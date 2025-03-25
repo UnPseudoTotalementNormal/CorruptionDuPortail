@@ -20,11 +20,13 @@ public class NetworkHUD : MonoBehaviour
     public async void OnJoinButtonClicked()
     {
         bool _isConnected = await StartClientWithRelay(inputField.text, "udp");
-        
+
+        if (!_isConnected)
+        {
+            return;
+        }
         _hostButton.interactable = false;
         _joinButton.interactable = false;
-        
-        Debug.Log(_isConnected);
     }
 
     public async void OnHostButtonClicked()

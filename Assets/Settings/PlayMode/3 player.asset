@@ -15,12 +15,28 @@ MonoBehaviour:
   m_Description: 
   m_EnableEditors: 1
   m_MainEditorInstance:
-    Name: Editor
+    Name: Main Editor
     <CorrespondingNodeId>k__BackingField: 
     m_Nodes: []
     m_PlayerTag: 
     m_InitialScene: {fileID: 0}
-  m_EditorInstances: []
+  m_EditorInstances:
+  - Name: Player 2
+    <CorrespondingNodeId>k__BackingField: 
+    m_Nodes: []
+    m_PlayerTag: 
+    m_InitialScene: {fileID: 0}
+    m_AdvancedConfiguration:
+      StreamLogsToMainEditor: 0
+      LogsColor: {r: 0.3643, g: 0.581, b: 0.8679, a: 1}
+  - Name: Player 3
+    <CorrespondingNodeId>k__BackingField: 
+    m_Nodes: []
+    m_PlayerTag: 
+    m_InitialScene: {fileID: 0}
+    m_AdvancedConfiguration:
+      StreamLogsToMainEditor: 0
+      LogsColor: {r: 0.3643, g: 0.581, b: 0.8679, a: 1}
   m_LocalInstances: []
   m_RemoteInstances: []
   m_OverridePort: 0

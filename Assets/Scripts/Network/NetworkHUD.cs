@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Network;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -7,10 +8,13 @@ using Unity.Services.Core;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class NetworkHUD : MonoBehaviour
 {
+    [SerializeField] private GameObject _panelObject;
+    
     [SerializeField] private Button _hostButton;
     [SerializeField] private Button _joinButton;
     
@@ -27,6 +31,10 @@ public class NetworkHUD : MonoBehaviour
         }
         _hostButton.interactable = false;
         _joinButton.interactable = false;
+
+        GameCode.gameCode = inputField.text;
+        
+        SwitchToGameScene();
     }
 
     public async void OnHostButtonClicked()
@@ -37,6 +45,10 @@ public class NetworkHUD : MonoBehaviour
         inputField.gameObject.SetActive(false);
         hostCodeText.gameObject.SetActive(true);
         hostCodeText.text = joinCode;
+        
+        GameCode.gameCode = joinCode;
+
+        SwitchToGameScene();
     }
     
     public async Task<string> StartHostWithRelay(int maxConnections, string connectionType)
@@ -63,5 +75,17 @@ public class NetworkHUD : MonoBehaviour
         var allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: joinCode);
         NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, connectionType));
         return !string.IsNullOrEmpty(joinCode) && NetworkManager.Singleton.StartClient();
+    }
+
+    private void SwitchToGameScene()
+    {
+        NetworkManager.Singleton.SceneManager.LoadScene(
+            "GameScene",
+            LoadSceneMode.Single);
+    }
+
+    public void HideButtonClicked()
+    {
+        _panelObject.SetActive(!_panelObject.activeSelf);
     }
 }

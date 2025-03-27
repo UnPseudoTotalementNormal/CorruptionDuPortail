@@ -11,11 +11,15 @@ public class ConnectedPlayerPanel : MonoBehaviour
     
     private void Update()
     {
+        if (!NetworkManager.Singleton)
+        {
+            return;
+        }
+        
         foreach (Transform child in _playerListParent)
         {
             Destroy(child.gameObject);
         }
-        
         
         foreach (var client in NetworkManager.Singleton.ConnectedClients.Values)
         {

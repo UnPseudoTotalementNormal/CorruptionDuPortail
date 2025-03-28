@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79de42731990b534fb974d3f3b4b215e, type: 3}
-  m_Name: Repenti
+  m_Name: Abyss
   m_EditorClassIdentifier: 
-  characterName: Le Repenti
+  characterName: "ABYSS, L\u2019Extension du N\xE9ant"
   characterArtwork: {fileID: 0}
-  characterType: 4
-  factionType: 1
-  characterDifficulty: 1
+  characterType: 5
+  factionType: 0
+  characterDifficulty: 2
   powers: []
   ownerClientId: 0
   isChained: 0

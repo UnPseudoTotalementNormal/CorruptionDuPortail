@@ -584,11 +584,22 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   characters: []
   gameStates:
-  - {fileID: 11400000, guid: 5802b0c86e33dda41a4458b3d5198abc, type: 2}
-  - {fileID: 11400000, guid: 7724efedc4300b248a78e71060eaba3e, type: 2}
-  - {fileID: 11400000, guid: 909bd736fa2d1fd45bbe2ce5e33669cb, type: 2}
-  - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
-  gameEndingState: {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}
+    _serializedList:
+    - Key: {fileID: 11400000, guid: 5802b0c86e33dda41a4458b3d5198abc, type: 2}
+      Value:
+        isInGameLoop: 0
+    - Key: {fileID: 11400000, guid: 7724efedc4300b248a78e71060eaba3e, type: 2}
+      Value:
+        isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: 909bd736fa2d1fd45bbe2ce5e33669cb, type: 2}
+      Value:
+        isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
+      Value:
+        isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}
+      Value:
+        isInGameLoop: 0
 --- !u!4 &704981000
 Transform:
   m_ObjectHideFlags: 0
@@ -598,7 +609,7 @@ Transform:
   m_GameObject: {fileID: 704980997}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 928.7561, y: 398.96445, z: -4.2892427}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -745,10 +756,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3

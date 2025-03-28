@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: L'Omniscient
   characterArtwork: {fileID: 0}
-  characterType: 3
+  characterType: 4
   factionType: 1
   characterDifficulty: 3
   powers: []
-  ownerId: 0
+  ownerClientId: 0
   isChained: 0

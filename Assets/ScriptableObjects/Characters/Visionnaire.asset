@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79de42731990b534fb974d3f3b4b215e, type: 3}
-  m_Name: Repenti
+  m_Name: Visionnaire
   m_EditorClassIdentifier: 
-  characterName: Le Repenti
+  characterName: La Visionnaire
   characterArtwork: {fileID: 0}
-  characterType: 4
+  characterType: 2
   factionType: 1
-  characterDifficulty: 1
+  characterDifficulty: 2
   powers: []
   ownerClientId: 0
   isChained: 0

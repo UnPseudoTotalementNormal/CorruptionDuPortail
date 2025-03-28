@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: "Le Ge\xF4lier"
   characterArtwork: {fileID: 0}
-  characterType: 2
+  characterType: 3
   factionType: 1
   characterDifficulty: 2
   powers: []
-  ownerId: 0
+  ownerClientId: 0
   isChained: 0

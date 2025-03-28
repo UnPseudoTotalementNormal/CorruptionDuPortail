@@ -9,18 +9,23 @@ namespace GameLogic
     [CreateAssetMenu(fileName = "AwakeningState", menuName = "GameStates/AwakeningState")]
     public class AwakeningState : GameState
     {
-        public List<Character> awakeningOrder;
-        [HideInInspector] public List<Character> sortedAwakeningCharacters;
+        public List<AwakeningLayerObject> awakeningOrder;
         
         public int currentAwakeningIndex;
 
-        public List<Character> GetAwakeningPlayerSortedList()
+        private void AwakeLayer(int layerToAwake)
         {
-            List<Character> sortedList = gameManager.characters;
-            
-            sortedList.Sort((a, b) => awakeningOrder.IndexOf(a).CompareTo(awakeningOrder.IndexOf(b)));
-            
-            return sortedList;
+            foreach (Character characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
+            {
+                foreach (Character characterInGame in gameManager.characters)
+                {
+                    if (!characterInGame.IsTheSameCharacter(characterToAwake))
+                    {
+                        continue;
+                    }
+                    //TODO: Awaken the character
+                }
+            }
         }
 
         public override void OnStateCreated()
@@ -42,5 +47,17 @@ namespace GameLogic
         {
             base.StateUpdate();
         }
+    }
+}
+
+[Serializable]
+public class AwakeningLayerObject
+{
+    public List<Character> awakeningCharacters = new();
+    
+    public Character this[int key]
+    {
+        get { return awakeningCharacters[key]; }
+        set { awakeningCharacters[key] = value; }
     }
 }

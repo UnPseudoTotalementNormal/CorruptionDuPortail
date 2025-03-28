@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AYellowpaper.SerializedCollections;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,9 +13,7 @@ public class GameManager : NetworkBehaviour
     
     public List<Character> characters = new();
     
-    public List<GameState> gameStates = new();
-
-    public GameState gameEndingState;
+    public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
     public int currentGameStateIndex { get; private set; }
 
@@ -27,30 +26,29 @@ public class GameManager : NetworkBehaviour
     private void Start()
     {
         currentGameStateIndex = 0;
-        gameStates[currentGameStateIndex].OnStartState();
+        GetGameState(currentGameStateIndex).OnStartState();
     }
 
     private void SetupGameStates()
     {
-        List<GameState> oldGameStates = gameStates.ToList();
+        var oldGameStates = gameStates.ToDictionary(key => key.Key, value => value.Value);
         gameStates.Clear();
         
-        foreach (GameState gameState in oldGameStates)
+        foreach (var gameState in oldGameStates)
         {
-            var clonedGameState = ScriptableObject.Instantiate(gameState);
-            gameStates.Add(clonedGameState);
+            var clonedGameState = ScriptableObject.Instantiate(gameState.Key);
+            gameStates.Add(clonedGameState, gameState.Value);
             
             clonedGameState.gameManager = this;
             clonedGameState.OnStateCreated();
         }
-        gameEndingState = ScriptableObject.Instantiate(gameEndingState);
     }
 
     private void Update()
     {
         if (IsServer)
         {
-            gameStates[currentGameStateIndex].StateUpdate();
+            GetGameState(currentGameStateIndex).StateUpdate();
         }
     }
 
@@ -66,9 +64,14 @@ public class GameManager : NetworkBehaviour
 
     private void SwitchGameState(int newGameState)
     {
-        gameStates[currentGameStateIndex].OnEndState();
+        GetGameState(currentGameStateIndex).OnEndState();
         
         currentGameStateIndex = newGameState;
-        gameStates[currentGameStateIndex].OnStartState();
+        GetGameState(currentGameStateIndex).OnStartState();
+    }
+
+    public GameState GetGameState(int index)
+    {
+        return gameStates.Keys.ElementAt(index);
     }
 }

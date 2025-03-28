@@ -21,8 +21,9 @@ public class Character : ScriptableObject
     [Header("Variables")]
     public ulong ownerClientId;
     public bool isChained;
-
-    public bool IsCharacterEqual(Character otherCharacter)
+    
+    
+    public bool IsTheSameCharacter(Character otherCharacter)
     {
         return characterName == otherCharacter.characterName;
     }

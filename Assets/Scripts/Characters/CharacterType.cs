@@ -2,10 +2,10 @@ namespace Characters
 {
     public enum CharacterType
     {
-        transformer,
-        detective,
-        protector,
-        hunter,
-        chillGuy
+        masked = 1,
+        detective = 2,
+        support = 3,
+        tracker = 4,
+        chillGuy = 5
     }
 }

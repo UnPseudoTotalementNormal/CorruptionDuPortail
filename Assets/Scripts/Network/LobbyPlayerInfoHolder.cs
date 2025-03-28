@@ -7,8 +7,20 @@ namespace Network
 {
     public class LobbyPlayerInfoHolder : NetworkBehaviour
     {
-        public static NetworkList<PlayerInfo> playerInfos { get; private set; } = new();
+        public static LobbyPlayerInfoHolder instance { get; private set; }
         
+        public NetworkList<PlayerInfo> playerInfos { get; private set; } = new();
+
+        private void Awake()
+        {
+            if (instance != null)
+            {
+                Destroy(instance.gameObject);
+                return;
+            }
+            instance = this;
+        }
+
         private void Start()
         {
             if (IsServer)

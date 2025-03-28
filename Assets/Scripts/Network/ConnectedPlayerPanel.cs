@@ -13,7 +13,7 @@ public class ConnectedPlayerPanel : MonoBehaviour
 
     private void Start()
     {
-        LobbyPlayerInfoHolder.playerInfos.OnListChanged += OnPlayerInfoListChanged;
+        LobbyPlayerInfoHolder.instance.playerInfos.OnListChanged += OnPlayerInfoListChanged;
         UpdatePanel();
     }
 
@@ -29,7 +29,7 @@ public class ConnectedPlayerPanel : MonoBehaviour
             Destroy(child.gameObject);
         }
         
-        foreach (PlayerInfo playerInfo in LobbyPlayerInfoHolder.playerInfos)
+        foreach (PlayerInfo playerInfo in LobbyPlayerInfoHolder.instance.playerInfos)
         {
             var newPlayerText = Instantiate(_playerTextObject, _playerListParent);
             newPlayerText.SetActive(true);

@@ -1,4 +1,5 @@
 using GameLogic;
+using GameLogic.GameStates;
 using UnityEngine;
 
 public class StateUI : MonoBehaviour

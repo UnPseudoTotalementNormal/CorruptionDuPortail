@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace GameLogic
+namespace GameLogic.GameStates
 {
     [Serializable]
     [CreateAssetMenu(fileName = "VoteState", menuName = "GameStates/VoteState")]
@@ -17,14 +17,24 @@ namespace GameLogic
             base.OnStateCreated();
         }
 
-        public override void OnStartState()
+        public override void OnStartStateServer()
         {
-            base.OnStartState();
+            base.OnStartStateServer();
         }
 
-        public override void OnEndState()
+        public override void OnEndStateServer()
         {
-            base.OnEndState();
+            base.OnEndStateServer();
+        }
+        
+        public override void OnStartStateClient()
+        {
+            base.OnStartStateClient();
+        }
+        
+        public override void OnEndStateClient()
+        {
+            base.OnEndStateClient();
         }
 
         public override void StateUpdate()

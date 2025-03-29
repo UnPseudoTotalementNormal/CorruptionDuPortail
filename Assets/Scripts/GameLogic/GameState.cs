@@ -20,15 +20,25 @@ namespace GameLogic
             }
         }
         
-        public virtual void OnStartState()
+        public virtual void OnStartStateServer()
+        {
+            
+        }
+
+        public virtual void OnEndStateServer()
+        {
+            
+        }
+        
+        public virtual void OnStartStateClient()
         {
             if (stateUI != null)
             {
                 stateUI.gameObject.SetActive(true);
             }
         }
-
-        public virtual void OnEndState()
+        
+        public virtual void OnEndStateClient()
         {
             if (stateUI != null)
             {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using GameLogic;
+using GameLogic.GameStates;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
@@ -21,6 +22,8 @@ public class GameManager : NetworkBehaviour
 
     public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
+    [HideInInspector] public bool c = false;
+
     private void Awake()
     {
         instance = this;
@@ -32,8 +35,10 @@ public class GameManager : NetworkBehaviour
         if (IsServer)
         {
             currentGameStateIndex.Value = 0;
+            GetGameState(currentGameStateIndex.Value).OnStartStateServer();
         }
-        GetGameState(currentGameStateIndex.Value).OnStartState();
+        
+        GetGameState(currentGameStateIndex.Value).OnStartStateClient();
     }
 
     private void SetupGameStates()
@@ -69,15 +74,19 @@ public class GameManager : NetworkBehaviour
         SwitchGameState(newGameStateIndex);
     }
 
-    private void SwitchGameState(int newGameState)
+    private void SwitchGameState(int newGameStateIndex)
     {
         Assert.IsTrue(IsServer, "SwitchGameState can only be called on the server");
-        Assert.IsTrue(newGameState >= 0 && newGameState < gameStates.Count, "Invalid game state index");
+        Assert.IsTrue(newGameStateIndex >= 0 && newGameStateIndex < gameStates.Count, "Invalid game state index");
+
+        var _oldGameState = GetGameState(currentGameStateIndex.Value);
+        _oldGameState.OnEndStateServer();
+        DoStateMethodRpc(_oldGameState.GetType().FullName, nameof(_oldGameState.OnEndStateClient), new StateRpcParams(StateRpcParams.RpcTargetType.clients));
         
-        GetGameState(currentGameStateIndex.Value).OnEndState();
-        
-        currentGameStateIndex.Value = newGameState;
-        GetGameState(currentGameStateIndex.Value).OnStartState();
+        currentGameStateIndex.Value = newGameStateIndex;
+        var _newGameState = GetGameState(currentGameStateIndex.Value);
+        _newGameState.OnStartStateServer();
+        DoStateMethodRpc(_newGameState.GetType().FullName, nameof(_newGameState.OnStartStateClient), new StateRpcParams(StateRpcParams.RpcTargetType.clients));
     }
 
     public GameState GetGameState(int index)
@@ -111,6 +120,11 @@ public class GameManager : NetworkBehaviour
         CallStateMethodRpc(stateTypeName, methodName, arguments, _rpcParams);
     }
 
+    public void DoStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName, StateRpcParams stateRpcParams)
+    {
+        DoStateMethodRpc(stateTypeName, methodName, null, stateRpcParams);
+    }
+
 
     [Rpc(SendTo.SpecifiedInParams)]
     private void CallStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName,
@@ -122,19 +136,20 @@ public class GameManager : NetworkBehaviour
         MethodInfo method = gameState.GetType().GetMethod(methodName.ToString(), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.IsNotNull(method, $"Method {methodName} not found in GameState {stateTypeName}");
 
-        
-        ParameterInfo[] paramInfos = method.GetParameters();
-        object[] parameters = new object[arguments.Length];
-
-        for (int i = 0; i < arguments.Length; i++)
+        object[] parameters = null;
+        if (arguments != null)
         {
-            parameters[i] = arguments[i].DeserializeNonGeneric(paramInfos[i].ParameterType);
+            ParameterInfo[] paramInfos = method.GetParameters();
+            parameters = new object[arguments.Length];
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                parameters[i] = arguments[i].DeserializeNonGeneric(paramInfos[i].ParameterType);
+            }
         }
-        
+
         method.Invoke(gameState, parameters);
     }
-    
-    
 }
 
 public class StateRpcParams

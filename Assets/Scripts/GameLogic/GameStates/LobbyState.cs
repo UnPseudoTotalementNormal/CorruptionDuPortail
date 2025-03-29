@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace GameLogic
+namespace GameLogic.GameStates
 {
     [CreateAssetMenu(fileName = "LobbyState", menuName = "GameStates/LobbyState")]
     public class LobbyState : GameState
@@ -14,19 +14,24 @@ namespace GameLogic
             base.OnStateCreated();
         }
 
-        public override void OnStartState()
+        public override void OnStartStateServer()
         {
-            base.OnStartState();
+            base.OnStartStateServer();
         }
 
-        private void DoStuffRpc(int cool, FixedString64Bytes coolString)
+        public override void OnEndStateServer()
         {
-            Debug.Log(coolString + cool.ToString());
+            base.OnEndStateServer();
         }
-
-        public override void OnEndState()
+        
+        public override void OnStartStateClient()
         {
-            base.OnEndState();
+            base.OnStartStateClient();
+        }
+        
+        public override void OnEndStateClient()
+        {
+            base.OnEndStateClient();
         }
 
         public override void StateUpdate()

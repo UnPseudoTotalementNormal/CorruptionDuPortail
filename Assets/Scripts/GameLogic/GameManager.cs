@@ -58,10 +58,7 @@ public class GameManager : NetworkBehaviour
 
     private void Update()
     {
-        if (IsServer)
-        {
-            GetGameState(currentGameStateIndex.Value).StateUpdate();
-        }
+        GetGameState(currentGameStateIndex.Value).StateUpdateServer();
     }
 
     public void NextGameState()

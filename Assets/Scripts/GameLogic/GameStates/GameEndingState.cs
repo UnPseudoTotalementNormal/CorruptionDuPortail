@@ -30,9 +30,14 @@ namespace GameLogic.GameStates
             base.OnEndStateClient();
         }
 
-        public override void StateUpdate()
+        public override void StateUpdateServer()
         {
-            base.StateUpdate();
+            base.StateUpdateServer();
+        }
+        
+        public override void StateUpdateClient()
+        {
+            base.StateUpdateClient();
         }
     }
 }

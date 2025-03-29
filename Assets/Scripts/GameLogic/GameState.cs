@@ -46,7 +46,12 @@ namespace GameLogic
             }
         }
 
-        public virtual void StateUpdate()
+        public virtual void StateUpdateServer()
+        {
+            
+        }
+        
+        public virtual void StateUpdateClient()
         {
             
         }

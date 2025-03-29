@@ -10,11 +10,15 @@ namespace GameLogic.GameStates
     public class AwakeningState : GameState
     {
         public List<AwakeningLayerObject> awakeningOrder;
+        public List<Character> currentlyAwakenedCharacters = new();
         
         public int currentAwakeningIndex;
 
+        public float currentAwakeningTimer;
+
         private void AwakeLayer(int layerToAwake)
         {
+            currentlyAwakenedCharacters.Clear();
             foreach (Character characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
             {
                 foreach (Character characterInGame in gameManager.characters)
@@ -26,6 +30,13 @@ namespace GameLogic.GameStates
                     //TODO: Awaken the character
                 }
             }
+            currentAwakeningTimer = CalculateAwakeningTimer();
+        }
+
+        public float CalculateAwakeningTimer()
+        {
+            //todo: calculate the awakening timer based on the characters awakened
+            return 5f;
         }
 
         public override void OnStateCreated()
@@ -36,6 +47,8 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            currentAwakeningIndex = 0;
+            AwakeLayer(currentAwakeningIndex);
         }
 
         public override void OnEndStateServer()
@@ -53,9 +66,29 @@ namespace GameLogic.GameStates
             base.OnEndStateClient();
         }
 
-        public override void StateUpdate()
+        public override void StateUpdateServer()
         {
-            base.StateUpdate();
+            base.StateUpdateServer();
+            currentAwakeningTimer -= Time.deltaTime;
+            
+            if (currentAwakeningTimer > 0)
+            {
+                return;
+            }
+            
+            currentAwakeningIndex++;
+            if (currentAwakeningIndex >= awakeningOrder.Count)
+            {
+                gameManager.NextGameState();
+                return;
+            }
+            
+            AwakeLayer(currentAwakeningIndex);
+        }
+        
+        public override void StateUpdateClient()
+        {
+            base.StateUpdateClient();
         }
     }
 }

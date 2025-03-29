@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
+using Characters;
 using GameLogic;
 using GameLogic.GameStates;
 using Network;
@@ -102,30 +103,30 @@ public class GameManager : NetworkBehaviour
 
     #region CharacterMethodRpc
 
-    public void DoCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
+    public void DoRoleMethodRpc(ulong roleOwnerClientId, FixedString64Bytes methodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
     {
         RpcParams _rpcParams;
         if (!GetTargetFromCustomRpcParams(customRpcParams, out _rpcParams))
         {
             return;
         }
-        CallCharacterMethodRpc(characterOwnerClientId, methodName, arguments, _rpcParams);
+        CallRoleMethodRpc(roleOwnerClientId, methodName, arguments, _rpcParams);
     }
 
-    public void DoCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName, CustomRpcParams customRpcParams)
+    public void DoRoleMethodRpc(ulong roleOwnerClientId, FixedString64Bytes methodName, CustomRpcParams customRpcParams)
     {
-        DoCharacterMethodRpc(characterOwnerClientId, methodName, null, customRpcParams);
+        DoRoleMethodRpc(roleOwnerClientId, methodName, null, customRpcParams);
     }
 
 
     [Rpc(SendTo.SpecifiedInParams)]
-    private void CallCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName,
+    private void CallRoleMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName,
         NetworkSerializableObject[] arguments, RpcParams rpcParams)
     {
-        Character _character = characters.FirstOrDefault(character => character.ownerClientId == characterOwnerClientId);
-        Assert.IsNotNull(_character, $"character from client {characterOwnerClientId} not found");
+        Role _role = characters.FirstOrDefault(character => character.ownerClientId == characterOwnerClientId)?.role;
+        Assert.IsNotNull(_role, $"character from client {characterOwnerClientId} not found");
         
-        CallMethodAfterRpc(_character, methodName, arguments);
+        CallMethodAfterRpc(_role, methodName, arguments);
     }
 
     #endregion

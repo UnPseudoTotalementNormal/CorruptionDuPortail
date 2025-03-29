@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Extensions;
 using UnityEngine;
 
@@ -10,7 +11,7 @@ namespace GameLogic.GameStates
     public class AwakeningState : GameState
     {
         public List<AwakeningLayerObject> awakeningOrder;
-        public List<Character> currentlyAwakenedCharacters = new();
+        public List<Role> currentlyAwakenedCharacters = new();
         
         public int currentAwakeningIndex;
 
@@ -19,15 +20,16 @@ namespace GameLogic.GameStates
         private void AwakeLayer(int layerToAwake)
         {
             currentlyAwakenedCharacters.Clear();
-            foreach (Character characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
+            foreach (Role _characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
             {
-                foreach (Character characterInGame in gameManager.characters)
+                List<Role> _rolesInGame = gameManager.characters.Select(character => character.role).ToList();
+                foreach (Role _curentRoleInGame in _rolesInGame)
                 {
-                    if (!characterInGame.IsTheSameCharacter(characterToAwake))
+                    if (!_curentRoleInGame.IsTheSameRole(_characterToAwake))
                     {
                         continue;
                     }
-                    currentlyAwakenedCharacters.Add(characterInGame);
+                    currentlyAwakenedCharacters.Add(_curentRoleInGame);
                     //TODO: Awaken the character
                 }
             }
@@ -97,9 +99,9 @@ namespace GameLogic.GameStates
 [Serializable]
 public class AwakeningLayerObject
 {
-    public List<Character> awakeningCharacters = new();
+    public List<Role> awakeningCharacters = new();
     
-    public Character this[int key]
+    public Role this[int key]
     {
         get { return awakeningCharacters[key]; }
         set { awakeningCharacters[key] = value; }

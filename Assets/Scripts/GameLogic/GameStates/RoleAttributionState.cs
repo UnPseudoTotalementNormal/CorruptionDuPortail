@@ -8,7 +8,7 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "RoleAttributionState", menuName = "GameStates/RoleAttributionState")]
     public class RoleAttributionState : GameState
     {
-        public SerializedDictionary<Character, RoleAttributionSetting> charactersAvailableForAttribution = new();
+        public SerializedDictionary<Role, RoleAttributionSetting> charactersAvailableForAttribution = new();
         
         public override void OnStateCreated()
         { 

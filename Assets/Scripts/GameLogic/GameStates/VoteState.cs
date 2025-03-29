@@ -8,7 +8,7 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "VoteState", menuName = "GameStates/VoteState")]
     public class VoteState : GameState
     {
-        public Dictionary<Character, int> votes;
+        public Dictionary<Role, int> votes;
         public float voteDuration;
         
         private float voteTimer;

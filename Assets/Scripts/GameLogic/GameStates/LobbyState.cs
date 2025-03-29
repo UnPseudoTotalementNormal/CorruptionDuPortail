@@ -1,27 +1,54 @@
-using Network;
-using Unity.Collections;
+using System.Linq;
+using Characters;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace GameLogic.GameStates
 {
     [CreateAssetMenu(fileName = "LobbyState", menuName = "GameStates/LobbyState")]
     public class LobbyState : GameState
     {
+        private void OnClientConnected(ulong clientId)
+        {
+            Character _newCharacter = new()
+            {
+                ownerClientId = clientId
+            };
+            gameManager.characters.Add(_newCharacter);
+        }
+        
+        private void OnClientDisconnected(ulong clientId)
+        {
+            Character clientCharacter = gameManager.characters.FirstOrDefault(character => character.ownerClientId == clientId);
+            if (clientCharacter == null)
+            {
+                return;
+            }
+            
+            gameManager.characters.Remove(clientCharacter);
+        }
+        
+        public void OnStartGameButtonPressed()
+        {
+            gameManager.NextGameState();
+        }
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
+            gameManager.NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            gameManager.NetworkManager.OnClientConnectedCallback += OnClientConnected;
         }
 
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
+            gameManager.NetworkManager.OnClientConnectedCallback -= OnClientConnected;
         }
         
         public override void OnStartStateClient()
@@ -43,11 +70,6 @@ namespace GameLogic.GameStates
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();
-        }
-        
-        public void OnStartGameButtonPressed()
-        {
-            gameManager.NextGameState();
         }
     }
 }

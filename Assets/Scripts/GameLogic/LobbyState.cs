@@ -1,3 +1,6 @@
+using Network;
+using Unity.Collections;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -14,6 +17,25 @@ namespace GameLogic
         public override void OnStartState()
         {
             base.OnStartState();
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += Testttt;
+                return;
+            }
+            
+        }
+
+        private void Testttt(ulong obj)
+        {
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(DoStuffRpc),
+                new[] { new NetworkSerializableObject(69), new NetworkSerializableObject((FixedString64Bytes)"pretty cool huh! ") },
+                new StateRpcParams(StateRpcParams.RpcTargetType.single, new []{obj}));
+        }
+
+        private void DoStuffRpc(int cool, FixedString64Bytes coolString)
+        {
+            Debug.Log(coolString + cool.ToString());
         }
 
         public override void OnEndState()

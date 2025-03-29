@@ -4,13 +4,14 @@ using Network.Player;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class ConnectedPlayerPanel : MonoBehaviour
 {
-    [SerializeField] private Transform _playerListParent;
+    [FormerlySerializedAs("_playerListParent")] [SerializeField] private Transform playerListParent;
     
-    [SerializeField] private GameObject _playerTextObject;
-
+    [FormerlySerializedAs("_playerTextObject")] [SerializeField] private GameObject playerTextObject;
+    [SerializeField] private TMP_Text playerCountText;
     private void Start()
     {
         LobbyPlayerInfoHolder.instance.playerInfos.OnListChanged += OnPlayerInfoListChanged;
@@ -24,14 +25,18 @@ public class ConnectedPlayerPanel : MonoBehaviour
 
     private void UpdatePanel()
     {
-        foreach (Transform child in _playerListParent)
+        foreach (Transform child in playerListParent)
         {
             Destroy(child.gameObject);
         }
+
+        var _playerInfos = LobbyPlayerInfoHolder.instance.playerInfos;
         
-        foreach (PlayerInfo playerInfo in LobbyPlayerInfoHolder.instance.playerInfos)
+        playerCountText.text = $"Connected Players: {_playerInfos.Count.ToString()}";
+        
+        foreach (PlayerInfo playerInfo in _playerInfos)
         {
-            var newPlayerText = Instantiate(_playerTextObject, _playerListParent);
+            var newPlayerText = Instantiate(playerTextObject, playerListParent);
             newPlayerText.SetActive(true);
             newPlayerText.GetComponent<TMP_Text>().text = playerInfo.playerName.ToString();
         }

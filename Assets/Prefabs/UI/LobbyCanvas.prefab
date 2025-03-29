@@ -154,8 +154,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87e7a197002c9024e9c5b9dca92bb32b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerListParent: {fileID: 143720594222667980}
-  _playerTextObject: {fileID: 6545009393514852979}
+  playerListParent: {fileID: 143720594222667980}
+  playerTextObject: {fileID: 6545009393514852979}
+  playerCountText: {fileID: 2317589562982602666}
 --- !u!222 &5949072870554619908
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -454,7 +455,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Connected Players
+  m_text: 'Connected Players: '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

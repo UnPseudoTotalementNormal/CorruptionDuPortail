@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2361109086d4e67936764ee6b0a7dcd, type: 3}
+  m_Name: RoleAttributionState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 0}
+  charactersAvailableForAttribution:
+    _serializedList:
+    - Key: {fileID: 11400000, guid: a33cc6fc48b56354c840f1df2435b337, type: 2}
+    - Key: {fileID: 11400000, guid: 15549f01dd0f4f74680fba868490bc4c, type: 2}
+    - Key: {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
+    - Key: {fileID: 11400000, guid: 5cc915e269b056f47ae814b88297f61a, type: 2}
+    - Key: {fileID: 11400000, guid: a33cf36599ff88d4c9b5dd781d278f1b, type: 2}
+    - Key: {fileID: 11400000, guid: 34102ae15f9526e48b4950dc91f30da6, type: 2}
+    - Key: {fileID: 11400000, guid: b8920e9cbccd10d489b987be70a78fb8, type: 2}
+    - Key: {fileID: 11400000, guid: 092e63cf1e06f434fb81eaec1a9577fa, type: 2}

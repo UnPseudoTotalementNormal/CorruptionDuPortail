@@ -220,8 +220,6 @@ public class GameManager : NetworkBehaviour
     }
 
     #endregion
-    
-    
 }
 
 public class CustomRpcParams

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b107cc35268454888d7d785756ac28e, type: 3}
   m_Name: AwakeningState
   m_EditorClassIdentifier: 
-  stateUIPrefab: {fileID: 0}
+  stateUIPrefab: {fileID: 1309300777674755838, guid: e58b440ad13b322428929b1837c0dc0d, type: 3}
   awakeningOrder:
   - awakeningCharacters:
     - {fileID: 11400000, guid: b8920e9cbccd10d489b987be70a78fb8, type: 2}
@@ -37,4 +37,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 34102ae15f9526e48b4950dc91f30da6, type: 2}
   - awakeningCharacters:
     - {fileID: 11400000, guid: b3f2e2d665a82124faf7d8aa31a97d5c, type: 2}
+  currentlyAwakenedCharacters: []
   currentAwakeningIndex: 0
+  currentAwakeningTimer: 0

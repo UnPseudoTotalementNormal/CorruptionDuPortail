@@ -27,6 +27,7 @@ namespace GameLogic.GameStates
                     {
                         continue;
                     }
+                    currentlyAwakenedCharacters.Add(characterInGame);
                     //TODO: Awaken the character
                 }
             }

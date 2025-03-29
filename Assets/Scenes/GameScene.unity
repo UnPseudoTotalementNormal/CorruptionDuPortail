@@ -600,6 +600,7 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}
       Value:
         isInGameLoop: 0
+  ignoreGameLoop: 0
 --- !u!4 &704981000
 Transform:
   m_ObjectHideFlags: 0

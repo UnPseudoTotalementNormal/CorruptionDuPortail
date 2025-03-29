@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Object = System.Object;
 
 public class GameManager : NetworkBehaviour
 {
@@ -72,7 +73,7 @@ public class GameManager : NetworkBehaviour
             _newGameStateIndex = 0;
         }
 
-        if (_wasInGameLoop && !ignoreGameLoop)
+        if (_wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
         {
             _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
         }
@@ -86,12 +87,12 @@ public class GameManager : NetworkBehaviour
 
         var _oldGameState = GetGameState(currentGameStateIndex.Value);
         _oldGameState.OnEndStateServer();
-        DoStateMethodRpc(_oldGameState.GetType().FullName, nameof(_oldGameState.OnEndStateClient), new StateRpcParams(StateRpcParams.RpcTargetType.clients));
+        DoStateMethodRpc(_oldGameState.GetType().FullName, nameof(_oldGameState.OnEndStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
         
         currentGameStateIndex.Value = newGameStateIndex;
         var _newGameState = GetGameState(currentGameStateIndex.Value);
         _newGameState.OnStartStateServer();
-        DoStateMethodRpc(_newGameState.GetType().FullName, nameof(_newGameState.OnStartStateClient), new StateRpcParams(StateRpcParams.RpcTargetType.clients));
+        DoStateMethodRpc(_newGameState.GetType().FullName, nameof(_newGameState.OnStartStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
     }
 
     public GameState GetGameState(int index)
@@ -99,35 +100,51 @@ public class GameManager : NetworkBehaviour
         return gameStates.Keys.ElementAt(index);
     }
 
-    public void DoStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName, NetworkSerializableObject[] arguments, StateRpcParams stateRpcParams)
+    #region CharacterMethodRpc
+
+    public void DoCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
     {
         RpcParams _rpcParams;
-        switch (stateRpcParams.targetType)
+        if (!GetTargetFromCustomRpcParams(customRpcParams, out _rpcParams))
         {
-            case StateRpcParams.RpcTargetType.single:
-                _rpcParams = RpcTarget.Single(stateRpcParams.clientId[0], RpcTargetUse.Temp);
-                break;
-            case StateRpcParams.RpcTargetType.server:
-                _rpcParams = RpcTarget.Server;
-                break;
-            case StateRpcParams.RpcTargetType.host:
-                _rpcParams = RpcTarget.Single(NetworkManager.ServerClientId, RpcTargetUse.Temp);
-                break;
-            case StateRpcParams.RpcTargetType.clients:
-                _rpcParams = RpcTarget.ClientsAndHost;
-                break;
-            case StateRpcParams.RpcTargetType.all:
-                _rpcParams = RpcTarget.Everyone;
-                break;
-            default:
-                return;
+            return;
+        }
+        CallCharacterMethodRpc(characterOwnerClientId, methodName, arguments, _rpcParams);
+    }
+
+    public void DoCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName, CustomRpcParams customRpcParams)
+    {
+        DoCharacterMethodRpc(characterOwnerClientId, methodName, null, customRpcParams);
+    }
+
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void CallCharacterMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName,
+        NetworkSerializableObject[] arguments, RpcParams rpcParams)
+    {
+        Character _character = characters.FirstOrDefault(character => character.ownerClientId == characterOwnerClientId);
+        Assert.IsNotNull(_character, $"character from client {characterOwnerClientId} not found");
+        
+        CallMethodAfterRpc(_character, methodName, arguments);
+    }
+
+    #endregion
+
+    #region StateMethodRpc
+
+    public void DoStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
+    {
+        RpcParams _rpcParams;
+        if (!GetTargetFromCustomRpcParams(customRpcParams, out _rpcParams))
+        {
+            return;
         }
         CallStateMethodRpc(stateTypeName, methodName, arguments, _rpcParams);
     }
 
-    public void DoStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName, StateRpcParams stateRpcParams)
+    public void DoStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName, CustomRpcParams customRpcParams)
     {
-        DoStateMethodRpc(stateTypeName, methodName, null, stateRpcParams);
+        DoStateMethodRpc(stateTypeName, methodName, null, customRpcParams);
     }
 
 
@@ -135,11 +152,57 @@ public class GameManager : NetworkBehaviour
     private void CallStateMethodRpc(FixedString64Bytes stateTypeName, FixedString64Bytes methodName,
         NetworkSerializableObject[] arguments, RpcParams rpcParams)
     {
-        GameState gameState = gameStates.Keys.FirstOrDefault(state => state.GetType().FullName == stateTypeName.ToString());
-        Assert.IsNotNull(gameState, $"GameState {stateTypeName} not found");
+        GameState _gameState = gameStates.Keys.FirstOrDefault(state => state.GetType().FullName == stateTypeName.ToString());
+        Assert.IsNotNull(_gameState, $"GameState {stateTypeName} not found");
         
-        MethodInfo method = gameState.GetType().GetMethod(methodName.ToString(), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        Assert.IsNotNull(method, $"Method {methodName} not found in GameState {stateTypeName}");
+        CallMethodAfterRpc(_gameState, methodName, arguments);
+    }
+
+    #endregion
+
+    #region CallMethodRpc
+
+    // ReSharper disable Unity.PerformanceAnalysis
+    private bool GetTargetFromCustomRpcParams(CustomRpcParams customRpcParams, out RpcParams rpcParams)
+    {
+        rpcParams = null;
+        try
+        {
+            switch (customRpcParams.targetType)
+            {
+                case CustomRpcParams.RpcTargetType.single:
+                    rpcParams = RpcTarget.Single(customRpcParams.clientId[0], RpcTargetUse.Temp);
+                    break;
+                case CustomRpcParams.RpcTargetType.server:
+                    rpcParams = RpcTarget.Server;
+                    break;
+                case CustomRpcParams.RpcTargetType.host:
+                    rpcParams = RpcTarget.Single(NetworkManager.ServerClientId, RpcTargetUse.Temp);
+                    break;
+                case CustomRpcParams.RpcTargetType.clients:
+                    rpcParams = RpcTarget.ClientsAndHost;
+                    break;
+                case CustomRpcParams.RpcTargetType.all:
+                    rpcParams = RpcTarget.Everyone;
+                    break;
+                default:
+                    return false;
+            }
+            
+            return true;
+        }
+        catch (Exception _exception)
+        {
+            Debug.LogError("Error while getting target from custom RPC params: " + _exception);
+            return false;
+        }
+    }
+
+    private void CallMethodAfterRpc(Object objectToCall, FixedString64Bytes methodName,
+        NetworkSerializableObject[] arguments)
+    {
+        MethodInfo method = objectToCall.GetType().GetMethod(methodName.ToString(), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.IsNotNull(method, $"Method {methodName} not found in object {objectToCall.ToString()}");
 
         object[] parameters = null;
         if (arguments != null)
@@ -153,16 +216,20 @@ public class GameManager : NetworkBehaviour
             }
         }
 
-        method.Invoke(gameState, parameters);
+        method.Invoke(objectToCall, parameters);
     }
+
+    #endregion
+    
+    
 }
 
-public class StateRpcParams
+public class CustomRpcParams
 {
     public ulong[] clientId;
     public RpcTargetType targetType;
     
-    public StateRpcParams(RpcTargetType targetType, ulong[] clientId = null)
+    public CustomRpcParams(RpcTargetType targetType, ulong[] clientId = null)
     {
         this.clientId = clientId;
         this.targetType = targetType;

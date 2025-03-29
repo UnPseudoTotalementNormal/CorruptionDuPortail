@@ -1,5 +1,7 @@
 using System;
+using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace GameLogic
 {
@@ -15,6 +17,7 @@ namespace GameLogic
             if (stateUIPrefab != null)
             {
                 stateUI = Instantiate(stateUIPrefab).GetComponentInChildren<StateUI>();
+                Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
                 stateUI.gameObject.SetActive(false);
             }

@@ -22,7 +22,7 @@ public class GameManager : NetworkBehaviour
 
     public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
-    [HideInInspector] public bool c = false;
+    [HideInInspector] public bool ignoreGameLoop = false;
 
     private void Awake()
     {
@@ -66,12 +66,20 @@ public class GameManager : NetworkBehaviour
 
     public void NextGameState()
     {
-        int newGameStateIndex = currentGameStateIndex.Value + 1;
-        if (newGameStateIndex >= gameStates.Count)
+        Assert.IsTrue(IsServer, "NextGameState can only be called on the server");
+        
+        bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
+        int _newGameStateIndex = currentGameStateIndex.Value + 1;
+        if (_newGameStateIndex >= gameStates.Count)
         {
-            newGameStateIndex = 0;
+            _newGameStateIndex = 0;
         }
-        SwitchGameState(newGameStateIndex);
+
+        if (_wasInGameLoop && !ignoreGameLoop)
+        {
+            _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
+        }
+        SwitchGameState(_newGameStateIndex);
     }
 
     private void SwitchGameState(int newGameStateIndex)

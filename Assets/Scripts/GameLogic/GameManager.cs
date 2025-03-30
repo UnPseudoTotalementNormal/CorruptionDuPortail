@@ -5,7 +5,6 @@ using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using Characters;
 using GameLogic;
-using GameLogic.GameStates;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;

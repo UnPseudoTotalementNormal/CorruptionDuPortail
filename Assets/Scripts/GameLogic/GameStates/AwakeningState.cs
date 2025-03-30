@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using Extensions;
 using UnityEngine;
 
@@ -20,12 +21,12 @@ namespace GameLogic.GameStates
         private void AwakeLayer(int layerToAwake)
         {
             currentlyAwakenedCharacters.Clear();
-            foreach (Role _characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
+            foreach (RoleDataObject _characterToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
             {
                 List<Role> _rolesInGame = gameManager.characters.Select(character => character.role).ToList();
                 foreach (Role _curentRoleInGame in _rolesInGame)
                 {
-                    if (!_curentRoleInGame.IsTheSameRole(_characterToAwake))
+                    if (!_curentRoleInGame.IsTheSameRole(_characterToAwake.role))
                     {
                         continue;
                     }
@@ -99,9 +100,9 @@ namespace GameLogic.GameStates
 [Serializable]
 public class AwakeningLayerObject
 {
-    public List<Role> awakeningCharacters = new();
+    public List<RoleDataObject> awakeningCharacters = new();
     
-    public Role this[int key]
+    public RoleDataObject this[int key]
     {
         get { return awakeningCharacters[key]; }
         set { awakeningCharacters[key] = value; }

@@ -27,9 +27,9 @@ public class GameManagerEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        base.OnInspectorGUI();
+        
         serializedObject.Update();
-
-        EditorGUILayout.PropertyField(gameStatesProperty, true);
 
         EditorGUILayout.LabelField("GameStates properties", EditorStyles.boldLabel);
 

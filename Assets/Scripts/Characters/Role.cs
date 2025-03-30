@@ -1,25 +1,26 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Characters;
 using Characters.Powers;
 using Characters.WinningConditions;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-[CreateAssetMenu(fileName = "NewRole", menuName = "Roles/Role")]
+
 [Serializable]
-public class Role : ScriptableObject, INetworkSerializable
+public class Role : INetworkSerializable
 {
     [Header("Role Settings")]
-    [FormerlySerializedAs("characterName")] public string roleName;
-    public Sprite roleArtwork;
-    [FormerlySerializedAs("characterType")] public CharacterType roleType;
+    public FixedString64Bytes roleName;
+    public CharacterType roleType;
     public FactionType factionType;
-    [FormerlySerializedAs("characterDifficulty")] [UnityEngine.Range(1, 3)] public int roleDifficulty;
+    [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
-    public List<Power> powers;
-    public List<WinningCondition> winningConditions;
+    [SerializeField] public List<Power> powers = new();
+    //public List<WinningCondition> winningConditions = new();
         
     [Header("Variables")]
     public bool isChained;
@@ -36,5 +37,24 @@ public class Role : ScriptableObject, INetworkSerializable
         serializer.SerializeValue(ref factionType);
         serializer.SerializeValue(ref roleDifficulty);
         serializer.SerializeValue(ref isChained);
+    }
+
+    public Role CopyRole()
+    {
+        Role _newRole = (Role)Activator.CreateInstance(GetType());
+        _newRole.roleName = roleName;
+        _newRole.roleType = roleType;
+        _newRole.factionType = factionType;
+        _newRole.roleDifficulty = roleDifficulty;
+        _newRole.isChained = isChained;
+        _newRole.powers = new List<Power>();
+        //_newRole.winningConditions = winningConditions.ToList();
+        
+        foreach (Power _power in powers)
+        {
+            _newRole.powers.Add(_power.CopyPower());
+        }
+
+        return _newRole;
     }
 }

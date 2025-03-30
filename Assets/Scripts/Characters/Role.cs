@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "NewRole", menuName = "Roles/Role")]
+[Serializable]
 public class Role : ScriptableObject, INetworkSerializable
 {
     [Header("Role Settings")]

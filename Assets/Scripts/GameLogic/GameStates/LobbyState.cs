@@ -10,13 +10,18 @@ namespace GameLogic.GameStates
     {
         private void OnClientConnected(ulong clientId)
         {
+            AddNewCharacter(clientId);
+        }
+
+        private void AddNewCharacter(ulong clientId)
+        {
             Character _newCharacter = new()
             {
                 ownerClientId = clientId
             };
             gameManager.characters.Add(_newCharacter);
         }
-        
+
         private void OnClientDisconnected(ulong clientId)
         {
             Character clientCharacter = gameManager.characters.FirstOrDefault(character => character.ownerClientId == clientId);
@@ -36,7 +41,17 @@ namespace GameLogic.GameStates
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
-            gameManager.NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
+            
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+            
+            foreach (var connectedClient in NetworkManager.Singleton.ConnectedClients)
+            {
+                AddNewCharacter(connectedClient.Key);
+            }
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
         public override void OnStartStateServer()

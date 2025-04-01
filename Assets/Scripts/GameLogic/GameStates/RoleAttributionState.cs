@@ -55,6 +55,8 @@ namespace GameLogic.GameStates
             {
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }
+            
+            gameManager.NextGameState();
         }
 
         private void GiveRandomRole(Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute, Character _character, out RoleDataObject _removedRole)

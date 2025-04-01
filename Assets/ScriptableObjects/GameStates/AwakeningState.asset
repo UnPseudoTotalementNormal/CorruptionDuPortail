@@ -15,28 +15,28 @@ MonoBehaviour:
   stateUIPrefab: {fileID: 1309300777674755838, guid: e58b440ad13b322428929b1837c0dc0d, type: 3}
   awakeningOrder:
   - awakeningCharacters:
-    - {fileID: 11400000, guid: b8920e9cbccd10d489b987be70a78fb8, type: 2}
+    - {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: 092e63cf1e06f434fb81eaec1a9577fa, type: 2}
+    - {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: 5cc915e269b056f47ae814b88297f61a, type: 2}
+    - {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: d3e1031d0eceb174d9e4d84a45de760c, type: 2}
+    - {fileID: 11400000, guid: 90f32399e33a9fb489c671312b995815, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: 7cc65e7344398bf42a04bdc187869629, type: 2}
+    - {fileID: 11400000, guid: 795505cbed82e72468f5ed5ccfc4668d, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: a33cc6fc48b56354c840f1df2435b337, type: 2}
+    - {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: b4e5b5353ce096544ad01bd1b63739c0, type: 2}
+    - {fileID: 11400000, guid: dfeef97d534114540b5f13e732c7ad7c, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: ebbe292542b46084aa0c30d293b48a6c, type: 2}
-    - {fileID: 11400000, guid: 977191d3bbc65db489cdc84e9e2cb6e7, type: 2}
-    - {fileID: 11400000, guid: a33cf36599ff88d4c9b5dd781d278f1b, type: 2}
-    - {fileID: 11400000, guid: 15549f01dd0f4f74680fba868490bc4c, type: 2}
+    - {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
+    - {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
+    - {fileID: 11400000, guid: d098867bc1478f840bb1eafeefe04fc9, type: 2}
+    - {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
     - {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
-    - {fileID: 11400000, guid: 34102ae15f9526e48b4950dc91f30da6, type: 2}
+    - {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
   - awakeningCharacters:
-    - {fileID: 11400000, guid: b3f2e2d665a82124faf7d8aa31a97d5c, type: 2}
+    - {fileID: 11400000, guid: 34376dc154c7c5644bc6282d6d50380f, type: 2}
   currentlyAwakenedCharacters: []
   currentAwakeningIndex: 0
   currentAwakeningTimer: 0

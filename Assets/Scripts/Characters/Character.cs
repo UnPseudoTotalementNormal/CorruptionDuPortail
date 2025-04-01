@@ -14,5 +14,10 @@ namespace Characters
             serializer.SerializeValue(ref ownerClientId);
             //serializer.SerializeValue(ref role);
         }
+        
+        public void AwakenCharacter()
+        {
+            role.AwakenRole();
+        }
     }
 }

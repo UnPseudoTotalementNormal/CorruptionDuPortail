@@ -1,8 +1,17 @@
+using System;
+using Unity.Netcode;
+
 namespace Characters.WinningConditions
 {
-    public abstract class WinningCondition
+    [Serializable]
+    public abstract class WinningCondition : INetworkSerializable
     {
         public abstract bool CheckCondition();
         public abstract void OnWin();
+        
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            
+        }
     }
 }

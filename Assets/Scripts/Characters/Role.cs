@@ -20,7 +20,7 @@ public class Role : INetworkSerializable
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
     [SerializeField] public List<Power> powers = new();
-    //public List<WinningCondition> winningConditions = new();
+    public List<WinningCondition> winningConditions = new();
         
     [Header("Variables")]
     public bool isChained;
@@ -38,7 +38,12 @@ public class Role : INetworkSerializable
         serializer.SerializeValue(ref roleDifficulty);
         serializer.SerializeValue(ref isChained);
     }
-
+    
+    public virtual void AwakenRole()
+    {
+        Debug.Log($"{roleName} has awakened!");
+    }
+    
     public Role CopyRole()
     {
         Role _newRole = (Role)Activator.CreateInstance(GetType());

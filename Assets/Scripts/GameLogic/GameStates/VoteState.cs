@@ -20,6 +20,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            gameManager.NextGameState();
         }
 
         public override void OnEndStateServer()

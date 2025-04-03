@@ -36,7 +36,7 @@ namespace GameLogic
         {
             if (stateUI != null)
             {
-                stateUI.gameObject.SetActive(true);
+                stateUI.ShowStateUI();
             }
         }
         
@@ -44,7 +44,7 @@ namespace GameLogic
         {
             if (stateUI != null)
             {
-                stateUI.gameObject.SetActive(false);
+                stateUI.HideStateUI();
             }
         }
 

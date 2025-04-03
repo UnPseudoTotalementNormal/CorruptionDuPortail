@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2106b58dc3e47869e37bb0eca941691, type: 3}
-  m_Name: VoteState
+  m_Script: {fileID: 11500000, guid: 20f76429b85746619ac7d8f0c20a3634, type: 3}
+  m_Name: VoteRecapState
   m_EditorClassIdentifier: 
-  stateUIPrefab: {fileID: 1309300777674755838, guid: 19c36c39a176ad2459a7860cf2c8c7b7, type: 3}
-  voteDuration: 300
+  stateUIPrefab: {fileID: 0}
+  recapDuration: 10

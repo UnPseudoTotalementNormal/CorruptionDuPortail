@@ -12,4 +12,14 @@ public class StateUI : MonoBehaviour
         this.gameManager = gameManager;
         this.owningGameState = gameState;
     }
+    
+    public virtual void ShowStateUI()
+    {
+        gameObject.SetActive(true);
+    }
+    
+    public virtual void HideStateUI()
+    {
+        gameObject.SetActive(false);
+    }
 }

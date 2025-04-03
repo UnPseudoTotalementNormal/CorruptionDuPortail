@@ -600,6 +600,9 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
       Value:
         isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: 00c120cb10efd114382108d87c6782fe, type: 2}
+      Value:
+        isInGameLoop: 1
     - Key: {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}
       Value:
         isInGameLoop: 0

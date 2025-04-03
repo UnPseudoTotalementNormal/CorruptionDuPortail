@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace GameLogic.GameStates
 {
     [Serializable]
-    [CreateAssetMenu(fileName = "VoteState", menuName = "GameStates/VoteState")]
-    public class VoteState : GameState
+    [CreateAssetMenu(fileName = "VoteRecapState", menuName = "GameStates/VoteRecapState")]
+    public class VoteRecapState : GameState
     {
-        public Dictionary<ulong, int> votesForPlayer;
-        public float voteDuration;
+        public float recapDuration;
         
-        private float voteTimer;
+        private float recapTimer;
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -20,8 +20,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
-            votesForPlayer = new Dictionary<ulong, int>();
-            voteTimer = voteDuration;
+            recapTimer = recapDuration;
         }
 
         public override void OnEndStateServer()
@@ -43,8 +42,8 @@ namespace GameLogic.GameStates
         {
             base.StateUpdateServer();
             
-            voteTimer -= Time.deltaTime;
-            if (voteTimer > 0)
+            recapTimer -= Time.deltaTime;
+            if (recapTimer > 0)
             {
                 return;
             }

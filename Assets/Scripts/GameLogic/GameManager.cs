@@ -28,11 +28,15 @@ public class GameManager : NetworkBehaviour
     private void Awake()
     {
         instance = this;
-        SetupGameStates();
+        
     }
     
-    private void Start()
+    public override void OnNetworkSpawn()
     {
+        base.OnNetworkSpawn();
+        
+        SetupGameStates();
+        
         if (IsServer)
         {
             currentGameStateIndex.Value = 0;

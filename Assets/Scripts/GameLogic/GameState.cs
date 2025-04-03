@@ -1,4 +1,5 @@
 using System;
+using UI;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -15,7 +16,7 @@ namespace GameLogic
         {
             if (stateUIPrefab != null)
             {
-                stateUI = Instantiate(stateUIPrefab).GetComponentInChildren<StateUI>();
+                stateUI = Instantiate(stateUIPrefab, StatesCanvas.Instance.transform).GetComponentInChildren<StateUI>();
                 Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
                 stateUI.gameObject.SetActive(false);

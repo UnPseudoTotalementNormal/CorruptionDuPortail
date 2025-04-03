@@ -19,7 +19,7 @@ namespace GameLogic
                 stateUI = Instantiate(stateUIPrefab, StatesCanvas.Instance.transform).GetComponentInChildren<StateUI>();
                 Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
-                stateUI.gameObject.SetActive(false);
+                stateUI.HideStateUI(true);
             }
         }
         

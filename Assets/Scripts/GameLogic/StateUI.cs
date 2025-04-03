@@ -1,3 +1,4 @@
+using DG.Tweening;
 using GameLogic;
 using GameLogic.GameStates;
 using Unity.Netcode;
@@ -7,6 +8,8 @@ public class StateUI : NetworkBehaviour
 {
     [HideInInspector] public GameManager gameManager;
     [HideInInspector] public GameState owningGameState;
+
+    [SerializeField] private CanvasGroup canvasGroup;
     
     public void SetupStateUI(GameManager gameManager, GameState gameState)
     {
@@ -14,13 +17,34 @@ public class StateUI : NetworkBehaviour
         this.owningGameState = gameState;
     }
     
-    public virtual void ShowStateUI()
+    public virtual void ShowStateUI(bool instant = false)
     {
-        gameObject.SetActive(true);
+        if (instant)
+        {
+            canvasGroup.alpha = 1;
+        }
+        else
+        {
+            canvasGroup.DOFade(1, 0.5f);
+        }
+
+        canvasGroup.interactable = true;
+        canvasGroup.blocksRaycasts = true;
+
     }
     
-    public virtual void HideStateUI()
+    public virtual void HideStateUI(bool instant = false)
     {
-        gameObject.SetActive(false);
+        if (instant)
+        {
+            canvasGroup.alpha = 0;
+        }
+        else
+        {
+            canvasGroup.DOFade(0, 0.5f);
+        }
+
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
     }
 }

@@ -52,9 +52,9 @@ namespace UI.SelectPanels
             _voteText.text = "Votes: 0";
             voteState.onVoteRefresh += (_voteDictionary =>
             {
-                if (_voteDictionary.TryGetValue(_playerButton.GetComponent<PlayerButtonObject>().playerId, out int _votes))
+                if (_voteDictionary.TryGetValue(_playerButton.GetComponent<PlayerButtonObject>().playerId, out var _votes))
                 {
-                    _voteText.text = "Votes: " + _votes;
+                    _voteText.text = "Votes: " + _votes.Count;
                 }
                 else
                 {

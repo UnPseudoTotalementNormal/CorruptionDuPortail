@@ -12,12 +12,12 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "VoteState", menuName = "GameStates/VoteState")]
     public class VoteState : GameState
     {
-        public Dictionary<ulong, int> votesForPlayer = new();
+        public Dictionary<ulong, List<ulong>> votesForPlayer = new();
         public float voteDuration;
         
         private float voteTimer;
 
-        public event Action<Dictionary<ulong, int>> onVoteRefresh;
+        public event Action<Dictionary<ulong, List<ulong>>> onVoteRefresh;
         
         public void OnPlayerVoted(ulong _playerId)
         {
@@ -33,29 +33,42 @@ namespace GameLogic.GameStates
         private void OnPlayerVotedRpc(ulong _senderId, ulong _votedPlayerId)
         {
             Assert.IsTrue(gameManager.IsServer, "OnPlayerVotedRpc can only be called on server");
-            
-            if (!votesForPlayer.TryAdd(_votedPlayerId, 1))
+
+            if (votesForPlayer.Values.Any(voteList => voteList.Contains(_senderId)))
             {
-                votesForPlayer[_votedPlayerId]++;
+                Debug.LogWarning(_senderId + " has already voted.");
+                return;
             }
-            
+
+            if (!votesForPlayer.ContainsKey(_votedPlayerId))
+            {
+                votesForPlayer[_votedPlayerId] = new List<ulong>();
+            }
+            votesForPlayer[_votedPlayerId].Add(_senderId);
+
             Debug.Log(_senderId + " voted for " + _votedPlayerId);
 
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnRefreshPlayerVotesRpc), 
                 new NetworkSerializableObject[]
                 {
                     new(votesForPlayer.Keys.ToArray()), 
-                    new(votesForPlayer.Values.ToArray()),
+                    new(votesForPlayer.Values.SelectMany(v => v).ToArray()),
+                    new(votesForPlayer.Values.Select(v => (ulong)v.Count).ToArray())
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
         }
         
-        private void OnRefreshPlayerVotesRpc(ulong[] playerIds, int[] votes)
+        private void OnRefreshPlayerVotesRpc(ulong[] playerIds, ulong[] votes, ulong[] voteCounts)
         {
             votesForPlayer.Clear();
+            int index = 0;
             for (int i = 0; i < playerIds.Length; i++)
             {
-                votesForPlayer.Add(playerIds[i], votes[i]);
+                votesForPlayer[playerIds[i]] = new List<ulong>();
+                for (int j = 0; j < (int)voteCounts[i]; j++)
+                {
+                    votesForPlayer[playerIds[i]].Add(votes[index++]);
+                }
             }
             
             onVoteRefresh?.Invoke(votesForPlayer);
@@ -72,14 +85,15 @@ namespace GameLogic.GameStates
             votesForPlayer.Clear();
             foreach (var _character in gameManager.characters)
             {
-                votesForPlayer.Add(_character.ownerClientId, 0);
+                votesForPlayer.Add(_character.ownerClientId, new List<ulong>());
             }
             voteTimer = voteDuration;
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnRefreshPlayerVotesRpc), 
                 new NetworkSerializableObject[]
                 {
                     new(votesForPlayer.Keys.ToArray()), 
-                    new(votesForPlayer.Values.ToArray()),
+                    new(Array.Empty<ulong>()),
+                    new(votesForPlayer.Values.Select(v => (ulong)v.Count).ToArray())
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
         }

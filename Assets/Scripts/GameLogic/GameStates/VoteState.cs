@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Network;
@@ -15,9 +16,11 @@ namespace GameLogic.GameStates
         public Dictionary<ulong, List<ulong>> votesForPlayer = new();
         public float voteDuration;
         
-        private float voteTimer;
+        public float voteTimer;
 
         public event Action<Dictionary<ulong, List<ulong>>> onVoteRefresh;
+        
+        private Coroutine updateVoteTimerCoroutine;
         
         public void OnPlayerVoted(ulong _playerId)
         {
@@ -74,6 +77,27 @@ namespace GameLogic.GameStates
             onVoteRefresh?.Invoke(votesForPlayer);
         }
         
+        private void UpdateVoteTimerRpc(float _newVoteTimer)
+        {
+            if (gameManager.IsServer)
+            {
+                return;
+            }
+
+            voteTimer = _newVoteTimer;
+        }
+        
+        private IEnumerator UpdateVoteTimerCoroutine()
+        {
+            while (true)
+            {
+                gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateVoteTimerRpc), 
+                    new NetworkSerializableObject[] { new(voteTimer)}, 
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+                yield return new WaitForSeconds(1);
+            }
+        }
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -96,11 +120,14 @@ namespace GameLogic.GameStates
                     new(votesForPlayer.Values.Select(v => (ulong)v.Count).ToArray())
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+
+            updateVoteTimerCoroutine = gameManager.StartCoroutine(UpdateVoteTimerCoroutine());
         }
 
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
+            gameManager.StopCoroutine(updateVoteTimerCoroutine);
         }
         
         public override void OnStartStateClient()
@@ -111,6 +138,11 @@ namespace GameLogic.GameStates
             var _voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
             _voteSelectPanel.voteState = this;
             _voteSelectPanel.onPlayerVoted += OnPlayerVoted;
+
+            if (!gameManager.IsHost)
+            {
+                voteTimer -= Time.deltaTime;
+            }
         }
         
         public override void OnEndStateClient()

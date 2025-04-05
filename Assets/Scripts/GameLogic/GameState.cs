@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UI;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -11,6 +13,8 @@ namespace GameLogic
         
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }
+        
+        public List<GameState> gameStateDependencies = new();
 
         public virtual void OnStateCreated()
         {
@@ -57,6 +61,11 @@ namespace GameLogic
         public virtual void StateUpdateClient()
         {
             
+        }
+        
+        public bool IsStateActive()
+        {
+            return gameManager.currentGameStateIndex.Value == gameManager.gameStates.Keys.ToList().IndexOf(this);
         }
 
         public event Action OnStateStartEvent;

@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using GameLogic.GameStates;
 using TMPro;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
 
 namespace UI.SelectPanels
@@ -26,6 +28,12 @@ namespace UI.SelectPanels
 
         private void OnPlayerButtonCreated(GameObject _playerButton)
         {
+            var _playerButtonObject = _playerButton.GetComponent<PlayerButtonObject>();
+            if (GameManager.instance.characters.First(_character => _character.ownerClientId == _playerButtonObject.playerId).isChained)
+            {
+                Destroy(_playerButton);
+            }
+            
             var _newPlayerButtonParent = new GameObject("PlayerButtonParent", typeof(RectTransform), typeof(VerticalLayoutGroup));
             _newPlayerButtonParent.transform.SetParent(_playerButton.transform.parent);
             

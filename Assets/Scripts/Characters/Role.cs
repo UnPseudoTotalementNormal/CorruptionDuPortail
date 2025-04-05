@@ -22,8 +22,7 @@ public class Role : INetworkSerializable
     [SerializeField] public List<Power> powers = new();
     public List<WinningCondition> winningConditions = new();
         
-    [Header("Variables")]
-    public bool isChained;
+    
     
     public bool IsTheSameRole(Role otherRole)
     {
@@ -36,7 +35,6 @@ public class Role : INetworkSerializable
         serializer.SerializeValue(ref roleType);
         serializer.SerializeValue(ref factionType);
         serializer.SerializeValue(ref roleDifficulty);
-        serializer.SerializeValue(ref isChained);
     }
     
     public virtual void AwakenRole()
@@ -51,7 +49,6 @@ public class Role : INetworkSerializable
         _newRole.roleType = roleType;
         _newRole.factionType = factionType;
         _newRole.roleDifficulty = roleDifficulty;
-        _newRole.isChained = isChained;
         _newRole.powers = new List<Power>();
         //_newRole.winningConditions = winningConditions.ToList();
         

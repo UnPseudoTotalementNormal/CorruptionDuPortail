@@ -22,6 +22,8 @@ namespace GameLogic.GameStates
         
         private Coroutine updateVoteTimerCoroutine;
         
+        public const ulong SKIP_VOTE_ID = 999;
+        
         public void OnPlayerVoted(ulong _playerId)
         {
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
@@ -98,6 +100,13 @@ namespace GameLogic.GameStates
             }
         }
         
+        public void OnVoteSkipButtonPressed(ulong _senderId)
+        {
+            Assert.IsTrue(gameManager.IsServer, "OnVoteSkipButtonPressed can only be called on server");
+            
+            OnPlayerVotedRpc(_senderId, SKIP_VOTE_ID);
+        }
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -111,6 +120,8 @@ namespace GameLogic.GameStates
             {
                 votesForPlayer.Add(_character.ownerClientId, new List<ulong>());
             }
+            votesForPlayer.Add(SKIP_VOTE_ID, new List<ulong>());
+            
             voteTimer = voteDuration;
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnRefreshPlayerVotesRpc), 
                 new NetworkSerializableObject[]

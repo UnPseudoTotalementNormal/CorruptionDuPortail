@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: VoteRecapState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
+  gameStateDependencies:
+  - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
   recapDuration: 10

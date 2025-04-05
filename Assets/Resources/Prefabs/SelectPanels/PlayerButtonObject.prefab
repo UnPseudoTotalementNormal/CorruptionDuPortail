@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1203937486041366339}
   - component: {fileID: 1407909534211074639}
+  - component: {fileID: 2581159287738984993}
   - component: {fileID: 1344309551295537707}
   - component: {fileID: 6811599036433535783}
   - component: {fileID: 58111016747867672}
@@ -54,6 +55,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerId: 0
   hoverColor: {r: 0.6981132, g: 0.6981132, b: 0.6981132, a: 1}
+--- !u!114 &2581159287738984993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929717346342184906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff4bd586021a412a86fcc554911f67a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hoverColor: {r: 0.69803923, g: 0.69803923, b: 0.69803923, a: 1}
 --- !u!222 &1344309551295537707
 CanvasRenderer:
   m_ObjectHideFlags: 0

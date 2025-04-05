@@ -8,21 +8,15 @@ using UnityEngine.UI;
 
 namespace UI.SelectPanels
 {
-    public class PlayerButtonObject : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+    public class PlayerButtonObject : MonoBehaviour
     {
         public ulong playerId;
-        
-        private Color baseColor;
-        [SerializeField] private Color hoverColor;
-
-        private Image panelImage;
         
         public event Action<ulong> onPlayerButtonClicked;
 
         private void Awake()
         {
-            panelImage = GetComponent<Image>();
-            baseColor = panelImage.color;
+            GetComponent<CustomButton>().onButtonClicked += () => onPlayerButtonClicked?.Invoke(playerId);
         }
 
         private void Start()
@@ -37,23 +31,6 @@ namespace UI.SelectPanels
                 GetComponentInChildren<TMP_Text>().text = _playerInfo.playerName.ToString();
                 break;
             }
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            transform.DOKill(true);
-            transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
-            onPlayerButtonClicked?.Invoke(playerId);
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            panelImage.DOColor(hoverColor, 0.2f);
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            panelImage.DOColor(baseColor, 0.2f);
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace Characters
 {
@@ -9,9 +10,13 @@ namespace Characters
         public Role role;
         public ulong ownerClientId;
         
+        [Header("Variables")]
+        public bool isChained;
+        
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref ownerClientId);
+            serializer.SerializeValue(ref isChained);
             //serializer.SerializeValue(ref role);
         }
         

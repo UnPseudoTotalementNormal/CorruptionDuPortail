@@ -51,8 +51,6 @@ namespace GameLogic.GameStates
             }
             votesForPlayer[_votedPlayerId].Add(_senderId);
 
-            Debug.Log(_senderId + " voted for " + _votedPlayerId);
-
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnRefreshPlayerVotesRpc), 
                 new NetworkSerializableObject[]
                 {
@@ -61,6 +59,11 @@ namespace GameLogic.GameStates
                     new(votesForPlayer.Values.Select(v => (ulong)v.Count).ToArray())
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+            
+            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.characters.Count)
+            {
+                voteTimer = Mathf.Min(voteTimer, 5);
+            }
         }
         
         private void OnRefreshPlayerVotesRpc(ulong[] playerIds, ulong[] votes, ulong[] voteCounts)
@@ -171,7 +174,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            gameManager.NextGameState();
+            
         }
         
         public override void StateUpdateClient()

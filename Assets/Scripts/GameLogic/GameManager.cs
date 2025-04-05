@@ -91,6 +91,24 @@ public class GameManager : NetworkBehaviour
         SwitchGameState(_newGameStateIndex);
     }
 
+    public void PreviousGameState()
+    {
+        Assert.IsTrue(IsServer, "PreviousGameState can only be called on the server");
+    
+        bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
+        int _newGameStateIndex = currentGameStateIndex.Value - 1;
+        if (_newGameStateIndex < 0)
+        {
+            _newGameStateIndex = gameStates.Count - 1;
+        }
+    
+        if (_wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
+        {
+            _newGameStateIndex = gameStates.ToList().FindLastIndex(pair => pair.Value.isInGameLoop);
+        }
+        SwitchGameState(_newGameStateIndex);
+    }
+    
     private void SwitchGameState(int newGameStateIndex)
     {
         Assert.IsTrue(IsServer, "SwitchGameState can only be called on the server");

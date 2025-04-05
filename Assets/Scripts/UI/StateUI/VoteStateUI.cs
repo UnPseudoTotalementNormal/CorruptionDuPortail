@@ -34,7 +34,7 @@ namespace UI
         }
 
         [Rpc(SendTo.Server)]
-        public void OnVoteSkipButtonPressedRpc()
+        private void OnVoteSkipButtonPressedRpc()
         {
             ((VoteState)owningGameState).OnVoteSkipButtonPressed(gameManager.NetworkManager.LocalClientId);
         }

@@ -46,6 +46,20 @@ public class GameManager : NetworkBehaviour
         GetGameState(currentGameStateIndex.Value).OnStartStateClient();
     }
 
+    private void Update()
+    {
+        GetGameState(currentGameStateIndex.Value).StateUpdateClient();
+        
+        if (!IsServer)
+        {
+            return;
+        }
+        
+        GetGameState(currentGameStateIndex.Value).StateUpdateServer();
+    }
+
+    #region GameState Methods
+
     private void SetupGameStates()
     {
         var oldGameStates = gameStates.ToDictionary(key => key.Key, value => value.Value);
@@ -60,19 +74,7 @@ public class GameManager : NetworkBehaviour
             clonedGameState.OnStateCreated();
         }
     }
-
-    private void Update()
-    {
-        GetGameState(currentGameStateIndex.Value).StateUpdateClient();
-        
-        if (!IsServer)
-        {
-            return;
-        }
-        
-        GetGameState(currentGameStateIndex.Value).StateUpdateServer();
-    }
-
+    
     public void NextGameState()
     {
         Assert.IsTrue(IsServer, "NextGameState can only be called on the server");
@@ -128,6 +130,8 @@ public class GameManager : NetworkBehaviour
     {
         return gameStates.Keys.ElementAt(index);
     }
+
+    #endregion
 
     #region CharacterMethodRpc
 

@@ -9,7 +9,7 @@ public class StateUI : NetworkBehaviour
     [HideInInspector] public GameManager gameManager;
     [HideInInspector] public GameState owningGameState;
 
-    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] public CanvasGroup canvasGroup;
     
     public void SetupStateUI(GameManager gameManager, GameState gameState)
     {

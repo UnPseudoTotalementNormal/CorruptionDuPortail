@@ -74,7 +74,6 @@ namespace GameLogic.GameStates
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
-            //TODO: attribute all characters to the players
         }
 
         public override void StateUpdateServer()

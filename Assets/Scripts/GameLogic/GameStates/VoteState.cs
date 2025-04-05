@@ -148,12 +148,17 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
-            GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.transform);
+            GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.canvasGroup.transform);
             var _voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
             _voteSelectPanel.voteState = this;
             _voteSelectPanel.onPlayerVoted += OnPlayerVoted;
+            onStateEndEvent += () =>
+            {
+                _voteSelectPanel.onPlayerVoted -= OnPlayerVoted;
+                Destroy(_voteSelectPanel.gameObject);
+            };
 
-            if (!gameManager.IsHost)
+            if (!gameManager.IsServer)
             {
                 voteTimer -= Time.deltaTime;
             }
@@ -174,7 +179,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            
+            gameManager.NextGameState();
         }
         
         public override void StateUpdateClient()

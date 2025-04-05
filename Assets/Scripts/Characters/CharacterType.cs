@@ -6,6 +6,6 @@ namespace Characters
         detective = 2,
         support = 3,
         tracker = 4,
-        chillGuy = 5
+        innocent = 5
     }
 }

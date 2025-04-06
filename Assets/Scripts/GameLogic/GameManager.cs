@@ -57,6 +57,24 @@ public class GameManager : NetworkBehaviour
         
         GetGameState(currentGameStateIndex.Value).StateUpdateServer();
     }
+    
+    [Rpc(SendTo.Server)]
+    public void AskForUpdateAllCharactersRpc()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+        
+        UpdateAllCharactersRpc(characters.ToArray());
+    }
+    
+    [Rpc(SendTo.NotServer)]
+    public void UpdateAllCharactersRpc(Character[] _characters)
+    {
+        characters.Clear();
+        characters = _characters.ToList();
+    }
 
     #region GameState Methods
 

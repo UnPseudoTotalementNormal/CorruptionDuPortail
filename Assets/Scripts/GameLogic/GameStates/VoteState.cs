@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using Network;
 using UI.SelectPanels;
 using UnityEngine;
@@ -23,6 +24,8 @@ namespace GameLogic.GameStates
         private Coroutine updateVoteTimerCoroutine;
         
         public const ulong SKIP_VOTE_ID = 999;
+        
+        private VoteSelectPanel voteSelectPanel;
         
         public void OnPlayerVoted(ulong _playerId)
         {
@@ -142,6 +145,16 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateServer();
             gameManager.StopCoroutine(updateVoteTimerCoroutine);
+            
+            // Get the character who has the most votes
+            var _charactersWithMostVotes = votesForPlayer.OrderByDescending(v => v.Value.Count).ToList();
+            if (_charactersWithMostVotes.Count == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
+            {
+                Character _votedCharacter = gameManager.characters.Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
+                _votedCharacter.isChained = true;
+            }
+            
+            gameManager.AskForUpdateAllCharactersRpc();
         }
         
         public override void OnStartStateClient()
@@ -149,21 +162,24 @@ namespace GameLogic.GameStates
             base.OnStartStateClient();
 
             GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.canvasGroup.transform);
-            var _voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
-            _voteSelectPanel.voteState = this;
-            _voteSelectPanel.onPlayerVoted += OnPlayerVoted;
-            onStateEndEvent += () =>
-            {
-                _voteSelectPanel.onPlayerVoted -= OnPlayerVoted;
-                Destroy(_voteSelectPanel.gameObject);
-            };
+            voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
+            voteSelectPanel.voteState = this;
+            voteSelectPanel.onPlayerVoted += OnPlayerVoted;
+            onStateEndEvent += DestroyVotePanel;
 
             if (!gameManager.IsServer)
             {
                 voteTimer -= Time.deltaTime;
             }
         }
-        
+
+        private void DestroyVotePanel()
+        {
+            onStateEndEvent -= DestroyVotePanel;
+            voteSelectPanel.onPlayerVoted -= OnPlayerVoted;
+            Destroy(voteSelectPanel.gameObject);
+        }
+
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();

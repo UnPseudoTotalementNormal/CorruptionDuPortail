@@ -30,13 +30,13 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            OnVoteSkipButtonPressedRpc();
+            OnVoteSkipButtonPressedRpc(gameManager.NetworkManager.LocalClientId);
         }
 
         [Rpc(SendTo.Server)]
-        private void OnVoteSkipButtonPressedRpc()
+        private void OnVoteSkipButtonPressedRpc(ulong _senderId)
         {
-            ((VoteState)owningGameState).OnVoteSkipButtonPressed(gameManager.NetworkManager.LocalClientId);
+            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_senderId);
         }
     }
 }

@@ -70,7 +70,7 @@ public class GameManager : NetworkBehaviour
     }
     
     [Rpc(SendTo.NotServer)]
-    public void UpdateAllCharactersRpc(Character[] _characters)
+    private void UpdateAllCharactersRpc(Character[] _characters)
     {
         characters.Clear();
         characters = _characters.ToList();

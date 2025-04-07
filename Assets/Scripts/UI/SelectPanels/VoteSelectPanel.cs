@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GameLogic.GameStates;
 using TMPro;
@@ -13,6 +14,8 @@ namespace UI.SelectPanels
         public VoteState voteState;
         
         public event Action<ulong> onPlayerVoted;
+
+        private event Action onDestroy;
         
         private void Awake()
         {
@@ -58,17 +61,39 @@ namespace UI.SelectPanels
             _voteText.horizontalAlignment = TMPro.HorizontalAlignmentOptions.Center;
             _voteText.verticalAlignment = TMPro.VerticalAlignmentOptions.Middle;
             _voteText.text = "Votes: 0";
-            voteState.onVoteRefresh += (_voteDictionary =>
+            
+            Action<Dictionary<ulong, List<ulong>>> voteRefreshHandler = (_voteDictionary) =>
             {
-                if (_voteDictionary.TryGetValue(_playerButton.GetComponent<PlayerButtonObject>().playerId, out var _votes))
-                {
-                    _voteText.text = "Votes: " + _votes.Count;
-                }
-                else
-                {
-                    _voteText.text = "Votes: 0";
-                }
-            });
+                UpdateVoteCount(_playerButton, _voteDictionary, _voteText);
+            };
+
+            voteState.onVoteRefresh += voteRefreshHandler;
+            onDestroy += () =>
+            {
+                voteState.onVoteRefresh -= voteRefreshHandler;
+            };
+        }
+
+        private void UpdateVoteCount(GameObject _playerButton, Dictionary<ulong, List<ulong>> _voteDictionary, TextMeshProUGUI _voteText)
+        {
+            if (_voteDictionary == null || !_playerButton)
+            {
+                return;
+            }
+            
+            if (_voteDictionary.TryGetValue(_playerButton.GetComponent<PlayerButtonObject>().playerId, out var _votes))
+            {
+                _voteText.text = "Votes: " + _votes.Count;
+            }
+            else
+            {
+                _voteText.text = "Votes: 0";
+            }
+        }
+
+        private void OnDestroy()
+        {
+            onDestroy?.Invoke();
         }
     }
 }

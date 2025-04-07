@@ -17,7 +17,13 @@ namespace Characters
         {
             serializer.SerializeValue(ref ownerClientId);
             serializer.SerializeValue(ref isChained);
-            //serializer.SerializeValue(ref role);
+            
+            if (role == null)
+            {
+                role = new Role();
+            }
+
+            role.NetworkSerialize(serializer);
         }
         
         public void AwakenCharacter()

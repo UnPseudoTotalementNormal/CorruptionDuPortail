@@ -148,7 +148,8 @@ namespace GameLogic.GameStates
             
             // Get the character who has the most votes
             var _charactersWithMostVotes = votesForPlayer.OrderByDescending(v => v.Value.Count).ToList();
-            if (_charactersWithMostVotes.Count == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
+            int _numberOfCharacterWithTheMostVotes = _charactersWithMostVotes.Count(v => v.Value.Count == _charactersWithMostVotes.First().Value.Count);
+            if (_numberOfCharacterWithTheMostVotes == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = gameManager.characters.Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
                 _votedCharacter.isChained = true;

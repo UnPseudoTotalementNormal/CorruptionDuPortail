@@ -27,6 +27,8 @@ namespace GameLogic.GameStates
         
         private VoteSelectPanel voteSelectPanel;
         
+        public ulong lastVotedPlayer;
+        
         public void OnPlayerVoted(ulong _playerId)
         {
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
@@ -113,6 +115,11 @@ namespace GameLogic.GameStates
             OnPlayerVotedRpc(_senderId, SKIP_VOTE_ID);
         }
         
+        private void UpdateLastVotedPlayer(ulong _lastVotedPlayer)
+        {
+            lastVotedPlayer = _lastVotedPlayer;
+        }
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -153,7 +160,16 @@ namespace GameLogic.GameStates
             {
                 Character _votedCharacter = gameManager.characters.Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
                 _votedCharacter.isChained = true;
+                lastVotedPlayer = _votedCharacter.ownerClientId;
             }
+            else
+            {
+                lastVotedPlayer = SKIP_VOTE_ID;
+            }
+            
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateLastVotedPlayer), 
+                new NetworkSerializableObject[] { new(lastVotedPlayer) }, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
             gameManager.AskForUpdateAllCharactersRpc();
         }

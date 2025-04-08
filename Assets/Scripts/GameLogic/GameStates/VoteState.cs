@@ -27,7 +27,7 @@ namespace GameLogic.GameStates
         
         private VoteSelectPanel voteSelectPanel;
         
-        public ulong lastVotedPlayer;
+        public static ulong lastVotedPlayer;
         
         public void OnPlayerVoted(ulong _playerId)
         {

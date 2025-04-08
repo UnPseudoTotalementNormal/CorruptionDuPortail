@@ -16,3 +16,5 @@ MonoBehaviour:
   gameStateDependencies:
   - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
   recapDuration: 10
+  cardPrefab: {fileID: 417900098678493395, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
+  spawnedCard: {fileID: 0}

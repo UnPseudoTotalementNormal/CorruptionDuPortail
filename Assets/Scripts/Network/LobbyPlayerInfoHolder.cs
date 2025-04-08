@@ -65,5 +65,17 @@ namespace Network
         {
             playerInfos.Add(playerInfo);
         }
+
+        public PlayerInfo GetPlayerInfo(ulong _clientId)
+        { 
+            foreach (var info in playerInfos)
+            {
+                if (info.playerClientId == _clientId)
+                {
+                    return info;
+                }
+            }
+            return default;
+        }
     }
 }

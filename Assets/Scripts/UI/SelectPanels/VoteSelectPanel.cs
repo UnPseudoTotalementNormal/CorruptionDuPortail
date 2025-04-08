@@ -35,6 +35,7 @@ namespace UI.SelectPanels
             if (GameManager.instance.characters.First(_character => _character.ownerClientId == _playerButtonObject.playerId).isChained)
             {
                 Destroy(_playerButton);
+                return;
             }
             
             var _newPlayerButtonParent = new GameObject("PlayerButtonParent", typeof(RectTransform), typeof(VerticalLayoutGroup));

@@ -14,9 +14,21 @@ public class StateUI : NetworkBehaviour
     public void SetupStateUI(GameManager gameManager, GameState gameState)
     {
         this.gameManager = gameManager;
-        this.owningGameState = gameState;
+        owningGameState = gameState;
+        owningGameState.onStateStartEvent += OnStateStart;
+        owningGameState.onStateEndEvent += OnStateEnd;
+    }
+
+    protected virtual void OnStateStart()
+    {
+        
     }
     
+    protected virtual void OnStateEnd()
+    {
+        
+    }
+
     public virtual void ShowStateUI(bool instant = false)
     {
         if (instant)
@@ -46,5 +58,15 @@ public class StateUI : NetworkBehaviour
 
         canvasGroup.interactable = false;
         canvasGroup.blocksRaycasts = false;
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (owningGameState != null)
+        {
+            owningGameState.onStateStartEvent -= OnStateStart;
+            owningGameState.onStateEndEvent -= OnStateEnd;
+        }
     }
 }

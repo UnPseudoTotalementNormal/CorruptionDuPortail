@@ -1,4 +1,6 @@
 using System;
+using Network;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -29,6 +31,16 @@ namespace Characters
         public void AwakenCharacter()
         {
             role.AwakenRole();
+        }
+        
+        public Role GetRole(bool ignoreOverride = false)
+        {
+            return role;
+        }
+
+        public string GetOwnerPseudo()
+        {
+            return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId).playerName.ToString();
         }
     }
 }

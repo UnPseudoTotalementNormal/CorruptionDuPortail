@@ -21,30 +21,30 @@ MonoBehaviour:
       type: {class: PEmbraceOfShadows, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         powerName:
-          utf8LengthInBytes: 18
+          utf8LengthInBytes: 20
           bytes:
             offset0000:
-              byte0000: 101
-              byte0001: 114
-              byte0002: 109
-              byte0003: 32
-              byte0004: 119
-              byte0005: 104
-              byte0006: 97
-              byte0007: 116
-              byte0008: 32
-              byte0009: 116
-              byte0010: 104
+              byte0000: 69
+              byte0001: 116
+              byte0002: 114
+              byte0003: 101
+              byte0004: 105
+              byte0005: 110
+              byte0006: 116
+              byte0007: 101
+              byte0008: 115
+              byte0009: 32
+              byte0010: 100
               byte0011: 101
-              byte0012: 32
-              byte0013: 115
-              byte0014: 105
-              byte0015: 103
+              byte0012: 115
+              byte0013: 32
+              byte0014: 79
+              byte0015: 109
             offset0016:
-              byte0000: 109
-              byte0001: 97
-              byte0002: 0
-              byte0003: 0
+              byte0000: 98
+              byte0001: 114
+              byte0002: 101
+              byte0003: 115
               byte0004: 0
               byte0005: 0
               byte0006: 0

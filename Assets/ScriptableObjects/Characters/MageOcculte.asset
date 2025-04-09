@@ -84,6 +84,5 @@ MonoBehaviour:
     roleType: 2
     factionType: 0
     roleDifficulty: 3
-    isChained: 0
   powers:
   - {fileID: 11400000, guid: 2a2fe78b2d9ea9a46bd8957bf58ed8a9, type: 2}

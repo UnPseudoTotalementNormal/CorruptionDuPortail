@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -51,33 +52,42 @@ namespace GameLogic.GameStates
             }
             else
             {
-                spawnedCard = Instantiate(cardPrefab, BoardManager.instance.transform).transform;
-                spawnedCard.localPosition = new Vector3(0, 0, 20);
+                DoCardChainingAnimation();
+            }
+        }
+
+        private async UniTask DoCardChainingAnimation()
+        {
+            await BoardManager.instance.HideAllCards();
+            
+            var _cardInfo = BoardManager.instance.AddNewCard();
+            spawnedCard = _cardInfo.transform;
                 
-                Character _votedCharacter = gameManager.characters.First(character => character.ownerClientId == VoteState.lastVotedPlayer);
-                var _cardInfo = spawnedCard.GetComponent<Card>();
-                _cardInfo.SetInfo(_votedCharacter);
-                _cardInfo.ShowPseudoOnly();
-                _cardInfo.SetChainedOverlay(false, true);
-                
-                spawnedCard.DOLocalMove(Vector3.zero, 2).SetEase(Ease.OutQuint).onComplete = () =>
+            Character _votedCharacter = gameManager.characters.First(character => character.ownerClientId == VoteState.lastVotedPlayer);
+            _cardInfo.SetInfo(_votedCharacter);
+            _cardInfo.ShowPseudoOnly();
+            _cardInfo.SetChainedOverlay(false, true);
+
+            spawnedCard.eulerAngles = new Vector3(0, 0, 180);
+            await _cardInfo.ShowFrontSide();
+            
+            await UniTask.Delay(TimeSpan.FromSeconds(1));
+            
+            
+            spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
+            spawnedCard.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
+            {
+                _cardInfo.ShowPseudoWithRole();
+                    
+                spawnedCard.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+                spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
                 {
-                    spawnedCard.DOLocalMoveY(10, 1f).SetEase(Ease.OutQuint);
-                    spawnedCard.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
+                    spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f).onComplete = () =>
                     {
-                        _cardInfo.ShowPseudoWithRole();
-                        
-                        spawnedCard.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
-                        spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
-                        {
-                            spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f).onComplete = () =>
-                            {
-                                _cardInfo.SetChainedOverlay(true);
-                            };
-                        };
+                        _cardInfo.SetChainedOverlay(true);
                     };
                 };
-            }
+            };
         }
 
         public override void OnEndStateClient()
@@ -88,11 +98,8 @@ namespace GameLogic.GameStates
             {
                 return;
             }
-            
-            spawnedCard.DOLocalMove(new Vector3(0, 0, 20), 1f).SetEase(Ease.OutQuint).onComplete = () =>
-            {
-                Destroy(spawnedCard.gameObject);
-            };
+
+            BoardManager.instance.ShowAllPlayerCards();
         }
 
         public override void StateUpdateServer()

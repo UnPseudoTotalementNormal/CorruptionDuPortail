@@ -112,6 +112,8 @@ namespace GameLogic.GameStates
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
+
+            BoardManager.instance.ShowAllPlayerCards();
         }
 
         public override void StateUpdateServer()

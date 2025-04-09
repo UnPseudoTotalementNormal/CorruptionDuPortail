@@ -1,7 +1,10 @@
 using System;
 using Characters;
 using Characters.Powers;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using DG.Tweening.Core;
+using DG.Tweening.Plugins.Options;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +22,10 @@ public class Card : MonoBehaviour
     public Sprite unknownCardSprite;
     [HideInInspector] public Character characterInfo;
     [HideInInspector] public Role roleInfo;
+
+    [Header("Animation values")]
+    public float rotateTime = 1;
+    public float chainFadeTime = 0.5f;
 
     private void Awake()
     {
@@ -42,8 +49,7 @@ public class Card : MonoBehaviour
             ShowPseudoOnly();
         }
     }
-
-
+    
     #region TextInfo Methods
 
     private void ShowPowers()
@@ -63,7 +69,7 @@ public class Card : MonoBehaviour
 
     public void ShowPseudoWithRole()
     {
-        cardName.text = roleInfo.roleName + " (" + characterInfo.GetOwnerPseudo() + ")";
+        cardName.text = $"{characterInfo.GetOwnerPseudo()}\n{roleInfo.roleName}";
         ShowPowers();
     }
 
@@ -84,6 +90,26 @@ public class Card : MonoBehaviour
     
     public void SetChainedOverlay(bool _isChained, bool _instant = false)
     {
-        chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : 0.5f);
+        chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
+    }
+
+    public async UniTask ShowBackSide()
+    {
+        transform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        {
+            transform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
+        };
+        transform.DORotate(new Vector3(0, 0, -180), rotateTime * 0.75f);
+        await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
+    }
+    
+    public async UniTask ShowFrontSide()
+    {
+        transform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        {
+            transform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
+        };
+        transform.DORotate(Vector3.zero, rotateTime * 0.75f);
+        await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
     }
 }

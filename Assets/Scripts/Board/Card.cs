@@ -32,7 +32,15 @@ public class Card : MonoBehaviour
     {
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
-        ShowPseudoOnly();
+        SetChainedOverlay(characterInfo.isChained, true);
+        if (characterInfo.isChained)
+        {
+            ShowPseudoWithRole();
+        }
+        else
+        {
+            ShowPseudoOnly();
+        }
     }
 
 

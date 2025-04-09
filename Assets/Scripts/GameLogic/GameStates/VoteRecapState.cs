@@ -58,6 +58,7 @@ namespace GameLogic.GameStates
                 var _cardInfo = spawnedCard.GetComponent<Card>();
                 _cardInfo.SetInfo(_votedCharacter);
                 _cardInfo.ShowPseudoOnly();
+                _cardInfo.SetChainedOverlay(false, true);
                 
                 spawnedCard.DOLocalMove(Vector3.zero, 2).SetEase(Ease.OutQuint).onComplete = () =>
                 {

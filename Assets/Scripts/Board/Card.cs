@@ -7,11 +7,13 @@ using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class Card : MonoBehaviour
 {
-    public TMP_Text cardName;
+    [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
+    public TMP_Text cardRoleText;
     public TMP_Text powerText;
     
     public Image cardImage;
@@ -50,7 +52,7 @@ public class Card : MonoBehaviour
         }
     }
     
-    #region TextInfo Methods
+    #region Info Methods
 
     private void ShowPowers()
     {
@@ -61,28 +63,33 @@ public class Card : MonoBehaviour
         }
     }
 
-    public void ShowRoleOnly()
+    public async UniTask ShowRoleOnly()
     {
-        cardName.text = roleInfo.roleName.ToString();
+        cardPlayerPseudo.text = "";
+        cardRoleText.text = roleInfo.roleName.ToString();
+        cardImage.sprite = await roleInfo.GetRolePortrait();;
         ShowPowers();
     }
 
-    public void ShowPseudoWithRole()
+    public async UniTask ShowPseudoWithRole()
     {
-        cardName.text = $"{characterInfo.GetOwnerPseudo()}\n{roleInfo.roleName}";
+        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+        cardRoleText.text = roleInfo.roleName.ToString();
+        cardImage.sprite = await roleInfo.GetRolePortrait();;
         ShowPowers();
     }
 
     public void ShowPseudoOnly()
     {
         SetUnknownCard();
-        cardName.text = characterInfo.GetOwnerPseudo();
+        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
     }
     
     public void SetUnknownCard()
     {
-        cardName.text = "???";
-        powerText.text = "???";
+        cardPlayerPseudo.text = "";
+        cardRoleText.text = "";
+        powerText.text = "";
         cardImage.sprite = unknownCardSprite;
     }
 

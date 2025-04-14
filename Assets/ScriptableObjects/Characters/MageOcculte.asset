@@ -83,6 +83,7 @@ MonoBehaviour:
         byte0061: 0
     roleType: 2
     factionType: 0
+    rolePortrait: 1384333719
     roleDifficulty: 3
   powers:
   - {fileID: 11400000, guid: 2a2fe78b2d9ea9a46bd8957bf58ed8a9, type: 2}

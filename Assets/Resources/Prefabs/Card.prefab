@@ -150,7 +150,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57f933682621b444d92d1d133bb4c9b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardName: {fileID: 7225565607081040501}
+  cardPlayerPseudo: {fileID: 7225565607081040501}
+  cardRoleText: {fileID: 7497138110590187071}
   powerText: {fileID: 1155609850543042264}
   cardImage: {fileID: 2429788706011615213}
   chainedOverlay: {fileID: 1535649323081278993}
@@ -227,6 +228,7 @@ MonoBehaviour:
           byte0061: 0
       roleType: 0
       factionType: 0
+      rolePortrait: 0
       roleDifficulty: 0
     ownerClientId: 0
     isChained: 0
@@ -301,6 +303,7 @@ MonoBehaviour:
         byte0061: 0
     roleType: 0
     factionType: 0
+    rolePortrait: 0
     roleDifficulty: 0
   rotateTime: 1
   chainFadeTime: 0.5
@@ -871,7 +874,7 @@ GameObject:
   - component: {fileID: 1814040953602910517}
   - component: {fileID: 8359697888759508424}
   m_Layer: 0
-  m_Name: RoleNameBackground
+  m_Name: RoleNameHolder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

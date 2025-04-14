@@ -83,6 +83,6 @@ MonoBehaviour:
         byte0061: 0
     roleType: 1
     factionType: 1
+    rolePortrait: 1605640824
     roleDifficulty: 1
-    isChained: 0
   powers: []

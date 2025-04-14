@@ -2,12 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using Characters.Assets;
 using Characters.Powers;
 using Characters.WinningConditions;
+using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 
 [Serializable]
@@ -17,6 +22,7 @@ public class Role : INetworkSerializable
     public FixedString64Bytes roleName;
     public CharacterType roleType;
     public FactionType factionType;
+    public CharacterPortraitsValues.CharacterPortraits rolePortrait;
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
     [SerializeField] public List<Power> powers = new();
@@ -41,6 +47,7 @@ public class Role : INetworkSerializable
         _newRole.roleDifficulty = roleDifficulty;
         _newRole.powers = new List<Power>();
         _newRole.winningConditions = winningConditions.ToList();
+        _newRole.rolePortrait = rolePortrait;
         
         foreach (Power _power in powers)
         {
@@ -50,12 +57,20 @@ public class Role : INetworkSerializable
         return _newRole;
     }
     
+    public async UniTask<Sprite> GetRolePortrait()
+    {
+        AsyncOperationHandle<Sprite> _operation = Addressables.LoadAssetAsync<Sprite>(CharacterPortraitsValues.values[rolePortrait]);
+        await _operation.Task;
+        return _operation.Result;
+    }
+    
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref roleName);
         serializer.SerializeValue(ref roleType);
         serializer.SerializeValue(ref factionType);
         serializer.SerializeValue(ref roleDifficulty);
+        serializer.SerializeValue(ref rolePortrait);
         
         int powersCount = powers.Count;
         serializer.SerializeValue(ref powersCount);

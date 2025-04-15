@@ -42,14 +42,14 @@ public class Card : MonoBehaviour
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
         SetChainedOverlay(characterInfo.isChained, true);
-        if (characterInfo.isChained)
-        {
-            ShowPseudoWithRole();
-        }
-        else
-        {
-            ShowPseudoOnly();
-        }
+        // if (characterInfo.isChained)
+        // {
+        //     ShowPseudoWithRole();
+        // }
+        // else
+        // {
+        //     ShowPseudoOnly();
+        // }
     }
     
     #region Info Methods

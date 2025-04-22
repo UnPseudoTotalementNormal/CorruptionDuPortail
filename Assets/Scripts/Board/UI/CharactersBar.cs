@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Characters;
@@ -11,6 +12,8 @@ namespace Board.UI
     public class CharactersBar : NetworkBehaviour
     {
         public Transform charactersBarParent;
+        
+        public event Action<Character> onCharacterBarClicked;
 
         public void ResetCharactersBar(List<Character> _characters)
         {
@@ -28,7 +31,12 @@ namespace Board.UI
                 _characterBarTransform.localScale = new Vector3(1, 1, 1);
                 _characterBarTransform.localRotation = Quaternion.Euler(0, 0, 0);
 
-                _characterBarChild.AddComponent<CharactersBarObject>().SetCharacter(_character);
+                var _characterBarObject = _characterBarChild.AddComponent<CharactersBarObject>();
+                _characterBarObject.SetCharacter(_character);
+                _characterBarObject.onCharacterBarObjectClicked += (_characterClicked) =>
+                {
+                    onCharacterBarClicked?.Invoke(_characterClicked);
+                };
             }
         }
         

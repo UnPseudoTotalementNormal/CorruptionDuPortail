@@ -1,5 +1,7 @@
+using System;
 using Characters;
 using Cysharp.Threading.Tasks;
+using UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,7 +10,23 @@ namespace Board.UI
     public class CharactersBarObject : MonoBehaviour
     {
         public Character playerCharacter;
+
+        private CustomButton customButton;
         
+        public event Action<Character> onCharacterBarObjectClicked;
+
+        private void Start()
+        {
+            if (!TryGetComponent(out customButton))
+            {
+                customButton = gameObject.AddComponent<CustomButton>();
+            }
+            customButton.onButtonClicked += () =>
+            {
+                onCharacterBarObjectClicked?.Invoke(playerCharacter);
+            };
+        }
+
         public void SetCharacter(Character _character)
         {
             playerCharacter = _character;

@@ -12,7 +12,7 @@ namespace UI
     public class CustomButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         private Color baseColor;
-        [SerializeField] private Color hoverColor;
+        [SerializeField] private Color hoverColor = new Color(0.8f , 0.8f, 0.8f, 1);
 
         private Image panelImage;
         
@@ -25,7 +25,7 @@ namespace UI
             baseColor = panelImage.color;
         }
         
-        public void OnPointerClick(PointerEventData eventData)
+        public void OnPointerClick(PointerEventData _eventData)
         {
             transform.DOKill(true);
             transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
@@ -33,12 +33,12 @@ namespace UI
             onButtonClickedUnityEvent?.Invoke();
         }
 
-        public void OnPointerEnter(PointerEventData eventData)
+        public void OnPointerEnter(PointerEventData _eventData)
         {
             panelImage.DOColor(hoverColor, 0.2f);
         }
 
-        public void OnPointerExit(PointerEventData eventData)
+        public void OnPointerExit(PointerEventData _eventData)
         {
             panelImage.DOColor(baseColor, 0.2f);
         }

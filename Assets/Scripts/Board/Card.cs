@@ -54,14 +54,6 @@ public class Card : MonoBehaviour
             powerText.text = _power.powerName.ToString();
         }
     }
-
-    public async UniTask ShowRoleOnly()
-    {
-        cardPlayerPseudo.text = "";
-        cardRoleText.text = roleInfo.roleName.ToString();
-        cardImage.sprite = await roleInfo.GetRolePortrait();;
-        ShowPowers();
-    }
     
     public async UniTask ShowPseudoWithRevealedInfo()
     {
@@ -69,22 +61,42 @@ public class Card : MonoBehaviour
         if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
         {
             cardRoleText.text = roleInfo.roleName.ToString();
-            cardImage.sprite = await roleInfo.GetRolePortrait();
             ShowPowers();
+            cardImage.sprite = await roleInfo.GetRolePortrait();
         }
         else
         {
-            cardRoleText.text = "???";
+            cardRoleText.text = "";
             cardImage.sprite = unknownCardSprite;
         }
+    }
+    
+    public async UniTask ShowRoleWithRevealedInfo()
+    {
+        cardPlayerPseudo.text = "";
+        if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
+        {
+            cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+        }
+        cardRoleText.text = roleInfo.roleName.ToString();
+        ShowPowers();
+        cardImage.sprite = await roleInfo.GetRolePortrait();;
+    }
+
+    public async UniTask ShowRoleOnly()
+    {
+        cardPlayerPseudo.text = "";
+        cardRoleText.text = roleInfo.roleName.ToString();
+        ShowPowers();
+        cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
     public async UniTask ShowPseudoWithRole()
     {
         cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
         cardRoleText.text = roleInfo.roleName.ToString();
-        cardImage.sprite = await roleInfo.GetRolePortrait();;
         ShowPowers();
+        cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
     public void ShowPseudoOnly()

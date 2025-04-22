@@ -42,14 +42,6 @@ public class Card : MonoBehaviour
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
         SetChainedOverlay(characterInfo.isChained, true);
-        // if (characterInfo.isChained)
-        // {
-        //     ShowPseudoWithRole();
-        // }
-        // else
-        // {
-        //     ShowPseudoOnly();
-        // }
     }
     
     #region Info Methods
@@ -69,6 +61,22 @@ public class Card : MonoBehaviour
         cardRoleText.text = roleInfo.roleName.ToString();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
         ShowPowers();
+    }
+    
+    public async UniTask ShowPseudoWithRevealedInfo()
+    {
+        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+        if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
+        {
+            cardRoleText.text = roleInfo.roleName.ToString();
+            cardImage.sprite = await roleInfo.GetRolePortrait();
+            ShowPowers();
+        }
+        else
+        {
+            cardRoleText.text = "???";
+            cardImage.sprite = unknownCardSprite;
+        }
     }
 
     public async UniTask ShowPseudoWithRole()

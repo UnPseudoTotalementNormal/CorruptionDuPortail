@@ -52,7 +52,7 @@ namespace GameLogic.GameStates
             }
             else
             {
-                DoCardChainingAnimation();
+                _ = DoCardChainingAnimation();
             }
         }
 
@@ -63,7 +63,7 @@ namespace GameLogic.GameStates
             var _cardInfo = BoardManager.instance.AddNewCard();
             spawnedCard = _cardInfo.transform;
                 
-            Character _votedCharacter = gameManager.characters.First(character => character.ownerClientId == VoteState.lastVotedPlayer);
+            Character _votedCharacter = gameManager.characters.First(_character => _character.ownerClientId == VoteState.lastVotedPlayer);
             _cardInfo.SetInfo(_votedCharacter);
             _cardInfo.ShowPseudoOnly();
             _cardInfo.SetChainedOverlay(false, true);
@@ -73,11 +73,10 @@ namespace GameLogic.GameStates
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
-            
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
             spawnedCard.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
             {
-                _cardInfo.ShowPseudoWithRole();
+                _ = _cardInfo.ShowPseudoWithRevealedInfo();
                     
                 spawnedCard.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
                 spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
@@ -99,7 +98,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            BoardManager.instance.ShowAllPlayerCards();
+            _ = BoardManager.instance.ShowAllPlayerCards();
         }
 
         public override void StateUpdateServer()

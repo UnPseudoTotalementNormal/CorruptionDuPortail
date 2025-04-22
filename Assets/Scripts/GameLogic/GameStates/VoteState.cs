@@ -182,7 +182,7 @@ namespace GameLogic.GameStates
             voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
             voteSelectPanel.voteState = this;
             voteSelectPanel.onPlayerVoted += OnPlayerVoted;
-            onStateEndEvent += DestroyVotePanel;
+            onStateEndClient += DestroyVotePanel;
 
             if (!gameManager.IsServer)
             {
@@ -192,7 +192,7 @@ namespace GameLogic.GameStates
 
         private void DestroyVotePanel()
         {
-            onStateEndEvent -= DestroyVotePanel;
+            onStateEndClient -= DestroyVotePanel;
             voteSelectPanel.onPlayerVoted -= OnPlayerVoted;
             Destroy(voteSelectPanel.gameObject);
         }

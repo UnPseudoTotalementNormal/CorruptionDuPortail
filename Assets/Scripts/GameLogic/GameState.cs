@@ -16,8 +16,8 @@ namespace GameLogic
         
         public List<GameState> gameStateDependencies = new();
         
-        public event Action onStateStartEvent;
-        public event Action onStateEndEvent;
+        public event Action onStateStartClient;
+        public event Action onStateEndClient;
 
         public virtual void OnStateCreated()
         {
@@ -47,7 +47,7 @@ namespace GameLogic
                 stateUI.ShowStateUI();
             }
             
-            onStateStartEvent?.Invoke();
+            onStateStartClient?.Invoke();
         }
         
         public virtual void OnEndStateClient()
@@ -57,7 +57,7 @@ namespace GameLogic
                 stateUI.HideStateUI();
             }
             
-            onStateEndEvent?.Invoke();
+            onStateEndClient?.Invoke();
         }
 
         public virtual void StateUpdateServer()

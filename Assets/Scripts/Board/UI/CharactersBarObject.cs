@@ -31,7 +31,7 @@ namespace Board.UI
         {
             playerCharacter = _character;
 
-            UpdateCharacter();
+            _ = UpdateCharacter();
         }
 
         private async UniTaskVoid UpdateCharacter()

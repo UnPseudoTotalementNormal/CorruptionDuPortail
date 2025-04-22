@@ -15,8 +15,8 @@ public class StateUI : NetworkBehaviour
     {
         this.gameManager = gameManager;
         owningGameState = gameState;
-        owningGameState.onStateStartEvent += OnStateStart;
-        owningGameState.onStateEndEvent += OnStateEnd;
+        owningGameState.onStateStartClient += OnStateStart;
+        owningGameState.onStateEndClient += OnStateEnd;
     }
 
     protected virtual void OnStateStart()
@@ -65,8 +65,8 @@ public class StateUI : NetworkBehaviour
         base.OnDestroy();
         if (owningGameState != null)
         {
-            owningGameState.onStateStartEvent -= OnStateStart;
-            owningGameState.onStateEndEvent -= OnStateEnd;
+            owningGameState.onStateStartClient -= OnStateStart;
+            owningGameState.onStateEndClient -= OnStateEnd;
         }
     }
 }

@@ -53,16 +53,11 @@ public class BoardManager : NetworkBehaviour
         {
             Card _card = AddNewCard();
             _card.SetInfo(_character);
-            _card.ShowPseudoOnly();
+            _ = _card.ShowPseudoWithRevealedInfo();
             _card.transform.eulerAngles = new Vector3(0, 0, 180);
 
             _card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + (visibleCards.Count - 1) * 7, 0, 0), 0.5f);
-            _card.ShowFrontSide();
-            
-            if (_character.isChained || _character.ownerClientId == NetworkManager.LocalClientId)
-            {
-                _card.ShowPseudoWithRole();
-            }
+            _ = _card.ShowFrontSide();
         }
     }
     
@@ -78,7 +73,7 @@ public class BoardManager : NetworkBehaviour
         
         foreach (var _card in visibleCards)
         {
-            _card.ShowBackSide();
+            _ = _card.ShowBackSide();
         }
 
         await UniTask.Delay(TimeSpan.FromSeconds(visibleCards[0].rotateTime), cancellationToken: _cancelToken.Token);

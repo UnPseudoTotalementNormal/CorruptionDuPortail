@@ -18,6 +18,7 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager instance { get; private set; }
 
+    public GameInfoRevealer gameInfoRevealer;
     public CharactersBar charactersBar;
     
     [field: SerializeField] private List<Character> _characters = new();
@@ -171,6 +172,11 @@ public class GameManager : NetworkBehaviour
     public GameState GetGameState(int index)
     {
         return gameStates.Keys.ElementAt(index);
+    }
+
+    public GameState[] GetGameStates(Type _gameStateType)
+    {
+        return gameStates.Keys.Where(_state => _state.GetType() == _gameStateType).ToArray();
     }
 
     #endregion

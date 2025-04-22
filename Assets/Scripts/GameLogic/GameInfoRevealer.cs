@@ -4,6 +4,7 @@ using System.Linq;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace GameLogic
 {
@@ -30,9 +31,23 @@ namespace GameLogic
             }
         }
 
-        public CharacterInfoReveal GetCharacterInfo(ulong _characterInfoOwnerClientId)
+        public CharacterInfoReveal GetCharacterInfo(ulong _clientId)
         {
-            return charactersInfoRevealed[_characterInfoOwnerClientId];
+            return charactersInfoRevealed[_clientId];
+        }
+
+        [Rpc(SendTo.Everyone)]
+        public void SetRevealLevelRpc(ulong _clientId, string _revealVariableName, RevealLevel _revealLevel)
+        {
+            var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName);
+            Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
+            
+            RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(GetCharacterInfo(_clientId));
+            if ((int)_currentRevealLevel > (int)_revealLevel)
+            {
+                return;
+            }
+            _field.SetValue(GetCharacterInfo(_clientId), _revealLevel);
         }
     }
 
@@ -40,6 +55,7 @@ namespace GameLogic
     public class CharacterInfoReveal
     {
         public RevealLevel isRoleRevealed = RevealLevel.False;
+        public RevealLevel isCorruptRevealed = RevealLevel.False;
     }
     
     public enum RevealLevel

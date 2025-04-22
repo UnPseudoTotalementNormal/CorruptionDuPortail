@@ -161,6 +161,7 @@ namespace GameLogic.GameStates
                 Character _votedCharacter = gameManager.characters.Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
                 _votedCharacter.isChained = true;
                 lastVotedPlayer = _votedCharacter.ownerClientId;
+                gameManager.gameInfoRevealer.SetRevealLevelRpc(lastVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public);
             }
             else
             {

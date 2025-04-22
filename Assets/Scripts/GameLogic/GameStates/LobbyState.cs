@@ -68,6 +68,7 @@ namespace GameLogic.GameStates
         
         public override void OnStartStateClient()
         {
+            gameManager.charactersBar.DestroyCharactersBar();
             base.OnStartStateClient();
         }
         

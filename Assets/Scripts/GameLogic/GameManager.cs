@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
+using Board.UI;
 using Characters;
 using GameLogic;
 using Network;
@@ -15,15 +17,36 @@ using Object = System.Object;
 public class GameManager : NetworkBehaviour
 {
     public static GameManager instance { get; private set; }
+
+    public CharactersBar charactersBar;
     
-    
-    public List<Character> characters = new();
+    [field: SerializeField] private List<Character> _characters = new();
+
+    public List<Character> characters
+    {
+        get
+        {
+            StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
+            return _characters;
+        }
+        set
+        {
+            _characters = value;
+        }
+    }
     
     public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
     public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
     [HideInInspector] public bool ignoreGameLoop = false;
+
+    public event Action<List<Character>> onCharactersListUpdated;
+    public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        onCharactersListUpdated?.Invoke(_characters);
+    }
 
     private void Awake()
     {
@@ -74,6 +97,7 @@ public class GameManager : NetworkBehaviour
     {
         characters.Clear();
         characters = _characters.ToList();
+        onCharactersListUpdated?.Invoke(this._characters);
     }
 
     #region GameState Methods

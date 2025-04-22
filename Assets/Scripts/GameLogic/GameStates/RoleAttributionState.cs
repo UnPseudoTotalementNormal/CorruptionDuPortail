@@ -113,6 +113,7 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
 
+            gameManager.charactersBar.ResetCharactersBar(gameManager.characters);
             BoardManager.instance.ShowAllPlayerCards();
         }
 

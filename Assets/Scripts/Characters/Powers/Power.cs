@@ -6,14 +6,37 @@ using UnityEngine;
 namespace Characters.Powers
 {
     [Serializable]
-    public abstract class Power : INetworkSerializable
+    public abstract class Power : INetworkSerializable, ICloneable
     {
         public FixedString64Bytes powerName;
         public float maxWaitTime;
         
-        
-        public abstract bool CanUse();
-        public abstract void Use();
+        public bool isCurrentlyUsed = false;
+
+        public virtual bool CanUse()
+        {
+            if (isCurrentlyUsed)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public virtual void Use()
+        {
+            isCurrentlyUsed = true;
+        }
+
+        public virtual void OnUsed()
+        {
+            isCurrentlyUsed = false;
+        }
+
+        public virtual void Cancel()
+        {
+            isCurrentlyUsed = false;
+        }
         
         public virtual void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -21,6 +44,9 @@ namespace Characters.Powers
             serializer.SerializeValue(ref powerName);
         }
         
-        public abstract Power CopyPower();
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 }

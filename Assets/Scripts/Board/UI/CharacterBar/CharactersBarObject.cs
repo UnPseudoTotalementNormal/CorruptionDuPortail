@@ -5,7 +5,7 @@ using UI;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Board.UI
+namespace Board.UI.CharacterBar
 {
     public class CharactersBarObject : MonoBehaviour
     {

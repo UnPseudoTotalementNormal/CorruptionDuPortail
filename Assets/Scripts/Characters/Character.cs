@@ -14,11 +14,13 @@ namespace Characters
         
         [Header("Variables")]
         public bool isChained;
+        public bool isCorrupted;
         
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref ownerClientId);
             serializer.SerializeValue(ref isChained);
+            serializer.SerializeValue(ref isCorrupted);
             
             if (role == null)
             {
@@ -41,6 +43,11 @@ namespace Characters
         public string GetOwnerPseudo()
         {
             return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId).playerName.ToString();
+        }
+
+        public void CorruptPlayer()
+        {
+            GameManager.instance.CorruptPlayerRpc(ownerClientId);
         }
     }
 }

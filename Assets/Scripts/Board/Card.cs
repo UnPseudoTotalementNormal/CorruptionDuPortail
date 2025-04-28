@@ -7,10 +7,11 @@ using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-public class Card : MonoBehaviour
+public class Card : MonoBehaviour, IPointerClickHandler
 {
     [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
     public TMP_Text cardRoleText;
@@ -28,6 +29,8 @@ public class Card : MonoBehaviour
     [Header("Animation values")]
     public float rotateTime = 1;
     public float chainFadeTime = 0.5f;
+    
+    public event Action<Card> onCardClicked;
 
     private void Awake()
     {
@@ -138,5 +141,10 @@ public class Card : MonoBehaviour
         };
         transform.DORotate(Vector3.zero, rotateTime * 0.75f);
         await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
+    }
+
+    public void OnPointerClick(PointerEventData _eventData)
+    {
+        onCardClicked?.Invoke(this);
     }
 }

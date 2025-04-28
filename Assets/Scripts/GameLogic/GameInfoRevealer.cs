@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameLogic.GameStates;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -35,11 +36,24 @@ namespace GameLogic
         {
             return charactersInfoRevealed[_clientId];
         }
+        
+        public void SetRevealLevel(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel)
+        {
+            var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString());
+            Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
+            
+            RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(GetCharacterInfo(_clientId));
+            if ((int)_currentRevealLevel > (int)_revealLevel)
+            {
+                return;
+            }
+            _field.SetValue(GetCharacterInfo(_clientId), _revealLevel);
+        }
 
         [Rpc(SendTo.Everyone)]
-        public void SetRevealLevelRpc(ulong _clientId, string _revealVariableName, RevealLevel _revealLevel)
+        public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel)
         {
-            var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName);
+            var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString());
             Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
             
             RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(GetCharacterInfo(_clientId));

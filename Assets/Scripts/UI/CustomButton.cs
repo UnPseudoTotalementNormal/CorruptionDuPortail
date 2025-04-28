@@ -21,7 +21,7 @@ namespace UI
 
         private void Awake()
         {
-            panelImage = GetComponent<Image>();
+            panelImage = GetComponentInChildren<Image>();
             baseColor = panelImage.color;
         }
         

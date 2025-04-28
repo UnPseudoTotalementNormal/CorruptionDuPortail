@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AYellowpaper.SerializedCollections;
 using Characters;
+using Characters.Powers;
 using Network;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -72,7 +73,7 @@ namespace GameLogic.GameStates
                 Role _newRole = _randomRole.role.CopyRole();
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
-                    _newRole.powers.Add(_powerDataObject.power.CopyPower());
+                    _newRole.powers.Add((Power)_powerDataObject.power.Clone());
                 }
                 Debug.Log(_randomRole.role.roleName);
                 Debug.Log(_newRole.roleName);

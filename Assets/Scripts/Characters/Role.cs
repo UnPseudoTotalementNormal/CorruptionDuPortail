@@ -51,7 +51,7 @@ public class Role : INetworkSerializable
         
         foreach (Power _power in powers)
         {
-            _newRole.powers.Add(_power.CopyPower());
+            _newRole.powers.Add((Power)_power.Clone());
         }
 
         return _newRole;

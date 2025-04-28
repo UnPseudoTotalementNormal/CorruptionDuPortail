@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Network.Player;
@@ -18,13 +19,37 @@ public class BoardManager : NetworkBehaviour
     public List<Card> visibleCards = new();
     
     public List<CancellationTokenSource> cancelTokens = new();
+
+    public Action<Card> onCardClicked;
     
     
     private void Awake()
     {
         instance = this;
     }
-    
+
+    private void Start()
+    {
+        GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+    }
+
+    private void OnCharacterListUpdated(List<Character> _characters)
+    {
+        UpdateCards(_characters);
+    }
+
+    private void UpdateCards(List<Character> _characters)
+    {
+        foreach (var _character in _characters)
+        {
+            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId == _character.ownerClientId);
+            if (_card)
+            {
+                _card.characterInfo = _character;
+            }
+        }
+    }
+
     private void OnStartingNewAnim(CancellationTokenSource _cancelToken, bool _stopOtherAnims = true)
     {
         if (_stopOtherAnims)
@@ -95,6 +120,7 @@ public class BoardManager : NetworkBehaviour
     
     public void DestroyCard(Card _card)
     {
+        _card.onCardClicked -= OnCardClicked;
         visibleCards.Remove(_card);
         Destroy(_card.gameObject);
     }
@@ -105,7 +131,14 @@ public class BoardManager : NetworkBehaviour
         _card.transform.localPosition = new Vector3(0, 0, 0);
         
         visibleCards.Add(_card);
+
+        _card.onCardClicked += OnCardClicked;
         return _card;
+    }
+    
+    private void OnCardClicked(Card _card)
+    {
+        onCardClicked?.Invoke(_card);
     }
 }
 

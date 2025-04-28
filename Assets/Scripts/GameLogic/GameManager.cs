@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using Board.UI;
+using Board.UI.CharacterBar;
+using Board.UI.PowerBar;
 using Characters;
 using GameLogic;
 using Network;
@@ -20,6 +22,7 @@ public class GameManager : NetworkBehaviour
 
     public GameInfoRevealer gameInfoRevealer;
     public CharactersBar charactersBar;
+    public PowersBar powersBar;
     
     [field: SerializeField] private List<Character> _characters = new();
 
@@ -41,6 +44,9 @@ public class GameManager : NetworkBehaviour
     public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
     [HideInInspector] public bool ignoreGameLoop = false;
+    
+    public Character GetLocalCharacter() => characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
+    
 
     public event Action<List<Character>> onCharactersListUpdated;
     public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
@@ -52,7 +58,9 @@ public class GameManager : NetworkBehaviour
     private void Awake()
     {
         instance = this;
-        
+        onCharactersListUpdated += (_characters) =>
+            powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
+                _c.ownerClientId == NetworkManager.LocalClientId));
     }
     
     public override void OnNetworkSpawn()
@@ -301,6 +309,20 @@ public class GameManager : NetworkBehaviour
     }
 
     #endregion
+
+    [Rpc(SendTo.Server)]
+    public void CorruptPlayerRpc(ulong _ownerClientId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+        
+        var _character = characters.FirstOrDefault(_c => _c.ownerClientId == _ownerClientId);
+        _character.isCorrupted = true;
+        
+        AskForUpdateAllCharactersRpc();
+    }
 }
 
 public class CustomRpcParams

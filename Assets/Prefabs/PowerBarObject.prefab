@@ -205,6 +205,7 @@ MonoBehaviour:
     isCorrupted: 0
   powerImage: {fileID: 1335591211000258058}
   powerNameText: {fileID: 2174739838335350729}
+  customButton: {fileID: 0}
 --- !u!114 &8071823615459579921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -218,6 +219,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.32580394, g: 0.43278432, b: 0.496, a: 1}
+  disabledColor: {r: 0.16468254, g: 0.218254, b: 0.25, a: 1}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []

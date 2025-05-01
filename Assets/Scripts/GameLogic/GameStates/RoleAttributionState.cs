@@ -35,7 +35,7 @@ namespace GameLogic.GameStates
                 }
             }
             
-            float _fakeRoleAmountToRemove = Mathf.Abs(gameManager.characters.Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
+            float _fakeRoleAmountToRemove = Mathf.Abs(gameManager.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
 
             Dictionary<RoleDataObject, RoleAttributionSetting> _fakeRoles = _rolesToAttribute
                 .Where(_roleToAttribute => _roleToAttribute.Value.canBeFake)
@@ -52,7 +52,7 @@ namespace GameLogic.GameStates
             }
 
             //give random roles to character
-            foreach (Character _character in gameManager.characters.ToList())
+            foreach (Character _character in gameManager.GetCharacters().ToList())
             {
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }
@@ -97,7 +97,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            gameManager.characters.Add(_character);
+            gameManager.GetCharacters().Add(_character);
         }
         
         public override void OnEndStateServer()
@@ -114,7 +114,7 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
 
-            gameManager.charactersBar.ResetCharactersBar(gameManager.characters);
+            gameManager.charactersBar.ResetCharactersBar(gameManager.GetCharacters());
             _ = BoardManager.instance.ShowAllPlayerCards();
         }
 

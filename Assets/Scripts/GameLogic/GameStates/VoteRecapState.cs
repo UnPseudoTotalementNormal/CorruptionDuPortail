@@ -63,7 +63,7 @@ namespace GameLogic.GameStates
             var _cardInfo = BoardManager.instance.AddNewCard();
             spawnedCard = _cardInfo.transform;
                 
-            Character _votedCharacter = gameManager.characters.First(_character => _character.ownerClientId == VoteState.lastVotedPlayer);
+            Character _votedCharacter = gameManager.GetCharacters().First(_character => _character.ownerClientId == VoteState.lastVotedPlayer);
             _cardInfo.SetInfo(_votedCharacter);
             _cardInfo.ShowPseudoOnly();
             _cardInfo.SetChainedOverlay(false, true);

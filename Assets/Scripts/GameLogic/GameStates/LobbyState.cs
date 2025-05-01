@@ -19,18 +19,18 @@ namespace GameLogic.GameStates
             {
                 ownerClientId = clientId
             };
-            gameManager.characters.Add(_newCharacter);
+            gameManager.GetCharacters().Add(_newCharacter);
         }
 
         private void OnClientDisconnected(ulong clientId)
         {
-            Character clientCharacter = gameManager.characters.FirstOrDefault(character => character.ownerClientId == clientId);
+            Character clientCharacter = gameManager.GetCharacters().FirstOrDefault(character => character.ownerClientId == clientId);
             if (clientCharacter == null)
             {
                 return;
             }
             
-            gameManager.characters.Remove(clientCharacter);
+            gameManager.GetCharacters().Remove(clientCharacter);
         }
         
         public void OnStartGameButtonPressed()

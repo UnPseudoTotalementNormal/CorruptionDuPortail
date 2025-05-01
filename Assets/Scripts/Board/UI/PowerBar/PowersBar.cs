@@ -24,7 +24,7 @@ namespace Board.UI.PowerBar
         {
             foreach (var _currentPowerBarObject in powersBarObjects)
             {
-                var _playerPower = GameManager.instance.GetLocalCharacter().role.powers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
+                var _playerPower = GameManager.instance.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
                 if (_playerPower != null)
                 {
                     _currentPowerBarObject.customButton.enabled = _playerPower.CanUse();
@@ -34,18 +34,27 @@ namespace Board.UI.PowerBar
 
         public void RefreshCharacterPowerBar(Character _character)
         {
-            foreach (var _currentPowersBarObject in powersBarObjects.ToList())
-            {
-                powersBarObjects.Remove(_currentPowersBarObject);
-                Destroy(_currentPowersBarObject.gameObject);
-            }
-            
             if (_character == null || _character.role == null)
             {
                 return;
             }
+            
             List<Power> _powers = _character.role.powers;
-            CreatePowerBar(_powers, _character);
+
+            if (powersBarObjects.Count == 0)
+            {
+                CreatePowerBar(_powers, _character);
+                return;
+            }
+            
+            foreach (var _power in _powers)
+            {
+                var _powerBarObject = powersBarObjects.FirstOrDefault(_obj => _obj.power == _power);
+                if (_powerBarObject)
+                {
+                    _powerBarObject.SetPower(_power, _character);
+                }
+            }
         }
 
         public void CreatePowerBar(List<Power> _powers, Character _fromCharacter)

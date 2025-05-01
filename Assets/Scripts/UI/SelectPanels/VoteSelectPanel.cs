@@ -32,7 +32,7 @@ namespace UI.SelectPanels
         private void OnPlayerButtonCreated(GameObject _playerButton)
         {
             var _playerButtonObject = _playerButton.GetComponent<PlayerButtonObject>();
-            if (GameManager.instance.characters.First(_character => _character.ownerClientId == _playerButtonObject.playerId).isChained)
+            if (GameManager.instance.GetCharacters().First(_character => _character.ownerClientId == _playerButtonObject.playerId).isChained)
             {
                 Destroy(_playerButton);
                 return;

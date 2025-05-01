@@ -65,7 +65,7 @@ namespace GameLogic.GameStates
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
-            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.characters.Count)
+            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.GetCharacters().Count)
             {
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
@@ -129,7 +129,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             votesForPlayer.Clear();
-            foreach (var _character in gameManager.characters)
+            foreach (var _character in gameManager.GetCharacters())
             {
                 votesForPlayer.Add(_character.ownerClientId, new List<ulong>());
             }
@@ -158,7 +158,7 @@ namespace GameLogic.GameStates
             int _numberOfCharacterWithTheMostVotes = _charactersWithMostVotes.Count(v => v.Value.Count == _charactersWithMostVotes.First().Value.Count);
             if (_numberOfCharacterWithTheMostVotes == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
             {
-                Character _votedCharacter = gameManager.characters.Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
+                Character _votedCharacter = gameManager.GetCharacters().Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
                 _votedCharacter.isChained = true;
                 lastVotedPlayer = _votedCharacter.ownerClientId;
                 gameManager.gameInfoRevealer.SetRevealLevelRpc(lastVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public);

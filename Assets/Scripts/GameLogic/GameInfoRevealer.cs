@@ -21,7 +21,7 @@ namespace GameLogic
         private void OnRolesAttributed()
         {
             charactersInfoRevealed = new Dictionary<ulong, CharacterInfoReveal>();
-            foreach (var _character in GameManager.instance.characters)
+            foreach (var _character in GameManager.instance.GetCharacters())
             {
                 var _characterInfoReveal = new CharacterInfoReveal();
                 if (_character.ownerClientId == NetworkManager.LocalClientId)

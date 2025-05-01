@@ -17,7 +17,7 @@ namespace UI.SelectPanels
         
         private void Start()
         {
-            foreach (ulong _playerId in GameManager.instance.characters.Select(character => character.ownerClientId))
+            foreach (ulong _playerId in GameManager.instance.GetCharacters().Select(character => character.ownerClientId))
             {
                 GameObject _playerButton = Instantiate(playerButtonPrefab, layoutTransform);
                 PlayerButtonObject _playerButtonObject = _playerButton.GetComponent<PlayerButtonObject>();

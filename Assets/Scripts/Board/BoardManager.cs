@@ -76,7 +76,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.instance.characters)
+        foreach (var _character in GameManager.instance.GetCharacters())
         {
             Card _card = AddNewCard();
             _card.SetInfo(_character);

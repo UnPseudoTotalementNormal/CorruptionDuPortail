@@ -25,19 +25,6 @@ public class GameManager : NetworkBehaviour
     public PowersBar powersBar;
     
     [field: SerializeField] private List<Character> _characters = new();
-
-    public List<Character> characters
-    {
-        get
-        {
-            StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
-            return _characters;
-        }
-        set
-        {
-            _characters = value;
-        }
-    }
     
     public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
@@ -45,8 +32,23 @@ public class GameManager : NetworkBehaviour
 
     [HideInInspector] public bool ignoreGameLoop = false;
     
-    public Character GetLocalCharacter() => characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
-    
+    public Character GetLocalCharacter(bool _triggerUpdate = true)
+    {
+        if (_triggerUpdate)
+        {
+            StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
+        }
+        return _characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
+    }
+
+    public List<Character> GetCharacters(bool _triggerUpdate = true)
+    {
+        if (_triggerUpdate)
+        {
+            StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
+        }
+        return _characters;
+    }
 
     public event Action<List<Character>> onCharactersListUpdated;
     public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
@@ -61,6 +63,11 @@ public class GameManager : NetworkBehaviour
         onCharactersListUpdated += (_characters) =>
             powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
                 _c.ownerClientId == NetworkManager.LocalClientId));
+        
+        /*onCharactersListUpdated += (_) =>
+        {
+            Debug.Log("test");
+        };*/
     }
     
     public override void OnNetworkSpawn()
@@ -98,15 +105,14 @@ public class GameManager : NetworkBehaviour
             return;
         }
      
-        onCharactersListUpdated?.Invoke(_characters);
-        UpdateAllCharactersRpc(characters.ToArray());
+        UpdateAllCharactersRpc(GetCharacters().ToArray());
     }
     
     [Rpc(SendTo.NotServer)]
     private void UpdateAllCharactersRpc(Character[] _characters)
     {
-        characters.Clear();
-        characters = _characters.ToList();
+        this._characters.Clear();
+        this._characters = _characters.ToList();
         onCharactersListUpdated?.Invoke(this._characters);
     }
 
@@ -212,7 +218,7 @@ public class GameManager : NetworkBehaviour
     private void CallRoleMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName,
         NetworkSerializableObject[] arguments, RpcParams rpcParams)
     {
-        Role _role = characters.FirstOrDefault(character => character.ownerClientId == characterOwnerClientId)?.role;
+        Role _role = GetCharacters().FirstOrDefault(character => character.ownerClientId == characterOwnerClientId)?.role;
         Assert.IsNotNull(_role, $"character from client {characterOwnerClientId} not found");
         
         CallMethodAfterRpc(_role, methodName, arguments);
@@ -319,7 +325,7 @@ public class GameManager : NetworkBehaviour
             return;
         }
         
-        var _character = characters.FirstOrDefault(_c => _c.ownerClientId == _ownerClientId);
+        var _character = GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
         _character.isCorrupted = true;
         
         AskForUpdateAllCharactersRpc();

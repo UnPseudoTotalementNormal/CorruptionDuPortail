@@ -21,7 +21,7 @@ namespace Characters.Powers
                 return false;
             }
             
-            if (hasToBeAwakened && !GameManager.instance.GetLocalCharacter().role.isAwakened)
+            if (hasToBeAwakened && !GameManager.instance.GetLocalCharacter(false).role.isAwakened)
             {
                 return false;
             }

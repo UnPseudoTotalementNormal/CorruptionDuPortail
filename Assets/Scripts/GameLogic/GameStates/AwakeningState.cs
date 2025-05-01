@@ -25,7 +25,7 @@ namespace GameLogic.GameStates
 
             foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
             {
-                List<Character> _charactersInGame = gameManager.characters.ToList();
+                List<Character> _charactersInGame = gameManager.GetCharacters().ToList();
                 foreach (Character _currentCharacter in _charactersInGame)
                 {
                     if (!_currentCharacter.role.IsTheSameRole(_roleToAwake.role))
@@ -74,14 +74,14 @@ namespace GameLogic.GameStates
 
         public void AwakeCharacterRpc(ulong _characterClientId)
         {
-            Character _character = gameManager.characters.FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+            Character _character = gameManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
 
             _character?.AwakenCharacter();
         }
         
         public void SleepCharacterRpc(ulong _characterClientId)
         {
-            Character _character = gameManager.characters.FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+            Character _character = gameManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
 
             _character?.SleepCharacter();
         }

@@ -28,14 +28,25 @@ public class Role : INetworkSerializable
     [SerializeField] public List<Power> powers = new();
     public List<WinningCondition> winningConditions = new();
     
-    public bool IsTheSameRole(Role otherRole)
+    [NonSerialized] public bool isAwakened = false;
+    
+    public bool IsTheSameRole(Role _otherRole)
     {
-        return roleName == otherRole.roleName;
+        return roleName == _otherRole.roleName;
     }
     
     public virtual void AwakenRole()
     {
-        Debug.Log($"{roleName} has awakened!");
+        isAwakened = true;
+    }
+    
+    public void SleepRole()
+    {
+        isAwakened = false;
+        foreach (var _power in powers)
+        {
+            _power.Cancel();
+        }
     }
     
     public Role CopyRole()
@@ -64,61 +75,61 @@ public class Role : INetworkSerializable
         return _operation.Result;
     }
     
-    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
     {
-        serializer.SerializeValue(ref roleName);
-        serializer.SerializeValue(ref roleType);
-        serializer.SerializeValue(ref factionType);
-        serializer.SerializeValue(ref roleDifficulty);
-        serializer.SerializeValue(ref rolePortrait);
+        _serializer.SerializeValue(ref roleName);
+        _serializer.SerializeValue(ref roleType);
+        _serializer.SerializeValue(ref factionType);
+        _serializer.SerializeValue(ref roleDifficulty);
+        _serializer.SerializeValue(ref rolePortrait);
         
-        int powersCount = powers.Count;
-        serializer.SerializeValue(ref powersCount);
-        if (serializer.IsReader)
+        int _powersCount = powers.Count;
+        _serializer.SerializeValue(ref _powersCount);
+        if (_serializer.IsReader)
         {
-            powers = new List<Power>(powersCount);
-            for (int i = 0; i < powersCount; i++)
+            powers = new List<Power>(_powersCount);
+            for (int i = 0; i < _powersCount; i++)
             {
-                string powerTypeName = string.Empty;
-                serializer.SerializeValue(ref powerTypeName);
-                Type powerType = Type.GetType(powerTypeName);
-                Power power = (Power)Activator.CreateInstance(powerType);
-                power.NetworkSerialize(serializer);
-                powers.Add(power);
+                string _powerTypeName = string.Empty;
+                _serializer.SerializeValue(ref _powerTypeName);
+                Type _powerType = Type.GetType(_powerTypeName);
+                Power _power = (Power)Activator.CreateInstance(_powerType);
+                _power.NetworkSerialize(_serializer);
+                powers.Add(_power);
             }
         }
         else
         {
-            foreach (var power in powers)
+            foreach (var _power in powers)
             {
-                string powerTypeName = power.GetType().AssemblyQualifiedName;
-                serializer.SerializeValue(ref powerTypeName);
-                power.NetworkSerialize(serializer);
+                string _powerTypeName = _power.GetType().AssemblyQualifiedName;
+                _serializer.SerializeValue(ref _powerTypeName);
+                _power.NetworkSerialize(_serializer);
             }
         }
 
-        int winningConditionsCount = winningConditions.Count;
-        serializer.SerializeValue(ref winningConditionsCount);
-        if (serializer.IsReader)
+        int _winningConditionsCount = winningConditions.Count;
+        _serializer.SerializeValue(ref _winningConditionsCount);
+        if (_serializer.IsReader)
         {
-            winningConditions = new List<WinningCondition>(winningConditionsCount);
-            for (int i = 0; i < winningConditionsCount; i++)
+            winningConditions = new List<WinningCondition>(_winningConditionsCount);
+            for (int i = 0; i < _winningConditionsCount; i++)
             {
-                string conditionTypeName = string.Empty;
-                serializer.SerializeValue(ref conditionTypeName);
-                Type conditionType = Type.GetType(conditionTypeName);
-                WinningCondition condition = (WinningCondition)Activator.CreateInstance(conditionType);
-                condition.NetworkSerialize(serializer);
-                winningConditions.Add(condition);
+                string _conditionTypeName = string.Empty;
+                _serializer.SerializeValue(ref _conditionTypeName);
+                Type _conditionType = Type.GetType(_conditionTypeName);
+                WinningCondition _condition = (WinningCondition)Activator.CreateInstance(_conditionType);
+                _condition.NetworkSerialize(_serializer);
+                winningConditions.Add(_condition);
             }
         }
         else
         {
-            foreach (var condition in winningConditions)
+            foreach (var _condition in winningConditions)
             {
-                string conditionTypeName = condition.GetType().AssemblyQualifiedName;
-                serializer.SerializeValue(ref conditionTypeName);
-                condition.NetworkSerialize(serializer);
+                string _conditionTypeName = _condition.GetType().AssemblyQualifiedName;
+                _serializer.SerializeValue(ref _conditionTypeName);
+                _condition.NetworkSerialize(_serializer);
             }
         }
     }

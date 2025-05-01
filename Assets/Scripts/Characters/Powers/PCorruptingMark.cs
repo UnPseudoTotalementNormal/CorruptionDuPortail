@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
 using ArrowSystem;
+using FocusSystem;
 using GameLogic;
 using UnityEngine;
+using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
@@ -46,20 +48,15 @@ namespace Characters.Powers
             BoardManager.instance.onCardHovered += OnCardHovered;
             BoardManager.instance.onCardUnhovered += OnCardUnhovered;
 
-            ArrowManager.instance.StartNewArrow(
-                GameManager.instance.powersBar.GetPowerBarObject(this).transform.position,
-                Input.mousePosition);
-
             hoveredCard = null;
+            
+            FocusManager.instance.SetFocusOnType(FocusType.Cards);
         }
 
         public override void OnUsed()
         {
             base.OnUsed();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
-            BoardManager.instance.onCardHovered -= OnCardHovered;
-            BoardManager.instance.onCardUnhovered -= OnCardUnhovered;
-            ArrowManager.instance.DestroyAllArrows();
+            StopUse();
         }
 
         public override void Cancel()
@@ -69,28 +66,17 @@ namespace Characters.Powers
                 return;
             }
             base.Cancel();
+            StopUse();
+        }
+        
+        private void StopUse()
+        {
             BoardManager.instance.onCardClicked -= OnCardClicked;
             BoardManager.instance.onCardHovered -= OnCardHovered;
             BoardManager.instance.onCardUnhovered -= OnCardUnhovered;
             ArrowManager.instance.DestroyAllArrows();
-        }
-
-        public override void UsingPowerUpdate()
-        {
-            ArrowObject _arrow = ArrowManager.instance.GetLastArrow();
-            if (_arrow)
-            {
-                Ray _ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit[] _results = Physics.RaycastAll(_ray.origin, _ray.direction, Mathf.Infinity);
-                Vector3 _foundPosition = _results.First(_hit => _hit.collider.gameObject.layer == LayerMask.NameToLayer("Arrow")).point;
-
-                if (hoveredCard)
-                {
-                    _foundPosition = hoveredCard.transform.position;
-                }
-                
-                _arrow.SetPointB(_foundPosition);
-            }
+            
+            FocusManager.instance.UnfocusAll();
         }
     }
 }

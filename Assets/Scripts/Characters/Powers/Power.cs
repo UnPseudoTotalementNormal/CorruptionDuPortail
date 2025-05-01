@@ -11,11 +11,17 @@ namespace Characters.Powers
         public FixedString64Bytes powerName;
         public float maxWaitTime;
         
-        public bool isCurrentlyUsed = false;
+        public bool hasToBeAwakened = true;
+        [NonSerialized] public bool isCurrentlyUsed = false;
 
         public virtual bool CanUse()
         {
             if (isCurrentlyUsed)
+            {
+                return false;
+            }
+            
+            if (hasToBeAwakened && !GameManager.instance.GetLocalCharacter().role.isAwakened)
             {
                 return false;
             }
@@ -43,10 +49,11 @@ namespace Characters.Powers
             
         }
         
-        public virtual void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref maxWaitTime);
-            serializer.SerializeValue(ref powerName);
+            _serializer.SerializeValue(ref maxWaitTime);
+            _serializer.SerializeValue(ref powerName);
+            _serializer.SerializeValue(ref hasToBeAwakened);
         }
         
         public object Clone()

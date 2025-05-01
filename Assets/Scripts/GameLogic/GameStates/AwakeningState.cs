@@ -19,26 +19,39 @@ namespace GameLogic.GameStates
 
         public float currentAwakeningTimer;
 
-        private void AwakeLayer(int layerToAwake)
+        private void AwakeLayer(int _layerToAwake)
         {
-            currentlyAwakenedCharacters.Clear();
-            foreach (RoleDataObject _roleToAwake in awakeningOrder[layerToAwake].awakeningCharacters)
+            SleepCurrentlyAwakenedCharacters();
+
+            foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
             {
                 List<Character> _charactersInGame = gameManager.characters.ToList();
-                foreach (Character _curentCharacter in _charactersInGame)
+                foreach (Character _currentCharacter in _charactersInGame)
                 {
-                    if (!_curentCharacter.role.IsTheSameRole(_roleToAwake.role))
+                    if (!_currentCharacter.role.IsTheSameRole(_roleToAwake.role))
                     {
                         continue;
                     }
-                    currentlyAwakenedCharacters.Add(_curentCharacter);
+                    currentlyAwakenedCharacters.Add(_currentCharacter);
                     
                     gameManager.DoStateMethodRpc(GetType().FullName, nameof(AwakeCharacterRpc),
-                        new[] {new NetworkSerializableObject(_curentCharacter.ownerClientId)}, 
-                        new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_curentCharacter.ownerClientId}));
+                        new[] {new NetworkSerializableObject(_currentCharacter.ownerClientId)}, 
+                        new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_currentCharacter.ownerClientId}));
                 }
             }
-            currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(character => character.role).ToList());
+            currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
+        }
+
+        private void SleepCurrentlyAwakenedCharacters()
+        {
+            foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
+            {
+                gameManager.DoStateMethodRpc(GetType().FullName, nameof(SleepCharacterRpc),
+                    new[] {new NetworkSerializableObject(_awakenedCharacter.ownerClientId)}, 
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_awakenedCharacter.ownerClientId}));
+            }
+
+            currentlyAwakenedCharacters.Clear();
         }
 
         public float CalculateAwakeningTimer(List<Role> _awakeningRoles)
@@ -48,7 +61,6 @@ namespace GameLogic.GameStates
                 return 0f;
             }
             
-            //todo: calculate the awakening timer based on the characters awakened
             float _maxAwakeningTime = 0f;
             foreach (var _role in _awakeningRoles)
             {
@@ -60,15 +72,18 @@ namespace GameLogic.GameStates
             return _maxAwakeningTime;
         }
 
-        public void AwakeCharacterRpc(ulong characterClientId)
+        public void AwakeCharacterRpc(ulong _characterClientId)
         {
-            Character _character = gameManager.characters.FirstOrDefault(character => character.ownerClientId == characterClientId);
-            if (_character == null)
-            {
-                return;
-            }
-            
-            _character.AwakenCharacter();
+            Character _character = gameManager.characters.FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+
+            _character?.AwakenCharacter();
+        }
+        
+        public void SleepCharacterRpc(ulong _characterClientId)
+        {
+            Character _character = gameManager.characters.FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+
+            _character?.SleepCharacter();
         }
 
         public override void OnStateCreated()
@@ -111,6 +126,7 @@ namespace GameLogic.GameStates
             currentAwakeningIndex++;
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
+                SleepCurrentlyAwakenedCharacters();
                 gameManager.NextGameState();
                 return;
             }

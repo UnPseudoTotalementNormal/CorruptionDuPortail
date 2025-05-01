@@ -13,6 +13,7 @@ namespace UI
     {
         private Color baseColor;
         [SerializeField] private Color hoverColor = new Color(0.8f , 0.8f, 0.8f, 1);
+        [SerializeField] private Color disabledColor = new Color(0.5f, 0.5f, 0.5f, 1);
 
         private Image panelImage;
         
@@ -45,6 +46,16 @@ namespace UI
         {
             panelImage.DOColor(baseColor, 0.2f);
             onButtonUnhovered?.Invoke();
+        }
+
+        private void OnDisable()
+        {
+            panelImage.DOColor(disabledColor, 0.2f);
+        }
+        
+        private void OnEnable()
+        {
+            panelImage.DOColor(baseColor, 0.2f);
         }
     }
 }

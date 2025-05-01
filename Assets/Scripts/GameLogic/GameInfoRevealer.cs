@@ -43,7 +43,7 @@ namespace GameLogic
             Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
             
             RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(GetCharacterInfo(_clientId));
-            if ((int)_currentRevealLevel > (int)_revealLevel)
+            if ((int)_currentRevealLevel >= (int)_revealLevel)
             {
                 return;
             }
@@ -52,7 +52,7 @@ namespace GameLogic
             switch (_revealVariableName.ToString())
             {
                 case nameof(CharacterInfoReveal.isRoleRevealed):
-                    BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _clientId)
+                    _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _clientId)
                         .ShowPseudoWithRevealedInfo(true);
                     break;
             }

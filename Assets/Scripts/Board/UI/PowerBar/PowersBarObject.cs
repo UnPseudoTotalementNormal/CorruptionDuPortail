@@ -15,9 +15,15 @@ namespace Board.UI.PowerBar
         
         [SerializeField] private Image powerImage;
         [SerializeField] private TMP_Text powerNameText;
+        [HideInInspector] public CustomButton customButton;
         
         public event Action<Power> onPowerBarObjectClicked;
-        
+
+        private void Awake()
+        {
+            customButton = GetComponent<CustomButton>();
+        }
+
         public void SetPower(Power _power, Character _fromCharacter)
         {
             power = _power;

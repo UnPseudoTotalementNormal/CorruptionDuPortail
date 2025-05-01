@@ -35,6 +35,11 @@ namespace Characters
             role.AwakenRole();
         }
         
+        public void SleepCharacter()
+        {
+            role.SleepRole();
+        }
+        
         public Role GetRole(bool ignoreOverride = false)
         {
             return role;
@@ -49,5 +54,7 @@ namespace Characters
         {
             GameManager.instance.CorruptPlayerRpc(ownerClientId);
         }
+
+        
     }
 }

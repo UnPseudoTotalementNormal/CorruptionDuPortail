@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Characters;
 using Characters.Powers;
 using Extensions;
@@ -15,13 +16,28 @@ namespace Board.UI.PowerBar
         
         [SerializeField] private GameObject powerBarObjectPrefab;
         
-        public event Action<Power> onPowerClicked;
+        public List<PowersBarObject> powersBarObjects = new();
         
+        public event Action<Power> onPowerClicked;
+
+        private void Update()
+        {
+            foreach (var _currentPowerBarObject in powersBarObjects)
+            {
+                var _playerPower = GameManager.instance.GetLocalCharacter().role.powers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
+                if (_playerPower != null)
+                {
+                    _currentPowerBarObject.customButton.enabled = _playerPower.CanUse();
+                }
+            }
+        }
+
         public void RefreshCharacterPowerBar(Character _character)
         {
-            foreach (Transform child in powersBarParent)
+            foreach (var _currentPowersBarObject in powersBarObjects.ToList())
             {
-                Destroy(child.gameObject);
+                powersBarObjects.Remove(_currentPowersBarObject);
+                Destroy(_currentPowersBarObject.gameObject);
             }
             
             if (_character == null || _character.role == null)
@@ -40,6 +56,8 @@ namespace Board.UI.PowerBar
                 var _powersBarObject = _powerBarGameObject.GetComponent<PowersBarObject>();
                 _powersBarObject.SetPower(_currentPower, _fromCharacter);
                 _powersBarObject.onPowerBarObjectClicked += OnPowerClicked;
+                
+                powersBarObjects.Add(_powersBarObject);
             }
         }
 

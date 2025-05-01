@@ -47,7 +47,7 @@ namespace Board.UI.CharacterBar
             transform.DOKill();
             transform.DOScale(hoverScale, 0.35f).SetEase(Ease.OutQuint);
             transform.position += Vector3.forward * 0.01f;
-            canvasObject.sortingOrder = 1;
+            canvasObject.sortingOrder += 1;
             onCharacterBarObjectHovered?.Invoke(playerCharacter);
         }
 
@@ -56,7 +56,7 @@ namespace Board.UI.CharacterBar
             transform.DOKill();
             transform.DOScale(originalScale, 0.35f).SetEase(Ease.OutQuint);
             transform.position += -Vector3.forward * 0.01f;
-            canvasObject.sortingOrder = 0;
+            canvasObject.sortingOrder -= 1;
             onCharacterBarObjectUnhovered?.Invoke(playerCharacter);
         }
         

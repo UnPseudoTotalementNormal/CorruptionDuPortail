@@ -97,7 +97,8 @@ public class GameManager : NetworkBehaviour
         {
             return;
         }
-        
+     
+        onCharactersListUpdated?.Invoke(_characters);
         UpdateAllCharactersRpc(characters.ToArray());
     }
     

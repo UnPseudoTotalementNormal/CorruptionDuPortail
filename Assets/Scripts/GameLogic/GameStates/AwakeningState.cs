@@ -49,7 +49,15 @@ namespace GameLogic.GameStates
             }
             
             //todo: calculate the awakening timer based on the characters awakened
-            return 5f;
+            float _maxAwakeningTime = 0f;
+            foreach (var _role in _awakeningRoles)
+            {
+                foreach (var _power in _role.powers)
+                {
+                    _maxAwakeningTime = Mathf.Max(_maxAwakeningTime, _power.maxWaitTime);
+                }
+            }
+            return _maxAwakeningTime;
         }
 
         public void AwakeCharacterRpc(ulong characterClientId)

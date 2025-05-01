@@ -12,6 +12,8 @@ namespace Board.UI.CharacterBar
     {
         public Transform charactersBarParent;
         
+        [SerializeField] private GameObject characterBarObjectPrefab;
+        
         public event Action<Character> onCharacterBarClicked;
 
         public void ResetCharactersBar(List<Character> _characters)
@@ -23,16 +25,9 @@ namespace Board.UI.CharacterBar
 
             foreach (Character _character in _characters)
             {
-                GameObject _characterBarChild = new GameObject(_character.GetRole().roleName.ToString(), typeof(RectTransform));
-                var _characterBarChildTransform = _characterBarChild.transform;
-                _characterBarChildTransform.SetParent(charactersBarParent);
-                _characterBarChildTransform.ResetLocalValues();
+                GameObject _characterBarChild = Instantiate(characterBarObjectPrefab, charactersBarParent);
 
-                var _characterBarObject = new GameObject("CharacterBarObject", typeof(Image)).AddComponent<CharactersBarObject>();
-                _characterBarObject.transform.SetParent(_characterBarChildTransform);
-                _characterBarObject.transform.ResetLocalValues();
-                
-                _characterBarObject.GetComponent<RectTransform>().SetToFullStretch();
+                var _characterBarObject = _characterBarChild.GetComponent<CharactersBarObject>();
                 _characterBarObject.SetCharacter(_character);
                 _characterBarObject.onCharacterBarObjectClicked += (_characterClicked) =>
                 {

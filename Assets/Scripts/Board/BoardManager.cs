@@ -20,7 +20,9 @@ public class BoardManager : NetworkBehaviour
     
     public List<CancellationTokenSource> cancelTokens = new();
 
-    public Action<Card> onCardClicked;
+    public event Action<Card> onCardClicked;
+    public event Action<Card> onCardHovered;
+    public event Action<Card> onCardUnhovered;
     
     
     private void Awake()
@@ -120,7 +122,9 @@ public class BoardManager : NetworkBehaviour
     
     public void DestroyCard(Card _card)
     {
-        _card.onCardClicked -= OnCardClicked;
+        _card.onCardClicked -= onCardClicked;
+        _card.onCardHovered -= onCardHovered;
+        _card.onCardUnhovered -= onCardUnhovered;
         visibleCards.Remove(_card);
         Destroy(_card.gameObject);
     }
@@ -132,13 +136,10 @@ public class BoardManager : NetworkBehaviour
         
         visibleCards.Add(_card);
 
-        _card.onCardClicked += OnCardClicked;
+        _card.onCardClicked += onCardClicked;
+        _card.onCardHovered += onCardHovered;
+        _card.onCardUnhovered += onCardUnhovered;
         return _card;
-    }
-    
-    private void OnCardClicked(Card _card)
-    {
-        onCardClicked?.Invoke(_card);
     }
 }
 

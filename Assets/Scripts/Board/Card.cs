@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-public class Card : MonoBehaviour, IPointerClickHandler
+public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
     public TMP_Text cardRoleText;
@@ -31,6 +31,8 @@ public class Card : MonoBehaviour, IPointerClickHandler
     public float chainFadeTime = 0.5f;
     
     public event Action<Card> onCardClicked;
+    public event Action<Card> onCardHovered;
+    public event Action<Card> onCardUnhovered;
 
     private void Awake()
     {
@@ -146,5 +148,15 @@ public class Card : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData _eventData)
     {
         onCardClicked?.Invoke(this);
+    }
+
+    public void OnPointerEnter(PointerEventData _eventData)
+    {
+        onCardHovered?.Invoke(this);
+    }
+
+    public void OnPointerExit(PointerEventData _eventData)
+    {
+        onCardUnhovered?.Invoke(this);
     }
 }

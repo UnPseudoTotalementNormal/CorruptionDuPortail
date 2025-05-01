@@ -17,6 +17,8 @@ namespace UI
         private Image panelImage;
         
         public event Action onButtonClicked;
+        public event Action onButtonHovered;
+        public event Action onButtonUnhovered;
         [SerializeField] public UnityEvent onButtonClickedUnityEvent = new();
 
         private void Awake()
@@ -36,11 +38,13 @@ namespace UI
         public void OnPointerEnter(PointerEventData _eventData)
         {
             panelImage.DOColor(hoverColor, 0.2f);
+            onButtonHovered?.Invoke();
         }
 
         public void OnPointerExit(PointerEventData _eventData)
         {
             panelImage.DOColor(baseColor, 0.2f);
+            onButtonUnhovered?.Invoke();
         }
     }
 }

@@ -42,6 +42,8 @@ namespace Characters.Powers
                 clickedCharacter.CorruptPlayer();
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                    clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
             OnUsed();
         }

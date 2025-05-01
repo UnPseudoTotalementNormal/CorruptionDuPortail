@@ -60,8 +60,13 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         }
     }
     
-    public async UniTask ShowPseudoWithRevealedInfo()
+    public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false)
     {
+        if (_turnCard)
+        {
+            await ShowBackSide();
+        }
+        
         cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
         if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
         {
@@ -73,6 +78,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         {
             cardRoleText.text = "";
             cardImage.sprite = unknownCardSprite;
+        }
+        
+        if (_turnCard)
+        {
+            await ShowFrontSide();
         }
     }
     

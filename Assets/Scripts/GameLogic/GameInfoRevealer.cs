@@ -48,6 +48,14 @@ namespace GameLogic
                 return;
             }
             _field.SetValue(GetCharacterInfo(_clientId), _revealLevel);
+
+            switch (_revealVariableName.ToString())
+            {
+                case nameof(CharacterInfoReveal.isRoleRevealed):
+                    BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _clientId)
+                        .ShowPseudoWithRevealedInfo(true);
+                    break;
+            }
         }
 
         [Rpc(SendTo.Everyone)]

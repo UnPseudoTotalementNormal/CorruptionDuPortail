@@ -10,8 +10,8 @@ namespace Board.UI.PowerBar
 {
     public class PowersBarObject : MonoBehaviour
     {
-        private Power power;
-        private Character fromCharacter;
+        [HideInInspector] public Power power;
+        [HideInInspector] public Character fromCharacter;
         
         [SerializeField] private Image powerImage;
         [SerializeField] private TMP_Text powerNameText;

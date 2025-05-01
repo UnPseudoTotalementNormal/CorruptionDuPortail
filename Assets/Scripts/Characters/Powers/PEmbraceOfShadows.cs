@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using ArrowSystem;
 using GameLogic;
 using UI.SelectPanels;
 using UnityEngine;
@@ -26,16 +28,21 @@ namespace Characters.Powers
             return true;
         }
 
-        public override void Use()
+        public override void StartUse()
         {
-            base.Use();
+            base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
+
+            ArrowManager.instance.StartNewArrow(
+                GameManager.instance.powersBar.GetPowerBarObject(this).transform.position,
+                Input.mousePosition);
         }
 
         public override void OnUsed()
         {
             base.OnUsed();
             BoardManager.instance.onCardClicked -= OnCardClicked;
+            ArrowManager.instance.DestroyAllArrows();
         }
 
         public override void Cancel()
@@ -46,6 +53,29 @@ namespace Characters.Powers
             }
             base.Cancel();
             BoardManager.instance.onCardClicked -= OnCardClicked;
+            ArrowManager.instance.DestroyAllArrows();
+        }
+
+        public override void UsingPowerUpdate()
+        {
+            ArrowObject _arrow = ArrowManager.instance.GetLastArrow();
+            if (_arrow)
+            {
+                Ray _ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                RaycastHit[] _results = Physics.RaycastAll(_ray.origin, _ray.direction, Mathf.Infinity);
+                Vector3 _foundPosition = _results.First(_hit => _hit.collider.gameObject.layer == LayerMask.NameToLayer("Arrow")).point;
+                foreach (var _hit in _results)
+                {
+                    var _card = _hit.transform.GetComponentInParent<Card>();
+                    if (_card)
+                    {
+                        _foundPosition = _card.transform.position;
+                        break;
+                    }
+                }
+                
+                _arrow.SetPointB(_foundPosition);
+            }
         }
     }
 }

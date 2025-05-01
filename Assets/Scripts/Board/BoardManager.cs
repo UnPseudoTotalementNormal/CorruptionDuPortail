@@ -136,10 +136,25 @@ public class BoardManager : NetworkBehaviour
         
         visibleCards.Add(_card);
 
-        _card.onCardClicked += onCardClicked;
-        _card.onCardHovered += onCardHovered;
-        _card.onCardUnhovered += onCardUnhovered;
+        _card.onCardClicked += OnCardClicked;
+        _card.onCardHovered += OnCardHovered;
+        _card.onCardUnhovered += OnCardUnhovered;
         return _card;
+    }
+    
+    private void OnCardClicked(Card _card)
+    {
+        onCardClicked?.Invoke(_card);
+    }
+    
+    private void OnCardHovered(Card _card)
+    {
+        onCardHovered?.Invoke(_card);
+    }
+    
+    private void OnCardUnhovered(Card _card)
+    {
+        onCardUnhovered?.Invoke(_card);
     }
 }
 

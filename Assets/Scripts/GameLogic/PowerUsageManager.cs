@@ -17,19 +17,35 @@ namespace GameLogic
 
         private void TrySelectPower(Power _power)
         {
-            currentPower = _power;
             var _playerPower = GameManager.instance.GetLocalCharacter().role.powers.FirstOrDefault(_p => _p == _power);
             Assert.IsNotNull(_playerPower, "power was not found in the character's powers");
             
             if (_playerPower.CanUse())
             {
-                _playerPower.Use();
+                _playerPower.StartUse();
+                currentPower = _playerPower;
             }
         }
 
         private void OnPowerClicked(Power _power)
         {
             TrySelectPower(_power);
+        }
+
+        private void Update()
+        {
+            if (currentPower == null)
+            {
+                return;
+            }
+
+            if (currentPower.isCurrentlyUsed == false)
+            {
+                currentPower = null;
+                return;
+            }
+            
+            currentPower.UsingPowerUpdate();
         }
     }
 }

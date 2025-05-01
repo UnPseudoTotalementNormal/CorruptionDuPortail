@@ -47,5 +47,18 @@ namespace Board.UI.PowerBar
         {
             onPowerClicked?.Invoke(_power);
         }
+        
+        public PowersBarObject GetPowerBarObject(Power _power)
+        {
+            foreach (Transform _child in powersBarParent)
+            {
+                var _powerBarObject = _child.GetComponent<PowersBarObject>();
+                if (_powerBarObject != null && _powerBarObject.power == _power)
+                {
+                    return _powerBarObject;
+                }
+            }
+            return null;
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace Characters.Powers
             return true;
         }
 
-        public virtual void Use()
+        public virtual void StartUse()
         {
             isCurrentlyUsed = true;
         }
@@ -36,6 +36,11 @@ namespace Characters.Powers
         public virtual void Cancel()
         {
             isCurrentlyUsed = false;
+        }
+
+        public virtual void UsingPowerUpdate() //note: please make it visuals only
+        {
+            
         }
         
         public virtual void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter

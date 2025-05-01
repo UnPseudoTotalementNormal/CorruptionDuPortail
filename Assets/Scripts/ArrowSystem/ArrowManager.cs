@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 
 namespace ArrowSystem
@@ -58,9 +60,9 @@ namespace ArrowSystem
         
         public void DestroyAllArrows()
         {
-            foreach (var _arrow in arrows)
+            foreach (var _arrow in arrows.ToList())
             {
-                Destroy(_arrow.gameObject);
+                DestroyArrow(_arrow);
             }
             arrows.Clear();
         }
@@ -72,12 +74,23 @@ namespace ArrowSystem
                 return;
             }
             
-            Destroy(arrows[^1].gameObject);
-            arrows.RemoveAt(arrows.Count - 1);
+            DestroyArrow(arrows[^1]);
             
             if (arrows.Count > 0)
             {
                 GetLastArrow().SetIsInner(false);
+            }
+        }
+
+        private void DestroyArrow(ArrowObject _arrow)
+        {
+            if (arrows.Contains(_arrow))
+            {
+                arrows.Remove(_arrow);
+                _arrow.transform.DOScaleX(0, 0.25f).SetEase(Ease.OutQuint).OnComplete(() =>
+                {
+                    Destroy(_arrow);
+                });
             }
         }
     }

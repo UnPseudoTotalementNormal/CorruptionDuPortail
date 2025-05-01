@@ -14,7 +14,28 @@ namespace Board.UI.CharacterBar
         
         [SerializeField] private GameObject characterBarObjectPrefab;
         
+        public List<CharactersBarObject> charactersBarObjects = new();
+        
         public event Action<Character> onCharacterBarClicked;
+        public event Action<Character> onCharacterBarHovered;
+        public event Action<Character> onCharacterBarUnhovered;
+
+        private void Start()
+        {
+            GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+        }
+
+        private void OnCharacterListUpdated(List<Character> _characters)
+        {
+            foreach (var _character in _characters)
+            {
+                var _characterBarObject = charactersBarObjects.Find(_obj => _obj.playerCharacter.ownerClientId == _character.ownerClientId);
+                if (_characterBarObject)
+                {
+                    _characterBarObject.SetCharacter(_character);
+                }
+            }
+        }
 
         public void ResetCharactersBar(List<Character> _characters)
         {
@@ -23,6 +44,8 @@ namespace Board.UI.CharacterBar
                 Destroy(charactersBarParent.GetChild(i).gameObject);
             }
 
+            charactersBarObjects.Clear();
+            
             foreach (Character _character in _characters)
             {
                 GameObject _characterBarChild = Instantiate(characterBarObjectPrefab, charactersBarParent);
@@ -33,6 +56,16 @@ namespace Board.UI.CharacterBar
                 {
                     onCharacterBarClicked?.Invoke(_characterClicked);
                 };
+                _characterBarObject.onCharacterBarObjectHovered += (_characterHovered) =>
+                {
+                    onCharacterBarHovered?.Invoke(_characterHovered);
+                };
+                _characterBarObject.onCharacterBarObjectUnhovered += (_characterUnhovered) =>
+                {
+                    onCharacterBarUnhovered?.Invoke(_characterUnhovered);
+                };
+                
+                charactersBarObjects.Add(_characterBarObject);
             }
         }
         
@@ -42,6 +75,8 @@ namespace Board.UI.CharacterBar
             {
                 Destroy(charactersBarParent.GetChild(i).gameObject);
             }
+            
+            charactersBarObjects.Clear();
         }
     }
 }

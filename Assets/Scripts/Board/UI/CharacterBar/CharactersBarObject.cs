@@ -22,6 +22,8 @@ namespace Board.UI.CharacterBar
         public Vector3 hoverScale = new Vector3(1.2f, 1.2f, 1.2f);
         
         public event Action<Character> onCharacterBarObjectClicked;
+        public event Action<Character> onCharacterBarObjectHovered;
+        public event Action<Character> onCharacterBarObjectUnhovered;
 
         private void Start()
         {
@@ -46,6 +48,7 @@ namespace Board.UI.CharacterBar
             transform.DOScale(hoverScale, 0.35f).SetEase(Ease.OutQuint);
             transform.position += Vector3.forward * 0.01f;
             canvasObject.sortingOrder = 1;
+            onCharacterBarObjectHovered?.Invoke(playerCharacter);
         }
 
         private void OnButtonUnhovered()
@@ -54,6 +57,7 @@ namespace Board.UI.CharacterBar
             transform.DOScale(originalScale, 0.35f).SetEase(Ease.OutQuint);
             transform.position += -Vector3.forward * 0.01f;
             canvasObject.sortingOrder = 0;
+            onCharacterBarObjectUnhovered?.Invoke(playerCharacter);
         }
         
         public void SetCharacter(Character _character)

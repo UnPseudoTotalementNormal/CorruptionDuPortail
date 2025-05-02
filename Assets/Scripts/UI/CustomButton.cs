@@ -50,7 +50,10 @@ namespace UI
 
         private void OnDisable()
         {
-            panelImage.DOColor(disabledColor, 0.2f);
+            if (panelImage != null)
+            {
+                panelImage.DOColor(disabledColor, 0.2f);
+            }
         }
         
         private void OnEnable()

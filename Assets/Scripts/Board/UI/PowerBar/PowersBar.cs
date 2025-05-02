@@ -22,9 +22,21 @@ namespace Board.UI.PowerBar
 
         private void Update()
         {
+            var _rolePowers = GameManager.instance.GetLocalCharacter(false)?.role?.powers;
+            
+            if (_rolePowers == null)
+            {
+                return;
+            }
+            
+            if (_rolePowers.Count == 0)
+            {
+                return;
+            }
+            
             foreach (var _currentPowerBarObject in powersBarObjects)
             {
-                var _playerPower = GameManager.instance.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
+                var _playerPower = _rolePowers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
                 if (_playerPower != null)
                 {
                     _currentPowerBarObject.customButton.enabled = _playerPower.CanUse();

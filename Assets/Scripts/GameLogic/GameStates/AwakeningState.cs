@@ -18,6 +18,10 @@ namespace GameLogic.GameStates
         public int currentAwakeningIndex;
 
         public float currentAwakeningTimer;
+        public float currentAwakeningMaxTime;
+        
+        private float updateAwakeningTimer;
+        private const float UpdateAwakeningTimerInterval = 1f;
 
         private void AwakeLayer(int _layerToAwake)
         {
@@ -34,21 +38,21 @@ namespace GameLogic.GameStates
                     }
                     currentlyAwakenedCharacters.Add(_currentCharacter);
                     
-                    gameManager.DoStateMethodRpc(GetType().FullName, nameof(AwakeCharacterRpc),
-                        new[] {new NetworkSerializableObject(_currentCharacter.ownerClientId)}, 
-                        new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_currentCharacter.ownerClientId}));
+                    gameManager.DoStateMethodRpc(GetType().FullName, nameof(AwakeCharacterRpc), new[] {new NetworkSerializableObject(_currentCharacter.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_currentCharacter.ownerClientId}));
                 }
             }
-            currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
+            currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
+            
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningMaxTimeRpc), new[] {new NetworkSerializableObject(currentAwakeningMaxTime)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
 
         private void SleepCurrentlyAwakenedCharacters()
         {
             foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
             {
-                gameManager.DoStateMethodRpc(GetType().FullName, nameof(SleepCharacterRpc),
-                    new[] {new NetworkSerializableObject(_awakenedCharacter.ownerClientId)}, 
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_awakenedCharacter.ownerClientId}));
+                gameManager.DoStateMethodRpc(GetType().FullName, nameof(SleepCharacterRpc), new[] {new NetworkSerializableObject(_awakenedCharacter.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_awakenedCharacter.ownerClientId}));
             }
 
             currentlyAwakenedCharacters.Clear();
@@ -97,12 +101,8 @@ namespace GameLogic.GameStates
             currentAwakeningIndex = 0;
             AwakeLayer(currentAwakeningIndex);
             
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc),
-                new NetworkSerializableObject[] {new(currentAwakeningIndex)}, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc),
-                new NetworkSerializableObject[] {new(currentAwakeningTimer)}, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
 
         public override void OnEndStateServer()
@@ -124,6 +124,13 @@ namespace GameLogic.GameStates
         {
             base.StateUpdateServer();
             currentAwakeningTimer -= Time.deltaTime;
+            updateAwakeningTimer -= Time.deltaTime;
+            
+            if (updateAwakeningTimer <= 0)
+            {
+                updateAwakeningTimer = UpdateAwakeningTimerInterval;
+                gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            }
             
             if (currentAwakeningTimer > 0)
             {
@@ -131,9 +138,6 @@ namespace GameLogic.GameStates
             }
             
             currentAwakeningIndex++;
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc),
-                new NetworkSerializableObject[] {new(currentAwakeningIndex)}, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
@@ -144,14 +148,18 @@ namespace GameLogic.GameStates
             
             AwakeLayer(currentAwakeningIndex);
             
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc),
-                new NetworkSerializableObject[] {new(currentAwakeningTimer)}, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
         
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();
+
+            if (gameManager.IsServer)
+            {
+                return;
+            }
+            currentAwakeningTimer -= Time.deltaTime;
         }
         
         private void UpdateAwakeningTimerRpc(float _newAwakeningTimer)
@@ -170,6 +178,15 @@ namespace GameLogic.GameStates
                 return;
             }
             currentAwakeningIndex = _newAwakeningIndex;
+        }
+        
+        private void UpdateAwakeningMaxTimeRpc(float _newAwakeningMaxTime)
+        {
+            if (gameManager.IsServer)
+            {
+                return;
+            }
+            currentAwakeningMaxTime = _newAwakeningMaxTime;
         }
     }
 }

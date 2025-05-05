@@ -275,6 +275,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3778174208872907019}
   - component: {fileID: 1702573686804971979}
+  - component: {fileID: 7744140302356566659}
   - component: {fileID: 2303567830554595728}
   m_Layer: 5
   m_Name: AwakenTimer
@@ -310,6 +311,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8156196739143440472}
   m_CullTransparentMesh: 1
+--- !u!114 &7744140302356566659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8156196739143440472}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8aed84e881e9e414891873f28232922c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  timerImage: {fileID: 2303567830554595728}
 --- !u!114 &2303567830554595728
 MonoBehaviour:
   m_ObjectHideFlags: 0

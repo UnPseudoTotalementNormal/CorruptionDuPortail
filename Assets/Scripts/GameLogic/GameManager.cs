@@ -195,6 +195,50 @@ public class GameManager : NetworkBehaviour
     }
 
     #endregion
+    
+    #region PowerStaticMethodRpc
+
+    public void DoPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
+    {
+        RpcParams _rpcParams;
+        if (!GetTargetFromCustomRpcParams(customRpcParams, out _rpcParams))
+        {
+            return;
+        }
+        CallPowerStaticMethodRpc(senderOwnerClientId, typeName, staticMethodName, arguments, _rpcParams);
+    }
+
+    public void DoPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName, CustomRpcParams customRpcParams)
+    {
+        DoPowerStaticMethodRpc(senderOwnerClientId, typeName, staticMethodName, null, customRpcParams);
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    private void CallPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName,
+        NetworkSerializableObject[] arguments, RpcParams rpcParams)
+    {
+        Type staticType = Type.GetType(typeName.ToString());
+        Assert.IsNotNull(staticType, $"Static type {typeName} not found");
+
+        MethodInfo method = staticType.GetMethod(staticMethodName.ToString(), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.IsNotNull(method, $"Static method {staticMethodName} not found in type {typeName}");
+
+        object[] parameters = null;
+        if (arguments != null)
+        {
+            ParameterInfo[] paramInfos = method.GetParameters();
+            parameters = new object[arguments.Length];
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                parameters[i] = arguments[i].DeserializeNonGeneric(paramInfos[i].ParameterType);
+            }
+        }
+
+        method.Invoke(null, parameters);
+    }
+
+    #endregion
 
     #region CharacterMethodRpc
 
@@ -281,6 +325,9 @@ public class GameManager : NetworkBehaviour
                 case CustomRpcParams.RpcTargetType.all:
                     rpcParams = RpcTarget.Everyone;
                     break;
+                case CustomRpcParams.RpcTargetType.notHost:
+                    rpcParams = RpcTarget.NotServer;
+                    break;
                 default:
                     return false;
             }
@@ -349,7 +396,7 @@ public class CustomRpcParams
         server,
         host,
         clients,
+        notHost,
         all,
     }
 }
-

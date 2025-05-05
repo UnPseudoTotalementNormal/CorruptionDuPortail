@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: RoleAttributionState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
+  gameStateDependencies: []
   roleAttributionDictionary:
     _serializedList:
     - Key: {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
       Value:
         roleToAttribute: 1
-        canBeFake: 0
+        canBeFake: 1
     - Key: {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
       Value:
         roleToAttribute: 1
@@ -46,4 +47,4 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
       Value:
         roleToAttribute: 1
-        canBeFake: 1
+        canBeFake: 0

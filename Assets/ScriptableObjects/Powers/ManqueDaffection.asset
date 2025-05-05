@@ -10,41 +10,41 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 297c575ec34c4b34b84f7838b07d694b, type: 3}
-  m_Name: EtreintesDesOmbres
+  m_Name: ManqueDaffection
   m_EditorClassIdentifier: 
   power:
-    rid: 2254570180246765654
+    rid: 7121801923566501975
   references:
     version: 2
     RefIds:
-    - rid: 2254570180246765654
-      type: {class: PEmbraceOfShadows, ns: Characters.Powers, asm: Assembly-CSharp}
+    - rid: 7121801923566501975
+      type: {class: PLackOfAffection, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         powerName:
-          utf8LengthInBytes: 20
+          utf8LengthInBytes: 18
           bytes:
             offset0000:
-              byte0000: 69
-              byte0001: 116
-              byte0002: 114
-              byte0003: 101
-              byte0004: 105
-              byte0005: 110
-              byte0006: 116
-              byte0007: 101
-              byte0008: 115
-              byte0009: 32
-              byte0010: 100
-              byte0011: 101
-              byte0012: 115
-              byte0013: 32
-              byte0014: 111
-              byte0015: 109
+              byte0000: 77
+              byte0001: 97
+              byte0002: 110
+              byte0003: 113
+              byte0004: 117
+              byte0005: 101
+              byte0006: 32
+              byte0007: 100
+              byte0008: 39
+              byte0009: 97
+              byte0010: 102
+              byte0011: 102
+              byte0012: 101
+              byte0013: 99
+              byte0014: 116
+              byte0015: 105
             offset0016:
-              byte0000: 98
-              byte0001: 114
-              byte0002: 101
-              byte0003: 115
+              byte0000: 111
+              byte0001: 110
+              byte0002: 0
+              byte0003: 0
               byte0004: 0
               byte0005: 0
               byte0006: 0

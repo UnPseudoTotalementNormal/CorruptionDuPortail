@@ -1,23 +1,38 @@
 using System;
 using System.Linq;
-using ArrowSystem;
 using FocusSystem;
 using GameLogic;
+using Network;
+using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
     [Serializable]
-    public class PCorruptingMark : Power
+    public class PLackOfAffection : Power
     {
+        private static void OnPlayerContactedRpc(ulong _senderClientId)
+        {
+            Character _localCharacter = GameManager.instance.GetLocalCharacter(false);
+            if (_localCharacter.role.factionType != FactionType.anomaly)
+            {
+                GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                    _senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+            }
+            else
+            {
+                //TODO: Feedback
+            }
+        }
         
         private void OnCardClicked(Card _clickedCard)
         {
-            _clickedCard.characterInfo.CorruptPlayer();
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _clickedCard.characterInfo.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             OnUsed();
+            GameManager.instance.DoPowerStaticMethodRpc(
+                NetworkManager.Singleton.LocalClientId, typeof(PLackOfAffection).FullName, nameof(OnPlayerContactedRpc),
+                new [] { new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId) },
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId }));
         }
         
         public override bool CanUse()
@@ -37,6 +52,7 @@ namespace Characters.Powers
             
             FocusManager.instance.SetFocusOnType(FocusType.Cards);
         }
+        
 
         public override void OnUsed()
         {
@@ -55,7 +71,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             BoardManager.instance.onCardClicked -= OnCardClicked;
-            ArrowManager.instance.DestroyAllArrows();
             
             FocusManager.instance.UnfocusAll();
         }

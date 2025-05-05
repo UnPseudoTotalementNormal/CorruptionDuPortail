@@ -60,7 +60,6 @@ namespace Characters.Powers
         public override void OnUsed()
         {
             base.OnUsed();
-            StopUse();
         }
 
         public override void Cancel()
@@ -70,10 +69,9 @@ namespace Characters.Powers
                 return;
             }
             base.Cancel();
-            StopUse();
         }
 
-        private void StopUse()
+        protected override void StopUse()
         {
             BoardManager.instance.onCardClicked -= OnCardClicked;
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;

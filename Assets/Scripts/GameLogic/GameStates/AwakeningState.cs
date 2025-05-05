@@ -96,6 +96,13 @@ namespace GameLogic.GameStates
             base.OnStartStateServer();
             currentAwakeningIndex = 0;
             AwakeLayer(currentAwakeningIndex);
+            
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc),
+                new NetworkSerializableObject[] {new(currentAwakeningIndex)}, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc),
+                new NetworkSerializableObject[] {new(currentAwakeningTimer)}, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
 
         public override void OnEndStateServer()
@@ -124,6 +131,10 @@ namespace GameLogic.GameStates
             }
             
             currentAwakeningIndex++;
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc),
+                new NetworkSerializableObject[] {new(currentAwakeningIndex)}, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
                 SleepCurrentlyAwakenedCharacters();
@@ -132,11 +143,33 @@ namespace GameLogic.GameStates
             }
             
             AwakeLayer(currentAwakeningIndex);
+            
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc),
+                new NetworkSerializableObject[] {new(currentAwakeningTimer)}, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
         
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();
+        }
+        
+        private void UpdateAwakeningTimerRpc(float _newAwakeningTimer)
+        {
+            if (gameManager.IsServer)
+            {
+                return;
+            }
+            currentAwakeningTimer = _newAwakeningTimer;
+        }
+        
+        private void UpdateAwakeningIndexRpc(int _newAwakeningIndex)
+        {
+            if (gameManager.IsServer)
+            {
+                return;
+            }
+            currentAwakeningIndex = _newAwakeningIndex;
         }
     }
 }

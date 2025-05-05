@@ -85,4 +85,5 @@ MonoBehaviour:
     factionType: 1
     rolePortrait: 1124117774
     roleDifficulty: 1
-  powers: []
+  powers:
+  - {fileID: 11400000, guid: 4e5818522b667104ba51fb0e851307b1, type: 2}

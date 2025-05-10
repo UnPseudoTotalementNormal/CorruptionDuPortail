@@ -21,7 +21,7 @@ namespace GameLogic
                 var _roleAttributionGameState = GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
                 int _index = GameManager.instance.gameStates.Keys.ToList().IndexOf(_roleAttributionGameState);
                 var _startGameState = GameManager.instance.gameStates.Keys.ToList()[_index + 1];
-                _startGameState.onStateStartServer += OnGameStarted;
+                _startGameState.onStateStartServer += OnGameStarted; //TODO : ADD A REAL GAME STARTED EVENT
                 _startGameState.onStateStartServer += () =>
                 {
                     _startGameState.onStateStartServer -= OnGameStarted;

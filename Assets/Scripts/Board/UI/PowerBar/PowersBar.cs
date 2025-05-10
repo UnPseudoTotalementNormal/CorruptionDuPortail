@@ -60,6 +60,11 @@ namespace Board.UI.PowerBar
             
             foreach (var _power in _powers)
             {
+                if (_power.isPassive)
+                {
+                    continue;
+                }
+                
                 var _powerBarObject = powersBarObjects.FirstOrDefault(_obj => _obj.power == _power);
                 if (_powerBarObject)
                 {
@@ -72,6 +77,11 @@ namespace Board.UI.PowerBar
         {
             foreach (var _currentPower in _powers)
             {
+                if (_currentPower.isPassive)
+                {
+                    continue;
+                }
+                
                 GameObject _powerBarGameObject = Instantiate(powerBarObjectPrefab, powersBarParent);
                 var _powersBarObject = _powerBarGameObject.GetComponent<PowersBarObject>();
                 _powersBarObject.SetPower(_currentPower, _fromCharacter);

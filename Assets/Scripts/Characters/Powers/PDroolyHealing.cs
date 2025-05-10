@@ -18,7 +18,7 @@ namespace Characters.Powers
         [NonSerialized] private Character clickedCharacter;
         [NonSerialized] private List<Character> alreadyHealedCharacters = new();
         
-        public ulong[] healedCharacters = Enumerable.Repeat(BASE_VALUE, GameValues.MAX_PLAYERS).ToArray();
+        [NonSerialized] public ulong[] healedCharacters = Enumerable.Repeat(BASE_VALUE, GameValues.MAX_PLAYERS).ToArray();
         public const ulong BASE_VALUE = 999;
         
         public override void NetworkSerialize<T>(BufferSerializer<T> serializer)
@@ -92,7 +92,7 @@ namespace Characters.Powers
                 return false;
             }
 
-            if (alreadyHealedCharacters.Count == GameManager.instance.GetCharacters(false).Count)
+            if (healedCharacters.CountUsed(BASE_VALUE) == GameManager.instance.GetCharacters(false).Count)
             {
                 return false;
             }
@@ -109,6 +109,8 @@ namespace Characters.Powers
 
             alreadyHealedCharacters = GameManager.instance.GetCharacters(false)
                 .Where(_c => healedCharacters.Contains(_c.ownerClientId)).ToList();
+            
+            Debug.Log(alreadyHealedCharacters.Count);
 
             foreach (var _alreadyHealedCharacter in alreadyHealedCharacters)
             {
@@ -142,6 +144,14 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnCardClicked;
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
             FocusManager.instance.UnfocusAll();
+        }
+
+        public override object Clone()
+        {
+            var _clonedPower = (PDroolyHealing)this.MemberwiseClone();
+            _clonedPower.healedCharacters = (ulong[])this.healedCharacters.Clone();
+            _clonedPower.alreadyHealedCharacters = alreadyHealedCharacters.ToList();
+            return _clonedPower;
         }
     }
 }

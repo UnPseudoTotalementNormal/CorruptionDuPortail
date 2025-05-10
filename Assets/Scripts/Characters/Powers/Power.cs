@@ -81,7 +81,7 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref hasToBeAwakened);
         }
         
-        public object Clone()
+        public virtual object Clone()
         {
             return MemberwiseClone();
         }

@@ -48,7 +48,7 @@ namespace Characters.Powers
             base.OnGameStartedServer();
             foreach (var _character in GameManager.instance.GetCharacters(false))
             {
-                Debug.Log(ownerClientId);
+                //TODO : REVEAL CORRUPTION OF ROLES NOT CHARACTERS
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _character.ownerClientId,
                     nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal,

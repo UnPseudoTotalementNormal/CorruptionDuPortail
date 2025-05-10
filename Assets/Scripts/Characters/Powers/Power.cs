@@ -8,9 +8,12 @@ namespace Characters.Powers
     [Serializable]
     public abstract class Power : INetworkSerializable, ICloneable
     {
+        [HideInInspector] public ulong ownerClientId;
+        
         public FixedString64Bytes powerName;
         public float maxWaitTime;
         
+        public bool isPassive = false;
         public bool hasToBeAwakened = true;
         [NonSerialized] public bool isCurrentlyUsed = false;
         
@@ -57,6 +60,16 @@ namespace Characters.Powers
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only
+        {
+            
+        }
+        
+        public virtual void PassivePowerUpdate()
+        {
+            
+        }
+
+        public virtual void OnGameStartedServer()
         {
             
         }

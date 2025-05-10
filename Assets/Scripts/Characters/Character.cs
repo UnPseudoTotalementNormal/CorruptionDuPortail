@@ -27,7 +27,9 @@ namespace Characters
                 role = new Role();
             }
 
+            role.ownerClientId = ownerClientId;
             role.NetworkSerialize(serializer);
+            role.ownerClientId = ownerClientId;
         }
         
         public void UpdateCharacter(Character _newCharacter)

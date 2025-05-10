@@ -20,6 +20,7 @@ MonoBehaviour:
     - rid: 7121802017446035562
       type: {class: PCorruptionKnowledge, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
+        ownerClientId: 0
         powerName:
           utf8LengthInBytes: 23
           bytes:
@@ -89,4 +90,5 @@ MonoBehaviour:
             byte0060: 0
             byte0061: 0
         maxWaitTime: 0
+        isPassive: 1
         hasToBeAwakened: 0

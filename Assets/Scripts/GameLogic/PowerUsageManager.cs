@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using Board.UI.PowerBar;
 using Characters.Powers;
+using GameLogic.GameStates;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -14,6 +16,25 @@ namespace GameLogic
         private void Start()
         {
             GameManager.instance.powersBar.onPowerClicked += OnPowerClicked;
+            if (NetworkManager.Singleton.IsServer)
+            {
+                var _roleAttributionGameState = GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
+                int _index = GameManager.instance.gameStates.Keys.ToList().IndexOf(_roleAttributionGameState);
+                var _startGameState = GameManager.instance.gameStates.Keys.ToList()[_index + 1];
+                _startGameState.onStateStartServer += OnGameStarted;
+                _startGameState.onStateStartServer += () =>
+                {
+                    _startGameState.onStateStartServer -= OnGameStarted;
+                };
+            }
+        }
+
+        private void OnGameStarted()
+        {
+            foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
+            {
+                _rolePower.OnGameStartedServer();
+            }
         }
 
         private void TrySelectPower(Power _power)
@@ -39,6 +60,8 @@ namespace GameLogic
 
         private void Update()
         {
+            
+            
             if (currentPower == null)
             {
                 return;

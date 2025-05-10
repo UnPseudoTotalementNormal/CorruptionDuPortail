@@ -30,6 +30,8 @@ public class Role : INetworkSerializable
     
     public bool isAwakened = false;
     
+    public ulong ownerClientId;
+    
     public bool IsTheSameRole(Role _otherRole)
     {
         return roleName == _otherRole.roleName;
@@ -38,6 +40,10 @@ public class Role : INetworkSerializable
     public virtual void AwakenRole()
     {
         isAwakened = true;
+        foreach (var _power in powers) //just to be sure
+        {
+            _power.ownerClientId = ownerClientId;
+        }
     }
     
     public void SleepRole()
@@ -57,8 +63,13 @@ public class Role : INetworkSerializable
         roleDifficulty = _newCharacterRole.roleDifficulty;
         rolePortrait = _newCharacterRole.rolePortrait;
         isAwakened = _newCharacterRole.isAwakened;
+        ownerClientId = _newCharacterRole.ownerClientId;
 
         powers = _newCharacterRole.powers;
+        foreach (Power _power in powers)
+        {
+            _power.ownerClientId = _newCharacterRole.ownerClientId;
+        }
         
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
     }
@@ -73,6 +84,7 @@ public class Role : INetworkSerializable
         _newRole.powers = new List<Power>();
         _newRole.winningConditions = winningConditions.ToList();
         _newRole.rolePortrait = rolePortrait;
+        _newRole.ownerClientId = ownerClientId;
         
         foreach (Power _power in powers)
         {

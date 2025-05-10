@@ -20,6 +20,7 @@ MonoBehaviour:
     - rid: 7121802017446035564
       type: {class: PDroolyHealing, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
+        ownerClientId: 0
         powerName:
           utf8LengthInBytes: 11
           bytes:
@@ -89,4 +90,6 @@ MonoBehaviour:
             byte0060: 0
             byte0061: 0
         maxWaitTime: 15
+        isPassive: 0
         hasToBeAwakened: 1
+        healedCharacters: e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000e703000000000000

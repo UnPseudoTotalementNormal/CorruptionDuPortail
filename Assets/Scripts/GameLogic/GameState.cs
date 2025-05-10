@@ -16,6 +16,8 @@ namespace GameLogic
         
         public List<GameState> gameStateDependencies = new();
         
+        public event Action onStateStartServer;
+        public event Action onStateEndServer;
         public event Action onStateStartClient;
         public event Action onStateEndClient;
 
@@ -33,11 +35,13 @@ namespace GameLogic
         public virtual void OnStartStateServer()
         {
             Assert.IsTrue(gameManager.IsServer, "OnStartStateServer can only be called on server");
+            onStateStartServer?.Invoke();
         }
 
         public virtual void OnEndStateServer()
         {
             Assert.IsTrue(gameManager.IsServer, "OnEndStateServer can only be called on server");
+            onStateEndServer?.Invoke();
         }
         
         public virtual void OnStartStateClient()

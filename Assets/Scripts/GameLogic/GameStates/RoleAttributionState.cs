@@ -82,9 +82,9 @@ namespace GameLogic.GameStates
                 {
                     _newRole.powers.Add((Power)_powerDataObject.power.Clone());
                 }
-                Debug.Log(_randomRole.role.roleName);
-                Debug.Log(_newRole.roleName);
                 _character.role = _newRole;
+                _character.role.ownerClientId = _character.ownerClientId;
+                _character.role.powers.ForEach(_p => _p.ownerClientId = _character.ownerClientId);
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc),
                     new NetworkSerializableObject[] { new(_character) },
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));

@@ -20,6 +20,7 @@ MonoBehaviour:
     - rid: 7121801923566501975
       type: {class: PLackOfAffection, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
+        ownerClientId: 0
         powerName:
           utf8LengthInBytes: 18
           bytes:
@@ -89,4 +90,5 @@ MonoBehaviour:
             byte0060: 0
             byte0061: 0
         maxWaitTime: 10
+        isPassive: 0
         hasToBeAwakened: 1

@@ -1,4 +1,6 @@
 using System;
+using GameLogic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace Characters.Powers
@@ -39,6 +41,24 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             
+        }
+
+        public override void OnGameStartedServer()
+        {
+            base.OnGameStartedServer();
+            foreach (var _character in GameManager.instance.GetCharacters(false))
+            {
+                Debug.Log(ownerClientId);
+                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
+                    _character.ownerClientId,
+                    nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal,
+                    GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+            }
+            
+        }
+
+        private void OnGameStartedClient()
+        {
         }
     }
 }

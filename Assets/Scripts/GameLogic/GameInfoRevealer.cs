@@ -15,7 +15,7 @@ namespace GameLogic
 
         public void Start()
         {
-            GameManager.instance.GetGameStates(typeof(RoleAttributionState)).FirstOrDefault()!.onStateEndClient += OnRolesAttributed;
+            GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First().onStateEndClient += OnRolesAttributed;
         }
 
         private void OnRolesAttributed()
@@ -58,8 +58,8 @@ namespace GameLogic
             }
         }
 
-        [Rpc(SendTo.Everyone)]
-        public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel)
+        [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
+        public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, RpcParams _rpcParams = default)
         {
             var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString());
             Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);

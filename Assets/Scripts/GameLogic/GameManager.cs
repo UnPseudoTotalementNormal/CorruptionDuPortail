@@ -68,11 +68,6 @@ public class GameManager : NetworkBehaviour
         onCharactersListUpdated += (_characters) =>
             powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
                 _c.ownerClientId == NetworkManager.LocalClientId));
-        
-        /*onCharactersListUpdated += (_) =>
-        {
-            Debug.Log("test");
-        };*/
     }
     
     public override void OnNetworkSpawn()

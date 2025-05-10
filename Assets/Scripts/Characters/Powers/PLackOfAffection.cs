@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using Network;
@@ -20,24 +21,22 @@ namespace Characters.Powers
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     _senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
-            else
-            {
-                //TODO: Feedback
-            }
+            
+            ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", "Server");
         }
         
         private void OnCardClicked(Card _clickedCard)
         {
             OnUsed();
             GameManager.instance.DoPowerStaticMethodRpc(
-                NetworkManager.Singleton.LocalClientId, typeof(PLackOfAffection).FullName, nameof(OnPlayerContactedRpc),
+                typeof(PLackOfAffection).FullName, nameof(OnPlayerContactedRpc),
                 new [] { new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId) },
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId }));
         }
         
-        public override bool CanUse()
+        public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            bool _baseValue = base.CanUse();
+            bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);
             if (!_baseValue)
             {
                 return false;

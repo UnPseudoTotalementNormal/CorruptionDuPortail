@@ -41,6 +41,11 @@ public class GameManager : NetworkBehaviour
         return _characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
     }
 
+    public Character GetCharacter(ulong _characterId, bool _triggerUpdate = true)
+    {
+        return GetCharacters(_triggerUpdate).FirstOrDefault(_c => _c.ownerClientId == _characterId);
+    }
+
     public List<Character> GetCharacters(bool _triggerUpdate = true)
     {
         if (_triggerUpdate)
@@ -111,6 +116,18 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.NotServer)]
     private void UpdateAllCharactersRpc(Character[] _characters)
     {
+        foreach (var _character in _characters)
+        {
+            var _sameCharacter = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _character.ownerClientId);
+            if (_sameCharacter != null)
+            {
+                _sameCharacter.UpdateCharacter(_character);
+            }
+            else
+            {
+                this._characters.Add(_character);
+            }
+        }
         this._characters.Clear();
         this._characters = _characters.ToList();
         onCharactersListUpdated?.Invoke(this._characters);
@@ -198,23 +215,23 @@ public class GameManager : NetworkBehaviour
     
     #region PowerStaticMethodRpc
 
-    public void DoPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
+    public void DoPowerStaticMethodRpc(FixedString64Bytes typeName, FixedString64Bytes staticMethodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
     {
         RpcParams _rpcParams;
         if (!GetTargetFromCustomRpcParams(customRpcParams, out _rpcParams))
         {
             return;
         }
-        CallPowerStaticMethodRpc(senderOwnerClientId, typeName, staticMethodName, arguments, _rpcParams);
+        CallPowerStaticMethodRpc(typeName, staticMethodName, arguments, _rpcParams);
     }
 
-    public void DoPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName, CustomRpcParams customRpcParams)
+    public void DoPowerStaticMethodRpc(FixedString64Bytes typeName, FixedString64Bytes staticMethodName, CustomRpcParams customRpcParams)
     {
-        DoPowerStaticMethodRpc(senderOwnerClientId, typeName, staticMethodName, null, customRpcParams);
+        DoPowerStaticMethodRpc(typeName, staticMethodName, null, customRpcParams);
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
-    private void CallPowerStaticMethodRpc(ulong senderOwnerClientId, FixedString64Bytes typeName, FixedString64Bytes staticMethodName,
+    private void CallPowerStaticMethodRpc(FixedString64Bytes typeName, FixedString64Bytes staticMethodName,
         NetworkSerializableObject[] arguments, RpcParams rpcParams)
     {
         Type staticType = Type.GetType(typeName.ToString());
@@ -376,6 +393,44 @@ public class GameManager : NetworkBehaviour
         _character.isCorrupted = true;
         
         AskForUpdateAllCharactersRpc();
+    }
+    
+    [Rpc(SendTo.Server)]
+    public void HealPlayerRpc(ulong _ownerClientId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+        
+        var _character = GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
+        _character.isCorrupted = false;
+        
+        AskForUpdateAllCharactersRpc();
+    }
+    
+    [Rpc(SendTo.Everyone)]
+    public void AwakeCharacterRpc(ulong _characterClientId)
+    {
+        Character _character = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+
+        _character?.AwakenCharacter();
+        if (IsServer)
+        {
+            AskForUpdateAllCharactersRpc();
+        }
+    }
+        
+    [Rpc(SendTo.Everyone)]
+    public void SleepCharacterRpc(ulong _characterClientId)
+    {
+        Character _character = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+
+        _character?.SleepCharacter();
+        if (IsServer)
+        {
+            AskForUpdateAllCharactersRpc();
+        }
     }
 }
 

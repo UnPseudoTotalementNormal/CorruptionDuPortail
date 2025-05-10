@@ -6,6 +6,7 @@ using Characters.Powers;
 using Extensions;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UI;
 
 namespace Board.UI.PowerBar
@@ -36,11 +37,9 @@ namespace Board.UI.PowerBar
             
             foreach (var _currentPowerBarObject in powersBarObjects)
             {
-                var _playerPower = _rolePowers.FirstOrDefault(_p => _p == _currentPowerBarObject.power);
-                if (_playerPower != null)
-                {
-                    _currentPowerBarObject.customButton.enabled = _playerPower.CanUse();
-                }
+                var _playerPower = _rolePowers.FirstOrDefault(_p => _p.IsTheSamePower(_currentPowerBarObject.power));
+                Assert.IsNotNull(_playerPower, "Player Power should not be null");
+                _currentPowerBarObject.customButton.enabled = _playerPower.CanUse(true);
             }
         }
 

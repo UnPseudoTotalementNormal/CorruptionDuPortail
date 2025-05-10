@@ -15,7 +15,7 @@ public class PseudoInputField : MonoBehaviour
     {
         if (string.IsNullOrEmpty(pseudo))
         {
-            Debug.LogError("Pseudo is empty");
+            Debug.LogWarning("Pseudo is empty");
             return;
         }
 

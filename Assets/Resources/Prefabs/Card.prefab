@@ -307,6 +307,7 @@ MonoBehaviour:
     factionType: 0
     rolePortrait: 0
     roleDifficulty: 0
+  hoverZoom: 1.35
   rotateTime: 1
   chainFadeTime: 0.5
 --- !u!1 &932261811649724040

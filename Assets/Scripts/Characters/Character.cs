@@ -30,6 +30,20 @@ namespace Characters
             role.NetworkSerialize(serializer);
         }
         
+        public void UpdateCharacter(Character _newCharacter)
+        {
+            ownerClientId = _newCharacter.ownerClientId;
+            isChained = _newCharacter.isChained;
+            isCorrupted = _newCharacter.isCorrupted;
+            
+            if (role == null)
+            {
+                role = new Role();
+            }
+            
+            role.UpdateRole(_newCharacter.role);
+        }
+        
         public void AwakenCharacter()
         {
             role.AwakenRole();
@@ -53,6 +67,11 @@ namespace Characters
         public void CorruptPlayer()
         {
             GameManager.instance.CorruptPlayerRpc(ownerClientId);
+        }
+
+        public void HealPlayer()
+        {
+            GameManager.instance.HealPlayerRpc(ownerClientId);
         }
 
         

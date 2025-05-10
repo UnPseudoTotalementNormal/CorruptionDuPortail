@@ -13,10 +13,15 @@ namespace Characters.Powers
         
         public bool hasToBeAwakened = true;
         [NonSerialized] public bool isCurrentlyUsed = false;
-
-        public virtual bool CanUse()
+        
+        public bool IsTheSamePower(Power _isTheSamePower)
         {
-            if (isCurrentlyUsed)
+            return powerName == _isTheSamePower.powerName;
+        }
+
+        public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
+        {
+            if (isCurrentlyUsed && !_ignoreCurrentlyUsed)
             {
                 return false;
             }

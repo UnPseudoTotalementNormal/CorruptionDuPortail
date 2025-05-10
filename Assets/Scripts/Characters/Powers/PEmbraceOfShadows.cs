@@ -37,9 +37,9 @@ namespace Characters.Powers
             OnUsed();
         }
         
-        public override bool CanUse()
+        public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            bool _baseValue = base.CanUse();
+            bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);
             if (!_baseValue)
             {
                 return false;

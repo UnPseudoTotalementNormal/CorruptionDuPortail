@@ -48,17 +48,15 @@ namespace ChatSystem
             chatManager = _chatManager;
         }
 
-        public void AddMessage(FixedString512Bytes _message, ulong _senderClientId)
+        public void AddMessage(FixedString512Bytes _message, string _senderName)
         {
-            var _playerNickname = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
-            
             TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
-            
-            _chatText.text = $"{_playerNickname}: {_message.ToString()}";
-            
+
+            _chatText.text = $"{_senderName}: {_message.ToString()}";
+
             LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
         }
-        
-        
+
+
     }
 }

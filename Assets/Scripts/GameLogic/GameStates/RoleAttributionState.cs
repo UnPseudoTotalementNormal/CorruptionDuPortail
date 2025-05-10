@@ -44,10 +44,17 @@ namespace GameLogic.GameStates
             //remove fake roles from dictionary
             for (int i = 0; i < _fakeRoleAmountToRemove; i++)
             {
-                GiveRandomRole(_fakeRoles, null, out RoleDataObject _removedRole);
-                if (_removedRole != null)
+                if (_fakeRoles.Count == 0)
                 {
+                    break;
+                }
+    
+                GiveRandomRole(_fakeRoles, null, out RoleDataObject _removedRole);
+                if (_removedRole)
+                {
+                    Debug.Log("yo " + _removedRole.role.roleName);
                     _rolesToAttribute.Remove(_removedRole);
+                    _fakeRoles.Remove(_removedRole);
                 }
             }
 

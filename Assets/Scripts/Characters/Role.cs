@@ -28,7 +28,7 @@ public class Role : INetworkSerializable
     [SerializeField] public List<Power> powers = new();
     public List<WinningCondition> winningConditions = new();
     
-    [NonSerialized] public bool isAwakened = false;
+    public bool isAwakened = false;
     
     public bool IsTheSameRole(Role _otherRole)
     {
@@ -47,6 +47,20 @@ public class Role : INetworkSerializable
         {
             _power.Cancel();
         }
+    }
+    
+    public void UpdateRole(Role _newCharacterRole)
+    {
+        roleName = _newCharacterRole.roleName;
+        roleType = _newCharacterRole.roleType;
+        factionType = _newCharacterRole.factionType;
+        roleDifficulty = _newCharacterRole.roleDifficulty;
+        rolePortrait = _newCharacterRole.rolePortrait;
+        isAwakened = _newCharacterRole.isAwakened;
+
+        powers = _newCharacterRole.powers;
+        
+        winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
     }
     
     public Role CopyRole()
@@ -82,6 +96,7 @@ public class Role : INetworkSerializable
         _serializer.SerializeValue(ref factionType);
         _serializer.SerializeValue(ref roleDifficulty);
         _serializer.SerializeValue(ref rolePortrait);
+        _serializer.SerializeValue(ref isAwakened);
         
         int _powersCount = powers.Count;
         _serializer.SerializeValue(ref _powersCount);

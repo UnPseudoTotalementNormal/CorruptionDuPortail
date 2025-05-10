@@ -33,7 +33,9 @@ namespace Board.UI.CharacterBar
 
         public void Update()
         {
-            if (awakeningLayerIndex == awakeningState.currentAwakeningIndex)
+            
+            if (awakeningLayerIndex == awakeningState.currentAwakeningIndex && 
+                GameManager.instance.GetCharacters(false).First(_c => _c.role.IsTheSameRole(role)).role.isAwakened)
             {
                 float _timer = awakeningState.currentAwakeningTimer;
                 float _maxTimer = awakeningState.currentAwakeningMaxTime;

@@ -24,6 +24,11 @@ namespace Board.UI.PowerBar
             customButton = GetComponent<CustomButton>();
         }
 
+        private void Start()
+        {
+            GetComponentInChildren<CustomButton>().onButtonClicked += OnButtonClicked;
+        }
+
         public void SetPower(Power _power, Character _fromCharacter)
         {
             power = _power;
@@ -34,10 +39,11 @@ namespace Board.UI.PowerBar
         private void Init()
         {
             powerNameText.text = power.powerName.ToString();
-            GetComponentInChildren<CustomButton>().onButtonClicked += () =>
-            {
-                onPowerBarObjectClicked?.Invoke(power);
-            };
+        }
+
+        private void OnButtonClicked()
+        {
+            onPowerBarObjectClicked?.Invoke(power);
         }
     }
 }

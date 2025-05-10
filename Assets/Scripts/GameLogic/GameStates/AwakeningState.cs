@@ -37,8 +37,8 @@ namespace GameLogic.GameStates
                         continue;
                     }
                     currentlyAwakenedCharacters.Add(_currentCharacter);
-                    
-                    gameManager.DoStateMethodRpc(GetType().FullName, nameof(AwakeCharacterRpc), new[] {new NetworkSerializableObject(_currentCharacter.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_currentCharacter.ownerClientId}));
+
+                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId);
                 }
             }
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
@@ -52,7 +52,8 @@ namespace GameLogic.GameStates
         {
             foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
             {
-                gameManager.DoStateMethodRpc(GetType().FullName, nameof(SleepCharacterRpc), new[] {new NetworkSerializableObject(_awakenedCharacter.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{_awakenedCharacter.ownerClientId}));
+                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId);
+                
             }
 
             currentlyAwakenedCharacters.Clear();
@@ -76,19 +77,7 @@ namespace GameLogic.GameStates
             return _maxAwakeningTime;
         }
 
-        public void AwakeCharacterRpc(ulong _characterClientId)
-        {
-            Character _character = gameManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
-
-            _character?.AwakenCharacter();
-        }
         
-        public void SleepCharacterRpc(ulong _characterClientId)
-        {
-            Character _character = gameManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
-
-            _character?.SleepCharacter();
-        }
 
         public override void OnStateCreated()
         { 

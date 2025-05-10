@@ -16,6 +16,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
     public TMP_Text cardRoleText;
     public TMP_Text powerText;
+
+    public Transform cardScalerTransform;
     
     public Image cardImage;
 
@@ -159,21 +161,21 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public void OnPointerClick(PointerEventData _eventData)
     {
         onCardClicked?.Invoke(this);
-        transform.DOKill(true);
-        transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
+        cardScalerTransform.DOKill(true);
+        cardScalerTransform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
         onCardHovered?.Invoke(this);
-        transform.DOKill();
-        transform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
+        cardScalerTransform.DOKill();
+        cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         onCardUnhovered?.Invoke(this);
-        transform.DOKill();
-        transform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
+        cardScalerTransform.DOKill();
+        cardScalerTransform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
     }
 }

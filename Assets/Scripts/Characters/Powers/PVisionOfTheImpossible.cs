@@ -1,12 +1,10 @@
 using System;
-using GameLogic;
-using Unity.Netcode;
-using UnityEngine;
+using Unity.VisualScripting;
 
 namespace Characters.Powers
 {
     [Serializable]
-    public class PCorruptionKnowledge : Power
+    public class PVisionOfTheImpossible : Power
     {
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
@@ -41,24 +39,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-        }
-
-        public override void OnGameStartedServer()
-        {
-            base.OnGameStartedServer();
-            foreach (var _character in GameManager.instance.GetCharacters(false))
-            {
-                //TODO : REVEAL CORRUPTION OF ROLES NOT CHARACTERS
-                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _character.ownerClientId,
-                    nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal,
-                    GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
-            }
-            
-        }
-
-        private void OnGameStartedClient()
-        {
         }
     }
 }

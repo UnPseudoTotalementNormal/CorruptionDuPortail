@@ -44,19 +44,17 @@ namespace Characters.Powers
 
         public virtual void OnUsed()
         {
-            isCurrentlyUsed = false;
             StopUse();
         }
 
         public virtual void Cancel()
         {
-            isCurrentlyUsed = false;
             StopUse();
         }
 
         protected virtual void StopUse()
         {
-            
+            isCurrentlyUsed = false;
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only

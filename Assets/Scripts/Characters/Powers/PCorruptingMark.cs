@@ -54,6 +54,7 @@ namespace Characters.Powers
         
         protected override void StopUse()
         {
+            base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
             ArrowManager.instance.DestroyAllArrows();
             

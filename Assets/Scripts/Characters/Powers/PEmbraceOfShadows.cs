@@ -73,6 +73,7 @@ namespace Characters.Powers
 
         protected override void StopUse()
         {
+            base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
             FocusManager.instance.UnfocusAll();

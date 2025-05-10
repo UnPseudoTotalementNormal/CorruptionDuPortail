@@ -85,4 +85,7 @@ MonoBehaviour:
     factionType: 1
     rolePortrait: 1970802544
     roleDifficulty: 1
-  powers: []
+    isAwakened: 0
+    ownerClientId: 0
+  powers:
+  - {fileID: 11400000, guid: 6aed67fe3db3cec44b2244d76afc5ecf, type: 2}

@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 297c575ec34c4b34b84f7838b07d694b, type: 3}
+  m_Name: VisionDeLimpossible
+  m_EditorClassIdentifier: 
+  power:
+    rid: 7121802040003264772
+  references:
+    version: 2
+    RefIds:
+    - rid: 7121802040003264772
+      type: {class: PVisionOfTheImpossible, ns: Characters.Powers, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 0
+        powerName:
+          utf8LengthInBytes: 22
+          bytes:
+            offset0000:
+              byte0000: 86
+              byte0001: 105
+              byte0002: 115
+              byte0003: 105
+              byte0004: 111
+              byte0005: 110
+              byte0006: 32
+              byte0007: 100
+              byte0008: 101
+              byte0009: 32
+              byte0010: 76
+              byte0011: 39
+              byte0012: 105
+              byte0013: 109
+              byte0014: 112
+              byte0015: 111
+            offset0016:
+              byte0000: 115
+              byte0001: 115
+              byte0002: 105
+              byte0003: 98
+              byte0004: 108
+              byte0005: 101
+              byte0006: 0
+              byte0007: 0
+              byte0008: 0
+              byte0009: 0
+              byte0010: 0
+              byte0011: 0
+              byte0012: 0
+              byte0013: 0
+              byte0014: 0
+              byte0015: 0
+            offset0032:
+              byte0000: 0
+              byte0001: 0
+              byte0002: 0
+              byte0003: 0
+              byte0004: 0
+              byte0005: 0
+              byte0006: 0
+              byte0007: 0
+              byte0008: 0
+              byte0009: 0
+              byte0010: 0
+              byte0011: 0
+              byte0012: 0
+              byte0013: 0
+              byte0014: 0
+              byte0015: 0
+            byte0048: 0
+            byte0049: 0
+            byte0050: 0
+            byte0051: 0
+            byte0052: 0
+            byte0053: 0
+            byte0054: 0
+            byte0055: 0
+            byte0056: 0
+            byte0057: 0
+            byte0058: 0
+            byte0059: 0
+            byte0060: 0
+            byte0061: 0
+        maxWaitTime: 15
+        isPassive: 0
+        hasToBeAwakened: 1

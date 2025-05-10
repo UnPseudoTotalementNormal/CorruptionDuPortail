@@ -15,21 +15,23 @@ namespace Characters
         [Header("Variables")]
         public bool isChained;
         public bool isCorrupted;
+        public bool isBlessed;
         
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref ownerClientId);
             serializer.SerializeValue(ref isChained);
             serializer.SerializeValue(ref isCorrupted);
+            serializer.SerializeValue(ref isBlessed);
             
             if (role == null)
             {
                 role = new Role();
             }
 
-            role.ownerClientId = ownerClientId;
+            role.ownerClientId = ownerClientId; //for sender
             role.NetworkSerialize(serializer);
-            role.ownerClientId = ownerClientId;
+            role.ownerClientId = ownerClientId; //for receiver
         }
         
         public void UpdateCharacter(Character _newCharacter)
@@ -37,6 +39,7 @@ namespace Characters
             ownerClientId = _newCharacter.ownerClientId;
             isChained = _newCharacter.isChained;
             isCorrupted = _newCharacter.isCorrupted;
+            isBlessed = _newCharacter.isBlessed;
             
             if (role == null)
             {

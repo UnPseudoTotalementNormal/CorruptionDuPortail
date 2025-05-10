@@ -19,11 +19,15 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
       Value:
         roleToAttribute: 1
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
+      Value:
+        roleToAttribute: 1
         canBeFake: 0
     - Key: {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
       Value:
         roleToAttribute: 1
-        canBeFake: 0
+        canBeFake: 1
     - Key: {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
       Value:
         roleToAttribute: 1
@@ -37,10 +41,6 @@ MonoBehaviour:
         roleToAttribute: 1
         canBeFake: 1
     - Key: {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
-      Value:
-        roleToAttribute: 1
-        canBeFake: 1
-    - Key: {fileID: 11400000, guid: d098867bc1478f840bb1eafeefe04fc9, type: 2}
       Value:
         roleToAttribute: 1
         canBeFake: 1

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Board.UI.CharacterBar;
+using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
@@ -21,14 +23,37 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             clickedCharacter = _clickedCard.characterInfo;
+
+            if (GetIgnoreCharacters().Any(_c => _c.ownerClientId == clickedCharacter.ownerClientId))
+            {
+                return;
+            }
+            
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Characters);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
+            
+            foreach (var _ignoreRole in GetIgnoreRoles())
+            {
+                List<CharactersBarObject> _characterBarObjects = GameManager.instance.charactersBar.charactersBarObjects;
+                List<CharactersBarObject> _ignoreObjects = _characterBarObjects.FindAll(_c => _c.playerCharacter.role.IsTheSameRole(_ignoreRole));
+                foreach (var _ignoreObject in _ignoreObjects)
+                {
+                    FocusManager.instance.UnfocusObject(_ignoreObject.gameObject);
+                }
+            }
         }
         
         private void OnCharacterBarClicked(Character _character)
         {
+            var _roleClicked = _character.role;
+
+            if (GetIgnoreRoles().Any(_r => _r.IsTheSameRole(_roleClicked)))
+            {
+                return;
+            }
+            
             GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryBlessCharacterServerRpc),
                 new[] {  
                     new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
@@ -58,6 +83,8 @@ namespace Characters.Powers
             foreach (var _characterId in blessingCharacterIdOnMorning)
             {
                 GameManager.instance.GetCharacter(_characterId).isBlessed = true;
+                var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
+                ChatManager.instance.SendChatMessageServerRpc($"{_playerName} a été béni. (ne fais absolument rien pour l'instant)", GameValues.FAKE_CLIENT_ID); //TODO: Jarvis, faudra faire ça
             }
             blessingCharacterIdOnMorning.Clear();
             GameManager.instance.AskForUpdateAllCharactersRpc();
@@ -79,8 +106,43 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked += OnCardClicked;
             
             FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            
+            foreach (var _ignoreCharacter in GetIgnoreCharacters())
+            {
+                var _ignoreCard = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _ignoreCharacter.ownerClientId);
+                if (_ignoreCard)
+                {
+                    FocusManager.instance.UnfocusObject(_ignoreCard.gameObject);
+                }
+            }
 
             clickedCharacter = null;
+        }
+        
+        private List<Character> GetIgnoreCharacters()
+        {
+            List<Character> _ignoreCharacters = new();
+            foreach (var _character in GameManager.instance.GetCharacters(false))
+            {
+                if (_character.isChained || _character.isBlessed)
+                {
+                    _ignoreCharacters.Add(_character);
+                }
+            }
+            return _ignoreCharacters;
+        }
+        
+        public List<Role> GetIgnoreRoles()
+        {
+            List<Role> _ignoreRoles = new();
+            foreach (var _character in GameManager.instance.GetCharacters(false))
+            {
+                if (_character.role.factionType != FactionType.chosen)
+                {
+                    _ignoreRoles.Add(_character.role);
+                }
+            }
+            return _ignoreRoles;
         }
 
         public override void OnUsed()

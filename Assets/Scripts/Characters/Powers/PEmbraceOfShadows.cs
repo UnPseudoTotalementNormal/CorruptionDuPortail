@@ -20,7 +20,7 @@ namespace Characters.Powers
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Characters);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
         

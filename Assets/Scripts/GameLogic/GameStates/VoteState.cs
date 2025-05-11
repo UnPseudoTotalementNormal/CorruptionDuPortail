@@ -23,7 +23,7 @@ namespace GameLogic.GameStates
         
         private Coroutine updateVoteTimerCoroutine;
         
-        public const ulong SKIP_VOTE_ID = 999;
+        public const ulong SKIP_VOTE_ID = GameValues.FAKE_CLIENT_ID;
         
         private VoteSelectPanel voteSelectPanel;
         

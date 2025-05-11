@@ -2,7 +2,7 @@ namespace FocusSystem
 {
     public enum FocusType
     {
-        Characters,
+        Roles,
         Cards,
         Powers,
     }

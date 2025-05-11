@@ -40,7 +40,7 @@ namespace ChatSystem
                 return;
 
             FixedString512Bytes _message = new FixedString512Bytes(_text);
-            chatManager.SendChatMessageRpc(_message, NetworkManager.Singleton.LocalClientId);
+            chatManager.SendChatMessageServerRpc(_message, NetworkManager.Singleton.LocalClientId);
         }
 
         public void SetChatManager(ChatManager _chatManager)

@@ -18,8 +18,7 @@ namespace Characters.Powers
         [NonSerialized] private Character clickedCharacter;
         [NonSerialized] private List<Character> alreadyHealedCharacters = new();
         
-        [NonSerialized] public ulong[] healedCharacters = Enumerable.Repeat(BASE_VALUE, GameValues.MAX_PLAYERS).ToArray();
-        public const ulong BASE_VALUE = 999;
+        [NonSerialized] public ulong[] healedCharacters = Enumerable.Repeat(GameValues.FAKE_CLIENT_ID, GameValues.MAX_PLAYERS).ToArray();
         
         public override void NetworkSerialize<T>(BufferSerializer<T> serializer)
         {
@@ -37,7 +36,7 @@ namespace Characters.Powers
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Characters);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
         
@@ -65,7 +64,7 @@ namespace Characters.Powers
             var _choosedCharacter = GameManager.instance.GetCharacter(_healingCharacterId, false);
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
-                _power.healedCharacters[_power.healedCharacters.CountUsed(BASE_VALUE)] = _healingCharacterId;
+                _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
                 _choosedCharacter.HealPlayer();
                 GameManager.instance.AskForUpdateAllCharactersRpc();
                 GameManager.instance.DoPowerStaticMethodRpc(typeof(PDroolyHealing).FullName, nameof(OnHealRpc),
@@ -92,7 +91,7 @@ namespace Characters.Powers
                 return false;
             }
 
-            if (healedCharacters.CountUsed(BASE_VALUE) == GameManager.instance.GetCharacters(false).Count)
+            if (healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID) == GameManager.instance.GetCharacters(false).Count)
             {
                 return false;
             }

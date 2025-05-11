@@ -46,7 +46,7 @@ namespace FocusSystem
             
             switch (_focusType)
             {
-                case FocusType.Characters:
+                case FocusType.Roles:
                     foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
                     {
                         FocusObject(_characterBarObject.gameObject);
@@ -85,6 +85,11 @@ namespace FocusSystem
                 _focusCanvasGroup.DOKill();
                 _focusCanvasGroup.DOFade(1, 0.25f);
             }
+        }
+        
+        public bool IsFocused(GameObject _gameObject)
+        {
+            return currentFocusObjects.Any(_f => _f.gameObject == _gameObject);
         }
         
         public void UnfocusObject(GameObject _gameObject)

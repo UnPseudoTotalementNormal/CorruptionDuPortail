@@ -36,6 +36,11 @@ namespace Board.UI.CharacterBar
                 }
             }
         }
+        
+        public List<CharactersBarObject> GetCharacterBarObject(Role _role)
+        {
+            return charactersBarObjects.FindAll(_obj => _obj.playerCharacter.role.IsTheSameRole(_role));
+        }
 
         public void ResetCharactersBar(List<Character> _characters)
         {

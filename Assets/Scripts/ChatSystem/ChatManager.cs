@@ -11,6 +11,8 @@ namespace ChatSystem
         
         [SerializeField] private ChatWindow chatWindow;
 
+        public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;
+
         private void Awake()
         {
             instance = this;
@@ -18,16 +20,23 @@ namespace ChatSystem
         }
         
         [Rpc(SendTo.Server)]
-        public void SendChatMessageRpc(FixedString512Bytes _message, ulong _senderClientId)
+        public void SendChatMessageServerRpc(FixedString512Bytes _message, ulong _senderClientId)
         {
-            ReceiveChatMessageRpc(_message, _senderClientId);
+            ReceiveChatMessageClientRpc(_message, _senderClientId);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void ReceiveChatMessageRpc(FixedString512Bytes _message, ulong _senderClientId)
+        private void ReceiveChatMessageClientRpc(FixedString512Bytes _message, ulong _senderClientId)
         {
-            var _playerNickname = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
-            chatWindow.AddMessage(_message, _playerNickname);
+            string _senderName = _senderClientId == SERVER_CLIENT_ID ? "Server" : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
+            chatWindow.AddMessage(_message, _senderName);
+        }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void SendChatMessageSingleRpc(FixedString512Bytes _message, ulong _senderClientId, RpcParams _rpcParams)
+        {
+            string _senderName = _senderClientId == SERVER_CLIENT_ID ? "Server" : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
+            chatWindow.AddMessage(_message, _senderName);
         }
         
         public void AddMessageLocal(string _message, string _senderName)

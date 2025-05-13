@@ -1,0 +1,26 @@
+using System;
+using GameLogic;
+
+namespace Characters.WinningConditions
+{
+    [Serializable]
+    public class WAnomalyCorruption : WinningCondition
+    {
+        public override WinningTeam GetWinningTeam()
+        {
+            return WinningTeam.anomaly;
+        }
+
+        public override bool CheckCondition()
+        {
+            foreach (var _character in GameManager.instance.GetCharacters(false))
+            {
+                if (!_character.isCorrupted)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+}

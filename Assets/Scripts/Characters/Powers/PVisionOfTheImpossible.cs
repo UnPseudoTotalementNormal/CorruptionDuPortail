@@ -93,25 +93,25 @@ namespace Characters.Powers
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
             
-            bool _hasACorrectGuess = false;
+            string _message = string.Empty;
             foreach (var _guessedCharacter in _guessedCharacters)
             {
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
-                    _hasACorrectGuess = true;
+                    if (_message != String.Empty)
+                    {
+                        _message += "\n";
+                    }
+                    _message += $"{_guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
                     break;
                 }
             }
 
-            string _message;
-            if (_hasACorrectGuess)
+            if (_message == String.Empty)
             {
-                _message = "Votre vision est correct.";
+                _message = "Aucun personnage n'a été trouvé.";
             }
-            else
-            {
-                _message = "Votre vision est incorrect.";
-            }
+            
             ChatManager.instance.SendChatMessageSingleRpc(_message, 
                 GameValues.FAKE_CLIENT_ID, GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
         }   

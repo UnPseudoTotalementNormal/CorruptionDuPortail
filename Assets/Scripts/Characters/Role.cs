@@ -26,7 +26,7 @@ public class Role : INetworkSerializable
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
     [SerializeField] public List<Power> powers = new();
-    public List<WinningCondition> winningConditions = new();
+    [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions;
     
     public bool isAwakened = false;
     
@@ -158,6 +158,11 @@ public class Role : INetworkSerializable
                 _serializer.SerializeValue(ref _conditionTypeName);
                 _condition.NetworkSerialize(_serializer);
             }
+        }
+
+        foreach (var _winningCondition in winningConditions)
+        {
+            _winningCondition.ownerClientId = ownerClientId;
         }
     }
 }

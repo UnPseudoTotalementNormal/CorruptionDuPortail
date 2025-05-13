@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using GameLogic;
 using UnityEngine;
 
 namespace UI.SelectPanels

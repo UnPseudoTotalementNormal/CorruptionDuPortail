@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 003efe4579a74392974570ccab23884d, type: 3}
-  m_Name: GameEndingState
+  m_Script: {fileID: 11500000, guid: 7189d5fe484d4bc6ae3ff580dbb79d76, type: 3}
+  m_Name: VictoryConditionCheckState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
   gameStateDependencies:
-  - {fileID: 11400000, guid: 11d24de3438a578469e19f0acfaa4fc7, type: 2}
+  - {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}

@@ -85,5 +85,15 @@ MonoBehaviour:
     factionType: 1
     rolePortrait: 1124117774
     roleDifficulty: 1
+    winningConditions:
+    - rid: 7121802106355843693
+    isAwakened: 0
+    ownerClientId: 0
   powers:
   - {fileID: 11400000, guid: 4e5818522b667104ba51fb0e851307b1, type: 2}
+  references:
+    version: 2
+    RefIds:
+    - rid: 7121802106355843693
+      type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data: 

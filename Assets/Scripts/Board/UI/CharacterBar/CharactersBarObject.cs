@@ -2,6 +2,7 @@ using System;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using GameLogic;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,8 +17,10 @@ namespace Board.UI.CharacterBar
 
         [SerializeField] private Canvas canvasObject;
         
+        [SerializeField] private Image corruptedOverlayImage;
+        
         private CustomButton customButton;
-
+        
         private Vector3 originalScale;
         public Vector3 hoverScale = new Vector3(1.2f, 1.2f, 1.2f);
         
@@ -69,6 +72,10 @@ namespace Board.UI.CharacterBar
 
         private async UniTaskVoid UpdateCharacter()
         {
+            RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId).forceCorruptOnRoleRevealed;
+            bool _isCorrupted = playerCharacter.isCorrupted && _forceCorruptOnRoleRevealed > RevealLevel.False;
+            corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
+                
             var _rolePortrait = await playerCharacter.GetRole().GetRolePortrait();
             characterImage.sprite = _rolePortrait;
         }

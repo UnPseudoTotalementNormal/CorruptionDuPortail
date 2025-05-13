@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace GameLogic
 {
@@ -78,6 +79,7 @@ namespace GameLogic
     {
         public RevealLevel isRoleRevealed = RevealLevel.False;
         public RevealLevel isCorruptRevealed = RevealLevel.False;
+        public RevealLevel forceCorruptOnRoleRevealed = RevealLevel.False;
     }
     
     public enum RevealLevel

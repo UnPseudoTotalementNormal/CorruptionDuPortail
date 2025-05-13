@@ -4,6 +4,7 @@ using System.Linq;
 using Characters;
 using Characters.Powers;
 using Extensions;
+using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;

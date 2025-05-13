@@ -85,4 +85,10 @@ MonoBehaviour:
     factionType: 2
     rolePortrait: 683198692
     roleDifficulty: 3
+    winningConditions: []
+    isAwakened: 0
+    ownerClientId: 0
   powers: []
+  references:
+    version: 2
+    RefIds: []

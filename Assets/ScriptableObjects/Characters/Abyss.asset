@@ -85,4 +85,14 @@ MonoBehaviour:
     factionType: 0
     rolePortrait: 1048685107
     roleDifficulty: 2
+    winningConditions:
+    - rid: 7121802106355843684
+    isAwakened: 0
+    ownerClientId: 0
   powers: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 7121802106355843684
+      type: {class: WAnomalyCorruption, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data: 

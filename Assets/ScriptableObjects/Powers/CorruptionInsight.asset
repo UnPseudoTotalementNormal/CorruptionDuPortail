@@ -10,40 +10,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 297c575ec34c4b34b84f7838b07d694b, type: 3}
-  m_Name: ManqueDaffection
+  m_Name: CorruptionInsight
   m_EditorClassIdentifier: 
   power:
-    rid: 7121801923566501975
+    rid: 7121802218247815473
   references:
     version: 2
     RefIds:
-    - rid: 7121801923566501975
-      type: {class: PLackOfAffection, ns: Characters.Powers, asm: Assembly-CSharp}
+    - rid: 7121802218247815473
+      type: {class: PCorruptionInsight, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
         powerName:
           utf8LengthInBytes: 18
           bytes:
             offset0000:
-              byte0000: 77
-              byte0001: 97
-              byte0002: 110
-              byte0003: 113
+              byte0000: 67
+              byte0001: 111
+              byte0002: 114
+              byte0003: 114
               byte0004: 117
-              byte0005: 101
-              byte0006: 32
-              byte0007: 100
-              byte0008: 39
-              byte0009: 97
-              byte0010: 102
-              byte0011: 102
-              byte0012: 101
-              byte0013: 99
-              byte0014: 116
-              byte0015: 105
+              byte0005: 112
+              byte0006: 116
+              byte0007: 105
+              byte0008: 111
+              byte0009: 110
+              byte0010: 32
+              byte0011: 105
+              byte0012: 110
+              byte0013: 115
+              byte0014: 105
+              byte0015: 103
             offset0016:
-              byte0000: 111
-              byte0001: 110
+              byte0000: 104
+              byte0001: 116
               byte0002: 0
               byte0003: 0
               byte0004: 0
@@ -89,7 +89,7 @@ MonoBehaviour:
             byte0059: 0
             byte0060: 0
             byte0061: 0
-        maxWaitTime: 10
-        isPassive: 0
-        hasToBeAwakened: 1
+        maxWaitTime: 0
+        isPassive: 1
+        hasToBeAwakened: 0
         powerUseLeft: 0

@@ -92,3 +92,4 @@ MonoBehaviour:
         maxWaitTime: 15
         isPassive: 0
         hasToBeAwakened: 1
+        powerUseLeft: 0

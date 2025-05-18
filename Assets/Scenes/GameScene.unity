@@ -1448,6 +1448,9 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: 11d24de3438a578469e19f0acfaa4fc7, type: 2}
       Value:
         isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: fae8ab56d6331b040bbcd2a8e4a2ecce, type: 2}
+      Value:
+        isInGameLoop: 0
     - Key: {fileID: 11400000, guid: c34ec6bbcdb8bb04385994e2f622178f, type: 2}
       Value:
         isInGameLoop: 0
@@ -3992,6 +3995,80 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a180d91113410196f96a06209976bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentPower:
+    ownerClientId: 0
+    powerName:
+      utf8LengthInBytes: 0
+      bytes:
+        offset0000:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+    maxWaitTime: 0
+    isPassive: 0
+    hasToBeAwakened: 1
+    powerUseLeft: 0
   hasGameStarted: 1
 --- !u!1 &2007998396
 GameObject:

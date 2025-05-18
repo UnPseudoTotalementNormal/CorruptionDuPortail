@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using Characters.Assets;
 using Network;
 using UI.SelectPanels;
 using UnityEngine;
@@ -162,6 +163,14 @@ namespace GameLogic.GameStates
                 _votedCharacter.isChained = true;
                 lastVotedPlayer = _votedCharacter.ownerClientId;
                 gameManager.gameInfoRevealer.SetRevealLevelRpc(lastVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public);
+
+                if (_votedCharacter.role.rolePortrait ==
+                    CharacterPortraitsValues.CharacterPortraits.Vahal) //TODO : OMG CHANGE THIS PLEASE 
+                {
+                    var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
+                    _portalState.shouldActivate = true;
+                    _portalState.SetMageCharacter(_votedCharacter.ownerClientId);
+                }
             }
             else
             {

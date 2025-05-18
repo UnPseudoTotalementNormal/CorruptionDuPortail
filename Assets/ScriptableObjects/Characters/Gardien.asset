@@ -10,36 +10,36 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1bc12adc5904029922ba9b4a2a63669, type: 3}
-  m_Name: "Proph\xE8te"
+  m_Name: Gardien
   m_EditorClassIdentifier: 
   role:
     roleName:
-      utf8LengthInBytes: 22
+      utf8LengthInBytes: 10
       bytes:
         offset0000:
-          byte0000: 78
-          byte0001: 97
-          byte0002: 114
-          byte0003: 97
-          byte0004: 44
-          byte0005: 32
-          byte0006: 108
-          byte0007: 39
-          byte0008: 111
-          byte0009: 114
-          byte0010: 97
-          byte0011: 99
-          byte0012: 108
-          byte0013: 101
-          byte0014: 32
-          byte0015: 98
+          byte0000: 76
+          byte0001: 101
+          byte0002: 32
+          byte0003: 71
+          byte0004: 97
+          byte0005: 114
+          byte0006: 100
+          byte0007: 105
+          byte0008: 101
+          byte0009: 110
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
         offset0016:
-          byte0000: 114
-          byte0001: 105
-          byte0002: 115
-          byte0003: 195
-          byte0004: 169
-          byte0005: 101
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
           byte0006: 0
           byte0007: 0
           byte0008: 0
@@ -83,17 +83,17 @@ MonoBehaviour:
         byte0061: 0
     roleType: 2
     factionType: 1
-    rolePortrait: 823899898
+    rolePortrait: 1959347720
     roleDifficulty: 1
     winningConditions:
-    - rid: 7121802106355843694
+    - rid: 7121802106355843685
     isAwakened: 0
     ownerClientId: 0
-  powers:
-  - {fileID: 11400000, guid: d11fdcc72430ad54d810415989e49689, type: 2}
+  powers: []
   references:
     version: 2
     RefIds:
-    - rid: 7121802106355843694
+    - rid: 7121802106355843685
       type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
-      data: 
+      data:
+        ownerClientId: 0

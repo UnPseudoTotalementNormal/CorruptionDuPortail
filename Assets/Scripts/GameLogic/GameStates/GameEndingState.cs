@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
+using Cysharp.Threading.Tasks;
 using Network;
 using UnityEngine;
 
@@ -29,6 +30,19 @@ namespace GameLogic.GameStates
         {
             winningTeams = _winnersArray.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
+
+        public async UniTaskVoid GameEndingAnimation()
+        {
+            await BoardManager.instance.HideAllCards();
+            
+            foreach (var _winningTeam in winningTeams)
+            {
+                foreach (var _playerId in _winningTeam.Value)
+                {
+                    //TODO: Show winning animation for each player
+                }
+            }
+        }
         
         public override void OnStateCreated()
         { 
@@ -48,14 +62,10 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            foreach (var _winningTeam in winningTeams)
-            {
-                Debug.Log("Winning team: " + _winningTeam.Key);
-                foreach (var _playerId in _winningTeam.Value)
-                {
-                    Debug.Log("Player ID: " + _playerId);
-                }
-            }
+
+            _ = GameEndingAnimation();
+            
+            
         }
         
         public override void OnEndStateClient()

@@ -26,7 +26,7 @@ public class Role : INetworkSerializable
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
     [SerializeField] public List<Power> powers = new();
-    [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions;
+    [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions = new();
     
     public bool isAwakened = false;
     
@@ -40,9 +40,10 @@ public class Role : INetworkSerializable
     public virtual void AwakenRole()
     {
         isAwakened = true;
-        foreach (var _power in powers) //just to be sure
+        foreach (var _power in powers) 
         {
-            _power.ownerClientId = ownerClientId;
+            _power.ownerClientId = ownerClientId; //just to be sure
+            _power.powerUseLeft = 1; //TODO: REPLACE 1 WITH SCRIPTABLE OBJECT VALUE
         }
     }
     
@@ -135,7 +136,8 @@ public class Role : INetworkSerializable
             }
         }
 
-        int _winningConditionsCount = winningConditions.Count;
+        int _winningConditionsCount = 0;
+        _winningConditionsCount = winningConditions.Count;
         _serializer.SerializeValue(ref _winningConditionsCount);
         if (_serializer.IsReader)
         {

@@ -1,5 +1,6 @@
 using System;
 using GameLogic;
+using Network;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine;
 namespace Characters.Powers
 {
     [Serializable]
-    public abstract class Power : INetworkSerializable, ICloneable
+    public class Power : INetworkSerializable, ICloneable
     {
         [HideInInspector] public ulong ownerClientId;
         
@@ -17,6 +18,9 @@ namespace Characters.Powers
         public bool isPassive = false;
         public bool hasToBeAwakened = true;
         [NonSerialized] public bool isCurrentlyUsed = false;
+
+        public int powerUseLeft;
+        
         
         public bool IsTheSamePower(Power _isTheSamePower)
         {
@@ -34,6 +38,11 @@ namespace Characters.Powers
             {
                 return false;
             }
+            
+            if (powerUseLeft <= 0)
+            {
+                return false;
+            }
 
             return true;
         }
@@ -46,6 +55,15 @@ namespace Characters.Powers
         public virtual void OnUsed()
         {
             StopUse();
+            powerUseLeft -= 1;
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnUsedServer), 
+                new NetworkSerializableObject[] {}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+        }
+        
+        public virtual void OnUsedServer()
+        {
+            powerUseLeft -= 1;
+            GameManager.instance.AskForUpdateAllCharactersRpc();
         }
 
         public virtual void Cancel()
@@ -78,6 +96,7 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref maxWaitTime);
             _serializer.SerializeValue(ref powerName);
             _serializer.SerializeValue(ref hasToBeAwakened);
+            _serializer.SerializeValue(ref powerUseLeft);
         }
         
         public virtual object Clone()

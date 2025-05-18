@@ -7,6 +7,7 @@ using AYellowpaper.SerializedCollections;
 using Board.UI.CharacterBar;
 using Board.UI.PowerBar;
 using Characters;
+using Characters.Powers;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
@@ -236,6 +237,46 @@ namespace GameLogic
     
         #region PowerStaticMethodRpc
 
+        public void DoPowerMethodRpc(ulong _powerOwner, Power _power, FixedString64Bytes _methodName, NetworkSerializableObject[] _arguments, CustomRpcParams _customRpcParams)
+        {
+                if (_power == null)
+                {
+                    Debug.LogError("Power is null in DoPowerMethodRpc");
+                    return;
+                }
+    
+                RpcParams _rpcParams;
+                if (!GetTargetFromCustomRpcParams(_customRpcParams, out _rpcParams))
+                {
+                    return;
+                }
+    
+                CallPowerMethodRpc(_powerOwner, _power, _methodName, _arguments, _rpcParams);
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void CallPowerMethodRpc(ulong _powerOwner, Power _power, FixedString64Bytes _methodName, NetworkSerializableObject[] _arguments, RpcParams _rpcParams)
+        {
+            // Recherche du personnage possédant ce pouvoir
+            var character = GetCharacters().FirstOrDefault(c => c.ownerClientId == _powerOwner);
+            if (character == null)
+            {
+                Debug.LogError($"Aucun personnage trouvé avec ownerClientId {_powerOwner}");
+                return;
+            }
+    
+            // Recherche du pouvoir correspondant sur ce personnage
+            var power = character.role.powers.FirstOrDefault(p => p.IsTheSamePower(_power));
+            if (power == null)
+            {
+                Debug.LogError("Aucun pouvoir correspondant trouvé sur le personnage");
+                return;
+            }
+    
+            // Appel de la méthode sur le pouvoir trouvé
+            CallMethodAfterRpc(power, _methodName, _arguments);
+        }
+        
         public void DoPowerStaticMethodRpc(FixedString64Bytes typeName, FixedString64Bytes staticMethodName, NetworkSerializableObject[] arguments, CustomRpcParams customRpcParams)
         {
             RpcParams _rpcParams;

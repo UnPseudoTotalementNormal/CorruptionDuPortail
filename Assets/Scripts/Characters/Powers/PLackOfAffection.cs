@@ -16,7 +16,7 @@ namespace Characters.Powers
         private static void OnPlayerContactedRpc(ulong _senderClientId)
         {
             Character _localCharacter = GameManager.instance.GetLocalCharacter(false);
-            if (_localCharacter.role.factionType != FactionType.anomaly)
+            if (_localCharacter.role.factionType == FactionType.chosen)
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     _senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);

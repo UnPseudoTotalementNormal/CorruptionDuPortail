@@ -12,9 +12,9 @@ namespace Characters.WinningConditions
         
         public abstract bool CheckCondition();
         
-        public virtual void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
-            
+            _serializer.SerializeValue(ref ownerClientId);
         }
     }
 }

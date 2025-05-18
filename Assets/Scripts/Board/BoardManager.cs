@@ -25,6 +25,8 @@ public class BoardManager : NetworkBehaviour
     public event Action<Card> onCardHovered;
     public event Action<Card> onCardUnhovered;
     
+    public const float CARD_SPACING = 7;
+    
     
     private void Awake()
     {
@@ -84,7 +86,7 @@ public class BoardManager : NetworkBehaviour
             _ = _card.ShowPseudoWithRevealedInfo();
             _card.transform.eulerAngles = new Vector3(0, 0, 180);
 
-            _card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + (visibleCards.Count - 1) * 7, 0, 0), 0.5f);
+            _card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + (visibleCards.Count - 1) * CARD_SPACING, 0, 0), 0.5f);
             _ = _card.ShowFrontSide();
         }
     }

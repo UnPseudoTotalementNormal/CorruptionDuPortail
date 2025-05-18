@@ -1,4 +1,5 @@
 using System;
+using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -23,15 +24,9 @@ namespace UI
             {
                 return;
             }
-            
-            ShutOffGameRpc();
+
+            GameManager.instance.ShutOffGameRpc();
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void ShutOffGameRpc()
-        {
-            NetworkManager.Singleton.Shutdown();
-            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
-        }
     }
 }

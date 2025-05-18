@@ -19,14 +19,16 @@ namespace GameLogic.GameStates
         public bool shouldActivate; //TODO : Temporary
         public ulong mageCharacterOwnerId;
         
-        private ulong[] ignoreCharacters;
+        private List<ulong> ignoreCharacters;
         private Character clickedCharacter;
         
-        public void SetMageCharacter(ulong _mageCharacterOwnerId)
+        public void SetMageCharacterRpc(ulong _mageCharacterOwnerId)
         {
             mageCharacterOwnerId = _mageCharacterOwnerId;
         }
 
+        
+        
         private void OnCharacterClickClient(Card _card)
         {
             ulong _characterOwnerId = _card.characterInfo.ownerClientId;
@@ -92,23 +94,13 @@ namespace GameLogic.GameStates
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer);
             
-            List<ulong> _ignoreCharactersList = new();
-            foreach (var _character in gameManager.GetCharacters())
-            {
-                if (_character.ownerClientId == mageCharacterOwnerId)
-                {
-                    _ignoreCharactersList.Add(_character.ownerClientId);
-                    continue;
-                }
-                
-                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isRoleRevealed >= RevealLevel.Public)
-                {
-                    _ignoreCharactersList.Add(_character.ownerClientId);
-                }
-            }
-            ignoreCharacters = _ignoreCharactersList.ToArray();
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnHighlightAll), 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+            
+            var _ignoreCharactersList = GetIgnoreCharacters();
+            ignoreCharacters = _ignoreCharactersList.ToList();
 
-            if (ignoreCharacters.Length == gameManager.GetCharacters(false).Count)
+            if (ignoreCharacters.Count == gameManager.GetCharacters(false).Count)
             {
                 var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
                 var _newWinners = new Dictionary<WinningTeam, HashSet<ulong>>()
@@ -124,23 +116,25 @@ namespace GameLogic.GameStates
             }
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SetIgnoreCharactersRpc),
-                new NetworkSerializableObject[] { new(ignoreCharacters) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                new NetworkSerializableObject[] { new(ignoreCharacters.ToArray()) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightCharactersRpc), new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToCharacterClick), new CustomRpcParams(CustomRpcParams.RpcTargetType.single, 
                 new []{mageCharacterOwnerId}));
         }
-        
+
+
         private void HighlightCharactersRpc()
         {
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
-
-            foreach (var _card in BoardManager.instance.visibleCards)
+            
+            foreach (Card _card in BoardManager.instance.visibleCards)
             {
+                Debug.Log(_card.characterInfo.ownerClientId);
                 if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId))
                 {
-                    FocusManager.instance.UnfocusObject(_card.gameObject);
+                    continue;
                 }
+                FocusManager.instance.FocusObject(_card.gameObject);
             }
         }
         
@@ -164,7 +158,32 @@ namespace GameLogic.GameStates
         
         private void SetIgnoreCharactersRpc(ulong[] _ignoreCharacters)
         {
-            ignoreCharacters = _ignoreCharacters;
+            ignoreCharacters = _ignoreCharacters.ToList();
+        }
+        
+        private void UnHighlightAll()
+        {
+            FocusManager.instance.UnfocusAll();
+        }
+        
+        private List<ulong> GetIgnoreCharacters()
+        {
+            List<ulong> _ignoreCharactersList = new();
+            foreach (var _character in gameManager.GetCharacters())
+            {
+                if (_character.ownerClientId == mageCharacterOwnerId)
+                {
+                    _ignoreCharactersList.Add(_character.ownerClientId);
+                    continue;
+                }
+                
+                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isRoleRevealed >= RevealLevel.Public)
+                {
+                    _ignoreCharactersList.Add(_character.ownerClientId);
+                }
+            }
+
+            return _ignoreCharactersList;
         }
         
         public override void OnStateCreated()
@@ -182,7 +201,14 @@ namespace GameLogic.GameStates
                 gameManager.NextGameState();
                 return;
             }
-            
+
+            _ = WaitForCardsToBeVisible();
+        }
+
+        private async UniTaskVoid WaitForCardsToBeVisible()
+        {
+            await UniTask.WaitUntil(() => BoardManager.instance.visibleCards.Count > 0);
+            await UniTask.WaitForSeconds(3);
             WaitForCharacterClickServer();
         }
 

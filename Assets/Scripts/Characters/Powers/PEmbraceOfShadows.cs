@@ -33,9 +33,14 @@ namespace Characters.Powers
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
-                powerUseLeft += 1;
+                
             }
             OnUsed();
+        }
+
+        private void OnCorruptionSuccessfull() //TODO : THIS
+        {
+            
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

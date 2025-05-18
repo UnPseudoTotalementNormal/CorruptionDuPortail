@@ -8,6 +8,7 @@ using Board.UI.CharacterBar;
 using Board.UI.PowerBar;
 using Characters;
 using Characters.Powers;
+using Cysharp.Threading.Tasks;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
@@ -493,6 +494,19 @@ namespace GameLogic
             {
                 AskForUpdateAllCharactersRpc();
             }
+        }
+        
+        [Rpc(SendTo.Everyone)]
+        public void ShutOffGameRpc()
+        {
+            _ = ShutOffGame();
+        }
+
+        private async UniTaskVoid ShutOffGame()
+        {
+            await UniTask.WaitForSeconds(1);
+            NetworkManager.Singleton.Shutdown();
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
     }
 

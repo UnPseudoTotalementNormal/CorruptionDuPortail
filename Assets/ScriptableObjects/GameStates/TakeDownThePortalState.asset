@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4dcd17d462340459947dc97ca8ca65f, type: 3}
   m_Name: TakeDownThePortalState
   m_EditorClassIdentifier: 
-  stateUIPrefab: {fileID: 0}
+  stateUIPrefab: {fileID: 4316038992594077676, guid: 7098b1abd484dd54d81c1c7787464ee1, type: 3}
   gameStateDependencies:
   - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
+  shouldActivate: 0
+  mageCharacterOwnerId: 999

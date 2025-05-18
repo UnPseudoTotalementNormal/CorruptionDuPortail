@@ -1,0 +1,22 @@
+using System;
+using System.Linq;
+using GameLogic;
+using GameLogic.GameStates;
+using TMPro;
+using UnityEngine;
+
+public class TakeDownThePortalTextTitle : MonoBehaviour
+{
+    [SerializeField] private TMP_Text textTitle;
+
+    private void Start()
+    {
+        GetComponentInParent<StateUI>().owningGameState.onStateStartClient += OnStateStartClient;
+    }
+
+    private void OnStateStartClient()
+    {
+        var _takeDownThePortalState = (TakeDownThePortalState)GetComponentInParent<StateUI>().owningGameState;
+        textTitle.text = GameManager.instance.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo() + " doit abattre le portail.";
+    }
+}

@@ -168,7 +168,10 @@ namespace GameLogic.GameStates
                 {
                     var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
                     _portalState.shouldActivate = true;
-                    _portalState.SetMageCharacter(_votedCharacter.ownerClientId);
+                    
+                    GameManager.instance.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
+                        new NetworkSerializableObject[] { new(_votedCharacter.ownerClientId) },
+                        new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                     Debug.Log("should activate portal state");
                 }
             }

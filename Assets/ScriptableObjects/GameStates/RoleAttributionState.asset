@@ -28,18 +28,6 @@ MonoBehaviour:
       Value:
         roleToAttribute: 1
         canBeFake: 1
-    - Key: {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
-      Value:
-        roleToAttribute: 1
-        canBeFake: 1
-    - Key: {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
-      Value:
-        roleToAttribute: 1
-        canBeFake: 1
-    - Key: {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
-      Value:
-        roleToAttribute: 1
-        canBeFake: 1
     - Key: {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
       Value:
         roleToAttribute: 1

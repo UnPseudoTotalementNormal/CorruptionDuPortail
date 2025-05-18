@@ -38,10 +38,23 @@ namespace Characters.Powers
             
             FocusManager.instance.SetFocusOnType(FocusType.Roles);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
+
+            foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+            {
+                if (_characterBarObject.playerCharacter.role.factionType != FactionType.chosen)
+                {
+                    FocusManager.instance.UnfocusObject(_characterBarObject.gameObject);
+                }
+            }
         }
         
         private void OnCharacterBarClicked(Character _character)
         {
+            if (_character.role.factionType != FactionType.chosen)
+            {
+                return;
+            }
+            
             var _senderId = NetworkManager.Singleton.LocalClientId;
             GameManager.instance.DoPowerStaticMethodRpc(this.GetType().FullName, nameof(TryHealServerRpc),
                 new[] {  
@@ -81,6 +94,13 @@ namespace Characters.Powers
         {
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _healedCharacterId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+        }
+
+        public List<Character> GetIgnoreCharacters()
+        {
+            return GameManager.instance.GetCharacters(false)
+                .Where(_c => healedCharacters.Contains(_c.ownerClientId))
+                .ToList();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

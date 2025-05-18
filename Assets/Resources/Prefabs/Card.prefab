@@ -229,10 +229,14 @@ MonoBehaviour:
       factionType: 0
       rolePortrait: 0
       roleDifficulty: 0
+      powers: []
+      winningConditions: []
       isAwakened: 0
+      ownerClientId: 0
     ownerClientId: 0
     isChained: 0
     isCorrupted: 0
+    isBlessed: 0
   roleInfo:
     roleName:
       utf8LengthInBytes: 0
@@ -306,10 +310,16 @@ MonoBehaviour:
     factionType: 0
     rolePortrait: 0
     roleDifficulty: 0
+    powers: []
+    winningConditions: []
     isAwakened: 0
+    ownerClientId: 0
   hoverZoom: 1.35
   rotateTime: 1
   chainFadeTime: 0.5
+  references:
+    version: 2
+    RefIds: []
 --- !u!1 &932261811649724040
 GameObject:
   m_ObjectHideFlags: 0
@@ -1224,7 +1234,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 0c1f381ebc2d1ea43b89514823bcfa37, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 256f86a89e378044384985a3c1d10f43, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

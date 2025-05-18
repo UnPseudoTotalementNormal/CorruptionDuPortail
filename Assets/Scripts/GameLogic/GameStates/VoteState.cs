@@ -164,12 +164,12 @@ namespace GameLogic.GameStates
                 lastVotedPlayer = _votedCharacter.ownerClientId;
                 gameManager.gameInfoRevealer.SetRevealLevelRpc(lastVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public);
 
-                if (_votedCharacter.role.rolePortrait ==
-                    CharacterPortraitsValues.CharacterPortraits.Vahal) //TODO : OMG CHANGE THIS PLEASE 
+                if (_votedCharacter.role.factionType == FactionType.anomaly) //TODO : OMG CHANGE THIS PLEASE 
                 {
                     var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
                     _portalState.shouldActivate = true;
                     _portalState.SetMageCharacter(_votedCharacter.ownerClientId);
+                    Debug.Log("should activate portal state");
                 }
             }
             else

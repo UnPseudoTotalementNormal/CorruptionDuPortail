@@ -62,15 +62,7 @@ namespace GameLogic
         [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
         public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, RpcParams _rpcParams = default)
         {
-            var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString());
-            Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
-            
-            RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(GetCharacterInfo(_clientId));
-            if ((int)_currentRevealLevel > (int)_revealLevel)
-            {
-                return;
-            }
-            _field.SetValue(GetCharacterInfo(_clientId), _revealLevel);
+            SetRevealLevel(_clientId, _revealVariableName, _revealLevel);
         }
     }
 

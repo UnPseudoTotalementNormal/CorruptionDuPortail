@@ -71,6 +71,16 @@ public class BoardManager : NetworkBehaviour
     
     #region Animations
     
+    public void PlaceAllCardsToPosition()
+    {
+        for (var _i = 0; _i < visibleCards.Count; _i++)
+        {
+            var _card = visibleCards[_i];
+            _card.transform.DOLocalMoveX(spawnCardPosition.localPosition.x + _i * CARD_SPACING,
+                0.5f);
+        }
+    }
+    
     public async UniTask ShowAllPlayerCards(bool _stopOtherAnims = true)
     {
         CancellationTokenSource _cancelToken = new();
@@ -86,7 +96,7 @@ public class BoardManager : NetworkBehaviour
             _ = _card.ShowPseudoWithRevealedInfo();
             _card.transform.eulerAngles = new Vector3(0, 0, 180);
 
-            _card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + (visibleCards.Count - 1) * CARD_SPACING, 0, 0), 0.5f);
+            PlaceAllCardsToPosition();
             _ = _card.ShowFrontSide();
         }
     }

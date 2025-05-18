@@ -39,8 +39,18 @@ namespace GameLogic.GameStates
             {
                 foreach (var _playerId in _winningTeam.Value)
                 {
-                    //TODO: Show winning animation for each player
+                    var _character = GameManager.instance.GetCharacter(_playerId, false);
+                    
+                    var _newCard = BoardManager.instance.AddNewCard();
+                    _newCard.SetInfo(_character);
+                    _newCard.ShowBackSide(true);
                 }
+            }
+
+            BoardManager.instance.PlaceAllCardsToPosition();
+            foreach (var _card in BoardManager.instance.visibleCards)
+            {
+                _card.ShowFrontSide();
             }
         }
         

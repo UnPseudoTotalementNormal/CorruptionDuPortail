@@ -75,6 +75,8 @@ namespace GameLogic.GameStates
             
             GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, 
                 gameManager.RpcTarget.Everyone);
+            
+            WaitForCharacterClickServer();
         }
 
         private void SubscribeToCharacterClick() => BoardManager.instance.onCardClicked += OnCharacterClickClient;
@@ -93,7 +95,7 @@ namespace GameLogic.GameStates
             List<ulong> _ignoreCharactersList = new();
             foreach (var _character in gameManager.GetCharacters())
             {
-                if (_character.ownerClientId != mageCharacterOwnerId)
+                if (_character.ownerClientId == mageCharacterOwnerId)
                 {
                     _ignoreCharactersList.Add(_character.ownerClientId);
                     continue;
@@ -146,14 +148,18 @@ namespace GameLogic.GameStates
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer);
             
-            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
+                new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick), new CustomRpcParams(CustomRpcParams.RpcTargetType.single, 
                 new []{mageCharacterOwnerId}));
         }
         
-        private void HighlightRolesRpc()
+        private void HighlightRolesRpc(ulong _clickedCharacterOwnerId)
         {
             FocusManager.instance.SetFocusOnType(FocusType.Roles);
+
+            FocusManager.instance.FocusObject(BoardManager.instance.visibleCards
+                .First(_c => _c.characterInfo.ownerClientId == _clickedCharacterOwnerId).gameObject);
         }
         
         private void SetIgnoreCharactersRpc(ulong[] _ignoreCharacters)
@@ -172,6 +178,7 @@ namespace GameLogic.GameStates
             base.OnStartStateServer();
             if (!shouldActivate)
             {
+                Debug.Log("TakeDownThePortalState is not activated");
                 gameManager.NextGameState();
                 return;
             }

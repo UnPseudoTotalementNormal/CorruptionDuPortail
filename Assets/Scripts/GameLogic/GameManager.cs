@@ -172,7 +172,7 @@ namespace GameLogic
             SwitchGameState(_newGameStateIndex);
         }
     
-        public void NextGameState()
+        public void NextGameState(bool _ignoreGameLoop = false)
         {
             Assert.IsTrue(IsServer, "NextGameState can only be called on the server");
         
@@ -183,7 +183,7 @@ namespace GameLogic
                 _newGameStateIndex = 0;
             }
 
-            if (_wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
+            if (!_ignoreGameLoop && _wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
             {
                 _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
             }

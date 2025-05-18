@@ -139,24 +139,26 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
     }
 
-    public async UniTask ShowBackSide()
+    public async UniTask ShowBackSide(bool _isInstant = false)
     {
-        transform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        var _rotateTime = (_isInstant) ? 0 : rotateTime;
+        transform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
         {
-            transform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
+            transform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
         };
-        transform.DORotate(new Vector3(0, 0, -180), rotateTime * 0.75f);
-        await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
+        transform.DORotate(new Vector3(0, 0, -180), _rotateTime * 0.75f);
+        await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
     }
     
-    public async UniTask ShowFrontSide()
+    public async UniTask ShowFrontSide(bool _isInstant = false)
     {
-        transform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        var _rotateTime = (_isInstant) ? 0 : rotateTime;
+        transform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
         {
-            transform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
+            transform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
         };
-        transform.DORotate(Vector3.zero, rotateTime * 0.75f);
-        await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
+        transform.DORotate(Vector3.zero, _rotateTime * 0.75f);
+        await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
     }
 
     public void OnPointerClick(PointerEventData _eventData)

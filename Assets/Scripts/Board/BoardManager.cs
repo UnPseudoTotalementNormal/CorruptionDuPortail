@@ -76,6 +76,7 @@ public class BoardManager : NetworkBehaviour
         for (var _i = 0; _i < visibleCards.Count; _i++)
         {
             var _card = visibleCards[_i];
+            //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
             _card.transform.DOLocalMoveX(spawnCardPosition.localPosition.x + _i * CARD_SPACING,
                 0.5f);
         }
@@ -89,16 +90,16 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.instance.GetCharacters())
+        foreach (var _character in GameManager.instance.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard();
             _card.SetInfo(_character);
             _ = _card.ShowPseudoWithRevealedInfo();
             _card.transform.eulerAngles = new Vector3(0, 0, 180);
-
-            PlaceAllCardsToPosition();
+            
             _ = _card.ShowFrontSide();
         }
+        PlaceAllCardsToPosition();
     }
     
     public async UniTask HideAllCards(bool _stopOtherAnims = true)

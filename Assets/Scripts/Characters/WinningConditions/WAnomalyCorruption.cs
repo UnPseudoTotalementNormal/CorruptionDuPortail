@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using GameLogic;
 
 namespace Characters.WinningConditions
@@ -13,7 +14,7 @@ namespace Characters.WinningConditions
 
         public override bool CheckCondition()
         {
-            foreach (var _character in GameManager.instance.GetCharacters(false))
+            foreach (var _character in GameManager.instance.GetCharacters(false).Where(_c => !_c.isFake))
             {
                 if (!_character.isCorrupted)
                 {

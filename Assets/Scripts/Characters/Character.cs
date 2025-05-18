@@ -1,4 +1,5 @@
 using System;
+using Extensions;
 using GameLogic;
 using Network;
 using Unity.Collections;
@@ -17,7 +18,8 @@ namespace Characters
         public bool isChained;
         public bool isCorrupted;
         public bool isBlessed;
-        
+        public bool isFake => ownerClientId.IsFakeClientId();
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref ownerClientId);

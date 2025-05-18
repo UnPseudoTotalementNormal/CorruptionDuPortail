@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using GameLogic;
 
 namespace Characters.WinningConditions
@@ -13,9 +14,9 @@ namespace Characters.WinningConditions
         
         public override bool CheckCondition()
         {
-            var _characters = GameManager.instance.GetCharacters(false);
+            var _characters = GameManager.instance.GetCharacters(false).Where(_c => !_c.isFake).ToList();
             
-            if (!_characters.Exists(c => c.role.factionType == FactionType.anomaly))
+            if (!_characters.Exists(_c => _c.role.factionType == FactionType.anomaly))
             {
                 return false;
             }

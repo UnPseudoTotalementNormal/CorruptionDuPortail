@@ -508,6 +508,14 @@ namespace GameLogic
             NetworkManager.Singleton.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
+
+        public Character CreateNewFakeCharacter()
+        {
+            Character _character = new Character();
+            _character.ownerClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
+            _characters.Add(_character);
+            return _character;
+        }
     }
 
     public class CustomRpcParams

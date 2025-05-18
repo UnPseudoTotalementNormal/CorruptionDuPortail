@@ -171,6 +171,12 @@ namespace GameLogic.GameStates
             List<ulong> _ignoreCharactersList = new();
             foreach (var _character in gameManager.GetCharacters())
             {
+                if (_character.isFake)
+                {
+                    _ignoreCharactersList.Add(_character.ownerClientId);
+                    continue;
+                }
+                
                 if (_character.ownerClientId == mageCharacterOwnerId)
                 {
                     _ignoreCharactersList.Add(_character.ownerClientId);
@@ -180,6 +186,7 @@ namespace GameLogic.GameStates
                 if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isRoleRevealed >= RevealLevel.Public)
                 {
                     _ignoreCharactersList.Add(_character.ownerClientId);
+                    continue;
                 }
             }
 

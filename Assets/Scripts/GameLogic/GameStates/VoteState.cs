@@ -66,7 +66,7 @@ namespace GameLogic.GameStates
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
-            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.GetCharacters().Count)
+            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.GetCharacters().Count(_c => !_c.isFake))
             {
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
@@ -130,7 +130,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             votesForPlayer.Clear();
-            foreach (var _character in gameManager.GetCharacters())
+            foreach (var _character in gameManager.GetCharacters().Where(_c => !_c.isFake))
             {
                 votesForPlayer.Add(_character.ownerClientId, new List<ulong>());
             }

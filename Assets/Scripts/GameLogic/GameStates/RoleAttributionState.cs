@@ -49,17 +49,15 @@ namespace GameLogic.GameStates
                     break;
                 }
     
-                GiveRandomRole(_fakeRoles, null, out RoleDataObject _removedRole);
+                GiveRandomRole(_fakeRoles, gameManager.CreateNewFakeCharacter(), out RoleDataObject _removedRole);
                 if (_removedRole)
                 {
-                    Debug.Log("yo " + _removedRole.role.roleName);
                     _rolesToAttribute.Remove(_removedRole);
-                    _fakeRoles.Remove(_removedRole);
                 }
             }
 
             //give random roles to character
-            foreach (Character _character in gameManager.GetCharacters().ToList())
+            foreach (Character _character in gameManager.GetCharacters().Where(_c => !_c.isFake).ToList())
             {
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }

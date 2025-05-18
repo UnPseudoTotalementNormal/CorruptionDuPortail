@@ -19,6 +19,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public TMP_Text powerText;
 
     public Transform cardScalerTransform;
+    public Transform cardPivotTransform;
     
     public Image cardImage;
 

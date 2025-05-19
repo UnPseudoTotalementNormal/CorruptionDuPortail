@@ -93,3 +93,17 @@ MonoBehaviour:
         isPassive: 0
         hasToBeAwakened: 1
         powerUseLeft: 0
+        canalisationSound:
+          Guid:
+            Data1: 655096577
+            Data2: 1090671139
+            Data3: 989297035
+            Data4: -1172467078
+          Path: event:/Characters/Orpheline/Canalisation
+        usePowerSound:
+          Guid:
+            Data1: 616865672
+            Data2: 1223365263
+            Data3: -853449322
+            Data4: 1212795465
+          Path: event:/Characters/Orpheline/SendPower

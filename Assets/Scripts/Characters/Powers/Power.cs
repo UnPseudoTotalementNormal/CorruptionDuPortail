@@ -1,4 +1,5 @@
 using System;
+using FMODUnity;
 using GameLogic;
 using Network;
 using Unity.Collections;
@@ -20,6 +21,10 @@ namespace Characters.Powers
         [NonSerialized] public bool isCurrentlyUsed = false;
 
         public int powerUseLeft;
+        
+        [Header("Sounds")]
+        public EventReference canalisationSound;
+        public EventReference usePowerSound;
         
         
         public bool IsTheSamePower(Power _isTheSamePower)
@@ -109,6 +114,13 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref powerName);
             _serializer.SerializeValue(ref hasToBeAwakened);
             _serializer.SerializeValue(ref powerUseLeft);
+            
+            string _eventPath = canalisationSound.Path ?? string.Empty;
+            _serializer.SerializeValue(ref _eventPath);
+            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
+            {
+                canalisationSound = EventReference.Find(_eventPath);
+            }
         }
         
         public virtual object Clone()

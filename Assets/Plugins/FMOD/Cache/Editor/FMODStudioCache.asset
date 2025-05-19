@@ -53,7 +53,7 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 9569
+  Length: 11570
 --- !u!114 &-5574126476391208491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,10 +150,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638832193940376076
+  lastModified: 638832828930738767
   FileSizes:
   - Name: Desktop
-    Value: 5900736
+    Value: 5885184
   Exists: 1
 --- !u!114 &-3157601668546955457
 MonoBehaviour:
@@ -270,10 +270,32 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: 3211099948312062944}
   cacheVersion: 131847
-  cacheTime: 638832193940412105
+  cacheTime: 638832828930763855
   SerializableEventsDict:
   - key: event:/GameMusic
     index: 0
+  - key: event:/Characters/Orpheline/Canalisation
+    index: 1
+  - key: event:/Interface/Messages/SendMessage
+    index: 2
+  - key: event:/Characters/Orpheline/ReceivePower_Anomaly
+    index: 3
+  - key: event:/Interface/ChainingAnnoucement
+    index: 4
+  - key: event:/Characters/Orpheline/SendPower
+    index: 5
+  - key: event:/Interface/Messages/ReceiveMessage
+    index: 6
+  - key: event:/Characters/Orpheline/ReceivePower_Chosen
+    index: 7
+  - key: event:/Characters/Orpheline/Chaining
+    index: 8
+  - key: event:/Interface/Messages/MessageMenuSelect
+    index: 9
+  - key: event:/AbattreLePortail
+    index: 10
+  - key: event:/Characters/Orpheline/Annoucement
+    index: 11
 --- !u!114 &3211099948312062944
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,7 +311,7 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638832193940412105
+  lastModified: 638832828930763855
   FileSizes:
   - Name: Desktop
     Value: 1366

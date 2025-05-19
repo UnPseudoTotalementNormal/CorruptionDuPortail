@@ -139,7 +139,7 @@ namespace GameLogic
         
             foreach (var gameState in oldGameStates)
             {
-                var clonedGameState = ScriptableObject.Instantiate(gameState.Key);
+                var clonedGameState = Instantiate(gameState.Key);
                 gameStates.Add(clonedGameState, gameState.Value);
             
                 clonedGameState.gameManager = this;

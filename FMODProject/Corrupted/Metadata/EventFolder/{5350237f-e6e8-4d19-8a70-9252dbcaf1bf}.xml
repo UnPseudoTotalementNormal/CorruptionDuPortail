@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="EventFolder" id="{5350237f-e6e8-4d19-8a70-9252dbcaf1bf}">
+		<property name="name">
+			<value>Mage Occulte</value>
+		</property>
+		<relationship name="folder">
+			<destination>{47301aea-9bb7-4e51-a635-8ef0149eb161}</destination>
+		</relationship>
+	</object>
+</objects>

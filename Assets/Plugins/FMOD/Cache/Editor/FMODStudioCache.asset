@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Path: event:/GameMusic
   Guid:
-    Data1: 1838920322
-    Data2: 1311441310
-    Data3: 1551752373
-    Data4: -185367347
+    Data1: 613583386
+    Data2: 1216923872
+    Data3: 1848601773
+    Data4: -658138019
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 1
@@ -27,6 +27,114 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 463752
+--- !u!114 &-7685325957489230196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/Canalisation
+  Guid:
+    Data1: 655096577
+    Data2: 1090671139
+    Data3: 989297035
+    Data4: -1172467078
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 9569
+--- !u!114 &-5574126476391208491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/MessageMenuSelect
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/MessageMenuSelect
+  Guid:
+    Data1: -1932913990
+    Data2: 1148100710
+    Data3: -414748226
+    Data4: -791132990
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1776
+--- !u!114 &-5347597912518584425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/SendMessage
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/SendMessage
+  Guid:
+    Data1: 1568662278
+    Data2: 1156388377
+    Data3: -947327076
+    Data4: -2003215321
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1008
+--- !u!114 &-4253514335070699747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/SendPower
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/SendPower
+  Guid:
+    Data1: 616865672
+    Data2: 1223365263
+    Data3: -853449322
+    Data4: 1212795465
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1680
 --- !u!114 &-4111081932488574413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42,11 +150,92 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638832128684118542
+  lastModified: 638832193940376076
   FileSizes:
   - Name: Desktop
-    Value: 5285152
+    Value: 5900736
   Exists: 1
+--- !u!114 &-3157601668546955457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/ReceivePower_Anomaly
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/ReceivePower_Anomaly
+  Guid:
+    Data1: -94982084
+    Data2: 1184982034
+    Data3: -775239272
+    Data4: 384024150
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4608
+--- !u!114 &-2637084359228874970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/ReceiveMessage
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/ReceiveMessage
+  Guid:
+    Data1: 232737934
+    Data2: 1288740730
+    Data3: 464377770
+    Data4: -1284222518
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 360
+--- !u!114 &-366822279867392031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/Chaining
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/Chaining
+  Guid:
+    Data1: -556041060
+    Data2: 1252347014
+    Data3: 8791958
+    Data4: 2087231293
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4776
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,13 +253,24 @@ MonoBehaviour:
   - {fileID: -4111081932488574413}
   EditorEvents:
   - {fileID: -8918920962315414475}
+  - {fileID: -7685325957489230196}
+  - {fileID: -5347597912518584425}
+  - {fileID: -3157601668546955457}
+  - {fileID: 5698317650318699257}
+  - {fileID: -4253514335070699747}
+  - {fileID: -2637084359228874970}
+  - {fileID: 5304996221093173261}
+  - {fileID: -366822279867392031}
+  - {fileID: -5574126476391208491}
+  - {fileID: 5722049879338248000}
+  - {fileID: 4143032553559404170}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4111081932488574413}
   StringsBanks:
   - {fileID: 3211099948312062944}
   cacheVersion: 131847
-  cacheTime: 638832128684133582
+  cacheTime: 638832193940412105
   SerializableEventsDict:
   - key: event:/GameMusic
     index: 0
@@ -89,8 +289,116 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638832128684133582
+  lastModified: 638832193940412105
   FileSizes:
   - Name: Desktop
-    Value: 770
+    Value: 1366
   Exists: 1
+--- !u!114 &4143032553559404170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/Annoucement
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/Annoucement
+  Guid:
+    Data1: 379267383
+    Data2: 1239452801
+    Data3: -791614831
+    Data4: -1324382327
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 5904
+--- !u!114 &5304996221093173261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Orpheline/ReceivePower_Chosen
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Orpheline/ReceivePower_Chosen
+  Guid:
+    Data1: -175124592
+    Data2: 1264170244
+    Data3: -1595125078
+    Data4: 1533138782
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1680
+--- !u!114 &5698317650318699257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/ChainingAnnoucement
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/ChainingAnnoucement
+  Guid:
+    Data1: 798413136
+    Data2: 1152599177
+    Data3: 681112481
+    Data4: 1095025765
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2280
+--- !u!114 &5722049879338248000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/AbattreLePortail
+  m_EditorClassIdentifier: 
+  Path: event:/AbattreLePortail
+  Guid:
+    Data1: 1482311113
+    Data2: 1187093067
+    Data3: 1797484173
+    Data4: -1763425129
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 33796

@@ -5,6 +5,7 @@ using System.Threading;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using FMODUnity;
 using GameLogic;
 using Network.Player;
 using Unity.Netcode;

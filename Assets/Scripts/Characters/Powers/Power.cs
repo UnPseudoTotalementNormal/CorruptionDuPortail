@@ -29,12 +29,24 @@ namespace Characters.Powers
 
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
+            var _powerCharacter = GameManager.instance.GetCharacter(ownerClientId, false);
+            if (_powerCharacter == null)
+            {
+                Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
+                return false;
+            }
+            
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed)
             {
                 return false;
             }
+
+            if (_powerCharacter.isChained)
+            {
+                return false;
+            }
             
-            if (hasToBeAwakened && !GameManager.instance.GetLocalCharacter(false).role.isAwakened)
+            if (hasToBeAwakened && !_powerCharacter.role.isAwakened)
             {
                 return false;
             }

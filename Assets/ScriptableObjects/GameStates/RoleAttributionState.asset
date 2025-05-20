@@ -20,6 +20,14 @@ MonoBehaviour:
       Value:
         roleToAttribute: 1
         canBeFake: 0
+    - Key: {fileID: 11400000, guid: f55ca5ff68f68b247b3beace3abe7a7e, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
     - Key: {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
       Value:
         roleToAttribute: 1
@@ -35,4 +43,28 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
       Value:
         roleToAttribute: 1
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 34376dc154c7c5644bc6282d6d50380f, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 90f32399e33a9fb489c671312b995815, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
+      Value:
+        roleToAttribute: 0
         canBeFake: 1

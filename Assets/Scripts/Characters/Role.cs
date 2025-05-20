@@ -31,6 +31,11 @@ public class Role : INetworkSerializable
     public bool isAwakened = false;
     
     public ulong ownerClientId;
+
+    // Ajout d'un constructeur sans paramètre pour la désérialisation réseau
+    public Role()
+    {
+    }
     
     public bool IsTheSameRole(Role _otherRole)
     {
@@ -168,3 +173,4 @@ public class Role : INetworkSerializable
         }
     }
 }
+

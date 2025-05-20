@@ -1,3 +1,5 @@
+using System;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -5,14 +7,14 @@ namespace UI.GameSettings
 {
     public abstract class GameSettingTab : NetworkBehaviour
     {
-        public override void OnNetworkSpawn()
+
+        private void Start()
         {
-            base.OnNetworkSpawn();
             Init();
         }
 
         protected abstract void Init();
 
-        public abstract void ApplySettingsServer();
+        public abstract void AskForRefreshSettingsRpc();
     }
 }

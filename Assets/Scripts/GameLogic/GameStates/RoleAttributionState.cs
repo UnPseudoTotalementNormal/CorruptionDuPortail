@@ -5,6 +5,7 @@ using AYellowpaper.SerializedCollections;
 using Characters;
 using Characters.Powers;
 using Network;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
@@ -135,9 +136,15 @@ namespace GameLogic.GameStates
     }
 
     [Serializable]
-    public class RoleAttributionSetting
+    public class RoleAttributionSetting : INetworkSerializable
     {
         [Range(0, 10)] public int roleToAttribute;
         public bool canBeFake = true;
+        
+        public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
+        {
+            _serializer.SerializeValue(ref roleToAttribute);
+            _serializer.SerializeValue(ref canBeFake);
+        }
     }
 }

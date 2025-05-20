@@ -100,7 +100,7 @@ MonoBehaviour:
             Data3: 989297035
             Data4: -1172467078
           Path: event:/Characters/Orpheline/Canalisation
-        usePowerSound:
+        onUsedSound:
           Guid:
             Data1: 616865672
             Data2: 1223365263

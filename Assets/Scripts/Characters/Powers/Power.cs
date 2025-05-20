@@ -1,10 +1,12 @@
 using System;
+using FMOD.Studio;
 using FMODUnity;
 using GameLogic;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using STOP_MODE = FMOD.Studio.STOP_MODE;
 
 namespace Characters.Powers
 {
@@ -24,7 +26,9 @@ namespace Characters.Powers
         
         [Header("Sounds")]
         public EventReference canalisationSound;
-        public EventReference usePowerSound;
+        public EventReference onUsedSound;
+        
+        [NonSerialized] public EventInstance canalisationSoundInstance;
         
         
         public bool IsTheSamePower(Power _isTheSamePower)
@@ -67,6 +71,11 @@ namespace Characters.Powers
         public virtual void StartUse()
         {
             isCurrentlyUsed = true;
+            if (!string.IsNullOrEmpty(canalisationSound.Path))
+            {
+                canalisationSoundInstance = RuntimeManager.CreateInstance(canalisationSound);
+                canalisationSoundInstance.start();
+            }
         }
 
         public virtual void OnUsed()
@@ -75,6 +84,11 @@ namespace Characters.Powers
             powerUseLeft -= 1;
             GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnUsedServer), 
                 new NetworkSerializableObject[] {}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            
+            if (!string.IsNullOrEmpty(onUsedSound.Path))
+            {
+                RuntimeManager.PlayOneShot(onUsedSound);
+            }
         }
         
         public virtual void OnUsedServer()
@@ -91,6 +105,11 @@ namespace Characters.Powers
         protected virtual void StopUse()
         {
             isCurrentlyUsed = false;
+            if (canalisationSoundInstance.isValid())
+            {
+                canalisationSoundInstance.stop(STOP_MODE.ALLOWFADEOUT);
+                canalisationSoundInstance.release();
+            }
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only

@@ -1,4 +1,5 @@
 using System;
+using Extensions;
 using FMOD.Studio;
 using FMODUnity;
 using GameLogic;
@@ -14,23 +15,41 @@ namespace Characters.Powers
     public class Power : INetworkSerializable, ICloneable
     {
         [HideInInspector] public ulong ownerClientId;
-        
+
         public FixedString64Bytes powerName;
         public float maxWaitTime;
-        
-        public bool isPassive = false;
+
+        public bool isPassive;
         public bool hasToBeAwakened = true;
-        [NonSerialized] public bool isCurrentlyUsed = false;
 
         public int powerUseLeft;
-        
-        [Header("Sounds")]
-        public EventReference canalisationSound;
+
+        [Header("Sounds")] public EventReference canalisationSound;
+
         public EventReference onUsedSound;
-        
+
         [NonSerialized] public EventInstance canalisationSoundInstance;
-        
-        
+        [NonSerialized] public bool isCurrentlyUsed;
+
+        public virtual object Clone()
+        {
+            return MemberwiseClone();
+        }
+
+        public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
+        {
+            _serializer.SerializeValue(ref maxWaitTime);
+            _serializer.SerializeValue(ref powerName);
+            _serializer.SerializeValue(ref hasToBeAwakened);
+            _serializer.SerializeValue(ref powerUseLeft);
+
+            var _eventPath = canalisationSound.GetPath() ?? string.Empty;
+            _serializer.SerializeValue(ref _eventPath);
+            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
+                canalisationSound = RuntimeManager.PathToEventReference(_eventPath);
+        }
+
+
         public bool IsTheSamePower(Power _isTheSamePower)
         {
             return powerName == _isTheSamePower.powerName;
@@ -44,26 +63,14 @@ namespace Characters.Powers
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
                 return false;
             }
-            
-            if (isCurrentlyUsed && !_ignoreCurrentlyUsed)
-            {
-                return false;
-            }
 
-            if (_powerCharacter.isChained)
-            {
-                return false;
-            }
-            
-            if (hasToBeAwakened && !_powerCharacter.role.isAwakened)
-            {
-                return false;
-            }
-            
-            if (powerUseLeft <= 0)
-            {
-                return false;
-            }
+            if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
+
+            if (_powerCharacter.isChained) return false;
+
+            if (hasToBeAwakened && !_powerCharacter.role.isAwakened) return false;
+
+            if (powerUseLeft <= 0) return false;
 
             return true;
         }
@@ -71,7 +78,7 @@ namespace Characters.Powers
         public virtual void StartUse()
         {
             isCurrentlyUsed = true;
-            if (!string.IsNullOrEmpty(canalisationSound.Path))
+            if (!string.IsNullOrEmpty(canalisationSound.GetPath()))
             {
                 canalisationSoundInstance = RuntimeManager.CreateInstance(canalisationSound);
                 canalisationSoundInstance.start();
@@ -82,15 +89,12 @@ namespace Characters.Powers
         {
             StopUse();
             powerUseLeft -= 1;
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnUsedServer), 
-                new NetworkSerializableObject[] {}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
-            
-            if (!string.IsNullOrEmpty(onUsedSound.Path))
-            {
-                RuntimeManager.PlayOneShot(onUsedSound);
-            }
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnUsedServer),
+                new NetworkSerializableObject[] { }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+
+            if (!string.IsNullOrEmpty(onUsedSound.GetPath())) RuntimeManager.PlayOneShot(onUsedSound);
         }
-        
+
         public virtual void OnUsedServer()
         {
             powerUseLeft -= 1;
@@ -114,37 +118,14 @@ namespace Characters.Powers
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only
         {
-            
         }
-        
+
         public virtual void PassivePowerUpdate()
         {
-            
         }
 
         public virtual void OnGameStartedServer()
         {
-            
-        }
-        
-        public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
-        {
-            _serializer.SerializeValue(ref maxWaitTime);
-            _serializer.SerializeValue(ref powerName);
-            _serializer.SerializeValue(ref hasToBeAwakened);
-            _serializer.SerializeValue(ref powerUseLeft);
-            
-            string _eventPath = canalisationSound.Path ?? string.Empty;
-            _serializer.SerializeValue(ref _eventPath);
-            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
-            {
-                canalisationSound = EventReference.Find(_eventPath);
-            }
-        }
-        
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
         }
     }
 }

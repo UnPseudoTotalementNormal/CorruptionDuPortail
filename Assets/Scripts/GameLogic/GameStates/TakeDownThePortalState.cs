@@ -7,9 +7,9 @@ using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
 using FocusSystem;
 using Network;
-using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 using FocusType = FocusSystem.FocusType;
 
 #endregion

@@ -1,5 +1,9 @@
+#region
+
 using System;
 using GameLogic;
+
+#endregion
 
 namespace Characters.Powers
 {

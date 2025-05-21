@@ -1,13 +1,16 @@
+#region
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
-using Characters.Assets;
 using Network;
 using UI.SelectPanels;
 using UnityEngine;
 using UnityEngine.Assertions;
+
+#endregion
 
 namespace GameLogic.GameStates
 {

@@ -1,3 +1,5 @@
+#region
+
 using System;
 using Characters;
 using Characters.Powers;
@@ -5,6 +7,8 @@ using TMPro;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
+
+#endregion
 
 namespace Board.UI.PowerBar
 {

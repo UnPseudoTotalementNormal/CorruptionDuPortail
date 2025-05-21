@@ -1,5 +1,9 @@
+#region
+
 using FMOD;
 using FMODUnity;
+
+#endregion
 
 namespace Extensions
 {

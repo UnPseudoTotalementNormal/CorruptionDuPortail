@@ -1,7 +1,12 @@
 #if UNITY_EDITOR
+
+#region
+
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
+
+#endregion
 
 /// <summary>
 /// PropertyDrawer for a FixedString32Bytes

@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Linq;
 using Characters;
@@ -6,6 +8,8 @@ using GameLogic.GameStates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
+#endregion
 
 namespace UI.GameSettings
 {

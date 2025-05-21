@@ -1,10 +1,13 @@
-using System;
+#region
+
 using Network;
 using Network.Player;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
+
+#endregion
 
 public class ConnectedPlayerPanel : MonoBehaviour
 {

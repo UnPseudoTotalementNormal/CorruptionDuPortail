@@ -1,9 +1,14 @@
 #if UNITY_EDITOR
+
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+
+#endregion
 
 [CustomPropertyDrawer(typeof(PolymorphicAttribute), true)]
 public class PolymorphicPropertyDrawer : PropertyDrawer

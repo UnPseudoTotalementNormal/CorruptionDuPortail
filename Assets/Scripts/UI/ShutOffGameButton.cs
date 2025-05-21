@@ -1,7 +1,10 @@
-using System;
+#region
+
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 namespace UI
 {

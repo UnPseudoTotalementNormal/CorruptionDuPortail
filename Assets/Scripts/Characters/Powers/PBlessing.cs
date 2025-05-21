@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +11,8 @@ using GameLogic.GameStates;
 using Network;
 using Unity.Netcode;
 using UnityEngine.Assertions;
+
+#endregion
 
 namespace Characters.Powers
 {

@@ -1,7 +1,11 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using Characters.Powers;
 using UnityEngine;
+
+#endregion
 
 namespace Characters
 {

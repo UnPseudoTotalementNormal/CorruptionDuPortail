@@ -1,7 +1,11 @@
+#region
+
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 namespace ChatSystem
 {

@@ -1,9 +1,11 @@
-using System;
-using System.Linq;
+#region
+
 using GameLogic;
 using GameLogic.GameStates;
 using TMPro;
 using UnityEngine;
+
+#endregion
 
 public class TakeDownThePortalTextTitle : MonoBehaviour
 {

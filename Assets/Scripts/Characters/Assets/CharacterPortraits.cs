@@ -1,5 +1,9 @@
+#region
+
 using System.Collections.Generic;
 using CustomAttributes;
+
+#endregion
 
 namespace Characters.Assets
 {

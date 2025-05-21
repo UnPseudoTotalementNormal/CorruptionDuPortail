@@ -1,6 +1,8 @@
-using System;
-using System.Collections.Generic;
+#region
+
 using Unity.Netcode;
+
+#endregion
 
 namespace UI
 {

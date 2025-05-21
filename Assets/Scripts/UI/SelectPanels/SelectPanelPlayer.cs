@@ -1,7 +1,11 @@
+#region
+
 using System;
 using System.Linq;
 using GameLogic;
 using UnityEngine;
+
+#endregion
 
 namespace UI.SelectPanels
 {

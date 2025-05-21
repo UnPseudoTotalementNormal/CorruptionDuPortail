@@ -1,8 +1,11 @@
-using Unity.Netcode;
-using Unity.Collections;
+#region
+
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using Unity.Netcode;
+
+#endregion
 
 namespace Network
 {

@@ -1,8 +1,11 @@
+#region
+
 using DG.Tweening;
 using GameLogic;
-using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 public class StateUI : NetworkBehaviour
 {

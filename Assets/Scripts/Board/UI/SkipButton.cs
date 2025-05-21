@@ -1,6 +1,10 @@
+#region
+
 using GameLogic;
 using UI;
 using UnityEngine;
+
+#endregion
 
 namespace Board.UI
 {

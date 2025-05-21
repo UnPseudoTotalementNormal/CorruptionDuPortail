@@ -1,3 +1,5 @@
+#region
+
 using System;
 using Characters;
 using Cysharp.Threading.Tasks;
@@ -6,6 +8,8 @@ using GameLogic;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
+
+#endregion
 
 namespace Board.UI.CharacterBar
 {

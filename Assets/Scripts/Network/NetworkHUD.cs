@@ -1,3 +1,5 @@
+#region
+
 using System.Threading.Tasks;
 using Network;
 using TMPro;
@@ -10,6 +12,8 @@ using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
+#endregion
 
 public class NetworkHUD : MonoBehaviour
 {

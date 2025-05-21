@@ -1,7 +1,9 @@
-using System;
+#region
+
 using Network.Player;
 using Unity.Netcode;
-using UnityEngine;
+
+#endregion
 
 namespace Network
 {

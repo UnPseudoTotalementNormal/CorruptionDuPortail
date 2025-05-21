@@ -1,11 +1,13 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Extensions;
 using UI;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+
+#endregion
 
 namespace GameLogic
 {

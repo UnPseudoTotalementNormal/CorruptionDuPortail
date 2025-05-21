@@ -1,14 +1,16 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
 using Characters.Powers;
-using Extensions;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.UI;
+
+#endregion
 
 namespace Board.UI.PowerBar
 {

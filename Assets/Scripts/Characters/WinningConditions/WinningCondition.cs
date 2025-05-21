@@ -1,5 +1,9 @@
+#region
+
 using System;
 using Unity.Netcode;
+
+#endregion
 
 namespace Characters.WinningConditions
 {

@@ -1,9 +1,11 @@
-using System;
+#region
+
 using GameLogic.GameStates;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
+
+#endregion
 
 namespace UI
 {

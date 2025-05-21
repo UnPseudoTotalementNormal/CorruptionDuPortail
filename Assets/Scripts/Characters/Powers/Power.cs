@@ -1,3 +1,5 @@
+#region
+
 using System;
 using Extensions;
 using FMOD.Studio;
@@ -8,6 +10,8 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using STOP_MODE = FMOD.Studio.STOP_MODE;
+
+#endregion
 
 namespace Characters.Powers
 {

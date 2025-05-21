@@ -1,9 +1,10 @@
-using System;
+#region
+
 using Network;
 using TMPro;
-using Unity.Netcode;
-using Unity.Services.Relay;
 using UnityEngine;
+
+#endregion
 
 public class GameCodeText : MonoBehaviour
 {

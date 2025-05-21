@@ -1,10 +1,13 @@
-using System;
+#region
+
 using System.Linq;
 using GameLogic;
 using GameLogic.GameStates;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
+
+#endregion
 
 namespace Board.UI.CharacterBar
 {

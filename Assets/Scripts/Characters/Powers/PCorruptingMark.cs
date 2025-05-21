@@ -1,10 +1,12 @@
+#region
+
 using System;
-using System.Linq;
 using ArrowSystem;
 using FocusSystem;
 using GameLogic;
-using UnityEngine;
 using FocusType = FocusSystem.FocusType;
+
+#endregion
 
 namespace Characters.Powers
 {

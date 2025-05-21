@@ -1,13 +1,17 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CustomAttributes;
 using UnityEditor;
 using UnityEngine;
-using CustomAttributes;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.ResourceLocations;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
+
+#endregion
 
 public class AddressablesEnumGenerator
 {

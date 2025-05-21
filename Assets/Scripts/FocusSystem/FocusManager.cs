@@ -1,10 +1,12 @@
-using System;
+#region
+
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 using GameLogic;
 using UnityEngine;
-using Object = UnityEngine.Object;
+
+#endregion
 
 namespace FocusSystem
 {

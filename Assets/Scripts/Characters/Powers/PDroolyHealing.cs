@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,9 +8,10 @@ using FocusSystem;
 using GameLogic;
 using Network;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
+
+#endregion
 
 namespace Characters.Powers
 {

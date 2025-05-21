@@ -1,12 +1,14 @@
+#region
+
 using System;
-using System.Linq;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using Network;
 using Unity.Netcode;
-using UnityEngine;
 using FocusType = FocusSystem.FocusType;
+
+#endregion
 
 namespace Characters.Powers
 {

@@ -1,8 +1,12 @@
+#region
+
+using System;
+using System.Linq;
 using Characters.Powers;
 using UnityEditor;
 using UnityEngine;
-using System;
-using System.Linq;
+
+#endregion
 
 [CustomEditor(typeof(PowerDataObject))]
 public class PowerDataObjectEditor : Editor

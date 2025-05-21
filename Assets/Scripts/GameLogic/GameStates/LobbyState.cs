@@ -1,7 +1,11 @@
+#region
+
 using System.Linq;
 using Characters;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 namespace GameLogic.GameStates
 {

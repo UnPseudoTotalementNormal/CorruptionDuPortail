@@ -1,5 +1,9 @@
+#region
+
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 public class IsServerTest : MonoBehaviour
 {

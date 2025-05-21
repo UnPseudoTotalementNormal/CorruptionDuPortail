@@ -1,7 +1,11 @@
+#region
+
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
 using UnityEngine;
+
+#endregion
 
 namespace GameLogic.GameStates
 {

@@ -1,11 +1,12 @@
-using System;
-using GameLogic;
-using Network;
+#region
+
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+
+#endregion
 
 namespace ChatSystem
 {

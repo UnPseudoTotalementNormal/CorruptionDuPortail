@@ -1,6 +1,9 @@
-using System;
+#region
+
 using Characters.Powers;
 using UnityEngine;
+
+#endregion
 
 public class TestPowers : MonoBehaviour
 {

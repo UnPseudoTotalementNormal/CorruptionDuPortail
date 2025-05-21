@@ -1,12 +1,14 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameLogic.GameStates;
 using Unity.Collections;
 using Unity.Netcode;
-using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Serialization;
+
+#endregion
 
 namespace GameLogic
 {

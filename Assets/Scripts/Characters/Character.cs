@@ -1,10 +1,13 @@
+#region
+
 using System;
 using Extensions;
 using GameLogic;
 using Network;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 namespace Characters
 {

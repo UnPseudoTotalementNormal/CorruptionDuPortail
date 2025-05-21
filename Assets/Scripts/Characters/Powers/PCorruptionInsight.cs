@@ -1,6 +1,10 @@
+#region
+
 using System;
 using GameLogic;
 using Unity.Netcode;
+
+#endregion
 
 namespace Characters.Powers
 {

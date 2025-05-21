@@ -1,8 +1,12 @@
+#region
+
+using Unity.Netcode;
+using UnityEngine;
+
+#endregion
+
 namespace Extensions
 {
-    using Unity.Netcode;
-    using UnityEngine;
-
     public static class NetworkObjectExtensions
     {
         public static GameObject InstantiateAndSpawnWithChildren(this NetworkObject _prefab, Transform _parent = null, bool _destroyWithScene = true)

@@ -1,11 +1,13 @@
-using System;
+#region
+
 using System.Linq;
-using Board.UI.PowerBar;
 using Characters.Powers;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+
+#endregion
 
 namespace GameLogic
 {

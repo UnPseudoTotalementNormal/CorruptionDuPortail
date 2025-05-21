@@ -1,7 +1,10 @@
-using System;
+#region
+
 using Network.Player;
 using TMPro;
 using UnityEngine;
+
+#endregion
 
 public class PseudoInputField : MonoBehaviour
 {

@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +9,9 @@ using Characters.Powers;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
+
+#endregion
 
 namespace GameLogic.GameStates
 {

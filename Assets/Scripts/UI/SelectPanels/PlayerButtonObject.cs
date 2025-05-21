@@ -1,10 +1,11 @@
+#region
+
 using System;
-using DG.Tweening;
 using Network;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
+
+#endregion
 
 namespace UI.SelectPanels
 {

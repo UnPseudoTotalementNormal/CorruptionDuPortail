@@ -1,8 +1,10 @@
-using System;
+#region
+
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
+#endregion
 
 public class GameSceneOnlineChecker : MonoBehaviour
 {

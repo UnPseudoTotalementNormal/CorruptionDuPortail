@@ -1,7 +1,10 @@
+#region
+
 using System;
 using Unity.Collections;
 using Unity.Netcode;
-using UnityEngine;
+
+#endregion
 
 namespace Network.Player
 {

@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,6 +7,8 @@ using GameLogic;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
+
+#endregion
 
 namespace UI.GameSettings
 {

@@ -1,11 +1,13 @@
-using System;
+#region
+
 using System.Collections.Generic;
-using System.Linq;
 using Characters;
 using GameLogic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
+
+#endregion
 
 public class CardCorruptedText : MonoBehaviour
 {

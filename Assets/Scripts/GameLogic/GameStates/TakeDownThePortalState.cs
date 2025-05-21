@@ -1,3 +1,5 @@
+#region
+
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
@@ -8,8 +10,9 @@ using Network;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Serialization;
 using FocusType = FocusSystem.FocusType;
+
+#endregion
 
 namespace GameLogic.GameStates
 {

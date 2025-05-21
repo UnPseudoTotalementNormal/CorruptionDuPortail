@@ -1,3 +1,5 @@
+#region
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +17,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Object = System.Object;
+
+#endregion
 
 namespace GameLogic
 {

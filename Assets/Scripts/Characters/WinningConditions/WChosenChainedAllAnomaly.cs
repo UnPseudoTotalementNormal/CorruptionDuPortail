@@ -1,6 +1,10 @@
+#region
+
 using System;
 using System.Linq;
 using GameLogic;
+
+#endregion
 
 namespace Characters.WinningConditions
 {

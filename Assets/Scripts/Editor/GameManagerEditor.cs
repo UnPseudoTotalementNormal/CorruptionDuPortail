@@ -1,7 +1,10 @@
+#region
+
 using System.Collections.Generic;
 using GameLogic;
 using UnityEditor;
-using UnityEngine;
+
+#endregion
 
 [CustomEditor(typeof(GameManager))]
 public class GameManagerEditor : Editor

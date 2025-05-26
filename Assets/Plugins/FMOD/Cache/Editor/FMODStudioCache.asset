@@ -150,10 +150,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638834522728416306
+  lastModified: 638838803059735608
   FileSizes:
   - Name: Desktop
-    Value: 5885504
+    Value: 5885984
   Exists: 1
 --- !u!114 &-3157601668546955457
 MonoBehaviour:
@@ -270,7 +270,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: 3211099948312062944}
   cacheVersion: 131847
-  cacheTime: 638834522728436337
+  cacheTime: 638838803059765736
   SerializableEventsDict:
   - key: event:/GameMusic
     index: 0
@@ -311,10 +311,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638834522728436337
+  lastModified: 638838803059765736
   FileSizes:
   - Name: Desktop
-    Value: 1366
+    Value: 1436
   Exists: 1
 --- !u!114 &4143032553559404170
 MonoBehaviour:

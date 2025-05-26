@@ -46,7 +46,7 @@ MonoBehaviour:
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 6baffbde8ced9c44c844398de055b09d
-    m_Address: "Assets/Art/Sprites/Portraits/Proph\xE8te.jpg"
+    m_Address: Assets/Art/Sprites/Portraits/Prophete.jpg
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Characters;
 using GameLogic;
 using Unity.Netcode;
@@ -54,7 +55,7 @@ namespace Board.UI.CharacterBar
 
             charactersBarObjects.Clear();
             
-            foreach (Character _character in _characters)
+            foreach (Character _character in _characters.OrderBy(_ => UnityEngine.Random.value).ToList())
             {
                 GameObject _characterBarChild = Instantiate(characterBarObjectPrefab, charactersBarParent);
 

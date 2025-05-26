@@ -89,7 +89,21 @@ MonoBehaviour:
             byte0059: 0
             byte0060: 0
             byte0061: 0
-        maxWaitTime: 10
+        maxWaitTime: 60
         isPassive: 0
         hasToBeAwakened: 1
         powerUseLeft: 0
+        canalisationSound:
+          Guid:
+            Data1: 0
+            Data2: 0
+            Data3: 0
+            Data4: 0
+          Path: 
+        onUsedSound:
+          Guid:
+            Data1: 0
+            Data2: 0
+            Data3: 0
+            Data4: 0
+          Path: 

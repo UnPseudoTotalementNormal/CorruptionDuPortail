@@ -93,3 +93,17 @@ MonoBehaviour:
         isPassive: 1
         hasToBeAwakened: 0
         powerUseLeft: 0
+        canalisationSound:
+          Guid:
+            Data1: 0
+            Data2: 0
+            Data3: 0
+            Data4: 0
+          Path: 
+        onUsedSound:
+          Guid:
+            Data1: 0
+            Data2: 0
+            Data3: 0
+            Data4: 0
+          Path: 

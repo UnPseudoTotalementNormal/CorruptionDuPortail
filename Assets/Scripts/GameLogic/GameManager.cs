@@ -86,6 +86,14 @@ namespace GameLogic
             {
                 currentGameStateIndex.Value = 0;
                 GetGameState(currentGameStateIndex.Value).OnStartStateServer();
+                NetworkManager.OnClientDisconnectCallback += (_clientId) =>
+                {
+                    if (GetCharacters().Any(_c => _c.ownerClientId == _clientId))
+                    {
+                        GetCharacter(_clientId).ownerClientId = GameValues.FAKE_CLIENT_ID;
+                        AskForUpdateAllCharactersRpc();
+                    }
+                };
             }
         
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();

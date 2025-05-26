@@ -62,11 +62,6 @@ namespace GameLogic
         }
 
         public event Action<List<Character>> onCharactersListUpdated;
-        public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
-        {
-            yield return new WaitForEndOfFrame();
-            onCharactersListUpdated?.Invoke(_characters);
-        }
 
         private void Awake()
         {
@@ -86,14 +81,7 @@ namespace GameLogic
             {
                 currentGameStateIndex.Value = 0;
                 GetGameState(currentGameStateIndex.Value).OnStartStateServer();
-                NetworkManager.OnClientDisconnectCallback += (_clientId) =>
-                {
-                    if (GetCharacters().Any(_c => _c.ownerClientId == _clientId))
-                    {
-                        GetCharacter(_clientId).ownerClientId = GameValues.FAKE_CLIENT_ID;
-                        AskForUpdateAllCharactersRpc();
-                    }
-                };
+                NetworkManager.OnClientDisconnectCallback += OnPlayerDisconnectedServer;
             }
         
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();
@@ -110,7 +98,9 @@ namespace GameLogic
         
             GetGameState(currentGameStateIndex.Value).StateUpdateServer();
         }
-    
+
+        #region Characters Updates
+
         [Rpc(SendTo.Server)]
         public void AskForUpdateAllCharactersRpc()
         {
@@ -141,6 +131,14 @@ namespace GameLogic
             this._characters = _characters.ToList();
             onCharactersListUpdated?.Invoke(this._characters);
         }
+        
+        public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
+        {
+            yield return new WaitForEndOfFrame();
+            onCharactersListUpdated?.Invoke(_characters);
+        }
+
+        #endregion
 
         #region GameState Methods
 
@@ -527,6 +525,23 @@ namespace GameLogic
             _character.ownerClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
             _characters.Add(_character);
             return _character;
+        }
+        
+        private void OnPlayerDisconnectedServer(ulong _clientId)
+        {
+            if (GetCharacters().Any(_c => _c.ownerClientId == _clientId))
+            {
+                GetCharacter(_clientId).ownerClientId = GameValues.FAKE_CLIENT_ID;
+                AskForUpdateAllCharactersRpc();
+            }
+
+            OnPlayerDisconnectedRpc();
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void OnPlayerDisconnectedRpc()
+        {
+            BoardManager.instance.DestroyCard(BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.isFake));
         }
     }
 

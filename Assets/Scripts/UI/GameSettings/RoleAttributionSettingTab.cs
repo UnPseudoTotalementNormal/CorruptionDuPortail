@@ -21,10 +21,8 @@ namespace UI.GameSettings
     
         protected override void Init()
         {
-            Debug.Log("RoleAttributionSettingTab Init");
             foreach (var _roleDataObject in GetRoleAttributionState().roleAttributionDictionary.Keys.ToList())
             {
-                Debug.Log($"RoleAttributionSettingTab Init - {nameof(_roleDataObject)}: {_roleDataObject}");
                 RoleAttributionSettingObject _roleAttributionSettingObject = Instantiate(roleAttributionSettingObjectPrefab, layoutTransform);
                 _roleAttributionSettingObject.SetRoleDataObject(_roleDataObject);
                 _roleAttributionSettingObject.onValueChanged += OnRoleAttributionSettingObjectValueChanged;

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace UI.Settings
 {
-    public class AudioPannelSettings : MonoBehaviour
+    public class AudioPanelSettings : MonoBehaviour
     {
         [SerializeField] private Slider masterVolumeSlider;
         [SerializeField] private Slider musicVolumeSlider;

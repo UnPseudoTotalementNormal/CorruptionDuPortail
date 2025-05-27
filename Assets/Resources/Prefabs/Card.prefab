@@ -155,7 +155,7 @@ MonoBehaviour:
   cardPivotTransform: {fileID: 4456429850662113924}
   cardImage: {fileID: 2429788706011615213}
   chainedOverlay: {fileID: 1535649323081278993}
-  unknownCardSprite: {fileID: 0}
+  unknownCardSprite: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
   characterInfo:
     role:
       roleName:

@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: fc9e7d1e021cd5440a14877976774830
   m_SerializeEntries:
+  - m_GUID: 05360864de9355a4fb23bcb2075ed6c7
+    m_Address: Assets/Art/Sprites/Portraits/Inconnu.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 139c6044c406f4e428fc7f5f8745a4f8
     m_Address: Assets/Art/Sprites/Portraits/Abyss.jpg
     m_ReadOnly: 0

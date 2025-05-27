@@ -19,6 +19,7 @@ public class BoardManager : NetworkBehaviour
     public Card cardPrefab;
     
     public Transform spawnCardPosition;
+    public Transform maxCardPosition; //cards will overflow past this point
     
     public List<Card> visibleCards = new();
     
@@ -29,6 +30,7 @@ public class BoardManager : NetworkBehaviour
     public event Action<Card> onCardUnhovered;
     
     public const float CARD_SPACING = 7;
+    public const float CARD_LINE_SPACING = 9;
     
     
     private void Awake()
@@ -80,11 +82,31 @@ public class BoardManager : NetworkBehaviour
         {
             var _card = visibleCards[_i];
             //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
-            _card.transform.DOLocalMoveX(spawnCardPosition.localPosition.x + _i * CARD_SPACING,
-                0.5f);
+            Vector3 _localTargetPosition = GetCardPlacedPosition(_i);
+            
+            _card.transform.DOLocalMoveX(_localTargetPosition.x, 0.5f);
+            _card.transform.DOLocalMoveZ(_localTargetPosition.z, 0.5f);
         }
     }
-    
+
+    private Vector3 GetCardPlacedPosition(int _cardIndex)
+    {
+        var _position = new Vector3(spawnCardPosition.localPosition.x, spawnCardPosition.localPosition.y, spawnCardPosition.localPosition.z);
+        while (_cardIndex > 0)
+        {
+            _position += new Vector3(CARD_SPACING, 0, 0);
+            if (_position.x >= maxCardPosition.localPosition.x)
+            {
+                _position = new Vector3(spawnCardPosition.localPosition.x, _position.y, _position.z - CARD_LINE_SPACING);
+                break;
+            }
+            
+            _cardIndex -= 1;
+        }
+
+        return _position;
+    }
+
     public async UniTask ShowAllPlayerCards(bool _stopOtherAnims = true)
     {
         CancellationTokenSource _cancelToken = new();

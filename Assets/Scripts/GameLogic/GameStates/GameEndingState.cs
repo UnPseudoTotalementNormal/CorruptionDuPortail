@@ -47,6 +47,7 @@ namespace GameLogic.GameStates
                     
                     var _newCard = BoardManager.instance.AddNewCard();
                     _newCard.SetInfo(_character);
+                    _newCard.ShowPseudoWithRevealedInfo();
                     _newCard.ShowBackSide(true);
                 }
             }
@@ -78,8 +79,6 @@ namespace GameLogic.GameStates
             base.OnStartStateClient();
 
             _ = GameEndingAnimation();
-            
-            
         }
         
         public override void OnEndStateClient()

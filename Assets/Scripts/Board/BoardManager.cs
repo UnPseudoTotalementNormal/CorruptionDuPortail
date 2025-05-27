@@ -98,7 +98,6 @@ public class BoardManager : NetworkBehaviour
             if (_position.x >= maxCardPosition.localPosition.x)
             {
                 _position = new Vector3(spawnCardPosition.localPosition.x, _position.y, _position.z - CARD_LINE_SPACING);
-                break;
             }
             
             _cardIndex -= 1;

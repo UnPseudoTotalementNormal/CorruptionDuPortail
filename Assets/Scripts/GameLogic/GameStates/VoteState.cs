@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Board.UI.VoteCanvas;
 using Characters;
 using Network;
 using UI.SelectPanels;
@@ -32,6 +33,11 @@ namespace GameLogic.GameStates
         private VoteSelectPanel voteSelectPanel;
         
         public static ulong lastVotedPlayer;
+        
+        private void OnVoteButtonClicked(Card _card)
+        {
+            OnPlayerVoted(_card.characterInfo.ownerClientId);
+        }
         
         public void OnPlayerVoted(ulong _playerId)
         {
@@ -194,15 +200,19 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
-            GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.canvasGroup.transform);
+            /*GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.canvasGroup.transform);
             voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
             voteSelectPanel.voteState = this;
             voteSelectPanel.onPlayerVoted += OnPlayerVoted;
-            onStateEndClient += DestroyVotePanel;
+            onStateEndClient += DestroyVotePanel;*/
 
-            if (!gameManager.IsServer)
+            foreach (var _c in BoardManager.instance.visibleCards)
             {
-                voteTimer -= Time.deltaTime;
+                VoteCanvas _voteCanvas = _c.voteCanvas;
+                _voteCanvas.SetVoteState(this);
+                _voteCanvas.ResetVotes();
+                _voteCanvas.ActivateVoteCanvas();
+                _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
             }
         }
 
@@ -216,6 +226,8 @@ namespace GameLogic.GameStates
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
+            
+            BoardManager.instance.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
         }
 
         public override void StateUpdateServer()

@@ -89,7 +89,7 @@ MonoBehaviour:
             byte0059: 0
             byte0060: 0
             byte0061: 0
-        maxWaitTime: 60
+        maxWaitTime: 10
         isPassive: 0
         hasToBeAwakened: 1
         powerUseLeft: 0

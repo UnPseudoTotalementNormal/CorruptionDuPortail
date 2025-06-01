@@ -13,4 +13,6 @@ MonoBehaviour:
   m_Name: VoteState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: 19c36c39a176ad2459a7860cf2c8c7b7, type: 3}
+  gameStateDependencies: []
   voteDuration: 300
+  voteTimer: 0

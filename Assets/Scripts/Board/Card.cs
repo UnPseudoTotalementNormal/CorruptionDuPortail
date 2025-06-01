@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
 using Cysharp.Threading.Tasks;
@@ -25,6 +26,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     public Image cardImage;
 
+    public VoteCanvas voteCanvas;
     public CanvasGroup chainedOverlay;
  
     [Header("Info")]

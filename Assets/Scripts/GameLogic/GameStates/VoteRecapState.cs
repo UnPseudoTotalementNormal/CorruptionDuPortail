@@ -44,7 +44,7 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
         }
         
-        public override void OnStartStateClient()
+        public override async void OnStartStateClient()
         {
             base.OnStartStateClient();
 
@@ -54,33 +54,46 @@ namespace GameLogic.GameStates
             }
             else
             {
-                _ = DoCardChainingAnimation();
+                await DoCardChainingAnimation();
+                if (gameManager.IsServer)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(3));
+                    gameManager.NextGameState();
+                }
             }
         }
 
         private async UniTask DoCardChainingAnimation()
         {
+            foreach (var _c in BoardManager.instance.visibleCards)
+            {
+                _c.CancelShowPseudoWithRevealedInfo();
+            }
+            
+            await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
+            
             await BoardManager.instance.HideAllCards();
             
             var _cardInfo = BoardManager.instance.AddNewCard();
             spawnedCard = _cardInfo.transform;
+            var _spawnedCardPivot = _cardInfo.cardPivotTransform;
                 
             Character _votedCharacter = gameManager.GetCharacters().First(_character => _character.ownerClientId == VoteState.lastVotedPlayer);
             _cardInfo.SetInfo(_votedCharacter);
             _cardInfo.ShowPseudoOnly();
             _cardInfo.SetChainedOverlay(false, true);
 
-            spawnedCard.eulerAngles = new Vector3(0, 0, 180);
+            await _cardInfo.ShowBackSide(true);
             await _cardInfo.ShowFrontSide();
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            spawnedCard.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
+            _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
             {
                 _ = _cardInfo.ShowPseudoWithRevealedInfo();
                     
-                spawnedCard.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+                _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
                 spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
                 {
                     spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f).onComplete = () =>
@@ -106,6 +119,8 @@ namespace GameLogic.GameStates
         public override void StateUpdateServer()
         {
             base.StateUpdateServer();
+
+            return;
             
             recapTimer -= Time.deltaTime;
             if (recapTimer > 0)

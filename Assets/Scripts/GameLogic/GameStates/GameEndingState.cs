@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
@@ -51,6 +52,8 @@ namespace GameLogic.GameStates
                     _newCard.ShowBackSide(true);
                 }
             }
+            
+            await UniTask.Delay(TimeSpan.FromSeconds(1));
 
             BoardManager.instance.PlaceAllCardsToPosition();
             foreach (var _card in BoardManager.instance.visibleCards)

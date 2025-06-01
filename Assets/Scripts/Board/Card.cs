@@ -22,6 +22,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public TMP_Text powerText;
 
     public Transform cardScalerTransform;
+    public Transform cardDisplacerTransform;
     public Transform cardPivotTransform;
     
     public Image cardImage;
@@ -42,6 +43,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public event Action<Card> onCardClicked;
     public event Action<Card> onCardHovered;
     public event Action<Card> onCardUnhovered;
+
+    private System.Threading.CancellationTokenSource showPseudoCts;
 
     private void Awake()
     {
@@ -71,30 +74,40 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false)
     {
-        if (_turnCard)
+        showPseudoCts?.Cancel();
+        showPseudoCts = new System.Threading.CancellationTokenSource();
+        var _cancellationToken = showPseudoCts.Token;
+        try
         {
-            await ShowBackSide();
+            if (_turnCard)
+            {
+                await ShowBackSide().AttachExternalCancellation(_cancellationToken);
+            }
+            cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+            if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
+            {
+                cardRoleText.text = roleInfo.roleName.ToString();
+                ShowPowers();
+                cardImage.sprite = await roleInfo.GetRolePortrait().AttachExternalCancellation(_cancellationToken);
+            }
+            else
+            {
+                cardRoleText.text = "";
+                cardImage.sprite = unknownCardSprite;
+            }
+            if (_turnCard)
+            {
+                await ShowFrontSide().AttachExternalCancellation(_cancellationToken);
+            }
         }
-        
-        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
-        if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
-        {
-            cardRoleText.text = roleInfo.roleName.ToString();
-            ShowPowers();
-            cardImage.sprite = await roleInfo.GetRolePortrait();
-        }
-        else
-        {
-            cardRoleText.text = "";
-            cardImage.sprite = unknownCardSprite;
-        }
-        
-        if (_turnCard)
-        {
-            await ShowFrontSide();
-        }
+        catch (OperationCanceledException) { }
     }
-    
+
+    public void CancelShowPseudoWithRevealedInfo()
+    {
+        showPseudoCts?.Cancel();
+    }
+
     public async UniTask ShowRoleWithRevealedInfo()
     {
         cardPlayerPseudo.text = "";
@@ -147,23 +160,47 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public async UniTask ShowBackSide(bool _isInstant = false)
     {
         var _rotateTime = (_isInstant) ? 0 : rotateTime;
-        transform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        if (Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), 180)) // Already on back side
         {
-            transform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
-        };
-        transform.DORotate(new Vector3(0, 0, -180), _rotateTime * 0.75f);
-        await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+            return;
+        }
+
+        if (_isInstant)
+        {
+            cardPivotTransform.eulerAngles = new Vector3(0, 0, 180);
+        }
+        else
+        {
+            cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
+            };
+            cardPivotTransform.DORotate(new Vector3(0, 0, -180), _rotateTime * 0.75f);
+            await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+        }
     }
     
     public async UniTask ShowFrontSide(bool _isInstant = false)
     {
         var _rotateTime = (_isInstant) ? 0 : rotateTime;
-        transform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+        if (Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), 0)) // Already front side
         {
-            transform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
-        };
-        transform.DORotate(Vector3.zero, _rotateTime * 0.75f);
-        await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+            return;
+        }
+
+        if (_isInstant)
+        {
+            cardPivotTransform.eulerAngles = Vector3.zero;
+        }
+        else
+        {
+            cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
+            };
+            cardPivotTransform.DORotate(Vector3.zero, _rotateTime * 0.75f);
+            await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)

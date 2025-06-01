@@ -119,7 +119,7 @@ public class BoardManager : NetworkBehaviour
             Card _card = AddNewCard();
             _card.SetInfo(_character);
             _ = _card.ShowPseudoWithRevealedInfo();
-            _card.transform.eulerAngles = new Vector3(0, 0, 180);
+            _card.cardPivotTransform.eulerAngles = new Vector3(0, 0, -180);
             
             _ = _card.ShowFrontSide();
         }

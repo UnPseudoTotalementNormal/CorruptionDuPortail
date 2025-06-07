@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using GameLogic.GameStates;
 using TMPro;
@@ -18,6 +19,8 @@ namespace Board.UI.VoteCanvas
         public TMP_Text votesText;
         
         public Vector2 moveDirection = Vector2.up;
+        
+        private int voteCount = 0;
         
         public event Action<Card> onVoteButtonClicked;
         
@@ -56,16 +59,24 @@ namespace Board.UI.VoteCanvas
             }
         }
 
-        public void ResetVotes()
+        public void ResetVoteText()
         {
-            votesText.text = "Votes: 0";
+            votesText.text = "N'a pas voté";
+        }
+        
+        public void ShowVoteCount()
+        {
+            votesText.text = $"Votes: {voteCount}";
         }
         
         private void OnVoteRefresh(Dictionary<ulong, List<ulong>> _votes)
         {
-            votesText.text = "Votes: " + (_votes.TryGetValue(card.characterInfo.ownerClientId, out var _vote) 
-                ? _vote.Count.ToString() 
-                : "0");
+            if (_votes.TryGetValue(card.characterInfo.ownerClientId, out var voters))
+            {
+                voteCount = voters.Count;
+            }
+            bool _hasVoted = _votes.Any(_vote => _vote.Value.Contains(card.characterInfo.ownerClientId));
+            votesText.text = (_hasVoted) ? "A voté" : "N'a pas voté";
         }
         
         private void OnVoteButtonClicked()
@@ -83,12 +94,12 @@ namespace Board.UI.VoteCanvas
             rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint);
         }
         
-        private void ShowCanvas()
+        public void ShowCanvas()
         {
             rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint);
         }
 
-        private void HideCanvas()
+        public void HideCanvas()
         {
             rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y, 0.5f).SetEase(Ease.OutQuint);
         }

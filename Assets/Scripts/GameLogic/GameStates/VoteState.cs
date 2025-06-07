@@ -32,7 +32,7 @@ namespace GameLogic.GameStates
         
         private VoteSelectPanel voteSelectPanel;
         
-        public static ulong lastVotedPlayer;
+        public static ulong mostVotedPlayer;
         
         private void OnVoteButtonClicked(Card _card)
         {
@@ -125,9 +125,9 @@ namespace GameLogic.GameStates
             OnPlayerVotedRpc(_senderId, SKIP_VOTE_ID);
         }
         
-        private void UpdateLastVotedPlayer(ulong _lastVotedPlayer)
+        private void UpdateMostVotedPlayer(ulong _lastVotedPlayer)
         {
-            lastVotedPlayer = _lastVotedPlayer;
+            mostVotedPlayer = _lastVotedPlayer;
         }
         
         public override void OnStateCreated()
@@ -170,8 +170,8 @@ namespace GameLogic.GameStates
             {
                 Character _votedCharacter = gameManager.GetCharacters().Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
                 _votedCharacter.isChained = true;
-                lastVotedPlayer = _votedCharacter.ownerClientId;
-                gameManager.gameInfoRevealer.SetRevealLevelRpc(lastVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public);
+                mostVotedPlayer = _votedCharacter.ownerClientId;
+                gameManager.gameInfoRevealer.SetRevealLevelRpc(mostVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
 
                 if (_votedCharacter.role.factionType == FactionType.anomaly) //TODO : OMG CHANGE THIS PLEASE 
                 {
@@ -186,11 +186,11 @@ namespace GameLogic.GameStates
             }
             else
             {
-                lastVotedPlayer = SKIP_VOTE_ID;
+                mostVotedPlayer = SKIP_VOTE_ID;
             }
             
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateLastVotedPlayer), 
-                new NetworkSerializableObject[] { new(lastVotedPlayer) }, 
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateMostVotedPlayer), 
+                new NetworkSerializableObject[] { new(mostVotedPlayer) }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
             gameManager.AskForUpdateAllCharactersRpc();
@@ -210,7 +210,7 @@ namespace GameLogic.GameStates
             {
                 VoteCanvas _voteCanvas = _c.voteCanvas;
                 _voteCanvas.SetVoteState(this);
-                _voteCanvas.ResetVotes();
+                _voteCanvas.ResetVoteText();
                 _voteCanvas.ActivateVoteCanvas();
                 _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
             }

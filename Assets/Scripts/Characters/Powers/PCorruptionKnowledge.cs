@@ -53,7 +53,7 @@ namespace Characters.Powers
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _character.ownerClientId,
-                    nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed), RevealLevel.Personal,
+                    nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed), RevealLevel.Personal, true,
                     GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             }
             

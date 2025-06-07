@@ -74,7 +74,7 @@ namespace Characters.Powers
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _blessingCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal,
+                    _blessingCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
                 blessingCharacterIdOnMorning.Add(_blessingCharacterId);
                 

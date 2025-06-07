@@ -40,7 +40,7 @@ namespace GameLogic
             return charactersInfoRevealed[_clientId];
         }
         
-        public void SetRevealLevel(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel)
+        public void SetRevealLevel(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, bool _showInfo = true)
         {
             var _field = typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString());
             Assert.IsNotNull(_field, "Field not found: " + _revealVariableName);
@@ -55,6 +55,10 @@ namespace GameLogic
             switch (_revealVariableName.ToString())
             {
                 case nameof(CharacterInfoReveal.isRoleRevealed):
+                    if (!_showInfo)
+                    {
+                        return;
+                    }
                     _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _clientId)
                         .ShowPseudoWithRevealedInfo(true);
                     break;
@@ -62,9 +66,9 @@ namespace GameLogic
         }
 
         [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
-        public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, RpcParams _rpcParams = default)
+        public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, bool _showInfo = true, RpcParams _rpcParams = default)
         {
-            SetRevealLevel(_clientId, _revealVariableName, _revealLevel);
+            SetRevealLevel(_clientId, _revealVariableName, _revealLevel, _showInfo);
         }
     }
 

@@ -78,7 +78,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, 
+            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
                 gameManager.RpcTarget.Everyone);
             
             WaitForCharacterClickServer();

@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using Board.UI.VoteCanvas;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
@@ -33,7 +34,7 @@ namespace GameLogic.GameStates
             base.OnStartStateServer();
             recapTimer = recapDuration;
             
-            if (VoteState.lastVotedPlayer == VoteState.SKIP_VOTE_ID)
+            if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
             {
                 gameManager.NextGameState();
             }
@@ -48,28 +49,66 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
-            if (VoteState.lastVotedPlayer == VoteState.SKIP_VOTE_ID)
+            await UniTask.Delay(TimeSpan.FromSeconds(1));
+            
+            await ShowVoteResult();
+            
+            if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
             {
-                
+                if (gameManager.IsServer)
+                {
+                    gameManager.NextGameState();
+                }
             }
             else
             {
                 await DoCardChainingAnimation();
                 if (gameManager.IsServer)
                 {
-                    await UniTask.Delay(TimeSpan.FromSeconds(3));
+                    await UniTask.Delay(TimeSpan.FromSeconds(5));
                     gameManager.NextGameState();
                 }
             }
         }
 
+        private void SetVoteCanvasVisibility(bool visible)
+        {
+            foreach (var _card in BoardManager.instance.visibleCards)
+            {
+                var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
+                if (_voteCanvas)
+                {
+                    if (visible)
+                    {
+                        _voteCanvas.ShowCanvas();
+                    }
+                    else
+                    {
+                        _voteCanvas.HideCanvas();
+                    }
+                }
+            }
+        }
+
+        private async UniTask ShowVoteResult()
+        {
+            foreach (var _card in BoardManager.instance.visibleCards)
+            {
+                var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
+                if (_voteCanvas)
+                {
+                    _voteCanvas.ShowVoteCount();
+                }
+            }
+
+            SetVoteCanvasVisibility(true);
+            await UniTask.Delay(TimeSpan.FromSeconds(5));
+            SetVoteCanvasVisibility(false);
+            await UniTask.Delay(TimeSpan.FromSeconds(1));
+        }
+
         private async UniTask DoCardChainingAnimation()
         {
-            foreach (var _c in BoardManager.instance.visibleCards)
-            {
-                _c.CancelShowPseudoWithRevealedInfo();
-            }
-            
             await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
             
             await BoardManager.instance.HideAllCards();
@@ -78,7 +117,7 @@ namespace GameLogic.GameStates
             spawnedCard = _cardInfo.transform;
             var _spawnedCardPivot = _cardInfo.cardPivotTransform;
                 
-            Character _votedCharacter = gameManager.GetCharacters().First(_character => _character.ownerClientId == VoteState.lastVotedPlayer);
+            Character _votedCharacter = gameManager.GetCharacters().First(_character => _character.ownerClientId == VoteState.mostVotedPlayer);
             _cardInfo.SetInfo(_votedCharacter);
             _cardInfo.ShowPseudoOnly();
             _cardInfo.SetChainedOverlay(false, true);

@@ -46,6 +46,7 @@ namespace Characters.Powers
         {
             _serializer.SerializeValue(ref maxWaitTime);
             _serializer.SerializeValue(ref powerName);
+            _serializer.SerializeValue(ref powerDescription);
             _serializer.SerializeValue(ref hasToBeAwakened);
             _serializer.SerializeValue(ref powerUseLeft);
 
@@ -53,12 +54,17 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref _eventPath);
             if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
                 canalisationSound = RuntimeManager.PathToEventReference(_eventPath);
+            
+            _eventPath = onUsedSound.GetPath() ?? string.Empty;
+            _serializer.SerializeValue(ref _eventPath);
+            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
+                onUsedSound = RuntimeManager.PathToEventReference(_eventPath);
         }
 
 
         public bool IsTheSamePower(Power _isTheSamePower)
         {
-            return powerName == _isTheSamePower.powerName;
+            return powerName == _isTheSamePower.powerName && powerDescription == _isTheSamePower.powerDescription;
         }
 
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)

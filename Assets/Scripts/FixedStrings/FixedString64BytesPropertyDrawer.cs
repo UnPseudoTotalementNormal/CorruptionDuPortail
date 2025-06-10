@@ -25,26 +25,26 @@ public class FixedString64BytesPropertyDrawer : PropertyDrawer
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
         int controlId = GUIUtility.GetControlID(FocusType.Passive);
-        // Récupère la hauteur sauvegardée ou valeur par défaut
+        float minHeight = EditorGUIUtility.singleLineHeight + 4f;
         float height = EditorPrefs.GetFloat($"FixedString64Bytes_Height_{property.propertyPath}", EditorGUIUtility.singleLineHeight * 3f);
         var style = new GUIStyle(EditorStyles.textArea) { wordWrap = true };
 
-        // Affiche le label au-dessus
-        position.height = EditorGUIUtility.singleLineHeight;
-        EditorGUI.LabelField(position, label);
-        position.y += EditorGUIUtility.singleLineHeight + 2f;
-        position.height = height;
+        float labelWidth = EditorGUIUtility.labelWidth * 0.925f;
+        Rect labelRect = new Rect(position.x, position.y, labelWidth, EditorGUIUtility.singleLineHeight);
+        Rect textRect = new Rect(position.x + labelWidth, position.y, position.width - labelWidth, height);
+
+        EditorGUI.LabelField(labelRect, label);
 
         EditorGUI.BeginChangeCheck();
         var oldValue = property.boxedValue.ToString();
-        var newValue = EditorGUI.TextArea(position, oldValue, style);
+        var newValue = EditorGUI.TextArea(textRect, oldValue, style);
         if (EditorGUI.EndChangeCheck())
         {
             property.boxedValue = new FixedString64Bytes(newValue);
         }
 
-        // Permet le redimensionnement avec un handle
-        var resizeRect = new Rect(position.x, position.yMax, position.width, 5f);
+        // Handle de redimensionnement sous la TextArea
+        var resizeRect = new Rect(textRect.x, textRect.yMax, textRect.width, 5f);
         EditorGUIUtility.AddCursorRect(resizeRect, MouseCursor.ResizeVertical);
         if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition))
         {
@@ -56,7 +56,7 @@ public class FixedString64BytesPropertyDrawer : PropertyDrawer
             if (Event.current.type == EventType.MouseDrag)
             {
                 height += Event.current.delta.y;
-                height = Mathf.Max(EditorGUIUtility.singleLineHeight * 2f, height);
+                height = Mathf.Max(minHeight, height);
                 EditorPrefs.SetFloat($"FixedString64Bytes_Height_{property.propertyPath}", height);
                 Event.current.Use();
             }
@@ -76,8 +76,8 @@ public class FixedString64BytesPropertyDrawer : PropertyDrawer
     /// <returns>The proper height of the field</returns>
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
-        // Hauteur dynamique sauvegardée
-        return EditorPrefs.GetFloat($"FixedString64Bytes_Height_{property.propertyPath}", EditorGUIUtility.singleLineHeight * 3f) + EditorGUIUtility.singleLineHeight + 7f;
+        float height = EditorPrefs.GetFloat($"FixedString64Bytes_Height_{property.propertyPath}", EditorGUIUtility.singleLineHeight * 3f);
+        return Mathf.Max(height, EditorGUIUtility.singleLineHeight) + 7f;
     }
 
     #endregion

@@ -9,9 +9,11 @@ namespace TooltipSystem
         
         [SerializeField] private TooltipWindow tooltipPrefab;
         
+        [SerializeField] private Transform tooltipCanvas;
+        
         public TooltipWindow CreateNewTooltip(GameObject _linkedGameObject, string _tooltipTitle, string _tooltipDescription)
         {
-            TooltipWindow _newTooltip = Instantiate(tooltipPrefab, transform);
+            TooltipWindow _newTooltip = Instantiate(tooltipPrefab, tooltipCanvas);
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
 

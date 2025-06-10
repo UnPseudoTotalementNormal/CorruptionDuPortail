@@ -21,6 +21,7 @@ namespace Characters.Powers
         [HideInInspector] public ulong ownerClientId;
 
         public FixedString64Bytes powerName;
+        public FixedString512Bytes powerDescription;
         public float maxWaitTime;
 
         public bool isPassive;

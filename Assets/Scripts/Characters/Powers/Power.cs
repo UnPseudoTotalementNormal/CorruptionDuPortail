@@ -28,7 +28,8 @@ namespace Characters.Powers
 
         public int powerUseLeft;
 
-        [Header("Sounds")] public EventReference canalisationSound;
+        [Header("Sounds")] 
+        public EventReference canalisationSound;
 
         public EventReference onUsedSound;
 

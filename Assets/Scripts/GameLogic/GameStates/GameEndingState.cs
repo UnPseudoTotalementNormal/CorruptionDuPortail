@@ -48,8 +48,8 @@ namespace GameLogic.GameStates
                     
                     var _newCard = BoardManager.instance.AddNewCard();
                     _newCard.SetInfo(_character);
-                    _newCard.ShowPseudoWithRevealedInfo();
-                    _newCard.ShowBackSide(true);
+                    _ = _newCard.ShowPseudoWithRevealedInfo();
+                    _ = _newCard.ShowBackSide(true);
                 }
             }
             
@@ -58,7 +58,7 @@ namespace GameLogic.GameStates
             BoardManager.instance.PlaceAllCardsToPosition();
             foreach (var _card in BoardManager.instance.visibleCards)
             {
-                _card.ShowFrontSide();
+                _ = _card.ShowFrontSide();
             }
         }
         

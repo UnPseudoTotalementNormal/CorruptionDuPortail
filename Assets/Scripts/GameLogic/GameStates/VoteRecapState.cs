@@ -158,16 +158,6 @@ namespace GameLogic.GameStates
         public override void StateUpdateServer()
         {
             base.StateUpdateServer();
-
-            return;
-            
-            recapTimer -= Time.deltaTime;
-            if (recapTimer > 0)
-            {
-                return;
-            }
-            
-            gameManager.NextGameState();
         }
         
         public override void StateUpdateClient()

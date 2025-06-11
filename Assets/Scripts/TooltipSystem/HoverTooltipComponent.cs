@@ -35,6 +35,12 @@ namespace TooltipSystem
         public void OnPointerEnter(PointerEventData _eventData)
         {
             onMouseEnterTrigger?.Invoke();
+
+            if (TooltipManager.instance.IsTooltipOpenForGameObject(gameObject))
+            {
+                return;
+            }
+            
             TooltipWindow _newTooltip = TooltipManager.instance.CreateNewTooltip(gameObject, tooltipTitle, tooltipDescription);
             Canvas.ForceUpdateCanvases();
             PlaceTooltip(_newTooltip);

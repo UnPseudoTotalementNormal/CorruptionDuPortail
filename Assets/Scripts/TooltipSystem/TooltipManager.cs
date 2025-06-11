@@ -25,14 +25,14 @@ namespace TooltipSystem
 
             if (_linkedGameObject.TryGetComponent(out ITooltipTrigger _tooltipTrigger))
             {
-                _tooltipTrigger.onTooltipTryClose += () => { TryCloseTooltip(_newTooltip); };
+                _tooltipTrigger.onMouseExitTrigger += () => { OnMouseExitComponent(_newTooltip); };
                 _tooltipTrigger.onTooltipForceClose += () => { CloseTooltip(_newTooltip); };
             }
             LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());
             return _newTooltip;
         }
         
-        public void TryCloseTooltip(TooltipWindow _tooltip)
+        public void OnMouseExitComponent(TooltipWindow _tooltip)
         {
             if (!_tooltip)
             {

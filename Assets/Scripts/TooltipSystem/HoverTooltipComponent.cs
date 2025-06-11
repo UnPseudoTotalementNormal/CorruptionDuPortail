@@ -1,5 +1,6 @@
 using System;
-using UnityEditor;
+using System.Collections;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -7,12 +8,20 @@ namespace TooltipSystem
 {
     public class HoverTooltipComponent : MonoBehaviour, ITooltipTrigger, IPointerEnterHandler, IPointerExitHandler
     {
-        public event Action onTooltipTryClose;
+        public event Action onMouseEnterTrigger;
+        public event Action onMouseExitTrigger;
         public event Action onTooltipForceClose;
 
         [SerializeField] private string tooltipTitle;
         [SerializeField] private string tooltipDescription;
+
+        private Canvas canvas;
         
+        private void Start()
+        {
+            canvas = GetComponentInParent<Canvas>();
+        }
+
         public void SetTooltipTitle(string _title)
         {
             tooltipTitle = _title;
@@ -25,55 +34,55 @@ namespace TooltipSystem
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
+            onMouseEnterTrigger?.Invoke();
             TooltipWindow _newTooltip = TooltipManager.instance.CreateNewTooltip(gameObject, tooltipTitle, tooltipDescription);
+            Canvas.ForceUpdateCanvases();
             PlaceTooltip(_newTooltip);
-        }
-
-        private void PlaceTooltip(TooltipWindow _newTooltip)
-        {
-            RectTransform tooltipRect = _newTooltip.GetComponent<RectTransform>();
-            RectTransform[] targetRects = GetComponentsInChildren<RectTransform>();
-
-            if (targetRects.Length == 0)
-                return;
-
-            Vector3 min = Vector3.positiveInfinity;
-            Vector3 max = Vector3.negativeInfinity;
-            Vector3[] corners = new Vector3[4];
-
-            foreach (var rect in targetRects)
-            {
-                rect.GetWorldCorners(corners);
-                foreach (var corner in corners)
-                {
-                    min = Vector3.Min(min, corner);
-                    max = Vector3.Max(max, corner);
-                }
-            }
-
-            Vector3 boundingBoxSize = new Vector3(
-                Mathf.Abs(max.x - min.x),
-                Mathf.Abs(max.y - min.y),
-                Mathf.Abs(max.z - min.z)
-            );
-            Vector3 boundingBoxCenter = (min + max) * 0.5f;
-            
-            Vector2 screenMin = RectTransformUtility.WorldToScreenPoint(Camera.main, min);
-            Vector2 screenMax = RectTransformUtility.WorldToScreenPoint(Camera.main, max);
-            Vector2 screenBoundingBoxSize = screenMax - screenMin;
-            
-            Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(Camera.main, boundingBoxCenter);
-            tooltipRect.position = screenPos + Vector2.up * screenBoundingBoxSize.y / 2f; // + la moitié du tooltip aussi
         }
         
         public void OnPointerExit(PointerEventData _eventData)
         {
-            onTooltipTryClose?.Invoke();
+            onMouseExitTrigger?.Invoke();
         }
 
         private void OnDisable()
         {
             onTooltipForceClose?.Invoke();
+        }
+        
+        private void PlaceTooltip(TooltipWindow _newTooltip)
+        {
+            RectTransform _tooltipRect = _newTooltip.GetComponent<RectTransform>();
+            var (_tooltipBoundingBoxSize, _tooltipScreenPos) = GetScreenBoundingBoxAndCenter(_tooltipRect.GetComponentsInChildren<RectTransform>());
+            var (_componentBoundingBoxSize, _componentScreenPos) = GetScreenBoundingBoxAndCenter(GetComponentsInChildren<RectTransform>(), Camera.main);
+            _tooltipRect.position = _componentScreenPos + Vector2.up * (_componentBoundingBoxSize.y / 2f + _tooltipBoundingBoxSize.y / 2f);
+        }
+
+        private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)
+        {
+            if (_targetRects.Length == 0)
+                return (Vector2.zero, Vector2.zero);
+
+            Vector3 _min = Vector3.positiveInfinity;
+            Vector3 _max = Vector3.negativeInfinity;
+            Vector3[] _corners = new Vector3[4];
+
+            foreach (var _rect in _targetRects)
+            {
+                _rect.GetWorldCorners(_corners);
+                foreach (var _corner in _corners)
+                {
+                    _min = Vector3.Min(_min, _corner);
+                    _max = Vector3.Max(_max, _corner);
+                }
+            }
+
+            Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
+            Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(_camera, _min);
+            Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(_camera, _max);
+            Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_screenMax.x - _screenMin.x), Mathf.Abs(_screenMax.y - _screenMin.y));
+            Vector2 _screenPos = RectTransformUtility.WorldToScreenPoint(_camera, _boundingBoxCenter);
+            return (_screenBoundingBoxSize, _screenPos);
         }
     }
 }

@@ -962,6 +962,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tooltipPrefab: {fileID: 6011727100065080079, guid: 8cc773ddc69cc1d4ba1bd562a1443839, type: 3}
+  tooltipCanvas: {fileID: 1740318887}
 --- !u!1 &522897339
 GameObject:
   m_ObjectHideFlags: 0

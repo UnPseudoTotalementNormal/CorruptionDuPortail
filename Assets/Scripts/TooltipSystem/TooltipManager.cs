@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,7 +11,12 @@ namespace TooltipSystem
         [SerializeField] private TooltipWindow tooltipPrefab;
         
         [SerializeField] private Transform tooltipCanvas;
-        
+
+        private void Awake()
+        {
+            instance = this;
+        }
+
         public TooltipWindow CreateNewTooltip(GameObject _linkedGameObject, string _tooltipTitle, string _tooltipDescription)
         {
             TooltipWindow _newTooltip = Instantiate(tooltipPrefab, tooltipCanvas);

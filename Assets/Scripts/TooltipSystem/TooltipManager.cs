@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UI;
 
 namespace TooltipSystem
@@ -40,9 +41,13 @@ namespace TooltipSystem
             }
         }
 
-        public TooltipWindow CreateNewTooltip(GameObject _linkedGameObject, string _tooltipTitle, string _tooltipDescription)
+        public TooltipWindow CreateNewTooltipFromGameObject(GameObject _linkedGameObject, string _tooltipTitle, string _tooltipDescription)
         {
+            ITooltipTrigger _tooltipTrigger = _linkedGameObject.GetComponent<ITooltipTrigger>();
+            
+            Assert.IsNotNull(_tooltipTrigger, $"GameObject {_linkedGameObject.name} does not have a component that implements ITooltipTrigger. It is required to use CreateNewTooltipFromGameObject."); 
             TooltipWindow _newTooltip = Instantiate(tooltipPrefab, tooltipCanvas);
+            
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
             
@@ -51,12 +56,9 @@ namespace TooltipSystem
             var _tooltipInstanceInfo = new TooltipInstanceInfo(_linkedGameObject, _newTooltip);
             tooltipInstances.Add(_tooltipInstanceInfo);
 
-            if (_linkedGameObject.TryGetComponent(out ITooltipTrigger _tooltipTrigger))
-            {
-                _tooltipTrigger.onMouseEnterTrigger += () => { OnMouseEnterComponent(_tooltipInstanceInfo); };
-                _tooltipTrigger.onMouseExitTrigger += () => { OnMouseExitComponent(_tooltipInstanceInfo); };
-                _tooltipTrigger.onTooltipForceClose += () => { CloseTooltip(_newTooltip, _tooltipInstanceInfo); };
-            }
+            _tooltipTrigger.onMouseEnterTrigger += () => { OnMouseEnterComponent(_tooltipInstanceInfo); };
+            _tooltipTrigger.onMouseExitTrigger += () => { OnMouseExitComponent(_tooltipInstanceInfo); };
+            _tooltipTrigger.onTooltipForceClose += () => { CloseTooltip(_newTooltip, _tooltipInstanceInfo); };
             
             _newTooltip.onMouseEnterTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = true; };
             _newTooltip.onMouseExitTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = false; };

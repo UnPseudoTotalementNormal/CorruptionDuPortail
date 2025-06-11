@@ -41,7 +41,7 @@ namespace TooltipSystem
                 return;
             }
             
-            TooltipWindow _newTooltip = TooltipManager.instance.CreateNewTooltip(gameObject, tooltipTitle, tooltipDescription);
+            TooltipWindow _newTooltip = TooltipManager.instance.CreateNewTooltipFromGameObject(gameObject, tooltipTitle, tooltipDescription);
             Canvas.ForceUpdateCanvases();
             PlaceTooltip(_newTooltip);
         }

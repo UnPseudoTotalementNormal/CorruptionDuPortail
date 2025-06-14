@@ -173,7 +173,7 @@ namespace GameLogic.GameStates
                 mostVotedPlayer = _votedCharacter.ownerClientId;
                 gameManager.gameInfoRevealer.SetRevealLevelRpc(mostVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
 
-                if (_votedCharacter.role.factionType == FactionType.anomaly) //TODO : OMG CHANGE THIS PLEASE 
+                if (_votedCharacter.role.roleName == "Va'ahl, Le Mage Occulte") //TODO : OMG CHANGE THIS PLEASE 
                 {
                     var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
                     _portalState.shouldActivate = true;

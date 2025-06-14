@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Board.UI.VoteCanvas;
 using Characters;
+using Characters.Powers;
 using Network;
 using UI.SelectPanels;
 using UnityEngine;
@@ -21,8 +22,9 @@ namespace GameLogic.GameStates
     {
         public Dictionary<ulong, List<ulong>> votesForPlayer = new();
         public float voteDuration;
+        [SerializeField] private PowerDataObject takeDownThePortalPowerDataObject;
         
-        public float voteTimer;
+        [HideInInspector] public float voteTimer;
 
         public event Action<Dictionary<ulong, List<ulong>>> onVoteRefresh;
         
@@ -173,7 +175,7 @@ namespace GameLogic.GameStates
                 mostVotedPlayer = _votedCharacter.ownerClientId;
                 gameManager.gameInfoRevealer.SetRevealLevelRpc(mostVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
 
-                if (_votedCharacter.role.roleName == "Va'ahl, Le Mage Occulte") //TODO : OMG CHANGE THIS PLEASE 
+                if (_votedCharacter.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject.power)))
                 {
                     var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
                     _portalState.shouldActivate = true;

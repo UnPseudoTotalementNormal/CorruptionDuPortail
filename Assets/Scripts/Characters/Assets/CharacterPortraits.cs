@@ -27,6 +27,7 @@ public static class CharacterPortraitsValues
         { CharacterPortraits.Technomancien, "Assets/Art/Sprites/Portraits/Technomancien.jpg" },
         { CharacterPortraits.Uges, "Assets/Art/Sprites/Portraits/Uges.jpg" },
         { CharacterPortraits.Vahal, "Assets/Art/Sprites/Portraits/Vahal.jpg" },
+        { CharacterPortraits.Inconnu, "Assets/Art/Sprites/Portraits/Inconnu.jpg" },
         { CharacterPortraits.DrGloubi, "Assets/Art/Sprites/Portraits/DrGloubi.png" },
     };
 
@@ -49,6 +50,7 @@ public static class CharacterPortraitsValues
     Technomancien = 632219777,
     Uges = 864506531,
     Vahal = 1384333719,
+    Inconnu = 148354486,
         }
 }
 

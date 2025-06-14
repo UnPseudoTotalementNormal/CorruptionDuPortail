@@ -14,6 +14,8 @@ public class StateUI : NetworkBehaviour
 
     [SerializeField] public CanvasGroup canvasGroup;
     
+    [SerializeField] public bool instantShowOnStateStart = false;
+    
     public void SetupStateUI(GameManager gameManager, GameState gameState)
     {
         this.gameManager = gameManager;
@@ -40,6 +42,7 @@ public class StateUI : NetworkBehaviour
         }
         else
         {
+            canvasGroup.DOKill(true);
             canvasGroup.DOFade(1, 0.5f);
         }
 
@@ -56,6 +59,7 @@ public class StateUI : NetworkBehaviour
         }
         else
         {
+            canvasGroup.DOKill(true);
             canvasGroup.DOFade(0, 0.5f);
         }
 

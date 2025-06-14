@@ -52,7 +52,7 @@ namespace GameLogic
         {
             if (stateUI != null)
             {
-                stateUI.ShowStateUI();
+                stateUI.ShowStateUI(stateUI.instantShowOnStateStart);
             }
             
             onStateStartClient?.Invoke();

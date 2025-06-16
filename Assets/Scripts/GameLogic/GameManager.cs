@@ -182,6 +182,12 @@ namespace GameLogic
         
             SwitchGameState(_newGameStateIndex);
         }
+        
+        public async UniTask WaitAFrameAndNextGameState()
+        {
+            await UniTask.WaitForEndOfFrame();
+            NextGameState();
+        }
     
         public void NextGameState(bool _ignoreGameLoop = false)
         {

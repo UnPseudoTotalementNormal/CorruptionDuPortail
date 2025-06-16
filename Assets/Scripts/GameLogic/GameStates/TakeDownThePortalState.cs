@@ -208,7 +208,7 @@ namespace GameLogic.GameStates
             if (!shouldActivate)
             {
                 Debug.Log("TakeDownThePortalState is not activated");
-                gameManager.NextGameState();
+                _ = gameManager.WaitAFrameAndNextGameState();
                 return;
             }
 

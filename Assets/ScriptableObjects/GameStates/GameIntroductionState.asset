@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: ceaab6d0c4406e04faf453ff0c4d03ac, type: 3}
   gameStateDependencies: []
+  timeBeforePreRoleText: 1
+  timeBeforeRoleText: 3
+  timeBeforeGameStart: 7.5

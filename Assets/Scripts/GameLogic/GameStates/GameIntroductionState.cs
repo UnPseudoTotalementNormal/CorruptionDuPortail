@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
@@ -12,6 +13,18 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "GameIntroductionState", menuName = "GameStates/GameIntroductionState")]
     public class GameIntroductionState : GameState
     {
+        private bool showPreRoleText;
+        private bool showRoleText;
+        private bool endedState;
+    
+        public float timeBeforePreRoleText = 0.5f;
+        public float timeBeforeRoleText = 1.5f;
+        public float timeBeforeGameStart = 4f;
+        public event Action onPreRoleTextShown;
+        public event Action onRoleTextShown;
+
+        private float stateTimer = 0;
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -20,8 +33,6 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
-            
-            gameManager.NextGameState();
         }
 
         public override void OnEndStateServer()
@@ -32,6 +43,11 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+
+            stateTimer = 0;
+            showRoleText = false;
+            showPreRoleText = false;
+            endedState = false;
         }
         
         public override void OnEndStateClient()
@@ -50,6 +66,26 @@ namespace GameLogic.GameStates
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();
+            
+            stateTimer += Time.deltaTime;
+            if (!showPreRoleText && stateTimer >= timeBeforePreRoleText)
+            {
+                showPreRoleText = true;
+                onPreRoleTextShown?.Invoke();
+            }
+            
+            if (!showRoleText && stateTimer >= timeBeforeRoleText)
+            {
+
+                showRoleText = true;
+                onRoleTextShown?.Invoke();
+            }
+            
+            if (!endedState && gameManager.IsServer && stateTimer >= timeBeforeGameStart)
+            {
+                endedState = true;
+                gameManager.NextGameState();
+            }
         }
     }
 }

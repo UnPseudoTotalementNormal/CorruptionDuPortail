@@ -16,7 +16,7 @@ public class StateUI : NetworkBehaviour
     
     [SerializeField] public bool instantShowOnStateStart = false;
     
-    public void SetupStateUI(GameManager gameManager, GameState gameState)
+    public virtual void SetupStateUI(GameManager gameManager, GameState gameState)
     {
         this.gameManager = gameManager;
         owningGameState = gameState;
@@ -36,13 +36,14 @@ public class StateUI : NetworkBehaviour
 
     public virtual void ShowStateUI(bool instant = false)
     {
+        canvasGroup.DOKill(true);
+        
         if (instant)
         {
             canvasGroup.alpha = 1;
         }
         else
         {
-            canvasGroup.DOKill(true);
             canvasGroup.DOFade(1, 0.5f);
         }
 
@@ -53,13 +54,14 @@ public class StateUI : NetworkBehaviour
     
     public virtual void HideStateUI(bool instant = false)
     {
+        canvasGroup.DOKill(true);
+        
         if (instant)
         {
             canvasGroup.alpha = 0;
         }
         else
         {
-            canvasGroup.DOKill(true);
             canvasGroup.DOFade(0, 0.5f);
         }
 

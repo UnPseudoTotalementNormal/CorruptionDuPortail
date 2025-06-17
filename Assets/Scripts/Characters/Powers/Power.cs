@@ -44,9 +44,11 @@ namespace Characters.Powers
 
         public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
+            _serializer.SerializeValue(ref ownerClientId);
             _serializer.SerializeValue(ref maxWaitTime);
             _serializer.SerializeValue(ref powerName);
             _serializer.SerializeValue(ref powerDescription);
+            _serializer.SerializeValue(ref isPassive);
             _serializer.SerializeValue(ref hasToBeAwakened);
             _serializer.SerializeValue(ref powerUseLeft);
 

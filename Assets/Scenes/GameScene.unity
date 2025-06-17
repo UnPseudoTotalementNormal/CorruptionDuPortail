@@ -1656,6 +1656,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1910531426}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &886355729
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 886355730}
+  m_Layer: 0
+  m_Name: CardMaxPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &886355730
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 886355729}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 19, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1230486869}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &892093031
 GameObject:
   m_ObjectHideFlags: 0
@@ -2138,6 +2169,7 @@ Transform:
   m_Children:
   - {fileID: 1637949529}
   - {fileID: 1636735881}
+  - {fileID: 886355730}
   m_Father: {fileID: 1864116603}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1230486870
@@ -2155,7 +2187,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   cardPrefab: {fileID: 3564681152801350707, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
   spawnCardPosition: {fileID: 1636735881}
-  maxCardPosition: {fileID: 0}
+  maxCardPosition: {fileID: 886355730}
   visibleCards: []
 --- !u!114 &1230486871
 MonoBehaviour:

@@ -20,7 +20,7 @@ MonoBehaviour:
       Value:
         roleToAttribute: 1
         canBeFake: 0
-    - Key: {fileID: 11400000, guid: f55ca5ff68f68b247b3beace3abe7a7e, type: 2}
+    - Key: {fileID: 11400000, guid: 795505cbed82e72468f5ed5ccfc4668d, type: 2}
       Value:
         roleToAttribute: 0
         canBeFake: 1

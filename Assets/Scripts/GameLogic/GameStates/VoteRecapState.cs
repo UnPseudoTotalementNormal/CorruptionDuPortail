@@ -16,7 +16,7 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "VoteRecapState", menuName = "GameStates/VoteRecapState")]
     public class VoteRecapState : GameState
     {
-        public float recapDuration;
+        public float recapDuration; //useless rn
         
         private float recapTimer;
         
@@ -33,11 +33,6 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             recapTimer = recapDuration;
-            
-            if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
-            {
-                gameManager.NextGameState();
-            }
         }
 
         public override void OnEndStateServer()

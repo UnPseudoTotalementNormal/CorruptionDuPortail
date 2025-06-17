@@ -85,14 +85,19 @@ MonoBehaviour:
     factionType: 0
     rolePortrait: 1048685107
     roleDifficulty: 2
+    powers: []
     winningConditions:
     - rid: 7121802106355843684
     isAwakened: 0
     ownerClientId: 0
-  powers: []
+  powers:
+  - {fileID: 11400000, guid: 3d1c122cf29f9fb45a3c142f7d9884af, type: 2}
+  - {fileID: 11400000, guid: a3b4e54569ed66f4a8987e3ff9e20780, type: 2}
+  - {fileID: 11400000, guid: 365f6b78303b727439eb99848f76efae, type: 2}
   references:
     version: 2
     RefIds:
     - rid: 7121802106355843684
       type: {class: WAnomalyCorruption, ns: Characters.WinningConditions, asm: Assembly-CSharp}
-      data: 
+      data:
+        ownerClientId: 0

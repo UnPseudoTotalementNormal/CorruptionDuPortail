@@ -459,6 +459,28 @@ namespace GameLogic
         }
 
         #endregion
+        
+        [Rpc(SendTo.Server)]
+        public void ChainPlayerAndShowRpc(ulong _chainingClientId)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+        
+            var _chainingCharacter = GetCharacters().First(_c => _c.ownerClientId == _chainingClientId);
+        
+            _chainingCharacter.isChained = true;
+        
+            AskForUpdateAllCharactersRpc();
+            UpdateChainOverlayRpc(_chainingClientId);
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        public void UpdateChainOverlayRpc(ulong _chainedClientId)
+        {
+            BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.ownerClientId == _chainedClientId).UpdateChainOverlay();
+        }
 
         [Rpc(SendTo.Server)]
         public void CorruptPlayerRpc(ulong _ownerClientId)

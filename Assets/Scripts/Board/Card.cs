@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
@@ -46,6 +47,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private System.Threading.CancellationTokenSource showPseudoCts;
 
+    private bool isSubscribedToUpdate = false;
+
     private void Awake()
     {
         if (characterInfo == null)
@@ -59,8 +62,18 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
         SetChainedOverlay(characterInfo.isChained, true);
+        if (!isSubscribedToUpdate)
+        {
+            isSubscribedToUpdate = true;
+            GameManager.instance.onCharactersListUpdated += UpdateInfo;
+        }
     }
-    
+
+    private void UpdateInfo(List<Character> _characters)
+    {
+        characterInfo = _characters.Find(_character => _character.ownerClientId == characterInfo.ownerClientId);
+    }
+
     #region Info Methods
 
     private void ShowPowers()
@@ -151,6 +164,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     }
 
     #endregion
+
+    public void UpdateChainOverlay(bool _instant = false)
+    {
+        SetChainedOverlay(characterInfo.isChained, _instant);
+    }
     
     public void SetChainedOverlay(bool _isChained, bool _instant = false)
     {

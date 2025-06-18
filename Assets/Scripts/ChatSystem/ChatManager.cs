@@ -48,4 +48,16 @@ namespace ChatSystem
             chatWindow.AddMessage(_message, _senderName);
         }
     }
+    
+    public class ChatWindowInfo : INetworkSerializable
+    {
+        public int windowId;
+        public FixedString64Bytes windowName;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
+        {
+            _serializer.SerializeValue(ref windowId);
+            _serializer.SerializeValue(ref windowName);
+        }
+    }
 }

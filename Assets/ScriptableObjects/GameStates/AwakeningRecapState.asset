@@ -17,6 +17,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7724efedc4300b248a78e71060eaba3e, type: 2}
   recapEvents:
   - eventName: "R\xE9sum\xE9 des corruptions"
-    duration: 8
     eventPrefab: {fileID: 3507378301809329924, guid: 5724cf52c7825784ca8550d8dddcc24c, type: 3}
+  - eventName: Lecture des messages
+    eventPrefab: {fileID: 5710704963254373396, guid: 7df602c8bd4ccc44aab4427c69dfba6c, type: 3}
   currentEventTimer: 0

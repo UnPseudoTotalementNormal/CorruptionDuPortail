@@ -107,17 +107,17 @@ namespace GameLogic.GameStates
             }
             ShowEvent(_newIndex);
             
-            currentEventTimer = recapEvents[_newIndex].duration;
+            currentEventTimer = spawnedRecapEvents[_newIndex].EvaluateDuration();
         }
 
         private void ShowEvent(int _index)
         {
-            spawnedRecapEvents[_index].ShowEvent();
+            spawnedRecapEvents[_index]?.ShowEvent();
         }
 
         private void HideEvent(int _index)
         {
-            spawnedRecapEvents[_index].HideEvent();
+            spawnedRecapEvents[_index]?.HideEvent();
         }
     }
     
@@ -125,7 +125,6 @@ namespace GameLogic.GameStates
     public class AwakeningRecapEvent
     {
         public string eventName;
-        public float duration;
         
         public AwakeningRecapEventComponent eventPrefab;
     }

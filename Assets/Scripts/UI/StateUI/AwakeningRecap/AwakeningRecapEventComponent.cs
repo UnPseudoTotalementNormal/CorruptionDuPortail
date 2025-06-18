@@ -9,10 +9,16 @@ namespace UI.Components
     public class AwakeningRecapEventComponent : MonoBehaviour
     {
         public CanvasGroup eventCanvasGroup;
+        public float baseDuration = 5f;
 
         private void Awake()
         {
             Assert.IsNotNull(eventCanvasGroup, "AwakeningRecapEventComponent requires a CanvasGroup component to be set.");
+        }
+
+        public virtual float EvaluateDuration()
+        {
+            return baseDuration;
         }
         
         public virtual void SetupEvent(AwakeningRecapEvent _recapEvent)

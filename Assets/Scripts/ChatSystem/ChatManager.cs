@@ -1,5 +1,6 @@
 #region
 
+using System;
 using Network;
 using Unity.Collections;
 using Unity.Netcode;
@@ -49,7 +50,8 @@ namespace ChatSystem
         }
     }
     
-    public class ChatWindowInfo : INetworkSerializable
+    [Serializable]
+    public struct ChatWindowInfo : INetworkSerializable
     {
         public int windowId;
         public FixedString64Bytes windowName;

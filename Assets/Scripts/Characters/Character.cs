@@ -17,10 +17,11 @@ namespace Characters
         public Role role;
         public ulong ownerClientId;
         
-        [Header("Variables")]
+        [Header("Variables")] //quand de nouvelle variable son ajoutée, il faut mettre à jour le UpdateCharacter
         public bool isChained;
         public bool isCorrupted;
         public bool isBlessed;
+        public int messageLeft = 1;
         public bool isFake => ownerClientId.IsFakeClientId();
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -29,6 +30,7 @@ namespace Characters
             serializer.SerializeValue(ref isChained);
             serializer.SerializeValue(ref isCorrupted);
             serializer.SerializeValue(ref isBlessed);
+            serializer.SerializeValue(ref messageLeft);
             
             if (role == null)
             {
@@ -46,6 +48,7 @@ namespace Characters
             isChained = _newCharacter.isChained;
             isCorrupted = _newCharacter.isCorrupted;
             isBlessed = _newCharacter.isBlessed;
+            messageLeft = _newCharacter.messageLeft;
             
             if (role == null)
             {

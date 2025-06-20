@@ -1,10 +1,13 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using Network;
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 #endregion
 
@@ -13,40 +16,85 @@ namespace ChatSystem
     public class ChatManager : NetworkBehaviour
     {
         public static ChatManager instance;
-        
-        [SerializeField] private ChatWindow chatWindow;
 
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;
+
+        private List<ChatWindow> chatWindows = new();
+        private HashSet<int> discoveredChatIds = new();
+        
+        public int activeChatId { get; private set; } = (int)ChatWindowIDs.General;
+        
+        public event Action<int> onActiveChatChanged;
 
         private void Awake()
         {
             instance = this;
-            chatWindow.SetChatManager(this);
         }
         
-        [Rpc(SendTo.Server)]
-        public void SendChatMessageServerRpc(FixedString512Bytes _message, ulong _senderClientId)
+        public void ChangeActiveChat(int _chatId)
         {
-            ReceiveChatMessageClientRpc(_message, _senderClientId);
+            if (discoveredChatIds.Contains(_chatId))
+            {
+                activeChatId = _chatId;
+                onActiveChatChanged?.Invoke(activeChatId);
+            }
+            else
+            {
+                Debug.LogWarning($"Chat with ID {_chatId} is not discovered yet.");
+            }
         }
 
-        [Rpc(SendTo.ClientsAndHost)]
-        private void ReceiveChatMessageClientRpc(FixedString512Bytes _message, ulong _senderClientId)
+        public void TrySendChatMessage(string _text)
         {
-            string _senderName = _senderClientId == SERVER_CLIENT_ID ? "Server" : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
-            chatWindow.AddMessage(_message, _senderName);
+            if (string.IsNullOrEmpty(_text))
+            {
+                return;
+            }
+            
+            FixedString512Bytes _message = new FixedString512Bytes(_text);
+            SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message), activeChatId);
+        }
+
+        public void DiscoverChat(int _chatId)
+        {
+            discoveredChatIds.Add(_chatId);
+        }
+
+        public ChatWindow GetChatWindow(int _chatId)
+        {
+            ChatWindow _window = chatWindows.Find(w => w.chatId == _chatId);
+            if (_window == null)
+            {
+                _window = new ChatWindow
+                {
+                    chatId = _chatId,
+                    chatName = $"Chat {_chatId}",
+                    chatMessages = new List<ChatMessage>()
+                };
+                chatWindows.Add(_window);
+            }
+            
+            return _window;
         }
         
-        [Rpc(SendTo.SpecifiedInParams)]
-        public void SendChatMessageSingleRpc(FixedString512Bytes _message, ulong _senderClientId, RpcParams _rpcParams)
-        {
-            string _senderName = _senderClientId == SERVER_CLIENT_ID ? "Server" : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_senderClientId).playerName.ToString();
-            chatWindow.AddMessage(_message, _senderName);
-        }
         
-        public void AddMessageLocal(string _message, string _senderName)
+        [Rpc(SendTo.Server)]
+        public void SendChatMessageServerRpc(ChatMessage _chatMessage, int _chatId)
         {
-            chatWindow.AddMessage(_message, _senderName);
+            ReceiveChatMessageRpc(_chatMessage, _chatId);
+        }
+
+        [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
+        public void ReceiveChatMessageRpc(ChatMessage _chatMessage, int _chatId = (int)ChatWindowIDs.General, RpcParams _rpcParams = default)
+        {
+            ChatWindow _window = GetChatWindow(_chatId);
+            _window?.AddChatMessage(_chatMessage);
+        }
+
+        public void AddMessageLocal(string _message, ulong _senderId, int _chatId = (int)ChatWindowIDs.General)
+        {
+            ChatWindow _window = GetChatWindow(_chatId);
+            _window?.AddChatMessage(new ChatMessage(_senderId, _message));
         }
     }
     

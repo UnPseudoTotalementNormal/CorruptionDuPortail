@@ -13,11 +13,11 @@ namespace Characters.Powers
                 _character.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             if (_character.role.factionType == FactionType.chosen)
             {
-                ChatSystem.ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} est un élu.", "Server");
+                ChatSystem.ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} est un élu.", GameValues.CHAT_SERVER_CLIENT_ID);
             }
             else
             {
-                ChatSystem.ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", "Server");
+                ChatSystem.ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID);
             }
             
             GameManager.instance.GetCharacter(ownerClientId).CorruptPlayer();   

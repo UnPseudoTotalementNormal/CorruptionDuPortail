@@ -1,34 +1,24 @@
 #region
 
-using TMPro;
+using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
-using UnityEngine;
-using UnityEngine.UI;
 
 #endregion
 
 namespace ChatSystem
 {
-    public class ChatWindow : MonoBehaviour
+    public class ChatWindow
     {
-        private ChatManager chatManager;
-        [SerializeField] private TMP_Text chatTextPrefab;
-    
-        [SerializeField] private TMP_InputField inputField;
-        [SerializeField] private RectTransform layoutTransform;
-
-        private void Awake()
-        {
-            inputField.onEndEdit.AddListener(_text =>
-            {
-                if (Input.GetKeyDown(KeyCode.Return))
-                {
-                    TrySendChatMessage(_text);
-                    inputField.text = string.Empty;
-                }
-            });
-        }
+        private ChatManager chatManager => ChatManager.instance;
+        
+        public int chatId;
+        
+        public FixedString64Bytes chatName;
+        public List<ChatMessage> chatMessages = new();
+        
+        public event Action<ChatMessage> onMessageReceived;
 
         private void TrySendChatMessage(string _text)
         {
@@ -41,23 +31,13 @@ namespace ChatSystem
                 return;
 
             FixedString512Bytes _message = new FixedString512Bytes(_text);
-            chatManager.SendChatMessageServerRpc(_message, NetworkManager.Singleton.LocalClientId);
+            chatManager.SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message), chatId);
         }
 
-        public void SetChatManager(ChatManager _chatManager)
+        public void AddChatMessage(ChatMessage _message)
         {
-            chatManager = _chatManager;
+            chatMessages.Add(_message);
+            onMessageReceived?.Invoke(_message);
         }
-
-        public void AddMessage(FixedString512Bytes _message, string _senderName)
-        {
-            TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
-
-            _chatText.text = $"{_senderName}: {_message.ToString()}";
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
-        }
-
-
     }
 }

@@ -18,17 +18,41 @@ namespace ChatSystem
         public static ChatManager instance;
 
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;
-        
-        [SerializeField] private TMP_Text chatTextPrefab;
-        [SerializeField] private TMP_InputField inputField;
-        [SerializeField] private RectTransform layoutTransform;
 
         private List<ChatWindow> chatWindows = new();
         private HashSet<int> discoveredChatIds = new();
+        
+        public int activeChatId { get; private set; } = (int)ChatWindowIDs.General;
+        
+        public event Action<int> onActiveChatChanged;
 
         private void Awake()
         {
             instance = this;
+        }
+        
+        public void ChangeActiveChat(int _chatId)
+        {
+            if (discoveredChatIds.Contains(_chatId))
+            {
+                activeChatId = _chatId;
+                onActiveChatChanged?.Invoke(activeChatId);
+            }
+            else
+            {
+                Debug.LogWarning($"Chat with ID {_chatId} is not discovered yet.");
+            }
+        }
+
+        public void TrySendChatMessage(string _text)
+        {
+            if (string.IsNullOrEmpty(_text))
+            {
+                return;
+            }
+            
+            FixedString512Bytes _message = new FixedString512Bytes(_text);
+            SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message), activeChatId);
         }
 
         public void DiscoverChat(int _chatId)
@@ -36,14 +60,23 @@ namespace ChatSystem
             discoveredChatIds.Add(_chatId);
         }
 
-        public ChatWindow OpenChat(int _chatId)
+        public ChatWindow GetChatWindow(int _chatId)
         {
-            if (discoveredChatIds.Contains(_chatId))
+            ChatWindow _window = chatWindows.Find(w => w.chatId == _chatId);
+            if (_window == null)
             {
-                return chatWindows.Find(w => w.chatId == _chatId);
+                _window = new ChatWindow
+                {
+                    chatId = _chatId,
+                    chatName = $"Chat {_chatId}",
+                    chatMessages = new List<ChatMessage>()
+                };
+                chatWindows.Add(_window);
             }
-            return null;
+            
+            return _window;
         }
+        
         
         [Rpc(SendTo.Server)]
         public void SendChatMessageServerRpc(ChatMessage _chatMessage, int _chatId)
@@ -54,27 +87,14 @@ namespace ChatSystem
         [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
         public void ReceiveChatMessageRpc(ChatMessage _chatMessage, int _chatId = (int)ChatWindowIDs.General, RpcParams _rpcParams = default)
         {
-            string _senderName = _chatMessage.senderClientId == SERVER_CLIENT_ID 
-                ? "Server" 
-                : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_chatMessage.senderClientId).playerName.ToString();
-            
-            var _window = chatWindows.Find(w => w.chatId == _chatId);
-            _window?.chatMessages.Add(_chatMessage);
+            ChatWindow _window = GetChatWindow(_chatId);
+            _window?.AddChatMessage(_chatMessage);
         }
 
         public void AddMessageLocal(string _message, ulong _senderId, int _chatId = (int)ChatWindowIDs.General)
         {
-            var _window = chatWindows.Find(w => w.chatId == _chatId);
-            _window?.chatMessages.Add(new ChatMessage(_senderId, _message));
-        }
-        
-        public void AddMessage(FixedString512Bytes _message, string _senderName)
-        {
-            TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
-
-            _chatText.text = $"{_senderName}: {_message.ToString()}";
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
+            ChatWindow _window = GetChatWindow(_chatId);
+            _window?.AddChatMessage(new ChatMessage(_senderId, _message));
         }
     }
     

@@ -1,12 +1,19 @@
+using System;
 using Unity.Collections;
 using Unity.Netcode;
 
 namespace ChatSystem
 {
+    [Serializable]
     public class ChatMessage : INetworkSerializable
     {
         public ulong senderClientId;
         public FixedString512Bytes message;
+
+        public ChatMessage()
+        {
+            
+        }
         
         public ChatMessage(ulong _senderClientId, FixedString512Bytes _message)
         {

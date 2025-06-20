@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
@@ -16,6 +17,8 @@ namespace ChatSystem
         
         public FixedString64Bytes chatName;
         public List<ChatMessage> chatMessages = new();
+        
+        public event Action<ChatMessage> onMessageReceived;
 
         private void TrySendChatMessage(string _text)
         {
@@ -29,6 +32,12 @@ namespace ChatSystem
 
             FixedString512Bytes _message = new FixedString512Bytes(_text);
             chatManager.SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message), chatId);
+        }
+
+        public void AddChatMessage(ChatMessage _message)
+        {
+            chatMessages.Add(_message);
+            onMessageReceived?.Invoke(_message);
         }
     }
 }

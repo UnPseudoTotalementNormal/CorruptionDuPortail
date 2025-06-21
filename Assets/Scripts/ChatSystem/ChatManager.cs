@@ -25,6 +25,7 @@ namespace ChatSystem
         public int activeChatId { get; private set; } = (int)ChatWindowIDs.General;
         
         public event Action<int> onActiveChatChanged;
+        public event Action<int> onChatDiscovered;
 
         private void Awake()
         {
@@ -59,6 +60,7 @@ namespace ChatSystem
         public void DiscoverChat(int _chatId)
         {
             discoveredChatIds.Add(_chatId);
+            onChatDiscovered?.Invoke(_chatId);
         }
         
         [Rpc(SendTo.SpecifiedInParams)]

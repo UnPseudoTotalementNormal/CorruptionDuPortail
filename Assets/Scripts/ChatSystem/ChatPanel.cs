@@ -1,6 +1,8 @@
 using Network;
 using TMPro;
+using UI;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace ChatSystem
@@ -8,8 +10,12 @@ namespace ChatSystem
     public class ChatPanel : MonoBehaviour
     {
         [SerializeField] private TMP_Text chatTextPrefab;
+        [SerializeField] private TMP_Text chatTitleText;
         [SerializeField] private TMP_InputField inputField;
         [SerializeField] private RectTransform layoutTransform;
+        [SerializeField] private RectTransform discoveredChatLayoutTransform;
+        
+        [SerializeField] private CustomButton discoveredChatButtonPrefab;
         
         private ChatWindow observedChatWindow;
 
@@ -23,8 +29,23 @@ namespace ChatSystem
             });
             OnActiveChatChanged(ChatManager.instance.activeChatId);
             ChatManager.instance.onActiveChatChanged += OnActiveChatChanged;
+            ChatManager.instance.onChatDiscovered += OnChatDiscovered;
+            foreach (var _discoveredChatId in ChatManager.instance.discoveredChatIds)
+            {
+                OnChatDiscovered(_discoveredChatId);
+            }
         }
-        
+
+        private void OnChatDiscovered(int _chatId)
+        {
+            var _newButton = Instantiate(discoveredChatButtonPrefab, discoveredChatLayoutTransform);
+            _newButton.GetComponentInChildren<TMP_Text>().text = ChatManager.instance.GetChatWindow(_chatId).chatName.ToString();
+            _newButton.onButtonClicked += () =>
+            {
+                ChatManager.instance.ChangeActiveChat(_chatId);
+            };
+        }
+
         private void TrySendChatMessage(string _text)
         {
             ChatManager.instance.TrySendChatMessage(_text);
@@ -34,6 +55,7 @@ namespace ChatSystem
         {
             ChatWindow _oldObservedChat = observedChatWindow;
             ChatWindow _newObservedChat = ChatManager.instance.GetChatWindow(_newId);
+            observedChatWindow = _newObservedChat;
             
             if (_oldObservedChat != null)
             {
@@ -46,8 +68,7 @@ namespace ChatSystem
             }
             
             RedrawChatMessages();
-            
-            observedChatWindow = _newObservedChat;
+            chatTitleText.text = _newObservedChat.chatName.ToString();
         }
 
         private void RedrawChatMessages()

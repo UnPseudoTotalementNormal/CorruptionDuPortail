@@ -20,7 +20,7 @@ namespace ChatSystem
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;
 
         private List<ChatWindow> chatWindows = new();
-        private HashSet<int> discoveredChatIds = new();
+        public HashSet<int> discoveredChatIds = new();
         
         public int activeChatId { get; private set; } = (int)ChatWindowIDs.General;
         
@@ -59,6 +59,7 @@ namespace ChatSystem
 
         public void DiscoverChat(int _chatId)
         {
+            Debug.Log("Discovering chat with ID: " + _chatId);
             discoveredChatIds.Add(_chatId);
             onChatDiscovered?.Invoke(_chatId);
         }
@@ -77,7 +78,7 @@ namespace ChatSystem
                 _window = new ChatWindow
                 {
                     chatId = _chatId,
-                    chatName = $"Chat {_chatId}",
+                    chatName = GetChatWindowName(_chatId),
                     chatMessages = new List<ChatMessage>()
                 };
                 chatWindows.Add(_window);
@@ -86,6 +87,14 @@ namespace ChatSystem
             return _window;
         }
         
+        public string GetChatWindowName(int _chatId)
+        {
+            if (Enum.IsDefined(typeof(ChatWindowIDs), _chatId))
+            {
+                return ((ChatWindowIDs)_chatId).ToString();
+            }
+            return $"Chat {_chatId}";
+        }
         
         [Rpc(SendTo.Server)]
         public void SendChatMessageServerRpc(ChatMessage _chatMessage, int _chatId)

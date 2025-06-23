@@ -37,7 +37,7 @@ namespace GameLogic
         public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
         [HideInInspector] public bool ignoreGameLoop = false;
-        private bool gameHasStartedFirstLoop;
+        private bool gameHasStartedFirstLoop = false;
 
         public event Action onGameStarted;
         public event Action onNewDayPassed;
@@ -106,13 +106,13 @@ namespace GameLogic
         #region Events Rpc
         
         [Rpc(SendTo.Everyone)]
-        public void OnGameStartedRpc()
+        private void OnGameStartedRpc()
         {
             onGameStarted?.Invoke();
         }
         
         [Rpc(SendTo.Everyone)]
-        public void OnNewDayPassedRpc()
+        private void OnNewDayPassedRpc()
         {
             onNewDayPassed?.Invoke();
         }
@@ -224,12 +224,14 @@ namespace GameLogic
             {
                 _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
                 OnNewDayPassedRpc();
-                if (!gameHasStartedFirstLoop)
-                {
-                    gameHasStartedFirstLoop = true;
-                    OnGameStartedRpc();
-                }
             }
+
+            if (gameStates[GetGameState(_newGameStateIndex)].isInGameLoop && !gameHasStartedFirstLoop)
+            {
+                gameHasStartedFirstLoop = true;
+                OnGameStartedRpc();
+            }
+            
             SwitchGameState(_newGameStateIndex);
         }
 

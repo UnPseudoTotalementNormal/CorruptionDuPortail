@@ -15,30 +15,18 @@ namespace GameLogic
     {
         [HideInInspector] public Power currentPower;
         
-        [HideInInspector] public bool hasGameStarted; //temp
-        
         private void Start()
         {
-            hasGameStarted = false;
             GameManager.instance.powersBar.onPowerClicked += OnPowerClicked;
             if (NetworkManager.Singleton.IsServer)
             {
                 var _roleAttributionGameState = GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
-                int _index = GameManager.instance.gameStates.Keys.ToList().IndexOf(_roleAttributionGameState);
-                var _startGameState = GameManager.instance.gameStates.Keys.ToList()[_index + 1];
-                _startGameState.onStateStartServer += OnGameStarted; //TODO : ADD A REAL GAME STARTED EVENT
+                GameManager.instance.onGameStarted += OnGameStarted;
             }
         }
 
         private void OnGameStarted()
         {
-            if (hasGameStarted)
-            {
-                return;
-            }
-
-            hasGameStarted = true;
-            
             foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
             {
                 _rolePower.OnGameStartedServer();

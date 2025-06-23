@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using GameLogic;
+using GameLogic.GameStates;
 using Unity.Netcode;
 
 namespace RoleTargetSystem
@@ -15,7 +17,20 @@ namespace RoleTargetSystem
             base.OnNetworkSpawn();
             instance = this;
         }
-        
+
+        private void Start()
+        {
+            foreach (var _awakeningState in GameManager.instance.GetGameStates(typeof(AwakeningState)))
+            {
+                _awakeningState.onStateStartClient += ResetTargetingData;
+            }
+        }
+
+        private void ResetTargetingData()
+        {
+            currentTargetingDataList.Clear();
+        }
+
         public void NewTargeting(ulong _targeterId, ulong _targetId)
         {
             NewTargetingRpc(_targeterId, _targetId);

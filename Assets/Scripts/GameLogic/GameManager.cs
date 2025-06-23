@@ -37,6 +37,10 @@ namespace GameLogic
         public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
         [HideInInspector] public bool ignoreGameLoop = false;
+        private bool gameHasStartedFirstLoop;
+
+        public event Action onGameStarted;
+        public event Action onNewDayPassed;
     
         public Character GetLocalCharacter(bool _triggerUpdate = true)
         {
@@ -98,6 +102,22 @@ namespace GameLogic
         
             GetGameState(currentGameStateIndex.Value).StateUpdateServer();
         }
+        
+        #region Events Rpc
+        
+        [Rpc(SendTo.Everyone)]
+        public void OnGameStartedRpc()
+        {
+            onGameStarted?.Invoke();
+        }
+        
+        [Rpc(SendTo.Everyone)]
+        public void OnNewDayPassedRpc()
+        {
+            onNewDayPassed?.Invoke();
+        }
+        
+        #endregion
 
         #region Characters Updates
 
@@ -203,6 +223,12 @@ namespace GameLogic
             if (!_ignoreGameLoop && _wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
             {
                 _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
+                OnNewDayPassedRpc();
+                if (!gameHasStartedFirstLoop)
+                {
+                    gameHasStartedFirstLoop = true;
+                    OnGameStartedRpc();
+                }
             }
             SwitchGameState(_newGameStateIndex);
         }

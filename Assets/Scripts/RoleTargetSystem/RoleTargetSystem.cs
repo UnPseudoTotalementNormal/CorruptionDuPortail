@@ -42,7 +42,7 @@ namespace RoleTargetSystem
             ReceiveTargetingDataRpc(new TargetingData(_targeterId, _targetId));
         }
         
-        [Rpc(SendTo.ClientsAndHost)]
+        [Rpc(SendTo.Everyone)]
         private void ReceiveTargetingDataRpc(TargetingData _targetingData)
         {
             currentTargetingDataList.Add(_targetingData);

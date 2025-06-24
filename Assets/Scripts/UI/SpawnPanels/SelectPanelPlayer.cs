@@ -3,15 +3,16 @@
 using System;
 using System.Linq;
 using GameLogic;
+using UI.SelectPanels;
 using UnityEngine;
 
 #endregion
 
-namespace UI.SelectPanels
+namespace UI.SpawnPanels
 {
     public class SelectPanelPlayer : MonoBehaviour
     {
-        private static string _pannelPath = "Prefabs/SelectPanels/SelectPanelPlayer";
+        private static string _pannelPath = "Prefabs/SpawnPanels/SelectPanelPlayer";
         
         [SerializeField] private Transform layoutTransform;
         

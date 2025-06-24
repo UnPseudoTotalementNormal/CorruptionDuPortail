@@ -32,8 +32,6 @@ namespace GameLogic.GameStates
         
         public const ulong SKIP_VOTE_ID = GameValues.FAKE_CLIENT_ID;
         
-        private VoteSelectPanel voteSelectPanel;
-        
         public static ulong mostVotedPlayer;
         
         private void OnVoteButtonClicked(Card _card)
@@ -202,12 +200,6 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
-            /*GameObject _newSelectPanelPlayer = SelectPanelPlayer.CreatePannel(stateUI.canvasGroup.transform);
-            voteSelectPanel = _newSelectPanelPlayer.AddComponent<VoteSelectPanel>();
-            voteSelectPanel.voteState = this;
-            voteSelectPanel.onPlayerVoted += OnPlayerVoted;
-            onStateEndClient += DestroyVotePanel;*/
-
             foreach (var _c in BoardManager.instance.visibleCards)
             {
                 VoteCanvas _voteCanvas = _c.voteCanvas;
@@ -216,13 +208,6 @@ namespace GameLogic.GameStates
                 _voteCanvas.ActivateVoteCanvas();
                 _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
             }
-        }
-
-        private void DestroyVotePanel()
-        {
-            onStateEndClient -= DestroyVotePanel;
-            voteSelectPanel.onPlayerVoted -= OnPlayerVoted;
-            Destroy(voteSelectPanel.gameObject);
         }
 
         public override void OnEndStateClient()

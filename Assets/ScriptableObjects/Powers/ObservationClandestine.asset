@@ -634,8 +634,8 @@ MonoBehaviour:
             byte0508: 0
             byte0509: 0
         maxWaitTime: 25
-        isPassive: 0
-        hasToBeAwakened: 1
+        isPassive: 1
+        hasToBeAwakened: 0
         powerUseLeft: 0
         canalisationSound:
           Guid:

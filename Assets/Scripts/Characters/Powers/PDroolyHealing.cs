@@ -7,6 +7,7 @@ using Extensions;
 using FocusSystem;
 using GameLogic;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
@@ -70,6 +71,7 @@ namespace Characters.Powers
         
         private static void TryHealServerRpc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
         {
+            RoleTargetSystem.instance.NewTargeting(_sender, _healingCharacterId);
             PDroolyHealing _power = (PDroolyHealing)GameManager.instance.GetCharacter(_sender).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
             if (_power.healedCharacters.Contains(_healingCharacterId))
             {

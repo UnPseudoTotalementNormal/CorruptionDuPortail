@@ -9,6 +9,7 @@ using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 
@@ -71,13 +72,14 @@ namespace Characters.Powers
         private static void TryBlessCharacterServerRpc(ulong _sender, ulong _blessingCharacterId, Role _compareRole)
         {
             Character _blessingCharacter = GameManager.instance.GetCharacter(_blessingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(_sender, _blessingCharacterId);
+            
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _blessingCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
                 blessingCharacterIdOnMorning.Add(_blessingCharacterId);
-                
             }
         }
 

@@ -8,6 +8,7 @@ using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 using FocusType = FocusSystem.FocusType;
@@ -98,6 +99,8 @@ namespace Characters.Powers
             string _message = string.Empty;
             foreach (var _guessedCharacter in _guessedCharacters)
             {
+                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId);
+                
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
                     if (_message != String.Empty)

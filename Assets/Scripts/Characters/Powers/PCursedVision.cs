@@ -1,13 +1,19 @@
+using System;
 using FocusSystem;
 using GameLogic;
+using RoleTarget;
+using Unity.Netcode;
 
 namespace Characters.Powers
 {
+    [Serializable]
     public class PCursedVision : Power
     {
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = _clickedCard.characterInfo;
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId);
+            
             _character.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _character.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);

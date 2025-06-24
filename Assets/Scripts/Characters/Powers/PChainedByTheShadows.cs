@@ -8,6 +8,7 @@ using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 
@@ -70,6 +71,8 @@ namespace Characters.Powers
         private static void TryCorruptCharacterServerRpc(ulong _sender, ulong _corruptingCharacterId, Role _compareRole)
         {
             Character _corruptingCharacter = GameManager.instance.GetCharacter(_corruptingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(_sender, _corruptingCharacterId);
+            
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(

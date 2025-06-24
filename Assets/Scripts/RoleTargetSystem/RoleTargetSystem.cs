@@ -4,7 +4,7 @@ using GameLogic;
 using GameLogic.GameStates;
 using Unity.Netcode;
 
-namespace RoleTargetSystem
+namespace RoleTarget
 {
     public class RoleTargetSystem : NetworkBehaviour
     {

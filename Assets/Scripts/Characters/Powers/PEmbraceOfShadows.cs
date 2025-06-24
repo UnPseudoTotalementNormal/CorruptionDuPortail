@@ -3,6 +3,7 @@
 using System;
 using FocusSystem;
 using GameLogic;
+using RoleTarget;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -25,6 +26,7 @@ namespace Characters.Powers
         
         private void OnCharacterBarClicked(Character _character)
         {
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();
@@ -32,12 +34,11 @@ namespace Characters.Powers
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
-                
             }
             OnUsed();
         }
 
-        private void OnCorruptionSuccessfull() //TODO : THIS
+        private void OnCorruptionSuccessful() //TODO : THIS
         {
             
         }

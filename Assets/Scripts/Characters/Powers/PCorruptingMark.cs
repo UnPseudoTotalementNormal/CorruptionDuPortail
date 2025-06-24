@@ -4,6 +4,8 @@ using System;
 using ArrowSystem;
 using FocusSystem;
 using GameLogic;
+using RoleTarget;
+using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -16,6 +18,7 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);

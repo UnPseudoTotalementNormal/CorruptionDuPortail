@@ -5,6 +5,7 @@ using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
 
@@ -29,10 +30,11 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
             OnUsed();
             GameManager.instance.DoPowerStaticMethodRpc(
                 typeof(PLackOfAffection).FullName, nameof(OnPlayerContactedRpc),
-                new [] { new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId) },
+                new [] { new NetworkSerializableObject(ownerClientId) },
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId }));
         }
         

@@ -83,8 +83,10 @@ MonoBehaviour:
         byte0061: 0
     roleType: 5
     factionType: 2
+    roleID: 3917
     rolePortrait: 683198692
     roleDifficulty: 3
+    powers: []
     winningConditions: []
     isAwakened: 0
     ownerClientId: 0

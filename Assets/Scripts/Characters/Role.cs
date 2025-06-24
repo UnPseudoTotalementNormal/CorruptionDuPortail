@@ -13,6 +13,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.Serialization;
 
 #endregion
 
@@ -23,6 +24,7 @@ public class Role : INetworkSerializable
     public FixedString64Bytes roleName;
     public CharacterType roleType;
     public FactionType factionType;
+    public RoleID roleID;
     public CharacterPortraitsValues.CharacterPortraits rolePortrait;
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
@@ -33,7 +35,6 @@ public class Role : INetworkSerializable
     
     public ulong ownerClientId;
 
-    // Ajout d'un constructeur sans paramètre pour la désérialisation réseau
     public Role()
     {
     }
@@ -71,6 +72,7 @@ public class Role : INetworkSerializable
         rolePortrait = _newCharacterRole.rolePortrait;
         isAwakened = _newCharacterRole.isAwakened;
         ownerClientId = _newCharacterRole.ownerClientId;
+        roleID = _newCharacterRole.roleID;
 
         powers = _newCharacterRole.powers;
         foreach (Power _power in powers)
@@ -92,6 +94,7 @@ public class Role : INetworkSerializable
         _newRole.winningConditions = winningConditions.ToList();
         _newRole.rolePortrait = rolePortrait;
         _newRole.ownerClientId = ownerClientId;
+        _newRole.roleID = roleID;
         
         foreach (Power _power in powers)
         {
@@ -116,6 +119,7 @@ public class Role : INetworkSerializable
         _serializer.SerializeValue(ref roleDifficulty);
         _serializer.SerializeValue(ref rolePortrait);
         _serializer.SerializeValue(ref isAwakened);
+        _serializer.SerializeValue(ref roleID);
         
         int _powersCount = powers.Count;
         _serializer.SerializeValue(ref _powersCount);

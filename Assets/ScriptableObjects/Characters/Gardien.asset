@@ -83,8 +83,10 @@ MonoBehaviour:
         byte0061: 0
     roleType: 2
     factionType: 1
+    roleID: 7615
     rolePortrait: 1959347720
     roleDifficulty: 1
+    powers: []
     winningConditions:
     - rid: 7121802106355843685
     isAwakened: 0

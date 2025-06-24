@@ -26,7 +26,7 @@ namespace Characters.Powers
         
         private void OnCharacterBarClicked(Character _character)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();

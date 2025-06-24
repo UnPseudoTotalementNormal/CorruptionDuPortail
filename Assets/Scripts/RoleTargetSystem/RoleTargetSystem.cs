@@ -47,6 +47,32 @@ namespace RoleTarget
         {
             currentTargetingDataList.Add(_targetingData);
         }
+        
+        public List<TargetingData> GetAllTargetingDataForTarget(ulong _targetId)
+        {
+            List<TargetingData> _targetingDataList = new();
+            foreach (var _targetingData in currentTargetingDataList)
+            {
+                if (_targetingData.targetId == _targetId)
+                {
+                    _targetingDataList.Add(_targetingData);
+                }
+            }
+            return _targetingDataList;
+        }
+        
+        public List<TargetingData> GetAllTargetingDataForTargeter(ulong _targeterId)
+        {
+            List<TargetingData> _targetingDataList = new();
+            foreach (var _targetingData in currentTargetingDataList)
+            {
+                if (_targetingData.targeterId == _targeterId)
+                {
+                    _targetingDataList.Add(_targetingData);
+                }
+            }
+            return _targetingDataList;
+        }
     }
 
     [Serializable]

@@ -91,7 +91,8 @@ MonoBehaviour:
     - rid: 7121802106355843697
     isAwakened: 0
     ownerClientId: 0
-  powers: []
+  powers:
+  - {fileID: 11400000, guid: 1f66aecee4f502b47975e6aea7dc0c41, type: 2}
   references:
     version: 2
     RefIds:

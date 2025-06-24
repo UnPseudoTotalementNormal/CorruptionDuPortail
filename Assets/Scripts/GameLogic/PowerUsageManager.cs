@@ -27,6 +27,8 @@ namespace GameLogic
 
         private void OnGameStarted()
         {
+            Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnGameStarted should only be called on the server");
+            
             foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
             {
                 _rolePower.OnGameStartedServer();

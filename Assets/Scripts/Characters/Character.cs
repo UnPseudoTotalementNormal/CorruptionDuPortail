@@ -23,6 +23,8 @@ namespace Characters
         public bool isBlessed;
         public int messageLeft = 1;
         public bool isFake => ownerClientId.IsFakeClientId();
+        
+        public Action onCharacterAwakened;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -60,6 +62,7 @@ namespace Characters
         
         public void AwakenCharacter()
         {
+            onCharacterAwakened?.Invoke();
             role.AwakenRole();
         }
         

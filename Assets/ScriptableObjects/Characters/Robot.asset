@@ -87,10 +87,15 @@ MonoBehaviour:
     rolePortrait: 683198692
     roleDifficulty: 3
     powers: []
-    winningConditions: []
+    winningConditions:
+    - rid: 5230312567992221785
     isAwakened: 0
     ownerClientId: 0
   powers: []
   references:
     version: 2
-    RefIds: []
+    RefIds:
+    - rid: 5230312567992221785
+      type: {class: WMarginalIsChainedWin, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 0

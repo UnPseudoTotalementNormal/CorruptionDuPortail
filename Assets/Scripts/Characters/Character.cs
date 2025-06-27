@@ -20,6 +20,7 @@ namespace Characters
         [Header("Variables")] //quand de nouvelle variable son ajoutée, il faut mettre à jour le UpdateCharacter
         public bool isChained;
         public bool isCorrupted;
+        public bool isEliminated;
         public bool isBlessed;
         public int messageLeft = 1;
         public bool isFake => ownerClientId.IsFakeClientId();
@@ -33,6 +34,7 @@ namespace Characters
             serializer.SerializeValue(ref isCorrupted);
             serializer.SerializeValue(ref isBlessed);
             serializer.SerializeValue(ref messageLeft);
+            serializer.SerializeValue(ref isEliminated);
             
             if (role == null)
             {
@@ -51,6 +53,7 @@ namespace Characters
             isCorrupted = _newCharacter.isCorrupted;
             isBlessed = _newCharacter.isBlessed;
             messageLeft = _newCharacter.messageLeft;
+            isEliminated = _newCharacter.isEliminated;
             
             if (role == null)
             {
@@ -90,7 +93,5 @@ namespace Characters
         {
             GameManager.instance.HealPlayerRpc(ownerClientId);
         }
-
-        
     }
 }

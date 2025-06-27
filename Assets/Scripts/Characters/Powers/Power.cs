@@ -80,7 +80,7 @@ namespace Characters.Powers
 
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
 
-            if (_powerCharacter.isChained) return false;
+            if (_powerCharacter.isChained || _powerCharacter.isEliminated) return false;
 
             if (hasToBeAwakened && !_powerCharacter.role.isAwakened) return false;
 

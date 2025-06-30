@@ -18,7 +18,8 @@ namespace Characters.Powers
     [Serializable]
     public class Power : INetworkSerializable, ICloneable
     {
-        [HideInInspector] public ulong ownerClientId;
+        [ReadOnly] public ulong ownerClientId;
+        [ReadOnly] public ulong powerGameId;
 
         public FixedString64Bytes powerName;
         public FixedString512Bytes powerDescription;
@@ -51,6 +52,7 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref isPassive);
             _serializer.SerializeValue(ref hasToBeAwakened);
             _serializer.SerializeValue(ref powerUseLeft);
+            _serializer.SerializeValue(ref powerGameId);
 
             var _eventPath = canalisationSound.GetPath() ?? string.Empty;
             _serializer.SerializeValue(ref _eventPath);

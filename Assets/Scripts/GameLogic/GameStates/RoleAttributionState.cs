@@ -80,13 +80,17 @@ namespace GameLogic.GameStates
             if (_character != null)
             {
                 Role _newRole = _randomRole.role.CopyRole();
-                foreach (var _powerDataObject in _randomRole.powers)
-                {
-                    _newRole.powers.Add((Power)_powerDataObject.power.Clone());
-                }
                 _character.role = _newRole;
                 _character.role.ownerClientId = _character.ownerClientId;
-                _character.role.powers.ForEach(_p => _p.ownerClientId = _character.ownerClientId);
+                
+                foreach (var _powerDataObject in _randomRole.powers)
+                {
+                    Power _newPower = (Power)_powerDataObject.power.Clone();
+                    _newPower.ownerClientId = _character.ownerClientId;
+                    _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
+                    _character.role.powers.Add(_newPower);
+                }
+                
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc),
                     new NetworkSerializableObject[] { new(_character) },
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));

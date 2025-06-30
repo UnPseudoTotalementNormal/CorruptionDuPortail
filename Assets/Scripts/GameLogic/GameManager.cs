@@ -296,11 +296,11 @@ namespace GameLogic
                     return;
                 }
     
-                CallPowerMethodRpc(_powerOwner, _power, _methodName, _arguments, _rpcParams);
+                CallPowerMethodRpc(_powerOwner, _power.powerGameId, _methodName, _arguments, _rpcParams);
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
-        private void CallPowerMethodRpc(ulong _powerOwner, Power _power, FixedString64Bytes _methodName, NetworkSerializableObject[] _arguments, RpcParams _rpcParams)
+        private void CallPowerMethodRpc(ulong _powerOwner, ulong _powerId, FixedString64Bytes _methodName, NetworkSerializableObject[] _arguments, RpcParams _rpcParams)
         {
             // Recherche du personnage possédant ce pouvoir
             var character = GetCharacters().FirstOrDefault(c => c.ownerClientId == _powerOwner);
@@ -311,7 +311,7 @@ namespace GameLogic
             }
     
             // Recherche du pouvoir correspondant sur ce personnage
-            var power = character.role.powers.FirstOrDefault(p => p.IsTheSamePower(_power));
+            var power = character.role.powers.FirstOrDefault(p => p.powerGameId == _powerId);
             if (power == null)
             {
                 Debug.LogError("Aucun pouvoir correspondant trouvé sur le personnage");

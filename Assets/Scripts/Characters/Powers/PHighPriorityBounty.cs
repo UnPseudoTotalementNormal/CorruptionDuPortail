@@ -23,10 +23,8 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
 
             var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
-            if (_character.role.roleID == RoleID.Robot)
-            {
-                
-            }
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnCardClickedRpc), 
+                new[] { new NetworkSerializableObject(_character.ownerClientId) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             
             OnUsed();
         }

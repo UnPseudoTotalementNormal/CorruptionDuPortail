@@ -89,13 +89,19 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 5230312567992221785
+    - rid: 5230312634475610202
     isAwakened: 0
     ownerClientId: 0
-  powers: []
+  powers:
+  - {fileID: 11400000, guid: 3039ed57d4e2a0645a9ac4d445480e41, type: 2}
   references:
     version: 2
     RefIds:
     - rid: 5230312567992221785
       type: {class: WMarginalIsChainedWin, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 0
+    - rid: 5230312634475610202
+      type: {class: WOmniscienceHackedCharacter, ns: Characters.WinningConditions, asm: Assembly-CSharp}
       data:
         ownerClientId: 0

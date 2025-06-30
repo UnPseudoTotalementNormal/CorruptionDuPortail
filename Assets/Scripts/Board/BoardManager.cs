@@ -194,6 +194,18 @@ public class BoardManager : NetworkBehaviour
     {
         onCardUnhovered?.Invoke(_card);
     }
+
+    [Rpc(SendTo.Everyone)]
+    public void UpdateCardChainStatusRpc(ulong _clientId, bool _instant = false)
+    {
+        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId == _clientId);
+        if (_card == null)
+        {
+            return;
+        }
+
+        _card.UpdateChainOverlay(_instant);
+    }
 }
 
 public enum BoardAnims

@@ -49,6 +49,7 @@ namespace Characters.Powers
             else
             {
                 _characterOwner.isChained = true;
+                BoardManager.instance.UpdateCardChainStatusRpc(_characterOwner.ownerClientId, false);
             }
             
             GameManager.instance.AskForUpdateAllCharactersRpc();

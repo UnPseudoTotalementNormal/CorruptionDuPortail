@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AwakeningState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: e58b440ad13b322428929b1837c0dc0d, type: 3}
+  gameStateDependencies: []
   awakeningOrder:
   - awakeningCharacters:
     - {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
@@ -30,13 +31,20 @@ MonoBehaviour:
     - {fileID: 11400000, guid: dfeef97d534114540b5f13e732c7ad7c, type: 2}
   - awakeningCharacters:
     - {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
-    - {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
     - {fileID: 11400000, guid: d098867bc1478f840bb1eafeefe04fc9, type: 2}
     - {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
     - {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
     - {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
   - awakeningCharacters:
+    - {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
+  - awakeningCharacters:
     - {fileID: 11400000, guid: 34376dc154c7c5644bc6282d6d50380f, type: 2}
   currentlyAwakenedCharacters: []
   currentAwakeningIndex: 0
   currentAwakeningTimer: 0
+  currentAwakeningMaxTime: 0
+  references:
+    version: 2
+    RefIds: []

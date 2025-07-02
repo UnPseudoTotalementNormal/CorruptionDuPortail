@@ -31,6 +31,10 @@ namespace GameLogic
             
             foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
             {
+                if (GameManager.instance.GetCharacter(_rolePower.ownerClientId, false).isFake)
+                {
+                    continue;
+                }
                 _rolePower.OnGameStartedServer();
             }
         }

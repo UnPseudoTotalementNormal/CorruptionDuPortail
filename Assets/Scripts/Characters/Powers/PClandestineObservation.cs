@@ -38,26 +38,23 @@ namespace Characters.Powers
         {
             base.OnGameStartedServer();
             
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(SubscribeToNightOver),
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(SubscribeToAwakening),
                 new NetworkSerializableObject[] { }, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new[] { ownerClientId }));
         }
         
-        public void SubscribeToNightOver()
+        public void SubscribeToAwakening()
         {
-            foreach (var _awakeningState in GameManager.instance.GetGameStates(typeof(AwakeningState)))
-            {
-                _awakeningState.onStateEndClient += OnNightOver;
-            }
+            GameManager.instance.GetCharacter(ownerClientId, false).onCharacterAwakened += DeclareAllTargetFocus;
         }
 
-        public void OnNightOver()
+        public void DeclareAllTargetFocus()
         {
             List<Character> _targetedCharacters = GameManager.instance.GetCharacters(false)
                 .Where(_c => _c.role.roleID == targetRoleID).ToList();
 
             if (_targetedCharacters.Count == 0)
             {
-                ChatManager.instance.AddMessageLocal($"Aucun personnage n'a le rôle {targetRoleID.ToString()} ciblé.",
+                ChatManager.instance.AddMessageLocal($"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.",
                     GameValues.CHAT_SERVER_CLIENT_ID);
                 return;
             }

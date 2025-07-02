@@ -25,7 +25,7 @@ namespace Characters
         public int messageLeft = 1;
         public bool isFake => ownerClientId.IsFakeClientId();
         
-        public Action onCharacterAwakened;
+        public event Action onCharacterAwakened;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {

@@ -65,8 +65,8 @@ namespace Characters
         
         public void AwakenCharacter()
         {
-            onCharacterAwakened?.Invoke();
             role.AwakenRole();
+            onCharacterAwakened?.Invoke();
         }
         
         public void SleepCharacter()

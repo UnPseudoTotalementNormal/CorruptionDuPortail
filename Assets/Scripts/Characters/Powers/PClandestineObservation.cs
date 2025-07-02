@@ -49,6 +49,11 @@ namespace Characters.Powers
 
         public void DeclareAllTargetFocus()
         {
+            if (!CanUse())
+            {
+                return;
+            }
+            
             List<Character> _targetedCharacters = GameManager.instance.GetCharacters(false)
                 .Where(_c => _c.role.roleID == targetRoleID).ToList();
 

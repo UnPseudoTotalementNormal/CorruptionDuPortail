@@ -2460,7 +2460,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 835881829}
-  - component: {fileID: 835881831}
   - component: {fileID: 835881830}
   m_Layer: 5
   m_Name: MessageButton
@@ -2519,18 +2518,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &835881831
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 835881828}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afac7a3f86bb40047a752e3e0d8a69ce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &879727146
 GameObject:
   m_ObjectHideFlags: 0
@@ -6911,6 +6898,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentPower:
     ownerClientId: 0
+    powerGameId: 0
     powerName:
       utf8LengthInBytes: 0
       bytes:

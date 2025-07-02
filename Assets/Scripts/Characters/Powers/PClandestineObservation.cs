@@ -7,6 +7,7 @@ using GameLogic.GameStates;
 using Network;
 using RoleTarget;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace Characters.Powers
 {
@@ -38,17 +39,13 @@ namespace Characters.Powers
         {
             base.OnGameStartedServer();
             
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(SubscribeToAwakening),
-                new NetworkSerializableObject[] { }, new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new[] { ownerClientId }));
+            GameManager.instance.GetCharacter(ownerClientId, false).onCharacterAwakened += DeclareAllTargetFocusServer;
         }
         
-        public void SubscribeToAwakening()
-        {
-            GameManager.instance.GetCharacter(ownerClientId, false).onCharacterAwakened += DeclareAllTargetFocus;
-        }
 
-        public void DeclareAllTargetFocus()
+        public void DeclareAllTargetFocusServer()
         {
+            Debug.Log("decalre all target focus");
             if (!CanUse())
             {
                 return;
@@ -59,19 +56,23 @@ namespace Characters.Powers
 
             if (_targetedCharacters.Count == 0)
             {
-                ChatManager.instance.AddMessageLocal($"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.",
-                    GameValues.CHAT_SERVER_CLIENT_ID);
+                ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
+                    $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0."),
+                    0,
+                    NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
                 return;
             }
 
             List<TargetingData> _targetingDataList = new();
             foreach (var _targetedCharacter in _targetedCharacters)
             {
-                _targetingDataList.Concat(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId));
+                _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId));
             }
             
-            ChatManager.instance.AddMessageLocal($"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Count}",
-                GameValues.CHAT_SERVER_CLIENT_ID);
+            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
+                $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Count}"),
+                0,
+                NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }
 
         public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)

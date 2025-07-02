@@ -637,7 +637,7 @@ MonoBehaviour:
         maxWaitTime: 25
         isPassive: 1
         hasToBeAwakened: 0
-        powerUseLeft: 0
+        powerUseLeft: 1
         canalisationSound:
           Guid:
             Data1: 0

@@ -21,6 +21,7 @@ MonoBehaviour:
       type: {class: PCorruptingMark, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
+        powerGameId: 0
         powerName:
           utf8LengthInBytes: 19
           bytes:
@@ -639,15 +640,15 @@ MonoBehaviour:
         powerUseLeft: 0
         canalisationSound:
           Guid:
-            Data1: 0
-            Data2: 0
-            Data3: 0
-            Data4: 0
-          Path: 
+            Data1: 1078989102
+            Data2: 1232430830
+            Data3: -522383229
+            Data4: 1816705201
+          Path: event:/Characters/Mage Occulte/Canalisation
         onUsedSound:
           Guid:
-            Data1: 0
-            Data2: 0
-            Data3: 0
-            Data4: 0
-          Path: 
+            Data1: 1471864045
+            Data2: 1088138177
+            Data3: -387915347
+            Data4: -243499154
+          Path: event:/Characters/Mage Occulte/Corrupting brand

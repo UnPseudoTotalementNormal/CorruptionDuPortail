@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8918920962315414475
+--- !u!114 &-8620107549129980232
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,9 +10,36 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/GameMusic
+  m_Name: event:/Characters/Dryade/GoodAnswer
   m_EditorClassIdentifier: 
-  Path: event:/GameMusic
+  Path: event:/Characters/Dryade/GoodAnswer
+  Guid:
+    Data1: 1587971508
+    Data2: 1210005613
+    Data3: 1984492167
+    Data4: 1133840612
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4100
+--- !u!114 &-8100886581133694282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/GameMusic
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/GameMusic
   Guid:
     Data1: 613583386
     Data2: 1216923872
@@ -27,7 +54,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 463752
---- !u!114 &-7685325957489230196
+--- !u!114 &-7703313424830530553
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -37,23 +64,104 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/Canalisation
+  m_Name: event:/Characters/Mage Occulte/embrace of shadows - Failure
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/Canalisation
+  Path: event:/Characters/Mage Occulte/embrace of shadows - Failure
   Guid:
-    Data1: 655096577
-    Data2: 1090671139
-    Data3: 989297035
-    Data4: -1172467078
+    Data1: -1483684165
+    Data2: 1241310542
+    Data3: -19726450
+    Data4: 2001007959
   Banks:
   - {fileID: -4111081932488574413}
-  IsStream: 1
+  IsStream: 0
   Is3D: 0
-  IsOneShot: 0
+  IsOneShot: 1
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 11570
+  Length: 2352
+--- !u!114 &-7265526967062957785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Orpheline/ReceivePower_Chosen
+  m_EditorClassIdentifier: 
+  Path: event:/Orpheline/ReceivePower_Chosen
+  Guid:
+    Data1: -175124592
+    Data2: 1264170244
+    Data3: -1595125078
+    Data4: 1533138782
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1680
+--- !u!114 &-6912197168561946529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Orpheline/Annoucement
+  m_EditorClassIdentifier: 
+  Path: event:/Orpheline/Annoucement
+  Guid:
+    Data1: 379267383
+    Data2: 1239452801
+    Data3: -791614831
+    Data4: -1324382327
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 5904
+--- !u!114 &-6663359746550798338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Opening
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Opening
+  Guid:
+    Data1: -1018522590
+    Data2: 1085794016
+    Data3: -698886753
+    Data4: -1296589212
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4608
 --- !u!114 &-5574126476391208491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -81,6 +189,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1776
+--- !u!114 &-5566668107272368804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption
+  Guid:
+    Data1: 386574851
+    Data2: 1184091438
+    Data3: -2056191074
+    Data4: -1028104561
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1340
 --- !u!114 &-5347597912518584425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108,7 +243,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1008
---- !u!114 &-4253514335070699747
+--- !u!114 &-4801730923534967909
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -118,14 +253,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/SendPower
+  m_Name: event:/Characters/Mage Occulte/embrace of shadows - Sucess
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/SendPower
+  Path: event:/Characters/Mage Occulte/embrace of shadows - Sucess
   Guid:
-    Data1: 616865672
-    Data2: 1223365263
-    Data3: -853449322
-    Data4: 1212795465
+    Data1: 1862133295
+    Data2: 1223705465
+    Data3: 872570496
+    Data4: 611831916
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -134,7 +269,34 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 1680
+  Length: 3720
+--- !u!114 &-4664142379002277317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dryade/Chaining
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dryade/Chaining
+  Guid:
+    Data1: -618104974
+    Data2: 1270347226
+    Data3: -1027984491
+    Data4: -783762723
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4224
 --- !u!114 &-4111081932488574413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,12 +312,12 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638870781691939840
+  lastModified: 638870918439047896
   FileSizes:
   - Name: Desktop
-    Value: 5885984
+    Value: 9680896
   Exists: 1
---- !u!114 &-3157601668546955457
+--- !u!114 &-4089365157833686040
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -165,23 +327,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/ReceivePower_Anomaly
+  m_Name: event:/Project_38
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/ReceivePower_Anomaly
+  Path: event:/Project_38
   Guid:
-    Data1: -94982084
-    Data2: 1184982034
-    Data3: -775239272
-    Data4: 384024150
+    Data1: 2008057823
+    Data2: 1307242171
+    Data3: -1347956301
+    Data4: -705807950
   Banks:
   - {fileID: -4111081932488574413}
-  IsStream: 0
+  IsStream: 1
   Is3D: 0
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 4608
+  Length: 235154
 --- !u!114 &-2637084359228874970
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -209,7 +371,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 360
---- !u!114 &-366822279867392031
+--- !u!114 &-1916512007672029284
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -219,14 +381,68 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/Chaining
+  m_Name: event:/Interface/AbattreLePortail
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/Chaining
+  Path: event:/Interface/AbattreLePortail
   Guid:
-    Data1: -556041060
-    Data2: 1252347014
-    Data3: 8791958
-    Data4: 2087231293
+    Data1: 1482311113
+    Data2: 1187093067
+    Data3: 1797484173
+    Data4: -1763425129
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 33796
+--- !u!114 &-1511420367702980350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Mage Occulte/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Mage Occulte/Canalisation
+  Guid:
+    Data1: 1078989102
+    Data2: 1232430830
+    Data3: -522383229
+    Data4: 1816705201
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 10000
+--- !u!114 &-1111495655923249105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Oracle/Chaining
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Oracle/Chaining
+  Guid:
+    Data1: 2030048620
+    Data2: 1237141960
+    Data3: 1016564663
+    Data4: -457265924
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -235,7 +451,34 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 4776
+  Length: 4608
+--- !u!114 &-820745195521087852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dr. Gloubi/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dr. Gloubi/Canalisation
+  Guid:
+    Data1: 622229679
+    Data2: 1228540502
+    Data3: 514179222
+    Data4: -1301035937
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4348
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,50 +495,161 @@ MonoBehaviour:
   - {fileID: 3211099948312062944}
   - {fileID: -4111081932488574413}
   EditorEvents:
-  - {fileID: -8918920962315414475}
-  - {fileID: -7685325957489230196}
   - {fileID: -5347597912518584425}
-  - {fileID: -3157601668546955457}
   - {fileID: 5698317650318699257}
-  - {fileID: -4253514335070699747}
   - {fileID: -2637084359228874970}
-  - {fileID: 5304996221093173261}
-  - {fileID: -366822279867392031}
   - {fileID: -5574126476391208491}
-  - {fileID: 5722049879338248000}
-  - {fileID: 4143032553559404170}
+  - {fileID: 7884740200230072550}
+  - {fileID: -5566668107272368804}
+  - {fileID: -8100886581133694282}
+  - {fileID: -6663359746550798338}
+  - {fileID: -1511420367702980350}
+  - {fileID: -4801730923534967909}
+  - {fileID: 6735967636546259667}
+  - {fileID: -6912197168561946529}
+  - {fileID: 3581937539284923840}
+  - {fileID: 6731152146824504030}
+  - {fileID: -1111495655923249105}
+  - {fileID: -4664142379002277317}
+  - {fileID: 5986747855110557214}
+  - {fileID: 4467284990416004512}
+  - {fileID: 2737142589505471356}
+  - {fileID: -7265526967062957785}
+  - {fileID: 997035851128620311}
+  - {fileID: 5902033555798445732}
+  - {fileID: 4826096801887098897}
+  - {fileID: -820745195521087852}
+  - {fileID: -8620107549129980232}
+  - {fileID: -7703313424830530553}
+  - {fileID: -1916512007672029284}
+  - {fileID: 5657417369599593419}
+  - {fileID: -4089365157833686040}
+  - {fileID: 3791016524034812930}
+  - {fileID: 7518445709850202936}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4111081932488574413}
   StringsBanks:
   - {fileID: 3211099948312062944}
   cacheVersion: 131847
-  cacheTime: 638870781691949845
+  cacheTime: 638870918439089516
   SerializableEventsDict:
-  - key: event:/GameMusic
-    index: 0
-  - key: event:/Characters/Orpheline/Canalisation
-    index: 1
   - key: event:/Interface/Messages/SendMessage
-    index: 2
-  - key: event:/Characters/Orpheline/ReceivePower_Anomaly
-    index: 3
+    index: 0
   - key: event:/Interface/ChainingAnnoucement
-    index: 4
-  - key: event:/Characters/Orpheline/SendPower
-    index: 5
+    index: 1
   - key: event:/Interface/Messages/ReceiveMessage
-    index: 6
-  - key: event:/Characters/Orpheline/ReceivePower_Chosen
-    index: 7
-  - key: event:/Characters/Orpheline/Chaining
-    index: 8
+    index: 2
   - key: event:/Interface/Messages/MessageMenuSelect
+    index: 3
+  - key: event:/Orpheline/Canalisation
+    index: 4
+  - key: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption
+    index: 5
+  - key: event:/Interface/GameMusic
+    index: 6
+  - key: event:/Interface/Opening
+    index: 7
+  - key: event:/Characters/Mage Occulte/Canalisation
+    index: 8
+  - key: event:/Characters/Mage Occulte/embrace of shadows - Sucess
     index: 9
-  - key: event:/AbattreLePortail
+  - key: event:/Characters/Dr. Gloubi/Chaining
     index: 10
-  - key: event:/Characters/Orpheline/Annoucement
+  - key: event:/Orpheline/Annoucement
     index: 11
+  - key: event:/Orpheline/ReceivePower_Anomaly
+    index: 12
+  - key: event:/Characters/Mage Occulte/Opening
+    index: 13
+  - key: event:/Characters/Oracle/Chaining
+    index: 14
+  - key: event:/Characters/Dryade/Chaining
+    index: 15
+  - key: event:/Orpheline/SendPower
+    index: 16
+  - key: event:/Characters/Dryade/Canalisation
+    index: 17
+  - key: event:/Characters/Dr. Gloubi/GoodAnswer
+    index: 18
+  - key: event:/Orpheline/ReceivePower_Chosen
+    index: 19
+  - key: event:/Characters/Oracle/SendPower
+    index: 20
+  - key: event:/Orpheline/Chaining
+    index: 21
+  - key: event:/Characters/Mage Occulte/Chaining
+    index: 22
+  - key: event:/Characters/Dr. Gloubi/Canalisation
+    index: 23
+  - key: event:/Characters/Dryade/GoodAnswer
+    index: 24
+  - key: event:/Characters/Mage Occulte/embrace of shadows - Failure
+    index: 25
+  - key: event:/Interface/AbattreLePortail
+    index: 26
+  - key: event:/Characters/Oracle/Canalisation
+    index: 27
+  - key: event:/Project_38
+    index: 28
+  - key: event:/Characters/Mage Occulte/Corrupting brand
+    index: 29
+  - key: event:/Characters/Dryade/BadAnswer or WithoutGCorruption
+    index: 30
+--- !u!114 &997035851128620311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Oracle/SendPower
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Oracle/SendPower
+  Guid:
+    Data1: -1270743407
+    Data2: 1154343017
+    Data3: 1830670214
+    Data4: 1381209960
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4992
+--- !u!114 &2737142589505471356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dr. Gloubi/GoodAnswer
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dr. Gloubi/GoodAnswer
+  Guid:
+    Data1: 106296717
+    Data2: 1150388440
+    Data3: -1239444058
+    Data4: -1183599853
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2500
 --- !u!114 &3211099948312062944
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -311,12 +665,12 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638870781691949845
+  lastModified: 638870918439089516
   FileSizes:
   - Name: Desktop
-    Value: 1436
+    Value: 2432
   Exists: 1
---- !u!114 &4143032553559404170
+--- !u!114 &3581937539284923840
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -326,14 +680,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/Annoucement
+  m_Name: event:/Orpheline/ReceivePower_Anomaly
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/Annoucement
+  Path: event:/Orpheline/ReceivePower_Anomaly
   Guid:
-    Data1: 379267383
-    Data2: 1239452801
-    Data3: -791614831
-    Data4: -1324382327
+    Data1: -94982084
+    Data2: 1184982034
+    Data3: -775239272
+    Data4: 384024150
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -342,8 +696,8 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 5904
---- !u!114 &5304996221093173261
+  Length: 4608
+--- !u!114 &3791016524034812930
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -353,14 +707,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Characters/Orpheline/ReceivePower_Chosen
+  m_Name: event:/Characters/Mage Occulte/Corrupting brand
   m_EditorClassIdentifier: 
-  Path: event:/Characters/Orpheline/ReceivePower_Chosen
+  Path: event:/Characters/Mage Occulte/Corrupting brand
   Guid:
-    Data1: -175124592
-    Data2: 1264170244
-    Data3: -1595125078
-    Data4: 1533138782
+    Data1: 1471864045
+    Data2: 1088138177
+    Data3: -387915347
+    Data4: -243499154
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -369,7 +723,88 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 1680
+  Length: 5568
+--- !u!114 &4467284990416004512
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dryade/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dryade/Canalisation
+  Guid:
+    Data1: 2010032009
+    Data2: 1096883797
+    Data3: -321132383
+    Data4: 584681373
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4348
+--- !u!114 &4826096801887098897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Mage Occulte/Chaining
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Mage Occulte/Chaining
+  Guid:
+    Data1: 525785248
+    Data2: 1088511385
+    Data3: 1126606771
+    Data4: 1171405699
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4824
+--- !u!114 &5657417369599593419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Oracle/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Oracle/Canalisation
+  Guid:
+    Data1: 1172022985
+    Data2: 1096180562
+    Data3: -1701195084
+    Data4: 1899403199
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 10500
 --- !u!114 &5698317650318699257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -397,7 +832,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2280
---- !u!114 &5722049879338248000
+--- !u!114 &5902033555798445732
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -407,14 +842,149 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/AbattreLePortail
+  m_Name: event:/Orpheline/Chaining
   m_EditorClassIdentifier: 
-  Path: event:/AbattreLePortail
+  Path: event:/Orpheline/Chaining
   Guid:
-    Data1: 1482311113
-    Data2: 1187093067
-    Data3: 1797484173
-    Data4: -1763425129
+    Data1: -556041060
+    Data2: 1252347014
+    Data3: 8791958
+    Data4: 2087231293
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4224
+--- !u!114 &5986747855110557214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Orpheline/SendPower
+  m_EditorClassIdentifier: 
+  Path: event:/Orpheline/SendPower
+  Guid:
+    Data1: 616865672
+    Data2: 1223365263
+    Data3: -853449322
+    Data4: 1212795465
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1680
+--- !u!114 &6731152146824504030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Mage Occulte/Opening
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Mage Occulte/Opening
+  Guid:
+    Data1: -1940016562
+    Data2: 1204164765
+    Data3: 1579141820
+    Data4: -1406215027
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4344
+--- !u!114 &6735967636546259667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dr. Gloubi/Chaining
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dr. Gloubi/Chaining
+  Guid:
+    Data1: 1708220464
+    Data2: 1201551575
+    Data3: -1448840798
+    Data4: -1637735613
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4224
+--- !u!114 &7518445709850202936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Dryade/BadAnswer or WithoutGCorruption
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Dryade/BadAnswer or WithoutGCorruption
+  Guid:
+    Data1: 1471747567
+    Data2: 1197057720
+    Data3: -1702528095
+    Data4: 1258860122
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1340
+--- !u!114 &7884740200230072550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Orpheline/Canalisation
+  m_EditorClassIdentifier: 
+  Path: event:/Orpheline/Canalisation
+  Guid:
+    Data1: 655096577
+    Data2: 1090671139
+    Data3: 989297035
+    Data4: -1172467078
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 1
@@ -423,4 +993,4 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 33796
+  Length: 9966

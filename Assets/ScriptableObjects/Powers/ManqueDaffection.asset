@@ -21,6 +21,7 @@ MonoBehaviour:
       type: {class: PLackOfAffection, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
+        powerGameId: 0
         powerName:
           utf8LengthInBytes: 18
           bytes:
@@ -643,11 +644,11 @@ MonoBehaviour:
             Data2: 1090671139
             Data3: 989297035
             Data4: -1172467078
-          Path: event:/Characters/Orpheline/Canalisation
+          Path: event:/Orpheline/Canalisation
         onUsedSound:
           Guid:
             Data1: 616865672
             Data2: 1223365263
             Data3: -853449322
             Data4: 1212795465
-          Path: event:/Characters/Orpheline/SendPower
+          Path: event:/Orpheline/SendPower

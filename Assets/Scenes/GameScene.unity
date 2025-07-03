@@ -4588,7 +4588,7 @@ MonoBehaviour:
       Data2: 1216923872
       Data3: 1848601773
       Data4: -658138019
-    Path: event:/GameMusic
+    Path: event:/Interface/GameMusic
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 2

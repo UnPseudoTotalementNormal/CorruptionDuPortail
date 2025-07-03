@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{e558c053-a3dc-4ed8-b9f8-1e50b4d9d067}">
+		<property name="assetPath">
+			<value>Dryade - Canalisation PT2.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>2.3039999999999998</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e66d3d08-7377-46a7-824d-08ed54029370}</destination>
+		</relationship>
+	</object>
+</objects>

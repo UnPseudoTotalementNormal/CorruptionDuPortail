@@ -21,6 +21,7 @@ MonoBehaviour:
       type: {class: PBlessing, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
+        powerGameId: 0
         powerName:
           utf8LengthInBytes: 13
           bytes:
@@ -639,11 +640,11 @@ MonoBehaviour:
         powerUseLeft: 0
         canalisationSound:
           Guid:
-            Data1: 0
-            Data2: 0
-            Data3: 0
-            Data4: 0
-          Path: 
+            Data1: 2010032009
+            Data2: 1096883797
+            Data3: -321132383
+            Data4: 584681373
+          Path: event:/Characters/Dryade/Canalisation
         onUsedSound:
           Guid:
             Data1: 0

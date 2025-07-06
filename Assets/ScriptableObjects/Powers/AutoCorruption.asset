@@ -21,6 +21,7 @@ MonoBehaviour:
       type: {class: PAutoCorruption, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
+        powerGameId: 0
         powerName:
           utf8LengthInBytes: 15
           bytes:

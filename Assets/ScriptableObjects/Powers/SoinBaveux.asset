@@ -21,6 +21,7 @@ MonoBehaviour:
       type: {class: PDroolyHealing, ns: Characters.Powers, asm: Assembly-CSharp}
       data:
         ownerClientId: 0
+        powerGameId: 0
         powerName:
           utf8LengthInBytes: 11
           bytes:

@@ -49,10 +49,10 @@ namespace Characters.Powers
             else
             {
                 _characterOwner.isChained = true;
-                BoardManager.instance.UpdateCardChainStatusRpc(_characterOwner.ownerClientId, false);
             }
             
             GameManager.instance.AskForUpdateAllCharactersRpc();
+            BoardManager.instance.UpdateCardChainStatusRpc(_characterOwner.ownerClientId, false);
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

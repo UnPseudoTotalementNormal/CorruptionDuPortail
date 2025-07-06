@@ -199,12 +199,7 @@ public class BoardManager : NetworkBehaviour
     public void UpdateCardChainStatusRpc(ulong _clientId, bool _instant = false)
     {
         var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId == _clientId);
-        if (_card == null)
-        {
-            return;
-        }
-
-        _card.UpdateChainOverlay(_instant);
+        _card?.UpdateChainOverlay(_instant);
     }
 }
 

@@ -19,6 +19,10 @@ public class TakeDownThePortalTextTitle : MonoBehaviour
     private void OnStateStartClient()
     {
         var _takeDownThePortalState = (TakeDownThePortalState)GetComponentInParent<StateUI>().owningGameState;
+        if (_takeDownThePortalState == null || !_takeDownThePortalState.shouldActivate)
+        {
+            return;
+        }
         textTitle.text = GameManager.instance.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo() + " doit abattre le portail.";
     }
 }

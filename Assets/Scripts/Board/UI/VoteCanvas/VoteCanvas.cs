@@ -40,6 +40,11 @@ namespace Board.UI.VoteCanvas
             ShowCanvas();
             card.onCardHovered += OnCardHovered;
             card.onCardUnhovered += OnCardUnhovered;
+            if (card.characterInfo.isEliminated)
+            {
+                votesText.text = "Éliminé";
+                return;
+            }
             voteButton.onButtonClicked += OnVoteButtonClicked;
             if (voteState)
             {
@@ -61,11 +66,19 @@ namespace Board.UI.VoteCanvas
 
         public void ResetVoteText()
         {
+            if (card.characterInfo.isEliminated)
+            {
+                return;
+            }
             votesText.text = "N'a pas voté";
         }
         
         public void ShowVoteCount()
         {
+            if (card.characterInfo.isEliminated)
+            {
+                return;
+            }
             votesText.text = $"Votes: {voteCount}";
         }
         

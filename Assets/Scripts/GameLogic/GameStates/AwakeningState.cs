@@ -95,11 +95,25 @@ namespace GameLogic.GameStates
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            
+            gameManager.onCharactersListUpdated += OnCharactersListUpdatedWhileAwakening;
         }
 
         public override void OnEndStateServer()
         {
+            gameManager.onCharactersListUpdated -= OnCharactersListUpdatedWhileAwakening;
             base.OnEndStateServer();
+        }
+        
+        private void OnCharactersListUpdatedWhileAwakening(List<Character> _characters)
+        {
+            var _isAnyCharacterAwakened = _characters.Any(_c => _c.role.isAwakened);
+            if (_isAnyCharacterAwakened)
+            {
+                return;
+            }
+            
+            GoToNextAwakeLayer();
         }
         
         public override void OnStartStateClient()
@@ -129,6 +143,11 @@ namespace GameLogic.GameStates
                 return;
             }
             
+            GoToNextAwakeLayer();
+        }
+
+        private void GoToNextAwakeLayer()
+        {
             currentAwakeningIndex++;
             
             if (currentAwakeningIndex >= awakeningOrder.Count)
@@ -140,9 +159,11 @@ namespace GameLogic.GameStates
             
             AwakeLayer(currentAwakeningIndex);
             
-            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), 
+                new NetworkSerializableObject[] {new(currentAwakeningTimer)}, 
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
-        
+
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();

@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using Extensions;
 using Network;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 #endregion
 
@@ -137,6 +139,20 @@ namespace GameLogic.GameStates
                 updateAwakeningTimer = UpdateAwakeningTimerInterval;
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             }
+
+            /*//handle fake skip/used power
+            {
+                var _fakeAwakenedCharacters = gameManager.GetCharacters(false)
+                    .Where(_c => _c.ownerClientId.IsFakeClientId() && _c.role.isAwakened);
+                foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
+                {
+                    float _r = Random.Range(0.0f, 1.0f);
+                    if (_r < 0.00045f)
+                    {
+                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId);
+                    }
+                }
+            }*/
             
             if (currentAwakeningTimer > 0)
             {

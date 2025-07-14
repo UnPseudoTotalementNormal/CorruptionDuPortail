@@ -140,7 +140,8 @@ namespace GameLogic.GameStates
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             }
 
-            /*//handle fake skip/used power
+            //handle fake skip/used power
+            if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f)
             {
                 var _fakeAwakenedCharacters = gameManager.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.IsFakeClientId() && _c.role.isAwakened);
@@ -152,7 +153,7 @@ namespace GameLogic.GameStates
                         gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId);
                     }
                 }
-            }*/
+            }
             
             if (currentAwakeningTimer > 0)
             {

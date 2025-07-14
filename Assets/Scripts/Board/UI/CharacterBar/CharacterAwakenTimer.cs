@@ -1,6 +1,7 @@
 #region
 
 using System.Linq;
+using Characters;
 using GameLogic;
 using GameLogic.GameStates;
 using UnityEngine;
@@ -13,6 +14,8 @@ namespace Board.UI.CharacterBar
 {
     public class CharacterAwakenTimer : MonoBehaviour
     {
+        public AwakeningTimerType awakeningTimerType = AwakeningTimerType.SpecificCharacter;
+        
         [SerializeField] private Image timerImage;
         
         private Role role;
@@ -37,19 +40,41 @@ namespace Board.UI.CharacterBar
         public void Update()
         {
             
-            if (awakeningLayerIndex == awakeningState.currentAwakeningIndex && 
-                GameManager.instance.GetCharacters(false).First(_c => _c.role.IsTheSameRole(role)).role.isAwakened)
+            if (awakeningLayerIndex == awakeningState.currentAwakeningIndex)
             {
-                float _timer = awakeningState.currentAwakeningTimer;
-                float _maxTimer = awakeningState.currentAwakeningMaxTime;
-                float _percentage = (_timer / _maxTimer);
-                timerImage.fillAmount = _percentage;
-                timerImage.enabled = true;
+                Character _characterOwner = GameManager.instance.GetCharacters(false)
+                    .First(c => c.ownerClientId == role.ownerClientId);
+                bool _isAnySameRoleAwakened = GameManager.instance.GetCharacters(false)
+                    .Any(c => c.role.IsTheSameRole(role) && c.role.isAwakened);
+                if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.role.isAwakened) ||
+                    (awakeningTimerType == AwakeningTimerType.AnyRole && _isAnySameRoleAwakened))
+                {
+                    UpdateTimer();
+                }
+                else
+                {
+                    timerImage.enabled = false;
+                }
             }
             else
             {
                 timerImage.enabled = false;
             }
+        }
+
+        private void UpdateTimer()
+        {
+            float _timer = awakeningState.currentAwakeningTimer;
+            float _maxTimer = awakeningState.currentAwakeningMaxTime;
+            float _percentage = (_timer / _maxTimer);
+            timerImage.fillAmount = _percentage;
+            timerImage.enabled = true;
+        }
+
+        public enum AwakeningTimerType
+        {
+            AnyRole,
+            SpecificCharacter
         }
     }
 }

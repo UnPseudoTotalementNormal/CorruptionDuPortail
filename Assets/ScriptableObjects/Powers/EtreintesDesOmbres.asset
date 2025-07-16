@@ -652,3 +652,17 @@ MonoBehaviour:
             Data3: 0
             Data4: 0
           Path: 
+        onCorruptionSuccessfulSound:
+          Guid:
+            Data1: 1862133295
+            Data2: 1223705465
+            Data3: 872570496
+            Data4: 611831916
+          Path: event:/Characters/Mage Occulte/embrace of shadows - Sucess
+        onCorruptionFailedSound:
+          Guid:
+            Data1: -1483684165
+            Data2: 1241310542
+            Data3: -19726450
+            Data4: 2001007959
+          Path: event:/Characters/Mage Occulte/embrace of shadows - Failure

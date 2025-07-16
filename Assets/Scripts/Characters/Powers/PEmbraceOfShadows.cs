@@ -1,9 +1,12 @@
 #region
 
 using System;
+using Extensions;
+using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -14,6 +17,8 @@ namespace Characters.Powers
     public class PEmbraceOfShadows : Power
     {
         [NonSerialized] private Character clickedCharacter;
+        public EventReference onCorruptionSuccessfulSound;
+        public EventReference onCorruptionFailedSound;
         
         private void OnCardClicked(Card _clickedCard)
         {
@@ -34,6 +39,17 @@ namespace Characters.Powers
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                if (!String.IsNullOrEmpty(onCorruptionSuccessfulSound.GetPath()))
+                {
+                    RuntimeManager.PlayOneShot(onCorruptionSuccessfulSound.GetPath());
+                }
+            }
+            else
+            {
+                if (!String.IsNullOrEmpty(onCorruptionFailedSound.GetPath()))
+                {
+                    RuntimeManager.PlayOneShot(onCorruptionFailedSound.GetPath());
+                }
             }
             OnUsed();
         }
@@ -83,6 +99,14 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnCardClicked;
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
             FocusManager.instance.UnfocusAll();
+        }
+
+        public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
+        {
+            base.NetworkSerialize(_serializer);
+            
+            onCorruptionFailedSound.NetworkSerialize(_serializer);
+            onCorruptionSuccessfulSound.NetworkSerialize(_serializer);
         }
     }
 }

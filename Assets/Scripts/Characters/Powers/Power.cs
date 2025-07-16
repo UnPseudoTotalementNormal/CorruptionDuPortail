@@ -32,7 +32,6 @@ namespace Characters.Powers
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
-
         public EventReference onUsedSound;
 
         [NonSerialized] public EventInstance canalisationSoundInstance;
@@ -54,15 +53,8 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref powerUseLeft);
             _serializer.SerializeValue(ref powerGameId);
 
-            var _eventPath = canalisationSound.GetPath() ?? string.Empty;
-            _serializer.SerializeValue(ref _eventPath);
-            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
-                canalisationSound = RuntimeManager.PathToEventReference(_eventPath);
-            
-            _eventPath = onUsedSound.GetPath() ?? string.Empty;
-            _serializer.SerializeValue(ref _eventPath);
-            if (_serializer.IsReader && !string.IsNullOrEmpty(_eventPath))
-                onUsedSound = RuntimeManager.PathToEventReference(_eventPath);
+            canalisationSound.NetworkSerialize(_serializer);
+            onUsedSound.NetworkSerialize(_serializer);
         }
 
 

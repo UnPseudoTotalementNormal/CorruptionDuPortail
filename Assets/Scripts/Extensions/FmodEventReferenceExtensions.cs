@@ -25,5 +25,13 @@ namespace Extensions
                 eventReference = RuntimeManager.PathToEventReference(eventPath);
             }
         }
+        
+        public static void TryPlayOneShot(this EventReference _eventReference)
+        {
+            if (!string.IsNullOrEmpty(_eventReference.GetPath()))
+            {
+                RuntimeManager.PlayOneShot(_eventReference.GetPath());
+            }
+        }
     }
 }

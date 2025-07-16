@@ -39,17 +39,11 @@ namespace Characters.Powers
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
-                if (!String.IsNullOrEmpty(onCorruptionSuccessfulSound.GetPath()))
-                {
-                    RuntimeManager.PlayOneShot(onCorruptionSuccessfulSound.GetPath());
-                }
+                onCorruptionSuccessfulSound.TryPlayOneShot();
             }
             else
             {
-                if (!String.IsNullOrEmpty(onCorruptionFailedSound.GetPath()))
-                {
-                    RuntimeManager.PlayOneShot(onCorruptionFailedSound.GetPath());
-                }
+                onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
         }

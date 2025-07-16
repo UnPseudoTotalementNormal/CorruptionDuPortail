@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Extensions;
+using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using Network;
@@ -24,10 +25,15 @@ namespace Characters.Powers
         
         [NonSerialized] public ulong[] healedCharacters = Enumerable.Repeat(GameValues.FAKE_CLIENT_ID, GameValues.MAX_PLAYERS).ToArray();
         
+        public EventReference onHealSuccessfulSound;
+        public EventReference onHealFailedSound;
+        
         public override void NetworkSerialize<T>(BufferSerializer<T> serializer)
         {
             base.NetworkSerialize(serializer);
             serializer.SerializeValue(ref healedCharacters);
+            onHealSuccessfulSound.NetworkSerialize(serializer);
+            onHealFailedSound.NetworkSerialize(serializer);
         }
         
         private void OnCardClicked(Card _clickedCard)
@@ -60,7 +66,7 @@ namespace Characters.Powers
             }
             
             var _senderId = NetworkManager.Singleton.LocalClientId;
-            GameManager.instance.DoPowerStaticMethodRpc(this.GetType().FullName, nameof(TryHealServerRpc),
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(TryHealServerRpc),
                 new[] {  
                     new NetworkSerializableObject(_senderId),
                     new NetworkSerializableObject(clickedCharacter.ownerClientId),
@@ -69,7 +75,7 @@ namespace Characters.Powers
             OnUsed();
         }
         
-        private static void TryHealServerRpc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
+        private void TryHealServerRpc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
         {
             RoleTargetSystem.instance.NewTargeting(_sender, _healingCharacterId);
             PDroolyHealing _power = (PDroolyHealing)GameManager.instance.GetCharacter(_sender).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
@@ -85,20 +91,28 @@ namespace Characters.Powers
                 _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
                 _choosedCharacter.HealPlayer();
                 GameManager.instance.AskForUpdateAllCharactersRpc();
-                GameManager.instance.DoPowerStaticMethodRpc(typeof(PDroolyHealing).FullName, nameof(OnHealRpc),
+                GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealSuccessfulRpc),
                     new[] { new NetworkSerializableObject(_choosedCharacter.ownerClientId) }, 
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
             }
             else
             {
-                //fail heal
+                GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealFailedRpc), 
+                    new NetworkSerializableObject[] { }, 
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
             }
         }
 
-        private static void OnHealRpc(ulong _healedCharacterId)
+        private void OnHealSuccessfulRpc(ulong _healedCharacterId)
         {
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _healedCharacterId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+            onHealSuccessfulSound.TryPlayOneShot();
+        }
+        
+        private void OnHealFailedRpc()
+        {
+            onHealFailedSound.TryPlayOneShot();
         }
 
         public List<Character> GetIgnoreCharacters()

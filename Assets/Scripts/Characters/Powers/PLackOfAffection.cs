@@ -2,6 +2,8 @@
 
 using System;
 using ChatSystem;
+using Extensions;
+using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using Network;
@@ -16,8 +18,13 @@ namespace Characters.Powers
     [Serializable]
     public class PLackOfAffection : Power
     {
-        private static void OnPlayerContactedRpc(ulong _senderClientId)
+        public EventReference onContactedAsChosenSound;
+        public EventReference onContactedAsMarginalSound;
+        public EventReference onContactedAsAnomalySound;
+        
+        private void OnPlayerContactedRpc(ulong _senderClientId)
         {
+            
             Character _localCharacter = GameManager.instance.GetLocalCharacter(false);
             if (_localCharacter.role.factionType == FactionType.chosen)
             {
@@ -26,14 +33,27 @@ namespace Characters.Powers
             }
             
             ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID);
+
+            switch (_localCharacter.role.factionType)
+            {
+                case FactionType.chosen:
+                    onContactedAsChosenSound.TryPlayOneShot();
+                    break;
+                case FactionType.marginal:
+                    onContactedAsMarginalSound.TryPlayOneShot();
+                    break;
+                case FactionType.anomaly:
+                    onContactedAsAnomalySound.TryPlayOneShot();
+                    break;
+            }
         }
         
         private void OnCardClicked(Card _clickedCard)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
             OnUsed();
-            GameManager.instance.DoPowerStaticMethodRpc(
-                typeof(PLackOfAffection).FullName, nameof(OnPlayerContactedRpc),
+            GameManager.instance.DoPowerMethodRpc(ownerClientId,
+                this, nameof(OnPlayerContactedRpc),
                 new [] { new NetworkSerializableObject(ownerClientId) },
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId }));
         }
@@ -77,6 +97,14 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnCardClicked;
             
             FocusManager.instance.UnfocusAll();
+        }
+
+        public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
+        {
+            base.NetworkSerialize(_serializer);
+            onContactedAsChosenSound.NetworkSerialize(_serializer);
+            onContactedAsMarginalSound.NetworkSerialize(_serializer);
+            onContactedAsAnomalySound.NetworkSerialize(_serializer);
         }
     }
 }

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AudioSystem;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
@@ -86,33 +87,31 @@ namespace Characters.Powers
             }
             
             var _choosedCharacter = GameManager.instance.GetCharacter(_healingCharacterId, false);
+            bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
                 _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
-                _choosedCharacter.HealPlayer();
-                GameManager.instance.AskForUpdateAllCharactersRpc();
+
+                if (_choosedCharacter.isCorrupted)
+                {
+                    _healSuccess = true;
+                    _choosedCharacter.HealPlayer();
+                    GameManager.instance.AskForUpdateAllCharactersRpc();
+                }
                 GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealSuccessfulRpc),
                     new[] { new NetworkSerializableObject(_choosedCharacter.ownerClientId) }, 
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
             }
-            else
-            {
-                GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealFailedRpc), 
-                    new NetworkSerializableObject[] { }, 
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
-            }
+            
+            GameAudioManager.instance.PlayOneShotRpc(
+                _healSuccess? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(), 
+                NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }
 
         private void OnHealSuccessfulRpc(ulong _healedCharacterId)
         {
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _healedCharacterId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
-            onHealSuccessfulSound.TryPlayOneShot();
-        }
-        
-        private void OnHealFailedRpc()
-        {
-            onHealFailedSound.TryPlayOneShot();
         }
 
         public List<Character> GetIgnoreCharacters()

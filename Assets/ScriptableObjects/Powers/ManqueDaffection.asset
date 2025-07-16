@@ -652,3 +652,24 @@ MonoBehaviour:
             Data3: -853449322
             Data4: 1212795465
           Path: event:/Orpheline/SendPower
+        onContactedAsChosenSound:
+          Guid:
+            Data1: -175124592
+            Data2: 1264170244
+            Data3: -1595125078
+            Data4: 1533138782
+          Path: event:/Orpheline/ReceivePower_Chosen
+        onContactedAsMarginalSound:
+          Guid:
+            Data1: -94982084
+            Data2: 1184982034
+            Data3: -775239272
+            Data4: 384024150
+          Path: event:/Orpheline/ReceivePower_Anomaly
+        onContactedAsAnomalySound:
+          Guid:
+            Data1: -94982084
+            Data2: 1184982034
+            Data3: -775239272
+            Data4: 384024150
+          Path: event:/Orpheline/ReceivePower_Anomaly

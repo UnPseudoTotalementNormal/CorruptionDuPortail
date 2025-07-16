@@ -8,12 +8,13 @@ using Characters.Assets;
 using Characters.Powers;
 using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
+using Extensions;
+using FMODUnity;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using UnityEngine.Serialization;
 
 #endregion
 
@@ -30,6 +31,10 @@ public class Role : INetworkSerializable
     
     [SerializeField] public List<Power> powers = new();
     [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions = new();
+
+    [Header("Sounds")] 
+    public EventReference onChainingSound;
+    public EventReference onGameStartRoleRevealSound;
     
     public bool isAwakened = false;
     
@@ -81,6 +86,8 @@ public class Role : INetworkSerializable
         }
         
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
+        onChainingSound = _newCharacterRole.onChainingSound;
+        onGameStartRoleRevealSound = _newCharacterRole.onGameStartRoleRevealSound;
     }
     
     public Role CopyRole()
@@ -95,6 +102,8 @@ public class Role : INetworkSerializable
         _newRole.rolePortrait = rolePortrait;
         _newRole.ownerClientId = ownerClientId;
         _newRole.roleID = roleID;
+        _newRole.onChainingSound = onChainingSound;
+        _newRole.onGameStartRoleRevealSound = onGameStartRoleRevealSound;
         
         foreach (Power _power in powers)
         {
@@ -120,6 +129,8 @@ public class Role : INetworkSerializable
         _serializer.SerializeValue(ref rolePortrait);
         _serializer.SerializeValue(ref isAwakened);
         _serializer.SerializeValue(ref roleID);
+        onChainingSound.NetworkSerialize(_serializer);
+        onGameStartRoleRevealSound.NetworkSerialize(_serializer);
         
         int _powersCount = powers.Count;
         _serializer.SerializeValue(ref _powersCount);

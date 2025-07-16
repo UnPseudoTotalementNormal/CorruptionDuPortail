@@ -652,3 +652,17 @@ MonoBehaviour:
             Data3: 0
             Data4: 0
           Path: 
+        onHealSuccessfulSound:
+          Guid:
+            Data1: 106296717
+            Data2: 1150388440
+            Data3: -1239444058
+            Data4: -1183599853
+          Path: event:/Characters/Dr. Gloubi/GoodAnswer
+        onHealFailedSound:
+          Guid:
+            Data1: 386574851
+            Data2: 1184091438
+            Data3: -2056191074
+            Data4: -1028104561
+          Path: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption

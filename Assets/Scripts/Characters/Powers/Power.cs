@@ -1,6 +1,7 @@
 #region
 
 using System;
+using AudioSystem;
 using Extensions;
 using FMOD.Studio;
 using FMODUnity;
@@ -33,8 +34,8 @@ namespace Characters.Powers
         [Header("Sounds")] 
         public EventReference canalisationSound;
         public EventReference onUsedSound;
-
-        [NonSerialized] public EventInstance canalisationSoundInstance;
+        
+        public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
 
         public virtual object Clone()
@@ -86,11 +87,7 @@ namespace Characters.Powers
         public virtual void StartUse()
         {
             isCurrentlyUsed = true;
-            if (!string.IsNullOrEmpty(canalisationSound.GetPath()))
-            {
-                canalisationSoundInstance = RuntimeManager.CreateInstance(canalisationSound);
-                canalisationSoundInstance.start();
-            }
+            GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
         }
 
         public virtual void OnUsed()
@@ -117,11 +114,7 @@ namespace Characters.Powers
         protected virtual void StopUse()
         {
             isCurrentlyUsed = false;
-            if (canalisationSoundInstance.isValid())
-            {
-                canalisationSoundInstance.stop(STOP_MODE.ALLOWFADEOUT);
-                canalisationSoundInstance.release();
-            }
+            GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only

@@ -76,8 +76,11 @@ namespace AudioSystem
             
             if (eventInstances.TryGetValue(_instanceKey, out EventInstance _instance))
             {
-                _instance.stop(STOP_MODE.ALLOWFADEOUT);
-                _instance.release();
+                if (_instance.isValid())
+                {
+                    _instance.stop(STOP_MODE.ALLOWFADEOUT);
+                    _instance.release();
+                }
                 eventInstances.Remove(_instanceKey);
             }
         }

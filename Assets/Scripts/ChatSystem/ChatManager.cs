@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using AudioSystem;
+using Extensions;
+using FMODUnity;
 using Network;
 using TMPro;
 using Unity.Collections;
@@ -24,13 +27,23 @@ namespace ChatSystem
         
         public int activeChatId { get; private set; } = (int)ChatWindowIDs.General;
         
+        public event Action<ChatMessage> onChatMessageReceived;
+        public event Action<ChatMessage> onChatMessageSent;
         public event Action<int> onActiveChatChanged;
         public event Action<int> onChatDiscovered;
+        
+        public EventReference switchChatSound;
+        public EventReference receiveMessageSound;
+        public EventReference sendMessageSound;
 
         private void Awake()
         {
             instance = this;
             DiscoverChat((int)ChatWindowIDs.General);
+            
+            onChatMessageSent += (_) => { GameAudioManager.instance.PlayOneShot(sendMessageSound.GetPath()); };
+            onChatMessageReceived += (_) => { GameAudioManager.instance.PlayOneShot(receiveMessageSound.GetPath()); };
+            onActiveChatChanged += (_) => { GameAudioManager.instance.PlayOneShot(switchChatSound.GetPath()); };
         }
         
         public void ChangeActiveChat(int _chatId)
@@ -100,6 +113,13 @@ namespace ChatSystem
         public void SendChatMessageServerRpc(ChatMessage _chatMessage, int _chatId)
         {
             ReceiveChatMessageRpc(_chatMessage, _chatId);
+            OnMessageSentRpc(_chatMessage, RpcTarget.Single(_chatMessage.senderClientId, RpcTargetUse.Persistent));
+        }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void OnMessageSentRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
+        {
+            onChatMessageSent?.Invoke(_chatMessage);
         }
 
         [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
@@ -107,12 +127,14 @@ namespace ChatSystem
         {
             ChatWindow _window = GetChatWindow(_chatId);
             _window?.AddChatMessage(_chatMessage);
+            onChatMessageReceived?.Invoke(_chatMessage);
         }
 
         public void AddMessageLocal(string _message, ulong _senderId, int _chatId = (int)ChatWindowIDs.General)
         {
             ChatWindow _window = GetChatWindow(_chatId);
             _window?.AddChatMessage(new ChatMessage(_senderId, _message));
+            onChatMessageReceived?.Invoke(new ChatMessage(_senderId, _message));
         }
     }
     

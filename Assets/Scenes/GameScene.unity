@@ -2126,6 +2126,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  switchChatSound:
+    Guid:
+      Data1: -1932913990
+      Data2: 1148100710
+      Data3: -414748226
+      Data4: -791132990
+    Path: event:/Interface/Messages/MessageMenuSelect
+  receiveMessageSound:
+    Guid:
+      Data1: 232737934
+      Data2: 1288740730
+      Data3: 464377770
+      Data4: -1284222518
+    Path: event:/Interface/Messages/ReceiveMessage
+  sendMessageSound:
+    Guid:
+      Data1: 1568662278
+      Data2: 1156388377
+      Data3: -947327076
+      Data4: -2003215321
+    Path: event:/Interface/Messages/SendMessage
 --- !u!1 &640315080
 GameObject:
   m_ObjectHideFlags: 0
@@ -4331,6 +4352,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eaee873fc1439794caf4503a33206f93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &1503345853
 GameObject:
   m_ObjectHideFlags: 0

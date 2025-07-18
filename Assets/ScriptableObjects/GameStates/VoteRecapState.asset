@@ -18,3 +18,10 @@ MonoBehaviour:
   recapDuration: 10
   cardPrefab: {fileID: 417900098678493395, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
   spawnedCard: {fileID: 0}
+  chainingAnnouncementSound:
+    Guid:
+      Data1: 798413136
+      Data2: 1152599177
+      Data3: 681112481
+      Data4: 1095025765
+    Path: event:/Interface/ChainingAnnoucement

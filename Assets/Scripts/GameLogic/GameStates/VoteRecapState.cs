@@ -2,10 +2,13 @@
 
 using System;
 using System.Linq;
+using AudioSystem;
 using Board.UI.VoteCanvas;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using Extensions;
+using FMODUnity;
 using UnityEngine;
 
 #endregion
@@ -23,6 +26,8 @@ namespace GameLogic.GameStates
         [SerializeField] private GameObject cardPrefab;
 
         [HideInInspector] public Transform spawnedCard;
+        
+        public EventReference chainingAnnouncementSound;
         
         public override void OnStateCreated()
         { 
@@ -57,6 +62,7 @@ namespace GameLogic.GameStates
             }
             else
             {
+                GameAudioManager.instance.PlayOneShot(chainingAnnouncementSound.GetPath());
                 await DoCardChainingAnimation();
                 if (gameManager.IsServer)
                 {

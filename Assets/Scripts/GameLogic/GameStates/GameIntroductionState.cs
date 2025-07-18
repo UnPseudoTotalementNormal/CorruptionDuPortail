@@ -6,6 +6,7 @@ using System.Linq;
 using AudioSystem;
 using Characters.WinningConditions;
 using Extensions;
+using FMODUnity;
 using UnityEngine;
 
 #endregion
@@ -27,6 +28,8 @@ namespace GameLogic.GameStates
 
         private float stateTimer = 0;
         
+        public EventReference gameOpeningSound;
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -46,6 +49,8 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
+            GameAudioManager.instance.PlayOneShot(gameOpeningSound.GetPath());
+            
             stateTimer = 0;
             showRoleText = false;
             showPreRoleText = false;

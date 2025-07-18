@@ -17,3 +17,10 @@ MonoBehaviour:
   timeBeforePreRoleText: 1
   timeBeforeRoleText: 3
   timeBeforeGameStart: 7.5
+  gameOpeningSound:
+    Guid:
+      Data1: -1018522590
+      Data2: 1085794016
+      Data3: -698886753
+      Data4: -1296589212
+    Path: event:/Interface/Opening

@@ -13,10 +13,39 @@ namespace AudioSystem
         public static GameAudioManager instance;
         
         private Dictionary<string, EventInstance> eventInstances = new();
+        
+        private EventInstance currentMusicInstance;
 
         private void Awake()
         {
             instance = this;
+        }
+
+        public void StopMusic()
+        {
+            if (currentMusicInstance.isValid())
+            {
+                currentMusicInstance.stop(STOP_MODE.ALLOWFADEOUT);
+                currentMusicInstance.release();
+            }
+        }
+        
+        public void PlayMusic(string _eventPath)
+        {
+            if (string.IsNullOrEmpty(_eventPath))
+            {
+                return;
+            }
+            
+            if (currentMusicInstance.isValid())
+            {
+                currentMusicInstance.stop(STOP_MODE.ALLOWFADEOUT);
+                currentMusicInstance.release();
+            }
+            
+            EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
+            currentMusicInstance = RuntimeManager.CreateInstance(_eventReference);
+            currentMusicInstance.start();
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

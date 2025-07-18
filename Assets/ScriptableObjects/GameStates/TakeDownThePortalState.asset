@@ -17,3 +17,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
   shouldActivate: 0
   mageCharacterOwnerId: 999
+  takeDownThePortalMusic:
+    Guid:
+      Data1: 1482311113
+      Data2: 1187093067
+      Data3: 1797484173
+      Data4: -1763425129
+    Path: event:/Interface/AbattreLePortail

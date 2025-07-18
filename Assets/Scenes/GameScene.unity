@@ -4835,28 +4835,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1596593364}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Script: {fileID: 11500000, guid: 2d79a87a27c04c8bbcc5d1b62c98945c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CollisionTag: 
-  EventReference:
+  musicEvent:
     Guid:
       Data1: 613583386
       Data2: 1216923872
       Data3: 1848601773
       Data4: -658138019
     Path: event:/Interface/GameMusic
-  Event: 
-  EventPlayTrigger: 1
-  EventStopTrigger: 2
-  AllowFadeout: 1
-  TriggerOnce: 0
-  Preload: 0
-  NonRigidbodyVelocity: 0
-  Params: []
-  OverrideAttenuation: 0
-  OverrideMinDistance: 1
-  OverrideMaxDistance: 20
 --- !u!1 &1607011513
 GameObject:
   m_ObjectHideFlags: 0

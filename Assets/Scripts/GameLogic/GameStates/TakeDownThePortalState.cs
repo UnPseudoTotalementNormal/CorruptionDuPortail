@@ -2,9 +2,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using AudioSystem;
 using Characters;
 using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
+using Extensions;
+using FMODUnity;
 using FocusSystem;
 using Network;
 using Unity.Netcode;
@@ -24,6 +27,8 @@ namespace GameLogic.GameStates
         
         private List<ulong> ignoreCharacters;
         private Character clickedCharacter;
+        
+        public EventReference takeDownThePortalMusic;
         
         public void SetMageCharacterRpc(ulong _mageCharacterOwnerId)
         {
@@ -212,6 +217,9 @@ namespace GameLogic.GameStates
                 return;
             }
 
+            GameAudioManager.instance.PlayMusicRpc(takeDownThePortalMusic.GetPath(), 
+                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
+
             _ = WaitForCardsToBeVisible();
         }
 
@@ -225,6 +233,9 @@ namespace GameLogic.GameStates
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
+            
+            GameAudioManager.instance.StopMusicRpc(takeDownThePortalMusic.GetPath(), 
+                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
         }
         
         public override void OnStartStateClient()

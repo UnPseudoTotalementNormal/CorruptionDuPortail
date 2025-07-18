@@ -89,6 +89,20 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843693
+    onChainingSound:
+      Guid:
+        Data1: -556041060
+        Data2: 1252347014
+        Data3: 8791958
+        Data4: 2087231293
+      Path: event:/Orpheline/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 379267383
+        Data2: 1239452801
+        Data3: -791614831
+        Data4: -1324382327
+      Path: event:/Orpheline/Annoucement
     isAwakened: 0
     ownerClientId: 0
   powers:

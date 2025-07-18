@@ -3,7 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AudioSystem;
 using Characters.WinningConditions;
+using Extensions;
 using UnityEngine;
 
 #endregion
@@ -76,7 +78,8 @@ namespace GameLogic.GameStates
             
             if (!showRoleText && stateTimer >= timeBeforeRoleText)
             {
-
+                var _eventPath = GameManager.instance.GetLocalCharacter(false).role.onGameStartRoleRevealSound.GetPath();
+                GameAudioManager.instance.PlayOneShot(_eventPath);
                 showRoleText = true;
                 onRoleTextShown?.Invoke();
             }

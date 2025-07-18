@@ -89,6 +89,20 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843694
+    onChainingSound:
+      Guid:
+        Data1: 2030048620
+        Data2: 1237141960
+        Data3: 1016564663
+        Data4: -457265924
+      Path: event:/Characters/Oracle/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:
@@ -99,4 +113,4 @@ MonoBehaviour:
     - rid: 7121802106355843694
       type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
       data:
-        ownerClientId: 0
+        ownerClientId: 18446744073709551611

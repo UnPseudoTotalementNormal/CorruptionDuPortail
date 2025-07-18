@@ -89,6 +89,20 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843686
+    onChainingSound:
+      Guid:
+        Data1: 1708220464
+        Data2: 1201551575
+        Data3: -1448840798
+        Data4: -1637735613
+      Path: event:/Characters/Dr. Gloubi/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:

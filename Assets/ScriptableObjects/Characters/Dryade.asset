@@ -89,6 +89,20 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843687
+    onChainingSound:
+      Guid:
+        Data1: -618104974
+        Data2: 1270347226
+        Data3: -1027984491
+        Data4: -783762723
+      Path: event:/Characters/Dryade/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:

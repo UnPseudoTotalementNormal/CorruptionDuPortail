@@ -5,6 +5,7 @@ using FMOD.Studio;
 using FMODUnity;
 using Unity.Netcode;
 using Unity.Collections;
+using UnityEngine;
 using UnityEngine.Assertions;
 using STOP_MODE = FMOD.Studio.STOP_MODE;
 
@@ -46,7 +47,7 @@ namespace AudioSystem
             
             if (activeMusicInstances.Count > 0)
             {
-                activeMusicInstances[^1].setPaused(false);
+                activeMusicInstances[^1].start();
             }
         }
         
@@ -70,7 +71,7 @@ namespace AudioSystem
             
             if (activeMusicInstances.Count != 0)
             {
-                activeMusicInstances[^1].setPaused(true);
+                activeMusicInstances[^1].stop(STOP_MODE.ALLOWFADEOUT);
             }
             
             _newMusicInstance.start();

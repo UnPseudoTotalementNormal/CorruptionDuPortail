@@ -143,5 +143,30 @@ namespace AudioSystem
                 eventInstances.Remove(_instanceKey);
             }
         }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            
+            foreach (var _music in activeMusicInstances)
+            {
+                if (_music.isValid())
+                {
+                    _music.stop(STOP_MODE.ALLOWFADEOUT);
+                    _music.release();
+                }
+            }
+            activeMusicInstances.Clear();
+            
+            foreach (var _eventInstance in eventInstances.Values)
+            {
+                if (_eventInstance.isValid())
+                {
+                    _eventInstance.stop(STOP_MODE.ALLOWFADEOUT);
+                    _eventInstance.release();
+                }
+            }
+            eventInstances.Clear();
+        }
     }
 }

@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using Extensions;
 using FMOD.Studio;
 using FMODUnity;
 using Unity.Netcode;
 using Unity.Collections;
+using UnityEngine.Assertions;
 using STOP_MODE = FMOD.Studio.STOP_MODE;
 
 namespace AudioSystem
@@ -14,7 +16,7 @@ namespace AudioSystem
         
         private Dictionary<string, EventInstance> eventInstances = new();
         
-        private EventInstance currentMusicInstance;
+        private List<EventInstance> activeMusicInstances = new();
 
         private void Awake()
         {
@@ -22,17 +24,29 @@ namespace AudioSystem
         }
         
         [Rpc(SendTo.SpecifiedInParams)]
-        public void StopMusicRpc(RpcParams _rpcParams = default)
+        public void StopMusicRpc(FixedString128Bytes _eventPath, RpcParams _rpcParams = default)
         {
-            StopMusic();
+            StopMusic(_eventPath.ToString());
         }
 
-        public void StopMusic()
+        public void StopMusic(string _eventPath)
         {
-            if (currentMusicInstance.isValid())
+            foreach (var _m in activeMusicInstances.ToList())
             {
-                currentMusicInstance.stop(STOP_MODE.ALLOWFADEOUT);
-                currentMusicInstance.release();
+                _m.getDescription(out EventDescription _desc);
+                _desc.getPath(out string _path);
+                
+                if (_path == _eventPath)
+                {
+                    _m.stop(STOP_MODE.ALLOWFADEOUT);
+                    _m.release();
+                    activeMusicInstances.Remove(_m);
+                }
+            }
+            
+            if (activeMusicInstances.Count > 0)
+            {
+                activeMusicInstances[^1].setPaused(false);
             }
         }
         
@@ -49,15 +63,18 @@ namespace AudioSystem
                 return;
             }
             
-            if (currentMusicInstance.isValid())
+            EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
+            EventInstance _newMusicInstance = RuntimeManager.CreateInstance(_eventReference);
+
+            Assert.IsTrue(_newMusicInstance.isValid(), "the new music instance is not valid with path: " + _eventPath);
+            
+            if (activeMusicInstances.Count != 0)
             {
-                currentMusicInstance.stop(STOP_MODE.ALLOWFADEOUT);
-                currentMusicInstance.release();
+                activeMusicInstances[^1].setPaused(true);
             }
             
-            EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
-            currentMusicInstance = RuntimeManager.CreateInstance(_eventReference);
-            currentMusicInstance.start();
+            _newMusicInstance.start();
+            activeMusicInstances.Add(_newMusicInstance);
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

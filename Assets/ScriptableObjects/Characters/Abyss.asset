@@ -91,18 +91,18 @@ MonoBehaviour:
     - rid: 7121802106355843684
     onChainingSound:
       Guid:
-        Data1: 525785248
-        Data2: 1088511385
-        Data3: 1126606771
-        Data4: 1171405699
-      Path: event:/Characters/Mage Occulte/Chaining
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     onGameStartRoleRevealSound:
       Guid:
-        Data1: -1940016562
-        Data2: 1204164765
-        Data3: 1579141820
-        Data4: -1406215027
-      Path: event:/Characters/Mage Occulte/Opening
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:

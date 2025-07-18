@@ -89,6 +89,20 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843690
+    onChainingSound:
+      Guid:
+        Data1: 525785248
+        Data2: 1088511385
+        Data3: 1126606771
+        Data4: 1171405699
+      Path: event:/Characters/Mage Occulte/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: -1940016562
+        Data2: 1204164765
+        Data3: 1579141820
+        Data4: -1406215027
+      Path: event:/Characters/Mage Occulte/Opening
     isAwakened: 0
     ownerClientId: 0
   powers:

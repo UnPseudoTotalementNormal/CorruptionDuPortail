@@ -20,6 +20,12 @@ namespace AudioSystem
         {
             instance = this;
         }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void StopMusicRpc(RpcParams _rpcParams = default)
+        {
+            StopMusic();
+        }
 
         public void StopMusic()
         {
@@ -28,6 +34,12 @@ namespace AudioSystem
                 currentMusicInstance.stop(STOP_MODE.ALLOWFADEOUT);
                 currentMusicInstance.release();
             }
+        }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void PlayMusicRpc(FixedString128Bytes _eventPath, RpcParams _rpcParams = default)
+        {
+            PlayMusic(_eventPath.ToString());
         }
         
         public void PlayMusic(string _eventPath)

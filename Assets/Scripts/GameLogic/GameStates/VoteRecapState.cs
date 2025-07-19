@@ -98,7 +98,7 @@ namespace GameLogic.GameStates
                 var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
                 if (_voteCanvas)
                 {
-                    _voteCanvas.ShowVoteCount();
+                    _voteCanvas.ShowVoteCount(true);
                 }
             }
 

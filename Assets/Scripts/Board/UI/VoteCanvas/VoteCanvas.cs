@@ -21,6 +21,9 @@ namespace Board.UI.VoteCanvas
         public Vector2 moveDirection = Vector2.up;
         
         private int voteCount = 0;
+
+        private bool isEliminatedOnVoteStart;
+        private bool isChainedOnVoteStart;
         
         public event Action<Card> onVoteButtonClicked;
         
@@ -37,12 +40,15 @@ namespace Board.UI.VoteCanvas
 
         public void ActivateVoteCanvas()
         {
+            isChainedOnVoteStart = card.characterInfo.isChained;
+            isEliminatedOnVoteStart = card.characterInfo.isEliminated;
             ShowCanvas();
             card.onCardHovered += OnCardHovered;
             card.onCardUnhovered += OnCardUnhovered;
             if (card.characterInfo.isEliminated)
             {
                 votesText.text = "Éliminé";
+                voteButton.GetComponentInChildren<TMP_Text>().text = "Éliminé";
                 return;
             }
 
@@ -82,19 +88,19 @@ namespace Board.UI.VoteCanvas
             votesText.text = "N'a pas voté";
         }
         
-        public void ShowVoteCount()
+        public void ShowVoteCount(bool _useVoteStartValue)
         {
-            switch (card.characterInfo)
+            if ((_useVoteStartValue && isEliminatedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isEliminated))
             {
-                case var info when info.isEliminated:
-                    votesText.text = "Éliminé";
-                    break;
-                case var info when info.isChained:
-                    votesText.text = "Enchaîné";
-                    break;
-                default:
-                    votesText.text = $"Votes: {voteCount}";
-                    break;
+                votesText.text = "Éliminé";
+            }
+            else if ((_useVoteStartValue && isChainedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isChained))
+            {
+                votesText.text = "Enchaîné";
+            }
+            else
+            {
+                votesText.text = $"Votes: {voteCount}";
             }
         }
         

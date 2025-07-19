@@ -54,10 +54,10 @@ namespace GameLogic.GameStates
         {
             Assert.IsTrue(gameManager.IsServer, "OnPlayerVotedRpc can only be called on server");
 
-            if (votesForPlayer.Values.Any(voteList => voteList.Contains(_senderId)))
+            if (!CanVote(_senderId))
             {
-                Debug.LogWarning(_senderId + " has already voted.");
-                return;
+                Debug.LogWarning($"Player {_senderId} tried to vote for player {_votedPlayerId} but cannot vote.");
+                return; 
             }
 
             if (!votesForPlayer.ContainsKey(_votedPlayerId))
@@ -75,10 +75,29 @@ namespace GameLogic.GameStates
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
-            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >= gameManager.GetCharacters().Count(_c => !_c.isFake))
+            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
+                gameManager.GetCharacters().Count(_c => CanVote(_c.ownerClientId, true)))
             {
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
+        }
+        
+        public bool CanVote(ulong _playerId, bool _ignoreAlreadyVoted = false)
+        {
+            Assert.IsTrue(gameManager.IsServer, "CanVote can only be called on server");
+            
+            if (!_ignoreAlreadyVoted && votesForPlayer.Values.Any(_voteList => _voteList.Contains(_playerId)))
+            {
+                return false; // Player has already voted
+            }
+
+            Character _character = gameManager.GetCharacter(_playerId, false);
+            if (_character == null || _character.isEliminated || _character.isFake)
+            {
+                return false; // Player is eliminated or does not exist or is a fake character
+            }
+
+            return true;
         }
         
         private void OnRefreshPlayerVotesRpc(ulong[] playerIds, ulong[] votes, ulong[] voteCounts)

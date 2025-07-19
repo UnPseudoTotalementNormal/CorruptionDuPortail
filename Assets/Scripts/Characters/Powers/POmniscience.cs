@@ -36,6 +36,10 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId, ownerClientId);
             
             hackedCharacterClientId = _targetClientId;
+
+            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_targetClientId,
+                nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             
             GameManager.instance.AskForUpdateAllCharactersRpc();
         }

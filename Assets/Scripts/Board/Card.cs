@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using AudioSystem;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using Extensions;
 using GameLogic;
 using TMPro;
 using UnityEngine;
@@ -48,6 +50,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     private System.Threading.CancellationTokenSource showPseudoCts;
 
     private bool isSubscribedToUpdate = false;
+    private bool lastIsChainedStatus = false;
 
     private void Awake()
     {
@@ -172,7 +175,17 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     public void SetChainedOverlay(bool _isChained, bool _instant = false)
     {
+        if (lastIsChainedStatus == _isChained)
+        {
+            return;
+        }
+        
         chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
+        if (_isChained && !_instant)
+        {
+            GameAudioManager.instance.PlayOneShot(characterInfo.role.onChainingSound.GetPath());
+        }
+        lastIsChainedStatus = _isChained;
     }
 
     public async UniTask ShowBackSide(bool _isInstant = false)

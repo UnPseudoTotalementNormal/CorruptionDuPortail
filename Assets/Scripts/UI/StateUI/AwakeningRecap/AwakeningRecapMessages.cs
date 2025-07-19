@@ -6,6 +6,7 @@ using GameLogic.GameStates;
 using MessageSystem;
 using TMPro;
 using Unity.Collections;
+using Unity.Netcode;
 
 namespace UI.Components
 {
@@ -83,7 +84,11 @@ namespace UI.Components
             {
                 messagesToReveal.Push(_messageInfo);
             }
-            MessageManager.instance.RevealAllMessage();
+
+            if (NetworkManager.Singleton.IsServer)
+            {
+                MessageManager.instance.RevealAllMessage();
+            }
         }
         
         public override void HideEvent()

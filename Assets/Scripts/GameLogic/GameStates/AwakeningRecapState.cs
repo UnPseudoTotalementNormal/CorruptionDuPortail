@@ -106,9 +106,9 @@ namespace GameLogic.GameStates
             {
                 HideEvent(_oldIndex);
             }
-            ShowEvent(_newIndex);
-            
             currentEventTimer = spawnedRecapEvents[_newIndex].EvaluateDuration();
+            
+            ShowEvent(_newIndex);
         }
         
         private void HideCurrentEvent()

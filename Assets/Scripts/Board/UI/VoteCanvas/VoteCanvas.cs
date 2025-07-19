@@ -48,11 +48,13 @@ namespace Board.UI.VoteCanvas
 
             if (card.characterInfo.isChained)
             {
-                votesText.text = "Enchaîné";
-                return;
+                voteButton.GetComponentInChildren<TMP_Text>().text = "Enchaîné";
+            }
+            else
+            {
+                voteButton.onButtonClicked += OnVoteButtonClicked;
             }
             
-            voteButton.onButtonClicked += OnVoteButtonClicked;
             if (voteState)
             {
                 voteState.onVoteRefresh += OnVoteRefresh;

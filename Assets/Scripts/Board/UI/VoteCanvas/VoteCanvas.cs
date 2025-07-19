@@ -75,7 +75,7 @@ namespace Board.UI.VoteCanvas
 
         public void ResetVoteText()
         {
-            if (card.characterInfo.isEliminated || card.characterInfo.isChained)
+            if (card.characterInfo.isEliminated)
             {
                 return;
             }
@@ -84,11 +84,18 @@ namespace Board.UI.VoteCanvas
         
         public void ShowVoteCount()
         {
-            if (card.characterInfo.isEliminated || card.characterInfo.isChained)
+            switch (card.characterInfo)
             {
-                return;
+                case var info when info.isEliminated:
+                    votesText.text = "Éliminé";
+                    break;
+                case var info when info.isChained:
+                    votesText.text = "Enchaîné";
+                    break;
+                default:
+                    votesText.text = $"Votes: {voteCount}";
+                    break;
             }
-            votesText.text = $"Votes: {voteCount}";
         }
         
         private void OnVoteRefresh(Dictionary<ulong, List<ulong>> _votes)

@@ -45,6 +45,13 @@ namespace Board.UI.VoteCanvas
                 votesText.text = "Éliminé";
                 return;
             }
+
+            if (card.characterInfo.isChained)
+            {
+                votesText.text = "Enchaîné";
+                return;
+            }
+            
             voteButton.onButtonClicked += OnVoteButtonClicked;
             if (voteState)
             {
@@ -66,7 +73,7 @@ namespace Board.UI.VoteCanvas
 
         public void ResetVoteText()
         {
-            if (card.characterInfo.isEliminated)
+            if (card.characterInfo.isEliminated || card.characterInfo.isChained)
             {
                 return;
             }
@@ -75,7 +82,7 @@ namespace Board.UI.VoteCanvas
         
         public void ShowVoteCount()
         {
-            if (card.characterInfo.isEliminated)
+            if (card.characterInfo.isEliminated || card.characterInfo.isChained)
             {
                 return;
             }

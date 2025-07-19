@@ -63,6 +63,7 @@ namespace GameLogic.GameStates
         
         public override void OnEndStateClient()
         {
+            HideCurrentEvent();
             base.OnEndStateClient();
         }
 
@@ -108,6 +109,14 @@ namespace GameLogic.GameStates
             ShowEvent(_newIndex);
             
             currentEventTimer = spawnedRecapEvents[_newIndex].EvaluateDuration();
+        }
+        
+        private void HideCurrentEvent()
+        {
+            if (currentEventIndex != NONE_EVENT_INDEX)
+            {
+                HideEvent(currentEventIndex);
+            }
         }
 
         private void ShowEvent(int _index)

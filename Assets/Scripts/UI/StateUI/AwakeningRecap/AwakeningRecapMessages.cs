@@ -59,7 +59,11 @@ namespace UI.Components
             
             titleText.text = $"Message anonyme";
             messageText.horizontalAlignment = HorizontalAlignmentOptions.Center;
-            if (messagesToReveal.Count > 0)
+            if (messagesToReveal.Count == 1)
+            {
+                messageText.text = $"Durant cet éveil, 1 message a été envoyé.";
+            }
+            else if (messagesToReveal.Count > 1)
             {
                 messageText.text = $"Durant cet éveil, {messagesToReveal.Count} messages ont été envoyés.";
             }
@@ -79,6 +83,7 @@ namespace UI.Components
             {
                 messagesToReveal.Push(_messageInfo);
             }
+            MessageManager.instance.RevealAllMessage();
         }
         
         public override void HideEvent()

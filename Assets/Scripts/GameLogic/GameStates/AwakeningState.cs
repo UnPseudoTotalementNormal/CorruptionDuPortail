@@ -41,6 +41,12 @@ namespace GameLogic.GameStates
                     {
                         continue;
                     }
+                    
+                    if (_currentCharacter.isChained || _currentCharacter.isEliminated)
+                    {
+                        continue;
+                    }
+                    
                     currentlyAwakenedCharacters.Add(_currentCharacter);
 
                     gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId);

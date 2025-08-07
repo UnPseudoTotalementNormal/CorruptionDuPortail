@@ -40,7 +40,15 @@ namespace Characters.Powers.Target
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Corrupted))
             {
-                _targets.RemoveAll(_t => _t.isCorrupted);
+                for (int _i = _targets.Count - 1; _i >= 0; _i--)
+                {
+                    CharacterInfoReveal _info =
+                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId);
+                    if (_info.isCorruptRevealed > RevealLevel.False && _targets[_i].isCorrupted)
+                    {
+                        _targets.RemoveAt(_i);
+                    }
+                }
             }
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Blessed))

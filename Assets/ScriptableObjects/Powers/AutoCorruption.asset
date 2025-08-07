@@ -30,7 +30,7 @@ MonoBehaviour:
               byte0001: 117
               byte0002: 116
               byte0003: 111
-              byte0004: 32
+              byte0004: 45
               byte0005: 99
               byte0006: 111
               byte0007: 114
@@ -637,6 +637,7 @@ MonoBehaviour:
         maxWaitTime: 0
         isPassive: 1
         hasToBeAwakened: 0
+        targetIncludeFlags: 0
         powerUseLeft: 0
         canalisationSound:
           Guid:

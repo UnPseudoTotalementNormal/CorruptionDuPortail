@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Board.UI.CharacterBar;
+using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
@@ -29,32 +30,20 @@ namespace Characters.Powers
         {
             clickedCharacter = _clickedCard.characterInfo;
 
-            if (GetIgnoreCharacters().Any(_c => _c.ownerClientId == clickedCharacter.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(clickedCharacter.ownerClientId))
             {
                 return;
             }
             
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Roles);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
-            
-            foreach (var _ignoreRole in GetIgnoreRoles())
-            {
-                List<CharactersBarObject> _characterBarObjects = GameManager.instance.charactersBar.charactersBarObjects;
-                List<CharactersBarObject> _ignoreObjects = _characterBarObjects.FindAll(_c => _c.playerCharacter.role.IsTheSameRole(_ignoreRole));
-                foreach (var _ignoreObject in _ignoreObjects)
-                {
-                    FocusManager.instance.UnfocusObject(_ignoreObject.gameObject);
-                }
-            }
         }
         
         private void OnCharacterBarClicked(Character _character)
         {
-            var _roleClicked = _character.role;
-
-            if (GetIgnoreRoles().Any(_r => _r.IsTheSameRole(_roleClicked)))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
             {
                 return;
             }
@@ -112,44 +101,9 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
-            
-            foreach (var _ignoreCharacter in GetIgnoreCharacters())
-            {
-                var _ignoreCard = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _ignoreCharacter.ownerClientId);
-                if (_ignoreCard)
-                {
-                    FocusManager.instance.UnfocusObject(_ignoreCard.gameObject);
-                }
-            }
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
 
             clickedCharacter = null;
-        }
-        
-        private List<Character> GetIgnoreCharacters()
-        {
-            List<Character> _ignoreCharacters = new();
-            foreach (var _character in GameManager.instance.GetCharacters(false))
-            {
-                if (_character.isChained || _character.isBlessed)
-                {
-                    _ignoreCharacters.Add(_character);
-                }
-            }
-            return _ignoreCharacters;
-        }
-        
-        public List<Role> GetIgnoreRoles()
-        {
-            List<Role> _ignoreRoles = new();
-            foreach (var _character in GameManager.instance.GetCharacters(false))
-            {
-                if (_character.role.factionType != FactionType.chosen)
-                {
-                    _ignoreRoles.Add(_character.role);
-                }
-            }
-            return _ignoreRoles;
         }
 
         public override void OnUsed()

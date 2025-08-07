@@ -1,4 +1,5 @@
 using System;
+using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
@@ -13,6 +14,12 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = _clickedCard.characterInfo;
+            
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId))
+            {
+                return;
+            }
+            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId);
             
             _character.CorruptPlayer();
@@ -48,7 +55,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
         public override void OnUsed()

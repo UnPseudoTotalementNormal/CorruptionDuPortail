@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
@@ -20,6 +21,11 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            {
+                return;
+            }
+            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
 
             var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
@@ -70,7 +76,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
         public override void OnUsed()

@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
@@ -22,15 +23,25 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            {
+                return;
+            }
+            
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Roles);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
         
         private void OnCharacterBarClicked(Character _character)
         {
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
+            {
+                return;
+            }
+            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
@@ -68,7 +79,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
 
             clickedCharacter = null;
         }

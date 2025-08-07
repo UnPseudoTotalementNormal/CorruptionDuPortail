@@ -73,7 +73,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
         
 

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
@@ -44,24 +45,21 @@ namespace Characters.Powers
                 return;
             }
             
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            {
+                return;
+            }
+            
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Roles);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
-
-            foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
-            {
-                if (_characterBarObject.playerCharacter.role.factionType != FactionType.chosen)
-                {
-                    FocusManager.instance.UnfocusObject(_characterBarObject.gameObject);
-                }
-            }
         }
         
         private void OnCharacterBarClicked(Character _character)
         {
-            if (_character.role.factionType != FactionType.chosen)
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
             {
                 return;
             }
@@ -142,7 +140,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
 
             alreadyHealedCharacters = GameManager.instance.GetCharacters(false)
                 .Where(_c => healedCharacters.Contains(_c.ownerClientId)).ToList();

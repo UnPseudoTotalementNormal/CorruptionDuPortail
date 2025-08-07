@@ -1,4 +1,5 @@
 using System;
+using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using Network;
@@ -17,8 +18,8 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
-
-            if (_character.isChained || _character.ownerClientId == ownerClientId)
+            
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId))
             {
                 return;
             }
@@ -59,14 +60,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
-            foreach (var _card in BoardManager.instance.visibleCards)
-            {
-                if (_card.characterInfo.isChained || _card.characterInfo.ownerClientId == ownerClientId)
-                {
-                    FocusManager.instance.UnfocusObject(_card.gameObject);
-                }
-            }
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
         public override void OnUsed()

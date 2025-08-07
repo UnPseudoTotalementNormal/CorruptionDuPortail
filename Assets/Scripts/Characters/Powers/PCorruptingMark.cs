@@ -2,6 +2,7 @@
 
 using System;
 using ArrowSystem;
+using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
@@ -18,6 +19,11 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            {
+                return;
+            }
+            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
@@ -40,7 +46,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
         public override void OnUsed()

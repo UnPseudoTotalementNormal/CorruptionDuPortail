@@ -5,5 +5,6 @@ namespace Characters
         anomaly,
         chosen,
         marginal,
+        unknown,
     }
 }

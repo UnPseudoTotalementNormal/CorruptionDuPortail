@@ -230,9 +230,31 @@ MonoBehaviour:
   cardDisplacerTransform: {fileID: 1040824015893496145}
   cardPivotTransform: {fileID: 4456429850662113924}
   cardImage: {fileID: 2429788706011615213}
+  factionLogoImage: {fileID: 8618780977505519655}
+  factionLogoBackgroundImage: {fileID: 4574760127277184339}
   voteCanvas: {fileID: 6534977542599041295}
   chainedOverlay: {fileID: 1535649323081278993}
   unknownCardSprite: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
+  factionLogo:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: a54dfb5f1be7ff944a3b634f687e25d3, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
+    - Key: 3
+      Value: {fileID: 0}
+  factionLogoBackground:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: 60d7128af5f0d284796cdeb0eff0dcbb, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 28be9f44c0d173940bfb6635f6cce559, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: 685299ce002f5334da7109febd65caf5, type: 3}
+    - Key: 3
+      Value: {fileID: 0}
   characterInfo:
     role:
       roleName:
@@ -305,16 +327,33 @@ MonoBehaviour:
           byte0061: 0
       roleType: 0
       factionType: 0
+      roleID: 0
       rolePortrait: 0
       roleDifficulty: 0
       powers: []
       winningConditions: []
+      onChainingSound:
+        Guid:
+          Data1: 0
+          Data2: 0
+          Data3: 0
+          Data4: 0
+        Path: 
+      onGameStartRoleRevealSound:
+        Guid:
+          Data1: 0
+          Data2: 0
+          Data3: 0
+          Data4: 0
+        Path: 
       isAwakened: 0
       ownerClientId: 0
     ownerClientId: 0
     isChained: 0
     isCorrupted: 0
+    isEliminated: 0
     isBlessed: 0
+    messageLeft: 1
   roleInfo:
     roleName:
       utf8LengthInBytes: 0
@@ -386,10 +425,25 @@ MonoBehaviour:
         byte0061: 0
     roleType: 0
     factionType: 0
+    roleID: 0
     rolePortrait: 0
     roleDifficulty: 0
     powers: []
     winningConditions: []
+    onChainingSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   hoverZoom: 1.35

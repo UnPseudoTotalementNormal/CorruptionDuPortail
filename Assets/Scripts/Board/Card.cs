@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using AudioSystem;
+using AYellowpaper.SerializedCollections;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
@@ -29,12 +30,16 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public Transform cardPivotTransform;
     
     public Image cardImage;
+    public Image factionLogoImage;
+    public Image factionLogoBackgroundImage;
 
     public VoteCanvas voteCanvas;
     public CanvasGroup chainedOverlay;
  
     [Header("Info")]
-    public Sprite unknownCardSprite;
+    [SerializeField] private Sprite unknownCardSprite;
+    [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogo;
+    [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogoBackground;
     [HideInInspector] public Character characterInfo;
     [HideInInspector] public Role roleInfo;
 
@@ -103,6 +108,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
             {
                 cardRoleText.text = roleInfo.roleName.ToString();
+                factionLogoImage.sprite = factionLogo[roleInfo.factionType];
+                factionLogoBackgroundImage.sprite = factionLogoBackground[roleInfo.factionType];
                 ShowPowers();
                 cardImage.sprite = await roleInfo.GetRolePortrait().AttachExternalCancellation(_cancellationToken);
             }
@@ -110,6 +117,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             {
                 cardRoleText.text = "";
                 cardImage.sprite = unknownCardSprite;
+                factionLogoImage.sprite = factionLogo[FactionType.unknown];
+                factionLogoBackgroundImage.sprite = factionLogoBackground[FactionType.unknown];
             }
             if (_turnCard)
             {

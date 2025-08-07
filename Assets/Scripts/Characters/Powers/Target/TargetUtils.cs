@@ -5,9 +5,9 @@ using Unity.Netcode;
 
 namespace Characters.Powers.Target
 {
-    public class TargetUtils
+    public static class TargetUtils
     {
-        public List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
+        public static List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
         {
             List<Character> _targets = GameManager.instance.GetCharacters(false);
 
@@ -64,7 +64,7 @@ namespace Characters.Powers.Target
             return _targets.Select(_t => _t.ownerClientId).ToList();
         }
 
-        public List<ulong> GetTargetsForRoles(TargetIncludeFlags _includeFlags)
+        public static List<ulong> GetTargetsForRoles(TargetIncludeFlags _includeFlags)
         {
             List<Character> _targets = GameManager.instance.GetCharacters(false);
 

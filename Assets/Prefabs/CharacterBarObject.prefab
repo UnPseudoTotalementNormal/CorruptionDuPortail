@@ -164,6 +164,7 @@ GameObject:
   - component: {fileID: 6371621035504576672}
   - component: {fileID: 7457916283588836762}
   - component: {fileID: 6574735506729409167}
+  - component: {fileID: 8991915726581910073}
   m_Layer: 5
   m_Name: CharacterBarObject
   m_TagString: Untagged
@@ -276,18 +277,41 @@ MonoBehaviour:
           byte0061: 0
       roleType: 0
       factionType: 0
+      roleID: 0
       rolePortrait: 0
       roleDifficulty: 0
+      powers: []
+      winningConditions: []
+      onChainingSound:
+        Guid:
+          Data1: 0
+          Data2: 0
+          Data3: 0
+          Data4: 0
+        Path: 
+      onGameStartRoleRevealSound:
+        Guid:
+          Data1: 0
+          Data2: 0
+          Data3: 0
+          Data4: 0
+        Path: 
       isAwakened: 0
       ownerClientId: 0
     ownerClientId: 0
     isChained: 0
     isCorrupted: 0
+    isEliminated: 0
     isBlessed: 0
+    messageLeft: 1
   characterImage: {fileID: 1637366238393953664}
   canvasObject: {fileID: 7457916283588836762}
   corruptedOverlayImage: {fileID: 5021932142332569484}
+  hoverTooltipComponent: {fileID: 8991915726581910073}
   hoverScale: {x: 2.5, y: 2.5, z: 2.5}
+  references:
+    version: 2
+    RefIds: []
 --- !u!114 &6371621035504576672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -345,6 +369,21 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &8991915726581910073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7913822557668518461}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85e0e0efaccb4de99cbd9dcc142ca719, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tooltipTitle: Dr Gloubi (test)
+  tooltipDescription: "ceci est un test, t'es pas sens\xE9 voir \xE7a"
+  <tooltipOffsetDirection>k__BackingField: {x: 0, y: -1}
 --- !u!1 &8156196739143440472
 GameObject:
   m_ObjectHideFlags: 0
@@ -403,6 +442,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8aed84e881e9e414891873f28232922c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  awakeningTimerType: 1
   timerImage: {fileID: 2303567830554595728}
 --- !u!114 &2303567830554595728
 MonoBehaviour:

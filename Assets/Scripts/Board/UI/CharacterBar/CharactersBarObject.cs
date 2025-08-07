@@ -5,6 +5,7 @@ using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameLogic;
+using TooltipSystem;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -22,6 +23,8 @@ namespace Board.UI.CharacterBar
         [SerializeField] private Canvas canvasObject;
         
         [SerializeField] private Image corruptedOverlayImage;
+        
+        [SerializeField] private HoverTooltipComponent hoverTooltipComponent;
         
         private CustomButton customButton;
         
@@ -79,6 +82,14 @@ namespace Board.UI.CharacterBar
             RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId).forceCorruptOnRoleRevealed;
             bool _isCorrupted = playerCharacter.isCorrupted && _forceCorruptOnRoleRevealed > RevealLevel.False;
             corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
+            
+            hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
+            string _description = "Pouvoirs:";
+            foreach (var _power in playerCharacter.role.powers)
+            {
+                _description += $"\n- {_power.powerName}";
+            }
+            hoverTooltipComponent.SetTooltipDescription(_description);
                 
             var _rolePortrait = await playerCharacter.GetRole().GetRolePortrait();
             characterImage.sprite = _rolePortrait;

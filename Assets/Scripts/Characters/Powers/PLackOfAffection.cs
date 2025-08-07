@@ -32,7 +32,7 @@ namespace Characters.Powers
                     _senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
             
-            ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID);
+            ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
 
             switch (_localCharacter.role.factionType)
             {

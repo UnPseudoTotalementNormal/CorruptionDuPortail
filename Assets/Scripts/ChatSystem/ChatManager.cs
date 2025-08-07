@@ -39,6 +39,7 @@ namespace ChatSystem
         private void Awake()
         {
             instance = this;
+            DiscoverChat((int)ChatWindowIDs.Server);
             DiscoverChat((int)ChatWindowIDs.General);
             
             onChatMessageSent += (_) => { GameAudioManager.instance.PlayOneShot(sendMessageSound.GetPath()); };

@@ -91,7 +91,7 @@ namespace Characters.Powers
                 GameManager.instance.GetCharacter(_characterId).isBlessed = true;
                 var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
                 ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
-                    $"{_playerName} a été béni. (ne fais absolument rien pour l'instant)"), (int)ChatWindowIDs.General); //TODO: Jarvis, faudra faire ça
+                    $"{_playerName} a été béni. (ne fais absolument rien pour l'instant)"), (int)ChatWindowIDs.Server); //TODO: Jarvis, faudra faire ça
             }
             blessingCharacterIdOnMorning.Clear();
             GameManager.instance.AskForUpdateAllCharactersRpc();

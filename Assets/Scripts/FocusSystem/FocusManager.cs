@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Characters.Powers.Target;
 using DG.Tweening;
 using GameLogic;
 using UnityEngine;
@@ -40,7 +41,7 @@ namespace FocusSystem
             }
         }
         
-        public void SetFocusOnType(FocusType _focusType, bool _stopOtherFocus = true)
+        public void SetFocusOnType(FocusType _focusType, TargetIncludeFlags _includeFlags = (TargetIncludeFlags)(-1), bool _stopOtherFocus = true)
         {
             if (_stopOtherFocus)
             {
@@ -50,15 +51,23 @@ namespace FocusSystem
             switch (_focusType)
             {
                 case FocusType.Roles:
+                    List<ulong> _targetRoles = TargetUtils.GetTargetsForRoles(_includeFlags);
                     foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
                     {
-                        FocusObject(_characterBarObject.gameObject);
+                        if (_targetRoles.Contains(_characterBarObject.playerCharacter.ownerClientId))
+                        {
+                            FocusObject(_characterBarObject.gameObject);
+                        }
                     }
                     break;
                 case FocusType.Cards:
+                    List<ulong> _targetChars = TargetUtils.GetTargetsForCharacters(_includeFlags);
                     foreach (var _card in BoardManager.instance.visibleCards)
                     {
-                        FocusObject(_card.gameObject);
+                        if (_targetChars.Contains(_card.characterInfo.ownerClientId))
+                        {
+                            FocusObject(_card.gameObject);
+                        }
                     }
                     break;
                 case FocusType.Powers:

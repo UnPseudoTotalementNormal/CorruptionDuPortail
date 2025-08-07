@@ -14,12 +14,14 @@ namespace TooltipSystem
 
         [SerializeField] private string tooltipTitle;
         [SerializeField] private string tooltipDescription;
+        [SerializeField] private Vector2 tooltipOffsetDirection = Vector2.up;
 
         private Canvas canvas;
         
         private void Start()
         {
             canvas = GetComponentInParent<Canvas>();
+            tooltipOffsetDirection.Normalize();
         }
 
         public void SetTooltipTitle(string _title)
@@ -61,7 +63,7 @@ namespace TooltipSystem
             RectTransform _tooltipRect = _newTooltip.GetComponent<RectTransform>();
             var (_tooltipBoundingBoxSize, _tooltipScreenPos) = GetScreenBoundingBoxAndCenter(_tooltipRect.GetComponentsInChildren<RectTransform>());
             var (_componentBoundingBoxSize, _componentScreenPos) = GetScreenBoundingBoxAndCenter(GetComponentsInChildren<RectTransform>(), Camera.main);
-            _tooltipRect.position = _componentScreenPos + Vector2.up * (_componentBoundingBoxSize.y / 2f + _tooltipBoundingBoxSize.y / 2f);
+            _tooltipRect.position = _componentScreenPos + tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f);
         }
 
         private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)

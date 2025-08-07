@@ -2,6 +2,7 @@
 
 using System;
 using AudioSystem;
+using Characters.Powers.Target;
 using Extensions;
 using FMOD.Studio;
 using FMODUnity;
@@ -28,7 +29,9 @@ namespace Characters.Powers
 
         public bool isPassive;
         public bool hasToBeAwakened = true;
-
+        
+        public TargetIncludeFlags targetIncludeFlags;
+        
         public int powerUseLeft;
 
         [Header("Sounds")] 
@@ -53,6 +56,7 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref hasToBeAwakened);
             _serializer.SerializeValue(ref powerUseLeft);
             _serializer.SerializeValue(ref powerGameId);
+            _serializer.SerializeValue(ref targetIncludeFlags);
 
             canalisationSound.NetworkSerialize(_serializer);
             onUsedSound.NetworkSerialize(_serializer);

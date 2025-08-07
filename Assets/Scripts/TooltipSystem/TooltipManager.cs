@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -64,6 +65,9 @@ namespace TooltipSystem
             
             _newTooltip.onMouseEnterTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = true; };
             _newTooltip.onMouseExitTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = false; };
+            
+            _newTooltip.transform.localScale = Vector3.zero;
+            _newTooltip.transform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
             
             PlaceTooltip(_tooltipTrigger, _linkedGameObject, _newTooltip);
             

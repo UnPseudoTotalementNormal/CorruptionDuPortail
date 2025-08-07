@@ -26,6 +26,8 @@ namespace TooltipSystem
         {
             foreach (var _tooltipInstanceInfo in tooltipInstances.ToList())
             {
+                PlaceTooltip(_tooltipInstanceInfo.linkedTooltipTrigger, _tooltipInstanceInfo.linkedGameObject, _tooltipInstanceInfo.tooltipWindow);
+                
                 if (_tooltipInstanceInfo.isMouseOverLinkedGameObject || _tooltipInstanceInfo.isMouseOverTooltipWindow)
                 {
                     _tooltipInstanceInfo.tooltipNoHoverTimer = _tooltipInstanceInfo.tooltipNoHoverTime;
@@ -62,6 +64,8 @@ namespace TooltipSystem
             
             _newTooltip.onMouseEnterTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = true; };
             _newTooltip.onMouseExitTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = false; };
+            
+            PlaceTooltip(_tooltipTrigger, _linkedGameObject, _newTooltip);
             
             return _newTooltip;
         }
@@ -102,11 +106,50 @@ namespace TooltipSystem
         {
             return tooltipInstances.Any(x => x.linkedGameObject == _linkedGameObject);
         }
+        
+        private void PlaceTooltip(ITooltipTrigger _tooltipTrigger, GameObject _linkedGameObject, TooltipWindow _newTooltip)
+        {
+            Canvas.ForceUpdateCanvases();
+            RectTransform _tooltipRect = _newTooltip.GetComponent<RectTransform>();
+            var (_tooltipBoundingBoxSize, _tooltipScreenPos) = 
+                GetScreenBoundingBoxAndCenter(_tooltipRect.GetComponentsInChildren<RectTransform>());
+            var (_componentBoundingBoxSize, _componentScreenPos) = 
+                GetScreenBoundingBoxAndCenter(_linkedGameObject.GetComponentsInChildren<RectTransform>(), Camera.main);
+            _tooltipRect.position = _componentScreenPos + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f);
+        }
+
+        private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)
+        {
+            if (_targetRects.Length == 0)
+                return (Vector2.zero, Vector2.zero);
+
+            Vector3 _min = Vector3.positiveInfinity;
+            Vector3 _max = Vector3.negativeInfinity;
+            Vector3[] _corners = new Vector3[4];
+
+            foreach (var _rect in _targetRects)
+            {
+                _rect.GetWorldCorners(_corners);
+                foreach (var _corner in _corners)
+                {
+                    _min = Vector3.Min(_min, _corner);
+                    _max = Vector3.Max(_max, _corner);
+                }
+            }
+
+            Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
+            Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(_camera, _min);
+            Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(_camera, _max);
+            Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_screenMax.x - _screenMin.x), Mathf.Abs(_screenMax.y - _screenMin.y));
+            Vector2 _screenPos = RectTransformUtility.WorldToScreenPoint(_camera, _boundingBoxCenter);
+            return (_screenBoundingBoxSize, _screenPos);
+        }
     }
 
     public class TooltipInstanceInfo
     {
         public GameObject linkedGameObject;
+        public ITooltipTrigger linkedTooltipTrigger;
         public TooltipWindow tooltipWindow;
         public bool isMouseOverLinkedGameObject = true;
         public bool isMouseOverTooltipWindow = false;
@@ -117,6 +160,7 @@ namespace TooltipSystem
         public TooltipInstanceInfo(GameObject _linkedGameObject, TooltipWindow _tooltipWindow)
         {
             linkedGameObject = _linkedGameObject;
+            linkedTooltipTrigger = _linkedGameObject.GetComponent<ITooltipTrigger>();
             tooltipWindow = _tooltipWindow;
             tooltipNoHoverTimer = tooltipNoHoverTime;
         }

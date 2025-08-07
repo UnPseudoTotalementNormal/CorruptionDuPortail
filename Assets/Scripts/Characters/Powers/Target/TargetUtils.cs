@@ -47,6 +47,11 @@ namespace Characters.Powers.Target
             {
                 _targets.RemoveAll(_t => _t.isBlessed);
             }
+            
+            if (!_includeFlags.HasFlag(TargetIncludeFlags.Chained))
+            {
+                _targets.RemoveAll(_t => _t.isChained);
+            }
 
             return _targets.Select(_t => _t.ownerClientId).ToList();
         }

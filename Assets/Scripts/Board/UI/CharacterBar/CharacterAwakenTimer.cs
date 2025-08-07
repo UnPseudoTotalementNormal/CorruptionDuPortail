@@ -53,12 +53,12 @@ namespace Board.UI.CharacterBar
                 }
                 else
                 {
-                    timerImage.enabled = false;
+                    timerImage.gameObject.SetActive(false);
                 }
             }
             else
             {
-                timerImage.enabled = false;
+                timerImage.gameObject.SetActive(false);
             }
         }
 
@@ -68,7 +68,7 @@ namespace Board.UI.CharacterBar
             float _maxTimer = awakeningState.currentAwakeningMaxTime;
             float _percentage = (_timer / _maxTimer);
             timerImage.fillAmount = _percentage;
-            timerImage.enabled = true;
+            timerImage.gameObject.SetActive(true);
         }
 
         public enum AwakeningTimerType

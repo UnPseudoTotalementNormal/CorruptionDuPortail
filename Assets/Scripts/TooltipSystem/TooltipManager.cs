@@ -101,9 +101,12 @@ namespace TooltipSystem
                 return;
             }
 
-            tooltipInstances.Remove(_tooltipInstanceInfo ?? tooltipInstances.First(x => x.tooltipWindow == _tooltip));
+            tooltipInstances.Remove(_tooltipInstanceInfo ?? tooltipInstances.Find(x => x.tooltipWindow == _tooltip));
 
-            Destroy(_tooltip.gameObject);
+            _tooltip.transform.DOScale(Vector3.zero, 0.35f).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                Destroy(_tooltip.gameObject);
+            };
         }
         
         public bool IsTooltipOpenForGameObject(GameObject _linkedGameObject)

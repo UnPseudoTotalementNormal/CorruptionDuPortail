@@ -1,3 +1,4 @@
+using System.Collections;
 using Network;
 using TMPro;
 using UI;
@@ -14,9 +15,11 @@ namespace ChatSystem
         [SerializeField] private TMP_InputField inputField;
         [SerializeField] private RectTransform layoutTransform;
         [SerializeField] private RectTransform discoveredChatLayoutTransform;
+        [SerializeField] private Scrollbar chatScrollbar;
         
         [SerializeField] private CustomButton discoveredChatButtonPrefab;
         
+        [SerializeField]private float scrollbarBottomThreshold = 0.05f;
         private ChatWindow observedChatWindow;
 
         private void Start()
@@ -94,6 +97,8 @@ namespace ChatSystem
         
         public void AddMessage(ChatMessage _chatMessage)
         {
+            float _oldScrollbarValue = chatScrollbar.value;
+            
             string _senderName = _chatMessage.senderClientId == GameValues.CHAT_SERVER_CLIENT_ID 
                 ? "Server" 
                 : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_chatMessage.senderClientId).playerName.ToString();
@@ -102,6 +107,19 @@ namespace ChatSystem
 
             _chatText.text = $"{_senderName}: {_chatMessage.message}";
 
+            LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
+            
+            if (_oldScrollbarValue < scrollbarBottomThreshold)
+            {
+                StartCoroutine(WaitForScrollbarUpdate());
+            }
+        }
+        
+        private IEnumerator WaitForScrollbarUpdate()
+        {
+            yield return new WaitForEndOfFrame();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
+            chatScrollbar.value = 0f;
             LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
         }
     }

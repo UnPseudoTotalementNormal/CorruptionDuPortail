@@ -62,7 +62,7 @@ namespace ChatSystem
 
         public void TrySendChatMessage(string _text)
         {
-            if (string.IsNullOrEmpty(_text))
+            if (string.IsNullOrEmpty(_text) || activeChatId == (int)ChatWindowIDs.Server)
             {
                 return;
             }

@@ -22,6 +22,11 @@ namespace ChatSystem
 
         private void TrySendChatMessage(string _text)
         {
+            if (chatId == (int)ChatWindowIDs.Server)
+            {
+                return;
+            }
+            
             SendChatMessage(_text);
         }
 

@@ -6664,7 +6664,9 @@ MonoBehaviour:
   inputField: {fileID: 394987988}
   layoutTransform: {fileID: 1572867094}
   discoveredChatLayoutTransform: {fileID: 2054144186}
+  chatScrollbar: {fileID: 1528769366}
   discoveredChatButtonPrefab: {fileID: 1298378506885670401, guid: c17c67dc2bcc9b54684bdf2d1c8f6d1b, type: 3}
+  scrollbarBottomThreshold: 0.05
 --- !u!1 &1827791804
 GameObject:
   m_ObjectHideFlags: 0
@@ -7824,6 +7826,7 @@ MonoBehaviour:
     maxWaitTime: 0
     isPassive: 0
     hasToBeAwakened: 1
+    targetIncludeFlags: 0
     powerUseLeft: 0
     canalisationSound:
       Guid:

@@ -1,4 +1,5 @@
 using System.Collections;
+using DG.Tweening;
 using Network;
 using TMPro;
 using UI;
@@ -21,9 +22,14 @@ namespace ChatSystem
         
         [SerializeField]private float scrollbarBottomThreshold = 0.05f;
         private ChatWindow observedChatWindow;
-
+        
+        private bool isFullScreen = false;
+        private Vector2 baseSizeDelta;
+        [SerializeField] private float fullScreenSwitchDuration = 0.5f;
+        
         private void Start()
         {
+            baseSizeDelta = GetComponent<RectTransform>().sizeDelta;
             inputField.onEndEdit.AddListener(_text =>
             {
                 if (!Input.GetKeyDown(KeyCode.Return)) return;
@@ -121,6 +127,44 @@ namespace ChatSystem
             LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
             chatScrollbar.value = 0f;
             LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
+        }
+        
+        public void OnFullScreenButtonClicked()
+        {
+            if (isFullScreen)
+            {
+                DeactivateFullScreen();
+            }
+            else
+            {
+                ActivateFullScreen();
+            }
+        }
+
+        public void ActivateFullScreen()
+        {
+            if (isFullScreen)
+            {
+                return;
+            }
+            
+            isFullScreen = true;
+            var _canvasRectTransform = GetComponentInParent<Canvas>().GetComponent<RectTransform>();
+            Vector2 _canvasSizeDelta = _canvasRectTransform.sizeDelta;
+
+            GetComponent<RectTransform>().DOSizeDelta(_canvasSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint);
+        }
+        
+        public void DeactivateFullScreen()
+        {
+            if (!isFullScreen)
+            {
+                return;
+            }
+            
+            isFullScreen = false;
+            
+            GetComponent<RectTransform>().DOSizeDelta(baseSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint);
         }
     }
 }

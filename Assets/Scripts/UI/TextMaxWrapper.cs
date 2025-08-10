@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -14,8 +16,11 @@ public class TextMaxWrapper : MonoBehaviour
     [Tooltip("Conserver les balises RichText (simple)")]
     public bool preserveRichText = true;
 
-    string originalText;
-    private Vector2 lastRectSize;
+    private string originalText;
+    private string _lastText;
+    
+    private bool isTruncateQueueRunning = false;
+    private bool hasTruncated = false;
 
     void Reset()
     {
@@ -26,41 +31,47 @@ public class TextMaxWrapper : MonoBehaviour
     void Start()
     {
         if (tmp == null) tmp = GetComponent<TMP_Text>();
-        originalText = tmp.text;
-        lastRectSize = _rectTransform.rect.size;
-        TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
-    }
-
-    private void Update()
-    {
-        Vector2 _currentRectSize = _rectTransform.rect.size;
-        if (_currentRectSize == lastRectSize)
-        {
-            return;
-        }
-        
-        lastRectSize = _currentRectSize;
-        TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
+        _lastText = originalText = tmp.text;
         TruncateNow();
         TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
     }
-
+    
     private void OnTextChanged(Object _obj)
     {
-        if (_obj != tmp)
+        if (_obj != tmp || _lastText == tmp.text)
         {
             return;
         }
-        
+
+        _ = TruncateQueue();
+    }
+
+    private async UniTaskVoid TruncateQueue()
+    {
+        if (isTruncateQueueRunning)
+        {
+            return;
+        }
+
+        isTruncateQueueRunning = true;
         TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
+        if (hasTruncated)
+        {
+            await UniTask.Delay(TimeSpan.FromMilliseconds(70));
+        }
+
         TruncateNow();
+        
         TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
-        lastRectSize = _rectTransform.rect.size;
+        hasTruncated = true;
+        isTruncateQueueRunning = false;
     }
     
     [ContextMenu("Truncate Now")]
     public void TruncateNow()
     {
+        Debug.LogError("whooooo ???");
+        TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
         originalText = originalText ?? tmp.text;
         tmp.text = originalText;
 
@@ -97,6 +108,7 @@ public class TextMaxWrapper : MonoBehaviour
 
         tmp.text = ellipsis + (preserveRichText ? CloseOpenTags(originalText, -1) : "");
         tmp.ForceMeshUpdate();
+        TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
     }
 
     static string CloseOpenTags(string _source, int _cutIndex)

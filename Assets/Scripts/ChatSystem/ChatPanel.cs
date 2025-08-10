@@ -183,7 +183,13 @@ namespace ChatSystem
             var _canvasRectTransform = GetComponentInParent<Canvas>().GetComponent<RectTransform>();
             Vector2 _canvasSizeDelta = _canvasRectTransform.sizeDelta;
 
-            GetComponent<RectTransform>().DOSizeDelta(_canvasSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint);
+            GetComponent<RectTransform>().DOSizeDelta(_canvasSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                foreach (var _textMaxWrapper in GetComponentsInChildren<TextMaxWrapper>())
+                {
+                    _textMaxWrapper.TruncateNow();
+                }
+            };
         }
         
         public void DeactivateFullScreen()
@@ -195,7 +201,13 @@ namespace ChatSystem
             
             isFullScreen = false;
             
-            GetComponent<RectTransform>().DOSizeDelta(baseSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint);
+            GetComponent<RectTransform>().DOSizeDelta(baseSizeDelta, fullScreenSwitchDuration).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                foreach (var _textMaxWrapper in GetComponentsInChildren<TextMaxWrapper>())
+                {
+                    _textMaxWrapper.TruncateNow();
+                }
+            };
         }
     }
 }

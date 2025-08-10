@@ -6788,6 +6788,7 @@ MonoBehaviour:
   chatTextPrefab: {fileID: 3314516240121098377, guid: aea8aa2cfe355ae4198df450c8aeb92a, type: 3}
   chatTitleText: {fileID: 1867345637}
   inputField: {fileID: 394987988}
+  rectTransform: {fileID: 1797913383}
   layoutTransform: {fileID: 1572867094}
   discoveredChatLayoutTransform: {fileID: 2054144186}
   chatScrollbar: {fileID: 1528769366}

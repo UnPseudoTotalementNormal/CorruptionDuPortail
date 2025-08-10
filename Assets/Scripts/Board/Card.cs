@@ -108,8 +108,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
             {
                 cardRoleText.text = roleInfo.roleName.ToString();
-                factionLogoImage.sprite = factionLogo[roleInfo.factionType];
-                factionLogoBackgroundImage.sprite = factionLogoBackground[roleInfo.factionType];
+                UpdateFaction(roleInfo.factionType);
                 ShowPowers();
                 cardImage.sprite = await roleInfo.GetRolePortrait().AttachExternalCancellation(_cancellationToken);
             }
@@ -117,11 +116,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             {
                 cardRoleText.text = "";
                 cardImage.sprite = unknownCardSprite;
-                factionLogoImage.sprite = factionLogo[FactionType.unknown];
-                factionLogoBackgroundImage.sprite = factionLogoBackground[FactionType.unknown];
-                bool _factionActive = factionLogoImage.sprite != null;
-                factionLogoImage.gameObject.SetActive(_factionActive);
-                factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
+                UpdateFaction(FactionType.unknown);
             }
             if (_turnCard)
             {
@@ -129,6 +124,15 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             }
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void UpdateFaction(FactionType _factionType)
+    {
+        factionLogoImage.sprite = factionLogo[_factionType];
+        factionLogoBackgroundImage.sprite = factionLogoBackground[_factionType];
+        bool _factionActive = factionLogoImage.sprite != null;
+        factionLogoImage.gameObject.SetActive(_factionActive);
+        factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
     }
 
     public void CancelShowPseudoWithRevealedInfo()

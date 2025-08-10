@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using DG.Tweening;
 using Network;
@@ -14,9 +15,12 @@ namespace ChatSystem
         [SerializeField] private TMP_Text chatTextPrefab;
         [SerializeField] private TMP_Text chatTitleText;
         [SerializeField] private TMP_InputField inputField;
+        [SerializeField] private RectTransform rectTransform;
         [SerializeField] private RectTransform layoutTransform;
         [SerializeField] private RectTransform discoveredChatLayoutTransform;
         [SerializeField] private Scrollbar chatScrollbar;
+        private bool lastScrollbarValueActive = false;
+        private Vector2 lastRectSize;
         
         [SerializeField] private CustomButton discoveredChatButtonPrefab;
         
@@ -26,7 +30,12 @@ namespace ChatSystem
         private bool isFullScreen = false;
         private Vector2 baseSizeDelta;
         [SerializeField] private float fullScreenSwitchDuration = 0.5f;
-        
+
+        private void Reset()
+        {
+            rectTransform = GetComponent<RectTransform>();
+        }
+
         private void Start()
         {
             baseSizeDelta = GetComponent<RectTransform>().sizeDelta;
@@ -42,6 +51,28 @@ namespace ChatSystem
             foreach (var _discoveredChatId in ChatManager.instance.discoveredChatIds)
             {
                 OnChatDiscovered(_discoveredChatId);
+            }
+
+            lastScrollbarValueActive = chatScrollbar.isActiveAndEnabled;
+            lastRectSize = rectTransform.rect.size;
+        }
+
+        private void Update()
+        {
+            if (lastScrollbarValueActive != chatScrollbar.isActiveAndEnabled)
+            {
+                lastScrollbarValueActive = chatScrollbar.isActiveAndEnabled;
+                StartCoroutine(WaitForScrollbarUpdate());
+            }
+            
+            Vector2 _currentRectSize = rectTransform.rect.size;
+            if (_currentRectSize != lastRectSize)
+            {
+                lastRectSize = _currentRectSize;
+                if (chatScrollbar.value < scrollbarBottomThreshold)
+                {
+                    StartCoroutine(WaitForScrollbarUpdate());
+                }
             }
         }
 

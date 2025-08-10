@@ -119,6 +119,9 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
                 cardImage.sprite = unknownCardSprite;
                 factionLogoImage.sprite = factionLogo[FactionType.unknown];
                 factionLogoBackgroundImage.sprite = factionLogoBackground[FactionType.unknown];
+                bool _factionActive = factionLogoImage.sprite != null;
+                factionLogoImage.gameObject.SetActive(_factionActive);
+                factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
             }
             if (_turnCard)
             {

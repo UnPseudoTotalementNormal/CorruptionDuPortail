@@ -70,7 +70,7 @@ public class TextMaxWrapper : MonoBehaviour
     [ContextMenu("Truncate Now")]
     public void TruncateNow()
     {
-        Debug.LogError("whooooo ???");
+        //Debug.LogError("whooooo ???");
         TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
         originalText = originalText ?? tmp.text;
         tmp.text = originalText;

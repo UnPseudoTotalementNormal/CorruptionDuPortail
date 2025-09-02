@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using GameLogic;
 using GameLogic.GameStates;
 using MessageSystem;
 using TMPro;
@@ -46,23 +47,16 @@ namespace UI.Components
             messagesCanvasGroup.alpha = 0;
             await BasePanel();
 
-            messageText.DOFade(1, 0.5f);
             messagesCanvasGroup.DOFade(1, 0.5f);
             titleText.text = $"Message anonyme";
+
+            SpawnNewMessageText($"Messages du jour {GameManager.instance.currentDay}:").GetComponent<TMP_Text>().fontStyle |= FontStyles.Underline;
+            
             while (messagesToReveal.Count > 0)
             {
                 MessageInfo _messageInfo = messagesToReveal.Pop();
                 
-                //TODO: replace by message prefab
-                GameObject _newMessageObject = new GameObject("AnonymousMessage", typeof(TMP_Text), typeof(CanvasGroup), typeof(ContentSizeFitter)); 
-                _newMessageObject.transform.SetParent(messagesLayoutTransform, false);
-                
-                TMP_Text _messageTMP = _newMessageObject.GetComponent<TMP_Text>();
-                _messageTMP.text = _messageInfo.message.ToString();
-                _messageTMP.fontSize = 45;
-                
-                ContentSizeFitter _contentSizeFitter = _newMessageObject.GetComponent<ContentSizeFitter>();
-                _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                var _newMessageObject = SpawnNewMessageText(_messageInfo.message.ToString());
                 
                 CanvasGroup _messageCanvasGroup = _newMessageObject.GetComponent<CanvasGroup>();
                 _messageCanvasGroup.alpha = 0;
@@ -70,6 +64,23 @@ namespace UI.Components
                 
                 await UniTask.Delay(TimeSpan.FromSeconds(timeAddedPerMessage));
             }
+        }
+
+        //TODO: replace by message prefab
+        private GameObject SpawnNewMessageText(string _text)
+        {
+            GameObject _newMessageObject = new GameObject("AnonymousMessage", typeof(TextMeshProUGUI), typeof(CanvasGroup), typeof(ContentSizeFitter));
+            _newMessageObject.transform.SetParent(messagesLayoutTransform, false);
+
+            var _messageText = _newMessageObject.GetComponent<TMP_Text>();
+            _messageText.fontSize = 45;
+            _messageText.richText = false;
+            _messageText.text = _text;
+            
+            ContentSizeFitter _contentSizeFitter = _newMessageObject.GetComponent<ContentSizeFitter>();
+            _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            
+            return _newMessageObject;
         }
 
         private async UniTask BasePanel()

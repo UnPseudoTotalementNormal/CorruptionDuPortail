@@ -38,6 +38,8 @@ namespace GameLogic
 
         [HideInInspector] public bool ignoreGameLoop = false;
         private bool gameHasStartedFirstLoop = false;
+        public int gameLoopCount { get; private set; } = 0;
+        public int currentDay => gameLoopCount + 1;
 
         public event Action onGameStarted;
         public event Action onNewDayPassed;
@@ -73,6 +75,7 @@ namespace GameLogic
             onCharactersListUpdated += (_characters) =>
                 powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
                     _c.ownerClientId == NetworkManager.LocalClientId));
+            onNewDayPassed += () => gameLoopCount++;
         }
     
         public override void OnNetworkSpawn()

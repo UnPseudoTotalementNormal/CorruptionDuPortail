@@ -7,6 +7,8 @@ using MessageSystem;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace UI.Components
 {
@@ -17,6 +19,9 @@ namespace UI.Components
         [ReadOnly] public Stack<MessageInfo> messagesToReveal = new();
         public TMP_Text titleText;
         public TMP_Text messageText;
+        
+        public CanvasGroup messagesCanvasGroup;
+        public Transform messagesLayoutTransform;
         
         public override float EvaluateDuration()
         {
@@ -38,18 +43,31 @@ namespace UI.Components
 
         private async UniTaskVoid RevealMessagesAsync()
         {
+            messagesCanvasGroup.alpha = 0;
             await BasePanel();
-            
-            messageText.horizontalAlignment = HorizontalAlignmentOptions.Justified;
+
+            messageText.DOFade(1, 0.5f);
+            messagesCanvasGroup.DOFade(1, 0.5f);
+            titleText.text = $"Message anonyme";
             while (messagesToReveal.Count > 0)
             {
-                messageText.DOFade(1, 0.5f);
-                
                 MessageInfo _messageInfo = messagesToReveal.Pop();
-                titleText.text = $"Message anonyme";
-                messageText.text =  $"\"{_messageInfo.message.ToString()}\"";
                 
-                messageText.DOFade(0, 0.5f).SetDelay(timeAddedPerMessage - 0.5f);
+                //TODO: replace by message prefab
+                GameObject _newMessageObject = new GameObject("AnonymousMessage", typeof(TMP_Text), typeof(CanvasGroup), typeof(ContentSizeFitter)); 
+                _newMessageObject.transform.SetParent(messagesLayoutTransform, false);
+                
+                TMP_Text _messageTMP = _newMessageObject.GetComponent<TMP_Text>();
+                _messageTMP.text = _messageInfo.message.ToString();
+                _messageTMP.fontSize = 45;
+                
+                ContentSizeFitter _contentSizeFitter = _newMessageObject.GetComponent<ContentSizeFitter>();
+                _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                
+                CanvasGroup _messageCanvasGroup = _newMessageObject.GetComponent<CanvasGroup>();
+                _messageCanvasGroup.alpha = 0;
+                _messageCanvasGroup.DOFade(1, 0.5f);
+                
                 await UniTask.Delay(TimeSpan.FromSeconds(timeAddedPerMessage));
             }
         }

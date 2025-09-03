@@ -188,20 +188,8 @@ namespace GameLogic.GameStates
             if (_numberOfCharacterWithTheMostVotes == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = gameManager.GetCharacters().Find(_character => _character.ownerClientId == _charactersWithMostVotes.First().Key);
-                _votedCharacter.isChained = true;
                 mostVotedPlayer = _votedCharacter.ownerClientId;
-                gameManager.gameInfoRevealer.SetRevealLevelRpc(mostVotedPlayer, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
-
-                if (_votedCharacter.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject.power)))
-                {
-                    var _portalState = (TakeDownThePortalState)GameManager.instance.GetGameStates(typeof(TakeDownThePortalState)).First();
-                    _portalState.shouldActivate = true;
-                    
-                    GameManager.instance.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
-                        new NetworkSerializableObject[] { new(_votedCharacter.ownerClientId) },
-                        new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
-                    Debug.Log("should activate portal state");
-                }
+                gameManager.chainingManager.chainingPlayers.Add(_votedCharacter.ownerClientId);
             }
             else
             {

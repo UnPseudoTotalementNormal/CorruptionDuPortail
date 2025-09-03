@@ -29,6 +29,7 @@ namespace GameLogic
         public GameInfoRevealer gameInfoRevealer;
         public CharactersBar charactersBar;
         public PowersBar powersBar;
+        public ChainingManager chainingManager;
     
         [field: SerializeField] private List<Character> _characters = new();
     

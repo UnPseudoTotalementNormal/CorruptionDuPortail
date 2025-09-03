@@ -2263,6 +2263,7 @@ MonoBehaviour:
   gameInfoRevealer: {fileID: 1771149311}
   charactersBar: {fileID: 463595595}
   powersBar: {fileID: 129913599}
+  chainingManager: {fileID: 1446097057}
   _characters: []
   gameStates:
     _serializedList:
@@ -2281,10 +2282,16 @@ MonoBehaviour:
     - Key: {fileID: 11400000, guid: 909bd736fa2d1fd45bbe2ce5e33669cb, type: 2}
       Value:
         isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: 013071886359bc848aa088fc579cb2c8, type: 2}
+      Value:
+        isInGameLoop: 1
     - Key: {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
       Value:
         isInGameLoop: 1
     - Key: {fileID: 11400000, guid: 00c120cb10efd114382108d87c6782fe, type: 2}
+      Value:
+        isInGameLoop: 1
+    - Key: {fileID: 11400000, guid: 276dd5fcec6b4704d9aa46a386f59731, type: 2}
       Value:
         isInGameLoop: 1
     - Key: {fileID: 11400000, guid: 11d24de3438a578469e19f0acfaa4fc7, type: 2}
@@ -4480,6 +4487,78 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!1 &1446097055
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1446097056}
+  - component: {fileID: 1446097057}
+  - component: {fileID: 1446097058}
+  m_Layer: 0
+  m_Name: ChainingManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1446097056
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446097055}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1626639601}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1446097057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446097055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cec4e0138194976bd807eed30916430, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  takeDownThePortalPowerDataObject: {fileID: 11400000, guid: 4dca6b257df02de46a1ab5a0b95f9735, type: 2}
+--- !u!114 &1446097058
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446097055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1984349370
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 8
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &1503345853
 GameObject:
   m_ObjectHideFlags: 0
@@ -5321,9 +5400,10 @@ Transform:
   - {fileID: 892093034}
   - {fileID: 1944481109}
   - {fileID: 2007998397}
-  - {fileID: 187593507}
   - {fileID: 607280635}
+  - {fileID: 187593507}
   - {fileID: 498437615}
+  - {fileID: 1446097056}
   - {fileID: 1068472795}
   - {fileID: 1120937487}
   m_Father: {fileID: 0}

@@ -27,8 +27,6 @@ namespace GameLogic.GameStates
 
         [HideInInspector] public Transform spawnedCard;
         
-        public EventReference chainingAnnouncementSound;
-        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -62,11 +60,10 @@ namespace GameLogic.GameStates
             }
             else
             {
-                GameAudioManager.instance.PlayOneShot(chainingAnnouncementSound.GetPath());
-                await DoCardChainingAnimation();
+                
+                Character _chainingCharacter = gameManager.GetCharacter(VoteState.mostVotedPlayer);
                 if (gameManager.IsServer)
                 {
-                    await UniTask.Delay(TimeSpan.FromSeconds(5));
                     gameManager.NextGameState();
                 }
             }
@@ -106,42 +103,6 @@ namespace GameLogic.GameStates
             await UniTask.Delay(TimeSpan.FromSeconds(5));
             SetVoteCanvasVisibility(false);
             await UniTask.Delay(TimeSpan.FromSeconds(1));
-        }
-
-        private async UniTask DoCardChainingAnimation()
-        {
-            await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
-            
-            await BoardManager.instance.HideAllCards();
-            
-            var _cardInfo = BoardManager.instance.AddNewCard();
-            spawnedCard = _cardInfo.transform;
-            var _spawnedCardPivot = _cardInfo.cardPivotTransform;
-                
-            Character _votedCharacter = gameManager.GetCharacters().First(_character => _character.ownerClientId == VoteState.mostVotedPlayer);
-            _cardInfo.SetInfo(_votedCharacter);
-            _cardInfo.ShowPseudoOnly();
-            _cardInfo.SetChainedOverlay(false, true);
-
-            await _cardInfo.ShowBackSide(true);
-            await _cardInfo.ShowFrontSide();
-            
-            await UniTask.Delay(TimeSpan.FromSeconds(1));
-            
-            spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
-            {
-                _ = _cardInfo.ShowPseudoWithRevealedInfo();
-                    
-                _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
-                spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
-                {
-                    spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f).onComplete = () =>
-                    {
-                        _cardInfo.SetChainedOverlay(true);
-                    };
-                };
-            };
         }
 
         public override void OnEndStateClient()

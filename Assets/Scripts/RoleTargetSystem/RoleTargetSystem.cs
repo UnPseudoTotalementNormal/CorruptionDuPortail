@@ -31,15 +31,20 @@ namespace RoleTarget
             currentTargetingDataList.Clear();
         }
 
+        public void NewTargeting(TargetingData _targetingData)
+        {
+            NewTargetingRpc(_targetingData);
+        }
+
         public void NewTargeting(ulong _targeterId, ulong _targetId)
         {
-            NewTargetingRpc(_targeterId, _targetId);
+            NewTargetingRpc(new TargetingData(_targeterId, _targetId));
         }
 
         [Rpc(SendTo.Server)]
-        private void NewTargetingRpc(ulong _targeterId, ulong _targetId)
+        private void NewTargetingRpc(TargetingData _targetingData)
         {
-            ReceiveTargetingDataRpc(new TargetingData(_targeterId, _targetId));
+            ReceiveTargetingDataRpc(_targetingData);
         }
         
         [Rpc(SendTo.Everyone)]

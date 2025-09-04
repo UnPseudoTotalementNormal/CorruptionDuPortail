@@ -1282,6 +1282,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.8113208, g: 0, b: 0, a: 1}
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -2697,6 +2698,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -2823,6 +2825,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.22173916, g: 0.75, b: 0.3260869, a: 1}
   disabledColor: {r: 0.05646957, g: 0.191, b: 0.08304347, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -3311,6 +3314,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.8113208, g: 0, b: 0, a: 1}
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -4166,6 +4170,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -6871,9 +6876,9 @@ MonoBehaviour:
   rectTransform: {fileID: 1797913383}
   layoutTransform: {fileID: 1572867094}
   discoveredChatLayoutTransform: {fileID: 2054144186}
-  chatScrollbar: {fileID: 1528769366}
+  <chatScrollbar>k__BackingField: {fileID: 1528769366}
   discoveredChatButtonPrefab: {fileID: 1298378506885670401, guid: c17c67dc2bcc9b54684bdf2d1c8f6d1b, type: 3}
-  scrollbarBottomThreshold: 0.05
+  <scrollbarBottomThreshold>k__BackingField: 0.075
   fullScreenSwitchDuration: 0.5
 --- !u!1 &1827791804
 GameObject:
@@ -8483,6 +8488,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0, g: 0.735849, b: 0, a: 1}
   disabledColor: {r: 0, g: 0.3962264, b: 0, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:

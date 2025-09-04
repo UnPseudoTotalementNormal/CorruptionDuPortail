@@ -18,13 +18,16 @@ namespace ChatSystem
         [SerializeField] private RectTransform rectTransform;
         [SerializeField] private RectTransform layoutTransform;
         [SerializeField] private RectTransform discoveredChatLayoutTransform;
-        [SerializeField] private Scrollbar chatScrollbar;
+        [field:SerializeField] public Scrollbar chatScrollbar { get; private set; }
         private bool lastScrollbarValueActive = false;
+        [field:SerializeField] public float scrollbarBottomThreshold { get; private set; } = 0.05f;
+        public bool isScrollbarAtBottom => chatScrollbar.value < scrollbarBottomThreshold || !chatScrollbar.isActiveAndEnabled;
+        public event Action onScrollbarBottomReached;
+        
         private Vector2 lastRectSize;
         
         [SerializeField] private CustomButton discoveredChatButtonPrefab;
         
-        [SerializeField]private float scrollbarBottomThreshold = 0.05f;
         private ChatWindow observedChatWindow;
         
         private bool isFullScreen = false;
@@ -52,9 +55,19 @@ namespace ChatSystem
             {
                 OnChatDiscovered(_discoveredChatId);
             }
+            
+            chatScrollbar.onValueChanged.AddListener(OnChatScrollbarValueChanged);
 
             lastScrollbarValueActive = chatScrollbar.isActiveAndEnabled;
             lastRectSize = rectTransform.rect.size;
+        }
+
+        private void OnChatScrollbarValueChanged(float _value)
+        {
+            if (isScrollbarAtBottom)
+            {
+                onScrollbarBottomReached?.Invoke();
+            }
         }
 
         private void Update()
@@ -69,7 +82,7 @@ namespace ChatSystem
             if (_currentRectSize != lastRectSize)
             {
                 lastRectSize = _currentRectSize;
-                if (chatScrollbar.value < scrollbarBottomThreshold)
+                if (isScrollbarAtBottom)
                 {
                     StartCoroutine(WaitForScrollbarUpdate());
                 }
@@ -84,6 +97,7 @@ namespace ChatSystem
             {
                 ChatManager.instance.ChangeActiveChat(_chatId);
             };
+            _newButton.GetComponentInChildren<ChatNotificationComponent>().chatId = _chatId;
         }
 
         private void TrySendChatMessage(string _text)

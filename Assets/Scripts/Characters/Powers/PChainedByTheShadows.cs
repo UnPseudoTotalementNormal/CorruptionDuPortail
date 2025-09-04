@@ -20,9 +20,6 @@ namespace Characters.Powers
     [Serializable]
     public class PChainedByTheShadows : Power
     {
-        [NonSerialized] private bool isSubscribedToMornings = false;
-        [NonSerialized] private static List<ulong> chainingCharacterIdOnMorning = new();
-        
         [NonSerialized] private Character clickedCharacter;
         
         private void OnCardClicked(Card _clickedCard)
@@ -71,21 +68,9 @@ namespace Characters.Powers
                     GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    chainingCharacterIdOnMorning.Add(_corruptingCharacterId);
+                    GameManager.instance.chainingManager.chainingPlayers.Add(_corruptingCharacterId);
                 }
             }
-        }
-
-        private static void OnMorningChainingServer()
-        {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, $"{nameof(OnMorningChainingServer)} should only be called on server");
-            foreach (var _characterId in chainingCharacterIdOnMorning)
-            {
-                GameManager.instance.ChainPlayerAndShowRpc(_characterId);
-                var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
-            }
-            chainingCharacterIdOnMorning.Clear();
-            GameManager.instance.AskForUpdateAllCharactersRpc();
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
@@ -133,17 +118,6 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            if (isSubscribedToMornings)
-            {
-                return;
-            }
-            var _awakeningStates = GameManager.instance.GetGameStates(typeof(AwakeningState));
-            foreach (var _awakeningState in _awakeningStates)
-            {
-                _awakeningState.onStateEndServer += OnMorningChainingServer;
-            }
-
-            isSubscribedToMornings = true;
         }
     }
 }

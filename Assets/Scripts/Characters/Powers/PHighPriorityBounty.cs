@@ -54,11 +54,14 @@ namespace Characters.Powers
             }
             else
             {
-                _characterOwner.isChained = true;
+                GameManager.instance.chainingManager.chainingPlayers.Add(_characterOwner.ownerClientId);
+                ChatManager.instance.ReceiveChatMessageRpc(
+                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
+                        $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil."), 
+                    (int)ChatWindowIDs.Server);
             }
             
             GameManager.instance.AskForUpdateAllCharactersRpc();
-            BoardManager.instance.UpdateCardChainStatusRpc(_characterOwner.ownerClientId, false);
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

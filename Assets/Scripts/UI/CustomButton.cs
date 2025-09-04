@@ -17,7 +17,7 @@ namespace UI
         [SerializeField] private Color hoverColor = new Color(0.8f , 0.8f, 0.8f, 1);
         [SerializeField] private Color disabledColor = new Color(0.5f, 0.5f, 0.5f, 1);
 
-        private Image panelImage;
+        [SerializeField] private Image panelImage;
         
         public event Action onButtonClicked;
         public event Action onButtonHovered;
@@ -26,7 +26,10 @@ namespace UI
 
         private void Awake()
         {
-            panelImage = GetComponentInChildren<Image>();
+            if (panelImage == null)
+            {
+                panelImage = GetComponentInChildren<Image>();
+            }
             baseColor = panelImage.color;
         }
         

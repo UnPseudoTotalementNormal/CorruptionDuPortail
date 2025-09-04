@@ -29,7 +29,6 @@ namespace GameLogic
                 _gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
                     new NetworkSerializableObject[] { new(_character.ownerClientId) },
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
-                Debug.Log("should activate portal state");
             }
             
             _gameManager.AskForUpdateAllCharactersRpc();

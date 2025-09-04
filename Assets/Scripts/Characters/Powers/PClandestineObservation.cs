@@ -57,8 +57,8 @@ namespace Characters.Powers
             if (_targetedCharacters.Count == 0)
             {
                 ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
-                    $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0."),
-                    (int)ChatWindowIDs.Server,
+                    $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.", 
+                    (int)ChatWindowIDs.Server),
                     NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
                 return;
             }
@@ -70,8 +70,8 @@ namespace Characters.Powers
             }
             
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Distinct().Count()}"),
-                (int)ChatWindowIDs.Server,
+                $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Distinct().Count()}",
+                (int)ChatWindowIDs.Server),
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }
 

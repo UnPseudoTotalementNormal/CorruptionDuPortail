@@ -46,9 +46,9 @@ namespace Characters.Powers
                 _characterTarget.isEliminated = true;
                 string _characterPseudo = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName.ToString();
                 ChatManager.instance.SendChatMessageServerRpc(
-                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
-                        $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}."),
-                    (int)ChatWindowIDs.Server);
+                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
+                        $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 
+                        (int)ChatWindowIDs.Server));
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
                 //TODO: do actual elimination logic & visual
             }
@@ -57,8 +57,8 @@ namespace Characters.Powers
                 GameManager.instance.chainingManager.chainingPlayers.Add(_characterOwner.ownerClientId);
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil."), 
-                    (int)ChatWindowIDs.Server);
+                        $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
+                        (int)ChatWindowIDs.Server));
             }
             
             GameManager.instance.AskForUpdateAllCharactersRpc();

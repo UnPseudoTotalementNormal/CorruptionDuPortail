@@ -68,7 +68,7 @@ namespace ChatSystem
             }
             
             FixedString512Bytes _message = new FixedString512Bytes(_text);
-            SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message), activeChatId);
+            SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message, activeChatId));
         }
 
         public void DiscoverChat(int _chatId)
@@ -111,9 +111,9 @@ namespace ChatSystem
         }
         
         [Rpc(SendTo.Server)]
-        public void SendChatMessageServerRpc(ChatMessage _chatMessage, int _chatId)
+        public void SendChatMessageServerRpc(ChatMessage _chatMessage)
         {
-            ReceiveChatMessageRpc(_chatMessage, _chatId);
+            ReceiveChatMessageRpc(_chatMessage);
             OnMessageSentRpc(_chatMessage, RpcTarget.Single(_chatMessage.senderClientId, RpcTargetUse.Persistent));
         }
         
@@ -124,9 +124,9 @@ namespace ChatSystem
         }
 
         [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
-        public void ReceiveChatMessageRpc(ChatMessage _chatMessage, int _chatId = (int)ChatWindowIDs.General, RpcParams _rpcParams = default)
+        public void ReceiveChatMessageRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
         {
-            ChatWindow _window = GetChatWindow(_chatId);
+            ChatWindow _window = GetChatWindow(_chatMessage.chatId);
             _window?.AddChatMessage(_chatMessage);
             onChatMessageReceived?.Invoke(_chatMessage);
         }
@@ -134,8 +134,9 @@ namespace ChatSystem
         public void AddMessageLocal(string _message, ulong _senderId, int _chatId = (int)ChatWindowIDs.General)
         {
             ChatWindow _window = GetChatWindow(_chatId);
-            _window?.AddChatMessage(new ChatMessage(_senderId, _message));
-            onChatMessageReceived?.Invoke(new ChatMessage(_senderId, _message));
+            var _chatMessage = new ChatMessage(_senderId, _message, _chatId);
+            _window?.AddChatMessage(_chatMessage);
+            onChatMessageReceived?.Invoke(_chatMessage);
         }
     }
     

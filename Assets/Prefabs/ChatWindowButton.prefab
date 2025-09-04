@@ -359,6 +359,7 @@ GameObject:
   - component: {fileID: 3103576531056566866}
   - component: {fileID: 1290873167442965396}
   - component: {fileID: 1293017540159494759}
+  - component: {fileID: 6116535545359703292}
   m_Layer: 5
   m_Name: Notification
   m_TagString: Untagged
@@ -436,11 +437,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c45613f72060434895b11b48d4fda9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canvasGroup: {fileID: 6116535545359703292}
   notificationIcon: {fileID: 1290873167442965396}
   notificationText: {fileID: 6610416917634078444}
   notificationMode: 0
   chatId: 0
   chatWindowId: -999
+--- !u!225 &6116535545359703292
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6192155348242331486}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &8518740351692640655
 GameObject:
   m_ObjectHideFlags: 0

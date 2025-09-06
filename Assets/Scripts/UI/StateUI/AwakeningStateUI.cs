@@ -9,10 +9,16 @@ namespace UI
     {
         public TMP_Text awakeningHelpText;
 
+        public override void SetupStateUI(GameManager gameManager, GameState gameState)
+        {
+            base.SetupStateUI(gameManager, gameState);
+            gameManager.onGameStarted += OnGameStarted;
+        }
+
         protected override void OnStateStart()
         {
             base.OnStateStart();
-            gameManager.onGameStarted += OnGameStarted;
+            awakeningHelpText.alpha = 0;
         }
 
         private void OnGameStarted()

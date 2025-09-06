@@ -28,6 +28,11 @@ namespace UI
 
         private void ShowAwakeningHelpText()
         {
+            if (!awakeningHelpText)
+            {
+                return;
+            }
+            
             awakeningHelpText.DOKill(true);
             awakeningHelpText.text = "Vous vous éveillez...";
             awakeningHelpText.alpha = 0;

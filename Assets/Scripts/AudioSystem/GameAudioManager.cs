@@ -84,6 +84,10 @@ namespace AudioSystem
             PlayOneShot(_eventPath.ToString());
         }
         
+        public void PlayOneShot(EventReference _eventReference)
+        {
+            PlayOneShot(_eventReference.GetPath());
+        }
         public void PlayOneShot(string _eventPath)
         {
             if (string.IsNullOrEmpty(_eventPath))
@@ -99,6 +103,11 @@ namespace AudioSystem
         public void PlayEventInstanceRpc(FixedString128Bytes _eventPath, FixedString64Bytes _instanceKey, RpcParams _rpcParams = default)
         {
             PlayEventInstance(_eventPath.ToString(), _instanceKey.ToString());
+        }
+        
+        public void PlayEventInstance(EventReference _eventReference, string _instanceKey)
+        {
+            PlayEventInstance(_eventReference.GetPath(), _instanceKey);
         }
         
         public void PlayEventInstance(string _eventPath, string _instanceKey)

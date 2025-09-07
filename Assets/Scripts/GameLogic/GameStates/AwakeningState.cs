@@ -3,8 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AudioSystem;
 using Characters;
 using Extensions;
+using FMODUnity;
 using Network;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -27,6 +29,10 @@ namespace GameLogic.GameStates
         
         private float updateAwakeningTimer;
         private const float UpdateAwakeningTimerInterval = 1f;
+        
+        public EventReference awakeningAnnouncementSound;
+        public EventReference awakenedLoopSound;
+        public const string AWAKENED_LOOP_KEY = "AwakenedLoopFeedback";
 
         private void AwakeLayer(int _layerToAwake)
         {
@@ -127,6 +133,19 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+            var _localCharacter = gameManager.GetLocalCharacter(false);
+            if (_localCharacter != null)
+            {
+                _localCharacter.onCharacterAwakened += () =>
+                {
+                    GameAudioManager.instance.PlayOneShot(awakeningAnnouncementSound);
+                    GameAudioManager.instance.PlayEventInstance(awakenedLoopSound, AWAKENED_LOOP_KEY);
+                };
+                _localCharacter.onCharacterSleep += () =>
+                {
+                    GameAudioManager.instance.StopEventInstance(AWAKENED_LOOP_KEY);
+                };
+            }
         }
         
         public override void OnEndStateClient()

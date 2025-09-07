@@ -27,6 +27,7 @@ namespace Characters
         public bool isFake => ownerClientId.IsFakeClientId();
         
         public event Action onCharacterAwakened;
+        public event Action onCharacterSleep;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -73,6 +74,7 @@ namespace Characters
         public void SleepCharacter()
         {
             role.SleepRole();
+            onCharacterSleep?.Invoke();
         }
         
         public Role GetRole(bool ignoreOverride = false)

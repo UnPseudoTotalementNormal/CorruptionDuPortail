@@ -31,6 +31,15 @@ public class ChatNotificationComponent : MonoBehaviour
         
         ChatManager.instance.onChatMessageReceived += OnChatMessageReceived;
         chatPanel.onScrollbarBottomReached += OnScrollbarBottomReached;
+        ChatManager.instance.onActiveChatChanged += OnActiveChatChanged;
+    }
+
+    private void OnActiveChatChanged(int _newChatId)
+    {
+        if (notificationMode == ChatNotificationComponentMode.ChatId && _newChatId == chatId)
+        {
+            SetNotificationCount(0);
+        }
     }
 
     private void OnScrollbarBottomReached()

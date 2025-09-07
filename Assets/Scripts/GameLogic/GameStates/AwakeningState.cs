@@ -99,6 +99,22 @@ namespace GameLogic.GameStates
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
+            gameManager.onGameStarted += () =>
+            {
+                var _localCharacter = gameManager.GetLocalCharacter(false);
+                if (_localCharacter != null)
+                {
+                    _localCharacter.onCharacterAwakened += () =>
+                    {
+                        GameAudioManager.instance.PlayOneShot(awakeningAnnouncementSound);
+                        GameAudioManager.instance.PlayEventInstance(awakenedLoopSound, AWAKENED_LOOP_KEY);
+                    };
+                    _localCharacter.onCharacterSleep += () =>
+                    {
+                        GameAudioManager.instance.StopEventInstance(AWAKENED_LOOP_KEY);
+                    };
+                }
+            }
         }
 
         public override void OnStartStateServer()
@@ -133,19 +149,6 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            var _localCharacter = gameManager.GetLocalCharacter(false);
-            if (_localCharacter != null)
-            {
-                _localCharacter.onCharacterAwakened += () =>
-                {
-                    GameAudioManager.instance.PlayOneShot(awakeningAnnouncementSound);
-                    GameAudioManager.instance.PlayEventInstance(awakenedLoopSound, AWAKENED_LOOP_KEY);
-                };
-                _localCharacter.onCharacterSleep += () =>
-                {
-                    GameAudioManager.instance.StopEventInstance(AWAKENED_LOOP_KEY);
-                };
-            }
         }
         
         public override void OnEndStateClient()

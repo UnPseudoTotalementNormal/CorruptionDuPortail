@@ -151,8 +151,6 @@ namespace GameLogic
                     this._characters.Add(_character);
                 }
             }
-            this._characters.Clear();
-            this._characters = _characters.ToList();
             onCharactersListUpdated?.Invoke(this._characters);
         }
         

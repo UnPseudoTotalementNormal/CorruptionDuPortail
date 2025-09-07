@@ -114,7 +114,7 @@ namespace GameLogic.GameStates
                         GameAudioManager.instance.StopEventInstance(AWAKENED_LOOP_KEY);
                     };
                 }
-            }
+            };
         }
 
         public override void OnStartStateServer()

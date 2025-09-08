@@ -12,6 +12,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 {
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private TMP_InputField messageInputField;
+    public bool isPanelOpen { get; private set; }
     
     public void TrySendMessageToServer()
     {
@@ -39,6 +40,18 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
         GameManager.instance.AskForUpdateAllCharactersRpc();
     }
 
+    public void SwitchPanelOpen()
+    {
+        if (isPanelOpen)
+        {
+            ClosePanel();
+        }
+        else
+        {
+            TryOpenPanel();
+        }
+    }
+
     public void TryOpenPanel()
     {
         if (GameManager.instance.GetLocalCharacter(false).messageLeft <= 0)
@@ -53,11 +66,13 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 
     public void OpenPanel()
     {
+        isPanelOpen = true;
         canvasGroup.DoShowGroup(0.5f);
     }
 
     public void ClosePanel()
     {
+        isPanelOpen = false;
         canvasGroup.DoHideGroup(0.5f);
     }
 }

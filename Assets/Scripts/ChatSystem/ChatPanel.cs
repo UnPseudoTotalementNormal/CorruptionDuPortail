@@ -34,6 +34,8 @@ namespace ChatSystem
         private bool isFullScreen = false;
         private Vector2 baseSizeDelta;
         [SerializeField] private float fullScreenSwitchDuration = 0.5f;
+        
+        public bool isPanelOpen { get; private set; }
 
         private void Reset()
         {
@@ -225,6 +227,18 @@ namespace ChatSystem
             };
         }
 
+        public void SwitchPanelOpen()
+        {
+            if (isPanelOpen)
+            {
+                ClosePanel();
+            }
+            else
+            {
+                TryOpenPanel();
+            }
+        }
+
         public void TryOpenPanel()
         {
             OpenPanel();
@@ -233,12 +247,12 @@ namespace ChatSystem
 
         public void OpenPanel()
         {
-            
+            isPanelOpen = true;
         }
 
         public void ClosePanel()
         {
-            
+            isPanelOpen = false;
         }
     }
 }

@@ -1,8 +1,9 @@
 using Extensions;
+using UI.Panel;
 using UnityEngine;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class PanelComponent : MonoBehaviour
+public class PanelComponent : MonoBehaviour, IPanelComponent
 {
     [SerializeField] private CanvasGroup canvasGroup;
 
@@ -17,7 +18,7 @@ public class PanelComponent : MonoBehaviour
         return true;
     }
 
-    private void OpenPanel()
+    public void OpenPanel()
     {
         canvasGroup.DoShowGroup(0.5f);
     }

@@ -3,11 +3,12 @@ using Extensions;
 using GameLogic;
 using MessageSystem;
 using TMPro;
+using UI.Panel;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-public class SendMessagePanel : NetworkBehaviour
+public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 {
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private TMP_InputField messageInputField;
@@ -38,18 +39,19 @@ public class SendMessagePanel : NetworkBehaviour
         GameManager.instance.AskForUpdateAllCharactersRpc();
     }
 
-    public void TryOpenPanel()
+    public bool TryOpenPanel()
     {
         if (GameManager.instance.GetLocalCharacter(false).messageLeft <= 0)
         {
             Debug.Log("You have no messages left to send.");
-            return;
+            return false;
         }
         
         OpenPanel();
+        return true;
     }
 
-    private void OpenPanel()
+    public void OpenPanel()
     {
         canvasGroup.DoShowGroup(0.5f);
     }

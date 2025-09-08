@@ -4,13 +4,14 @@ using DG.Tweening;
 using Network;
 using TMPro;
 using UI;
+using UI.Panel;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace ChatSystem
 {
-    public class ChatPanel : MonoBehaviour
+    public class ChatPanel : MonoBehaviour, IPanelComponent
     {
         [SerializeField] private TMP_Text chatTextPrefab;
         [SerializeField] private TMP_Text chatTitleText;
@@ -222,6 +223,22 @@ namespace ChatSystem
                     _textMaxWrapper.TruncateNow();
                 }
             };
+        }
+
+        public bool TryOpenPanel()
+        {
+            OpenPanel();
+            return true;
+        }
+
+        public void OpenPanel()
+        {
+            
+        }
+
+        public void ClosePanel()
+        {
+            
         }
     }
 }

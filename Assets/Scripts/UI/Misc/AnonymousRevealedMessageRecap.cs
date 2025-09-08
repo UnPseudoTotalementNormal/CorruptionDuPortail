@@ -23,6 +23,11 @@ namespace UI
 
         private void RebuildRevealedMessagesUI()
         {
+            foreach (GameObject _messageObject in messagesLayoutTransform)
+            {
+                Destroy(_messageObject);
+            }
+            
             int _currentDay = -1;
             int _messageRevealedTodayCount = 1;
             foreach (var _revealedMessage in MessageManager.instance.revealedMessages)

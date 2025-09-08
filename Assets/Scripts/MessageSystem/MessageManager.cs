@@ -1,4 +1,5 @@
 using System;
+using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine.Assertions;
@@ -20,7 +21,7 @@ namespace MessageSystem
         [Rpc(SendTo.Server)]
         public void SendMessageRpc(ulong _sender, FixedString512Bytes _message)
         {
-            messagesToReveal.Add(new MessageInfo(_sender, _message));
+            messagesToReveal.Add(new MessageInfo(_sender, _message, GameManager.instance.currentDay));
         }
 
         public void RevealAllMessage()
@@ -39,22 +40,25 @@ namespace MessageSystem
     {
         public ulong senderClientId;
         public FixedString512Bytes message;
+        public int day;
         
-        public MessageInfo(ulong _senderClientId, FixedString512Bytes _message)
+        public MessageInfo(ulong _senderClientId, FixedString512Bytes _message, int _day)
         {
             message = _message;
             senderClientId = _senderClientId;
+            day = _day;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
             _serializer.SerializeValue(ref message);
             _serializer.SerializeValue(ref senderClientId);
+            _serializer.SerializeValue(ref day);
         }
 
         public bool Equals(MessageInfo _other)
         {
-            return senderClientId == _other.senderClientId && message.Equals(_other.message);
+            return senderClientId == _other.senderClientId && message.Equals(_other.message) && day == _other.day;
         }
     }
 }

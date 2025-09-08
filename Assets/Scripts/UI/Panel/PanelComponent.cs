@@ -6,6 +6,7 @@ using UnityEngine;
 public class PanelComponent : MonoBehaviour, IPanelComponent
 {
     [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private float animationDuration = 0.5f;
 
     private void Reset()
     {
@@ -20,11 +21,11 @@ public class PanelComponent : MonoBehaviour, IPanelComponent
 
     public void OpenPanel()
     {
-        canvasGroup.DoShowGroup(0.5f);
+        canvasGroup.DoShowGroup(animationDuration);
     }
 
     public void ClosePanel()
     {
-        canvasGroup.DoHideGroup(0.5f);
+        canvasGroup.DoHideGroup(animationDuration);
     }
 }

@@ -11,7 +11,13 @@ public class PanelComponent : MonoBehaviour
         canvasGroup = GetComponent<CanvasGroup>();
     }
 
-    public void OpenPanel()
+    public virtual bool TryOpenPanel()
+    {
+        OpenPanel();
+        return true;
+    }
+
+    private void OpenPanel()
     {
         canvasGroup.DoShowGroup(0.5f);
     }

@@ -34,8 +34,14 @@ namespace ChatSystem
         private bool isFullScreen = false;
         private Vector2 baseSizeDelta;
         [SerializeField] private float fullScreenSwitchDuration = 0.5f;
+
+        public bool isPanelOpen { get; private set; } = true;
         
-        public bool isPanelOpen { get; private set; }
+        [SerializeField] private RectTransform visibilityToggleButtonRectTransform;
+        private Vector2 basePosition;
+        private Vector2 closedPosition => new(baseSizeDelta.x - visibilityToggleButtonRectTransform.sizeDelta.x, basePosition.y);
+        public event Action onPanelOpened;
+        public event Action onPanelClosed;
 
         private void Reset()
         {
@@ -63,6 +69,8 @@ namespace ChatSystem
 
             lastScrollbarValueActive = chatScrollbar.isActiveAndEnabled;
             lastRectSize = rectTransform.rect.size;
+            
+            basePosition = rectTransform.anchoredPosition;
         }
 
         private void OnChatScrollbarValueChanged(float _value)
@@ -229,6 +237,11 @@ namespace ChatSystem
 
         public void SwitchPanelOpen()
         {
+            if (isFullScreen)
+            {
+                return;
+            }
+            
             if (isPanelOpen)
             {
                 ClosePanel();
@@ -241,18 +254,26 @@ namespace ChatSystem
 
         public void TryOpenPanel()
         {
+            if (isFullScreen)
+            {
+                return;
+            }
+            
             OpenPanel();
-            return;
         }
 
         public void OpenPanel()
         {
             isPanelOpen = true;
+            rectTransform.DOAnchorPosX(basePosition.x, 0.5f).SetEase(Ease.OutQuint);
+            onPanelOpened?.Invoke();
         }
 
         public void ClosePanel()
         {
             isPanelOpen = false;
+            rectTransform.DOAnchorPosX(closedPosition.x, 0.5f).SetEase(Ease.OutQuint);
+            onPanelClosed?.Invoke();
         }
     }
 }

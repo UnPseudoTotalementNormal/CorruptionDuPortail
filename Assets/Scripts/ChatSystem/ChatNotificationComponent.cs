@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using ChatSystem;
 using DG.Tweening;
 using TMPro;
@@ -32,6 +33,25 @@ public class ChatNotificationComponent : MonoBehaviour
         ChatManager.instance.onChatMessageReceived += OnChatMessageReceived;
         chatPanel.onScrollbarBottomReached += OnScrollbarBottomReached;
         ChatManager.instance.onActiveChatChanged += OnActiveChatChanged;
+        chatPanel.onPanelClosed += OnChatPanelClosed;
+        chatPanel.onPanelOpened += OnChatPanelOpened;
+    }
+
+    private void OnChatPanelClosed()
+    {
+        if (notificationMode == ChatNotificationComponentMode.HiddenChatPanel)
+        {
+            int _notificationCount = chatPanel.GetComponentsInChildren<ChatNotificationComponent>().Sum(_c => _c.notificationCount);
+            SetNotificationCount(_notificationCount);
+        }
+    }
+
+    private void OnChatPanelOpened()
+    {
+        if (notificationMode == ChatNotificationComponentMode.HiddenChatPanel)
+        {
+            SetNotificationCount(0);
+        }
     }
 
     private void OnActiveChatChanged(int _newChatId)
@@ -53,14 +73,28 @@ public class ChatNotificationComponent : MonoBehaviour
     private void OnChatMessageReceived(ChatMessage _newChatMessage)
     {
         var _chatManager = ChatManager.instance;
-        if (notificationMode == ChatNotificationComponentMode.ChatId && _newChatMessage.chatId != chatId)
+        switch (notificationMode)
         {
-            return;
-        }
-        
-        if (_chatManager.activeChatId == _newChatMessage.chatId && chatPanel.isScrollbarAtBottom)
-        {
-            return;
+            case ChatNotificationComponentMode.ChatId:
+            {
+                if (_newChatMessage.chatId != chatId)
+                {
+                    return;
+                }
+                if (_chatManager.activeChatId == _newChatMessage.chatId && chatPanel.isScrollbarAtBottom)
+                {
+                    return;
+                }
+                break;
+            }
+            case ChatNotificationComponentMode.HiddenChatPanel:
+            {
+                if (chatPanel.isPanelOpen)
+                {
+                    return;
+                }
+                break;
+            }
         }
         
         SetNotificationCount(notificationCount + 1);
@@ -82,5 +116,5 @@ public class ChatNotificationComponent : MonoBehaviour
 public enum ChatNotificationComponentMode
 {
     ChatId,
-    AllChat,
+    HiddenChatPanel,
 }

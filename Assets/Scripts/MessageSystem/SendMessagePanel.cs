@@ -39,16 +39,16 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
         GameManager.instance.AskForUpdateAllCharactersRpc();
     }
 
-    public bool TryOpenPanel()
+    public void TryOpenPanel()
     {
         if (GameManager.instance.GetLocalCharacter(false).messageLeft <= 0)
         {
             Debug.Log("You have no messages left to send.");
-            return false;
+            return;
         }
         
         OpenPanel();
-        return true;
+        return;
     }
 
     public void OpenPanel()

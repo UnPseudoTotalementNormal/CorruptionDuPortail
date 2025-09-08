@@ -225,10 +225,10 @@ namespace ChatSystem
             };
         }
 
-        public bool TryOpenPanel()
+        public void TryOpenPanel()
         {
             OpenPanel();
-            return true;
+            return;
         }
 
         public void OpenPanel()

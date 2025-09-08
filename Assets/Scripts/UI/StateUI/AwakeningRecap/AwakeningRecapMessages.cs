@@ -24,6 +24,8 @@ namespace UI.Components
         public CanvasGroup messagesCanvasGroup;
         public Transform messagesLayoutTransform;
         
+        public GameObject anonymousMessagePrefab;
+        
         public override float EvaluateDuration()
         {
             int _messageCount = MessageManager.instance.messagesToReveal.Count;
@@ -51,34 +53,29 @@ namespace UI.Components
             titleText.text = $"Message anonyme";
 
             SpawnNewMessageText($"Messages du jour {GameManager.instance.currentDay}:").GetComponent<TMP_Text>().fontStyle |= FontStyles.Underline;
-            
+
+            int _messageRevealedCount = 0;
             while (messagesToReveal.Count > 0)
             {
                 MessageInfo _messageInfo = messagesToReveal.Pop();
                 
-                var _newMessageObject = SpawnNewMessageText(_messageInfo.message.ToString());
+                _messageRevealedCount += 1;
+                var _newMessageObject = SpawnNewMessageText($"{_messageRevealedCount}: \"{_messageInfo.message.ToString()}\"");
                 
                 CanvasGroup _messageCanvasGroup = _newMessageObject.GetComponent<CanvasGroup>();
                 _messageCanvasGroup.alpha = 0;
                 _messageCanvasGroup.DOFade(1, 0.5f);
-                
+
                 await UniTask.Delay(TimeSpan.FromSeconds(timeAddedPerMessage));
             }
         }
 
-        //TODO: replace by message prefab
         private GameObject SpawnNewMessageText(string _text)
         {
-            GameObject _newMessageObject = new GameObject("AnonymousMessage", typeof(TextMeshProUGUI), typeof(CanvasGroup), typeof(ContentSizeFitter));
-            _newMessageObject.transform.SetParent(messagesLayoutTransform, false);
+            GameObject _newMessageObject = Instantiate(anonymousMessagePrefab, messagesLayoutTransform, false);
 
             var _messageText = _newMessageObject.GetComponent<TMP_Text>();
-            _messageText.fontSize = 45;
-            _messageText.richText = false;
             _messageText.text = _text;
-            
-            ContentSizeFitter _contentSizeFitter = _newMessageObject.GetComponent<ContentSizeFitter>();
-            _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             
             return _newMessageObject;
         }

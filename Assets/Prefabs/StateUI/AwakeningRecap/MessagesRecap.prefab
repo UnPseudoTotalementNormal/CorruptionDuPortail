@@ -1276,3 +1276,4 @@ MonoBehaviour:
   messageText: {fileID: 5470785463563423795}
   messagesCanvasGroup: {fileID: 5656783747930888834}
   messagesLayoutTransform: {fileID: 1876096839624027114}
+  anonymousMessagePrefab: {fileID: 3039476336587193392, guid: 47506da7b60aaaf42b478fff5bb2a9e0, type: 3}

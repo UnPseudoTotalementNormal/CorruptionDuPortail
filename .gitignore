@@ -92,3 +92,15 @@ crashlytics-build.properties
 fmod_editor.log
 /FMODProject/Corrupted/.unsaved
 .idea/
+
+# Normalize line endings
+* text=auto
+
+# Linux hidden/system files
+.*.swp
+.*.swo
+.DS_Store      # macOS mais pas mal si tu collabores avec Mac
+.Trash-*
+
+# Unity Linux local cache
+/[Ll]ibrary/ShaderCache/

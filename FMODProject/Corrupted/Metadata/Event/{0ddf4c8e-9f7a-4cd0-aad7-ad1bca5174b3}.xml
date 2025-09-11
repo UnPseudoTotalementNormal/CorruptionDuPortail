@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{0ddf4c8e-9f7a-4cd0-aad7-ad1bca5174b3}">
 		<property name="name">
-			<value>ReceiveMessage</value>
+			<value>SendMessage</value>
 		</property>
 		<property name="outputFormat">
 			<value>1</value>
@@ -98,7 +98,7 @@
 	</object>
 	<object class="EventMixerGroup" id="{6bbff0d4-c9f6-4cce-862e-3b5aef7c3588}">
 		<property name="volume">
-			<value>1.5</value>
+			<value>2</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>
@@ -123,9 +123,21 @@
 	<object class="MixerBusEffectChain" id="{065b3373-53b2-4387-b23c-0e60301f86d2}">
 		<relationship name="effects">
 			<destination>{c5e23105-e7b5-401a-945f-11e07844d76c}</destination>
+			<destination>{dbb768ba-2ec7-42b9-8ad8-3d0734e99cb0}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{dff8a3cc-dd7e-4192-bb0d-a6416458dd4d}" />
 	<object class="MixerBusFader" id="{1d22b7e7-1f6d-4c48-8a89-2cc08f9c83e5}" />
 	<object class="MixerBusFader" id="{c5e23105-e7b5-401a-945f-11e07844d76c}" />
+	<object class="ThreeEQEffect" id="{dbb768ba-2ec7-42b9-8ad8-3d0734e99cb0}">
+		<property name="lowGain">
+			<value>2.5</value>
+		</property>
+		<property name="highGain">
+			<value>2</value>
+		</property>
+		<property name="lowCrossover">
+			<value>500</value>
+		</property>
+	</object>
 </objects>

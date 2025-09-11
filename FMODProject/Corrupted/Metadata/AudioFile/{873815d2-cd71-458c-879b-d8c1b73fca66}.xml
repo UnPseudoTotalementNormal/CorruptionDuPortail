@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{873815d2-cd71-458c-879b-d8c1b73fca66}">
+		<property name="assetPath">
+			<value>Chasseuse de Prime - Ambiant.mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>29.376000000000001</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e66d3d08-7377-46a7-824d-08ed54029370}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -108,33 +108,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4608
---- !u!114 &-5574126476391208491
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/MessageMenuSelect
-  m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/MessageMenuSelect
-  Guid:
-    Data1: -1932913990
-    Data2: 1148100710
-    Data3: -414748226
-    Data4: -791132990
-  Banks:
-  - {fileID: -4111081932488574413}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 1776
 --- !u!114 &-5566668107272368804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,10 +149,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Path: event:/Interface/Messages/SendMessage
   Guid:
-    Data1: 1568662278
-    Data2: 1156388377
-    Data3: -947327076
-    Data4: -2003215321
+    Data1: 232737934
+    Data2: 1288740730
+    Data3: 464377770
+    Data4: -1284222518
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -188,7 +161,7 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 1008
+  Length: 360
 --- !u!114 &-5270288976784628085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -216,6 +189,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1680
+--- !u!114 &-4818972373118919025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/MessageMenuSelect Anomaly
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/MessageMenuSelect Anomaly
+  Guid:
+    Data1: 476291807
+    Data2: 1159268860
+    Data3: 1884989317
+    Data4: 1727256808
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2204
 --- !u!114 &-4801730923534967909
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -285,10 +285,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638884692326792367
+  lastModified: 638932113176972656
   FileSizes:
   - Name: Desktop
-    Value: 9681856
+    Value: 10189088
   Exists: 1
 --- !u!114 &-4089365157833686040
 MonoBehaviour:
@@ -385,10 +385,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Path: event:/Interface/Messages/ReceiveMessage
   Guid:
-    Data1: 232737934
-    Data2: 1288740730
-    Data3: 464377770
-    Data4: -1284222518
+    Data1: 1568662278
+    Data2: 1156388377
+    Data3: -947327076
+    Data4: -2003215321
   Banks:
   - {fileID: -4111081932488574413}
   IsStream: 0
@@ -397,7 +397,7 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 360
+  Length: 1008
 --- !u!114 &-1916512007672029284
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -479,6 +479,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 10000
+--- !u!114 &-1217017657348680126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/WaitingforPower
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/WaitingforPower
+  Guid:
+    Data1: 554727870
+    Data2: 1183354671
+    Data3: 74505634
+    Data4: 211429031
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 19010
 --- !u!114 &-1111495655923249105
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -579,7 +606,6 @@ MonoBehaviour:
   - {fileID: -5347597912518584425}
   - {fileID: 5698317650318699257}
   - {fileID: -2637084359228874970}
-  - {fileID: -5574126476391208491}
   - {fileID: -5566668107272368804}
   - {fileID: -8100886581133694282}
   - {fileID: -6663359746550798338}
@@ -607,13 +633,17 @@ MonoBehaviour:
   - {fileID: -3926117794901696028}
   - {fileID: -5270288976784628085}
   - {fileID: -3464440767684096608}
+  - {fileID: 1570906191506870285}
+  - {fileID: 6606559895226226206}
+  - {fileID: -1217017657348680126}
+  - {fileID: -4818972373118919025}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4111081932488574413}
   StringsBanks:
   - {fileID: 3211099948312062944}
   cacheVersion: 131847
-  cacheTime: 638884692326832721
+  cacheTime: 638932113177037639
   SerializableEventsDict:
   - key: event:/Interface/Messages/SendMessage
     index: 0
@@ -621,62 +651,68 @@ MonoBehaviour:
     index: 1
   - key: event:/Interface/Messages/ReceiveMessage
     index: 2
-  - key: event:/Interface/Messages/MessageMenuSelect
-    index: 3
   - key: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption
-    index: 4
+    index: 3
   - key: event:/Interface/GameMusic
-    index: 5
+    index: 4
   - key: event:/Interface/Opening
-    index: 6
+    index: 5
   - key: event:/Characters/Mage Occulte/Canalisation
-    index: 7
+    index: 6
   - key: event:/Characters/Mage Occulte/embrace of shadows - Sucess
-    index: 8
+    index: 7
   - key: event:/Characters/Dr. Gloubi/Chaining
-    index: 9
+    index: 8
   - key: event:/Characters/Mage Occulte/Opening
-    index: 10
+    index: 9
   - key: event:/Characters/Oracle/Chaining
-    index: 11
+    index: 10
   - key: event:/Characters/Dryade/Chaining
-    index: 12
+    index: 11
   - key: event:/Characters/Dryade/Canalisation
-    index: 13
+    index: 12
   - key: event:/Characters/Dr. Gloubi/GoodAnswer
-    index: 14
+    index: 13
   - key: event:/Characters/Oracle/SendPower
-    index: 15
+    index: 14
   - key: event:/Characters/Mage Occulte/Chaining
-    index: 16
+    index: 15
   - key: event:/Characters/Dr. Gloubi/Canalisation
-    index: 17
+    index: 16
   - key: event:/Characters/Dryade/GoodAnswer
-    index: 18
+    index: 17
   - key: event:/Characters/Mage Occulte/embrace of shadows - Failure
-    index: 19
+    index: 18
   - key: event:/Interface/AbattreLePortail
-    index: 20
+    index: 19
   - key: event:/Characters/Oracle/Canalisation
-    index: 21
+    index: 20
   - key: event:/Project_38
-    index: 22
+    index: 21
   - key: event:/Characters/Mage Occulte/Corrupting brand
-    index: 23
+    index: 22
   - key: event:/Characters/Dryade/BadAnswer or WithoutGCorruption
-    index: 24
+    index: 23
   - key: event:/Characters/Orpheline/Canalisation
-    index: 25
+    index: 24
   - key: event:/Characters/Orpheline/Annoucement
-    index: 26
+    index: 25
   - key: event:/Characters/Orpheline/ReceivePower_Anomaly
-    index: 27
+    index: 26
   - key: event:/Characters/Orpheline/SendPower
-    index: 28
+    index: 27
   - key: event:/Characters/Orpheline/ReceivePower_Chosen
-    index: 29
+    index: 28
   - key: event:/Characters/Orpheline/Chaining
+    index: 29
+  - key: event:/Characters/Mage Occulte/Ambiant Anomaly
     index: 30
+  - key: event:/Interface/Messages/MessageMenuSelect General
+    index: 31
+  - key: event:/Interface/Messages/WaitingforPower
+    index: 32
+  - key: event:/Interface/Messages/MessageMenuSelect Anomaly
+    index: 33
 --- !u!114 &997035851128620311
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -704,6 +740,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4992
+--- !u!114 &1570906191506870285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Characters/Mage Occulte/Ambiant Anomaly
+  m_EditorClassIdentifier: 
+  Path: event:/Characters/Mage Occulte/Ambiant Anomaly
+  Guid:
+    Data1: -464084876
+    Data2: 1178607672
+    Data3: -223495747
+    Data4: 259090284
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 22476
 --- !u!114 &2737142589505471356
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -746,10 +809,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638884692326832721
+  lastModified: 638932113177037639
   FileSizes:
   - Name: Desktop
-    Value: 2442
+    Value: 2592
   Exists: 1
 --- !u!114 &3791016524034812930
 MonoBehaviour:
@@ -913,6 +976,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2280
+--- !u!114 &6606559895226226206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages/MessageMenuSelect General
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages/MessageMenuSelect General
+  Guid:
+    Data1: -1932913990
+    Data2: 1148100710
+    Data3: -414748226
+    Data4: -791132990
+  Banks:
+  - {fileID: -4111081932488574413}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1776
 --- !u!114 &6731152146824504030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -962,7 +1052,7 @@ MonoBehaviour:
   - {fileID: -4111081932488574413}
   IsStream: 0
   Is3D: 0
-  IsOneShot: 0
+  IsOneShot: 1
   Parameters: []
   MinDistance: 1
   MaxDistance: 20

@@ -1,0 +1,27 @@
+# For Unity text files
+*.cs text diff=csharp
+*.shader text
+*.txt text
+*.json text
+*.asmdef text
+*.meta text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.fbx binary
+
+# Force LF on text files
+* text=auto eol=lf
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+.vs/
+*.user
+*.suo
+*.tmp
+*.bak
+*.swp

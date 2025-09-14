@@ -12,6 +12,8 @@ namespace TooltipSystem
     {
         public static TooltipManager instance;
         
+        [field:SerializeField] public TooltipLinkReferenceHolder tooltipLinkReferenceHolder { get; private set; }
+        
         [SerializeField] private TooltipWindow tooltipPrefab;
         
         [SerializeField] private Transform tooltipCanvas;
@@ -121,6 +123,11 @@ namespace TooltipSystem
         public bool IsTooltipOpenForGameObject(GameObject _linkedGameObject)
         {
             return tooltipInstances.Any(x => x.linkedGameObject == _linkedGameObject);
+        }
+        
+        public TooltipInstanceInfo GetTooltipInstanceInfo(GameObject gameObject)
+        {
+            return tooltipInstances.FirstOrDefault(x => x.linkedGameObject == gameObject);
         }
         
         private void PlaceTooltip(ITooltipTrigger _tooltipTrigger, GameObject _linkedGameObject, TooltipWindow _newTooltip)

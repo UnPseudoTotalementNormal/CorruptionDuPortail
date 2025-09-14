@@ -1259,6 +1259,7 @@ GameObject:
   m_Component:
   - component: {fileID: 498437615}
   - component: {fileID: 498437616}
+  - component: {fileID: 498437617}
   m_Layer: 0
   m_Name: TooltipManager
   m_TagString: Untagged
@@ -1293,8 +1294,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6dc92059ce697de408294cc361818e96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  <tooltipLinkReferenceHolder>k__BackingField: {fileID: 498437617}
   tooltipPrefab: {fileID: 6011727100065080079, guid: 8cc773ddc69cc1d4ba1bd562a1443839, type: 3}
   tooltipCanvas: {fileID: 1740318887}
+--- !u!114 &498437617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498437614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ef3646437de99d1bbbfc73e64a283ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textTooltipReferences:
+    _serializedList:
+    - Key: corruption
+      Value:
+        title: Corruption
+        description: "Chaque joueur peut \xEAtre corrompu, lorsque tout les joueurs
+          non-anomalie sont corrompu, les anomalies gagnent"
 --- !u!1 &552546343
 GameObject:
   m_ObjectHideFlags: 0
@@ -8556,6 +8577,18 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4994821243535803777, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994821243535803777, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4994821243535803777, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5956409541211102362, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_Name
       value: Chat
@@ -8638,6 +8671,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6831905932990082112, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8252220020157294377, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8252220020157294377, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8252220020157294377, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
+      propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8300029199202109872, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}

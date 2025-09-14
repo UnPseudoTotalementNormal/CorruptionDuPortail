@@ -13,7 +13,7 @@ namespace TooltipSystem
         public event Action onMouseEnterTrigger;
         public event Action onMouseExitTrigger;
         public event Action onTooltipForceClose;
-        public Vector2 tooltipOffsetDirection { get; set; }
+        public Vector2 tooltipOffsetDirection { get; set; } = Vector2.up;
 
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -24,6 +24,22 @@ namespace TooltipSystem
         public void OnPointerExit(PointerEventData eventData)
         {
             onMouseExitTrigger?.Invoke();
+        }
+
+        void Update()
+        {
+            if (TooltipManager.instance.IsTooltipOpenForGameObject(gameObject))
+            {
+                return;
+            }
+            
+            int linkIndex = TMP_TextUtilities.FindIntersectingLink(DescriptionText, Input.mousePosition, null);
+
+            if (linkIndex != -1)
+            {
+                var linkInfo = DescriptionText.textInfo.linkInfo[linkIndex];
+                TooltipManager.instance.CreateNewTooltipFromGameObject(gameObject, linkInfo.GetLinkID(), "test tooltip in tooltip");
+            }
         }
     }
 }

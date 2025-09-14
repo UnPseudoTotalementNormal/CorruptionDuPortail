@@ -27,6 +27,12 @@ namespace TooltipSystem
         {
             foreach (var _tooltipInstanceInfo in tooltipInstances.ToList())
             {
+                if (_tooltipInstanceInfo.linkedGameObject == null)
+                {
+                    CloseTooltip(_tooltipInstanceInfo.tooltipWindow, _tooltipInstanceInfo);
+                    return;
+                }
+                
                 PlaceTooltip(_tooltipInstanceInfo.linkedTooltipTrigger, _tooltipInstanceInfo.linkedGameObject, _tooltipInstanceInfo.tooltipWindow);
                 
                 if (_tooltipInstanceInfo.isMouseOverLinkedGameObject || _tooltipInstanceInfo.isMouseOverTooltipWindow)
@@ -128,28 +134,66 @@ namespace TooltipSystem
         private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)
         {
             if (_targetRects.Length == 0)
+            {
                 return (Vector2.zero, Vector2.zero);
+            }
+
+            Canvas parentCanvas = _targetRects[0].GetComponentInParent<Canvas>();
+            if (!parentCanvas)
+            {
+                return (Vector2.zero, Vector2.zero);
+            }
 
             Vector3 _min = Vector3.positiveInfinity;
             Vector3 _max = Vector3.negativeInfinity;
             Vector3[] _corners = new Vector3[4];
 
-            foreach (var _rect in _targetRects)
+            // WorldSpace: use WorldToScreenPoint
+            if (parentCanvas.renderMode == RenderMode.WorldSpace)
             {
-                _rect.GetWorldCorners(_corners);
-                foreach (var _corner in _corners)
+                foreach (var _rect in _targetRects)
                 {
-                    _min = Vector3.Min(_min, _corner);
-                    _max = Vector3.Max(_max, _corner);
+                    _rect.GetWorldCorners(_corners);
+                    foreach (var _corner in _corners)
+                    {
+                        _min = Vector3.Min(_min, _corner);
+                        _max = Vector3.Max(_max, _corner);
+                    }
                 }
+                Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
+                Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(_camera, _min);
+                Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(_camera, _max);
+                Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_screenMax.x - _screenMin.x), Mathf.Abs(_screenMax.y - _screenMin.y));
+                Vector2 _screenPos = RectTransformUtility.WorldToScreenPoint(_camera, _boundingBoxCenter);
+                return (_screenBoundingBoxSize, _screenPos);
             }
-
-            Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
-            Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(_camera, _min);
-            Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(_camera, _max);
-            Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_screenMax.x - _screenMin.x), Mathf.Abs(_screenMax.y - _screenMin.y));
-            Vector2 _screenPos = RectTransformUtility.WorldToScreenPoint(_camera, _boundingBoxCenter);
-            return (_screenBoundingBoxSize, _screenPos);
+            // ScreenSpace Overlay or Camera: use local positions in the Canvas
+            else
+            {
+                foreach (var _rect in _targetRects)
+                {
+                    _rect.GetWorldCorners(_corners);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        // Convert corners to Canvas coordinates
+                        Vector2 canvasPos = Vector2.zero;
+                        if (parentCanvas.renderMode == RenderMode.ScreenSpaceCamera && parentCanvas.worldCamera != null)
+                        {
+                            canvasPos = RectTransformUtility.WorldToScreenPoint(parentCanvas.worldCamera, _corners[i]);
+                        }
+                        else // ScreenSpaceOverlay
+                        {
+                            canvasPos = RectTransformUtility.WorldToScreenPoint(null, _corners[i]);
+                        }
+                        _min = Vector3.Min(_min, canvasPos);
+                        _max = Vector3.Max(_max, canvasPos);
+                    }
+                }
+                Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
+                Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_max.x - _min.x), Mathf.Abs(_max.y - _min.y));
+                Vector2 _screenPos = new Vector2(_boundingBoxCenter.x, _boundingBoxCenter.y);
+                return (_screenBoundingBoxSize, _screenPos);
+            }
         }
     }
 

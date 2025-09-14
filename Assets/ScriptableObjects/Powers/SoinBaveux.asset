@@ -641,11 +641,11 @@ MonoBehaviour:
         powerUseLeft: 0
         canalisationSound:
           Guid:
-            Data1: 0
-            Data2: 0
-            Data3: 0
-            Data4: 0
-          Path: 
+            Data1: 622229679
+            Data2: 1228540502
+            Data3: 514179222
+            Data4: -1301035937
+          Path: event:/Characters/Dr. Gloubi/Canalisation
         onUsedSound:
           Guid:
             Data1: 0

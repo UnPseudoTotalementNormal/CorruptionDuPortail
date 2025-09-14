@@ -45,6 +45,20 @@ MonoBehaviour:
   currentAwakeningIndex: 0
   currentAwakeningTimer: 0
   currentAwakeningMaxTime: 0
+  awakeningAnnouncementSound:
+    Guid:
+      Data1: -1018522590
+      Data2: 1085794016
+      Data3: -698886753
+      Data4: -1296589212
+    Path: event:/Interface/Opening
+  awakenedLoopSound:
+    Guid:
+      Data1: 554727870
+      Data2: 1183354671
+      Data3: 74505634
+      Data4: 211429031
+    Path: event:/Interface/Messages/WaitingforPower
   references:
     version: 2
     RefIds: []

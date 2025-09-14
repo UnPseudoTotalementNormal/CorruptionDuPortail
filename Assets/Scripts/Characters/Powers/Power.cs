@@ -31,6 +31,7 @@ namespace Characters.Powers
         public bool hasToBeAwakened = true;
         
         public TargetIncludeFlags targetIncludeFlags;
+        public bool needTargetSelection => targetIncludeFlags != 0;
         
         public int powerUseLeft;
 
@@ -82,6 +83,8 @@ namespace Characters.Powers
             if (_powerCharacter.isChained || _powerCharacter.isEliminated) return false;
 
             if (hasToBeAwakened && !_powerCharacter.role.isAwakened) return false;
+            
+            if (needTargetSelection && TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Count <= 0) return false;
 
             if (powerUseLeft <= 0) return false;
 

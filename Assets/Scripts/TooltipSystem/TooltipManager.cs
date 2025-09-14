@@ -63,6 +63,7 @@ namespace TooltipSystem
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
             _newTooltip.DescriptionText.text = _tooltipDescription.Replace("<link=", "<u><link=").Replace("</link>", "</link></u>");
+            _newTooltip.tooltipOffsetDirection = _tooltipTrigger.tooltipOffsetDirection;
             
             LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());
             

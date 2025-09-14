@@ -35,7 +35,8 @@ namespace TooltipSystem
                 
                 PlaceTooltip(_tooltipInstanceInfo.linkedTooltipTrigger, _tooltipInstanceInfo.linkedGameObject, _tooltipInstanceInfo.tooltipWindow);
                 
-                if (_tooltipInstanceInfo.isMouseOverLinkedGameObject || _tooltipInstanceInfo.isMouseOverTooltipWindow)
+                if (_tooltipInstanceInfo.isMouseOverLinkedGameObject || _tooltipInstanceInfo.isMouseOverTooltipWindow 
+                                                                     || IsTooltipOpenForGameObject(_tooltipInstanceInfo.tooltipWindow.gameObject))
                 {
                     _tooltipInstanceInfo.tooltipNoHoverTimer = _tooltipInstanceInfo.tooltipNoHoverTime;
                     continue;
@@ -59,6 +60,7 @@ namespace TooltipSystem
             
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
+            _newTooltip.DescriptionText.text = _tooltipDescription.Replace("<link=", "<u><link=").Replace("</link>", "</link></u>");
             
             LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());
             
@@ -108,6 +110,7 @@ namespace TooltipSystem
             }
 
             tooltipInstances.Remove(_tooltipInstanceInfo ?? tooltipInstances.Find(x => x.tooltipWindow == _tooltip));
+            _tooltipInstanceInfo.tooltipWindow.enabled = false;
 
             _tooltip.transform.DOScale(Vector3.zero, 0.35f).SetEase(Ease.OutQuint).onComplete = () =>
             {

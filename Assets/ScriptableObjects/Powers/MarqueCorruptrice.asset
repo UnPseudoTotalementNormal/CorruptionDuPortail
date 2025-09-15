@@ -23,7 +23,7 @@ MonoBehaviour:
         ownerClientId: 0
         powerGameId: 0
         powerName:
-          utf8LengthInBytes: 19
+          utf8LengthInBytes: 18
           bytes:
             offset0000:
               byte0000: 77
@@ -45,7 +45,7 @@ MonoBehaviour:
             offset0016:
               byte0000: 99
               byte0001: 101
-              byte0002: 10
+              byte0002: 0
               byte0003: 0
               byte0004: 0
               byte0005: 0

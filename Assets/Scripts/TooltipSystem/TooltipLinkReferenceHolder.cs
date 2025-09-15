@@ -25,6 +25,7 @@ namespace TooltipSystem
             
             if (linkKey.StartsWith("power_"))
             {
+                linkKey = linkKey.Replace("power_", "");
                 return GetPowerTooltipReference(linkKey);
             }
             
@@ -33,8 +34,15 @@ namespace TooltipSystem
         
         private TooltipReference GetPowerTooltipReference(string linkID)
         {
-            //TODO: jarvis, faudra faire ça avec des Addressables
-            return null;
+            var _powerDataObject = GameAssetHolder.instance.GetPowerDataObject(linkID);
+
+            var _tooltipReference = new TooltipReference()
+            {
+                title = _powerDataObject.power.powerName.ToString(),
+                description = _powerDataObject.power.powerDescription.ToString(),
+            };
+            
+            return _tooltipReference;
         }
     }
 }

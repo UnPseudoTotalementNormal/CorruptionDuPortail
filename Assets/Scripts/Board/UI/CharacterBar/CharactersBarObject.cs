@@ -2,6 +2,7 @@
 
 using System;
 using Characters;
+using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameLogic;
@@ -85,9 +86,9 @@ namespace Board.UI.CharacterBar
             
             hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
             string _description = "Pouvoirs:";
-            foreach (var _power in playerCharacter.role.powers)
+            foreach (Power _power in playerCharacter.role.powers)
             {
-                _description += $"\n- {_power.powerName}";
+                _description += $"\n- <link=power_{_power.powerName}>{_power.powerName}</link>";
             }
             hoverTooltipComponent.SetTooltipDescription(_description);
                 

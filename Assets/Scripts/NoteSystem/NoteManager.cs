@@ -14,9 +14,9 @@ namespace NoteSystem
         private Dictionary<ulong, List<Role>> confirmedRolesByPlayer = new();
         private Dictionary<ulong, List<Role>> excludedRolesByPlayer = new();
         
-        public event Action<ulong, List<Role>> possibleRolesByPlayerModified;
-        public event Action<ulong, List<Role>> confirmedRolesByPlayerModified;
-        public event Action<ulong, List<Role>> excludedRolesByPlayerModified;
+        public event Action<ulong, List<Role>> onPossibleRolesByPlayerModified;
+        public event Action<ulong, List<Role>> onConfirmedRolesByPlayerModified;
+        public event Action<ulong, List<Role>> onExcludedRolesByPlayerModified;
         
         
         private void Awake()
@@ -63,13 +63,13 @@ namespace NoteSystem
             switch (_noteType)
             {
                 case NoteType.Possible:
-                    possibleRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                    onPossibleRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                     break;
                 case NoteType.Confirmed:
-                    confirmedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                    onConfirmedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                     break;
                 case NoteType.Excluded:
-                    excludedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                    onExcludedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(_noteType), _noteType, null);
@@ -93,13 +93,13 @@ namespace NoteSystem
                 switch (_noteType)
                 {
                     case NoteType.Possible:
-                        possibleRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                        onPossibleRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                         break;
                     case NoteType.Confirmed:
-                        confirmedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                        onConfirmedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                         break;
                     case NoteType.Excluded:
-                        excludedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
+                        onExcludedRolesByPlayerModified?.Invoke(_playerID, _targetDictionary[_playerID]);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(_noteType), _noteType, null);

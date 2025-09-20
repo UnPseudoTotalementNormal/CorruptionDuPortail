@@ -1,8 +1,7 @@
 namespace UI.Panel
 {
-    public interface IPanelComponent
+    public interface IPanelComponent : IPanelOpen
     {
-        public bool isPanelOpen { get; }
         public void SwitchPanelOpen();
         public void TryOpenPanel();
         public void OpenPanel();

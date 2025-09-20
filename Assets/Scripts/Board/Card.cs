@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AudioSystem;
 using AYellowpaper.SerializedCollections;
 using Board.UI.VoteCanvas;
@@ -12,6 +13,7 @@ using DG.Tweening;
 using Extensions;
 using GameLogic;
 using TMPro;
+using UI.Panel;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
@@ -58,13 +60,33 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     private bool lastIsChainedStatus = false;
     
     private bool isPointerOver = false;
-
+    private bool isCardZoomed = false;
+    
     private void Awake()
     {
         if (characterInfo == null)
         {
             SetUnknownCard();
         }
+    }
+
+    private void Update()
+    {
+        if (isPointerOver || !isCardZoomed) 
+        {
+            return;
+        }
+        //TODO: jarvis, c'est quoi ça frr
+        if (!CanUnZoomCard())
+        {
+            return;
+        }
+        OnUnOverZoom();
+    }
+
+    private bool CanUnZoomCard()
+    {
+        return !GetComponentsInChildren<IPanelOpen>().Any(_ip => _ip.isPanelOpen);
     }
 
     public void SetInfo(Character _character)
@@ -262,16 +284,34 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public void OnPointerEnter(PointerEventData _eventData)
     {
         onCardHovered?.Invoke(this);
-        cardScalerTransform.DOKill();
-        cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
+        OnOverZoom();
         isPointerOver = true;
     }
+    
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         onCardUnhovered?.Invoke(this);
+        
+        if (CanUnZoomCard())
+        {
+            OnUnOverZoom();
+        }
+        
+        isPointerOver = false;
+    }
+    
+    private void OnOverZoom()
+    {
+        cardScalerTransform.DOKill();
+        cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
+        isCardZoomed = true;
+    }
+
+    private void OnUnOverZoom()
+    {
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
-        isPointerOver = false;
+        isCardZoomed = false;
     }
 }

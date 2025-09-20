@@ -5,27 +5,33 @@ using Board.UI.CharacterBar;
 using Characters;
 using DG.Tweening;
 using GameLogic;
+using UI;
 using UI.Panel;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
 
 namespace NoteSystem
 {
-    public class NoteChoosePanel : MonoBehaviour, IPanelComponent
+    public class NoteChoosePanel : MonoBehaviour, IPanelComponent, IPanelCloseEvent, IPointerClickHandler
     {
         [SerializeField] private CharactersBarObject characterNoteObjectPrefab;
         [SerializeField] private RectTransform layoutTransform;
+        [SerializeField] private CustomButton closeButton;
         
         public event Action<Character> onCharacterNoteObjectClicked;
+        public event Action onPanelClose;
         
         private ulong currentPlayerId;
         private NoteType currentNoteType;
+
         
         public bool isPanelOpen { get; protected set; }
 
         private void Awake()
         {
             onCharacterNoteObjectClicked += OnCharacterNoteObjectClicked;
+            closeButton.onButtonClicked += ClosePanel;
         }
 
         private void OnCharacterNoteObjectClicked(Character _character)
@@ -59,10 +65,9 @@ namespace NoteSystem
             
             List<Character> _filteredCharacters = _allCharacters.ToList();
 
-            _filteredCharacters.RemoveAll(_c => 
-                _currentPlayerNotes.Any(_cn => _cn.IsTheSameRole(_c.GetRole())));
+            _filteredCharacters.RemoveAll(_c => _currentPlayerNotes.Any(_cn => _cn.IsTheSameRole(_c.GetRole())));
                 
-            _filteredCharacters
+            _filteredCharacters = _filteredCharacters
                 .GroupBy(c => c.GetRole())
                 .Select(g => g.First())
                 .Where(c => !_currentPlayerNotes.Any(n => n.IsTheSameRole(n)))
@@ -97,7 +102,13 @@ namespace NoteSystem
 
         public void ClosePanel()
         {
-            throw new NotImplementedException();
+            Destroy(gameObject);
+            onPanelClose?.Invoke();
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            
         }
     }
 }

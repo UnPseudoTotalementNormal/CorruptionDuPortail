@@ -56,6 +56,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private bool isSubscribedToUpdate = false;
     private bool lastIsChainedStatus = false;
+    
+    private bool isPointerOver = false;
 
     private void Awake()
     {
@@ -262,6 +264,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         onCardHovered?.Invoke(this);
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
+        isPointerOver = true;
     }
 
     public void OnPointerExit(PointerEventData _eventData)
@@ -269,5 +272,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         onCardUnhovered?.Invoke(this);
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
+        isPointerOver = false;
     }
 }

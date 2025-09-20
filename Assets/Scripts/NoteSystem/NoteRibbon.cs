@@ -54,6 +54,11 @@ namespace NoteSystem
 
         public void OnPointerExit(PointerEventData _eventData)
         {
+            if (currentNoteChoosePanel != null)
+            {
+                return;
+            }
+            
             ribbonPivot.DOAnchorPos(hiddenAnchoredPosition, 0.5f).SetEase(Ease.OutQuint);
         }
     }

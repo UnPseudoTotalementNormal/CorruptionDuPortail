@@ -82,16 +82,22 @@ namespace Board.UI.CharacterBar
         {
             RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId).forceCorruptOnRoleRevealed;
             bool _isCorrupted = playerCharacter.isCorrupted && _forceCorruptOnRoleRevealed > RevealLevel.False;
-            corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
-            
-            hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
-            string _description = "Pouvoirs:";
-            foreach (Power _power in playerCharacter.role.powers)
+            if (corruptedOverlayImage)
             {
-                _description += $"\n- <link=power_{_power.powerName}>{_power.powerName}</link>";
+                corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
             }
-            hoverTooltipComponent.SetTooltipDescription(_description);
-                
+
+            if (hoverTooltipComponent)
+            {
+                hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
+                string _description = "Pouvoirs:";
+                foreach (Power _power in playerCharacter.role.powers)
+                {
+                    _description += $"\n- <link=power_{_power.powerName}>{_power.powerName}</link>";
+                }
+                hoverTooltipComponent.SetTooltipDescription(_description);
+            }
+            
             var _rolePortrait = await playerCharacter.GetRole().GetRolePortrait();
             characterImage.sprite = _rolePortrait;
         }

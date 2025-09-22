@@ -49,18 +49,33 @@ namespace NoteSystem
 
         private void Init()
         {
+            var _noteManager = NoteManager.instance;
             isPanelOpen = true;
-            DisplayCharacters();
+            
+            DisplayCharacters(currentPlayerId, _noteManager.GetNotesForPlayer(currentPlayerId, currentNoteType));
+
+            switch (currentNoteType)
+            {
+                case NoteType.Confirmed:
+                    _noteManager.onConfirmedRolesByPlayerModified += UpdateDisplay;
+                    break;
+                case NoteType.Possible:
+                    _noteManager.onPossibleRolesByPlayerModified += UpdateDisplay;
+                    break;
+                case NoteType.Excluded:
+                    _noteManager.onExcludedRolesByPlayerModified += UpdateDisplay;
+                    break;
+            }
+            
         }
 
-        private void DisplayCharacters()
+        private void DisplayCharacters(ulong _currentPlayerId, List<Role> _currentPlayerNotes)
         {
             foreach (Transform _child in layoutTransform)
             {
                 Destroy(_child.gameObject);
             }
             
-            var _currentPlayerNotes = NoteManager.instance.GetNotesForPlayer(currentPlayerId, currentNoteType);
             var _allCharacters = GameManager.instance.GetCharacters(false);
             
             List<Character> _filteredCharacters = _allCharacters.ToList();
@@ -68,9 +83,8 @@ namespace NoteSystem
             _filteredCharacters.RemoveAll(_c => _currentPlayerNotes.Any(_cn => _cn.IsTheSameRole(_c.GetRole())));
                 
             _filteredCharacters = _filteredCharacters
-                .GroupBy(c => c.GetRole())
+                .GroupBy(_c => _filteredCharacters.FirstOrDefault(x => x.role.IsTheSameRole(_c.role)), _c => _c)
                 .Select(g => g.First())
-                .Where(c => !_currentPlayerNotes.Any(n => n.IsTheSameRole(n)))
                 .ToList();
 
             foreach (Character _character in _filteredCharacters)
@@ -79,12 +93,16 @@ namespace NoteSystem
                 _characterNoteObject.SetCharacter(_character);
                 _characterNoteObject.onCharacterBarObjectClicked += (_) =>
                 {
-                    Destroy(_characterNoteObject.gameObject);
                     onCharacterNoteObjectClicked?.Invoke(_character);
                 };
             }
         }
-        
+
+        private void UpdateDisplay(ulong _ulong, List<Role> _roles)
+        {
+            DisplayCharacters(_ulong, _roles);
+        }
+
         public void SwitchPanelOpen()
         {
             throw new NotImplementedException();
@@ -104,6 +122,10 @@ namespace NoteSystem
         {
             Destroy(gameObject);
             onPanelClose?.Invoke();
+            var _noteManager = NoteManager.instance;
+            _noteManager.onConfirmedRolesByPlayerModified -= UpdateDisplay;
+            _noteManager.onPossibleRolesByPlayerModified -= UpdateDisplay;
+            _noteManager.onExcludedRolesByPlayerModified -= UpdateDisplay;
         }
 
         public void OnPointerClick(PointerEventData eventData)

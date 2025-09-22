@@ -156,7 +156,7 @@ MonoBehaviour:
   canvasObject: {fileID: 4665635996908068775}
   corruptedOverlayImage: {fileID: 0}
   hoverTooltipComponent: {fileID: 352206801399310027}
-  hoverScale: {x: 1.6, y: 1.6, z: 1.6}
+  hoverScale: {x: 1.15, y: 1.15, z: 1.15}
   references:
     version: 2
     RefIds: []

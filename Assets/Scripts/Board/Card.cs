@@ -58,6 +58,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private bool isSubscribedToUpdate = false;
     private bool lastIsChainedStatus = false;
+    private float lastZoomStartTime = 0;
     
     private bool isPointerOver = false;
     private bool isCardZoomed = false;
@@ -86,6 +87,10 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private bool CanUnZoomCard()
     {
+        if (Time.time - lastZoomStartTime < 0.15f)
+        {
+            return false;
+        }
         return !GetComponentsInChildren<IPanelOpen>().Any(_ip => _ip.isPanelOpen);
     }
 
@@ -305,6 +310,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
+        cardDisplacerTransform.DOKill();
+        cardDisplacerTransform.DOLocalMoveY(0.35f, 0.35f).SetEase(Ease.OutQuint);
+        
+        lastZoomStartTime = Time.time;
+        
         isCardZoomed = true;
     }
 
@@ -312,6 +322,9 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
+        cardDisplacerTransform.DOKill();
+        cardDisplacerTransform.DOLocalMoveY(0, 0.35f).SetEase(Ease.OutQuint);
+        
         isCardZoomed = false;
     }
 }

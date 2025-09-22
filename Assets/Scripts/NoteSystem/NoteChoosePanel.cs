@@ -30,6 +30,9 @@ namespace NoteSystem
 
         private void Awake()
         {
+            transform.localScale = Vector3.zero;
+            transform.DOScale(1, 0.25f).SetEase(Ease.OutQuint);
+            
             onCharacterNoteObjectClicked += OnCharacterNoteObjectClicked;
             closeButton.onButtonClicked += ClosePanel;
         }
@@ -120,12 +123,15 @@ namespace NoteSystem
 
         public void ClosePanel()
         {
-            Destroy(gameObject);
             onPanelClose?.Invoke();
             var _noteManager = NoteManager.instance;
             _noteManager.onConfirmedRolesByPlayerModified -= UpdateDisplay;
             _noteManager.onPossibleRolesByPlayerModified -= UpdateDisplay;
             _noteManager.onExcludedRolesByPlayerModified -= UpdateDisplay;
+            transform.DOScale(0, 0.25f).SetEase(Ease.OutQuint).onComplete = () =>
+            {
+                Destroy(gameObject);
+            };
         }
 
         public void OnPointerClick(PointerEventData eventData)

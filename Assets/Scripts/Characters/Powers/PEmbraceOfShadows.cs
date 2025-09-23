@@ -1,11 +1,13 @@
 #region
 
 using System;
+using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
 using GameLogic;
+using Network;
 using RoleTarget;
 using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
@@ -15,11 +17,17 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PEmbraceOfShadows : Power
+    public class PEmbraceOfShadows : Power, ICorrupterPower
     {
         [NonSerialized] private Character clickedCharacter;
         public EventReference onCorruptionSuccessfulSound;
         public EventReference onCorruptionFailedSound;
+        
+        public event Action<Character> onCharacterCorrupted;
+        public void InvokeOnCharacterCorrupted(Character _character)
+        {
+            onCharacterCorrupted?.Invoke(_character);
+        }
         
         private void OnCardClicked(Card _clickedCard)
         {
@@ -46,6 +54,8 @@ namespace Characters.Powers
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();
+                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
+                    new NetworkSerializableObject[]{ new(clickedCharacter)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(

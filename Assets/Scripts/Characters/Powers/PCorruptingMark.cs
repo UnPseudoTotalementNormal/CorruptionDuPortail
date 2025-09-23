@@ -2,9 +2,11 @@
 
 using System;
 using ArrowSystem;
+using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
+using Network;
 using RoleTarget;
 using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
@@ -14,9 +16,13 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PCorruptingMark : Power
+    public class PCorruptingMark : Power, ICorrupterPower
     {
-        
+        public event Action<Character> onCharacterCorrupted;
+        public void InvokeOnCharacterCorrupted(Character _character)
+        {
+            onCharacterCorrupted?.Invoke(_character);
+        }
         private void OnCardClicked(Card _clickedCard)
         {
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
@@ -28,6 +34,8 @@ namespace Characters.Powers
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
+                new NetworkSerializableObject[]{ new(_clickedCard.characterInfo)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             OnUsed();
         }
         

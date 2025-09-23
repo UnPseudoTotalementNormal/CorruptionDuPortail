@@ -41,6 +41,8 @@ namespace Characters.Powers
         
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
+        
+        public event Action onPowerUsedServer;
 
         public virtual object Clone()
         {
@@ -110,6 +112,7 @@ namespace Characters.Powers
         public virtual void OnUsedServer()
         {
             powerUseLeft -= 1;
+            onPowerUsedServer?.Invoke();
             GameManager.instance.AskForUpdateAllCharactersRpc();
         }
 

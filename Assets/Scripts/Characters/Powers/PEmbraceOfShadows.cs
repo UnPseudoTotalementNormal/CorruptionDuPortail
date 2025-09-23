@@ -10,6 +10,7 @@ using GameLogic;
 using Network;
 using RoleTarget;
 using Unity.Netcode;
+using UnityEngine;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -17,16 +18,24 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PEmbraceOfShadows : Power, ICorrupterPower
+    public class PEmbraceOfShadows : Power, ICorruptionChainPower
     {
         [NonSerialized] private Character clickedCharacter;
         public EventReference onCorruptionSuccessfulSound;
         public EventReference onCorruptionFailedSound;
         
-        public event Action<Character> onCharacterCorrupted;
+        public event Action<Character> onCharacterCorruptionSuccessful;
+        public event Action<Character> onCharacterCorruptionFailed;
+        [field:SerializeField] public int maxCorruptionChain { get; set; } = 2;
+        public int currentCorruptionChain { get; set; }
+
         public void InvokeOnCharacterCorrupted(Character _character)
         {
-            onCharacterCorrupted?.Invoke(_character);
+            onCharacterCorruptionSuccessful?.Invoke(_character);
+        }
+        public void InvokeOnCharacterCorruptionFailed(Character _character)
+        {
+            onCharacterCorruptionFailed?.Invoke(_character);
         }
         
         private void OnCardClicked(Card _clickedCard)
@@ -64,6 +73,8 @@ namespace Characters.Powers
             }
             else
             {
+                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionFailed),
+                    new NetworkSerializableObject[]{ new(clickedCharacter)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
@@ -119,6 +130,14 @@ namespace Characters.Powers
         public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
         {
             base.NetworkSerialize(_serializer);
+
+            var _tempCorruptionChain = maxCorruptionChain;
+            _serializer.SerializeValue(ref _tempCorruptionChain);
+            maxCorruptionChain = _tempCorruptionChain;
+            
+            var _tempCurrentCorruptionChain = currentCorruptionChain;
+            _serializer.SerializeValue(ref _tempCurrentCorruptionChain);
+            currentCorruptionChain = _tempCurrentCorruptionChain;
             
             onCorruptionFailedSound.NetworkSerialize(_serializer);
             onCorruptionSuccessfulSound.NetworkSerialize(_serializer);

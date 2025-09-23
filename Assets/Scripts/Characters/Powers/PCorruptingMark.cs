@@ -18,15 +18,23 @@ namespace Characters.Powers
     [Serializable]
     public class PCorruptingMark : Power, ICorrupterPower
     {
-        public event Action<Character> onCharacterCorrupted;
-        public void InvokeOnCharacterCorrupted(Character _character)
+        public event Action<Character> onCharacterCorruptionSuccessful;
+        public event Action<Character> onCharacterCorruptionFailed;
+
+        public void InvokeOnCharacterCorruptionSuccessful(Character _character)
         {
-            onCharacterCorrupted?.Invoke(_character);
+            onCharacterCorruptionSuccessful?.Invoke(_character);
+        }
+        public void InvokeOnCharacterCorruptionFailed(Character _character)
+        {
+            onCharacterCorruptionFailed?.Invoke(_character);
         }
         private void OnCardClicked(Card _clickedCard)
         {
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
             {
+                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionFailed),
+                    new NetworkSerializableObject[]{ new(_clickedCard.characterInfo)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 return;
             }
             
@@ -34,7 +42,7 @@ namespace Characters.Powers
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionSuccessful),
                 new NetworkSerializableObject[]{ new(_clickedCard.characterInfo)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             OnUsed();
         }

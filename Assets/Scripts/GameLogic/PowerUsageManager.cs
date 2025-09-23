@@ -18,25 +18,6 @@ namespace GameLogic
         private void Start()
         {
             GameManager.instance.powersBar.onPowerClicked += OnPowerClicked;
-            if (NetworkManager.Singleton.IsServer)
-            {
-                var _roleAttributionGameState = GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
-                GameManager.instance.onGameStarted += OnGameStarted;
-            }
-        }
-
-        private void OnGameStarted()
-        {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnGameStarted should only be called on the server");
-            
-            foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
-            {
-                if (GameManager.instance.GetCharacter(_rolePower.ownerClientId, false).isFake)
-                {
-                    continue;
-                }
-                _rolePower.OnGameStartedServer();
-            }
         }
 
         private void TrySelectPower(Power _power)
@@ -67,8 +48,6 @@ namespace GameLogic
 
         private void Update()
         {
-            
-            
             if (currentPower == null)
             {
                 return;

@@ -4,7 +4,7 @@ namespace Characters.Powers.Interfaces
 {
     public interface ICorrupterPower
     {
-        public event Action<Character> onCharacterCorrupted;
-        public void InvokeOnCharacterCorrupted(Character _character);
+        public event Action<Character> onCharacterCorruptionSuccessful;
+        public event Action<Character> onCharacterCorruptionFailed;
     }
 }

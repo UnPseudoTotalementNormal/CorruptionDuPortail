@@ -639,6 +639,7 @@ MonoBehaviour:
         hasToBeAwakened: 0
         targetIncludeFlags: 0
         powerUseLeft: 1
+        maxPowerUse: 1
         canalisationSound:
           Guid:
             Data1: 0

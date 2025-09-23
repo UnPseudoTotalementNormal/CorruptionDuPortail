@@ -639,6 +639,7 @@ MonoBehaviour:
         hasToBeAwakened: 1
         targetIncludeFlags: 78
         powerUseLeft: 0
+        maxPowerUse: 2
         canalisationSound:
           Guid:
             Data1: 1078989102
@@ -667,3 +668,4 @@ MonoBehaviour:
             Data3: -19726450
             Data4: 2001007959
           Path: event:/Characters/Mage Occulte/embrace of shadows - Failure
+        <maxCorruptionChain>k__BackingField: 2

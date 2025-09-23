@@ -34,7 +34,8 @@ namespace Characters.Powers
         public bool needTargetSelection => targetIncludeFlags != 0;
         
         public int powerUseLeft;
-
+        public int maxPowerUse = 1; 
+        
         [Header("Sounds")] 
         public EventReference canalisationSound;
         public EventReference onUsedSound;
@@ -60,6 +61,7 @@ namespace Characters.Powers
             _serializer.SerializeValue(ref powerUseLeft);
             _serializer.SerializeValue(ref powerGameId);
             _serializer.SerializeValue(ref targetIncludeFlags);
+            _serializer.SerializeValue(ref maxPowerUse);
 
             canalisationSound.NetworkSerialize(_serializer);
             onUsedSound.NetworkSerialize(_serializer);

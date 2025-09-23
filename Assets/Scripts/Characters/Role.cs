@@ -55,7 +55,7 @@ public class Role : INetworkSerializable
         foreach (var _power in powers) 
         {
             _power.ownerClientId = ownerClientId; //just to be sure
-            _power.powerUseLeft = 1; //TODO: REPLACE 1 WITH SCRIPTABLE OBJECT VALUE
+            _power.powerUseLeft = _power.maxPowerUse;
         }
     }
     

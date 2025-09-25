@@ -27,7 +27,7 @@ public class CardCorruptedText : MonoBehaviour
     private void Start()
     {
         originalColor = tmpText.color;
-        GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+        GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     private void OnCharacterListUpdated(List<Character> _characters)
@@ -46,6 +46,6 @@ public class CardCorruptedText : MonoBehaviour
 
     private void OnDestroy()
     {
-        GameManager.instance.onCharactersListUpdated -= OnCharacterListUpdated;
+        GameManager.instance.characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
     }
 }

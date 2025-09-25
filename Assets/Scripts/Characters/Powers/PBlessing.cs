@@ -60,7 +60,7 @@ namespace Characters.Powers
 
         private static void TryBlessCharacterServerRpc(ulong _sender, ulong _blessingCharacterId, Role _compareRole)
         {
-            Character _blessingCharacter = GameManager.instance.GetCharacter(_blessingCharacterId, false);
+            Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
             RoleTargetSystem.instance.NewTargeting(_sender, _blessingCharacterId);
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
@@ -77,14 +77,14 @@ namespace Characters.Powers
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnMorningBlessingServer should only be called on server");
             foreach (var _characterId in blessingCharacterIdOnMorning)
             {
-                GameManager.instance.GetCharacter(_characterId).isBlessed = true;
+                GameManager.instance.characterManager.GetCharacter(_characterId).isBlessed = true;
                 var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
                 ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
                     $"{_playerName} a été béni.",
                     (int)ChatWindowIDs.Server)); //TODO: Jarvis, faudra faire ça (Jarvis, c'est fait normalement)
             }
             blessingCharacterIdOnMorning.Clear();
-            GameManager.instance.AskForUpdateAllCharactersRpc();
+            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

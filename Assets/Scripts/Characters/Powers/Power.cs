@@ -75,7 +75,7 @@ namespace Characters.Powers
 
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            var _powerCharacter = GameManager.instance.GetCharacter(ownerClientId, false);
+            var _powerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
             if (_powerCharacter == null)
             {
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
@@ -115,7 +115,7 @@ namespace Characters.Powers
         {
             powerUseLeft -= 1;
             onPowerUsedServer?.Invoke();
-            GameManager.instance.AskForUpdateAllCharactersRpc();
+            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public virtual void Cancel()

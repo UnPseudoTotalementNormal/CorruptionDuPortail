@@ -23,7 +23,7 @@ namespace GameLogic.GameStates
 
             Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new();
                 
-            foreach (var _currentCharacters in gameManager.GetCharacters(false))
+            foreach (var _currentCharacters in gameManager.characterManager.GetCharacters(false))
             {
                 foreach (var _currentWinningCondition in _currentCharacters.role.winningConditions)
                 {

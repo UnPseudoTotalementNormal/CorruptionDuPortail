@@ -19,7 +19,7 @@ namespace Board.UI
 
         private void OnSkipButtonClicked()
         {
-            GameManager.instance.SleepCharacterRpc(GameManager.instance.GetLocalCharacter(false).ownerClientId);
+            GameManager.instance.SleepCharacterRpc(GameManager.instance.characterManager.GetLocalCharacter(false).ownerClientId);
         }
     }
 }

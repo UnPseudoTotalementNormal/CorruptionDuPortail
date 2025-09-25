@@ -23,7 +23,7 @@ namespace UI
 
         private void OnGameStarted()
         {
-            gameManager.GetLocalCharacter(false).onCharacterAwakened += ShowAwakeningHelpText;
+            gameManager.characterManager.GetLocalCharacter(false).onCharacterAwakened += ShowAwakeningHelpText;
         }
 
         private void ShowAwakeningHelpText()

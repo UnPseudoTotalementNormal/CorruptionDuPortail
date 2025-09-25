@@ -18,7 +18,7 @@ namespace Characters.WinningConditions
         
         public override bool CheckCondition()
         {
-            var _characters = GameManager.instance.GetCharacters(false).Where(_c => !_c.isFake).ToList();
+            var _characters = GameManager.instance.characterManager.GetCharacters(false).Where(_c => !_c.isFake).ToList();
             
             foreach (var _character in _characters)
             {

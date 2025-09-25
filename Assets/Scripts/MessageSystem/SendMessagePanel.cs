@@ -16,7 +16,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     
     public void TrySendMessageToServer()
     {
-        if (GameManager.instance.GetLocalCharacter(false).messageLeft <= 0)
+        if (GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft <= 0)
         {
             Debug.Log("You have no messages left to send.");
             return;
@@ -36,8 +36,8 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     [Rpc(SendTo.Server)]
     public void OnMessageSentRpc(ulong _senderId, FixedString512Bytes _message)
     {
-        GameManager.instance.GetCharacter(_senderId).messageLeft -= 1;
-        GameManager.instance.AskForUpdateAllCharactersRpc();
+        GameManager.instance.characterManager.GetCharacter(_senderId).messageLeft -= 1;
+        GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
     }
 
     public void SwitchPanelOpen()
@@ -54,7 +54,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 
     public void TryOpenPanel()
     {
-        if (GameManager.instance.GetLocalCharacter(false).messageLeft <= 0)
+        if (GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft <= 0)
         {
             Debug.Log("You have no messages left to send.");
             return;

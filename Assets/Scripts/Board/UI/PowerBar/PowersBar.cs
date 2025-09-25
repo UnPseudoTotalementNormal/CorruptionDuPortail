@@ -26,7 +26,7 @@ namespace Board.UI.PowerBar
 
         private void Update()
         {
-            var _rolePowers = GameManager.instance.GetLocalCharacter(false)?.role?.powers;
+            var _rolePowers = GameManager.instance.characterManager.GetLocalCharacter(false)?.role?.powers;
             
             if (_rolePowers == null)
             {

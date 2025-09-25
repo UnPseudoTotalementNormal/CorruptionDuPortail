@@ -28,7 +28,7 @@ namespace Characters.Powers
             
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
 
-            var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
+            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId);
             GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnCardClickedRpc), 
                 new[] { new NetworkSerializableObject(_character.ownerClientId) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             
@@ -39,8 +39,8 @@ namespace Characters.Powers
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId, ownerClientId);
             
-            var _characterTarget = GameManager.instance.GetCharacter(_targetClientId);
-            var _characterOwner = GameManager.instance.GetCharacter(ownerClientId);
+            var _characterTarget = GameManager.instance.characterManager.GetCharacter(_targetClientId);
+            var _characterOwner = GameManager.instance.characterManager.GetCharacter(ownerClientId);
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
                 _characterTarget.isEliminated = true;
@@ -61,7 +61,7 @@ namespace Characters.Powers
                         (int)ChatWindowIDs.Server));
             }
             
-            GameManager.instance.AskForUpdateAllCharactersRpc();
+            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

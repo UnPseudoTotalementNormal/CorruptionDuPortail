@@ -44,7 +44,7 @@ namespace GameLogic.GameStates
             {
                 foreach (var _playerId in _winningTeam.Value)
                 {
-                    var _character = GameManager.instance.GetCharacter(_playerId, false);
+                    var _character = GameManager.instance.characterManager.GetCharacter(_playerId, false);
                     
                     var _newCard = BoardManager.instance.AddNewCard();
                     _newCard.SetInfo(_character);

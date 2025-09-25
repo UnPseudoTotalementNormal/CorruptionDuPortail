@@ -14,7 +14,7 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            foreach (var _character in GameManager.instance.GetCharacters())
+            foreach (var _character in GameManager.instance.characterManager.GetCharacters())
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed),
                     RevealLevel.Personal, true, GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));

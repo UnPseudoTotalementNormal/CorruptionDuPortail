@@ -22,7 +22,7 @@ namespace GameLogic
 
         private void TrySelectPower(Power _power)
         {
-            var _playerPower = GameManager.instance.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p.IsTheSamePower(_power));
+            var _playerPower = GameManager.instance.characterManager.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p.IsTheSamePower(_power));
             Assert.IsNotNull(_playerPower, "power was not found in the character's powers");
 
             if (currentPower != null && !currentPower.IsTheSamePower(_power))

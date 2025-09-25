@@ -26,7 +26,7 @@ namespace Board.UI.CharacterBar
 
         private void Start()
         {
-            GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+            GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
         private void OnCharacterListUpdated(List<Character> _characters)

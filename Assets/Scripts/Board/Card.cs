@@ -102,7 +102,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         if (!isSubscribedToUpdate)
         {
             isSubscribedToUpdate = true;
-            GameManager.instance.onCharactersListUpdated += UpdateInfo;
+            GameManager.instance.characterManager.onCharactersListUpdated += UpdateInfo;
         }
     }
 

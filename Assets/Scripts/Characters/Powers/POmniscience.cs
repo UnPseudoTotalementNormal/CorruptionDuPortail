@@ -17,7 +17,7 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
+            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId);
             
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId))
             {
@@ -42,7 +42,7 @@ namespace Characters.Powers
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             
-            GameManager.instance.AskForUpdateAllCharactersRpc();
+            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

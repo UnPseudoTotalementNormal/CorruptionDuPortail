@@ -49,7 +49,7 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            foreach (var _character in GameManager.instance.GetCharacters(false))
+            foreach (var _character in GameManager.instance.characterManager.GetCharacters(false))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _character.ownerClientId,

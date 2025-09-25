@@ -13,7 +13,7 @@ namespace Characters.WinningConditions
 
         public override bool CheckCondition()
         {
-            var _ownerCharacter = GameManager.instance.GetCharacter(ownerClientId);
+            var _ownerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId);
             if (_ownerCharacter == null || _ownerCharacter.isFake)
             {
                 return false;

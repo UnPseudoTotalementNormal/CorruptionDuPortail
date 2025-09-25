@@ -13,12 +13,12 @@ namespace UI
         private void Start()
         {
             
-            GameManager.instance.onCharactersListUpdated += UpdateMessageLeftText;
+            GameManager.instance.characterManager.onCharactersListUpdated += UpdateMessageLeftText;
         }
 
         private void UpdateMessageLeftText(List<Character> _obj)
         {
-            int _messageLeft = GameManager.instance.GetLocalCharacter(false).messageLeft;
+            int _messageLeft = GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft;
             messageLeftText.text = $"restant: {_messageLeft.ToString()}";
         }
     }

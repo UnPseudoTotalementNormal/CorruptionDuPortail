@@ -9,7 +9,7 @@ namespace Characters.Powers.Target
     {
         public static List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.GetCharacters(false).ToList();
+            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Self))
             {
@@ -66,7 +66,7 @@ namespace Characters.Powers.Target
 
         public static List<ulong> GetTargetsForRoles(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.GetCharacters(false).ToList();
+            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Fake))
             {

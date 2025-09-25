@@ -34,7 +34,7 @@ namespace Characters.Powers
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
             
-            GameManager.instance.GetCharacter(ownerClientId).CorruptPlayer();   
+            GameManager.instance.characterManager.GetCharacter(ownerClientId).CorruptPlayer();   
             GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             
             OnUsed();

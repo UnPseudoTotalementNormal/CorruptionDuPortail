@@ -16,7 +16,7 @@ namespace GameLogic
         public void ChainCharacterRpc(ulong _characterId)
         {
             var _gameManager = GameManager.instance;
-            var _character = _gameManager.GetCharacter(_characterId);
+            var _character = _gameManager.characterManager.GetCharacter(_characterId);
             
             _character.isChained = true;
             _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
@@ -31,7 +31,7 @@ namespace GameLogic
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             }
             
-            _gameManager.AskForUpdateAllCharactersRpc();
+            _gameManager.characterManager.AskForUpdateAllCharactersRpc();
         }
     }
 }

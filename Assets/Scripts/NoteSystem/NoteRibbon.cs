@@ -107,7 +107,7 @@ namespace NoteSystem
             for (int _i = 0; _i < _notesToDisplay; _i++)
             {
                 var _noteObject = Instantiate(notePrefab, gridLayoutGroup.transform);
-                _noteObject.SetCharacter(GameManager.instance.GetCharacter(_roles[_i].ownerClientId, false));
+                _noteObject.SetCharacter(GameManager.instance.characterManager.GetCharacter(_roles[_i].ownerClientId, false));
                 var _index = _i;
                 _noteObject.onCharacterBarObjectClicked += (_) =>
                 {

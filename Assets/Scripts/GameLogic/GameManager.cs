@@ -30,8 +30,7 @@ namespace GameLogic
         public CharactersBar charactersBar;
         public PowersBar powersBar;
         public ChainingManager chainingManager;
-    
-        [field: SerializeField] private List<Character> _characters = new();
+        public CharacterManager characterManager;
     
         public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
@@ -44,36 +43,12 @@ namespace GameLogic
 
         public event Action onGameStarted;
         public event Action onNewDayPassed;
-    
-        public Character GetLocalCharacter(bool _triggerUpdate = true)
-        {
-            if (_triggerUpdate)
-            {
-                StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
-            }
-            return _characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
-        }
-
-        public Character GetCharacter(ulong _characterId, bool _triggerUpdate = true)
-        {
-            return GetCharacters(_triggerUpdate).FirstOrDefault(_c => _c.ownerClientId == _characterId);
-        }
-
-        public List<Character> GetCharacters(bool _triggerUpdate = true)
-        {
-            if (_triggerUpdate)
-            {
-                StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
-            }
-            return _characters;
-        }
-
-        public event Action<List<Character>> onCharactersListUpdated;
+        
 
         private void Awake()
         {
             instance = this;
-            onCharactersListUpdated += (_characters) =>
+            characterManager.onCharactersListUpdated += (_characters) =>
                 powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
                     _c.ownerClientId == NetworkManager.LocalClientId));
             onNewDayPassed += () => gameLoopCount++;
@@ -123,44 +98,7 @@ namespace GameLogic
         
         #endregion
 
-        #region Characters Updates
-
-        [Rpc(SendTo.Server)]
-        public void AskForUpdateAllCharactersRpc()
-        {
-            if (!IsServer)
-            {
-                return;
-            }
-     
-            UpdateAllCharactersRpc(GetCharacters().ToArray());
-        }
-    
-        [Rpc(SendTo.NotServer)]
-        private void UpdateAllCharactersRpc(Character[] _characters)
-        {
-            foreach (var _character in _characters)
-            {
-                var _sameCharacter = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _character.ownerClientId);
-                if (_sameCharacter != null)
-                {
-                    _sameCharacter.UpdateCharacter(_character);
-                }
-                else
-                {
-                    this._characters.Add(_character);
-                }
-            }
-            onCharactersListUpdated?.Invoke(this._characters);
-        }
         
-        public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
-        {
-            yield return new WaitForEndOfFrame();
-            onCharactersListUpdated?.Invoke(_characters);
-        }
-
-        #endregion
 
         #region GameState Methods
 
@@ -305,7 +243,7 @@ namespace GameLogic
         private void CallPowerMethodRpc(ulong _powerOwner, ulong _powerId, FixedString64Bytes _methodName, NetworkSerializableObject[] _arguments, RpcParams _rpcParams)
         {
             // Recherche du personnage possédant ce pouvoir
-            var character = GetCharacters().FirstOrDefault(c => c.ownerClientId == _powerOwner);
+            var character = characterManager.GetCharacters().FirstOrDefault(c => c.ownerClientId == _powerOwner);
             if (character == null)
             {
                 Debug.LogError($"Aucun personnage trouvé avec ownerClientId {_powerOwner}");
@@ -388,7 +326,7 @@ namespace GameLogic
         private void CallRoleMethodRpc(ulong characterOwnerClientId, FixedString64Bytes methodName,
             NetworkSerializableObject[] arguments, RpcParams rpcParams)
         {
-            Role _role = GetCharacters().FirstOrDefault(character => character.ownerClientId == characterOwnerClientId)?.role;
+            Role _role = characterManager.GetCharacters().FirstOrDefault(character => character.ownerClientId == characterOwnerClientId)?.role;
             Assert.IsNotNull(_role, $"character from client {characterOwnerClientId} not found");
         
             CallMethodAfterRpc(_role, methodName, arguments);
@@ -498,11 +436,11 @@ namespace GameLogic
                 return;
             }
         
-            var _chainingCharacter = GetCharacters().First(_c => _c.ownerClientId == _chainingClientId);
+            var _chainingCharacter = characterManager.GetCharacters().First(_c => _c.ownerClientId == _chainingClientId);
         
             _chainingCharacter.isChained = true;
         
-            AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
             UpdateChainOverlayRpc(_chainingClientId);
         }
 
@@ -520,10 +458,10 @@ namespace GameLogic
                 return;
             }
         
-            var _character = GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
+            var _character = characterManager.GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
             _character.isCorrupted = true;
         
-            AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
         }
     
         [Rpc(SendTo.Server)]
@@ -534,33 +472,33 @@ namespace GameLogic
                 return;
             }
         
-            var _character = GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
+            var _character = characterManager.GetCharacters().First(_c => _c.ownerClientId == _ownerClientId);
             _character.isCorrupted = false;
         
-            AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
         }
     
         [Rpc(SendTo.Everyone)]
         public void AwakeCharacterRpc(ulong _characterClientId)
         {
-            Character _character = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+            Character _character = characterManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
 
             _character?.AwakenCharacter();
             if (IsServer)
             {
-                AskForUpdateAllCharactersRpc();
+                characterManager.AskForUpdateAllCharactersRpc();
             }
         }
         
         [Rpc(SendTo.Everyone)]
         public void SleepCharacterRpc(ulong _characterClientId)
         {
-            Character _character = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
+            Character _character = characterManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _characterClientId);
 
             _character?.SleepCharacter();
             if (IsServer)
             {
-                AskForUpdateAllCharactersRpc();
+                characterManager.AskForUpdateAllCharactersRpc();
             }
         }
         
@@ -577,20 +515,14 @@ namespace GameLogic
             UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
 
-        public Character CreateNewFakeCharacter()
-        {
-            Character _character = new Character();
-            _character.ownerClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
-            _characters.Add(_character);
-            return _character;
-        }
+        
         
         private void OnPlayerDisconnectedServer(ulong _clientId)
         {
-            if (GetCharacters().Any(_c => _c.ownerClientId == _clientId))
+            if (characterManager.GetCharacters().Any(_c => _c.ownerClientId == _clientId))
             {
-                GetCharacter(_clientId).ownerClientId = GameValues.FAKE_CLIENT_ID;
-                AskForUpdateAllCharactersRpc();
+                characterManager.GetCharacter(_clientId).ownerClientId = GameValues.FAKE_CLIENT_ID;
+                characterManager.AskForUpdateAllCharactersRpc();
             }
 
             OnPlayerDisconnectedRpc();

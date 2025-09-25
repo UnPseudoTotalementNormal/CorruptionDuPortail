@@ -40,7 +40,7 @@ public class BoardManager : NetworkBehaviour
 
     private void Start()
     {
-        GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+        GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     private void OnCharacterListUpdated(List<Character> _characters)
@@ -114,7 +114,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.instance.GetCharacters().Where(_c => !_c.isFake))
+        foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard();
             _card.SetInfo(_character);

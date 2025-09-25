@@ -19,7 +19,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 #endregion
 
 [Serializable]
-public class Role : INetworkSerializable
+public class Role : INetworkSerializable, ICloneable
 {
     [Header("Role Settings")]
     public FixedString64Bytes roleName;
@@ -88,29 +88,6 @@ public class Role : INetworkSerializable
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
         onChainingSound = _newCharacterRole.onChainingSound;
         onGameStartRoleRevealSound = _newCharacterRole.onGameStartRoleRevealSound;
-    }
-    
-    public Role CopyRole()
-    {
-        Role _newRole = (Role)Activator.CreateInstance(GetType());
-        _newRole.roleName = roleName;
-        _newRole.roleType = roleType;
-        _newRole.factionType = factionType;
-        _newRole.roleDifficulty = roleDifficulty;
-        _newRole.powers = new List<Power>();
-        _newRole.winningConditions = winningConditions.ToList();
-        _newRole.rolePortrait = rolePortrait;
-        _newRole.ownerClientId = ownerClientId;
-        _newRole.roleID = roleID;
-        _newRole.onChainingSound = onChainingSound;
-        _newRole.onGameStartRoleRevealSound = onGameStartRoleRevealSound;
-        
-        foreach (Power _power in powers)
-        {
-            _newRole.powers.Add((Power)_power.Clone());
-        }
-
-        return _newRole;
     }
     
     public async UniTask<Sprite> GetRolePortrait()
@@ -188,5 +165,23 @@ public class Role : INetworkSerializable
             _winningCondition.ownerClientId = ownerClientId;
         }
     }
-}
 
+    public object Clone()
+    {
+        Role _newRole = (Role)this.MemberwiseClone();
+        _newRole.powers = new List<Power>();
+        foreach (Power _power in powers)
+        {
+            _newRole.powers.Add((Power)_power.Clone());
+        }
+        _newRole.winningConditions = new List<WinningCondition>();
+        foreach (WinningCondition _condition in winningConditions)
+        {
+            if (_condition is ICloneable _cloneable)
+                _newRole.winningConditions.Add((WinningCondition)_cloneable.Clone());
+            else
+                _newRole.winningConditions.Add(_condition); // fallback: shallow copy
+        }
+        return _newRole;
+    }
+}

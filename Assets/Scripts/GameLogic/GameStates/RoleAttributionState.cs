@@ -79,7 +79,7 @@ namespace GameLogic.GameStates
             
             if (_character != null)
             {
-                Role _newRole = _randomRole.role.CopyRole();
+                Role _newRole = (Role)_randomRole.role.Clone();
                 _character.role = _newRole;
                 _character.role.ownerClientId = _character.ownerClientId;
                 

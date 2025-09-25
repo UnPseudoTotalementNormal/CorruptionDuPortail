@@ -19,8 +19,8 @@ namespace Characters
         public object Clone()
         {
             var _clone = CreateInstance<RoleDataObject>();
-            _clone.role = this.role.CopyRole();
-            _clone.powers = new List<PowerDataObject>(this.powers);
+            _clone.role = (Role)role.Clone();
+            _clone.powers = new List<PowerDataObject>(powers);
             return _clone;
         }
     }

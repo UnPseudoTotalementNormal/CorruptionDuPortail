@@ -137,7 +137,7 @@ namespace GameLogic.GameStates
             
             foreach (Card _card in BoardManager.instance.visibleCards)
             {
-                Debug.Log(_card.characterInfo.ownerClientId);
+                Debug.Log("card visible from: " + _card.characterInfo.ownerClientId);
                 if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId))
                 {
                     continue;
@@ -225,8 +225,8 @@ namespace GameLogic.GameStates
 
         private async UniTaskVoid WaitForCardsToBeVisible()
         {
-            await UniTask.WaitUntil(() => BoardManager.instance.visibleCards.Count > 0);
             await UniTask.WaitForSeconds(3);
+            await UniTask.WaitUntil(() => BoardManager.instance.visibleCards.Count > 0);
             WaitForCharacterClickServer();
         }
 
@@ -241,6 +241,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+            _ = BoardManager.instance.ShowAllPlayerCards();
         }
         
         public override void OnEndStateClient()

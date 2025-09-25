@@ -13,7 +13,7 @@ using UnityEngine;
 namespace Characters
 {
     [Serializable]
-    public class Character : INetworkSerializable
+    public class Character : NetworkBehaviour, INetworkSerializable
     {
         public Role role;
         public ulong ownerClientId;

@@ -22,7 +22,7 @@ public class ChatNotificationComponent : MonoBehaviour
     private int notificationCount = 0;
     
 
-    private void Awake()
+    private void Start()
     {
         chatPanel = GetComponentInParent<ChatPanel>();
         

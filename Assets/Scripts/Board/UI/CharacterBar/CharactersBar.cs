@@ -33,7 +33,7 @@ namespace Board.UI.CharacterBar
         {
             foreach (var _character in _characters)
             {
-                var _characterBarObject = charactersBarObjects.Find(_obj => _obj.playerCharacter.ownerClientId == _character.ownerClientId);
+                var _characterBarObject = charactersBarObjects.Find(_obj => _obj.playerCharacter.ownerClientId.Value == _character.ownerClientId.Value);
                 if (_characterBarObject)
                 {
                     _characterBarObject.SetCharacter(_character);

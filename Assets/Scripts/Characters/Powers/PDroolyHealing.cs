@@ -45,7 +45,7 @@ namespace Characters.Powers
                 return;
             }
             
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
                 return;
             }
@@ -59,7 +59,7 @@ namespace Characters.Powers
         
         private void OnCharacterBarClicked(Character _character)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
@@ -68,7 +68,7 @@ namespace Characters.Powers
             GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(TryHealServerRpc),
                 new[] {  
                     new NetworkSerializableObject(_senderId),
-                    new NetworkSerializableObject(clickedCharacter.ownerClientId),
+                    new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
                     new NetworkSerializableObject(_character.role) }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             OnUsed();
@@ -90,14 +90,14 @@ namespace Characters.Powers
             {
                 _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
 
-                if (_choosedCharacter.isCorrupted)
+                if (_choosedCharacter.isCorrupted.Value)
                 {
                     _healSuccess = true;
                     _choosedCharacter.HealPlayer();
                     GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
                 }
                 GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealSuccessfulRpc),
-                    new[] { new NetworkSerializableObject(_choosedCharacter.ownerClientId) }, 
+                    new[] { new NetworkSerializableObject(_choosedCharacter.ownerClientId.Value) }, 
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
             }
             
@@ -115,7 +115,7 @@ namespace Characters.Powers
         public List<Character> GetIgnoreCharacters()
         {
             return GameManager.instance.characterManager.GetCharacters(false)
-                .Where(_c => healedCharacters.Contains(_c.ownerClientId))
+                .Where(_c => healedCharacters.Contains(_c.ownerClientId.Value))
                 .ToList();
         }
         
@@ -143,13 +143,13 @@ namespace Characters.Powers
             FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
 
             alreadyHealedCharacters = GameManager.instance.characterManager.GetCharacters(false)
-                .Where(_c => healedCharacters.Contains(_c.ownerClientId)).ToList();
+                .Where(_c => healedCharacters.Contains(_c.ownerClientId.Value)).ToList();
             
             Debug.Log(alreadyHealedCharacters.Count);
 
             foreach (var _alreadyHealedCharacter in alreadyHealedCharacters)
             {
-                Card _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId == _alreadyHealedCharacter.ownerClientId);
+                Card _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _alreadyHealedCharacter.ownerClientId.Value);
                 if (_card == null)
                 {
                     continue;

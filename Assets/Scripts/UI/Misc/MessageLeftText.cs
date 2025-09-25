@@ -18,7 +18,7 @@ namespace UI
 
         private void UpdateMessageLeftText(List<Character> _obj)
         {
-            int _messageLeft = GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft;
+            int _messageLeft = GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft.Value;
             messageLeftText.text = $"restant: {_messageLeft.ToString()}";
         }
     }

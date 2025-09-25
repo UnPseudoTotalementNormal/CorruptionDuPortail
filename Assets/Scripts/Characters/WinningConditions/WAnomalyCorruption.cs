@@ -20,7 +20,7 @@ namespace Characters.WinningConditions
         {
             foreach (var _character in GameManager.instance.characterManager.GetCharacters(false).Where(_c => !_c.isFake))
             {
-                if (!_character.isCorrupted)
+                if (!_character.isCorrupted.Value)
                 {
                     return false;
                 }

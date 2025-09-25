@@ -31,7 +31,7 @@ namespace Characters.Powers
         {
             var _clickedCharacter = _cardClicked.characterInfo;
             
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
@@ -44,7 +44,7 @@ namespace Characters.Powers
             clickedCharacters.Add(_clickedCharacter);
 
             var _clickedCard = BoardManager.instance.visibleCards.First(_card =>
-                _card.characterInfo.ownerClientId == _clickedCharacter.ownerClientId);
+                _card.characterInfo.ownerClientId.Value == _clickedCharacter.ownerClientId.Value);
             FocusManager.instance.UnfocusObject(_clickedCard.gameObject);
 
             if (clickedCharacters.Count >= charactersToSelect)
@@ -57,7 +57,7 @@ namespace Characters.Powers
 
         private void OnCharacterBarClicked(Character _characterClicked)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId.Value))
             {
                 return;
             }
@@ -99,7 +99,7 @@ namespace Characters.Powers
             string _message = string.Empty;
             foreach (var _guessedCharacter in _guessedCharacters)
             {
-                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId);
+                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId.Value);
                 
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {

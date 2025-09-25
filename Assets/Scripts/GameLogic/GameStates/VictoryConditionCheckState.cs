@@ -34,7 +34,7 @@ namespace GameLogic.GameStates
                             _winningTeams[_currentWinningCondition.GetWinningTeam()] = new HashSet<ulong>();
                         }
                         
-                        _winningTeams[_currentWinningCondition.GetWinningTeam()].Add(_currentCharacters.ownerClientId);
+                        _winningTeams[_currentWinningCondition.GetWinningTeam()].Add(_currentCharacters.ownerClientId.Value);
                     }
                 }
             }

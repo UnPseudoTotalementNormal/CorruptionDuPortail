@@ -36,12 +36,12 @@ namespace Characters
             {
                 StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
             }
-            return _characters.FirstOrDefault(_character => _character.ownerClientId == NetworkManager.LocalClientId);
+            return _characters.FirstOrDefault(_character => _character.ownerClientId.Value == NetworkManager.LocalClientId);
         }
 
         public Character GetCharacter(ulong _characterId, bool _triggerUpdate = true)
         {
-            return GetCharacters(_triggerUpdate).FirstOrDefault(_c => _c.ownerClientId == _characterId);
+            return GetCharacters(_triggerUpdate).FirstOrDefault(_c => _c.ownerClientId.Value == _characterId);
         }
 
         public List<Character> GetCharacters(bool _triggerUpdate = true)
@@ -51,6 +51,16 @@ namespace Characters
                 StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
             }
             return _characters;
+        }
+        
+        [Rpc(SendTo.Everyone, RequireOwnership = true)]
+        public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
+        {
+            Character _character = GetCharacter(_characterId, false);
+            if (_character != null)
+            {
+                _character.role = _role;
+            }
         }
         
         #region Characters Updates
@@ -63,15 +73,15 @@ namespace Characters
                 return;
             }
      
-            UpdateAllCharactersRpc(GetCharacters().ToArray());
+            //UpdateAllCharactersRpc(GetCharacters().ToArray());
         }
     
-        [Rpc(SendTo.NotServer)]
+        /*[Rpc(SendTo.NotServer)]
         private void UpdateAllCharactersRpc(Character[] _characters)
         {
             foreach (var _character in _characters)
             {
-                var _sameCharacter = GetCharacters().FirstOrDefault(_c => _c.ownerClientId == _character.ownerClientId);
+                var _sameCharacter = GetCharacters().FirstOrDefault(_c => _c.ownerClientId.Value == _character.ownerClientId.Value);
                 if (_sameCharacter != null)
                 {
                     _sameCharacter.UpdateCharacter(_character);
@@ -82,7 +92,7 @@ namespace Characters
                 }
             }
             onCharactersListUpdated?.Invoke(this._characters);
-        }
+        }*/
         
         public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
         {
@@ -100,14 +110,12 @@ namespace Characters
 
         public Character AddNewCharacter(ulong _clientId)
         {
-            if (_characters.Any(_c => _c.ownerClientId == _clientId))
+            if (_characters.Any(_c => _c.ownerClientId.Value == _clientId))
             {
                 return null;
             }
             
-            NetworkObject _newCharacterObject = NetworkManager.SpawnManager.InstantiateAndSpawn(_characterPrefab, destroyWithScene: false);
-            
-            Debug.Log($"is spawned {_newCharacterObject.IsSpawned}");
+            NetworkObject _newCharacterObject = NetworkManager.SpawnManager.InstantiateAndSpawn(_characterPrefab, destroyWithScene: true);
             
             if (!_charactersParent.GetComponent<NetworkObject>().IsSpawned)
             {
@@ -119,7 +127,7 @@ namespace Characters
             }
             
             Character _newCharacter = _newCharacterObject.GetComponent<Character>();
-            _newCharacter.ownerClientId = _clientId;
+            _newCharacter.ownerClientId.Value = _clientId;
             _characters.Add(_newCharacter);
             onCharactersListUpdated?.Invoke(_characters);
             return _newCharacter;
@@ -127,7 +135,7 @@ namespace Characters
 
         public void RemoveCharacter(ulong _clientId)
         {
-            Character _characterToRemove = GetCharacters(false).FirstOrDefault(_c => _c.ownerClientId == _clientId);
+            Character _characterToRemove = GetCharacters(false).FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
             if (_characterToRemove != null)
             {
                 var _networkObject = _characterToRemove.GetComponent<NetworkObject>();

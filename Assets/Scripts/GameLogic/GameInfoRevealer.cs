@@ -27,11 +27,11 @@ namespace GameLogic
             foreach (var _character in GameManager.instance.characterManager.GetCharacters())
             {
                 var _characterInfoReveal = new CharacterInfoReveal();
-                if (_character.ownerClientId == NetworkManager.LocalClientId)
+                if (_character.ownerClientId.Value == NetworkManager.LocalClientId)
                 {
                     _characterInfoReveal.isRoleRevealed = RevealLevel.Personal;
                 }
-                charactersInfoRevealed.Add(_character.ownerClientId, _characterInfoReveal);
+                charactersInfoRevealed.Add(_character.ownerClientId.Value, _characterInfoReveal);
             }
         }
 
@@ -59,7 +59,7 @@ namespace GameLogic
                     {
                         return;
                     }
-                    _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId == _clientId)
+                    _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId.Value == _clientId)
                         .ShowPseudoWithRevealedInfo(true);
                     break;
             }

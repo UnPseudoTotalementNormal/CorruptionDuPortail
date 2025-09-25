@@ -21,16 +21,16 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
                 return;
             }
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
 
-            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId);
+            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
             GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnCardClickedRpc), 
-                new[] { new NetworkSerializableObject(_character.ownerClientId) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                new[] { new NetworkSerializableObject(_character.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             
             OnUsed();
         }
@@ -43,7 +43,7 @@ namespace Characters.Powers
             var _characterOwner = GameManager.instance.characterManager.GetCharacter(ownerClientId);
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
-                _characterTarget.isEliminated = true;
+                _characterTarget.isEliminated.Value = true;
                 string _characterPseudo = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName.ToString();
                 ChatManager.instance.SendChatMessageServerRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
@@ -54,7 +54,7 @@ namespace Characters.Powers
             }
             else
             {
-                GameManager.instance.chainingManager.chainingPlayers.Add(_characterOwner.ownerClientId);
+                GameManager.instance.chainingManager.chainingPlayers.Add(_characterOwner.ownerClientId.Value);
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",

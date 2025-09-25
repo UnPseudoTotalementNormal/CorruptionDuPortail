@@ -30,7 +30,7 @@ namespace Characters.Powers
         {
             clickedCharacter = _clickedCard.characterInfo;
 
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(clickedCharacter.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
@@ -43,7 +43,7 @@ namespace Characters.Powers
         
         private void OnCharacterBarClicked(Character _character)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace Characters.Powers
             GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryBlessCharacterServerRpc),
                 new[] {  
                     new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                    new NetworkSerializableObject(clickedCharacter.ownerClientId),
+                    new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
                     new NetworkSerializableObject(_character.role)
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
@@ -66,7 +66,7 @@ namespace Characters.Powers
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _blessingCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
                 blessingCharacterIdOnMorning.Add(_blessingCharacterId);
             }
@@ -77,7 +77,7 @@ namespace Characters.Powers
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnMorningBlessingServer should only be called on server");
             foreach (var _characterId in blessingCharacterIdOnMorning)
             {
-                GameManager.instance.characterManager.GetCharacter(_characterId).isBlessed = true;
+                GameManager.instance.characterManager.GetCharacter(_characterId).isBlessed.Value = true;
                 var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
                 ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
                     $"{_playerName} a été béni.",

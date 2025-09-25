@@ -77,23 +77,25 @@ namespace GameLogic.GameStates
             RoleAttributionSetting _randomRoleSettings = _rolesToAttribute[_randomRole];
 
             
-            if (_character != null)
+            if (_character)
             {
                 Role _newRole = (Role)_randomRole.role.Clone();
                 _character.role = _newRole;
-                _character.role.ownerClientId = _character.ownerClientId;
+                _character.role.ownerClientId = _character.ownerClientId.Value;
                 
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
                     Power _newPower = (Power)_powerDataObject.power.Clone();
-                    _newPower.ownerClientId = _character.ownerClientId;
+                    _newPower.ownerClientId = _character.ownerClientId.Value;
                     _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
                     _character.role.powers.Add(_newPower);
                 }
                 
-                gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc),
+                gameManager.characterManager.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
+                
+                /*gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc), //TODO: pourquoi c'était là ??????
                     new NetworkSerializableObject[] { new(_character) },
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));*/
             }
             _randomRoleSettings.roleToAttribute -= 1;
             if (_randomRoleSettings.roleToAttribute <= 0)

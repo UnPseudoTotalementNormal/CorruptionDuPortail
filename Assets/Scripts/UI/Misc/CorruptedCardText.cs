@@ -33,8 +33,8 @@ public class CardCorruptedText : MonoBehaviour
     private void OnCharacterListUpdated(List<Character> _characters)
     {
         var _character = card.characterInfo;
-        if (_character.isCorrupted && 
-            GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isCorruptRevealed > RevealLevel.False)
+        if (_character.isCorrupted.Value && 
+            GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isCorruptRevealed > RevealLevel.False)
         {
             tmpText.color = corruptedColor;
         }

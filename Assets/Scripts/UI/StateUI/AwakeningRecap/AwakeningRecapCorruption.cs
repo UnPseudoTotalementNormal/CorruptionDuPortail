@@ -22,7 +22,7 @@ namespace UI.Components
             var _characters = GameManager.instance.characterManager.GetCharacters(false)
                 .Where(_c => !_c.isFake && _c.role.factionType != FactionType.anomaly);
 
-            int _corruptedAmount = _characters.Count(_c => _c.isCorrupted);
+            int _corruptedAmount = _characters.Count(_c => _c.isCorrupted.Value);
             int _totalAmount = _characters.Count();
             corruptionText.text = $"<color=red>{_corruptedAmount} sur {_totalAmount}</color> non-anomalies ont été corrompues.";
         }

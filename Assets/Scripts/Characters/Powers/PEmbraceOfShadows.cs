@@ -40,7 +40,7 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
                 return;
             }
@@ -54,21 +54,21 @@ namespace Characters.Powers
         
         private void OnCharacterBarClicked(Character _character)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId.Value);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();
                 GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
                     new NetworkSerializableObject[]{ new(clickedCharacter)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
                 onCorruptionSuccessfulSound.TryPlayOneShot();
             }
             else

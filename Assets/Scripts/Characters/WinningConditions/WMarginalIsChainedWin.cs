@@ -19,7 +19,7 @@ namespace Characters.WinningConditions
                 return false;
             }
 
-            return _ownerCharacter.isChained;
+            return _ownerCharacter.isChained.Value;
         }
     }
 }

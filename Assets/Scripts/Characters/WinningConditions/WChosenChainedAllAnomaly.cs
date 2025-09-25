@@ -27,7 +27,7 @@ namespace Characters.WinningConditions
                     continue;
                 }
                 
-                if (!_character.isChained)
+                if (!_character.isChained.Value)
                 {
                     return false;
                 }

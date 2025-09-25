@@ -40,19 +40,19 @@ namespace Board.UI.VoteCanvas
 
         public void ActivateVoteCanvas()
         {
-            isChainedOnVoteStart = card.characterInfo.isChained;
-            isEliminatedOnVoteStart = card.characterInfo.isEliminated;
+            isChainedOnVoteStart = card.characterInfo.isChained.Value;
+            isEliminatedOnVoteStart = card.characterInfo.isEliminated.Value;
             ShowCanvas();
             card.onCardHovered += OnCardHovered;
             card.onCardUnhovered += OnCardUnhovered;
-            if (card.characterInfo.isEliminated)
+            if (card.characterInfo.isEliminated.Value)
             {
                 votesText.text = "Éliminé";
                 voteButton.GetComponentInChildren<TMP_Text>().text = "Éliminé";
                 return;
             }
 
-            if (card.characterInfo.isChained)
+            if (card.characterInfo.isChained.Value)
             {
                 voteButton.GetComponentInChildren<TMP_Text>().text = "Enchaîné";
             }
@@ -81,7 +81,7 @@ namespace Board.UI.VoteCanvas
 
         public void ResetVoteText()
         {
-            if (card.characterInfo.isEliminated)
+            if (card.characterInfo.isEliminated.Value)
             {
                 return;
             }
@@ -90,11 +90,11 @@ namespace Board.UI.VoteCanvas
         
         public void ShowVoteCount(bool _useVoteStartValue)
         {
-            if ((_useVoteStartValue && isEliminatedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isEliminated))
+            if ((_useVoteStartValue && isEliminatedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isEliminated.Value))
             {
                 votesText.text = "Éliminé";
             }
-            else if ((_useVoteStartValue && isChainedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isChained))
+            else if ((_useVoteStartValue && isChainedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isChained.Value))
             {
                 votesText.text = "Enchaîné";
             }
@@ -106,11 +106,11 @@ namespace Board.UI.VoteCanvas
         
         private void OnVoteRefresh(Dictionary<ulong, List<ulong>> _votes)
         {
-            if (_votes.TryGetValue(card.characterInfo.ownerClientId, out var voters))
+            if (_votes.TryGetValue(card.characterInfo.ownerClientId.Value, out var voters))
             {
                 voteCount = voters.Count;
             }
-            bool _hasVoted = _votes.Any(_vote => _vote.Value.Contains(card.characterInfo.ownerClientId));
+            bool _hasVoted = _votes.Any(_vote => _vote.Value.Contains(card.characterInfo.ownerClientId.Value));
             votesText.text = (_hasVoted) ? "A voté" : "N'a pas voté";
         }
         

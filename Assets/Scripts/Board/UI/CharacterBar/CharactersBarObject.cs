@@ -80,8 +80,8 @@ namespace Board.UI.CharacterBar
 
         private async UniTaskVoid UpdateCharacter()
         {
-            RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId).forceCorruptOnRoleRevealed;
-            bool _isCorrupted = playerCharacter.isCorrupted && _forceCorruptOnRoleRevealed > RevealLevel.False;
+            RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).forceCorruptOnRoleRevealed;
+            bool _isCorrupted = playerCharacter.isCorrupted.Value && _forceCorruptOnRoleRevealed > RevealLevel.False;
             if (corruptedOverlayImage)
             {
                 corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);

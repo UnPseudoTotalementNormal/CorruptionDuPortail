@@ -66,7 +66,7 @@ namespace Characters.Powers
             List<TargetingData> _targetingDataList = new();
             foreach (var _targetedCharacter in _targetedCharacters)
             {
-                _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId));
+                _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId.Value));
             }
             
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,

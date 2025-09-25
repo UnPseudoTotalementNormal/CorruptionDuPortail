@@ -15,16 +15,16 @@ namespace Characters.Powers
         {
             var _character = _clickedCard.characterInfo;
             
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId.Value);
             
             _character.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _character.ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             if (_character.role.factionType == FactionType.chosen)
             {
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} est un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);

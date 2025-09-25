@@ -13,49 +13,30 @@ using UnityEngine;
 namespace Characters
 {
     [Serializable]
-    public class Character : NetworkBehaviour, INetworkSerializable
+    public class Character : NetworkBehaviour
     {
         public Role role;
-        public ulong ownerClientId;
+        public NetworkVariable<ulong> ownerClientId = new(GameValues.FAKE_CLIENT_ID);
         
         [Header("Variables")] //quand de nouvelle variable son ajoutée, il faut mettre à jour le UpdateCharacter
-        public bool isChained;
-        public bool isCorrupted;
-        public bool isEliminated;
-        public bool isBlessed;
-        public int messageLeft = 1;
-        public bool isFake => ownerClientId.IsFakeClientId();
+        public NetworkVariable<bool> isChained = new(false);
+        public NetworkVariable<bool> isCorrupted = new(false);
+        public NetworkVariable<bool> isEliminated = new(false);
+        public NetworkVariable<bool> isBlessed = new(false);
+        public NetworkVariable<int> messageLeft = new(1);
+        public bool isFake => ownerClientId.Value.IsFakeClientId();
         
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
-
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref ownerClientId);
-            serializer.SerializeValue(ref isChained);
-            serializer.SerializeValue(ref isCorrupted);
-            serializer.SerializeValue(ref isBlessed);
-            serializer.SerializeValue(ref messageLeft);
-            serializer.SerializeValue(ref isEliminated);
-            
-            if (role == null)
-            {
-                role = new Role();
-            }
-
-            role.ownerClientId = ownerClientId; //for sender
-            role.NetworkSerialize(serializer);
-            role.ownerClientId = ownerClientId; //for receiver
-        }
         
         public void UpdateCharacter(Character _newCharacter)
         {
-            ownerClientId = _newCharacter.ownerClientId;
-            isChained = _newCharacter.isChained;
-            isCorrupted = _newCharacter.isCorrupted;
-            isBlessed = _newCharacter.isBlessed;
-            messageLeft = _newCharacter.messageLeft;
-            isEliminated = _newCharacter.isEliminated;
+            ownerClientId.Value = _newCharacter.ownerClientId.Value;
+            isChained.Value = _newCharacter.isChained.Value;
+            isCorrupted.Value = _newCharacter.isCorrupted.Value;
+            isBlessed.Value = _newCharacter.isBlessed.Value;
+            messageLeft.Value = _newCharacter.messageLeft.Value;
+            isEliminated.Value = _newCharacter.isEliminated.Value;
             
             if (role == null)
             {
@@ -84,17 +65,17 @@ namespace Characters
 
         public string GetOwnerPseudo()
         {
-            return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId).playerName.ToString();
+            return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
         }
 
         public void CorruptPlayer()
         {
-            GameManager.instance.CorruptPlayerRpc(ownerClientId);
+            GameManager.instance.CorruptPlayerRpc(ownerClientId.Value);
         }
 
         public void HealPlayer()
         {
-            GameManager.instance.HealPlayerRpc(ownerClientId);
+            GameManager.instance.HealPlayerRpc(ownerClientId.Value);
         }
     }
 }

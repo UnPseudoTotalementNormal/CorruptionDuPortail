@@ -39,7 +39,7 @@ namespace GameLogic.GameStates
         
         private void OnCharacterClickClient(Card _card)
         {
-            ulong _characterOwnerId = _card.characterInfo.ownerClientId;
+            ulong _characterOwnerId = _card.characterInfo.ownerClientId.Value;
             if (ignoreCharacters.Contains(_characterOwnerId))
             {
                 return;
@@ -52,7 +52,7 @@ namespace GameLogic.GameStates
         private void OnRoleClickClient(Character _character)
         {
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(OnRoleClickServer), 
-                new NetworkSerializableObject[] { new(_character.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                new NetworkSerializableObject[] { new(_character.ownerClientId.Value)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
         }
         
         private void OnCharacterClickServer(ulong _ownerId)
@@ -83,7 +83,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
+            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
                 gameManager.RpcTarget.Everyone);
             
             WaitForCharacterClickServer();
@@ -115,7 +115,7 @@ namespace GameLogic.GameStates
                 {
                     { WinningTeam.anomaly , new HashSet<ulong>(gameManager.characterManager.GetCharacters(false)
                         .Where(_c => _c.role.factionType == FactionType.anomaly)
-                        .Select(_c => _c.ownerClientId)) },
+                        .Select(_c => _c.ownerClientId.Value)) },
                 };
                 _gameEndingState.SetWinnersServer(_newWinners);
                 
@@ -137,8 +137,8 @@ namespace GameLogic.GameStates
             
             foreach (Card _card in BoardManager.instance.visibleCards)
             {
-                Debug.Log("card visible from: " + _card.characterInfo.ownerClientId);
-                if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId))
+                Debug.Log("card visible from: " + _card.characterInfo.ownerClientId.Value);
+                if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId.Value))
                 {
                     continue;
                 }
@@ -151,7 +151,7 @@ namespace GameLogic.GameStates
             Assert.IsTrue(NetworkManager.Singleton.IsServer);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
-                new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId.Value)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick), new CustomRpcParams(CustomRpcParams.RpcTargetType.single, 
                 new []{mageCharacterOwnerId}));
         }
@@ -161,7 +161,7 @@ namespace GameLogic.GameStates
             FocusManager.instance.SetFocusOnType(FocusType.Roles);
 
             FocusManager.instance.FocusObject(BoardManager.instance.visibleCards
-                .First(_c => _c.characterInfo.ownerClientId == _clickedCharacterOwnerId).gameObject);
+                .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
         }
         
         private void SetIgnoreCharactersRpc(ulong[] _ignoreCharacters)
@@ -181,19 +181,19 @@ namespace GameLogic.GameStates
             {
                 if (_character.isFake)
                 {
-                    _ignoreCharactersList.Add(_character.ownerClientId);
+                    _ignoreCharactersList.Add(_character.ownerClientId.Value);
                     continue;
                 }
                 
-                if (_character.ownerClientId == mageCharacterOwnerId)
+                if (_character.ownerClientId.Value == mageCharacterOwnerId)
                 {
-                    _ignoreCharactersList.Add(_character.ownerClientId);
+                    _ignoreCharactersList.Add(_character.ownerClientId.Value);
                     continue;
                 }
                 
-                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isRoleRevealed >= RevealLevel.Public)
+                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isRoleRevealed >= RevealLevel.Public)
                 {
-                    _ignoreCharactersList.Add(_character.ownerClientId);
+                    _ignoreCharactersList.Add(_character.ownerClientId.Value);
                     continue;
                 }
             }

@@ -48,14 +48,14 @@ namespace GameLogic.GameStates
                         continue;
                     }
                     
-                    if (_currentCharacter.isChained || _currentCharacter.isEliminated)
+                    if (_currentCharacter.isChained.Value || _currentCharacter.isEliminated.Value)
                     {
                         continue;
                     }
                     
                     currentlyAwakenedCharacters.Add(_currentCharacter);
 
-                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId);
+                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId.Value);
                 }
             }
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
@@ -69,7 +69,7 @@ namespace GameLogic.GameStates
         {
             foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
             {
-                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId);
+                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId.Value);
                 
             }
 
@@ -172,13 +172,13 @@ namespace GameLogic.GameStates
             if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f)
             {
                 var _fakeAwakenedCharacters = gameManager.characterManager.GetCharacters(false)
-                    .Where(_c => _c.ownerClientId.IsFakeClientId() && _c.role.isAwakened);
+                    .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.role.isAwakened);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < 0.00045f)
                     {
-                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId);
+                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId.Value);
                     }
                 }
             }

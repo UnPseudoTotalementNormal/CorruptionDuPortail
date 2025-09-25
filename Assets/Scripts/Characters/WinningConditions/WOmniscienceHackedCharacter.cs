@@ -32,7 +32,7 @@ namespace Characters.WinningConditions
                 return false;
             }
 
-            return _hackedCharacter.isChained && _hackedCharacter.role.factionType == FactionType.chosen;
+            return _hackedCharacter.isChained.Value && _hackedCharacter.role.factionType == FactionType.chosen;
         }
     }
 }

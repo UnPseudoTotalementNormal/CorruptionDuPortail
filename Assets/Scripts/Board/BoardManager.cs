@@ -52,7 +52,7 @@ public class BoardManager : NetworkBehaviour
     {
         foreach (var _character in _characters)
         {
-            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId == _character.ownerClientId);
+            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
             if (_card)
             {
                 _card.characterInfo = _character;
@@ -198,7 +198,7 @@ public class BoardManager : NetworkBehaviour
     [Rpc(SendTo.Everyone)]
     public void UpdateCardChainStatusRpc(ulong _clientId, bool _instant = false)
     {
-        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId == _clientId);
+        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _clientId);
         _card?.UpdateChainOverlay(_instant);
     }
 }

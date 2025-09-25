@@ -98,7 +98,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
-        SetChainedOverlay(characterInfo.isChained, true);
+        SetChainedOverlay(characterInfo.isChained.Value, true);
         if (!isSubscribedToUpdate)
         {
             isSubscribedToUpdate = true;
@@ -108,7 +108,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private void UpdateInfo(List<Character> _characters)
     {
-        characterInfo = _characters.Find(_character => _character.ownerClientId == characterInfo.ownerClientId);
+        characterInfo = _characters.Find(_character => _character.ownerClientId.Value == characterInfo.ownerClientId.Value);
     }
 
     #region Info Methods
@@ -134,7 +134,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
                 await ShowBackSide().AttachExternalCancellation(_cancellationToken);
             }
             cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
-            if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
+            if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0)
             {
                 cardRoleText.text = roleInfo.roleName.ToString();
                 UpdateFaction(roleInfo.factionType);
@@ -172,7 +172,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public async UniTask ShowRoleWithRevealedInfo()
     {
         cardPlayerPseudo.text = "";
-        if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId).isRoleRevealed > 0)
+        if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0)
         {
             cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
         }
@@ -215,7 +215,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     public void UpdateChainOverlay(bool _instant = false)
     {
-        SetChainedOverlay(characterInfo.isChained, _instant);
+        SetChainedOverlay(characterInfo.isChained.Value, _instant);
     }
     
     public void SetChainedOverlay(bool _isChained, bool _instant = false)

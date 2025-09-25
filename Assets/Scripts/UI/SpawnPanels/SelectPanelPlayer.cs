@@ -23,7 +23,7 @@ namespace UI.SpawnPanels
         
         private void Start()
         {
-            foreach (ulong _playerId in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake).Select(_character => _character.ownerClientId))
+            foreach (ulong _playerId in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake).Select(_character => _character.ownerClientId.Value))
             {
                 GameObject _playerButton = Instantiate(playerButtonPrefab, layoutTransform);
                 PlayerButtonObject _playerButtonObject = _playerButton.GetComponent<PlayerButtonObject>();

@@ -54,7 +54,7 @@ namespace FocusSystem
                     List<ulong> _targetRoles = TargetUtils.GetTargetsForRoles(_includeFlags);
                     foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
                     {
-                        if (_targetRoles.Contains(_characterBarObject.playerCharacter.ownerClientId))
+                        if (_targetRoles.Contains(_characterBarObject.playerCharacter.ownerClientId.Value))
                         {
                             FocusObject(_characterBarObject.gameObject);
                         }
@@ -64,7 +64,7 @@ namespace FocusSystem
                     List<ulong> _targetChars = TargetUtils.GetTargetsForCharacters(_includeFlags);
                     foreach (var _card in BoardManager.instance.visibleCards)
                     {
-                        if (_targetChars.Contains(_card.characterInfo.ownerClientId))
+                        if (_targetChars.Contains(_card.characterInfo.ownerClientId.Value))
                         {
                             FocusObject(_card.gameObject);
                         }

@@ -10,6 +10,9 @@ namespace Characters
     public class CharacterManager : NetworkBehaviour
     {
         public static CharacterManager instance;
+        
+        [SerializeField] private Transform _charactersParent;
+        [SerializeField] private NetworkObject _characterPrefab;
 
         [field: SerializeField] private List<Character> _characters = new();
         
@@ -91,10 +94,60 @@ namespace Characters
         
         public Character CreateNewFakeCharacter()
         {
-            Character _character = new Character();
-            _character.ownerClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
-            _characters.Add(_character);
-            return _character;
+            ulong _newFakeClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
+            return AddNewCharacter(_newFakeClientId);
+        }
+
+        public Character AddNewCharacter(ulong _clientId)
+        {
+            if (_characters.Any(_c => _c.ownerClientId == _clientId))
+            {
+                return null;
+            }
+            
+            NetworkObject _newCharacterObject = NetworkManager.SpawnManager.InstantiateAndSpawn(_characterPrefab, destroyWithScene: false);
+            
+            Debug.Log($"is spawned {_newCharacterObject.IsSpawned}");
+            
+            if (!_charactersParent.GetComponent<NetworkObject>().IsSpawned)
+            {
+                StartCoroutine(WaitForParentToSpawnAndSet(_newCharacterObject, _charactersParent.GetComponent<NetworkObject>()));
+            }
+            else
+            {
+                _newCharacterObject.TrySetParent(_charactersParent, false);
+            }
+            
+            Character _newCharacter = _newCharacterObject.GetComponent<Character>();
+            _newCharacter.ownerClientId = _clientId;
+            _characters.Add(_newCharacter);
+            onCharactersListUpdated?.Invoke(_characters);
+            return _newCharacter;
+        }
+
+        public void RemoveCharacter(ulong _clientId)
+        {
+            Character _characterToRemove = GetCharacters(false).FirstOrDefault(_c => _c.ownerClientId == _clientId);
+            if (_characterToRemove != null)
+            {
+                var _networkObject = _characterToRemove.GetComponent<NetworkObject>();
+                if (_networkObject != null && _networkObject.IsSpawned)
+                {
+                    _networkObject.Despawn();
+                }
+                _characters.Remove(_characterToRemove);
+            }
+            onCharactersListUpdated?.Invoke(_characters);
+        }
+        
+        private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent)
+        {
+            while (!_parent || !_parent.IsSpawned)
+            {
+                yield return null;
+            }
+            
+            _child.TrySetParent(_parent.transform, false);
         }
     }
 }

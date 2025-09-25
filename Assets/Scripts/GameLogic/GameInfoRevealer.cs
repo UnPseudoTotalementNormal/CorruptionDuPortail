@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using GameLogic.GameStates;
 using Unity.Collections;
 using Unity.Netcode;
@@ -26,17 +27,26 @@ namespace GameLogic
             charactersInfoRevealed = new Dictionary<ulong, CharacterInfoReveal>();
             foreach (var _character in GameManager.instance.characterManager.GetCharacters())
             {
-                var _characterInfoReveal = new CharacterInfoReveal();
-                if (_character.ownerClientId.Value == NetworkManager.LocalClientId)
-                {
-                    _characterInfoReveal.isRoleRevealed = RevealLevel.Personal;
-                }
-                charactersInfoRevealed.Add(_character.ownerClientId.Value, _characterInfoReveal);
+                AddCharacterToInfoList(_character);
             }
+        }
+
+        private void AddCharacterToInfoList(Character _character)
+        {
+            var _characterInfoReveal = new CharacterInfoReveal();
+            if (_character.ownerClientId.Value == NetworkManager.LocalClientId)
+            {
+                _characterInfoReveal.isRoleRevealed = RevealLevel.Personal;
+            }
+            charactersInfoRevealed.TryAdd(_character.ownerClientId.Value, _characterInfoReveal);
         }
 
         public CharacterInfoReveal GetCharacterInfo(ulong _clientId)
         {
+            if (!charactersInfoRevealed.ContainsKey(_clientId))
+            {
+                AddCharacterToInfoList(GameManager.instance.characterManager.GetCharacter(_clientId, false));
+            }
             return charactersInfoRevealed[_clientId];
         }
         

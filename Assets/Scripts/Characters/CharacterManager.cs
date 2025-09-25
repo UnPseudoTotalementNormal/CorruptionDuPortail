@@ -14,7 +14,7 @@ namespace Characters
         [SerializeField] private Transform _charactersParent;
         [SerializeField] private NetworkObject _characterPrefab;
 
-        [field: SerializeField] private List<Character> _characters = new();
+        private List<Character> _characters => new List<Character>(FindObjectsOfType<Character>()); //TODO: BIG TEMPORARY
         
         public event Action<List<Character>> onCharactersListUpdated;
         
@@ -57,9 +57,13 @@ namespace Characters
         public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
         {
             Character _character = GetCharacter(_characterId, false);
-            if (_character != null)
+            if (!_character) return;
+            
+            _character.role = _role;
+            _character.role.ownerClientId = _characterId;
+            foreach (var _rolePower in _character.role.powers)
             {
-                _character.role = _role;
+                _rolePower.ownerClientId = _characterId;
             }
         }
         

@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using AYellowpaper.SerializedCollections;
@@ -66,7 +67,13 @@ namespace GameLogic.GameStates
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }
             
-            gameManager.NextGameState();
+            gameManager.StartCoroutine(WaitAndNextState());
+
+            IEnumerator WaitAndNextState()
+            {
+                yield return new WaitForSeconds(3f); //TODO: TEMP FIX MAYBE DIDNT EVEN WORK
+                gameManager.NextGameState();
+            }
         }
 
         private void GiveRandomRole(Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute, Character _character, out RoleDataObject _removedRole)

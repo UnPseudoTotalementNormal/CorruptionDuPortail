@@ -57,7 +57,10 @@ namespace Characters
         public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
         {
             Character _character = GetCharacter(_characterId, false);
-            if (!_character) return;
+            if (!_character)
+            {
+                return;
+            }
             
             _character.role = _role;
             _character.role.ownerClientId = _characterId;
@@ -77,26 +80,18 @@ namespace Characters
                 return;
             }
      
-            //UpdateAllCharactersRpc(GetCharacters().ToArray());
+            UpdateAllCharactersRpc();
         }
     
-        /*[Rpc(SendTo.NotServer)]
-        private void UpdateAllCharactersRpc(Character[] _characters)
+        [Rpc(SendTo.NotServer)]
+        private void UpdateAllCharactersRpc()
         {
             foreach (var _character in _characters)
             {
-                var _sameCharacter = GetCharacters().FirstOrDefault(_c => _c.ownerClientId.Value == _character.ownerClientId.Value);
-                if (_sameCharacter != null)
-                {
-                    _sameCharacter.UpdateCharacter(_character);
-                }
-                else
-                {
-                    this._characters.Add(_character);
-                }
+                _character.AskForRoleUpdateRpc();
             }
             onCharactersListUpdated?.Invoke(this._characters);
-        }*/
+        }
         
         public IEnumerator TriggerOnCharactersListUpdatedAtEndOfFrame()
         {

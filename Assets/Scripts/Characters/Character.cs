@@ -28,22 +28,19 @@ namespace Characters
         
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
-        
-        public void UpdateCharacter(Character _newCharacter)
+        public event Action onRoleUpdated;
+
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        public void AskForRoleUpdateRpc()
         {
-            ownerClientId.Value = _newCharacter.ownerClientId.Value;
-            isChained.Value = _newCharacter.isChained.Value;
-            isCorrupted.Value = _newCharacter.isCorrupted.Value;
-            isBlessed.Value = _newCharacter.isBlessed.Value;
-            messageLeft.Value = _newCharacter.messageLeft.Value;
-            isEliminated.Value = _newCharacter.isEliminated.Value;
-            
-            if (role == null)
-            {
-                role = new Role();
-            }
-            
-            role.UpdateRole(_newCharacter.role);
+            UpdateRoleRpc(role);
+        }
+        
+        [Rpc(SendTo.NotServer)]
+        public void UpdateRoleRpc(Role _role)
+        {
+            role.UpdateRole(_role);
+            onRoleUpdated?.Invoke();
         }
         
         public void AwakenCharacter()

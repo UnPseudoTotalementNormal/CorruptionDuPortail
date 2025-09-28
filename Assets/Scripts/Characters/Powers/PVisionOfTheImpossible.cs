@@ -85,20 +85,21 @@ namespace Characters.Powers
                 GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(OnVisionGuessServerRpc),
                     new[] {  
                         new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                        new NetworkSerializableObject(clickedCharacters.ToArray()),
+                        new NetworkSerializableObject(clickedCharacters.Select(c => c.ownerClientId.Value).ToArray()),
                         new NetworkSerializableObject(clickedRoles.ToArray())
                     }, 
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             }
         }
         
-        private static void OnVisionGuessServerRpc(ulong _sender, Character[] _guessedCharacters, Role[] _guessedRoles)
+        private static void OnVisionGuessServerRpc(ulong _sender, ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
             
             string _message = string.Empty;
-            foreach (var _guessedCharacter in _guessedCharacters)
+            foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
+                var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
                 RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId.Value);
                 
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))

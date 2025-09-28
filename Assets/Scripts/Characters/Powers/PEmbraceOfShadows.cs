@@ -29,12 +29,14 @@ namespace Characters.Powers
         [field:SerializeField] public int maxCorruptionChain { get; set; } = 2;
         public int currentCorruptionChain { get; set; }
 
-        public void InvokeOnCharacterCorrupted(Character _character)
+        public void InvokeOnCharacterCorrupted(ulong characterId)
         {
+            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
             onCharacterCorruptionSuccessful?.Invoke(_character);
         }
-        public void InvokeOnCharacterCorruptionFailed(Character _character)
+        public void InvokeOnCharacterCorruptionFailed(ulong characterId)
         {
+            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
             onCharacterCorruptionFailed?.Invoke(_character);
         }
         
@@ -64,7 +66,7 @@ namespace Characters.Powers
             {
                 clickedCharacter.CorruptPlayer();
                 GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
-                    new NetworkSerializableObject[]{ new(clickedCharacter)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                    new NetworkSerializableObject[]{ new(clickedCharacter.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
@@ -74,7 +76,7 @@ namespace Characters.Powers
             else
             {
                 GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionFailed),
-                    new NetworkSerializableObject[]{ new(clickedCharacter)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                    new NetworkSerializableObject[]{ new(clickedCharacter.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();

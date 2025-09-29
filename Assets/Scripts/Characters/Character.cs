@@ -7,6 +7,7 @@ using GameLogic;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #endregion
 
@@ -33,6 +34,7 @@ namespace Characters
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void AskForRoleUpdateRpc()
         {
+            Assert.IsTrue(IsServer, "AskForRoleUpdateRpc can only be called on server");
             UpdateRoleRpc(role);
         }
         

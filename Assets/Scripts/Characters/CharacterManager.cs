@@ -56,12 +56,29 @@ namespace Characters
         [Rpc(SendTo.Everyone, RequireOwnership = true)]
         public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
         {
-            Character _character = GetCharacter(_characterId, false);
+            StartCoroutine(GiveRoleToCharacterCoroutine(_characterId, _role));
+        }
+
+        private IEnumerator GiveRoleToCharacterCoroutine(ulong _characterId, Role _role)
+        {
+            const int _maxTries = 20;
+            int _tries = 0;
+            Character _character = null;
+            while (_tries < _maxTries)
+            {
+                _character = GetCharacter(_characterId, false);
+                if (_character)
+                {
+                    break;
+                }
+                _tries++;
+                yield return null;
+            }
             if (!_character)
             {
-                return;
+                yield break;
             }
-            
+    
             _character.role = _role;
             _character.role.ownerClientId = _characterId;
             foreach (var _rolePower in _character.role.powers)
@@ -80,16 +97,17 @@ namespace Characters
                 return;
             }
      
+            foreach (var _character in _characters)
+            {
+                _character.AskForRoleUpdateRpc();
+            }
+            
             UpdateAllCharactersRpc();
         }
     
         [Rpc(SendTo.NotServer)]
         private void UpdateAllCharactersRpc()
         {
-            foreach (var _character in _characters)
-            {
-                _character.AskForRoleUpdateRpc();
-            }
             onCharactersListUpdated?.Invoke(this._characters);
         }
         

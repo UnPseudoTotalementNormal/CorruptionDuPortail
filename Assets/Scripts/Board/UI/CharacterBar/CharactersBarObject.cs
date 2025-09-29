@@ -73,8 +73,39 @@ namespace Board.UI.CharacterBar
         
         public void SetCharacter(Character _character)
         {
+            UnsubscribeFromCharacterEvents();
             playerCharacter = _character;
+            SubscribeToCharacterEvents();
+            _ = UpdateCharacter();
+        }
 
+        private bool isSubscribedToCharacter = false;
+        private void SubscribeToCharacterEvents()
+        {
+            if (playerCharacter == null || isSubscribedToCharacter) return;
+            playerCharacter.onRoleUpdated += OnCharacterRoleUpdated;
+            playerCharacter.isCorrupted.OnValueChanged += OnCorruptedChanged;
+            
+            isSubscribedToCharacter = true;
+        }
+        private void UnsubscribeFromCharacterEvents()
+        {
+            if (playerCharacter == null || !isSubscribedToCharacter) return;
+            playerCharacter.onRoleUpdated -= OnCharacterRoleUpdated;
+            playerCharacter.isCorrupted.OnValueChanged -= OnCorruptedChanged;
+            
+            isSubscribedToCharacter = false;
+        }
+        private void OnDestroy()
+        {
+            UnsubscribeFromCharacterEvents();
+        }
+        private void OnCharacterRoleUpdated()
+        {
+            _ = UpdateCharacter();
+        }
+        private void OnCorruptedChanged(bool previous, bool current)
+        {
             _ = UpdateCharacter();
         }
 

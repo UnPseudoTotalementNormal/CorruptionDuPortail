@@ -7,7 +7,7 @@ using UnityEngine;
 
 #endregion
 
-public class StateUI : MonoBehaviour
+public class StateUI : NetworkBehaviour
 {
     [HideInInspector] public GameManager gameManager;
     [HideInInspector] public GameState owningGameState;

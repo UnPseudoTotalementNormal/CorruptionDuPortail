@@ -45,6 +45,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     [HideInInspector] public Character characterInfo;
     [HideInInspector] public Role roleInfo;
 
+    private bool isSubscribedToCharacter = false;
+
     [Header("Animation values")]
     public float hoverZoom = 1.15f;
     public float rotateTime = 1;
@@ -96,19 +98,45 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     public void SetInfo(Character _character)
     {
+        UnsubscribeFromCharacterEvents();
         characterInfo = _character;
         roleInfo = characterInfo.GetRole();
         SetChainedOverlay(characterInfo.isChained.Value, true);
-        if (!isSubscribedToUpdate)
-        {
-            isSubscribedToUpdate = true;
-            GameManager.instance.characterManager.onCharactersListUpdated += UpdateInfo;
-        }
+        SubscribeToCharacterEvents();
     }
 
-    private void UpdateInfo(List<Character> _characters)
+    private void SubscribeToCharacterEvents()
     {
-        characterInfo = _characters.Find(_character => _character.ownerClientId.Value == characterInfo.ownerClientId.Value);
+        if (characterInfo == null || isSubscribedToCharacter) return;
+        characterInfo.onRoleUpdated += UpdateInfoFromCharacter;
+        characterInfo.isChained.OnValueChanged += OnChainedChanged;
+        
+        isSubscribedToCharacter = true;
+    }
+
+    private void UnsubscribeFromCharacterEvents()
+    {
+        if (characterInfo == null || !isSubscribedToCharacter) return;
+        characterInfo.onRoleUpdated -= UpdateInfoFromCharacter;
+        characterInfo.isChained.OnValueChanged -= OnChainedChanged;
+        
+        isSubscribedToCharacter = false;
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromCharacterEvents();
+    }
+
+    private void UpdateInfoFromCharacter()
+    {
+        roleInfo = characterInfo.GetRole();
+        ShowPowers();
+    }
+
+    private void OnChainedChanged(bool _previous, bool _current)
+    {
+        SetChainedOverlay(_current, false);
     }
 
     #region Info Methods

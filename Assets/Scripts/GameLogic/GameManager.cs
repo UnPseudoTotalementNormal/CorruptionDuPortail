@@ -48,9 +48,6 @@ namespace GameLogic
         private void Awake()
         {
             instance = this;
-            characterManager.onCharactersListUpdated += (_characters) =>
-                powersBar.RefreshCharacterPowerBar(_characters.FirstOrDefault(_c =>
-                    _c.ownerClientId.Value == NetworkManager.LocalClientId));
             onNewDayPassed += () => gameLoopCount++;
         }
     

@@ -14,7 +14,7 @@ namespace Characters.WinningConditions
 
         public override bool CheckCondition()
         {
-            var _ownerCharacter = GameManager.instance.GetCharacter(ownerClientId);
+            var _ownerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId);
             POmniscience _omniscience = (POmniscience)_ownerCharacter.role.powers.Find(_p => _p.GetType() == typeof(POmniscience));
             if (_omniscience == null)
             {
@@ -26,13 +26,13 @@ namespace Characters.WinningConditions
                 return false;
             }
             
-            var _hackedCharacter = GameManager.instance.GetCharacter(_omniscience.hackedCharacterClientId);
+            var _hackedCharacter = GameManager.instance.characterManager.GetCharacter(_omniscience.hackedCharacterClientId);
             if (_hackedCharacter == null)
             {
                 return false;
             }
 
-            return _hackedCharacter.isChained && _hackedCharacter.role.factionType == FactionType.chosen;
+            return _hackedCharacter.isChained.Value && _hackedCharacter.role.factionType == FactionType.chosen;
         }
     }
 }

@@ -26,14 +26,14 @@ namespace Board.UI.CharacterBar
 
         private void Start()
         {
-            GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+            GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
         private void OnCharacterListUpdated(List<Character> _characters)
         {
             foreach (var _character in _characters)
             {
-                var _characterBarObject = charactersBarObjects.Find(_obj => _obj.playerCharacter.ownerClientId == _character.ownerClientId);
+                var _characterBarObject = charactersBarObjects.Find(_obj => _obj.playerCharacter.ownerClientId.Value == _character.ownerClientId.Value);
                 if (_characterBarObject)
                 {
                     _characterBarObject.SetCharacter(_character);

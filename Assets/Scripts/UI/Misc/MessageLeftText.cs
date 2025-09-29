@@ -9,17 +9,37 @@ namespace UI
     public class MessageLeftText : MonoBehaviour
     {
         public TMP_Text messageLeftText;
-        
+        private Character localCharacter;
+        private bool isSubscribed = false;
+
         private void Start()
         {
-            
-            GameManager.instance.onCharactersListUpdated += UpdateMessageLeftText;
+            localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
+            if (localCharacter != null)
+            {
+                localCharacter.messageLeft.OnValueChanged += OnMessageLeftChanged;
+                isSubscribed = true;
+                UpdateMessageLeftText(localCharacter.messageLeft.Value, localCharacter.messageLeft.Value);
+            }
         }
 
-        private void UpdateMessageLeftText(List<Character> _obj)
+        private void OnDestroy()
         {
-            int _messageLeft = GameManager.instance.GetLocalCharacter(false).messageLeft;
-            messageLeftText.text = $"restant: {_messageLeft.ToString()}";
+            if (localCharacter != null && isSubscribed)
+            {
+                localCharacter.messageLeft.OnValueChanged -= OnMessageLeftChanged;
+                isSubscribed = false;
+            }
+        }
+
+        private void OnMessageLeftChanged(int _previous, int _current)
+        {
+            UpdateMessageLeftText(_current, _current);
+        }
+
+        private void UpdateMessageLeftText(int _previous, int _current)
+        {
+            messageLeftText.text = $"restant: {_current}";
         }
     }
 }

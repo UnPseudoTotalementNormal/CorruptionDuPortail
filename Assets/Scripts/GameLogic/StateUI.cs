@@ -69,9 +69,9 @@ public class StateUI : NetworkBehaviour
         canvasGroup.blocksRaycasts = false;
     }
 
-    public override void OnDestroy()
+    public void OnDestroy()
     {
-        base.OnDestroy();
+        //base.OnDestroy();
         if (owningGameState != null)
         {
             owningGameState.onStateStartClient -= OnStateStart;

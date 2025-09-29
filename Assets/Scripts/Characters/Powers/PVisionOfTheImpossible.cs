@@ -31,7 +31,7 @@ namespace Characters.Powers
         {
             var _clickedCharacter = _cardClicked.characterInfo;
             
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
@@ -44,7 +44,7 @@ namespace Characters.Powers
             clickedCharacters.Add(_clickedCharacter);
 
             var _clickedCard = BoardManager.instance.visibleCards.First(_card =>
-                _card.characterInfo.ownerClientId == _clickedCharacter.ownerClientId);
+                _card.characterInfo.ownerClientId.Value == _clickedCharacter.ownerClientId.Value);
             FocusManager.instance.UnfocusObject(_clickedCard.gameObject);
 
             if (clickedCharacters.Count >= charactersToSelect)
@@ -57,7 +57,7 @@ namespace Characters.Powers
 
         private void OnCharacterBarClicked(Character _characterClicked)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId))
+            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId.Value))
             {
                 return;
             }
@@ -85,21 +85,22 @@ namespace Characters.Powers
                 GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(OnVisionGuessServerRpc),
                     new[] {  
                         new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                        new NetworkSerializableObject(clickedCharacters.ToArray()),
+                        new NetworkSerializableObject(clickedCharacters.Select(c => c.ownerClientId.Value).ToArray()),
                         new NetworkSerializableObject(clickedRoles.ToArray())
                     }, 
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             }
         }
         
-        private static void OnVisionGuessServerRpc(ulong _sender, Character[] _guessedCharacters, Role[] _guessedRoles)
+        private static void OnVisionGuessServerRpc(ulong _sender, ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
             
             string _message = string.Empty;
-            foreach (var _guessedCharacter in _guessedCharacters)
+            foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
-                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId);
+                var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
+                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId.Value);
                 
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {

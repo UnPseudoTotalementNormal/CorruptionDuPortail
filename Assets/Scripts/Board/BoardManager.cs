@@ -40,7 +40,7 @@ public class BoardManager : NetworkBehaviour
 
     private void Start()
     {
-        GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+        GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     private void OnCharacterListUpdated(List<Character> _characters)
@@ -52,7 +52,7 @@ public class BoardManager : NetworkBehaviour
     {
         foreach (var _character in _characters)
         {
-            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId == _character.ownerClientId);
+            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
             if (_card)
             {
                 _card.characterInfo = _character;
@@ -114,7 +114,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.instance.GetCharacters().Where(_c => !_c.isFake))
+        foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard();
             _card.SetInfo(_character);
@@ -198,7 +198,7 @@ public class BoardManager : NetworkBehaviour
     [Rpc(SendTo.Everyone)]
     public void UpdateCardChainStatusRpc(ulong _clientId, bool _instant = false)
     {
-        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId == _clientId);
+        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _clientId);
         _card?.UpdateChainOverlay(_instant);
     }
 }

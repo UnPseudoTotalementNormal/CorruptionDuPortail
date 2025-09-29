@@ -24,9 +24,22 @@ namespace Board.UI.PowerBar
         
         public event Action<Power> onPowerClicked;
 
+        private void Start()
+        {
+            GameManager.instance.onGameStarted += () =>
+            {
+                var _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
+                if (_localCharacter)
+                {
+                    _localCharacter.onRoleUpdated += () => { RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value); };
+                    RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value);
+                }
+            };
+        }
+
         private void Update()
         {
-            var _rolePowers = GameManager.instance.GetLocalCharacter(false)?.role?.powers;
+            var _rolePowers = GameManager.instance.characterManager.GetLocalCharacter(false)?.role?.powers;
             
             if (_rolePowers == null)
             {
@@ -46,8 +59,9 @@ namespace Board.UI.PowerBar
             }
         }
 
-        public void RefreshCharacterPowerBar(Character _character)
+        public void RefreshCharacterPowerBar(ulong _characterID)
         {
+            Character _character = GameManager.instance.characterManager.GetCharacter(_characterID, false);
             if (_character == null || _character.role == null)
             {
                 return;

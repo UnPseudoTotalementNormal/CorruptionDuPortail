@@ -59,7 +59,7 @@ namespace NoteSystem
 
         private void OnNotesModified(ulong _playerNoted, List<Role> _roles)
         {
-            if (_playerNoted != card.characterInfo.ownerClientId)
+            if (_playerNoted != card.characterInfo.ownerClientId.Value)
             {
                 return;
             }
@@ -107,11 +107,11 @@ namespace NoteSystem
             for (int _i = 0; _i < _notesToDisplay; _i++)
             {
                 var _noteObject = Instantiate(notePrefab, gridLayoutGroup.transform);
-                _noteObject.SetCharacter(GameManager.instance.GetCharacter(_roles[_i].ownerClientId, false));
+                _noteObject.SetCharacter(GameManager.instance.characterManager.GetCharacter(_roles[_i].ownerClientId, false));
                 var _index = _i;
                 _noteObject.onCharacterBarObjectClicked += (_) =>
                 {
-                    NoteManager.instance.RemoveNote(card.characterInfo.ownerClientId, _roles[_index], noteType);
+                    NoteManager.instance.RemoveNote(card.characterInfo.ownerClientId.Value, _roles[_index], noteType);
                 };
             }
 
@@ -134,7 +134,7 @@ namespace NoteSystem
             }
             
             currentNoteChoosePanel = Instantiate(noteChoosePanelPrefab, noteChoosePanelCanvas.transform);
-            currentNoteChoosePanel.SetTarget(card.characterInfo.ownerClientId, noteType);
+            currentNoteChoosePanel.SetTarget(card.characterInfo.ownerClientId.Value, noteType);
             currentNoteChoosePanel.onPanelClose += () =>
             {
                 currentNoteChoosePanel = null;

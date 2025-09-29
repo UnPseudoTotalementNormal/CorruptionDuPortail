@@ -9,12 +9,12 @@ namespace Characters.Powers.Target
     {
         public static List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.GetCharacters(false).ToList();
+            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Self))
             {
                 ulong _localClientId = NetworkManager.Singleton.LocalClientId;
-                _targets.RemoveAll(_t => _t.ownerClientId == _localClientId);
+                _targets.RemoveAll(_t => _t.ownerClientId.Value == _localClientId);
             }
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Anomaly) ||
@@ -24,7 +24,7 @@ namespace Characters.Powers.Target
                 for (int _i = _targets.Count - 1; _i >= 0; _i--)
                 {
                     CharacterInfoReveal _info =
-                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId);
+                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
                     if (_info.isRoleRevealed > RevealLevel.False)
                     {
                         FactionType _faction = _targets[_i].role.factionType;
@@ -43,8 +43,8 @@ namespace Characters.Powers.Target
                 for (int _i = _targets.Count - 1; _i >= 0; _i--)
                 {
                     CharacterInfoReveal _info =
-                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId);
-                    if (_info.isCorruptRevealed > RevealLevel.False && _targets[_i].isCorrupted)
+                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
+                    if (_info.isCorruptRevealed > RevealLevel.False && _targets[_i].isCorrupted.Value)
                     {
                         _targets.RemoveAt(_i);
                     }
@@ -53,20 +53,20 @@ namespace Characters.Powers.Target
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Blessed))
             {
-                _targets.RemoveAll(_t => _t.isBlessed);
+                _targets.RemoveAll(_t => _t.isBlessed.Value);
             }
             
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Chained))
             {
-                _targets.RemoveAll(_t => _t.isChained);
+                _targets.RemoveAll(_t => _t.isChained.Value);
             }
 
-            return _targets.Select(_t => _t.ownerClientId).ToList();
+            return _targets.Select(_t => _t.ownerClientId.Value).ToList();
         }
 
         public static List<ulong> GetTargetsForRoles(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.GetCharacters(false).ToList();
+            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Fake))
             {
@@ -93,7 +93,7 @@ namespace Characters.Powers.Target
                 }
             }
             
-            return _targets.Select(_t => _t.ownerClientId).ToList();
+            return _targets.Select(_t => _t.ownerClientId.Value).ToList();
         }
     }
 }

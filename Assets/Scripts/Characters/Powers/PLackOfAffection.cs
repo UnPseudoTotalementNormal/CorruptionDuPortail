@@ -25,7 +25,7 @@ namespace Characters.Powers
         private void OnPlayerContactedRpc(ulong _senderClientId)
         {
             
-            Character _localCharacter = GameManager.instance.GetLocalCharacter(false);
+            Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
             if (_localCharacter.role.factionType == FactionType.chosen)
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
@@ -50,12 +50,12 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
             GameManager.instance.DoPowerMethodRpc(ownerClientId,
                 this, nameof(OnPlayerContactedRpc),
                 new [] { new NetworkSerializableObject(ownerClientId) },
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId }));
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId.Value }));
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using AYellowpaper.SerializedCollections;
@@ -39,7 +40,7 @@ namespace GameLogic.GameStates
                 }
             }
             
-            float _fakeRoleAmountToRemove = Mathf.Abs(gameManager.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
+            float _fakeRoleAmountToRemove = Mathf.Abs(gameManager.characterManager.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
 
             Dictionary<RoleDataObject, RoleAttributionSetting> _fakeRoles = _rolesToAttribute
                 .Where(_roleToAttribute => _roleToAttribute.Value.canBeFake)
@@ -53,7 +54,7 @@ namespace GameLogic.GameStates
                     break;
                 }
     
-                GiveRandomRole(_fakeRoles, gameManager.CreateNewFakeCharacter(), out RoleDataObject _removedRole);
+                GiveRandomRole(_fakeRoles, gameManager.characterManager.CreateNewFakeCharacter(), out RoleDataObject _removedRole);
                 if (_removedRole)
                 {
                     _rolesToAttribute.Remove(_removedRole);
@@ -61,12 +62,18 @@ namespace GameLogic.GameStates
             }
 
             //give random roles to character
-            foreach (Character _character in gameManager.GetCharacters().Where(_c => !_c.isFake).ToList())
+            foreach (Character _character in gameManager.characterManager.GetCharacters().Where(_c => !_c.isFake).ToList())
             {
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }
             
-            gameManager.NextGameState();
+            gameManager.StartCoroutine(WaitAndNextState());
+
+            IEnumerator WaitAndNextState()
+            {
+                yield return new WaitForSeconds(3f); //TODO: TEMP FIX MAYBE DIDNT EVEN WORK
+                gameManager.NextGameState();
+            }
         }
 
         private void GiveRandomRole(Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute, Character _character, out RoleDataObject _removedRole)
@@ -77,23 +84,25 @@ namespace GameLogic.GameStates
             RoleAttributionSetting _randomRoleSettings = _rolesToAttribute[_randomRole];
 
             
-            if (_character != null)
+            if (_character)
             {
                 Role _newRole = (Role)_randomRole.role.Clone();
                 _character.role = _newRole;
-                _character.role.ownerClientId = _character.ownerClientId;
+                _character.role.ownerClientId = _character.ownerClientId.Value;
                 
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
                     Power _newPower = (Power)_powerDataObject.power.Clone();
-                    _newPower.ownerClientId = _character.ownerClientId;
+                    _newPower.ownerClientId = _character.ownerClientId.Value;
                     _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
                     _character.role.powers.Add(_newPower);
                 }
                 
-                gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc),
+                gameManager.characterManager.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
+                
+                /*gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc), //TODO: pourquoi c'était là ??????
                     new NetworkSerializableObject[] { new(_character) },
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));*/
             }
             _randomRoleSettings.roleToAttribute -= 1;
             if (_randomRoleSettings.roleToAttribute <= 0)
@@ -110,7 +119,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            gameManager.GetCharacters().Add(_character);
+            gameManager.characterManager.GetCharacters().Add(_character);
         }
         
         public override void OnEndStateServer()

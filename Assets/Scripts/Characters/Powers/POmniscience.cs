@@ -17,17 +17,17 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            var _character = GameManager.instance.GetCharacter(_clickedCard.characterInfo.ownerClientId);
+            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
             
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId))
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
 
             GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnCardClickedRpc), 
-                new[] { new NetworkSerializableObject(_character.ownerClientId) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                new[] { new NetworkSerializableObject(_character.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
             
             OnUsed();
         }
@@ -42,7 +42,7 @@ namespace Characters.Powers
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             
-            GameManager.instance.AskForUpdateAllCharactersRpc();
+            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

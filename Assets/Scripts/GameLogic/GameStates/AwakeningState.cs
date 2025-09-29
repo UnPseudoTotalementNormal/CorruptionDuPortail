@@ -40,7 +40,7 @@ namespace GameLogic.GameStates
 
             foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
             {
-                List<Character> _charactersInGame = gameManager.GetCharacters().ToList();
+                List<Character> _charactersInGame = gameManager.characterManager.GetCharacters().ToList();
                 foreach (Character _currentCharacter in _charactersInGame)
                 {
                     if (!_currentCharacter.role.IsTheSameRole(_roleToAwake.role))
@@ -48,14 +48,14 @@ namespace GameLogic.GameStates
                         continue;
                     }
                     
-                    if (_currentCharacter.isChained || _currentCharacter.isEliminated)
+                    if (_currentCharacter.isChained.Value || _currentCharacter.isEliminated.Value)
                     {
                         continue;
                     }
                     
                     currentlyAwakenedCharacters.Add(_currentCharacter);
 
-                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId);
+                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId.Value);
                 }
             }
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
@@ -69,7 +69,7 @@ namespace GameLogic.GameStates
         {
             foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
             {
-                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId);
+                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId.Value);
                 
             }
 
@@ -101,7 +101,7 @@ namespace GameLogic.GameStates
             base.OnStateCreated();
             gameManager.onGameStarted += () =>
             {
-                var _localCharacter = gameManager.GetLocalCharacter(false);
+                var _localCharacter = gameManager.characterManager.GetLocalCharacter(false);
                 if (_localCharacter != null)
                 {
                     _localCharacter.onCharacterAwakened += () =>
@@ -126,12 +126,12 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
-            gameManager.onCharactersListUpdated += OnCharactersListUpdatedWhileAwakening;
+            gameManager.characterManager.onCharactersListUpdated += OnCharactersListUpdatedWhileAwakening;
         }
 
         public override void OnEndStateServer()
         {
-            gameManager.onCharactersListUpdated -= OnCharactersListUpdatedWhileAwakening;
+            gameManager.characterManager.onCharactersListUpdated -= OnCharactersListUpdatedWhileAwakening;
             base.OnEndStateServer();
         }
         
@@ -171,14 +171,14 @@ namespace GameLogic.GameStates
             //handle fake skip/used power
             if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f)
             {
-                var _fakeAwakenedCharacters = gameManager.GetCharacters(false)
-                    .Where(_c => _c.ownerClientId.IsFakeClientId() && _c.role.isAwakened);
+                var _fakeAwakenedCharacters = gameManager.characterManager.GetCharacters(false)
+                    .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.role.isAwakened);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < 0.00045f)
                     {
-                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId);
+                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId.Value);
                     }
                 }
             }

@@ -23,6 +23,6 @@ public class TakeDownThePortalTextTitle : MonoBehaviour
         {
             return;
         }
-        textTitle.text = GameManager.instance.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo() + " doit abattre le portail.";
+        textTitle.text = GameManager.instance.characterManager.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo() + " doit abattre le portail.";
     }
 }

@@ -42,9 +42,9 @@ namespace Board.UI.CharacterBar
             
             if (awakeningLayerIndex == awakeningState.currentAwakeningIndex)
             {
-                Character _characterOwner = GameManager.instance.GetCharacters(false)
-                    .First(c => c.ownerClientId == role.ownerClientId);
-                bool _isAnySameRoleAwakened = GameManager.instance.GetCharacters(false)
+                Character _characterOwner = GameManager.instance.characterManager.GetCharacters(false)
+                    .First(c => c.ownerClientId.Value == role.ownerClientId);
+                bool _isAnySameRoleAwakened = GameManager.instance.characterManager.GetCharacters(false)
                     .Any(c => c.role.IsTheSameRole(role) && c.role.isAwakened);
                 if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.role.isAwakened) ||
                     (awakeningTimerType == AwakeningTimerType.AnyRole && _isAnySameRoleAwakened))

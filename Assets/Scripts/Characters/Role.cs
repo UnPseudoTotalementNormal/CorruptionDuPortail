@@ -106,6 +106,7 @@ public class Role : INetworkSerializable, ICloneable
         _serializer.SerializeValue(ref rolePortrait);
         _serializer.SerializeValue(ref isAwakened);
         _serializer.SerializeValue(ref roleID);
+        _serializer.SerializeValue(ref ownerClientId);
         onChainingSound.NetworkSerialize(_serializer);
         onGameStartRoleRevealSound.NetworkSerialize(_serializer);
         

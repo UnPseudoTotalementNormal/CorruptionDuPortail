@@ -16,10 +16,10 @@ namespace GameLogic
         public void ChainCharacterRpc(ulong _characterId)
         {
             var _gameManager = GameManager.instance;
-            var _character = _gameManager.GetCharacter(_characterId);
+            var _character = _gameManager.characterManager.GetCharacter(_characterId);
             
-            _character.isChained = true;
-            _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
+            _character.isChained.Value = true;
+            _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject.power)))
             {
@@ -27,11 +27,11 @@ namespace GameLogic
                 _portalState.shouldActivate = true;
                     
                 _gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
-                    new NetworkSerializableObject[] { new(_character.ownerClientId) },
+                    new NetworkSerializableObject[] { new(_character.ownerClientId.Value) },
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             }
             
-            _gameManager.AskForUpdateAllCharactersRpc();
+            _gameManager.characterManager.AskForUpdateAllCharactersRpc();
         }
     }
 }

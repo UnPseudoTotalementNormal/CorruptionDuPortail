@@ -42,16 +42,16 @@ namespace GameLogic
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnGameStarted should only be called on the server");
             
-            foreach (var _rolePower in GameManager.instance.GetCharacters().SelectMany(_character => _character.role.powers))
+            foreach (var _rolePower in GameManager.instance.characterManager.GetCharacters().SelectMany(_character => _character.role.powers))
             {
-                if (GameManager.instance.GetCharacter(_rolePower.ownerClientId, false).isFake)
+                if (GameManager.instance.characterManager.GetCharacter(_rolePower.ownerClientId, false).isFake)
                 {
                     continue;
                 }
                 _rolePower.OnGameStartedServer();
             }
 
-            foreach (var _character in GameManager.instance.GetCharacters())
+            foreach (var _character in GameManager.instance.characterManager.GetCharacters())
             {
                 _character.onCharacterAwakened += () => OnCharacterAwakenedServer(_character);
                 foreach (Power _characterPower in _character.role.powers)
@@ -83,7 +83,7 @@ namespace GameLogic
                 {
                     _rolePower.powerUseLeft = 0;
                 }
-                GameManager.instance.AskForUpdateAllCharactersRpc();
+                GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
             };
             _corruptionChainPower.onCharacterCorruptionSuccessful += _corruptionChainSuccessHandler;
             _character.onCharacterSleep += () =>

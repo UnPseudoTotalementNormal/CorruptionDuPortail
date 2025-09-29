@@ -13,9 +13,9 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            List<ulong> _anomalyIds = GameManager.instance.GetCharacters(false)
+            List<ulong> _anomalyIds = GameManager.instance.characterManager.GetCharacters(false)
                 .Where(_c => _c.role.factionType == FactionType.anomaly)
-                .Select(_c => _c.ownerClientId)
+                .Select(_c => _c.ownerClientId.Value)
                 .ToList();
             foreach (var _anomalyId in _anomalyIds)
             {

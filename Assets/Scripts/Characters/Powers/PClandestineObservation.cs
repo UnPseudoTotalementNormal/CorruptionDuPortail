@@ -39,7 +39,7 @@ namespace Characters.Powers
         {
             base.OnGameStartedServer();
             
-            GameManager.instance.GetCharacter(ownerClientId, false).onCharacterAwakened += DeclareAllTargetFocusServer;
+            GameManager.instance.characterManager.GetCharacter(ownerClientId, false).onCharacterAwakened += DeclareAllTargetFocusServer;
         }
         
 
@@ -51,7 +51,7 @@ namespace Characters.Powers
                 return;
             }
             
-            List<Character> _targetedCharacters = GameManager.instance.GetCharacters(false)
+            List<Character> _targetedCharacters = GameManager.instance.characterManager.GetCharacters(false)
                 .Where(_c => _c.role.roleID == targetRoleID).ToList();
 
             if (_targetedCharacters.Count == 0)
@@ -66,7 +66,7 @@ namespace Characters.Powers
             List<TargetingData> _targetingDataList = new();
             foreach (var _targetedCharacter in _targetedCharacters)
             {
-                _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId));
+                _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId.Value));
             }
             
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,

@@ -16,7 +16,8 @@ public class CardCorruptedText : MonoBehaviour
 
     private Color originalColor;
     public Color corruptedColor = new Color(0.5f, 0.1f, 0.1f, 1);
-    
+    private bool isSubscribed = false;
+
     private void Awake()
     {
         tmpText = GetComponent<TMP_Text>();
@@ -27,14 +28,33 @@ public class CardCorruptedText : MonoBehaviour
     private void Start()
     {
         originalColor = tmpText.color;
-        GameManager.instance.onCharactersListUpdated += OnCharacterListUpdated;
+        if (card.characterInfo != null)
+        {
+            card.characterInfo.isCorrupted.OnValueChanged += OnCorruptedChanged;
+            isSubscribed = true;
+            UpdateCorruptedText(card.characterInfo.isCorrupted.Value);
+        }
     }
 
-    private void OnCharacterListUpdated(List<Character> _characters)
+    private void OnDestroy()
+    {
+        if (card.characterInfo != null && isSubscribed)
+        {
+            card.characterInfo.isCorrupted.OnValueChanged -= OnCorruptedChanged;
+            isSubscribed = false;
+        }
+    }
+
+    private void OnCorruptedChanged(bool _previous, bool _current)
+    {
+        UpdateCorruptedText(_current);
+    }
+
+    private void UpdateCorruptedText(bool _isCorrupted)
     {
         var _character = card.characterInfo;
-        if (_character.isCorrupted && 
-            GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId).isCorruptRevealed > RevealLevel.False)
+        if (_isCorrupted && 
+            GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isCorruptRevealed > RevealLevel.False)
         {
             tmpText.color = corruptedColor;
         }
@@ -42,10 +62,5 @@ public class CardCorruptedText : MonoBehaviour
         {
             tmpText.color = originalColor;
         }
-    }
-
-    private void OnDestroy()
-    {
-        GameManager.instance.onCharactersListUpdated -= OnCharacterListUpdated;
     }
 }

@@ -79,7 +79,7 @@ namespace NoteSystem
                 Destroy(_child.gameObject);
             }
             
-            var _allCharacters = GameManager.instance.GetCharacters(false);
+            var _allCharacters = GameManager.instance.characterManager.GetCharacters(false);
             
             List<Character> _filteredCharacters = _allCharacters.ToList();
 

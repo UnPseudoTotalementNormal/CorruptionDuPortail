@@ -65,7 +65,7 @@ namespace Characters.Powers
             }
             
             var _senderId = NetworkManager.Singleton.LocalClientId;
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(TryHealServerRpc),
+            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(TryHealServerRpcc),
                 new[] {  
                     new NetworkSerializableObject(_senderId),
                     new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
@@ -74,7 +74,7 @@ namespace Characters.Powers
             OnUsed();
         }
         
-        private void TryHealServerRpc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
+        private void TryHealServerRpcc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
         {
             RoleTargetSystem.instance.NewTargeting(_sender, _healingCharacterId);
             PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(_sender).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));

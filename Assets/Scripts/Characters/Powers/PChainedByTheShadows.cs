@@ -46,7 +46,7 @@ namespace Characters.Powers
                 return;
             }
             
-            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryCorruptCharacterServerRpc),
+            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryCorruptCharacterServerRpcc),
                 new[] {  
                     new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
                     new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
@@ -56,7 +56,7 @@ namespace Characters.Powers
             OnUsed();
         }
 
-        private static void TryCorruptCharacterServerRpc(ulong _sender, ulong _corruptingCharacterId, Role _compareRole)
+        private static void TryCorruptCharacterServerRpcc(ulong _sender, ulong _corruptingCharacterId, Role _compareRole)
         {
             Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
             RoleTargetSystem.instance.NewTargeting(_sender, _corruptingCharacterId);

@@ -82,7 +82,7 @@ namespace Characters.Powers
                 
                 OnUsed();
                 
-                GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(OnVisionGuessServerRpc),
+                GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(OnVisionGuessServerRpcc),
                     new[] {  
                         new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
                         new NetworkSerializableObject(clickedCharacters.Select(c => c.ownerClientId.Value).ToArray()),
@@ -92,7 +92,7 @@ namespace Characters.Powers
             }
         }
         
-        private static void OnVisionGuessServerRpc(ulong _sender, ulong[] _guessedCharacterIds, Role[] _guessedRoles)
+        private static void OnVisionGuessServerRpcc(ulong _sender, ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
             

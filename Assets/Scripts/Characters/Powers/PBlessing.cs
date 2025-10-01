@@ -48,7 +48,7 @@ namespace Characters.Powers
                 return;
             }
             
-            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryBlessCharacterServerRpc),
+            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryBlessCharacterServerRpcc),
                 new[] {  
                     new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
                     new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
@@ -58,7 +58,7 @@ namespace Characters.Powers
             OnUsed();
         }
 
-        private static void TryBlessCharacterServerRpc(ulong _sender, ulong _blessingCharacterId, Role _compareRole)
+        private static void TryBlessCharacterServerRpcc(ulong _sender, ulong _blessingCharacterId, Role _compareRole)
         {
             Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
             RoleTargetSystem.instance.NewTargeting(_sender, _blessingCharacterId);

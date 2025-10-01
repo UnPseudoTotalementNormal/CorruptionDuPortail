@@ -18,7 +18,7 @@ using STOP_MODE = FMOD.Studio.STOP_MODE;
 namespace Characters.Powers
 {
     [Serializable]
-    public class Power : INetworkSerializable, ICloneable
+    public class Power : NetworkBehaviour
     {
         [ReadOnly] public ulong ownerClientId;
         [ReadOnly] public ulong powerGameId;

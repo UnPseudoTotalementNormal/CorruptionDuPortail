@@ -310,28 +310,6 @@ namespace GameLogic
         }
 
         #endregion
-        
-        [Rpc(SendTo.Server)]
-        public void ChainPlayerAndShowRpc(ulong _chainingClientId)
-        {
-            if (!IsServer)
-            {
-                return;
-            }
-        
-            var _chainingCharacter = characterManager.GetCharacters().First(_c => _c.ownerClientId.Value == _chainingClientId);
-        
-            _chainingCharacter.isChained.Value = true;
-        
-            characterManager.AskForUpdateAllCharactersRpc();
-            UpdateChainOverlayRpc(_chainingClientId);
-        }
-
-        [Rpc(SendTo.ClientsAndHost)]
-        public void UpdateChainOverlayRpc(ulong _chainedClientId)
-        {
-            BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _chainedClientId).UpdateChainOverlay();
-        }
 
         [Rpc(SendTo.Server)]
         public void CorruptPlayerRpc(ulong _ownerClientId)
@@ -395,7 +373,7 @@ namespace GameLogic
         {
             await UniTask.WaitForSeconds(1);
             NetworkManager.Singleton.Shutdown();
-            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+            UnityEngine.SceneManagement.SceneManager.LoadScene(1); // Loading menu
         }
 
         

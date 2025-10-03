@@ -46,29 +46,24 @@ namespace Characters.Powers
                 return;
             }
             
-            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryCorruptCharacterServerRpcc),
-                new[] {  
-                    new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                    new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
-                    new NetworkSerializableObject(_character.role)
-                }, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            TryCorruptCharacterServerRpc(NetworkManager.Singleton.LocalClientId, clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
 
-        private static void TryCorruptCharacterServerRpcc(ulong _sender, ulong _corruptingCharacterId, Role _compareRole)
+        [Rpc(SendTo.Server)]
+        private void TryCorruptCharacterServerRpc(ulong senderId, ulong corruptingCharacterId, Role compareRole)
         {
-            Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(_sender, _corruptingCharacterId);
+            Character corruptingCharacter = GameManager.instance.characterManager.GetCharacter(corruptingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(senderId, corruptingCharacterId);
             
-            if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
+            if (corruptingCharacter.role.IsTheSameRole(compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
-                if (_corruptingCharacter.role.factionType == FactionType.chosen)
+                    corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                    GameManager.instance.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
+                if (corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    GameManager.instance.chainingManager.chainingPlayers.Add(_corruptingCharacterId);
+                    GameManager.instance.chainingManager.chainingPlayers.Add(corruptingCharacterId);
                 }
             }
         }

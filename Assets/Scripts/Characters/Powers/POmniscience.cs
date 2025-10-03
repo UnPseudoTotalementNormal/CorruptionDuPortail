@@ -25,11 +25,16 @@ namespace Characters.Powers
             }
             
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
-
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnCardClickedRpc), 
-                new[] { new NetworkSerializableObject(_character.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            // Remplacement par un vrai RPC serveur
+            OnCardClickedServerRpc(_character.ownerClientId.Value);
             
             OnUsed();
+        }
+
+        [Rpc(SendTo.Server)]
+        private void OnCardClickedServerRpc(ulong targetClientId)
+        {
+            OnCardClickedRpc(targetClientId);
         }
         
         private void OnCardClickedRpc(ulong _targetClientId)

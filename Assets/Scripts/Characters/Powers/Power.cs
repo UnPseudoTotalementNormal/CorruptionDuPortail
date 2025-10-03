@@ -101,10 +101,15 @@ namespace Characters.Powers
         {
             StopUse();
             powerUseLeft -= 1;
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(OnUsedServer),
-                new NetworkSerializableObject[] { }, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
-
+            // Remplacement par un vrai RPC serveur
+            OnUsedServerRpc();
             if (!string.IsNullOrEmpty(onUsedSound.GetPath())) RuntimeManager.PlayOneShot(onUsedSound);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void OnUsedServerRpc()
+        {
+            OnUsedServer();
         }
 
         public virtual void OnUsedServer()

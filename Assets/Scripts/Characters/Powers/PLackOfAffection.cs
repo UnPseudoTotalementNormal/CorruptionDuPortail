@@ -22,18 +22,25 @@ namespace Characters.Powers
         public EventReference onContactedAsMarginalSound;
         public EventReference onContactedAsAnomalySound;
         
-        private void OnPlayerContactedRpc(ulong _senderClientId)
+        private void OnCardClicked(Card _clickedCard)
         {
-            
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
+            OnUsed();
+            // Remplacement par un vrai RPC ciblé sur le client de la cible
+            OnPlayerContactedRpc(_clickedCard.characterInfo.ownerClientId.Value, ownerClientId, NetworkManager.RpcTarget.Single(_clickedCard.characterInfo.ownerClientId.Value, RpcTargetUse.Persistent));
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void OnPlayerContactedRpc(ulong targetClientId, ulong senderClientId, RpcParams rpcParams = default)
+        {
+            if (NetworkManager.Singleton.LocalClientId != targetClientId) return;
             Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
             if (_localCharacter.role.factionType == FactionType.chosen)
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    _senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                    senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
-            
             ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
-
             switch (_localCharacter.role.factionType)
             {
                 case FactionType.chosen:
@@ -46,16 +53,6 @@ namespace Characters.Powers
                     onContactedAsAnomalySound.TryPlayOneShot();
                     break;
             }
-        }
-        
-        private void OnCardClicked(Card _clickedCard)
-        {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
-            OnUsed();
-            GameManager.instance.DoPowerMethodRpc(ownerClientId,
-                this, nameof(OnPlayerContactedRpc),
-                new [] { new NetworkSerializableObject(ownerClientId) },
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new [] { _clickedCard.characterInfo.ownerClientId.Value }));
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -60,13 +60,12 @@ namespace Characters.Powers
             {
                 return;
             }
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId.Value);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();
-                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorrupted),
-                    new NetworkSerializableObject[]{ new(clickedCharacter.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                // Remplacement par un vrai RPC all
+                InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
@@ -75,13 +74,25 @@ namespace Characters.Powers
             }
             else
             {
-                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionFailed),
-                    new NetworkSerializableObject[]{ new(clickedCharacter.ownerClientId.Value) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                // Remplacement par un vrai RPC all
+                InvokeOnCharacterCorruptionFailedRpc(clickedCharacter.ownerClientId.Value);
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
         }
 
+        [Rpc(SendTo.Everyone)]
+        private void InvokeOnCharacterCorruptedRpc(ulong characterId)
+        {
+            InvokeOnCharacterCorrupted(characterId);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void InvokeOnCharacterCorruptionFailedRpc(ulong characterId)
+        {
+            InvokeOnCharacterCorruptionFailed(characterId);
+        }
+        
         private void OnCorruptionSuccessful() //TODO : THIS
         {
             

@@ -48,27 +48,22 @@ namespace Characters.Powers
                 return;
             }
             
-            GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(TryBlessCharacterServerRpcc),
-                new[] {  
-                    new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                    new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
-                    new NetworkSerializableObject(_character.role)
-                }, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            TryBlessCharacterServerRpc(NetworkManager.Singleton.LocalClientId, clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
 
-        private static void TryBlessCharacterServerRpcc(ulong _sender, ulong _blessingCharacterId, Role _compareRole)
+        [Rpc(SendTo.Server)]
+        private void TryBlessCharacterServerRpc(ulong senderId, ulong blessingCharacterId, Role compareRole)
         {
-            Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(_sender, _blessingCharacterId);
+            Character blessingCharacter = GameManager.instance.characterManager.GetCharacter(blessingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(senderId, blessingCharacterId);
             
-            if (_blessingCharacter.role.IsTheSameRole(_compareRole))
+            if (blessingCharacter.role.IsTheSameRole(compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
-                blessingCharacterIdOnMorning.Add(_blessingCharacterId);
+                    blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                    NetworkManager.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
+                blessingCharacterIdOnMorning.Add(blessingCharacterId);
             }
         }
 

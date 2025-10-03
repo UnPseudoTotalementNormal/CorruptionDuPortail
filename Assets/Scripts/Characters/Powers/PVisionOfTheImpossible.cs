@@ -82,44 +82,41 @@ namespace Characters.Powers
                 
                 OnUsed();
                 
-                GameManager.instance.DoPowerStaticMethodRpc(GetType().FullName, nameof(OnVisionGuessServerRpcc),
-                    new[] {  
-                        new NetworkSerializableObject(NetworkManager.Singleton.LocalClientId),
-                        new NetworkSerializableObject(clickedCharacters.Select(c => c.ownerClientId.Value).ToArray()),
-                        new NetworkSerializableObject(clickedRoles.ToArray())
-                    }, 
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                // Remplacement par un vrai RPC
+                OnVisionGuessServerRpc(NetworkManager.Singleton.LocalClientId,
+                    clickedCharacters.Select(c => c.ownerClientId.Value).ToArray(),
+                    clickedRoles.ToArray());
             }
         }
-        
-        private static void OnVisionGuessServerRpcc(ulong _sender, ulong[] _guessedCharacterIds, Role[] _guessedRoles)
+
+        [Rpc(SendTo.Server)]
+        private void OnVisionGuessServerRpc(ulong senderId, ulong[] guessedCharacterIds, Role[] guessedRoles)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
-            
-            string _message = string.Empty;
-            foreach (var _guessedCharacterId in _guessedCharacterIds)
+            string message = string.Empty;
+            foreach (var guessedCharacterId in guessedCharacterIds)
             {
-                var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
-                RoleTargetSystem.instance.NewTargeting(_sender, _guessedCharacter.ownerClientId.Value);
+                var guessedCharacter = GameManager.instance.characterManager.GetCharacter(guessedCharacterId, false);
+                RoleTargetSystem.instance.NewTargeting(senderId, guessedCharacter.ownerClientId.Value);
                 
-                if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
+                if (guessedRoles.Any(_r => _r.IsTheSameRole(guessedCharacter.role)))
                 {
-                    if (_message != String.Empty)
+                    if (message != String.Empty)
                     {
-                        _message += "\n";
+                        message += "\n";
                     }
-                    _message += $"{_guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
+                    message += $"{guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
                     break;
                 }
             }
 
-            if (_message == String.Empty)
+            if (message == String.Empty)
             {
-                _message = "Aucun personnage n'a été trouvé.";
+                message = "Aucun personnage n'a été trouvé.";
             }
             
-            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:GameManager.instance.RpcTarget.Single(_sender, RpcTargetUse.Persistent));
+            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, message, (int)ChatWindowIDs.Server),
+                _rpcParams:GameManager.instance.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

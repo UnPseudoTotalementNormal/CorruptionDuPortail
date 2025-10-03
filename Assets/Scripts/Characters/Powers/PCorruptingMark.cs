@@ -35,18 +35,29 @@ namespace Characters.Powers
         {
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
-                GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionFailed),
-                    new NetworkSerializableObject[]{ new(_clickedCard.characterInfo.ownerClientId.Value)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+                // Remplacement par un vrai RPC all
+                InvokeOnCharacterCorruptionFailedRpc(_clickedCard.characterInfo.ownerClientId.Value);
                 return;
             }
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(InvokeOnCharacterCorruptionSuccessful),
-                new NetworkSerializableObject[]{ new(_clickedCard.characterInfo.ownerClientId.Value)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
+            // Remplacement par un vrai RPC all
+            InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void InvokeOnCharacterCorruptionSuccessfulRpc(ulong characterId)
+        {
+            InvokeOnCharacterCorruptionSuccessful(characterId);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void InvokeOnCharacterCorruptionFailedRpc(ulong characterId)
+        {
+            InvokeOnCharacterCorruptionFailed(characterId);
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

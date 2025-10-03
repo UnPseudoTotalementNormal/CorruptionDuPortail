@@ -63,53 +63,45 @@ namespace Characters.Powers
             {
                 return;
             }
-            
             var _senderId = NetworkManager.Singleton.LocalClientId;
-            GameManager.instance.DoPowerMethodRpc(ownerClientId, this, nameof(TryHealServerRpcc),
-                new[] {  
-                    new NetworkSerializableObject(_senderId),
-                    new NetworkSerializableObject(clickedCharacter.ownerClientId.Value),
-                    new NetworkSerializableObject(_character.role) }, 
-                new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            TryHealServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
-        
-        private void TryHealServerRpcc(ulong _sender, ulong _healingCharacterId, Role _compareRole)
+
+        [Rpc(SendTo.Server)]
+        private void TryHealServerRpc(ulong healingCharacterId, Role compareRole)
         {
-            RoleTargetSystem.instance.NewTargeting(_sender, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(_sender).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
-            if (_power.healedCharacters.Contains(_healingCharacterId))
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, healingCharacterId);
+            PDroolyHealing power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            if (power.healedCharacters.Contains(healingCharacterId))
             {
                 Debug.Log("ALREADY HEALED");
                 return;
             }
-            
-            var _choosedCharacter = GameManager.instance.characterManager.GetCharacter(_healingCharacterId, false);
-            bool _healSuccess = false;
-            if (_compareRole.IsTheSameRole(_choosedCharacter.role))
+            var choosedCharacter = GameManager.instance.characterManager.GetCharacter(healingCharacterId, false);
+            bool healSuccess = false;
+            if (compareRole.IsTheSameRole(choosedCharacter.role))
             {
-                _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
-
-                if (_choosedCharacter.isCorrupted.Value)
+                power.healedCharacters[power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = healingCharacterId;
+                if (choosedCharacter.isCorrupted.Value)
                 {
-                    _healSuccess = true;
-                    _choosedCharacter.HealPlayer();
+                    healSuccess = true;
+                    choosedCharacter.HealPlayer();
                     GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
                 }
-                GameManager.instance.DoPowerMethodRpc(_sender, this, nameof(OnHealSuccessfulRpc),
-                    new[] { new NetworkSerializableObject(_choosedCharacter.ownerClientId.Value) }, 
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.single,new[] {_sender} ));
+                // Remplacement par un vrai RPC single
+                OnHealSuccessfulRpc(choosedCharacter.ownerClientId.Value, NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             }
-            
             GameAudioManager.instance.PlayOneShotRpc(
-                _healSuccess? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(), 
+                healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }
 
-        private void OnHealSuccessfulRpc(ulong _healedCharacterId)
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void OnHealSuccessfulRpc(ulong healedCharacterId, RpcParams rpcParams = default)
         {
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _healedCharacterId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                healedCharacterId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
         }
 
         public List<Character> GetIgnoreCharacters()

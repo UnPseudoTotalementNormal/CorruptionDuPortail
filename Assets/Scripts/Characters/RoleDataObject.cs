@@ -14,13 +14,13 @@ namespace Characters
     {
         [SerializeField] public Role role;
         
-        public List<PowerDataObject> powers;
+        public List<Power> powers;
         
         public object Clone()
         {
             var _clone = CreateInstance<RoleDataObject>();
             _clone.role = (Role)role.Clone();
-            _clone.powers = new List<PowerDataObject>(powers);
+            _clone.powers = new List<Power>(powers);
             return _clone;
         }
     }

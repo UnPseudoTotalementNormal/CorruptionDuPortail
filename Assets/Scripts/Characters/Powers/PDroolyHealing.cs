@@ -181,13 +181,5 @@ namespace Characters.Powers
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
             FocusManager.instance.UnfocusAll();
         }
-
-        public override object Clone()
-        {
-            var _clonedPower = (PDroolyHealing)this.MemberwiseClone();
-            _clonedPower.healedCharacters = (ulong[])this.healedCharacters.Clone();
-            _clonedPower.alreadyHealedCharacters = alreadyHealedCharacters.ToList();
-            return _clonedPower;
-        }
     }
 }

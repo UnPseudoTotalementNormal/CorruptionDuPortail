@@ -106,11 +106,11 @@ MonoBehaviour:
     isAwakened: 0
     ownerClientId: 0
   powers:
-  - {fileID: 11400000, guid: 2a2fe78b2d9ea9a46bd8957bf58ed8a9, type: 2}
-  - {fileID: 11400000, guid: 05ad11cbcd8ef56419ec0733b920acfd, type: 2}
-  - {fileID: 11400000, guid: 365f6b78303b727439eb99848f76efae, type: 2}
-  - {fileID: 11400000, guid: a3b4e54569ed66f4a8987e3ff9e20780, type: 2}
-  - {fileID: 11400000, guid: 4dca6b257df02de46a1ab5a0b95f9735, type: 2}
+  - {fileID: 1936720183572497299, guid: bca5e2c58326a8bbe9d0b4149d3625f8, type: 3}
+  - {fileID: 5930367012452364025, guid: 71b0dd9c95ae4fd36b896963be56456a, type: 3}
+  - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
+  - {fileID: 8296718483155507466, guid: 4be4aaf929ad584e6b113b69c1ef5a31, type: 3}
+  - {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}
   references:
     version: 2
     RefIds:

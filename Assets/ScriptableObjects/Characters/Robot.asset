@@ -90,20 +90,32 @@ MonoBehaviour:
     winningConditions:
     - rid: 5230312567992221785
     - rid: 5230312634475610202
+    onChainingSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:
-  - {fileID: 11400000, guid: 3039ed57d4e2a0645a9ac4d445480e41, type: 2}
+  - {fileID: 1535367521610931217, guid: 6faea0e3187452e02b9d90af196b5ff0, type: 3}
   references:
     version: 2
     RefIds:
     - rid: 5230312567992221785
       type: {class: WMarginalIsChainedWin, ns: Characters.WinningConditions, asm: Assembly-CSharp}
       data:
-        winningConditionId: 0
         ownerClientId: 2
     - rid: 5230312634475610202
       type: {class: WOmniscienceHackedCharacter, ns: Characters.WinningConditions, asm: Assembly-CSharp}
       data:
-        winningConditionId: 0
         ownerClientId: 2

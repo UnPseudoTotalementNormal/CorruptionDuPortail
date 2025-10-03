@@ -2,8 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Characters.Powers;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
+using Random = UnityEngine.Random;
 
 namespace Characters
 {
@@ -165,9 +168,30 @@ namespace Characters
             onCharactersListUpdated?.Invoke(_characters);
         }
         
+        public void GivePowerToCharacter(ulong _characterId, Power _power)
+        {
+            Assert.IsTrue(NetworkManager.Singleton.IsServer, "GivePowerToCharacter should only be called on the server");
+            Character _character = GetCharacter(_characterId);
+            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
+            
+            Power _newPower = Instantiate(_power, _character.transform);
+            _newPower.ownerClientId = _characterId;
+            _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
+            NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
+            _powerNetworkObject.Spawn(true);
+            StartCoroutine(WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>()));
+            
+        }
+        
         private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent)
         {
-            while (!_parent || !_parent.IsSpawned)
+            if (!_child || !_parent)
+            {
+                Debug.LogError("Child or parent is null in WaitForParentToSpawnAndSet");
+                yield break;
+            }
+            
+            while (!_parent.IsSpawned || !_child.IsSpawned)
             {
                 yield return null;
             }

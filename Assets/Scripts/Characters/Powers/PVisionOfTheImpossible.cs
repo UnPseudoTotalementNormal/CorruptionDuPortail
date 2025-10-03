@@ -160,13 +160,5 @@ namespace Characters.Powers
         {
             base.StopUse();
         }
-
-        public override object Clone()
-        {
-            var _clonedPower = (PVisionOfTheImpossible)base.Clone();
-            _clonedPower.clickedCharacters = clickedCharacters.ToList();
-            _clonedPower.clickedRoles = clickedRoles.ToList();
-            return _clonedPower;
-        }
     }
 }

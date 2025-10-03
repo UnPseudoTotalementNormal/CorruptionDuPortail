@@ -89,11 +89,25 @@ MonoBehaviour:
     powers: []
     winningConditions:
     - rid: 7121802106355843697
+    onChainingSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
     isAwakened: 0
     ownerClientId: 0
   powers:
-  - {fileID: 11400000, guid: 1f66aecee4f502b47975e6aea7dc0c41, type: 2}
-  - {fileID: 11400000, guid: 58a9d90c637966b40b5aad6a3eeaba43, type: 2}
+  - {fileID: 6512337065599842711, guid: 75e42c6b32d369d87b6732b5ff77aecb, type: 3}
+  - {fileID: 2004636813114998021, guid: a7938e7730a5dca1ab5d4903412b6393, type: 3}
   references:
     version: 2
     RefIds:

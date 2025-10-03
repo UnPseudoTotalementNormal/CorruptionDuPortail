@@ -106,7 +106,7 @@ MonoBehaviour:
     isAwakened: 0
     ownerClientId: 0
   powers:
-  - {fileID: 11400000, guid: 4e5818522b667104ba51fb0e851307b1, type: 2}
+  - {fileID: 5928142297490688375, guid: 96fe74f3610084a9d872a2f255f69132, type: 3}
   references:
     version: 2
     RefIds:

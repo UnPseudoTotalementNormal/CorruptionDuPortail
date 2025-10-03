@@ -45,10 +45,6 @@ namespace Characters.Powers
         
         public event Action onPowerUsedServer;
 
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
 
         public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {

@@ -10,6 +10,7 @@ using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using FMODUnity;
+using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -29,7 +30,7 @@ public class Role : INetworkSerializable, ICloneable
     public CharacterPortraitsValues.CharacterPortraits rolePortrait;
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
     
-    [SerializeField] public List<Power> powers = new();
+    public List<Power> powers => GameManager.instance.characterManager.GetCharacter(ownerClientId, false).GetComponentsInChildren<Power>().ToList(); //todo: BIG TEMPORARY
     [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions = new();
 
     [Header("Sounds")] 
@@ -79,7 +80,6 @@ public class Role : INetworkSerializable, ICloneable
         ownerClientId = _newCharacterRole.ownerClientId;
         roleID = _newCharacterRole.roleID;
 
-        powers = _newCharacterRole.powers;
         foreach (Power _power in powers)
         {
             _power.ownerClientId = _newCharacterRole.ownerClientId;
@@ -112,28 +112,6 @@ public class Role : INetworkSerializable, ICloneable
         
         int _powersCount = powers.Count;
         _serializer.SerializeValue(ref _powersCount);
-        if (_serializer.IsReader)
-        {
-            powers = new List<Power>(_powersCount);
-            for (int i = 0; i < _powersCount; i++)
-            {
-                string _powerTypeName = string.Empty;
-                _serializer.SerializeValue(ref _powerTypeName);
-                Type _powerType = Type.GetType(_powerTypeName);
-                Power _power = (Power)Activator.CreateInstance(_powerType);
-                _power.NetworkSerialize(_serializer);
-                powers.Add(_power);
-            }
-        }
-        else
-        {
-            foreach (var _power in powers)
-            {
-                string _powerTypeName = _power.GetType().AssemblyQualifiedName;
-                _serializer.SerializeValue(ref _powerTypeName);
-                _power.NetworkSerialize(_serializer);
-            }
-        }
 
         int _winningConditionsCount = 0;
         _winningConditionsCount = winningConditions.Count;
@@ -170,11 +148,6 @@ public class Role : INetworkSerializable, ICloneable
     public object Clone()
     {
         Role _newRole = (Role)this.MemberwiseClone();
-        _newRole.powers = new List<Power>();
-        foreach (Power _power in powers)
-        {
-            _newRole.powers.Add((Power)_power.Clone());
-        }
         _newRole.winningConditions = new List<WinningCondition>();
         foreach (WinningCondition _condition in winningConditions)
         {

@@ -92,10 +92,7 @@ namespace GameLogic.GameStates
                 
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
-                    Power _newPower = (Power)_powerDataObject.power.Clone();
-                    _newPower.ownerClientId = _character.ownerClientId.Value;
-                    _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
-                    _character.role.powers.Add(_newPower);
+                    gameManager.characterManager.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
                 }
                 
                 gameManager.characterManager.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);

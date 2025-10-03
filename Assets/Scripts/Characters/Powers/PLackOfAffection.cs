@@ -26,7 +26,6 @@ namespace Characters.Powers
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
-            // Remplacement par un vrai RPC ciblé sur le client de la cible
             OnPlayerContactedRpc(_clickedCard.characterInfo.ownerClientId.Value, ownerClientId, NetworkManager.RpcTarget.Single(_clickedCard.characterInfo.ownerClientId.Value, RpcTargetUse.Persistent));
         }
 

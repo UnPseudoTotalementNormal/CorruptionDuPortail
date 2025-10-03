@@ -1,17 +1,11 @@
 #region
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Board.UI.CharacterBar;
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
-using GameLogic.GameStates;
-using Network;
 using RoleTarget;
 using Unity.Netcode;
-using UnityEngine.Assertions;
 
 #endregion
 
@@ -25,45 +19,37 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             clickedCharacter = _clickedCard.characterInfo;
-
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
-            
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            
             FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
-        
         private void OnCharacterBarClicked(Character _character)
         {
             var _roleClicked = _character.role;
-
             if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
-            
-            TryCorruptCharacterServerRpc(NetworkManager.Singleton.LocalClientId, clickedCharacter.ownerClientId.Value, _character.role);
+            TryCorruptCharacterServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
-
         [Rpc(SendTo.Server)]
-        private void TryCorruptCharacterServerRpc(ulong senderId, ulong corruptingCharacterId, Role compareRole)
+        private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
-            Character corruptingCharacter = GameManager.instance.characterManager.GetCharacter(corruptingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(senderId, corruptingCharacterId);
-            
-            if (corruptingCharacter.role.IsTheSameRole(compareRole))
+            Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _corruptingCharacterId);
+            if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    GameManager.instance.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
-                if (corruptingCharacter.role.factionType == FactionType.chosen)
+                    _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                    GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    GameManager.instance.chainingManager.chainingPlayers.Add(corruptingCharacterId);
+                    GameManager.instance.chainingManager.chainingPlayers.Add(_corruptingCharacterId);
                 }
             }
         }

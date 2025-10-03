@@ -4,14 +4,11 @@ using System;
 using AudioSystem;
 using Characters.Powers.Target;
 using Extensions;
-using FMOD.Studio;
 using FMODUnity;
 using GameLogic;
-using Network;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using STOP_MODE = FMOD.Studio.STOP_MODE;
 
 #endregion
 
@@ -68,24 +65,18 @@ namespace Characters.Powers
         {
             return powerName == _isTheSamePower.powerName && powerDescription == _isTheSamePower.powerDescription;
         }
-
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             var _powerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
-            if (_powerCharacter == null)
+            if (!_powerCharacter)
             {
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
                 return false;
             }
-
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
-
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
-
             if (hasToBeAwakened && !_powerCharacter.role.isAwakened) return false;
-            
             if (needTargetSelection && TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Count <= 0) return false;
-
             if (powerUseLeft <= 0) return false;
 
             return true;

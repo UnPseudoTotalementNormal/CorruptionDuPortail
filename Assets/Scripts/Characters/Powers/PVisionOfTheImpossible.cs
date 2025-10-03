@@ -8,7 +8,6 @@ using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
-using Network;
 using RoleTarget;
 using Unity.Netcode;
 using UnityEngine.Assertions;
@@ -30,23 +29,18 @@ namespace Characters.Powers
         private void OnCardClicked(Card _cardClicked)
         {
             var _clickedCharacter = _cardClicked.characterInfo;
-            
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId.Value))
             {
                 return;
             }
-            
             if (clickedCharacters.Contains(_clickedCharacter))
             {
                 return;
             }
-            
             clickedCharacters.Add(_clickedCharacter);
-
             var _clickedCard = BoardManager.instance.visibleCards.First(_card =>
                 _card.characterInfo.ownerClientId.Value == _clickedCharacter.ownerClientId.Value);
             FocusManager.instance.UnfocusObject(_clickedCard.gameObject);
-
             if (clickedCharacters.Count >= charactersToSelect)
             {
                 BoardManager.instance.onCardClicked -= OnCardClicked;
@@ -61,20 +55,16 @@ namespace Characters.Powers
             {
                 return;
             }
-            
             if (clickedRoles.Any(_r => _r.IsTheSameRole(_characterClicked.role)))
             {
                 return;
             }
-            
             clickedRoles.Add(_characterClicked.role);
-            
             List<CharactersBarObject> _characterBarObjects = GameManager.instance.charactersBar.GetCharacterBarObject(_characterClicked.role);
             foreach (var _characterBarObject in _characterBarObjects)
             {
                 FocusManager.instance.UnfocusObject(_characterBarObject.gameObject);
             }
-            
             if (clickedRoles.Count >= rolesToSelect)
             {
                 GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
@@ -82,41 +72,37 @@ namespace Characters.Powers
                 
                 OnUsed();
                 
-                // Remplacement par un vrai RPC
-                OnVisionGuessServerRpc(NetworkManager.Singleton.LocalClientId,
-                    clickedCharacters.Select(c => c.ownerClientId.Value).ToArray(),
+                OnVisionGuessServerRpc(
+                    clickedCharacters.Select(_c => _c.ownerClientId.Value).ToArray(),
                     clickedRoles.ToArray());
             }
         }
 
         [Rpc(SendTo.Server)]
-        private void OnVisionGuessServerRpc(ulong senderId, ulong[] guessedCharacterIds, Role[] guessedRoles)
+        private void OnVisionGuessServerRpc(ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
-            string message = string.Empty;
-            foreach (var guessedCharacterId in guessedCharacterIds)
+            string _message = string.Empty;
+            foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
-                var guessedCharacter = GameManager.instance.characterManager.GetCharacter(guessedCharacterId, false);
-                RoleTargetSystem.instance.NewTargeting(senderId, guessedCharacter.ownerClientId.Value);
-                
-                if (guessedRoles.Any(_r => _r.IsTheSameRole(guessedCharacter.role)))
+                var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
+                RoleTargetSystem.instance.NewTargeting(ownerClientId, _guessedCharacter.ownerClientId.Value);
+                if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
-                    if (message != String.Empty)
+                    if (_message != String.Empty)
                     {
-                        message += "\n";
+                        _message += "\n";
                     }
-                    message += $"{guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
+                    _message += $"{_guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
                     break;
                 }
             }
-
-            if (message == String.Empty)
+            if (_message == String.Empty)
             {
-                message = "Aucun personnage n'a été trouvé.";
+                _message = "Aucun personnage n'a été trouvé.";
             }
-            
-            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, message, (int)ChatWindowIDs.Server),
-                _rpcParams:GameManager.instance.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
+            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
+                _rpcParams:GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -56,9 +56,7 @@ namespace Characters.Powers
                     nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed), RevealLevel.Personal, true,
                     GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             }
-            
         }
-
         private void OnGameStartedClient()
         {
         }

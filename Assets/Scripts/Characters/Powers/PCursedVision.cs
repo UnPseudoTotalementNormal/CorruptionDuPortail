@@ -14,14 +14,11 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = _clickedCard.characterInfo;
-            
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId.Value);
-            
             _character.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
@@ -33,10 +30,8 @@ namespace Characters.Powers
             {
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
-            
             GameManager.instance.characterManager.GetCharacter(ownerClientId).CorruptPlayer();   
             GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
-            
             OnUsed();
         }
         

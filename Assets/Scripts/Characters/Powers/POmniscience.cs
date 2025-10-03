@@ -2,54 +2,42 @@ using System;
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
-using Network;
 using RoleTarget;
 using Unity.Netcode;
 
 namespace Characters.Powers
 {
     [Serializable]
-    public class POmniscience : Power
+    public class POmniscience : Power //TODO: rework win condition to use power instead of creating a wincondition
     {
         public ulong hackedCharacterClientId = HACKED_CHARACTER_DEFAULT;
-
         public const ulong HACKED_CHARACTER_DEFAULT = 4994996541621;
         
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
-            
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId.Value))
             {
                 return;
             }
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
-            // Remplacement par un vrai RPC serveur
             OnCardClickedServerRpc(_character.ownerClientId.Value);
-            
             OnUsed();
         }
-
         [Rpc(SendTo.Server)]
-        private void OnCardClickedServerRpc(ulong targetClientId)
+        private void OnCardClickedServerRpc(ulong _targetClientId)
         {
-            OnCardClickedRpc(targetClientId);
+            OnCardClickedRpc(_targetClientId);
         }
-        
         private void OnCardClickedRpc(ulong _targetClientId)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId, ownerClientId);
-            
             hackedCharacterClientId = _targetClientId;
-
             GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_targetClientId,
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
-            
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
-        
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);

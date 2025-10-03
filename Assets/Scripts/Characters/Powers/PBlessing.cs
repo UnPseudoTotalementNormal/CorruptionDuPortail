@@ -2,8 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Board.UI.CharacterBar;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
@@ -48,22 +46,22 @@ namespace Characters.Powers
                 return;
             }
             
-            TryBlessCharacterServerRpc(NetworkManager.Singleton.LocalClientId, clickedCharacter.ownerClientId.Value, _character.role);
+            TryBlessCharacterServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
 
         [Rpc(SendTo.Server)]
-        private void TryBlessCharacterServerRpc(ulong senderId, ulong blessingCharacterId, Role compareRole)
+        private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
-            Character blessingCharacter = GameManager.instance.characterManager.GetCharacter(blessingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(senderId, blessingCharacterId);
+            Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId, _blessingCharacterId);
             
-            if (blessingCharacter.role.IsTheSameRole(compareRole))
+            if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    NetworkManager.RpcTarget.Single(senderId, RpcTargetUse.Persistent));
-                blessingCharacterIdOnMorning.Add(blessingCharacterId);
+                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                    NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                blessingCharacterIdOnMorning.Add(_blessingCharacterId);
             }
         }
 
@@ -76,7 +74,7 @@ namespace Characters.Powers
                 var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
                 ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
                     $"{_playerName} a été béni.",
-                    (int)ChatWindowIDs.Server)); //TODO: Jarvis, faudra faire ça (Jarvis, c'est fait normalement)
+                    (int)ChatWindowIDs.Server));
             }
             blessingCharacterIdOnMorning.Clear();
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();

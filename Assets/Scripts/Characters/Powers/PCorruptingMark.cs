@@ -6,7 +6,6 @@ using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
-using Network;
 using RoleTarget;
 using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
@@ -35,7 +34,6 @@ namespace Characters.Powers
         {
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
-                // Remplacement par un vrai RPC all
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCard.characterInfo.ownerClientId.Value);
                 return;
             }
@@ -43,7 +41,6 @@ namespace Characters.Powers
             _clickedCard.characterInfo.CorruptPlayer();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
-            // Remplacement par un vrai RPC all
             InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
         }

@@ -7,7 +7,6 @@ using Extensions;
 using FMODUnity;
 using FocusSystem;
 using GameLogic;
-using Network;
 using RoleTarget;
 using Unity.Netcode;
 using UnityEngine;
@@ -46,14 +45,11 @@ namespace Characters.Powers
             {
                 return;
             }
-            
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            
             FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
-        
         private void OnCharacterBarClicked(Character _character)
         {
             if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId.Value))
@@ -64,7 +60,6 @@ namespace Characters.Powers
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
                 clickedCharacter.CorruptPlayer();
-                // Remplacement par un vrai RPC all
                 InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
@@ -74,7 +69,6 @@ namespace Characters.Powers
             }
             else
             {
-                // Remplacement par un vrai RPC all
                 InvokeOnCharacterCorruptionFailedRpc(clickedCharacter.ownerClientId.Value);
                 onCorruptionFailedSound.TryPlayOneShot();
             }

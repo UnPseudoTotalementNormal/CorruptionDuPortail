@@ -27,15 +27,14 @@ namespace Characters.Powers
             }
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
             var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
-            // Remplacement par un vrai RPC serveur
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCardClickedServerRpc(ulong targetClientId)
+        private void OnCardClickedServerRpc(ulong _targetClientId)
         {
-            OnCardClickedRpc(targetClientId);
+            OnCardClickedRpc(_targetClientId);
         }
         
         private void OnCardClickedRpc(ulong _targetClientId)

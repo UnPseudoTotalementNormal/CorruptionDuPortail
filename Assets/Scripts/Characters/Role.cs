@@ -37,8 +37,6 @@ public class Role : INetworkSerializable, ICloneable
     public EventReference onChainingSound;
     public EventReference onGameStartRoleRevealSound;
     
-    public bool isAwakened = false;
-    
     public ulong ownerClientId;
 
     public Role()
@@ -52,7 +50,6 @@ public class Role : INetworkSerializable, ICloneable
     
     public virtual void AwakenRole()
     {
-        isAwakened = true;
         foreach (var _power in powers) 
         {
             _power.ownerClientId = ownerClientId;
@@ -62,7 +59,6 @@ public class Role : INetworkSerializable, ICloneable
     
     public void SleepRole()
     {
-        isAwakened = false;
         foreach (var _power in powers)
         {
             _power.Cancel();
@@ -76,7 +72,6 @@ public class Role : INetworkSerializable, ICloneable
         factionType = _newCharacterRole.factionType;
         roleDifficulty = _newCharacterRole.roleDifficulty;
         rolePortrait = _newCharacterRole.rolePortrait;
-        isAwakened = _newCharacterRole.isAwakened;
         ownerClientId = _newCharacterRole.ownerClientId;
         roleID = _newCharacterRole.roleID;
 
@@ -104,7 +99,6 @@ public class Role : INetworkSerializable, ICloneable
         _serializer.SerializeValue(ref factionType);
         _serializer.SerializeValue(ref roleDifficulty);
         _serializer.SerializeValue(ref rolePortrait);
-        _serializer.SerializeValue(ref isAwakened);
         _serializer.SerializeValue(ref roleID);
         _serializer.SerializeValue(ref ownerClientId);
         onChainingSound.NetworkSerialize(_serializer);

@@ -75,7 +75,7 @@ namespace Characters.Powers
             }
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
-            if (hasToBeAwakened && !_powerCharacter.role.isAwakened) return false;
+            if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
             if (needTargetSelection && TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Count <= 0) return false;
             if (powerUseLeft <= 0) return false;
 

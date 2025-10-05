@@ -45,8 +45,8 @@ namespace Board.UI.CharacterBar
                 Character _characterOwner = GameManager.instance.characterManager.GetCharacters(false)
                     .First(c => c.ownerClientId.Value == role.ownerClientId);
                 bool _isAnySameRoleAwakened = GameManager.instance.characterManager.GetCharacters(false)
-                    .Any(c => c.role.IsTheSameRole(role) && c.role.isAwakened);
-                if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.role.isAwakened) ||
+                    .Any(c => c.role.IsTheSameRole(role) && c.isAwakened.Value);
+                if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.isAwakened.Value) ||
                     (awakeningTimerType == AwakeningTimerType.AnyRole && _isAnySameRoleAwakened))
                 {
                     UpdateTimer();

@@ -25,6 +25,7 @@ namespace Characters
         public NetworkVariable<bool> isEliminated = new(false);
         public NetworkVariable<bool> isBlessed = new(false);
         public NetworkVariable<int> messageLeft = new(1);
+        public NetworkVariable<bool> isAwakened = new(false);
         public bool isFake => ownerClientId.Value.IsFakeClientId();
         
         public event Action onCharacterAwakened;
@@ -47,12 +48,14 @@ namespace Characters
         
         public void AwakenCharacter()
         {
+            isAwakened.Value = true;
             role.AwakenRole();
             onCharacterAwakened?.Invoke();
         }
         
         public void SleepCharacter()
         {
+            isAwakened.Value = false;
             role.SleepRole();
             onCharacterSleep?.Invoke();
         }

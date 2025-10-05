@@ -137,7 +137,7 @@ namespace GameLogic.GameStates
         
         private void OnCharactersListUpdatedWhileAwakening(List<Character> _characters)
         {
-            var _isAnyCharacterAwakened = _characters.Any(_c => _c.role.isAwakened);
+            var _isAnyCharacterAwakened = _characters.Any(_c => _c.isAwakened.Value);
             if (_isAnyCharacterAwakened)
             {
                 return;
@@ -172,7 +172,7 @@ namespace GameLogic.GameStates
             if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f)
             {
                 var _fakeAwakenedCharacters = gameManager.characterManager.GetCharacters(false)
-                    .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.role.isAwakened);
+                    .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
                     float _r = Random.Range(0.0f, 1.0f);

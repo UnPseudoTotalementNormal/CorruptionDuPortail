@@ -693,36 +693,36 @@ MonoBehaviour:
   maxPowerUse: 1
   canalisationSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 655096577
+      Data2: 1090671139
+      Data3: 989297035
+      Data4: -1172467078
+    Path: event:/Characters/Orpheline/Canalisation
   onUsedSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 616865672
+      Data2: 1223365263
+      Data3: -853449322
+      Data4: 1212795465
+    Path: event:/Characters/Orpheline/SendPower
   onContactedAsChosenSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -175124592
+      Data2: 1264170244
+      Data3: -1595125078
+      Data4: 1533138782
+    Path: event:/Characters/Orpheline/ReceivePower_Chosen
   onContactedAsMarginalSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -94982084
+      Data2: 1184982034
+      Data3: -775239272
+      Data4: 384024150
+    Path: event:/Characters/Orpheline/ReceivePower_Anomaly
   onContactedAsAnomalySound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -94982084
+      Data2: 1184982034
+      Data3: -775239272
+      Data4: 384024150
+    Path: event:/Characters/Orpheline/ReceivePower_Anomaly

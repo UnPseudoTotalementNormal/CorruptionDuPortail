@@ -17,27 +17,13 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PEmbraceOfShadows : Power, ICorruptionChainPower
+    public class PEmbraceOfShadows : Power, IFailablePower
     {
         [NonSerialized] private Character clickedCharacter;
         public EventReference onCorruptionSuccessfulSound;
         public EventReference onCorruptionFailedSound;
-        
-        public event Action<Character> onCharacterCorruptionSuccessful;
-        public event Action<Character> onCharacterCorruptionFailed;
-        [field:SerializeField] public int maxCorruptionChain { get; set; } = 2;
-        public int currentCorruptionChain { get; set; }
-
-        public void InvokeOnCharacterCorrupted(ulong characterId)
-        {
-            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
-            onCharacterCorruptionSuccessful?.Invoke(_character);
-        }
-        public void InvokeOnCharacterCorruptionFailed(ulong characterId)
-        {
-            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
-            onCharacterCorruptionFailed?.Invoke(_character);
-        }
+        public event Action onPowerSuccessful;
+        public event Action onPowerFailed;
         
         private void OnCardClicked(Card _clickedCard)
         {
@@ -78,13 +64,13 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         private void InvokeOnCharacterCorruptedRpc(ulong characterId)
         {
-            InvokeOnCharacterCorrupted(characterId);
+            onPowerSuccessful?.Invoke();
         }
 
         [Rpc(SendTo.Everyone)]
         private void InvokeOnCharacterCorruptionFailedRpc(ulong characterId)
         {
-            InvokeOnCharacterCorruptionFailed(characterId);
+            onPowerFailed?.Invoke();
         }
         
         private void OnCorruptionSuccessful() //TODO : THIS
@@ -137,14 +123,6 @@ namespace Characters.Powers
         public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
         {
             base.NetworkSerialize(_serializer);
-
-            var _tempCorruptionChain = maxCorruptionChain;
-            _serializer.SerializeValue(ref _tempCorruptionChain);
-            maxCorruptionChain = _tempCorruptionChain;
-            
-            var _tempCurrentCorruptionChain = currentCorruptionChain;
-            _serializer.SerializeValue(ref _tempCurrentCorruptionChain);
-            currentCorruptionChain = _tempCurrentCorruptionChain;
             
             onCorruptionFailedSound.NetworkSerialize(_serializer);
             onCorruptionSuccessfulSound.NetworkSerialize(_serializer);

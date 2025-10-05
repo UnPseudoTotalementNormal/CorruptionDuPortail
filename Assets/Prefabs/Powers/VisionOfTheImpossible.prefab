@@ -693,17 +693,17 @@ MonoBehaviour:
   maxPowerUse: 1
   canalisationSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1172022985
+      Data2: 1096180562
+      Data3: -1701195084
+      Data4: 1899403199
+    Path: event:/Characters/Oracle/Canalisation
   onUsedSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1270743407
+      Data2: 1154343017
+      Data3: 1830670214
+      Data4: 1381209960
+    Path: event:/Characters/Oracle/SendPower
   charactersToSelect: 2
   rolesToSelect: 2

@@ -63,33 +63,7 @@ namespace GameLogic
 
         private void OnCharacterAwakenedServer(Character _character)
         {
-            List<Power> _characterPowers = _character.role.powers;
-            foreach (Power _rolePower in _characterPowers)
-            {
-                if (_rolePower is ICorruptionChainPower _corruptionChainPower)
-                {
-                    HandleCorruptionChainPower(_character, _corruptionChainPower, _rolePower);
-                }
-            }
-        }
-
-        private void HandleCorruptionChainPower(Character _character, ICorruptionChainPower _corruptionChainPower, Power _rolePower)
-        {
-            _corruptionChainPower.currentCorruptionChain = 0; ;
-            Action<Character> _corruptionChainSuccessHandler = (_corruptedCharacter) =>
-            {
-                _corruptionChainPower.currentCorruptionChain++;
-                if (_corruptionChainPower.currentCorruptionChain >= _corruptionChainPower.maxCorruptionChain)
-                {
-                    _rolePower.powerUseLeft = 0;
-                }
-                GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
-            };
-            _corruptionChainPower.onCharacterCorruptionSuccessful += _corruptionChainSuccessHandler;
-            _character.onCharacterSleep += () =>
-            {
-                _corruptionChainPower.onCharacterCorruptionSuccessful -= _corruptionChainSuccessHandler;
-            };
+            
         }
     }
 }

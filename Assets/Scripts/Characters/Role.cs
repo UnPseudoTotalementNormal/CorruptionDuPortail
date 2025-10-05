@@ -55,7 +55,7 @@ public class Role : INetworkSerializable, ICloneable
         isAwakened = true;
         foreach (var _power in powers) 
         {
-            _power.ownerClientId = ownerClientId; //just to be sure
+            _power.ownerClientId = ownerClientId;
             _power.powerUseLeft = _power.maxPowerUse;
         }
     }

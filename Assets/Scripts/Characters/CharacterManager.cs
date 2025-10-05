@@ -82,8 +82,10 @@ namespace Characters
             {
                 yield break;
             }
-    
+
             _character.role = _role;
+            _character.UpdateRoleRpc(_role);
+            _character.CheckForPowers();
             _character.role.ownerClientId = _characterId;
         }
         
@@ -172,9 +174,9 @@ namespace Characters
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
             
             Power _newPower = Instantiate(_power);
-            _newPower.ownerClientId.Value = _characterId;
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.Spawn(true);
+            _newPower.ownerClientId.Value = _characterId;
             StartCoroutine(
                 WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), (_result) => { OnPowerReparentComplete(_newPower, _result); })
                 );

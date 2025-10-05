@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Characters.Powers;
 using Extensions;
 using FMODUnity;
 using GameLogic;
@@ -43,7 +44,20 @@ namespace Characters
         public void UpdateRoleRpc(Role _role)
         {
             role.UpdateRole(_role);
+            CheckForPowers();
             onRoleUpdated?.Invoke();
+        }
+
+        public void CheckForPowers()
+        {
+            var _foundPowers = GetComponentsInChildren<Power>();
+            foreach (var _power in _foundPowers)
+            {
+                if (!role.powers.Contains(_power))
+                {
+                    role.powers.Add(_power);
+                }
+            }
         }
         
         [Rpc(SendTo.Server)]

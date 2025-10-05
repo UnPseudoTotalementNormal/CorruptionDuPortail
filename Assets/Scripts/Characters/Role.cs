@@ -52,7 +52,6 @@ public class Role : INetworkSerializable, ICloneable
     {
         foreach (var _power in powers) 
         {
-            _power.ownerClientId.Value = ownerClientId;
             _power.powerUseLeft.Value = _power.maxPowerUse;
         }
     }
@@ -74,11 +73,6 @@ public class Role : INetworkSerializable, ICloneable
         rolePortrait = _newCharacterRole.rolePortrait;
         ownerClientId = _newCharacterRole.ownerClientId;
         roleID = _newCharacterRole.roleID;
-
-        foreach (Power _power in powers)
-        {
-            _power.ownerClientId.Value = _newCharacterRole.ownerClientId;
-        }
         
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
         onChainingSound = _newCharacterRole.onChainingSound;
@@ -103,9 +97,6 @@ public class Role : INetworkSerializable, ICloneable
         _serializer.SerializeValue(ref ownerClientId);
         onChainingSound.NetworkSerialize(_serializer);
         onGameStartRoleRevealSound.NetworkSerialize(_serializer);
-        
-        int _powersCount = powers.Count;
-        _serializer.SerializeValue(ref _powersCount);
 
         int _winningConditionsCount = 0;
         _winningConditionsCount = winningConditions.Count;
@@ -142,6 +133,7 @@ public class Role : INetworkSerializable, ICloneable
     public object Clone()
     {
         Role _newRole = (Role)this.MemberwiseClone();
+        _newRole.powers = powers.ToList();
         _newRole.winningConditions = new List<WinningCondition>();
         foreach (WinningCondition _condition in winningConditions)
         {

@@ -1,7 +1,9 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using AudioSystem;
+using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
@@ -38,9 +40,10 @@ namespace Characters.Powers
         
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
-        
+
         public event Action onPowerUsedServer;
 
+        public List<PowerComponent> powerComponents = new();
 
         public bool IsTheSamePower(Power _isTheSamePower)
         {
@@ -134,7 +137,11 @@ namespace Characters.Powers
             {
                 _oldParentCharacter.role.powers.Remove(this);
             }
-            _newParentCharacter.role.powers.Add(this);
+
+            if (!_newParentCharacter.role.powers.Contains(this))
+            {
+                _newParentCharacter.role.powers.Add(this);
+            }
         }
     }
 }

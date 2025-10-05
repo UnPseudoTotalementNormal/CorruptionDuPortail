@@ -8,9 +8,12 @@ namespace Characters.Powers.PowerComponents
         public NetworkVariable<int> currentChain = new(0);
         public int maxChain = 2;
         
+        
+        
         protected override void Init()
         {
             var _failablePower = power as IFailablePower;
+            power.powerComponents.Add(this);
             
             if (!NetworkManager.IsServer)
             {

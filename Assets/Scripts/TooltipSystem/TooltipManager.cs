@@ -4,6 +4,7 @@ using System.Linq;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace TooltipSystem
@@ -12,7 +13,7 @@ namespace TooltipSystem
     {
         public static TooltipManager instance;
         
-        [field:SerializeField] public TooltipLinkReferenceHolder tooltipLinkReferenceHolder { get; private set; }
+        [field: FormerlySerializedAs("<tooltipLinkReferenceHolder>k__BackingField")] [field:SerializeField] public TooltipLinkParser tooltipLinkParser { get; private set; }
         
         [SerializeField] private TooltipWindow tooltipPrefab;
         
@@ -62,7 +63,7 @@ namespace TooltipSystem
             
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
-            _newTooltip.DescriptionText.text = _tooltipDescription.Replace("<link=", "<u><link=").Replace("</link>", "</link></u>");
+            _newTooltip.DescriptionText.text = _tooltipDescription.Replace("<link=", "<color=#6fb5d1><link=").Replace("</link>", "</link></color>");
             _newTooltip.tooltipOffsetDirection = _tooltipTrigger.tooltipOffsetDirection;
             
             LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());

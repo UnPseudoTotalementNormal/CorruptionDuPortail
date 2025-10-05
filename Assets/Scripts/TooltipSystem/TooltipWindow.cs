@@ -64,7 +64,7 @@ namespace TooltipSystem
             }
 
             var _linkInfo = DescriptionText.textInfo.linkInfo[_linkIndex];
-            var _tooltipReference = _tooltipManager.tooltipLinkReferenceHolder.GetTooltipReference(_linkInfo.GetLinkID());
+            var _tooltipReference = _tooltipManager.tooltipLinkParser.GetTooltipReference(_linkInfo.GetLinkID());
             _tooltipManager.CreateNewTooltipFromGameObject(gameObject, _tooltipReference.title,
                 _tooltipReference.description);
         }

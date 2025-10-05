@@ -10,28 +10,42 @@ namespace Characters.Powers.PowerComponents
         
         protected override void Init()
         {
-            if (power is not IFailablePower _failablePower)
-            {
-                throw new System.Exception("PCChainer can only be used with powers that implement IFailablePower");
-            }
+            var _failablePower = power as IFailablePower;
             
             if (!NetworkManager.IsServer)
             {
                 return;
             }
             
-            ownerCharacter.onCharacterAwakened += () => currentChain.Value = 0;
-            _failablePower.onPowerSuccessful += () =>
+            ownerCharacter.onCharacterAwakened += OnCharacterAwakened;
+            
+            if (_failablePower == null)
             {
-                if (currentChain.Value < maxChain)
-                {
-                    currentChain.Value++;
-                }
-            };
-            _failablePower.onPowerFailed += () =>
+                power.onPowerUsedServer += OnPowerSuccessful;
+                return;
+            }
+            
+            _failablePower.onPowerSuccessful += OnPowerSuccessful;
+            _failablePower.onPowerFailed += OnPowerFailed;
+        }
+
+        private void OnCharacterAwakened()
+        {
+            currentChain.Value = 0;
+        }
+
+        private void OnPowerSuccessful()
+        {
+            currentChain.Value++;
+            if (currentChain.Value >= maxChain)
             {
                 power.powerUseLeft.Value = 0;
-            };
+            }
+        }
+
+        private void OnPowerFailed()
+        {
+            power.powerUseLeft.Value = 0;
         }
     }
 }

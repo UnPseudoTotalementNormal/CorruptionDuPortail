@@ -47,7 +47,28 @@ namespace Board.UI.PowerBar
         {
             powerNameText.text = power.powerName.ToString();
             hoverTooltipComponent.SetTooltipTitle(power.powerName.ToString());
-            hoverTooltipComponent.SetTooltipDescription(power.powerDescription.ToString());
+            
+            var _description = power.powerDescription.ToString();
+            
+            if (power.powerComponents.Count == 0)
+            {
+                hoverTooltipComponent.SetTooltipDescription(_description);
+                return;
+            }
+            
+            _description += "\n";
+            
+            for (var _index = 0; _index < power.powerComponents.Count; _index++)
+            {
+                var _powerComponent = power.powerComponents[_index];
+                if (_index > 0)
+                {
+                    _description += ", ";
+                }
+                _description += $"<link=powercomponent_{power.ownerClientId.Value}_{power.NetworkObjectId}_{_index}>{_powerComponent.componentName.ToString()}</link>";
+            }
+            
+            hoverTooltipComponent.SetTooltipDescription(_description);
         }
 
         private void OnButtonClicked()

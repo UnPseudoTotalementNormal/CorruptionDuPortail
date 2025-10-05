@@ -124,7 +124,7 @@ namespace Board.UI.CharacterBar
                 string _description = "Pouvoirs:";
                 foreach (Power _power in playerCharacter.role.powers)
                 {
-                    _description += $"\n- <link=power_{_power.powerName}>{_power.powerName}</link>";
+                    _description += $"\n- <link=power_{_power.ownerClientId.Value}_{_power.NetworkObjectId}>{_power.powerName}</link>";
                 }
                 hoverTooltipComponent.SetTooltipDescription(_description);
             }

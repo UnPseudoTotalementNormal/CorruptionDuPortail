@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using AYellowpaper.SerializedCollections;
+using Characters.Powers;
+using Characters.Powers.PowerComponents;
+using GameLogic;
 using UnityEngine;
 
 namespace TooltipSystem
@@ -11,36 +14,48 @@ namespace TooltipSystem
 
         private void Awake()
         {
-            foreach (var key in new List<string>(textTooltipReferences.Keys))
+            foreach (var _key in new List<string>(textTooltipReferences.Keys))
             {
-                var value = textTooltipReferences[key];
-                textTooltipReferences.Remove(key);
-                textTooltipReferences[key.ToLower()] = value;
+                var _value = textTooltipReferences[_key];
+                textTooltipReferences.Remove(_key);
+                textTooltipReferences[_key.ToLower()] = _value;
             }
         }
 
-        public TooltipReference GetTooltipReference(string linkKey)
+        public TooltipReference GetTooltipReference(string _linkKey)
         {
-            linkKey = linkKey.ToLower();
+            _linkKey = _linkKey.ToLower();
             
-            if (linkKey.StartsWith("power_"))
+            if (_linkKey.StartsWith("power_"))
             {
-                linkKey = linkKey.Replace("power_", "");
-                return GetPowerTooltipReference(linkKey);
+                _linkKey = _linkKey.Replace("power_", "");
+                return GetPowerTooltipReference(_linkKey);
             }
             
-            return textTooltipReferences.GetValueOrDefault(linkKey);
+            return textTooltipReferences.GetValueOrDefault(_linkKey);
         }
         
-        private TooltipReference GetPowerTooltipReference(string linkID)
+        private TooltipReference GetPowerTooltipReference(string _linkID)
         {
-            var _powerDataObject = GameAssetHolder.instance.GetPowerDataObject(linkID);
+            var _ids = _linkID.Split('_');
+            ulong _ownerClientId = (ulong)int.Parse(_ids[0]);
+            ulong _powerObjectId = (ulong)int.Parse(_ids[1]);
 
+            Power _power = GameManager.instance.characterManager
+                .GetCharacter(_ownerClientId, false)?.role.powers.Find(_p => _p.NetworkObjectId == _powerObjectId);
+            if (!_power)
+            {
+                Debug.LogWarning("Power not found for tooltip: " + _linkID);
+                return null;
+            }
+            
             var _tooltipReference = new TooltipReference()
             {
-                title = _powerDataObject.powerName.ToString(),
-                description = _powerDataObject.powerDescription.ToString(),
+                title = _power.powerName.ToString(),
+                description = _power.powerDescription.ToString(),
             };
+            
+            List<PowerComponent> _powerComponents = new();
             
             return _tooltipReference;
         }

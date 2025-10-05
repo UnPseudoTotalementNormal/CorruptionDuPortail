@@ -30,7 +30,7 @@ namespace Characters.Powers
         public TargetIncludeFlags targetIncludeFlags;
         public bool needTargetSelection => targetIncludeFlags != 0;
         
-        public int powerUseLeft;
+        public NetworkVariable<int> powerUseLeft;
         public int maxPowerUse = 1; 
         
         [Header("Sounds")] 
@@ -41,24 +41,6 @@ namespace Characters.Powers
         [NonSerialized] public bool isCurrentlyUsed;
         
         public event Action onPowerUsedServer;
-
-
-        public virtual void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
-        {
-            _serializer.SerializeValue(ref ownerClientId);
-            _serializer.SerializeValue(ref maxWaitTime);
-            _serializer.SerializeValue(ref powerName);
-            _serializer.SerializeValue(ref powerDescription);
-            _serializer.SerializeValue(ref isPassive);
-            _serializer.SerializeValue(ref hasToBeAwakened);
-            _serializer.SerializeValue(ref powerUseLeft);
-            _serializer.SerializeValue(ref powerGameId);
-            _serializer.SerializeValue(ref targetIncludeFlags);
-            _serializer.SerializeValue(ref maxPowerUse);
-
-            canalisationSound.NetworkSerialize(_serializer);
-            onUsedSound.NetworkSerialize(_serializer);
-        }
 
 
         public bool IsTheSamePower(Power _isTheSamePower)
@@ -77,7 +59,7 @@ namespace Characters.Powers
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
             if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
             if (needTargetSelection && TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Count <= 0) return false;
-            if (powerUseLeft <= 0) return false;
+            if (powerUseLeft.Value <= 0) return false;
 
             return true;
         }
@@ -88,24 +70,24 @@ namespace Characters.Powers
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
         }
 
-        public virtual void OnUsed()
+        public void OnUsed()
         {
             StopUse();
-            powerUseLeft -= 1;
-            // Remplacement par un vrai RPC serveur
+            OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
             OnUsedServerRpc();
+            
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        protected virtual void OnUsedOwnerClientRpc(RpcParams _params = default)
+        {
             if (!string.IsNullOrEmpty(onUsedSound.GetPath())) RuntimeManager.PlayOneShot(onUsedSound);
         }
-
+        
         [Rpc(SendTo.Server)]
-        private void OnUsedServerRpc()
+        protected virtual void OnUsedServerRpc()
         {
-            OnUsedServer();
-        }
-
-        public virtual void OnUsedServer()
-        {
-            powerUseLeft -= 1;
+            powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }

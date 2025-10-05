@@ -6,9 +6,9 @@ namespace Characters.Powers.PowerComponents
 {
     public abstract class PowerComponent : NetworkBehaviour
     {
-        private Power power;
-        private Character ownerCharacter => GameLogic.GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
-        private ulong ownerClientId => power.ownerClientId;
+        protected Power power;
+        protected Character ownerCharacter => GameLogic.GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
+        protected ulong ownerClientId => power.ownerClientId;
         protected void Awake()
         {
             power = GetComponent<Power>();

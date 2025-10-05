@@ -53,7 +53,7 @@ public class Role : INetworkSerializable, ICloneable
         foreach (var _power in powers) 
         {
             _power.ownerClientId = ownerClientId;
-            _power.powerUseLeft = _power.maxPowerUse;
+            _power.powerUseLeft.Value = _power.maxPowerUse;
         }
     }
     

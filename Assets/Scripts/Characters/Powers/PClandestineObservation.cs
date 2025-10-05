@@ -68,11 +68,5 @@ namespace Characters.Powers
                 (int)ChatWindowIDs.Server),
                 NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
         }
-
-        public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
-        {
-            base.NetworkSerialize(_serializer);
-            _serializer.SerializeValue(ref targetRoleID);
-        }
     }
 }

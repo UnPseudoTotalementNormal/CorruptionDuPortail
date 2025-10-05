@@ -84,11 +84,6 @@ namespace Characters.Powers
             FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
-        public override void OnUsed()
-        {
-            base.OnUsed();
-        }
-
         public override void Cancel()
         {
             if (!isCurrentlyUsed)
@@ -104,12 +99,6 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnCardClicked;
             
             FocusManager.instance.UnfocusAll();
-        }
-
-        public override void NetworkSerialize<T>(BufferSerializer<T> _serializer)
-        {
-            base.NetworkSerialize(_serializer);
-            _serializer.SerializeValue(ref targetRoleID);
         }
     }
 }

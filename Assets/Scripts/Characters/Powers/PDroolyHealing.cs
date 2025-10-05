@@ -28,14 +28,6 @@ namespace Characters.Powers
         public EventReference onHealSuccessfulSound;
         public EventReference onHealFailedSound;
         
-        public override void NetworkSerialize<T>(BufferSerializer<T> serializer)
-        {
-            base.NetworkSerialize(serializer);
-            serializer.SerializeValue(ref healedCharacters);
-            onHealSuccessfulSound.NetworkSerialize(serializer);
-            onHealFailedSound.NetworkSerialize(serializer);
-        }
-        
         private void OnCardClicked(Card _clickedCard)
         {
             if (alreadyHealedCharacters.Any(_c => _c.ownerClientId == _clickedCard.characterInfo.ownerClientId))
@@ -139,11 +131,6 @@ namespace Characters.Powers
             }
             
             clickedCharacter = null;
-        }
-
-        public override void OnUsed()
-        {
-            base.OnUsed();
         }
 
         public override void Cancel()

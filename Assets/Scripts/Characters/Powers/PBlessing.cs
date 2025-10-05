@@ -100,11 +100,6 @@ namespace Characters.Powers
             clickedCharacter = null;
         }
 
-        public override void OnUsed()
-        {
-            base.OnUsed();
-        }
-
         public override void Cancel()
         {
             if (!isCurrentlyUsed)

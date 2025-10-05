@@ -125,11 +125,6 @@ namespace Characters.Powers
             FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
         }
 
-        public override void OnUsed()
-        {
-            base.OnUsed();
-        }
-
         public override void Cancel()
         {
             if (!isCurrentlyUsed)

@@ -25,12 +25,6 @@ namespace Characters.Powers
         {
             base.StartUse();
         }
-        
-
-        public override void OnUsed()
-        {
-            base.OnUsed();
-        }
 
         public override void Cancel()
         {

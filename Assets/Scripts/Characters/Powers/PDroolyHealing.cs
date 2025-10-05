@@ -56,8 +56,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
+            PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
             if (_power.healedCharacters.Contains(_healingCharacterId))
             {
                 Debug.Log("ALREADY HEALED");
@@ -74,11 +74,11 @@ namespace Characters.Powers
                     _choosedCharacter.HealPlayerServerRpc();
                     GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
                 }
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
-                NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                NetworkManager.Singleton.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)

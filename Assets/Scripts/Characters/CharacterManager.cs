@@ -85,10 +85,6 @@ namespace Characters
     
             _character.role = _role;
             _character.role.ownerClientId = _characterId;
-            foreach (var _rolePower in _character.role.powers)
-            {
-                _rolePower.ownerClientId = _characterId;
-            }
         }
         
         #region Characters Updates
@@ -176,8 +172,7 @@ namespace Characters
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
             
             Power _newPower = Instantiate(_power);
-            _newPower.ownerClientId = _characterId;
-            _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
+            _newPower.ownerClientId.Value = _characterId;
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.Spawn(true);
             StartCoroutine(

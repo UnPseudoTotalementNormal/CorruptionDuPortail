@@ -86,7 +86,7 @@ namespace Characters.Powers
             foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
                 var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
-                RoleTargetSystem.instance.NewTargeting(ownerClientId, _guessedCharacter.ownerClientId.Value);
+                RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
                     if (_message != String.Empty)
@@ -102,7 +102,7 @@ namespace Characters.Powers
                 _message = "Aucun personnage n'a été trouvé.";
             }
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                _rpcParams:GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -41,12 +41,12 @@ namespace Characters.Powers
         private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
             Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _corruptingCharacterId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                    GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
                     GameManager.instance.chainingManager.chainingPlayers.Add(_corruptingCharacterId);

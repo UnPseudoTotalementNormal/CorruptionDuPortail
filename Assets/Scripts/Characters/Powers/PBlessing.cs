@@ -54,13 +54,13 @@ namespace Characters.Powers
         private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
             Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _blessingCharacterId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _blessingCharacterId);
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                    NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 blessingCharacterIdOnMorning.Add(_blessingCharacterId);
             }
         }

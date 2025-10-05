@@ -17,8 +17,7 @@ namespace Characters.Powers
     [Serializable]
     public class Power : NetworkBehaviour
     {
-        public ulong ownerClientId;
-        [ReadOnly] public ulong powerGameId;
+        public NetworkVariable<ulong> ownerClientId;
 
         public FixedString64Bytes powerName;
         public FixedString512Bytes powerDescription;
@@ -49,7 +48,7 @@ namespace Characters.Powers
         }
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            var _powerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
+            var _powerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
             if (!_powerCharacter)
             {
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
@@ -73,7 +72,7 @@ namespace Characters.Powers
         public void OnUsed()
         {
             StopUse();
-            OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+            OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             OnUsedServerRpc();
             
         }
@@ -121,10 +120,9 @@ namespace Characters.Powers
             {
                 return;
             }
-            powerGameId = NetworkObjectId;
-            ulong _oldOwnerId = ownerClientId;
-            ownerClientId = GetComponentInParent<Character>().ownerClientId.Value;
-            OnReparentedClientRpc(_oldOwnerId, ownerClientId);
+            ulong _oldOwnerId = ownerClientId.Value;
+            ownerClientId.Value = GetComponentInParent<Character>().ownerClientId.Value;
+            OnReparentedClientRpc(_oldOwnerId, ownerClientId.Value);
         }
 
         [Rpc(SendTo.Everyone)]

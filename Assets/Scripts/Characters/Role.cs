@@ -52,7 +52,7 @@ public class Role : INetworkSerializable, ICloneable
     {
         foreach (var _power in powers) 
         {
-            _power.ownerClientId = ownerClientId;
+            _power.ownerClientId.Value = ownerClientId;
             _power.powerUseLeft.Value = _power.maxPowerUse;
         }
     }
@@ -77,7 +77,7 @@ public class Role : INetworkSerializable, ICloneable
 
         foreach (Power _power in powers)
         {
-            _power.ownerClientId = _newCharacterRole.ownerClientId;
+            _power.ownerClientId.Value = _newCharacterRole.ownerClientId;
         }
         
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);

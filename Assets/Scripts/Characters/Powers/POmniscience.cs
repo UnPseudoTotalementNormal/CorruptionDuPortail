@@ -20,7 +20,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }
@@ -31,11 +31,11 @@ namespace Characters.Powers
         }
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
             hackedCharacterClientId = _targetClientId;
             GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_targetClientId,
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                NetworkManager.Singleton.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                NetworkManager.Singleton.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -24,9 +24,9 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
-            OnPlayerContactedRpc(_clickedCard.characterInfo.ownerClientId.Value, ownerClientId, NetworkManager.RpcTarget.Single(_clickedCard.characterInfo.ownerClientId.Value, RpcTargetUse.Persistent));
+            OnPlayerContactedRpc(_clickedCard.characterInfo.ownerClientId.Value, ownerClientId.Value, NetworkManager.RpcTarget.Single(_clickedCard.characterInfo.ownerClientId.Value, RpcTargetUse.Persistent));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

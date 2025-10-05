@@ -25,7 +25,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
             var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
@@ -39,10 +39,10 @@ namespace Characters.Powers
         
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId, ownerClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, ownerClientId.Value);
             
             var _characterTarget = GameManager.instance.characterManager.GetCharacter(_targetClientId);
-            var _characterOwner = GameManager.instance.characterManager.GetCharacter(ownerClientId);
+            var _characterOwner = GameManager.instance.characterManager.GetCharacter(ownerClientId.Value);
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
                 _characterTarget.isEliminated.Value = true;

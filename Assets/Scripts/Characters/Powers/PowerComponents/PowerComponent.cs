@@ -8,7 +8,7 @@ namespace Characters.Powers.PowerComponents
     {
         protected Power power;
         protected Character ownerCharacter => GameLogic.GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
-        protected ulong ownerClientId => power.ownerClientId;
+        protected ulong ownerClientId => power.ownerClientId.Value;
         protected void Awake()
         {
             power = GetComponent<Power>();

@@ -44,7 +44,7 @@ namespace GameLogic
             
             foreach (var _rolePower in GameManager.instance.characterManager.GetCharacters().SelectMany(_character => _character.role.powers))
             {
-                if (GameManager.instance.characterManager.GetCharacter(_rolePower.ownerClientId, false).isFake)
+                if (GameManager.instance.characterManager.GetCharacter(_rolePower.ownerClientId.Value, false).isFake)
                 {
                     continue;
                 }

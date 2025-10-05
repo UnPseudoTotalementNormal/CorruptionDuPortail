@@ -17,7 +17,7 @@ namespace Characters.Powers
             foreach (var _character in GameManager.instance.characterManager.GetCharacters())
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed),
-                    RevealLevel.Personal, true, GameManager.instance.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));
+                    RevealLevel.Personal, true, GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
         }
     }

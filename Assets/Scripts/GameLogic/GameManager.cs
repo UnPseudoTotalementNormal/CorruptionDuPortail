@@ -310,34 +310,7 @@ namespace GameLogic
         }
 
         #endregion
-
-        [Rpc(SendTo.Server)]
-        public void CorruptPlayerRpc(ulong _ownerClientId)
-        {
-            if (!IsServer)
-            {
-                return;
-            }
         
-            var _character = characterManager.GetCharacters().First(_c => _c.ownerClientId.Value == _ownerClientId);
-            _character.isCorrupted.Value = true;
-        
-            characterManager.AskForUpdateAllCharactersRpc();
-        }
-    
-        [Rpc(SendTo.Server)]
-        public void HealPlayerRpc(ulong _ownerClientId)
-        {
-            if (!IsServer)
-            {
-                return;
-            }
-        
-            var _character = characterManager.GetCharacters().First(_c => _c.ownerClientId.Value == _ownerClientId);
-            _character.isCorrupted.Value = false;
-        
-            characterManager.AskForUpdateAllCharactersRpc();
-        }
         
         [Rpc(SendTo.Everyone)]
         public void ShutOffGameRpc()

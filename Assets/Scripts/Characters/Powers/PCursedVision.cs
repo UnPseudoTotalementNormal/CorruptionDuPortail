@@ -19,7 +19,7 @@ namespace Characters.Powers
                 return;
             }
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _character.ownerClientId.Value);
-            _character.CorruptPlayer();
+            _character.CorruptPlayerServerRpc();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             if (_character.role.factionType == FactionType.chosen)
@@ -30,7 +30,7 @@ namespace Characters.Powers
             {
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
-            GameManager.instance.characterManager.GetCharacter(ownerClientId).CorruptPlayer();   
+            GameManager.instance.characterManager.GetCharacter(ownerClientId).CorruptPlayerServerRpc();   
             GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             OnUsed();
         }

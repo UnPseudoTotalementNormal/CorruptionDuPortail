@@ -45,7 +45,7 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId, clickedCharacter.ownerClientId.Value);
             if (clickedCharacter.role.IsTheSameRole(_character.role))
             {
-                clickedCharacter.CorruptPlayer();
+                clickedCharacter.CorruptPlayerServerRpc();
                 InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);

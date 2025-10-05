@@ -71,7 +71,7 @@ namespace Characters.Powers
                 if (_choosedCharacter.isCorrupted.Value)
                 {
                     _healSuccess = true;
-                    _choosedCharacter.HealPlayer();
+                    _choosedCharacter.HealPlayerServerRpc();
                     GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
                 }
                 OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, NetworkManager.RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent));

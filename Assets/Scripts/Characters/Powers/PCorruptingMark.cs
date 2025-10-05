@@ -38,7 +38,7 @@ namespace Characters.Powers
                 return;
             }
             RoleTargetSystem.instance.NewTargeting(ownerClientId, _clickedCard.characterInfo.ownerClientId.Value);
-            _clickedCard.characterInfo.CorruptPlayer();
+            _clickedCard.characterInfo.CorruptPlayerServerRpc();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCard.characterInfo.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCard.characterInfo.ownerClientId.Value);

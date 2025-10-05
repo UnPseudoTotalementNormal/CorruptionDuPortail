@@ -85,14 +85,17 @@ namespace Characters
             return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
         }
 
-        public void CorruptPlayer()
+        
+        [Rpc(SendTo.Server)]
+        public void CorruptPlayerServerRpc()
         {
-            GameManager.instance.CorruptPlayerRpc(ownerClientId.Value);
+            isCorrupted.Value = true;
         }
 
-        public void HealPlayer()
+        [Rpc(SendTo.Server)]
+        public void HealPlayerServerRpc()
         {
-            GameManager.instance.HealPlayerRpc(ownerClientId.Value);
+            isCorrupted.Value = false;
         }
     }
 }

@@ -4005,7 +4005,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  takeDownThePortalPowerDataObject: {fileID: 0}
+  takeDownThePortalPowerDataObject: {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}
 --- !u!114 &1446097058
 MonoBehaviour:
   m_ObjectHideFlags: 0

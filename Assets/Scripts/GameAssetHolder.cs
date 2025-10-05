@@ -7,7 +7,7 @@ public class GameAssetHolder : MonoBehaviour
 {
     public static GameAssetHolder instance { get; private set; }
 
-    [SerializeField] private List<PowerDataObject> powerDataObjects = new();
+    [SerializeField] private List<Power> powerDataObjects = new();
     [SerializeField] private List<RoleDataObject> roleDataObjects = new();
 
     private void Awake()
@@ -21,10 +21,10 @@ public class GameAssetHolder : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    public PowerDataObject GetPowerDataObject(string _powerName)
+    public Power GetPowerDataObject(string _powerName)
     {
-        var _powerDataObject = powerDataObjects.Find(p => p.power.powerName.ToString().ToLower() == _powerName.ToLower());
-        if (_powerDataObject != null)
+        var _powerDataObject = powerDataObjects.Find(_p => _p.powerName.ToString().ToLower() == _powerName.ToLower());
+        if (_powerDataObject)
         {
             return _powerDataObject;
         }

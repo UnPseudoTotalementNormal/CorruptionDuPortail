@@ -22,7 +22,6 @@ namespace GameLogic.GameStates
     {
         public Dictionary<ulong, List<ulong>> votesForPlayer = new();
         public float voteDuration;
-        [SerializeField] private PowerDataObject takeDownThePortalPowerDataObject;
         
         [HideInInspector] public float voteTimer;
 

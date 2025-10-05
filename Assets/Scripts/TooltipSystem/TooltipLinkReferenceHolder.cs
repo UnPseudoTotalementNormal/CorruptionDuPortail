@@ -38,8 +38,8 @@ namespace TooltipSystem
 
             var _tooltipReference = new TooltipReference()
             {
-                title = _powerDataObject.power.powerName.ToString(),
-                description = _powerDataObject.power.powerDescription.ToString(),
+                title = _powerDataObject.powerName.ToString(),
+                description = _powerDataObject.powerDescription.ToString(),
             };
             
             return _tooltipReference;

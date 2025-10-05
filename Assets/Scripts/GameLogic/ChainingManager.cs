@@ -10,7 +10,7 @@ namespace GameLogic
     public class ChainingManager : NetworkBehaviour
     {
         public NetworkList<ulong> chainingPlayers = new();
-        public PowerDataObject takeDownThePortalPowerDataObject;
+        public Power takeDownThePortalPowerDataObject;
         
         [Rpc(SendTo.Server)]
         public void ChainCharacterRpc(ulong _characterId)
@@ -21,7 +21,7 @@ namespace GameLogic
             _character.isChained.Value = true;
             _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
             
-            if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject.power)))
+            if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))
             {
                 var _portalState = (TakeDownThePortalState)_gameManager.GetGameStates(typeof(TakeDownThePortalState)).First();
                 _portalState.shouldActivate = true;

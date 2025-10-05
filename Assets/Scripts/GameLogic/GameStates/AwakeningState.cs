@@ -55,7 +55,7 @@ namespace GameLogic.GameStates
                     
                     currentlyAwakenedCharacters.Add(_currentCharacter);
 
-                    gameManager.AwakeCharacterRpc(_currentCharacter.ownerClientId.Value);
+                    _currentCharacter.AwakenCharacterServerRpc();
                 }
             }
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
@@ -69,8 +69,7 @@ namespace GameLogic.GameStates
         {
             foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
             {
-                gameManager.SleepCharacterRpc(_awakenedCharacter.ownerClientId.Value);
-                
+                _awakenedCharacter.SleepCharacterServerRpc();
             }
 
             currentlyAwakenedCharacters.Clear();
@@ -178,7 +177,7 @@ namespace GameLogic.GameStates
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < 0.00045f)
                     {
-                        gameManager.SleepCharacterRpc(_fakeAwakenedCharacter.ownerClientId.Value);
+                        _fakeAwakenedCharacter.SleepCharacterServerRpc();
                     }
                 }
             }

@@ -338,30 +338,6 @@ namespace GameLogic
         
             characterManager.AskForUpdateAllCharactersRpc();
         }
-    
-        [Rpc(SendTo.Everyone)]
-        public void AwakeCharacterRpc(ulong _characterClientId) //todo: call only on server
-        {
-            Character _character = characterManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId.Value == _characterClientId);
-
-            _character?.AwakenCharacter();
-            if (IsServer)
-            {
-                characterManager.AskForUpdateAllCharactersRpc();
-            }
-        }
-        
-        [Rpc(SendTo.Everyone)]
-        public void SleepCharacterRpc(ulong _characterClientId) //todo: call only on server
-        {
-            Character _character = characterManager.GetCharacters().FirstOrDefault(_c => _c.ownerClientId.Value == _characterClientId);
-
-            _character?.SleepCharacter();
-            if (IsServer)
-            {
-                characterManager.AskForUpdateAllCharactersRpc();
-            }
-        }
         
         [Rpc(SendTo.Everyone)]
         public void ShutOffGameRpc()

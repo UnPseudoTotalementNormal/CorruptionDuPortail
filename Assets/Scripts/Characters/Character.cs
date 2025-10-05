@@ -46,17 +46,32 @@ namespace Characters
             onRoleUpdated?.Invoke();
         }
         
-        public void AwakenCharacter()
+        [Rpc(SendTo.Server)]
+        public void AwakenCharacterServerRpc()
         {
             isAwakened.Value = true;
             role.AwakenRole();
+            SleepCharacterClientRpc();
+        }
+
+        [Rpc(SendTo.Everyone)]
+        protected void AwakenCharacterClientRpc()
+        {
             onCharacterAwakened?.Invoke();
         }
         
-        public void SleepCharacter()
+        [Rpc(SendTo.Server)]
+        public void SleepCharacterServerRpc()
         {
             isAwakened.Value = false;
             role.SleepRole();
+            SleepCharacterClientRpc();
+        }
+        
+
+        [Rpc(SendTo.Everyone)]
+        protected void SleepCharacterClientRpc()
+        {
             onCharacterSleep?.Invoke();
         }
         

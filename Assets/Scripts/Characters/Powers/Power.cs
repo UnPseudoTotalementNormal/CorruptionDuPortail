@@ -17,7 +17,7 @@ namespace Characters.Powers
     [Serializable]
     public class Power : NetworkBehaviour
     {
-        [ReadOnly] public ulong ownerClientId;
+        public ulong ownerClientId;
         [ReadOnly] public ulong powerGameId;
 
         public FixedString64Bytes powerName;

@@ -29,8 +29,8 @@ public class Role : INetworkSerializable, ICloneable
     public RoleID roleID;
     public CharacterPortraitsValues.CharacterPortraits rolePortrait;
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
-    
-    public List<Power> powers => GameManager.instance.characterManager.GetCharacter(ownerClientId, false).GetComponentsInChildren<Power>().ToList(); //todo: BIG TEMPORARY
+
+    public List<Power> powers = new();
     [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions = new();
 
     [Header("Sounds")] 

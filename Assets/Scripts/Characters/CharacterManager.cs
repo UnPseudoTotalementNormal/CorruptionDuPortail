@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers;
+using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -128,7 +129,7 @@ namespace Characters
             return AddNewCharacter(_newFakeClientId);
         }
 
-        public Character AddNewCharacter(ulong _clientId)
+        public Character AddNewCharacter(ulong _clientId) //todo: create all characters on start, and simply change ownerID when starting the game, to not have spawn issues
         {
             if (_characters.Any(_c => _c.ownerClientId.Value == _clientId))
             {
@@ -174,16 +175,28 @@ namespace Characters
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
             
-            Power _newPower = Instantiate(_power, _character.transform);
+            Power _newPower = Instantiate(_power);
             _newPower.ownerClientId = _characterId;
             _newPower.powerGameId = (ulong)Random.Range(int.MinValue, int.MaxValue) ^ (ulong)Random.Range(int.MinValue, int.MaxValue);
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.Spawn(true);
-            StartCoroutine(WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>()));
-            
+            StartCoroutine(
+                WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), (_result) => { OnPowerReparentComplete(_newPower, _result); })
+                );
+        }
+
+        private void OnPowerReparentComplete(Power _power, bool _result)
+        {
+            if (!_result)
+            {
+                Debug.LogError("Failed to reparent power " + _power.powerName + " to character " + _power.ownerClientId);
+                return;
+            }
+
+            PowerManager.instance.OnPowerReparentedServer(_power);
         }
         
-        private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent)
+        private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent, Action<bool> _callback = null)
         {
             if (!_child || !_parent)
             {
@@ -195,8 +208,15 @@ namespace Characters
             {
                 yield return null;
             }
-            
-            _child.TrySetParent(_parent.transform, false);
+
+            if (!_child.TrySetParent(_parent.transform, false))
+            {
+                Debug.LogError("Failed to set parent in WaitForParentToSpawnAndSet");
+                _callback?.Invoke(false);
+                yield break;
+            }
+
+            _callback?.Invoke(true);
         }
     }
 }

@@ -114,5 +114,29 @@ namespace Characters.Powers
         public virtual void OnGameStartedServer()
         {
         }
+
+        public void OnReparentedServer()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+            powerGameId = NetworkObjectId;
+            ulong _oldOwnerId = ownerClientId;
+            ownerClientId = GetComponentInParent<Character>().ownerClientId.Value;
+            OnReparentedClientRpc(_oldOwnerId, ownerClientId);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        public void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
+        {
+            var _oldParentCharacter = GameManager.instance.characterManager.GetCharacter(_oldParentId, false);
+            var _newParentCharacter = GameManager.instance.characterManager.GetCharacter(_newParentId, false);
+            if (_oldParentCharacter)
+            {
+                _oldParentCharacter.role.powers.Remove(this);
+            }
+            _newParentCharacter.role.powers.Add(this);
+        }
     }
 }

@@ -65,5 +65,12 @@ namespace GameLogic
         {
             
         }
+
+        public void OnPowerReparentedServer(Power _power)
+        {
+            Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnPowerReparented should only be called on the server");
+
+            _power.OnReparentedServer();
+        }
     }
 }

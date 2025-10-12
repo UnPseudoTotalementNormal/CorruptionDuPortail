@@ -13,6 +13,9 @@ EditorBuildSettings:
     guid: 44a8551e452438c47b501a557e5b6c91
   - enabled: 1
     path: Assets/Scenes/GameScene.unity
+    guid: 7d263ee747f5579d3855d02da8044e2d
+  - enabled: 0
+    path: Assets/Scenes/GameScene_backup.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 6a88e7a1666556f438e28740ba5cb537, type: 2}

@@ -25,7 +25,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 {
     [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
     public TMP_Text cardRoleText;
-    public TMP_Text powerText;
 
     public Transform cardScalerTransform;
     public Transform cardDisplacerTransform;
@@ -37,6 +36,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     public VoteCanvas voteCanvas;
     public CanvasGroup chainedOverlay;
+
+    public CanvasGroup noteCanvasGroup;
  
     [Header("Info")]
     [SerializeField] private Sprite unknownCardSprite;
@@ -131,7 +132,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     private void UpdateInfoFromCharacter()
     {
         roleInfo = characterInfo.GetRole();
-        ShowPowers();
     }
 
     private void OnChainedChanged(bool _previous, bool _current)
@@ -140,15 +140,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     }
 
     #region Info Methods
-
-    private void ShowPowers()
-    {
-        foreach (Power _power in roleInfo.powers)
-        {
-            //todo: draw all powers
-            powerText.text = _power.powerName.ToString();
-        }
-    }
     
     public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false)
     {
@@ -166,14 +157,15 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             {
                 cardRoleText.text = roleInfo.roleName.ToString();
                 UpdateFaction(roleInfo.factionType);
-                ShowPowers();
                 cardImage.sprite = await roleInfo.GetRolePortrait().AttachExternalCancellation(_cancellationToken);
+                noteCanvasGroup.DoHideGroup();
             }
             else
             {
                 cardRoleText.text = "";
                 cardImage.sprite = unknownCardSprite;
                 UpdateFaction(FactionType.unknown);
+                noteCanvasGroup.DoShowGroup();
             }
             if (_turnCard)
             {
@@ -205,7 +197,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
             cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
         }
         cardRoleText.text = roleInfo.roleName.ToString();
-        ShowPowers();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
@@ -213,7 +204,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         cardPlayerPseudo.text = "";
         cardRoleText.text = roleInfo.roleName.ToString();
-        ShowPowers();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
@@ -221,7 +211,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
         cardRoleText.text = roleInfo.roleName.ToString();
-        ShowPowers();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
@@ -235,7 +224,6 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         cardPlayerPseudo.text = "";
         cardRoleText.text = "";
-        powerText.text = "";
         cardImage.sprite = unknownCardSprite;
     }
 

@@ -30,7 +30,11 @@ namespace UI
             {
                 panelImage = GetComponentInChildren<Image>();
             }
-            baseColor = panelImage.color;
+
+            if (panelImage != null)
+            {
+                baseColor = panelImage.color;
+            }
         }
         
         public void OnPointerClick(PointerEventData _eventData)
@@ -43,7 +47,7 @@ namespace UI
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            panelImage.DOColor(hoverColor, 0.2f);
+            panelImage?.DOColor(hoverColor, 0.2f);
             onButtonHovered?.Invoke();
         }
 
@@ -57,13 +61,13 @@ namespace UI
         {
             if (panelImage != null)
             {
-                panelImage.DOColor(disabledColor, 0.2f);
+                panelImage?.DOColor(disabledColor, 0.2f);
             }
         }
         
         private void OnEnable()
         {
-            panelImage.DOColor(baseColor, 0.2f);
+            panelImage?.DOColor(baseColor, 0.2f);
         }
     }
 }

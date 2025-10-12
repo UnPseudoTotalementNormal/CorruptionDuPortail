@@ -85,6 +85,7 @@ public class BoardManager : NetworkBehaviour
             Vector3 _localTargetPosition = GetCardPlacedPosition(_i);
             
             _card.transform.DOLocalMoveX(_localTargetPosition.x, 0.5f);
+            _card.transform.DOLocalMoveY(_localTargetPosition.y, 0.5f);
             _card.transform.DOLocalMoveZ(_localTargetPosition.z, 0.5f);
         }
     }

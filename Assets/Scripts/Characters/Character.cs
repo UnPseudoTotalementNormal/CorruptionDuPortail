@@ -20,11 +20,12 @@ namespace Characters
         public Role role;
         public NetworkVariable<ulong> ownerClientId = new(GameValues.FAKE_CLIENT_ID);
         
-        [Header("Variables")] //quand de nouvelle variable son ajoutée, il faut mettre à jour le UpdateCharacter
+        [Header("Variables")] 
         public NetworkVariable<bool> isChained = new(false);
         public NetworkVariable<bool> isCorrupted = new(false);
         public NetworkVariable<bool> isEliminated = new(false);
         public NetworkVariable<bool> isBlessed = new(false);
+        public NetworkVariable<bool> isHealed = new(false);
         public NetworkVariable<int> messageLeft = new(1);
         public NetworkVariable<bool> isAwakened = new(false);
         public bool isFake => ownerClientId.Value.IsFakeClientId();

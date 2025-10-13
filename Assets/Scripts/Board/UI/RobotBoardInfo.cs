@@ -45,6 +45,11 @@ namespace Board.UI
         private void AskForNewTextRpc()
         {
             Character _robot = GameManager.instance.characterManager.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
+            if (!_robot)
+            {
+                WriteNewTextRpc("0");
+                return;
+            }
             List<TargetingData> _targetingDatas = RoleTargetSystem.instance.GetAllTargetingDataForTarget(_robot.ownerClientId.Value);
             WriteNewTextRpc($"{_targetingDatas.Count}");
         }

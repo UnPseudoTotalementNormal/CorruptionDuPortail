@@ -67,8 +67,10 @@ namespace GameLogic.GameStates
                 GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
             }
             
+            gameManager.NextGameState();
+            return;
             gameManager.StartCoroutine(WaitAndNextState());
-
+            
             IEnumerator WaitAndNextState()
             {
                 yield return new WaitForSeconds(3f); //TODO: TEMP FIX MAYBE DIDNT EVEN WORK

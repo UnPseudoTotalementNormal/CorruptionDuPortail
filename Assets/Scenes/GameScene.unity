@@ -3080,7 +3080,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 835881829}
-  - component: {fileID: 835881830}
+  - component: {fileID: 835881831}
   m_Layer: 5
   m_Name: MessageButton
   m_TagString: Untagged
@@ -3109,7 +3109,7 @@ RectTransform:
   m_AnchoredPosition: {x: -860, y: 50}
   m_SizeDelta: {x: 100, y: 105}
   m_Pivot: {x: 0.5, y: 0}
---- !u!114 &835881830
+--- !u!114 &835881831
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3118,10 +3118,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 835881828}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff4bd586021a412a86fcc554911f67a8, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d58251008eb03965b3b48490f9a5e58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
+  hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38039216, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
   onButtonClickedUnityEvent:

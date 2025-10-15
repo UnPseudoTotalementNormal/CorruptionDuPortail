@@ -5,10 +5,17 @@ namespace Characters.Powers
 {
     public class PInfiniteMessage : Power
     {
-        public override void OnNetworkSpawn()
+        private void Awake()
         {
-            base.OnNetworkSpawn();
-            CharacterManager.instance.GetCharacter(ownerClientId.Value).messageLeft.Value = Int32.MaxValue;
+            onPowerReparented += OnPowerReparented;
+        }
+
+        private void OnPowerReparented()
+        {
+            if (NetworkManager.IsServer)
+            {
+                CharacterManager.instance.GetCharacter(ownerClientId.Value).messageLeft.Value = Int32.MaxValue;
+            }
         }
     }
 }

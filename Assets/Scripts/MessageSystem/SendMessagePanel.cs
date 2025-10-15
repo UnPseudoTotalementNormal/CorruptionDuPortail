@@ -16,9 +16,16 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     
     public void TrySendMessageToServer()
     {
-        if (GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft.Value <= 0)
+        var _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
+        if (_localCharacter.messageLeft.Value <= 0)
         {
             Debug.Log("You have no messages left to send.");
+            return;
+        }
+        
+        if (_localCharacter.hasSentMessageThisTurn.Value == true)
+        {
+            Debug.Log("You have already sent a message this turn.");
             return;
         }
         
@@ -36,8 +43,9 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     [Rpc(SendTo.Server)]
     public void OnMessageSentRpc(ulong _senderId, FixedString512Bytes _message)
     {
-        GameManager.instance.characterManager.GetCharacter(_senderId).messageLeft.Value -= 1;
-        GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+        var _character = GameManager.instance.characterManager.GetCharacter(_senderId);
+        _character.messageLeft.Value -= 1;
+        _character.hasSentMessageThisTurn.Value = true;
     }
 
     public void SwitchPanelOpen()

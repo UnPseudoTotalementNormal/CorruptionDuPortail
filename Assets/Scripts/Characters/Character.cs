@@ -66,6 +66,7 @@ namespace Characters
         public void AwakenCharacterServerRpc()
         {
             isAwakened.Value = true;
+            hasSentMessageThisTurn.Value = false;
             role.AwakenRole();
             SleepCharacterClientRpc();
         }

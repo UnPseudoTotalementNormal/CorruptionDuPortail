@@ -88,7 +88,7 @@ MonoBehaviour:
     roleDifficulty: 1
     powers: []
     winningConditions:
-    - rid: 7121802106355843693
+    - rid: 5827652778058055943
     onChainingSound:
       Guid:
         Data1: -556041060
@@ -103,14 +103,14 @@ MonoBehaviour:
         Data3: -791614831
         Data4: -1324382327
       Path: event:/Characters/Orpheline/Annoucement
-    isAwakened: 0
     ownerClientId: 0
   powers:
   - {fileID: 5928142297490688375, guid: 96fe74f3610084a9d872a2f255f69132, type: 3}
+  - {fileID: 4186362527338676593, guid: 487847a75662496b09d32f94a06a1fd8, type: 3}
   references:
     version: 2
     RefIds:
-    - rid: 7121802106355843693
+    - rid: 5827652778058055943
       type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
       data:
         ownerClientId: 0

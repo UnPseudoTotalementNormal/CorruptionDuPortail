@@ -8,6 +8,8 @@ namespace UI
 {
     public class MessageLeftText : MonoBehaviour
     {
+        public const int INFINITE_MESSAGE_THRESHOLD = 1000;
+        
         public TMP_Text messageLeftText;
         private Character localCharacter;
         private bool isSubscribed = false;
@@ -39,6 +41,11 @@ namespace UI
 
         private void UpdateMessageLeftText(int _previous, int _current)
         {
+            if (_current > INFINITE_MESSAGE_THRESHOLD)
+            {
+                messageLeftText.text = "restant: ∞";
+                return;
+            }
             messageLeftText.text = $"restant: {_current}";
         }
     }

@@ -27,6 +27,7 @@ namespace Characters
         public NetworkVariable<bool> isBlessed = new(false);
         public NetworkVariable<bool> isHealed = new(false);
         public NetworkVariable<int> messageLeft = new(1);
+        public NetworkVariable<bool> hasSentMessageThisTurn = new(false);
         public NetworkVariable<bool> isAwakened = new(false);
         public bool isFake => ownerClientId.Value.IsFakeClientId();
         

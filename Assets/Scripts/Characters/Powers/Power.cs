@@ -42,6 +42,7 @@ namespace Characters.Powers
         [NonSerialized] public bool isCurrentlyUsed;
 
         public event Action onPowerUsedServer;
+        public event Action onPowerReparented;
 
         public List<PowerComponent> powerComponents = new();
 
@@ -129,7 +130,7 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Everyone)]
-        public void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
+        public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
             var _oldParentCharacter = GameManager.instance.characterManager.GetCharacter(_oldParentId, false);
             var _newParentCharacter = GameManager.instance.characterManager.GetCharacter(_newParentId, false);
@@ -142,6 +143,8 @@ namespace Characters.Powers
             {
                 _newParentCharacter.role.powers.Add(this);
             }
+            
+            onPowerReparented?.Invoke();
         }
     }
 }

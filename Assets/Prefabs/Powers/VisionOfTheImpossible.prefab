@@ -71,8 +71,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  ownerClientId: 0
-  powerGameId: 0
+  ownerClientId:
+    m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 22
     bytes:
@@ -688,8 +688,9 @@ MonoBehaviour:
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
-  targetIncludeFlags: 120
-  powerUseLeft: 0
+  targetIncludeFlags: 248
+  powerUseLeft:
+    m_InternalValue: 0
   maxPowerUse: 1
   canalisationSound:
     Guid:
@@ -705,5 +706,6 @@ MonoBehaviour:
       Data3: 1830670214
       Data4: 1381209960
     Path: event:/Characters/Oracle/SendPower
+  powerComponents: []
   charactersToSelect: 2
   rolesToSelect: 2

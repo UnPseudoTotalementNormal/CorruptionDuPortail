@@ -71,8 +71,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  ownerClientId: 0
-  powerGameId: 0
+  ownerClientId:
+    m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 18
     bytes:
@@ -688,8 +688,9 @@ MonoBehaviour:
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
-  targetIncludeFlags: 126
-  powerUseLeft: 0
+  targetIncludeFlags: 254
+  powerUseLeft:
+    m_InternalValue: 0
   maxPowerUse: 1
   canalisationSound:
     Guid:
@@ -705,6 +706,7 @@ MonoBehaviour:
       Data3: -853449322
       Data4: 1212795465
     Path: event:/Characters/Orpheline/SendPower
+  powerComponents: []
   onContactedAsChosenSound:
     Guid:
       Data1: -175124592

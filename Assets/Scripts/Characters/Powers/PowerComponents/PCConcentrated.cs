@@ -7,7 +7,7 @@ namespace Characters.Powers.PowerComponents
     [Tooltip("Will do the power concentrated action if the precedent power wasn't used this turn")]
     public class PCConcentrated : PowerComponent
     {
-        public string concentratedEffectDescription => "Si \"{var:precedentPowerName}\" n'est pas utilisé, rennonce à son utilisation et " 
+        public string concentratedEffectDescription => "Si \"{var:precedentPowerName}\" n'est pas utilisé, renonce à son utilisation et " 
                                                        + (power as IConcentratedPowerEffect)?.concentratedEffectDescription;
         public string precedentPowerName => GetPrecedentPower() ? GetPrecedentPower().powerName.ToString() : "Power not found";
         

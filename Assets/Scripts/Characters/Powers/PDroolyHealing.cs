@@ -23,14 +23,12 @@ namespace Characters.Powers
     public class PDroolyHealing : Power
     {
         [NonSerialized] private Character clickedCharacter;
-        [NonSerialized] private List<Character> alreadyHealedCharacters = new();
-        [NonSerialized] public ulong[] healedCharacters = Enumerable.Repeat(GameValues.FAKE_CLIENT_ID, GameValues.MAX_PLAYERS).ToArray();
         public EventReference onHealSuccessfulSound;
         public EventReference onHealFailedSound;
-        
+
         private void OnCardClicked(Card _clickedCard)
         {
-            if (alreadyHealedCharacters.Any(_c => _c.ownerClientId == _clickedCard.characterInfo.ownerClientId))
+            if (_clickedCard.characterInfo.isHealed.Value)
             {
                 return;
             }
@@ -58,16 +56,10 @@ namespace Characters.Powers
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
             PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
-            if (_power.healedCharacters.Contains(_healingCharacterId))
-            {
-                Debug.Log("ALREADY HEALED");
-                return;
-            }
             var _choosedCharacter = GameManager.instance.characterManager.GetCharacter(_healingCharacterId, false);
             bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
-                _power.healedCharacters[_power.healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID)] = _healingCharacterId;
                 if (_choosedCharacter.isCorrupted.Value)
                 {
                     _healSuccess = true;
@@ -86,21 +78,11 @@ namespace Characters.Powers
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
         }
-        public List<Character> GetIgnoreCharacters()
-        {
-            return GameManager.instance.characterManager.GetCharacters(false)
-                .Where(_c => healedCharacters.Contains(_c.ownerClientId.Value))
-                .ToList();
-        }
+        
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);
             if (!_baseValue)
-            {
-                return false;
-            }
-
-            if (healedCharacters.CountUsed(GameValues.FAKE_CLIENT_ID) == GameManager.instance.characterManager.GetCharacters(false).Count)
             {
                 return false;
             }
@@ -112,24 +94,22 @@ namespace Characters.Powers
         {
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
-            
+
             FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
 
-            alreadyHealedCharacters = GameManager.instance.characterManager.GetCharacters(false)
-                .Where(_c => healedCharacters.Contains(_c.ownerClientId.Value)).ToList();
-            
-            Debug.Log(alreadyHealedCharacters.Count);
-
-            foreach (var _alreadyHealedCharacter in alreadyHealedCharacters)
+            foreach (var _character in GameManager.instance.characterManager.GetCharacters(false))
             {
-                Card _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _alreadyHealedCharacter.ownerClientId.Value);
-                if (_card == null)
+                if (_character.isHealed.Value)
                 {
-                    continue;
+                    Card _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
+                    if (_card == null)
+                    {
+                        continue;
+                    }
+                    FocusManager.instance.UnfocusObject(_card.gameObject);
                 }
-                FocusManager.instance.UnfocusObject(_card.gameObject);
             }
-            
+
             clickedCharacter = null;
         }
 

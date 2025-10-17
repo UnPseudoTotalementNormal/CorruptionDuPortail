@@ -12,6 +12,7 @@ namespace Characters.Powers.Target
         Corrupted = 1 << 4,
         Blessed   = 1 << 5,
         Chained   = 1 << 6,
+        Healed    = 1 << 7,
         Fake      = 1 << 31
     }
 }

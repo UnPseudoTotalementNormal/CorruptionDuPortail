@@ -113,6 +113,7 @@ namespace Characters
         public void HealPlayerServerRpc()
         {
             isCorrupted.Value = false;
+            isHealed.Value = true;
         }
     }
 }

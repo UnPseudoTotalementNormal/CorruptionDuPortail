@@ -1,4 +1,6 @@
+using System;
 using Characters.Powers.Interfaces;
+using Unity.Collections;
 using Unity.Netcode;
 
 namespace Characters.Powers.PowerComponents
@@ -7,13 +9,16 @@ namespace Characters.Powers.PowerComponents
     {
         public NetworkVariable<int> currentChain = new(0);
         public int maxChain = 2;
-        
-        
-        
+
+        private void Reset()
+        {
+            componentName = "En chaîne";
+            description = "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à {var:maxChain} fois.";
+        }
+
         protected override void Init()
         {
             var _failablePower = power as IFailablePower;
-            power.powerComponents.Add(this);
             
             if (!NetworkManager.IsServer)
             {

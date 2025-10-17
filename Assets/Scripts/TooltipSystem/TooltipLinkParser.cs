@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using Characters.Powers;
 using Characters.Powers.PowerComponents;
@@ -123,44 +124,69 @@ namespace TooltipSystem
             return _tooltipReference;
         }
         
-        public string ParseText(Object _parsingObject, string _text)
+        public string ParseText(Object _parsingObject, string _text, bool _deepParsing = true)
         {
-            var _customBalises = GetTextBetweenBraces(_text);
-            
-            foreach (var _balise in _customBalises)
+            string _textOriginal = _text;
+            int _iterationLimit = 10;
+            int _iterationCount = 0;
+            while (_iterationCount < _iterationLimit)
             {
-                var _baliseCommand = _balise.Split(':')[0];
-                var _baliseParam = _balise.Split(':')[1];
-                string _replaceText = "";
-                switch (_baliseCommand)
+                var _customBalises = GetTextBetweenBraces(_text);
+
+                foreach (var _balise in _customBalises)
                 {
-                    case "var":
-                        var _varName = GetVarValue(_parsingObject, _baliseParam);
-                        if (_varName != null)
-                        {
-                            _replaceText = _varName.ToString();
-                        }
-                        break;
-                    default:
-                        Debug.LogWarning("Unknown balise command: " + _baliseCommand);
-                        break;
+                    var _baliseCommand = _balise.Split(':')[0];
+                    var _baliseParam = _balise.Split(':')[1];
+                    string _replaceText = "";
+                    switch (_baliseCommand)
+                    {
+                        case "var":
+                            var _varName = GetVarValue(_parsingObject, _baliseParam);
+                            if (_varName != null)
+                            {
+                                _replaceText = _varName.ToString();
+                            }
+                            break;
+                        default:
+                            Debug.LogWarning("Unknown balise command: " + _baliseCommand);
+                            break;
+                    }
+
+                    _text = _text.Replace("{" + _balise + "}", _replaceText);
                 }
-                
-                _text = _text.Replace("{" + _balise + "}", _replaceText);
+
+                _iterationCount++;
+                if (!_deepParsing || _text == _textOriginal)
+                {
+                    break;
+                }
+                _textOriginal = _text;
             }
-            
+
             return _text;
         }
         
         private object GetVarValue(Object _parsingObject, string _varName)
         {
             var _type = _parsingObject.GetType();
-            var _field = _type.GetField(_varName);
-            if (_field == null)
+            
+            var _field = _type.GetField(_varName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            object _varValue = null;
+            if (_field != null)
             {
-                return null;
+                _varValue = _field.GetValue(_parsingObject);
             }
-            var _varValue = _field.GetValue(_parsingObject);
+            else
+            {
+                // Si pas de champ, cherche une propriété (getter)
+                var _prop = _type.GetProperty(_varName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (_prop == null || _prop.GetIndexParameters().Length > 0)
+                {
+                    return null;
+                }
+                _varValue = _prop.GetValue(_parsingObject);
+            }
+            
             if (_varValue is Object _unityObject)
             {
                 if (_unityObject == null)

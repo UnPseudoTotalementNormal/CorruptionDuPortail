@@ -8,6 +8,7 @@ using FocusSystem;
 using GameLogic;
 using RoleTarget;
 using Unity.Netcode;
+using UnityEngine;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -15,8 +16,12 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PCorruptingMark : Power, ICorrupterPower
+    public class PCorruptingMark : Power, ICorrupterPower, IConcentratedPowerEffect
     {
+        [field:SerializeField] public string concentratedEffectDescription { get; set; }
+        
+        private NetworkVariable<ulong> lastCorruptedCharacterId = new(9999999);
+        
         public event Action<Character> onCharacterCorruptionSuccessful;
         public event Action<Character> onCharacterCorruptionFailed;
 
@@ -37,6 +42,7 @@ namespace Characters.Powers
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCard.characterInfo.ownerClientId.Value);
                 return;
             }
+            lastCorruptedCharacterId.Value = _clickedCard.characterInfo.ownerClientId.Value;
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
             _clickedCard.characterInfo.CorruptPlayerServerRpc();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
@@ -91,6 +97,13 @@ namespace Characters.Powers
             ArrowManager.instance.DestroyAllArrows();
             
             FocusManager.instance.UnfocusAll();
+        }
+        
+        public void OnConcentratedEffectServer()
+        {
+            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
+                lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }
     }
 }

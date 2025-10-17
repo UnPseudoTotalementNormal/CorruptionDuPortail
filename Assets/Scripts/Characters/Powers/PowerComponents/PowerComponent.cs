@@ -22,6 +22,7 @@ namespace Characters.Powers.PowerComponents
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            power.powerComponents.Add(this);
             Init();
         }
 

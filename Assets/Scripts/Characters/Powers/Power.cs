@@ -78,7 +78,6 @@ namespace Characters.Powers
             StopUse();
             OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             OnUsedServerRpc();
-            
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

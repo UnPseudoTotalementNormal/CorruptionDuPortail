@@ -103,11 +103,10 @@ MonoBehaviour:
         Data3: 1579141820
         Data4: -1406215027
       Path: event:/Characters/Mage Occulte/Opening
-    isAwakened: 0
     ownerClientId: 0
   powers:
   - {fileID: 1936720183572497299, guid: bca5e2c58326a8bbe9d0b4149d3625f8, type: 3}
-  - {fileID: 5930367012452364025, guid: 71b0dd9c95ae4fd36b896963be56456a, type: 3}
+  - {fileID: 5930367012452364025, guid: b90903ce095e7db979159327ef32ffa0, type: 3}
   - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
   - {fileID: 8296718483155507466, guid: 4be4aaf929ad584e6b113b69c1ef5a31, type: 3}
   - {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}

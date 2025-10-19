@@ -30,7 +30,7 @@ namespace Characters
         public NetworkVariable<bool> hasSentMessageThisTurn = new(false);
         public NetworkVariable<bool> isAwakened = new(false);
         public bool isFake => ownerClientId.Value.IsFakeClientId();
-        
+        public event Action onPowersUpdated;
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
@@ -46,20 +46,32 @@ namespace Characters
         public void UpdateRoleRpc(Role _role)
         {
             role.UpdateRole(_role);
-            CheckForPowers();
+            CheckForPowersRpc();
             onRoleUpdated?.Invoke();
         }
 
-        public void CheckForPowers()
+        [Rpc(SendTo.Everyone)]
+        public void CheckForPowersRpc()
         {
             var _foundPowers = GetComponentsInChildren<Power>();
+            bool _newPowersFound = false;
             foreach (var _power in _foundPowers)
             {
                 if (!role.powers.Contains(_power))
                 {
                     role.powers.Add(_power);
+                    _newPowersFound = true;
                 }
             }
+            if (_newPowersFound)
+            {
+                onPowersUpdated?.Invoke();
+            }
+        }
+        
+        public void InvokeOnPowersUpdated()
+        {
+            onPowersUpdated?.Invoke();
         }
         
         [Rpc(SendTo.Server)]

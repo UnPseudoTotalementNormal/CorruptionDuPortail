@@ -30,7 +30,7 @@ public class Role : INetworkSerializable, ICloneable
     public CharacterPortraitsValues.CharacterPortraits rolePortrait;
     [UnityEngine.Range(1, 3)] public int roleDifficulty;
 
-    public List<Power> powers = new();
+    public readonly List<Power> powers = new();
     [SerializeReference, Polymorphic] public List<WinningCondition> winningConditions = new();
 
     [Header("Sounds")] 
@@ -133,7 +133,6 @@ public class Role : INetworkSerializable, ICloneable
     public object Clone()
     {
         Role _newRole = (Role)this.MemberwiseClone();
-        _newRole.powers = powers.ToList();
         _newRole.winningConditions = new List<WinningCondition>();
         foreach (WinningCondition _condition in winningConditions)
         {

@@ -31,6 +31,7 @@ namespace Board.UI.PowerBar
                 var _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
                 if (_localCharacter)
                 {
+                    _localCharacter.onPowersUpdated += () => { RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value); };
                     _localCharacter.onRoleUpdated += () => { RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value); };
                     RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value);
                 }
@@ -53,8 +54,16 @@ namespace Board.UI.PowerBar
             
             foreach (var _currentPowerBarObject in powersBarObjects)
             {
+                if (!_currentPowerBarObject)
+                {
+                    continue;
+                }
                 var _playerPower = _rolePowers.FirstOrDefault(_p => _p.IsTheSamePower(_currentPowerBarObject.power));
-                Assert.IsNotNull(_playerPower, "Player Power should not be null");
+                if (_playerPower == null)
+                {
+                    CreatePowerBar(_rolePowers, GameManager.instance.characterManager.GetLocalCharacter(false));
+                    return;
+                }
                 _currentPowerBarObject.customButton.enabled = _playerPower.CanUse(true);
             }
         }
@@ -62,14 +71,22 @@ namespace Board.UI.PowerBar
         public void RefreshCharacterPowerBar(ulong _characterID)
         {
             Character _character = GameManager.instance.characterManager.GetCharacter(_characterID, false);
-            if (_character == null || _character.role == null)
+            if (!_character || _character.role == null)
             {
                 return;
             }
             
             List<Power> _powers = _character.role.powers;
-
+            
+            
             if (powersBarObjects.Count == 0)
+            {
+                CreatePowerBar(_powers, _character);
+                return;
+            }
+            
+            bool _hasSamePower = ArePowerSetsEqual(_powers, powersBarObjects);
+            if (!_hasSamePower)
             {
                 CreatePowerBar(_powers, _character);
                 return;
@@ -92,6 +109,12 @@ namespace Board.UI.PowerBar
 
         public void CreatePowerBar(List<Power> _powers, Character _fromCharacter)
         {
+            foreach (var _powersBarObject in powersBarObjects)
+            {
+                Destroy(_powersBarObject.gameObject);
+            }
+            powersBarObjects.Clear();
+
             foreach (var _currentPower in _powers)
             {
                 if (_currentPower.isPassive)
@@ -124,6 +147,30 @@ namespace Board.UI.PowerBar
                 }
             }
             return null;
+        }
+
+        public bool ArePowerSetsEqual(List<Power> _powers, List<PowersBarObject> _powersBarObjects)
+        {
+            var _leftIds = _powers?.Where(_p => _p).Select(_p => _p.NetworkObjectId).ToList() ??
+                           new List<ulong>();
+            var _rightIds = _powersBarObjects?
+                .Where(_pbo => _pbo.power)
+                .Select(_pbo => _pbo.power.NetworkObjectId)
+                .ToList() ?? new List<ulong>();
+
+            if (_leftIds.Count != _rightIds.Count)
+                return false;
+
+
+            var _remaining = new List<ulong>(_rightIds);
+
+            foreach (var id in _leftIds)
+            {
+                if (!_remaining.Remove(id))
+                    return false;
+            }
+
+            return _remaining.Count == 0;
         }
     }
 }

@@ -52,3 +52,7 @@ MonoBehaviour:
       Value:
         roleToAttribute: 0
         canBeFake: 1
+    - Key: {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1

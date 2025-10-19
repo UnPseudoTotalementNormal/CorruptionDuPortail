@@ -45,7 +45,8 @@ namespace Characters.Powers
         public event Action onPowerReparented;
 
         public List<PowerComponent> powerComponents = new();
-
+        
+        public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
         public bool IsTheSamePower(Power _isTheSamePower)
         {
             return powerName == _isTheSamePower.powerName && powerDescription == _isTheSamePower.powerDescription;
@@ -142,6 +143,9 @@ namespace Characters.Powers
             {
                 _newParentCharacter.role.powers.Add(this);
             }
+            
+            _oldParentCharacter.InvokeOnPowersUpdated();
+            _newParentCharacter.InvokeOnPowersUpdated();
             
             onPowerReparented?.Invoke();
         }

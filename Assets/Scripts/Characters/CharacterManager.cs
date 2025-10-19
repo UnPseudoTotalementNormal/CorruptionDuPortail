@@ -85,7 +85,7 @@ namespace Characters
 
             _character.role = _role;
             _character.UpdateRoleRpc(_role);
-            _character.CheckForPowers();
+            _character.CheckForPowersRpc();
             _character.role.ownerClientId = _characterId;
         }
         
@@ -173,13 +173,48 @@ namespace Characters
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
             
-            Power _newPower = Instantiate(_power);
+            Power _newPower = Instantiate(_power, null);
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.Spawn(true);
             _newPower.ownerClientId.Value = _characterId;
             StartCoroutine(
-                WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), (_result) => { OnPowerReparentComplete(_newPower, _result); })
+                WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), 
+                    (_result) => { OnPowerReparentComplete(_newPower, _result); })
                 );
+        }
+        
+        public void RemovePowerFromCharacter(ulong _characterId, Power _power)
+        {
+            Assert.IsTrue(NetworkManager.Singleton.IsServer, "RemovePowerFromCharacter should only be called on the server");
+            Character _character = GetCharacter(_characterId);
+            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power {_power.powerName}");
+            
+            if (_power.ownerCharacter != _character)
+            {
+                Debug.LogError($"Power {_power.powerName} does not belong to character {_characterId}");
+                return;
+            }
+            
+            RemovePowerFromCharacterPowerListRpc(_characterId, _power.NetworkObjectId);
+            NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
+            if (_powerNetworkObject != null)
+            {
+                _powerNetworkObject.Despawn();
+            }
+        }
+        
+        [Rpc(SendTo.Everyone)]
+        private void RemovePowerFromCharacterPowerListRpc(ulong _characterId, ulong _powerNetworkObjectId)
+        {
+            Character _character = GetCharacter(_characterId);
+            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
+            Power _power = _character.role.powers.FirstOrDefault(_p => _p.NetworkObjectId == _powerNetworkObjectId);
+            Assert.IsNotNull(_power, $"Power with id {_powerNetworkObjectId} not found on character {_characterId}");
+            
+            if (_character.role.powers.Contains(_power))
+            {
+                _character.role.powers.Remove(_power);
+            }
         }
 
         private void OnPowerReparentComplete(Power _power, bool _result)

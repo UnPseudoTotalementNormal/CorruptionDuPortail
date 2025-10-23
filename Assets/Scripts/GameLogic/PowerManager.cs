@@ -96,12 +96,51 @@ namespace GameLogic
         {
             
         }
+        
+        public void ReparentPowerToCharacterServer(Power _power, Character _newOwner)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogError("ReparentPowerToCharacterServer should only be called on the server");
+                return;
+            }
+            
+            if (_power.ownerCharacter == _newOwner)
+            {
+                Debug.LogWarning($"Power {_power.powerName} is already owned by character {_newOwner.ownerClientId.Value}");
+                return;
+            }
+
+            if (_power.ownerCharacter != null)
+            {
+                RemovePowerFromCharacterPowerListRpc(_power.ownerClientId.Value, _power.NetworkObjectId);
+            }
+
+            _power.GetComponent<NetworkObject>().TrySetParent(_newOwner.GetComponent<NetworkObject>());
+            
+            _power.ownerClientId.Value = _newOwner.ownerClientId.Value;
+            OnPowerReparentedServer(_power);
+        }
 
         public void OnPowerReparentedServer(Power _power)
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnPowerReparented should only be called on the server");
 
             _power.OnReparentedServer();
+        }
+        
+        [Rpc(SendTo.Everyone)]
+        public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, ulong _powerNetworkObjectId)
+        {
+            Character _character = CharacterManager.instance.GetCharacter(_characterId);
+            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
+            Power _power = _character.role.powers.FirstOrDefault(_p => _p.NetworkObjectId == _powerNetworkObjectId);
+            Assert.IsNotNull(_power, $"Power with id {_powerNetworkObjectId} not found on character {_characterId}");
+            
+            if (_character.role.powers.Contains(_power))
+            {
+                _character.role.powers.Remove(_power);
+            }
         }
 
         private void OnDestroy()

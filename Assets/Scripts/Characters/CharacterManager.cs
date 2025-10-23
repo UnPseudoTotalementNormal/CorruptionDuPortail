@@ -195,7 +195,7 @@ namespace Characters
                 return;
             }
             
-            RemovePowerFromCharacterPowerListRpc(_characterId, _power.NetworkObjectId);
+            PowerManager.instance.RemovePowerFromCharacterPowerListRpc(_characterId, _power.NetworkObjectId);
             NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
             if (_powerNetworkObject != null)
             {
@@ -203,19 +203,7 @@ namespace Characters
             }
         }
         
-        [Rpc(SendTo.Everyone)]
-        private void RemovePowerFromCharacterPowerListRpc(ulong _characterId, ulong _powerNetworkObjectId)
-        {
-            Character _character = GetCharacter(_characterId);
-            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
-            Power _power = _character.role.powers.FirstOrDefault(_p => _p.NetworkObjectId == _powerNetworkObjectId);
-            Assert.IsNotNull(_power, $"Power with id {_powerNetworkObjectId} not found on character {_characterId}");
-            
-            if (_character.role.powers.Contains(_power))
-            {
-                _character.role.powers.Remove(_power);
-            }
-        }
+        
 
         private void OnPowerReparentComplete(Power _power, bool _result)
         {

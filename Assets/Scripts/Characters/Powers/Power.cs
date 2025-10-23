@@ -33,7 +33,8 @@ namespace Characters.Powers
         public bool needTargetSelection => targetIncludeFlags != 0;
         
         public NetworkVariable<int> powerUseLeft;
-        public int maxPowerUse = 1; 
+        public int maxPowerUse = 1;
+        [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
         [Header("Sounds")] 
         public EventReference canalisationSound;

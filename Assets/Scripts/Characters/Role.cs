@@ -52,7 +52,10 @@ public class Role : INetworkSerializable, ICloneable
     {
         foreach (var _power in powers) 
         {
-            _power.powerUseLeft.Value = _power.maxPowerUse;
+            int _useToSet = (_power.powerUseRegenPerAwakening == -1) 
+                ? _power.maxPowerUse 
+                : Math.Clamp(_power.powerUseLeft.Value + _power.powerUseRegenPerAwakening, 0, _power.maxPowerUse);
+            _power.powerUseLeft.Value = _useToSet;
         }
     }
     

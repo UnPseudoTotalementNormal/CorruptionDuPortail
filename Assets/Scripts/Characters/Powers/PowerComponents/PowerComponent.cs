@@ -13,19 +13,24 @@ namespace Characters.Powers.PowerComponents
         protected Power power;
         protected Character ownerCharacter => GameLogic.GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
         protected ulong ownerClientId => power.ownerClientId.Value;
-        protected void Awake()
+        protected virtual void Awake()
         {
             power = GetComponent<Power>();
+            power.powerComponents.Add(this);
             Assert.IsNotNull(power, "PowerComponent must be attached to a GameObject with a Power component");
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            power.powerComponents.Add(this);
             Init();
         }
 
         protected abstract void Init();
+        
+        public virtual bool CanUsePower()
+        {
+            return true;
+        }
     }
 }

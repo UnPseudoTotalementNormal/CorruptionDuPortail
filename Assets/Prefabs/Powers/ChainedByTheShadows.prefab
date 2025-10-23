@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7494253773487851743}
   - component: {fileID: 1547528461306425092}
   - component: {fileID: 6383361928277287719}
+  - component: {fileID: -2459146488611782607}
   m_Layer: 0
   m_Name: ChainedByTheShadows
   m_TagString: Untagged
@@ -692,6 +693,7 @@ MonoBehaviour:
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 0
@@ -707,3 +709,596 @@ MonoBehaviour:
       Data4: 0
     Path: 
   powerComponents: []
+--- !u!114 &-2459146488611782607
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6431324284869479415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aa5ca77427f4f7b9cd7ed9243bafd88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  componentName:
+    utf8LengthInBytes: 9
+    bytes:
+      offset0000:
+        byte0000: 72
+        byte0001: 195
+        byte0002: 169
+        byte0003: 114
+        byte0004: 105
+        byte0005: 116
+        byte0006: 97
+        byte0007: 103
+        byte0008: 101
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      byte0016: 0
+      byte0017: 0
+      byte0018: 0
+      byte0019: 0
+      byte0020: 0
+      byte0021: 0
+      byte0022: 0
+      byte0023: 0
+      byte0024: 0
+      byte0025: 0
+      byte0026: 0
+      byte0027: 0
+      byte0028: 0
+      byte0029: 0
+  description:
+    utf8LengthInBytes: 109
+    bytes:
+      offset0000:
+        byte0000: 83
+        byte0001: 105
+        byte0002: 32
+        byte0003: 117
+        byte0004: 110
+        byte0005: 32
+        byte0006: 123
+        byte0007: 118
+        byte0008: 97
+        byte0009: 114
+        byte0010: 58
+        byte0011: 108
+        byte0012: 101
+        byte0013: 103
+        byte0014: 97
+        byte0015: 99
+      offset0016:
+        byte0000: 121
+        byte0001: 82
+        byte0002: 111
+        byte0003: 108
+        byte0004: 101
+        byte0005: 78
+        byte0006: 97
+        byte0007: 109
+        byte0008: 101
+        byte0009: 125
+        byte0010: 32
+        byte0011: 101
+        byte0012: 115
+        byte0013: 116
+        byte0014: 32
+        byte0015: 101
+      offset0032:
+        byte0000: 110
+        byte0001: 99
+        byte0002: 104
+        byte0003: 97
+        byte0004: 195
+        byte0005: 174
+        byte0006: 110
+        byte0007: 195
+        byte0008: 169
+        byte0009: 44
+        byte0010: 32
+        byte0011: 108
+        byte0012: 101
+        byte0013: 32
+        byte0014: 112
+        byte0015: 111
+      offset0048:
+        byte0000: 117
+        byte0001: 118
+        byte0002: 111
+        byte0003: 105
+        byte0004: 114
+        byte0005: 32
+        byte0006: 100
+        byte0007: 101
+        byte0008: 118
+        byte0009: 105
+        byte0010: 101
+        byte0011: 110
+        byte0012: 100
+        byte0013: 114
+        byte0014: 97
+        byte0015: 32
+      offset0064:
+        byte0000: 117
+        byte0001: 116
+        byte0002: 105
+        byte0003: 108
+        byte0004: 105
+        byte0005: 115
+        byte0006: 97
+        byte0007: 98
+        byte0008: 108
+        byte0009: 101
+        byte0010: 46
+        byte0011: 10
+        byte0012: 195
+        byte0013: 137
+        byte0014: 116
+        byte0015: 97
+      offset0080:
+        byte0000: 116
+        byte0001: 32
+        byte0002: 97
+        byte0003: 99
+        byte0004: 116
+        byte0005: 117
+        byte0006: 101
+        byte0007: 108
+        byte0008: 58
+        byte0009: 32
+        byte0010: 123
+        byte0011: 118
+        byte0012: 97
+        byte0013: 114
+        byte0014: 58
+        byte0015: 108
+      offset0096:
+        byte0000: 101
+        byte0001: 103
+        byte0002: 97
+        byte0003: 99
+        byte0004: 121
+        byte0005: 83
+        byte0006: 116
+        byte0007: 97
+        byte0008: 116
+        byte0009: 117
+        byte0010: 115
+        byte0011: 125
+        byte0012: 46
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0112:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0128:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0144:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0160:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0176:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0192:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0208:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0224:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0240:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0256:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0272:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0288:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0304:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0320:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0336:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0352:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0368:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0384:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0400:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0416:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0432:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0448:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0464:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0480:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      byte0496: 0
+      byte0497: 0
+      byte0498: 0
+      byte0499: 0
+      byte0500: 0
+      byte0501: 0
+      byte0502: 0
+      byte0503: 0
+      byte0504: 0
+      byte0505: 0
+      byte0506: 0
+      byte0507: 0
+      byte0508: 0
+      byte0509: 0
+  legacyRoleID: 3307
+  hasLegacyBeenInherited: 0

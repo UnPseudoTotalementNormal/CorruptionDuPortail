@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AudioSystem;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
@@ -47,6 +48,7 @@ namespace Characters.Powers
         public event Action onPowerUsedServer;
         public event Action onPowerUsed;
         public event Action onPowerReparented;
+        public event Action onPowerGameStartedServerTriggered;
 
         public List<PowerComponent> powerComponents = new();
         
@@ -71,6 +73,7 @@ namespace Characters.Powers
                 return false;
             }
 
+            if (powerComponents.Any(_pc => !_pc.CanUsePower())) return false;
             if (isPassive) return false;
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
@@ -137,6 +140,7 @@ namespace Characters.Powers
 
         public virtual void OnGameStartedServer()
         {
+            onPowerGameStartedServerTriggered?.Invoke();
         }
 
         public void OnReparentedServer()

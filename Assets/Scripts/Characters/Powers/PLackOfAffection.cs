@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Characters.Powers.Target;
 using ChatSystem;
 using Extensions;
 using FMODUnity;
@@ -24,6 +25,11 @@ namespace Characters.Powers
         
         private void OnCardClicked(Card _clickedCard)
         {
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
+            {
+                return;
+            }
+            
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
             OnUsed();
             OnPlayerContactedRpc(_clickedCard.characterInfo.ownerClientId.Value, ownerClientId.Value, NetworkManager.RpcTarget.Single(_clickedCard.characterInfo.ownerClientId.Value, RpcTargetUse.Persistent));

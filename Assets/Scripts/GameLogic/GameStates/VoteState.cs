@@ -188,7 +188,7 @@ namespace GameLogic.GameStates
             {
                 Character _votedCharacter = gameManager.characterManager.GetCharacters().Find(_character => _character.ownerClientId.Value == _charactersWithMostVotes.First().Key);
                 mostVotedPlayer = _votedCharacter.ownerClientId.Value;
-                gameManager.chainingManager.chainingPlayers.Add(_votedCharacter.ownerClientId.Value);
+                ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
             }
             else
             {

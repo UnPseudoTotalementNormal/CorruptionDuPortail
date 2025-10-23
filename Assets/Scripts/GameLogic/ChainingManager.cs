@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Characters.Powers;
 using GameLogic.GameStates;
@@ -9,9 +10,35 @@ namespace GameLogic
 {
     public class ChainingManager : NetworkBehaviour
     {
+        public static ChainingManager instance;
+        
         public NetworkList<ulong> chainingPlayers = new();
         public Power takeDownThePortalPowerDataObject;
+
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                Destroy(this.gameObject);
+                return;
+            }
+            instance = this;
+        }
         
+        public void AddCharacterToChainingList(ulong _characterId)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError("AddCharacterToChainingList can only be called on the server");
+                return;
+            }
+            
+            if (!chainingPlayers.Contains(_characterId))
+            {
+                chainingPlayers.Add(_characterId);
+            }
+        }
+
         [Rpc(SendTo.Server)]
         public void ChainCharacterRpc(ulong _characterId)
         {

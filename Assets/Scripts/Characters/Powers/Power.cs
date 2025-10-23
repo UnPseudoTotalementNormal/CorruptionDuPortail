@@ -7,6 +7,7 @@ using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
+using FocusSystem;
 using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
@@ -85,6 +86,7 @@ namespace Characters.Powers
         protected virtual void OnUsedOwnerClientRpc(RpcParams _params = default)
         {
             if (!string.IsNullOrEmpty(onUsedSound.GetPath())) RuntimeManager.PlayOneShot(onUsedSound);
+            FocusManager.instance.UnfocusAll();
         }
         
         [Rpc(SendTo.Server)]

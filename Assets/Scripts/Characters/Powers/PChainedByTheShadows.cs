@@ -49,7 +49,7 @@ namespace Characters.Powers
                     GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    GameManager.instance.chainingManager.chainingPlayers.Add(_corruptingCharacterId);
+                    ChainingManager.instance.AddCharacterToChainingList(_corruptingCharacterId);
                 }
             }
         }

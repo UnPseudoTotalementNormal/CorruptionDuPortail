@@ -195,7 +195,7 @@ namespace Characters
                 return;
             }
             
-            PowerManager.instance.RemovePowerFromCharacterPowerListRpc(_characterId, _power.NetworkObjectId);
+            PowerManager.instance.RemovePowerFromCharacterPowerListRpc(_characterId, new(_power));
             NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
             if (_powerNetworkObject != null)
             {

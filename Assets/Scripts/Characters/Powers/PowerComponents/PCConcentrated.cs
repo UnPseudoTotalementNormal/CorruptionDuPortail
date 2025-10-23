@@ -56,7 +56,6 @@ namespace Characters.Powers.PowerComponents
             int _siblingIndex = power.transform.GetSiblingIndex();
             Power _precedentPower = null;
             
-            Debug.Log("caca");
             if (_siblingIndex == 0)
             {
                 return _precedentPower;

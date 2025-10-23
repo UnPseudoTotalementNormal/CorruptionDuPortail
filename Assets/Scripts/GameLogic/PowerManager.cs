@@ -113,7 +113,7 @@ namespace GameLogic
 
             if (_power.ownerCharacter != null)
             {
-                RemovePowerFromCharacterPowerListRpc(_power.ownerClientId.Value, _power.NetworkObjectId);
+                RemovePowerFromCharacterPowerListRpc(_power.ownerClientId.Value, new(_power));
             }
 
             _power.GetComponent<NetworkObject>().TrySetParent(_newOwner.GetComponent<NetworkObject>());
@@ -130,12 +130,12 @@ namespace GameLogic
         }
         
         [Rpc(SendTo.Everyone)]
-        public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, ulong _powerNetworkObjectId)
+        public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, NetworkBehaviourReference _powerNetworkRef)
         {
             Character _character = CharacterManager.instance.GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
-            Power _power = _character.role.powers.FirstOrDefault(_p => _p.NetworkObjectId == _powerNetworkObjectId);
-            Assert.IsNotNull(_power, $"Power with id {_powerNetworkObjectId} not found on character {_characterId}");
+            _powerNetworkRef.TryGet(out Power _power);
+            Assert.IsNotNull(_power, $"Power with id {_powerNetworkRef} not found on character {_characterId}");
             
             if (_character.role.powers.Contains(_power))
             {

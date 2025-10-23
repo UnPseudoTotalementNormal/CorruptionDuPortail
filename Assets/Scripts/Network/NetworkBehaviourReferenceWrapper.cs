@@ -1,8 +1,7 @@
-/*
 using System;
 using Unity.Netcode;
 
-namespace Networking
+namespace Network
 {
     [Serializable]
     public struct NetworkBehaviourReferenceWrapper : INetworkSerializable, IEquatable<NetworkBehaviourReferenceWrapper>
@@ -13,49 +12,49 @@ namespace Networking
         const ulong NULL_NETWORK_OBJECT_ID = ulong.MaxValue;
         const ushort NULL_NETWORK_BEHAVIOUR_ID = ushort.MaxValue;
 
-        public NetworkBehaviourReferenceWrapper(NetworkBehaviour behaviour)
+        public NetworkBehaviourReferenceWrapper(NetworkBehaviour _behaviour)
         {
-            if (behaviour == null)
+            if (_behaviour == null)
             {
                 networkBehaviourId = NULL_NETWORK_BEHAVIOUR_ID;
                 networkObjectId = NULL_NETWORK_OBJECT_ID;
                 return;
             }
             
-            networkObjectId = behaviour.NetworkObjectId;
-            networkBehaviourId = behaviour.NetworkBehaviourId;
+            networkObjectId = _behaviour.NetworkObjectId;
+            networkBehaviourId = _behaviour.NetworkBehaviourId;
         }
 
-        public bool TryGet<T>(out T behaviour) where T : NetworkBehaviour
+        public bool TryGet<T>(out T _behaviour) where T : NetworkBehaviour
         {
-            behaviour = null;
+            _behaviour = null;
             if (networkBehaviourId == NULL_NETWORK_BEHAVIOUR_ID || networkObjectId == NULL_NETWORK_OBJECT_ID)
             {
                 return false;
             }
             
-            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject))
+            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject _networkObject))
             {
-                behaviour = networkObject.GetNetworkBehaviourAtOrderIndex(networkBehaviourId) as T;
-                return behaviour != null;
+                _behaviour = _networkObject.GetNetworkBehaviourAtOrderIndex(networkBehaviourId) as T;
+                return _behaviour != null;
             }
             return false;
         }
 
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref networkObjectId);
-            serializer.SerializeValue(ref networkBehaviourId);
+            _serializer.SerializeValue(ref networkObjectId);
+            _serializer.SerializeValue(ref networkBehaviourId);
         }
 
-        public bool Equals(NetworkBehaviourReferenceWrapper other)
+        public bool Equals(NetworkBehaviourReferenceWrapper _other)
         {
-            return networkObjectId == other.networkObjectId && networkBehaviourId == other.networkBehaviourId;
+            return networkObjectId == _other.networkObjectId && networkBehaviourId == _other.networkBehaviourId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object _obj)
         {
-            return obj is NetworkBehaviourReferenceWrapper other && Equals(other);
+            return _obj is NetworkBehaviourReferenceWrapper _other && Equals(_other);
         }
 
         public override int GetHashCode()
@@ -63,6 +62,4 @@ namespace Networking
             return HashCode.Combine(networkObjectId, networkBehaviourId);
         }
     }
-
 }
-*/

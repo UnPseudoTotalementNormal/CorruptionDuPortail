@@ -8,6 +8,7 @@ using Characters;
 using Extensions;
 using FMODUnity;
 using Network;
+using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -29,6 +30,8 @@ namespace GameLogic.GameStates
         
         private float updateAwakeningTimer;
         private const float UpdateAwakeningTimerInterval = 1f;
+        
+        private Dictionary<Character, NetworkVariable<bool>.OnValueChangedDelegate> characterAwakeningCallbacks = new();
         
         public EventReference awakeningAnnouncementSound;
         public EventReference awakenedLoopSound;
@@ -125,24 +128,58 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
-            gameManager.characterManager.onCharactersListUpdated += OnCharactersListUpdatedWhileAwakening;
+            foreach (var _character in CharacterManager.instance.GetCharacters(false))
+            {
+                // Créer une fonction anonyme avec le paramètre ownerId et la stocker
+                NetworkVariable<bool>.OnValueChangedDelegate _callback = (_previousValue, _newValue) => 
+                {
+                    OnCharacterAwakeningChanged(_previousValue, _newValue, _character.ownerClientId.Value);
+                };
+                
+                characterAwakeningCallbacks[_character] = _callback;
+                _character.isAwakened.OnValueChanged += _callback;
+            }
         }
 
-        public override void OnEndStateServer()
+        private void OnCharacterAwakeningChanged(bool _previousValue, bool _newValue, ulong _ownerId)
         {
-            gameManager.characterManager.onCharactersListUpdated -= OnCharactersListUpdatedWhileAwakening;
-            base.OnEndStateServer();
-        }
-        
-        private void OnCharactersListUpdatedWhileAwakening(List<Character> _characters)
-        {
-            var _isAnyCharacterAwakened = _characters.Any(_c => _c.isAwakened.Value);
-            if (_isAnyCharacterAwakened)
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogError("OnCharacterAwakeningChanged can only be called on the server");
+                return;
+            }
+            
+            if (_newValue)
             {
                 return;
             }
             
-            GoToNextAwakeLayer();
+            var _character = gameManager.characterManager.GetCharacter(_ownerId, false);
+            int _awakeningIndexForCharacter = awakeningOrder.FindIndex(_layer =>
+                _layer.awakeningCharacters.Any(_rdo => _character.role.IsTheSameRole(_rdo.role))
+            );
+            
+            if (_awakeningIndexForCharacter != currentAwakeningIndex)
+            {
+                return;
+            }
+            
+            currentlyAwakenedCharacters.Remove(_character);
+            
+            if (currentlyAwakenedCharacters.Count == 0)
+            {
+                GoToNextAwakeLayer();
+            }
+        }
+
+        public override void OnEndStateServer()
+        {
+            base.OnEndStateServer();
+            foreach (var (_character, _callback) in characterAwakeningCallbacks)
+            {
+                _character.isAwakened.OnValueChanged -= _callback;
+            }
+            characterAwakeningCallbacks.Clear();
         }
         
         public override void OnStartStateClient()
@@ -166,9 +203,8 @@ namespace GameLogic.GameStates
                 updateAwakeningTimer = UpdateAwakeningTimerInterval;
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             }
-
-            //handle fake skip/used power
-            if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f)
+            
+            if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f) //handle fake skip/used power
             {
                 var _fakeAwakenedCharacters = gameManager.characterManager.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);

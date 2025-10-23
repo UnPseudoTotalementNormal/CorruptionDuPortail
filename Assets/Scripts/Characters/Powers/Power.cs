@@ -43,24 +43,35 @@ namespace Characters.Powers
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
 
+        public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
+        public event Action onPowerUsed;
         public event Action onPowerReparented;
 
         public List<PowerComponent> powerComponents = new();
         
         public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
+        
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            onPowerSpawned?.Invoke(this);
+        }
+        
         public bool IsTheSamePower(Power _isTheSamePower)
         {
             return powerName == _isTheSamePower.powerName && powerDescription == _isTheSamePower.powerDescription;
         }
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            var _powerCharacter = GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
+            var _powerCharacter = ownerCharacter;
             if (!_powerCharacter)
             {
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
                 return false;
             }
+
+            if (isPassive) return false;
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
             if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
@@ -81,6 +92,13 @@ namespace Characters.Powers
             StopUse();
             OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             OnUsedServerRpc();
+            OnUsedRpc();
+        }
+
+        [Rpc(SendTo.Everyone)]
+        protected virtual void OnUsedRpc()
+        {
+            onPowerUsed?.Invoke();
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

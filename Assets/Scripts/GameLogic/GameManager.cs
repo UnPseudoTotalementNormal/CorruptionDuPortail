@@ -41,6 +41,7 @@ namespace GameLogic
         public int gameLoopCount { get; private set; } = 0;
         public int currentDay => gameLoopCount + 1;
 
+        public bool hasGameStarted => gameHasStartedFirstLoop;
         public event Action onGameStarted;
         public event Action onNewDayPassed;
         

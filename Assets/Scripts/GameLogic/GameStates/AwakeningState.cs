@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
 using Characters;
+using Characters.Powers;
 using Extensions;
 using FMODUnity;
 using Network;
@@ -280,6 +281,38 @@ namespace GameLogic.GameStates
                 return;
             }
             currentAwakeningMaxTime = _newAwakeningMaxTime;
+        }
+
+        public void OnPowerUsedServer(Power _newPower)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                Debug.LogError("OnPowerUsedServer can only be called on the server");
+                return;
+            }
+            
+            var _character = gameManager.characterManager.GetCharacter(_newPower.ownerClientId.Value, false);
+            if (!currentlyAwakenedCharacters.Contains(_character))
+            {
+                return;
+            }
+
+            bool _canPlay = true;
+            foreach (var _power in _character.role.powers)
+            {
+                if (!_power.CanUse())
+                {
+                    _canPlay = false;
+                    break;
+                }
+            }
+
+            if (_canPlay)
+            {
+                return;
+            }
+            
+            _character.SleepCharacterServerRpc();
         }
     }
 }

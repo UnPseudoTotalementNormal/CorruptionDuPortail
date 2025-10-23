@@ -29,6 +29,8 @@ namespace GameLogic
 
         private void Start()
         {
+            Power.onPowerSpawned += OnPowerSpawned;
+            
             if (!NetworkManager.Singleton.IsServer)
             {
                 return;
@@ -36,6 +38,35 @@ namespace GameLogic
             //server only
             
             GameManager.instance.onGameStarted += OnGameStarted;
+        }
+
+        private void OnPowerSpawned(Power _newPower)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
+            if (GameManager.instance.hasGameStarted)
+            {
+                _newPower.OnGameStartedServer();
+            }
+
+            _newPower.onPowerUsed += () => { OnPowerUsedServer(_newPower); };
+        }
+
+        private void OnPowerUsedServer(Power _newPower)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+            {
+                return;
+            }
+
+            var _gameManager = GameManager.instance;
+            if (_gameManager.GetGameState(_gameManager.currentGameStateIndex.Value) is AwakeningState _awakeningState)
+            {
+                _awakeningState.OnPowerUsedServer(_newPower);
+            }
         }
 
         private void OnGameStarted()
@@ -71,6 +102,11 @@ namespace GameLogic
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnPowerReparented should only be called on the server");
 
             _power.OnReparentedServer();
+        }
+
+        private void OnDestroy()
+        {
+            Power.onPowerSpawned -= OnPowerSpawned;
         }
     }
 }

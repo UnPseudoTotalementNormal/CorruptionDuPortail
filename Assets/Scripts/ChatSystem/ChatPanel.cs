@@ -102,11 +102,18 @@ namespace ChatSystem
 
         private void OnChatDiscovered(int _chatId)
         {
-            var _newButton = Instantiate(discoveredChatButtonPrefab, discoveredChatLayoutTransform);
+            CustomButton _newButton = Instantiate(discoveredChatButtonPrefab, discoveredChatLayoutTransform);
             _newButton.GetComponentInChildren<TMP_Text>().text = ChatManager.instance.GetChatWindow(_chatId).chatName.ToString();
             _newButton.onButtonClicked += () =>
             {
                 ChatManager.instance.ChangeActiveChat(_chatId);
+            };
+            ChatManager.instance.onChatUndiscovered += (int _undiscoveredId) =>
+            {
+                if (_undiscoveredId == _chatId && _newButton != null)
+                {
+                    Destroy(_newButton.gameObject);
+                }
             };
             _newButton.GetComponentInChildren<ChatNotificationComponent>().chatId = _chatId;
         }

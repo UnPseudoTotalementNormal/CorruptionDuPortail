@@ -93,7 +93,7 @@ namespace Characters.Powers
         public void OnUsed()
         {
             StopUse();
-            OnUsedOwnerClientRpc(NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            OnUsedOwnerClientRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             OnUsedServerRpc();
             OnUsedRpc();
         }
@@ -121,6 +121,10 @@ namespace Characters.Powers
 
         public virtual void Cancel()
         {
+            if (!isCurrentlyUsed && !isPassive)
+            {
+                return;
+            }
             StopUse();
         }
 

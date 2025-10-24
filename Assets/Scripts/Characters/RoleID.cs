@@ -18,5 +18,6 @@ namespace Characters
         Technomancien = 5555,
         ChasseuseDePrime = 7771,
         Uges = 9999,
+        Messager = 4321
     }
 }

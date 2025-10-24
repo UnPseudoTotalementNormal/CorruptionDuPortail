@@ -31,6 +31,7 @@ namespace ChatSystem
         public event Action<ChatMessage> onChatMessageSent;
         public event Action<int> onActiveChatChanged;
         public event Action<int> onChatDiscovered;
+        public event Action<int> onChatUndiscovered;
         
         public EventReference switchChatSound;
         public EventReference receiveMessageSound;
@@ -82,6 +83,25 @@ namespace ChatSystem
         public void DiscoverChatRpc(int _chatId, RpcParams _rpcParams = default)
         {
             DiscoverChat(_chatId);
+        }
+        
+        public void UndiscoverChat(int _chatId)
+        {
+            if (discoveredChatIds.Remove(_chatId))
+            {
+                Debug.Log("Undiscovering chat with ID: " + _chatId);
+                if (activeChatId == _chatId)
+                {
+                    ChangeActiveChat((int)ChatWindowIDs.General);
+                }
+                onChatUndiscovered?.Invoke(_chatId);
+            }
+        }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void UndiscoverChatRpc(int _chatId, RpcParams _rpcParams = default)
+        {
+            UndiscoverChat(_chatId);
         }
 
         public ChatWindow GetChatWindow(int _chatId)

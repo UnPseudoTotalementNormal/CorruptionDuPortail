@@ -35,7 +35,7 @@ namespace Characters.Powers.PowerComponents
                 return;
             }
 
-            if (_precedentPower.powerUseLeft.Value == _precedentPower.maxPowerUse)
+            if (_precedentPower.powerUseLeft.Value != _precedentPower.maxPowerUse)
             {
                 return;
             }

@@ -37,18 +37,26 @@ namespace Characters.Powers
         }
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
+            var _clickedCharacterId = _clickedCard.characterInfo.ownerClientId.Value;
+            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacterId))
             {
-                InvokeOnCharacterCorruptionFailedRpc(_clickedCard.characterInfo.ownerClientId.Value);
+                InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;
             }
-            lastCorruptedCharacterId.Value = _clickedCard.characterInfo.ownerClientId.Value;
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
-            _clickedCard.characterInfo.CorruptPlayerServerRpc();
+            OnCardClickedRpc(_clickedCharacterId);
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _clickedCard.characterInfo.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
-            InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCard.characterInfo.ownerClientId.Value);
+                _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             OnUsed();
+        }
+
+        [Rpc(SendTo.Server)]
+        private void OnCardClickedRpc(ulong _clickedCharacterId)
+        {
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacterId);
+            lastCorruptedCharacterId.Value = _clickedCharacterId;
+            InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCharacterId);
+            Character _clickedCharacter = GameManager.instance.characterManager.GetCharacter(_clickedCharacterId, false);
+            _clickedCharacter.CorruptPlayerServerRpc();
         }
 
         [Rpc(SendTo.Everyone)]

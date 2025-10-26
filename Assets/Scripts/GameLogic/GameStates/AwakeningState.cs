@@ -297,12 +297,17 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            bool _canPlay = true;
+            bool _canPlay = false;
             foreach (var _power in _character.role.powers)
             {
-                if (!_power.CanUse())
+                if (_power.isPassive)
                 {
-                    _canPlay = false;
+                    continue;
+                }
+                
+                if (_power.CanUse())
+                {
+                    _canPlay = true;
                     break;
                 }
             }

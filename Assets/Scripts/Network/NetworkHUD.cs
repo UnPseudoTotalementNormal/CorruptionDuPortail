@@ -38,6 +38,8 @@ public class NetworkHUD : MonoBehaviour
 
         GameCode.gameCode = inputField.text;
         
+        GUIUtility.systemCopyBuffer = GameCode.gameCode;
+        
         SwitchToGameScene();
     }
 
@@ -51,6 +53,8 @@ public class NetworkHUD : MonoBehaviour
         hostCodeText.text = joinCode;
         
         GameCode.gameCode = joinCode;
+        
+        GUIUtility.systemCopyBuffer = joinCode;
 
         SwitchToGameScene();
     }

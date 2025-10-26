@@ -1060,7 +1060,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\xC9lus corrompus lors de l'\xE9veil pr\xE9c\xE9dent"
+  m_text: Nombre total de corrompus
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1087,7 +1087,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 21.35
+  m_fontSize: 24.25
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -4366,7 +4366,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Nombre d'interaction avec le robot lors de l'\xE9veil pr\xE9c\xE9dent"
+  m_text: Nombre d'interaction avec le robot cette nuit
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4393,7 +4393,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16.05
+  m_fontSize: 18.8
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -9426,7 +9426,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 52.33
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -9454,7 +9454,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 138.14
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -9542,7 +9542,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 136.05
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x

@@ -32,10 +32,6 @@ namespace Characters.Powers
 
         private void OnCardClicked(Card _clickedCard)
         {
-            if (_clickedCard.characterInfo.isHealed.Value)
-            {
-                return;
-            }
             if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
             {
                 return;
@@ -64,7 +60,7 @@ namespace Characters.Powers
             bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
-                if (_choosedCharacter.isCorrupted.Value)
+                if (_choosedCharacter.isCorrupted.Value || _choosedCharacter.isHealed.Value)
                 {
                     _healSuccess = true;
                     _choosedCharacter.HealPlayerServerRpc();
@@ -132,19 +128,6 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked += OnCardClicked;
 
             FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
-
-            foreach (var _character in GameManager.instance.characterManager.GetCharacters(false))
-            {
-                if (_character.isHealed.Value)
-                {
-                    Card _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
-                    if (_card == null)
-                    {
-                        continue;
-                    }
-                    FocusManager.instance.UnfocusObject(_card.gameObject);
-                }
-            }
 
             clickedCharacter = null;
         }

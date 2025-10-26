@@ -61,6 +61,11 @@ namespace Characters.Powers.Target
                 _targets.RemoveAll(_t => _t.isChained.Value);
             }
 
+            if (!_includeFlags.HasFlag(TargetIncludeFlags.Healed))
+            {
+                _targets.RemoveAll(_t => _t.isHealed.Value);
+            }
+
             return _targets.Select(_t => _t.ownerClientId.Value).ToList();
         }
 

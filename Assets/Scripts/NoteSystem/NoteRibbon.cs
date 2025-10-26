@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Board.UI.CharacterBar;
 using DG.Tweening;
 using DG.Tweening.Core;
@@ -35,6 +36,9 @@ namespace NoteSystem
         [SerializeField] private int noteColumns = 3; 
         
         public bool isPanelOpen { get; protected set;}
+        public bool isChoosePanelOpen => currentNoteChoosePanel != null;
+        
+        private List<NoteRibbon> siblingsRibbons = new();
 
         private void Awake()
         {
@@ -54,6 +58,17 @@ namespace NoteSystem
                 case NoteType.Excluded:
                     _noteManager.onExcludedRolesByPlayerModified += OnNotesModified;
                     break;
+            }
+        }
+
+        private void Start()
+        {
+            foreach (var _sibling in transform.parent.GetComponentsInChildren<NoteRibbon>())
+            {
+                if (_sibling != this)
+                {
+                    siblingsRibbons.Add(_sibling);
+                }
             }
         }
 
@@ -128,7 +143,7 @@ namespace NoteSystem
 
         private void OnAddNoteButtonClicked()
         {
-            if (currentNoteChoosePanel != null)
+            if (currentNoteChoosePanel != null || siblingsRibbons.Any(_r => _r.isChoosePanelOpen))
             {
                 return;
             }

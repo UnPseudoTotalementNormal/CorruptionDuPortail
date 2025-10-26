@@ -58,6 +58,10 @@ namespace Characters.Powers
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
+                if (!_blessingCharacter.isHealed.Value)
+                {
+                    _blessingCharacter.HealPlayerServerRpc();
+                }
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));

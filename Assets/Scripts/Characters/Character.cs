@@ -124,6 +124,10 @@ namespace Characters
         [Rpc(SendTo.Server)]
         public void HealPlayerServerRpc()
         {
+            if (isHealed.Value)
+            {
+                return;
+            }
             isCorrupted.Value = false;
             isHealed.Value = true;
         }

@@ -3,7 +3,7 @@ using GameLogic;
 
 namespace Characters.Powers.PowerComponents
 {
-    public class PCLegacy : PowerComponent
+    public class PCPowerUnlockWhenChain : PowerComponent //jsp honnetement j'avais compris autre chose pour l'heritage
     {
         public RoleID legacyRoleID;
         public string legacyRoleName => legacyRoleID.ToString();

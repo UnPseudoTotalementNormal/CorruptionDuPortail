@@ -5,30 +5,20 @@
 [LOG] OutputPulseAudio::PulseAudio_RegisterLib : Loaded PulseAudio version 17.0.0.
 [LOG] PulseAudio_EnumOutputCallback            : Found output device NAME:audiorelay-virtual-mic-sink DESC:AudioRelay Mic&Sink CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumOutputCallback            : Found output device NAME:audiorelay_Speaker DESC:AudioRelay Speaker CHANNELS:2 RATE:48000.
-[LOG] PulseAudio_EnumOutputCallback            : Found output device NAME:alsa_output.pci-0000_01_00.1.hdmi-stereo DESC:AD107 High Definition Audio Controller Stéréo numérique (HDMI) CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumOutputCallback            : Found output device NAME:alsa_output.pci-0000_64_00.6.analog-stereo DESC:Family 17h/19h/1ah HD Audio Controller Stéréo analogique CHANNELS:2 RATE:48000.
+[LOG] PulseAudio_EnumOutputCallback            : Found output device NAME:alsa_output.pci-0000_01_00.1.hdmi-stereo DESC:AD107 High Definition Audio Controller Stéréo numérique (HDMI) CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumInputCallback             : Found input device NAME:audiorelay-virtual-mic-sink DESC:AudioRelay Mic&Sink CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumInputCallback             : Found input device NAME:audiorelay_Speaker.monitor DESC:Monitor of AudioRelay Speaker CHANNELS:2 RATE:48000.
-[LOG] PulseAudio_EnumInputCallback             : Found input device NAME:alsa_output.pci-0000_01_00.1.hdmi-stereo.monitor DESC:Monitor of AD107 High Definition Audio Controller Stéréo numérique (HDMI) CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumInputCallback             : Found input device NAME:alsa_output.pci-0000_64_00.6.analog-stereo.monitor DESC:Monitor of Family 17h/19h/1ah HD Audio Controller Stéréo analogique CHANNELS:2 RATE:48000.
 [LOG] PulseAudio_EnumInputCallback             : Found input device NAME:alsa_input.pci-0000_64_00.6.analog-stereo DESC:Family 17h/19h/1ah HD Audio Controller Stéréo analogique CHANNELS:2 RATE:48000.
+[LOG] PulseAudio_EnumInputCallback             : Found input device NAME:alsa_output.pci-0000_01_00.1.hdmi-stereo.monitor DESC:Monitor of AD107 High Definition Audio Controller Stéréo numérique (HDMI) CHANNELS:2 RATE:48000.
 [LOG] Thread::initThread                       : Init FMOD stream thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFB, Stack Size: 98304, Semaphore: No, Sleep Time: 10, Looping: Yes.
 [LOG] SystemI::DSPCodecPoolRegister            : register codec pool for pool type 0
 [LOG] Thread::initThread                       : Init FMOD mixer thread. Affinity: 0x4000000000000001, Priority: 0xFFFF7FFA, Stack Size: 81920, Semaphore: No, Sleep Time: 0, Looping: Yes.
-[LOG] AsyncManager::init                       : manager 0x55f0d78e9958 isAsync 0 updatePeriod 0.02
+[LOG] AsyncManager::init                       : manager 0x5587ae69ff78 isAsync 0 updatePeriod 0.02
 [LOG] AsyncManager::init                       : done
 [LOG] PlaybackSystem::init                     : 
 [LOG] Thread::initThread                       : Init FMOD Studio sample load thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFD, Stack Size: 98304, Semaphore: No, Sleep Time: 1, Looping: No.
 [LOG] PlaybackSystem::init                     : done
 [LOG] Thread::initThread                       : Init FMOD Studio bank load thread. Affinity: 0x4000000000000003, Priority: 0xFFFF7FFD, Stack Size: 98304, Semaphore: No, Sleep Time: 1, Looping: No.
 [LOG] Manager::init                            : done.
-[LOG] BankLoader::serializeBank                : fileversion = 146, compatVersion = 146 (oldest = 44, newest = 146)
-[LOG] BankLoader::serializeBank                : fileversion = 146, compatVersion = 146 (oldest = 44, newest = 146)
-[LOG] PlaybackSystem::acquireMasterBus         : Setting master channel group format to 6
-[LOG] Thread::callback                         : FMOD Studio bank load thread finished.
-[LOG] Thread::callback                         : FMOD Studio sample load thread finished.
-[LOG] LiveUpdate::release                      : 
-[LOG] LiveUpdate::reset                        : Reset connection (reason Disconnected)
-[LOG] Thread::callback                         : FMOD stream thread finished.
-[LOG] Thread::callback                         : FMOD mixer thread finished.
-[LOG] SystemI::closeInternal                   : Closed.

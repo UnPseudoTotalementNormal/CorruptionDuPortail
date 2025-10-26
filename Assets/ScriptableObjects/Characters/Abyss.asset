@@ -86,7 +86,6 @@ MonoBehaviour:
     roleID: 1042
     rolePortrait: 1048685107
     roleDifficulty: 2
-    powers: []
     winningConditions:
     - rid: 7121802106355843684
     onChainingSound:
@@ -103,13 +102,13 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
-    isAwakened: 0
     ownerClientId: 0
   powers:
   - {fileID: 6383361928277287719, guid: e4f9bc6468ffcf437904d9ccb8b81a24, type: 3}
   - {fileID: 8296718483155507466, guid: 4be4aaf929ad584e6b113b69c1ef5a31, type: 3}
   - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
   - {fileID: 5190409391054709449, guid: 8aded5866a7c938e59edb0d72ad82038, type: 3}
+  - {fileID: 2397874720278988406, guid: 9119f49837d8ccfa2be2803dd7270f0a, type: 3}
   references:
     version: 2
     RefIds:

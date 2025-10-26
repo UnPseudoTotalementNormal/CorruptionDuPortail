@@ -23,6 +23,8 @@ using UnityEngine.UI;
 
 public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    public Canvas cardCanvas;
+    
     [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
     public TMP_Text cardRoleText;
 
@@ -80,7 +82,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         {
             return;
         }
-        //TODO: jarvis, c'est quoi ça frr
+        
         if (!CanUnZoomCard())
         {
             return;
@@ -324,6 +326,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     private void OnOverZoom()
     {
+        if (isCardZoomed)
+        {
+            return;
+        }
+        
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one * hoverZoom, 0.35f).SetEase(Ease.OutQuint);
         cardDisplacerTransform.DOKill();
@@ -332,15 +339,24 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         lastZoomStartTime = Time.time;
         
         isCardZoomed = true;
+        
+        cardCanvas.sortingOrder += 1;
     }
 
     private void OnUnOverZoom()
     {
+        if (!isCardZoomed)
+        {
+            return;
+        }
+        
         cardScalerTransform.DOKill();
         cardScalerTransform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
         cardDisplacerTransform.DOKill();
         cardDisplacerTransform.DOLocalMoveY(0, 0.35f).SetEase(Ease.OutQuint);
         
         isCardZoomed = false;
+        
+        cardCanvas.sortingOrder -= 1;
     }
 }

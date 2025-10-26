@@ -134,6 +134,7 @@ namespace NoteSystem
             }
             
             currentNoteChoosePanel = Instantiate(noteChoosePanelPrefab, noteChoosePanelCanvas.transform);
+            currentNoteChoosePanel.transform.SetSiblingIndex(0);
             currentNoteChoosePanel.SetTarget(card.characterInfo.ownerClientId.Value, noteType);
             currentNoteChoosePanel.onPanelClose += () =>
             {

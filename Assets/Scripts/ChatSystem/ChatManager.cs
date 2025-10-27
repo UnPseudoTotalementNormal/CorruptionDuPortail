@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using AudioSystem;
+using AYellowpaper.SerializedCollections;
 using Extensions;
 using FMODUnity;
 using Network;
@@ -36,6 +37,8 @@ namespace ChatSystem
         public EventReference switchChatSound;
         public EventReference receiveMessageSound;
         public EventReference sendMessageSound;
+        
+        public SerializedDictionary<int, EventReference> switchChatSoundOverride = new();
 
         private void Awake()
         {
@@ -45,7 +48,15 @@ namespace ChatSystem
             
             onChatMessageSent += (_) => { GameAudioManager.instance.PlayOneShot(sendMessageSound.GetPath()); };
             onChatMessageReceived += (_) => { GameAudioManager.instance.PlayOneShot(receiveMessageSound.GetPath()); };
-            onActiveChatChanged += (_) => { GameAudioManager.instance.PlayOneShot(switchChatSound.GetPath()); };
+            onActiveChatChanged += (_newChatId) =>
+            {
+                if (switchChatSoundOverride.TryGetValue(_newChatId, out EventReference _overrideSound) && !string.IsNullOrEmpty(_overrideSound.GetPath()))
+                {
+                    GameAudioManager.instance.PlayOneShot(_overrideSound.GetPath());
+                    return;
+                }
+                GameAudioManager.instance.PlayOneShot(switchChatSound.GetPath());
+            };
         }
         
         public void ChangeActiveChat(int _chatId)

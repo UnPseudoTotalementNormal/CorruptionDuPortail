@@ -357,6 +357,41 @@ MonoBehaviour:
   hoverZoom: 1.35
   rotateTime: 1
   chainFadeTime: 0.5
+  cardFlipSound:
+    Guid:
+      Data1: -2102862649
+      Data2: 1325067085
+      Data3: 109568957
+      Data4: -141633920
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 3
+  cardUnflipSound:
+    Guid:
+      Data1: -2102862649
+      Data2: 1325067085
+      Data3: 109568957
+      Data4: -141633920
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 3
+  cardHoverSound:
+    Guid:
+      Data1: -1794442382
+      Data2: 1163313654
+      Data3: -113547853
+      Data4: 2024024420
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 2
+  cardUnhoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  cardClickSound:
+    Guid:
+      Data1: 1652283604
+      Data2: 1198001398
+      Data3: -290686321
+      Data4: 1967292025
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 1
   references:
     version: 2
     RefIds: []
@@ -1374,6 +1409,27 @@ MonoBehaviour:
   hoverColor: {r: 0.6886792, g: 0.14618193, b: 0.14618193, a: 1}
   disabledColor: {r: 0.31132078, g: 0.057271283, b: 0.057271283, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []

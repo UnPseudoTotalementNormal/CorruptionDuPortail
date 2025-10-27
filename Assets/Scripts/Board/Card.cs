@@ -11,6 +11,7 @@ using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Extensions;
+using FMODUnity;
 using GameLogic;
 using TMPro;
 using UI.Panel;
@@ -67,6 +68,13 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     private bool isPointerOver = false;
     private bool isCardZoomed = false;
+    
+    [Header("Sounds")]
+    [SerializeField] private EventReference cardFlipSound;
+    [SerializeField] private EventReference cardUnflipSound;
+    [SerializeField] private EventReference cardHoverSound;
+    [SerializeField] private EventReference cardUnhoverSound;
+    [SerializeField] private EventReference cardClickSound;
     
     private void Awake()
     {
@@ -265,6 +273,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         }
         else
         {
+            cardFlipSound.TryPlayOneShot();
             cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
                 cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
@@ -288,6 +297,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         }
         else
         {
+            cardUnflipSound.TryPlayOneShot();
             cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
                 cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
@@ -302,6 +312,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         onCardClicked?.Invoke(this);
         cardScalerTransform.DOKill(true);
         cardScalerTransform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
+        cardClickSound.TryPlayOneShot();
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
@@ -341,6 +352,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         isCardZoomed = true;
         
         cardCanvas.sortingOrder += 1;
+        
+        cardHoverSound.TryPlayOneShot();
     }
 
     private void OnUnOverZoom()
@@ -358,5 +371,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         isCardZoomed = false;
         
         cardCanvas.sortingOrder -= 1;
+        
+        cardUnhoverSound.TryPlayOneShot();
     }
 }

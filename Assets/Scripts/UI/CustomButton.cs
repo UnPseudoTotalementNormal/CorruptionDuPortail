@@ -2,6 +2,7 @@
 
 using System;
 using DG.Tweening;
+using Extensions;
 using FMODUnity;
 using UnityEngine;
 using UnityEngine.Events;
@@ -19,8 +20,10 @@ namespace UI
         [SerializeField] private Color disabledColor = new Color(0.5f, 0.5f, 0.5f, 1);
 
         [SerializeField] private Image panelImage;
-        
+
         [SerializeField] private EventReference clickSound;
+        [SerializeField] private EventReference hoverSound;
+        [SerializeField] private EventReference unHoverSound;
         
         public event Action onButtonClicked;
         public event Action onButtonHovered;
@@ -46,18 +49,21 @@ namespace UI
             transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
             onButtonClicked?.Invoke();
             onButtonClickedUnityEvent?.Invoke();
+            clickSound.TryPlayOneShot();
         }
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
             panelImage?.DOColor(hoverColor, 0.2f);
             onButtonHovered?.Invoke();
+            hoverSound.TryPlayOneShot();
         }
 
         public void OnPointerExit(PointerEventData _eventData)
         {
             panelImage.DOColor(baseColor, 0.2f);
             onButtonUnhovered?.Invoke();
+            unHoverSound.TryPlayOneShot();
         }
 
         private void OnDisable()

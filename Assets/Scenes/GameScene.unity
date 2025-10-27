@@ -412,6 +412,20 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -1726,6 +1740,20 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -2384,6 +2412,16 @@ MonoBehaviour:
       Data3: 464377770
       Data4: -1284222518
     Path: event:/Interface/Messages General + Anomaly/SendMessage
+  switchChatSoundOverride:
+    _serializedList:
+    - Key: 1
+      Value:
+        Guid:
+          Data1: 476291807
+          Data2: 1159268860
+          Data3: 1884989317
+          Data4: 1727256808
+        Path: event:/Interface/Messages General + Anomaly/MessageMenuSelect Anomaly
 --- !u!1 &659369329
 GameObject:
   m_ObjectHideFlags: 0
@@ -3206,6 +3244,20 @@ MonoBehaviour:
   panelImage: {fileID: 0}
   clickSound:
     Guid:
+      Data1: 787879576
+      Data2: 1266414123
+      Data3: 695832996
+      Data4: 1059406076
+    Path: event:/Interface/Messages General + Anomaly/Menu 2
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
       Data1: 0
       Data2: 0
       Data3: 0
@@ -3882,6 +3934,20 @@ MonoBehaviour:
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
   panelImage: {fileID: 0}
   clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
     Guid:
       Data1: 0
       Data2: 0
@@ -5009,6 +5075,20 @@ MonoBehaviour:
   panelImage: {fileID: 0}
   clickSound:
     Guid:
+      Data1: 787879576
+      Data2: 1266414123
+      Data3: 695832996
+      Data4: 1059406076
+    Path: event:/Interface/Messages General + Anomaly/Menu 2
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
       Data1: 0
       Data2: 0
       Data3: 0
@@ -5545,6 +5625,20 @@ MonoBehaviour:
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 1445814731}
   clickSound:
+    Guid:
+      Data1: 1570803450
+      Data2: 1074179891
+      Data3: 770040501
+      Data4: 274871426
+    Path: event:/Interface/Messages General + Anomaly/Menu 1
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
     Guid:
       Data1: 0
       Data2: 0
@@ -7033,6 +7127,20 @@ MonoBehaviour:
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
   clickSound:
+    Guid:
+      Data1: 787879576
+      Data2: 1266414123
+      Data3: 695832996
+      Data4: 1059406076
+    Path: event:/Interface/Messages General + Anomaly/Menu 2
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
     Guid:
       Data1: 0
       Data2: 0
@@ -8601,6 +8709,20 @@ MonoBehaviour:
   panelImage: {fileID: 0}
   clickSound:
     Guid:
+      Data1: 787879576
+      Data2: 1266414123
+      Data3: 695832996
+      Data4: 1059406076
+    Path: event:/Interface/Messages General + Anomaly/Menu 2
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
       Data1: 0
       Data2: 0
       Data3: 0
@@ -9326,6 +9448,20 @@ MonoBehaviour:
   disabledColor: {r: 0, g: 0.3962264, b: 0, a: 1}
   panelImage: {fileID: 0}
   clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
     Guid:
       Data1: 0
       Data2: 0

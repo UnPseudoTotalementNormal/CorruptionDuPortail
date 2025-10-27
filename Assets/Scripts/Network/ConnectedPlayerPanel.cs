@@ -41,7 +41,10 @@ public class ConnectedPlayerPanel : MonoBehaviour
         {
             var newPlayerText = Instantiate(playerTextObject, playerListParent);
             newPlayerText.SetActive(true);
-            newPlayerText.GetComponent<TMP_Text>().text = playerInfo.playerName.ToString();
+            var _tmpText = newPlayerText.GetComponent<TMP_Text>();
+            _tmpText.text = playerInfo.playerName.ToString();
+            _tmpText.enableAutoSizing = false;
+            _tmpText.fontSize = 27;
         }
     }
 }

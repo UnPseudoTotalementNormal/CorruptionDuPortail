@@ -70,6 +70,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8da3eddb0a457bf6899d2998959eddad
+    m_Address: Assets/Art/Sprites/Portraits/Messager.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 91ca642893e1a75489eafd5b8086acad
     m_Address: Assets/Art/Sprites/Portraits/DrGloubi.png
     m_ReadOnly: 0

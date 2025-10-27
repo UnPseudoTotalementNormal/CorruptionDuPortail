@@ -28,6 +28,7 @@ public static class CharacterPortraitsValues
         { CharacterPortraits.Uges, "Assets/Art/Sprites/Portraits/Uges.jpg" },
         { CharacterPortraits.Vahal, "Assets/Art/Sprites/Portraits/Vahal.jpg" },
         { CharacterPortraits.Inconnu, "Assets/Art/Sprites/Portraits/Inconnu.jpg" },
+        { CharacterPortraits.Messager, "Assets/Art/Sprites/Portraits/Messager.jpg" },
         { CharacterPortraits.DrGloubi, "Assets/Art/Sprites/Portraits/DrGloubi.png" },
     };
 
@@ -51,6 +52,7 @@ public static class CharacterPortraitsValues
     Uges = 864506531,
     Vahal = 1384333719,
     Inconnu = 148354486,
+    Messager = 883583601,
         }
 }
 

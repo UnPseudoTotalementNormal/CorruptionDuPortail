@@ -83,3 +83,12 @@
 [LOG] SoundI::release                          :     Boucle abattre le portail (0x7ff5fc000e78)
 [LOG] SoundI::release                          :  (0x7ff60c000cf8)
 [LOG] SoundI::release                          :     Selection du menu des messages (0x7ff60c000ac8)
+[LOG] Thread::callback                         : FMOD Studio bank load thread finished.
+[LOG] Thread::callback                         : FMOD Studio sample load thread finished.
+[LOG] LiveUpdate::release                      : 
+[LOG] LiveUpdate::reset                        : Reset connection (reason Disconnected)
+[LOG] Thread::callback                         : FMOD stream thread finished.
+[LOG] Thread::callback                         : FMOD mixer thread finished.
+[LOG] SystemI::closeInternal                   : Closed.
+[LOG] Thread::callback                         : FMOD nonblocking thread (0) finished.
+[LOG] Thread::callback                         : FMOD file thread finished.

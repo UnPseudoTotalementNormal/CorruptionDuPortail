@@ -2,6 +2,7 @@
 
 using System;
 using DG.Tweening;
+using FMODUnity;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -18,6 +19,8 @@ namespace UI
         [SerializeField] private Color disabledColor = new Color(0.5f, 0.5f, 0.5f, 1);
 
         [SerializeField] private Image panelImage;
+        
+        [SerializeField] private EventReference clickSound;
         
         public event Action onButtonClicked;
         public event Action onButtonHovered;

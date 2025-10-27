@@ -1,6 +1,7 @@
 #region
 
 using System.Linq;
+using AYellowpaper.SerializedCollections;
 using Characters;
 using Unity.Netcode;
 using UnityEngine;
@@ -29,6 +30,19 @@ namespace GameLogic.GameStates
         
         public void OnStartGameButtonPressed()
         {
+            SerializedDictionary<RoleDataObject, RoleAttributionSetting> _roleAttributionDictionary = 
+                ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState))
+                .First()).roleAttributionDictionary;
+            int _playerCount = gameManager.characterManager.GetCharacters().Count;
+
+            int _totalRolesToAttribute = _roleAttributionDictionary.Values.Sum(_setting => _setting.roleToAttribute);
+            
+            if (_playerCount > _totalRolesToAttribute)
+            {
+                Debug.LogWarning("Not enough roles to attribute to all players!");
+                return;
+            }
+            
             gameManager.NextGameState();
         }
         

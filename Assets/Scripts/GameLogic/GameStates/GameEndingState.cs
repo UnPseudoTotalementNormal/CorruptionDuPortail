@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
 using Network;
@@ -70,18 +71,26 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            
+            foreach (var _character in CharacterManager.instance.GetCharacters(false))
+            {
+                gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
+                    nameof(CharacterInfoReveal.isRoleRevealed),
+                    RevealLevel.Public, false);
+            }
+            
+            gameManager.DoStateMethodRpc(GetType().FullName, nameof(GameEndingAnimation),
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
         }
 
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
         }
-        
+
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-
-            _ = GameEndingAnimation();
         }
         
         public override void OnEndStateClient()

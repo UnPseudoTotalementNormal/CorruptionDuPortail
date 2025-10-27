@@ -32,6 +32,7 @@ public class BoardManager : NetworkBehaviour
     public const float CARD_SPACING = 7;
     public const float CARD_LINE_SPACING = 9;
     
+    public bool hasAllCardsShown => visibleCards.Count == GameManager.instance.characterManager.GetCharacters().Count(_c => !_c.isFake);
     
     private void Awake()
     {
@@ -107,8 +108,13 @@ public class BoardManager : NetworkBehaviour
         return _position;
     }
 
-    public async UniTask ShowAllPlayerCards(bool _stopOtherAnims = true)
+    public async UniTask ShowAllPlayerCards(bool _forceRefresh = false, bool _stopOtherAnims = true)
     {
+        if (hasAllCardsShown && !_forceRefresh)
+        {
+            return;
+        }
+        
         CancellationTokenSource _cancelToken = new();
         OnStartingNewAnim(_cancelToken, _stopOtherAnims);
         

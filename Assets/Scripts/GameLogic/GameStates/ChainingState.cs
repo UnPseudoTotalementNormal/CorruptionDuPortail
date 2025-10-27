@@ -34,7 +34,13 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateServer();
         }
-        
+
+        public override void OnEndStateClient()
+        {
+            base.OnEndStateClient();
+            _ = BoardManager.instance.ShowAllPlayerCards();
+        }
+
         public override async void OnStartStateClient()
         {
             base.OnStartStateClient();
@@ -75,20 +81,18 @@ namespace GameLogic.GameStates
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine).onComplete = () =>
-            {
-                _ = _cardInfo.ShowPseudoWithRevealedInfo();
-                    
-                _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
-                spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint).onComplete = () =>
-                {
-                    spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f).onComplete = () =>
-                    {
-                        _cardInfo.SetChainedOverlay(true);
-                    };
-                };
-            };
-            await UniTask.Delay(TimeSpan.FromSeconds(3.35f));
+            var _tween1 = _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
+            await UniTask.WaitUntil(() => !_tween1.IsActive());
+            
+            _ = _cardInfo.ShowPseudoWithRevealedInfo();
+            
+            _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+            var _tween2 = spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);
+            await UniTask.WaitUntil(() => !_tween2.IsActive());
+            
+            var _tween3 = spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f);
+            await UniTask.WaitUntil(() => !_tween3.IsActive());
+            _cardInfo.SetChainedOverlay(true);
         }
     }
 }

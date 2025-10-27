@@ -688,10 +688,11 @@ MonoBehaviour:
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
-  targetIncludeFlags: 152
+  targetIncludeFlags: 184
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 0

@@ -216,7 +216,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2204
---- !u!114 &-7276610687773168894
+--- !u!114 &-7264042366194979975
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -226,14 +226,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/SendMessage
+  m_Name: event:/Interface/Messages General + Anomaly/MessageMenuSelect General
   m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/SendMessage
+  Path: event:/Interface/Messages General + Anomaly/MessageMenuSelect General
   Guid:
-    Data1: 232737934
-    Data2: 1288740730
-    Data3: 464377770
-    Data4: -1284222518
+    Data1: -1932913990
+    Data2: 1148100710
+    Data3: -414748226
+    Data4: -791132990
   Banks:
   - {fileID: -4866380843273065656}
   IsStream: 0
@@ -242,7 +242,7 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 360
+  Length: 1776
 --- !u!114 &-7146467798184389136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -270,6 +270,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1008
+--- !u!114 &-7136748680810846159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Send Message 2
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Send Message 2
+  Guid:
+    Data1: -408051889
+    Data2: 1161728653
+    Data3: -850022234
+    Data4: -320894499
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 573
 --- !u!114 &-7050436078277407898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,33 +405,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 463752
---- !u!114 &-6034745572279998702
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/MessageMenuSelect General
-  m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/MessageMenuSelect General
-  Guid:
-    Data1: -1932913990
-    Data2: 1148100710
-    Data3: -414748226
-    Data4: -791132990
-  Banks:
-  - {fileID: -4866380843273065656}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 1776
 --- !u!114 &-5895277629209031567
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -486,33 +486,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1340
---- !u!114 &-5476304032789038138
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/MessageMenuSelect Anomaly
-  m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/MessageMenuSelect Anomaly
-  Guid:
-    Data1: 476291807
-    Data2: 1159268860
-    Data3: 1884989317
-    Data4: 1727256808
-  Banks:
-  - {fileID: -4866380843273065656}
-  IsStream: 1
-  Is3D: 0
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 2204
 --- !u!114 &-5347597912518584425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -609,8 +582,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638944461560139198
-  FileSizes: []
+  lastModified: 638971944215381142
+  FileSizes:
+  - Name: Desktop
+    Value: 10240672
   Exists: 1
 --- !u!114 &-4818972373118919025
 MonoBehaviour:
@@ -802,10 +777,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638944461560161065
+  lastModified: 638971944215555962
   FileSizes:
-  - Name: 
-    Value: 2592
+  - Name: Desktop
+    Value: 2874
   Exists: 1
 --- !u!114 &-3974452291014879238
 MonoBehaviour:
@@ -996,33 +971,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4348
---- !u!114 &-2750010681810291081
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/ReceiveMessage
-  m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/ReceiveMessage
-  Guid:
-    Data1: 1568662278
-    Data2: 1156388377
-    Data3: -947327076
-    Data4: -2003215321
-  Banks:
-  - {fileID: -4866380843273065656}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 1008
 --- !u!114 &-2695512023039043081
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1158,6 +1106,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1680
+--- !u!114 &-2370312708595966826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Touch Card 3
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Touch Card 3
+  Guid:
+    Data1: -2102862649
+    Data2: 1325067085
+    Data3: 109568957
+    Data4: -141633920
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 720
 --- !u!114 &-1916512007672029284
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1374,33 +1349,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4348
---- !u!114 &-604436864825426579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Interface/Messages/WaitingforPower
-  m_EditorClassIdentifier: 
-  Path: event:/Interface/Messages/WaitingforPower
-  Guid:
-    Data1: 554727870
-    Data2: 1183354671
-    Data3: 74505634
-    Data4: 211429031
-  Banks:
-  - {fileID: -4866380843273065656}
-  IsStream: 1
-  Is3D: 0
-  IsOneShot: 0
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 19010
 --- !u!114 &-563752136848857214
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1500,7 +1448,6 @@ MonoBehaviour:
   EditorEvents:
   - {fileID: -3910715252851951772}
   - {fileID: 783737210994000027}
-  - {fileID: -2750010681810291081}
   - {fileID: -6296362258342101123}
   - {fileID: 7679807937962533142}
   - {fileID: 5704197315643291162}
@@ -1516,98 +1463,117 @@ MonoBehaviour:
   - {fileID: 4095635620598913349}
   - {fileID: 3581699721179670889}
   - {fileID: 3217700747459898689}
-  - {fileID: -7276610687773168894}
   - {fileID: -2658687581183354237}
   - {fileID: 164057015143093230}
   - {fileID: -485301404939497410}
   - {fileID: -9199562812115163021}
   - {fileID: -2922436237300891482}
   - {fileID: 3689362050975608243}
-  - {fileID: -6034745572279998702}
   - {fileID: -8182201251439368775}
-  - {fileID: -604436864825426579}
   - {fileID: 8214473823302502765}
   - {fileID: 5071811082762831760}
   - {fileID: 6804003747919455822}
-  - {fileID: -5476304032789038138}
   - {fileID: 6194482352631363775}
   - {fileID: -2695512023039043081}
+  - {fileID: 5019952400559175247}
+  - {fileID: -7136748680810846159}
+  - {fileID: 4670358447258111562}
+  - {fileID: 4738901403559749038}
+  - {fileID: 4069044816430182230}
+  - {fileID: -7264042366194979975}
+  - {fileID: 5726009527553827081}
+  - {fileID: -2370312708595966826}
+  - {fileID: 8786495331084554641}
+  - {fileID: 7078950324401931055}
+  - {fileID: 8903052336178934206}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4866380843273065656}
   StringsBanks:
   - {fileID: -4062503513606897777}
   cacheVersion: 131847
-  cacheTime: 638944461560161065
+  cacheTime: 638971944215555962
   SerializableEventsDict:
   - key: event:/Characters/Orpheline/Canalisation
     index: 0
   - key: event:/Characters/Dr. Gloubi/BadAnswer or WithoutGCorruption
     index: 1
-  - key: event:/Interface/Messages/ReceiveMessage
-    index: 2
   - key: event:/Interface/GameMusic
-    index: 3
+    index: 2
   - key: event:/Interface/Opening
-    index: 4
+    index: 3
   - key: event:/Characters/Mage Occulte/Canalisation
-    index: 5
+    index: 4
   - key: event:/Characters/Mage Occulte/embrace of shadows - Sucess
-    index: 6
+    index: 5
   - key: event:/Characters/Dr. Gloubi/Chaining
-    index: 7
+    index: 6
   - key: event:/Characters/Orpheline/Annoucement
-    index: 8
+    index: 7
   - key: event:/Characters/Orpheline/ReceivePower_Anomaly
-    index: 9
+    index: 8
   - key: event:/Characters/Mage Occulte/Opening
-    index: 10
+    index: 9
   - key: event:/Interface/ChainingAnnoucement
-    index: 11
+    index: 10
   - key: event:/Characters/Oracle/Chaining
-    index: 12
+    index: 11
   - key: event:/Characters/Dryade/Chaining
-    index: 13
+    index: 12
   - key: event:/Characters/Mage Occulte/Ambiant Anomaly
-    index: 14
+    index: 13
   - key: event:/Characters/Orpheline/SendPower
-    index: 15
+    index: 14
   - key: event:/Characters/Dryade/Canalisation
-    index: 16
+    index: 15
   - key: event:/Characters/Dr. Gloubi/GoodAnswer
-    index: 17
-  - key: event:/Interface/Messages/SendMessage
-    index: 18
+    index: 16
   - key: event:/Characters/Orpheline/ReceivePower_Chosen
-    index: 19
+    index: 17
   - key: event:/Characters/Oracle/SendPower
-    index: 20
+    index: 18
   - key: event:/Characters/Orpheline/Chaining
-    index: 21
+    index: 19
   - key: event:/Characters/Mage Occulte/Chaining
-    index: 22
+    index: 20
   - key: event:/Characters/Dr. Gloubi/Canalisation
-    index: 23
+    index: 21
   - key: event:/Characters/Dryade/GoodAnswer
-    index: 24
-  - key: event:/Interface/Messages/MessageMenuSelect General
-    index: 25
+    index: 22
   - key: event:/Characters/Mage Occulte/embrace of shadows - Failure
-    index: 26
-  - key: event:/Interface/Messages/WaitingforPower
-    index: 27
+    index: 23
   - key: event:/Interface/AbattreLePortail
-    index: 28
+    index: 24
   - key: event:/Characters/Oracle/Canalisation
-    index: 29
+    index: 25
   - key: event:/Project_38
-    index: 30
-  - key: event:/Interface/Messages/MessageMenuSelect Anomaly
-    index: 31
+    index: 26
   - key: event:/Characters/Mage Occulte/Corrupting brand
-    index: 32
+    index: 27
   - key: event:/Characters/Dryade/BadAnswer or WithoutGCorruption
+    index: 28
+  - key: event:/Interface/Messages General + Anomaly/ReceiveMessage
+    index: 29
+  - key: event:/Interface/Messages General + Anomaly/Send Message 2
+    index: 30
+  - key: event:/Interface/Messages General + Anomaly/Touch Card 2
+    index: 31
+  - key: event:/Interface/Messages General + Anomaly/SendMessage
+    index: 32
+  - key: event:/Interface/Messages General + Anomaly/Menu 2
     index: 33
+  - key: event:/Interface/Messages General + Anomaly/MessageMenuSelect General
+    index: 34
+  - key: event:/Interface/WaitingforPower
+    index: 35
+  - key: event:/Interface/Messages General + Anomaly/Touch Card 3
+    index: 36
+  - key: event:/Interface/Messages General + Anomaly/Touch Card 1
+    index: 37
+  - key: event:/Interface/Messages General + Anomaly/MessageMenuSelect Anomaly
+    index: 38
+  - key: event:/Interface/Messages General + Anomaly/Menu 1
+    index: 39
 --- !u!114 &164057015143093230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2132,6 +2098,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4224
+--- !u!114 &4069044816430182230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Menu 2
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Menu 2
+  Guid:
+    Data1: 787879576
+    Data2: 1266414123
+    Data3: 695832996
+    Data4: 1059406076
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 313
 --- !u!114 &4095635620598913349
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2348,6 +2341,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4344
+--- !u!114 &4670358447258111562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Touch Card 2
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Touch Card 2
+  Guid:
+    Data1: -1794442382
+    Data2: 1163313654
+    Data3: -113547853
+    Data4: 2024024420
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 439
 --- !u!114 &4713782152263715654
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2375,6 +2395,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 33796
+--- !u!114 &4738901403559749038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/SendMessage
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/SendMessage
+  Guid:
+    Data1: 232737934
+    Data2: 1288740730
+    Data3: 464377770
+    Data4: -1284222518
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 360
 --- !u!114 &4826066904851086407
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2456,6 +2503,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4608
+--- !u!114 &5019952400559175247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/ReceiveMessage
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/ReceiveMessage
+  Guid:
+    Data1: 1568662278
+    Data2: 1156388377
+    Data3: -947327076
+    Data4: -2003215321
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1008
 --- !u!114 &5071811082762831760
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2591,6 +2665,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 10000
+--- !u!114 &5726009527553827081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/WaitingforPower
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/WaitingforPower
+  Guid:
+    Data1: 554727870
+    Data2: 1183354671
+    Data3: 74505634
+    Data4: 211429031
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 19010
 --- !u!114 &6194482352631363775
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2834,6 +2935,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 10000
+--- !u!114 &7078950324401931055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/MessageMenuSelect Anomaly
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/MessageMenuSelect Anomaly
+  Guid:
+    Data1: 476291807
+    Data2: 1159268860
+    Data3: 1884989317
+    Data4: 1727256808
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2204
 --- !u!114 &7518445709850202936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2996,3 +3124,57 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 360
+--- !u!114 &8786495331084554641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Touch Card 1
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Touch Card 1
+  Guid:
+    Data1: 1652283604
+    Data2: 1198001398
+    Data3: -290686321
+    Data4: 1967292025
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 440
+--- !u!114 &8903052336178934206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/Messages General + Anomaly/Menu 1
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/Messages General + Anomaly/Menu 1
+  Guid:
+    Data1: 1570803450
+    Data2: 1074179891
+    Data3: 770040501
+    Data4: 274871426
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 356

@@ -405,6 +405,13 @@ MonoBehaviour:
   hoverColor: {r: 0.8113208, g: 0, b: 0, a: 1}
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -1712,6 +1719,13 @@ MonoBehaviour:
   hoverColor: {r: 0.8113208, g: 0, b: 0, a: 1}
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -2355,21 +2369,21 @@ MonoBehaviour:
       Data2: 1148100710
       Data3: -414748226
       Data4: -791132990
-    Path: event:/Interface/Messages/MessageMenuSelect General
+    Path: event:/Interface/Messages General + Anomaly/MessageMenuSelect General
   receiveMessageSound:
     Guid:
       Data1: 1568662278
       Data2: 1156388377
       Data3: -947327076
       Data4: -2003215321
-    Path: event:/Interface/Messages/ReceiveMessage
+    Path: event:/Interface/Messages General + Anomaly/ReceiveMessage
   sendMessageSound:
     Guid:
       Data1: 232737934
       Data2: 1288740730
       Data3: 464377770
       Data4: -1284222518
-    Path: event:/Interface/Messages/SendMessage
+    Path: event:/Interface/Messages General + Anomaly/SendMessage
 --- !u!1 &659369329
 GameObject:
   m_ObjectHideFlags: 0
@@ -3190,6 +3204,13 @@ MonoBehaviour:
   hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38039216, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -3860,6 +3881,13 @@ MonoBehaviour:
   hoverColor: {r: 0.8113208, g: 0, b: 0, a: 1}
   disabledColor: {r: 0.41509432, g: 0, b: 0, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -4979,6 +5007,13 @@ MonoBehaviour:
   hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -5509,6 +5544,13 @@ MonoBehaviour:
   hoverColor: {r: 0.754717, g: 0.024919916, b: 0.024919916, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 1445814731}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -6990,6 +7032,13 @@ MonoBehaviour:
   hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -8550,6 +8599,13 @@ MonoBehaviour:
   hoverColor: {r: 0.7264151, g: 0.7264151, b: 0.7264151, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
@@ -9269,6 +9325,13 @@ MonoBehaviour:
   hoverColor: {r: 0, g: 0.735849, b: 0, a: 1}
   disabledColor: {r: 0, g: 0.3962264, b: 0, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:

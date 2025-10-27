@@ -131,5 +131,16 @@ namespace Characters
             isCorrupted.Value = false;
             isHealed.Value = true;
         }
+
+        public void ChainCharacterServer()
+        {
+            if (!IsServer)
+            {
+                Debug.LogError("ChainCharacterServer can only be called on the server");
+                return;
+            }
+            isChained.Value = true;
+            isCorrupted.Value = true;
+        }
     }
 }

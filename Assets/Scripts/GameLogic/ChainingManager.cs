@@ -45,7 +45,7 @@ namespace GameLogic
             var _gameManager = GameManager.instance;
             var _character = _gameManager.characterManager.GetCharacter(_characterId);
             
-            _character.isChained.Value = true;
+            _character.ChainCharacterServer();
             _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))

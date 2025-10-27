@@ -22,12 +22,12 @@ namespace UI
             }
             
             UpdateTimerText(((VoteState)owningGameState).voteTimer);
-            skipVoteAmountText.text = $"Skip ({((VoteState)owningGameState).votesForPlayer[VoteState.SKIP_VOTE_ID].Count.ToString()})";
+            skipVoteAmountText.text = "Skip";
         }
         
-        private void UpdateTimerText(float timeLeft)
+        private void UpdateTimerText(float _timeLeft)
         {
-            timerText.text = timeLeft.ToString("0");
+            timerText.text = _timeLeft.ToString("0");
         }
 
         public void OnVoteSkipButtonPressed()

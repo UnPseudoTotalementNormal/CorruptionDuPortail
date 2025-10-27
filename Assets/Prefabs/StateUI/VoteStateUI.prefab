@@ -53,6 +53,7 @@ MonoBehaviour:
   gameManager: {fileID: 0}
   owningGameState: {fileID: 0}
   canvasGroup: {fileID: 4936872615445173801}
+  instantShowOnStateStart: 0
   timerText: {fileID: 2198998047386928648}
   skipVoteAmountText: {fileID: 4827443390319173043}
 --- !u!1 &1830676475893352398
@@ -120,7 +121,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Skip (0)
+  m_text: Skip
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -427,6 +428,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   hoverColor: {r: 0.69803923, g: 0.69803923, b: 0.69803923, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  panelImage: {fileID: 0}
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:

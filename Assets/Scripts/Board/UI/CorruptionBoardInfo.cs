@@ -31,7 +31,8 @@ namespace Board.UI
 
         private void OnGameStarted()
         {
-            WriteNewTextRpc($"0/{GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType == FactionType.chosen)}");
+            WriteNewTextRpc(
+                $"0/{GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly)}");
         }
 
         private void OnAwakeningStateEnd()
@@ -42,8 +43,10 @@ namespace Board.UI
         [Rpc(SendTo.Server)]
         private void AskForNewTextRpc()
         {
-            int _chosenCount = GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType == FactionType.chosen && !_c.isFake);
-            int _corruptedChosenCount = GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType == FactionType.chosen && _c.isCorrupted.Value && !_c.isFake);
+            int _chosenCount = GameManager.instance.characterManager.GetCharacters()
+                .Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake);
+            int _corruptedChosenCount = GameManager.instance.characterManager.GetCharacters()
+                .Count(_c => _c.role.factionType != FactionType.anomaly && _c.isCorrupted.Value && !_c.isFake);
             WriteNewTextRpc($"{_corruptedChosenCount}/{_chosenCount}");
         }
 

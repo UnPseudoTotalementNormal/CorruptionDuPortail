@@ -48,7 +48,7 @@ namespace GameLogic.GameStates
             var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
             _gameEndingState.SetWinnersServer(_winningTeams);
             
-            gameManager.NextGameState(true);
+            gameManager.SetGameState(typeof(GameEndingState));
         }
 
         public override void OnEndStateServer()

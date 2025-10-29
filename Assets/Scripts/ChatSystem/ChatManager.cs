@@ -39,6 +39,7 @@ namespace ChatSystem
         public EventReference sendMessageSound;
         
         public SerializedDictionary<int, EventReference> switchChatSoundOverride = new();
+        public SerializedDictionary<int, string> chatWindowNameOverride = new();
 
         private void Awake()
         {
@@ -83,17 +84,21 @@ namespace ChatSystem
             SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message, activeChatId));
         }
 
-        public void DiscoverChat(int _chatId)
+        public void DiscoverChat(int _chatId, string _overrideName = null)
         {
             Debug.Log("Discovering chat with ID: " + _chatId);
             discoveredChatIds.Add(_chatId);
+            if (!string.IsNullOrEmpty(_overrideName))
+            {
+                chatWindowNameOverride.TryAdd(_chatId, _overrideName);
+            }
             onChatDiscovered?.Invoke(_chatId);
         }
         
         [Rpc(SendTo.SpecifiedInParams)]
-        public void DiscoverChatRpc(int _chatId, RpcParams _rpcParams = default)
+        public void DiscoverChatRpc(int _chatId, FixedString64Bytes _overrideName = default, RpcParams _rpcParams = default)
         {
-            DiscoverChat(_chatId);
+            DiscoverChat(_chatId, _overrideName.ToString());
         }
         
         public void UndiscoverChat(int _chatId)
@@ -134,6 +139,10 @@ namespace ChatSystem
         
         public string GetChatWindowName(int _chatId)
         {
+            if (chatWindowNameOverride.TryGetValue(_chatId, out string _overrideName))
+            {
+                return _overrideName;
+            }
             if (Enum.IsDefined(typeof(ChatWindowIDs), _chatId))
             {
                 return ((ChatWindowIDs)_chatId).ToString();

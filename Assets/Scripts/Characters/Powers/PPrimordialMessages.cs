@@ -6,6 +6,7 @@ using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
 using Network;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
@@ -70,7 +71,7 @@ namespace Characters.Powers
                 return;
             }
             
-            ChatManager.instance.DiscoverChatRpc(primordialChatId.Value, RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
+            ChatManager.instance.DiscoverChatRpc(primordialChatId.Value, new FixedString64Bytes("Lié par l'encre"), RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
             
             currentTargets.Add(_characterId);
             alreadyTargetedClients.Add(_characterId);
@@ -111,7 +112,7 @@ namespace Characters.Powers
             
             primordialChatId.Value = _chatId;
             usedPrimordialChatIds.Add(_chatId);
-            ChatManager.instance.DiscoverChatRpc(_chatId, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }
 
         protected override void StopUse()

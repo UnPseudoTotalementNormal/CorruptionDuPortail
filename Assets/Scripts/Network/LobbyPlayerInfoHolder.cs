@@ -23,8 +23,10 @@ namespace Network
             instance = this;
         }
 
-        private void Start()
+        public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+            
             if (IsServer)
             {
                 NetworkManager.OnClientConnectedCallback += OnClientConnected;

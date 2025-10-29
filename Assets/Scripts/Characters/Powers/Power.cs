@@ -51,12 +51,14 @@ namespace Characters.Powers
         public event Action onPowerGameStartedServerTriggered;
 
         public List<PowerComponent> powerComponents = new();
-        
+
         public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
         
+        public ulong idHolderServer;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            ownerClientId.Value = idHolderServer;
             onPowerSpawned?.Invoke(this);
         }
         

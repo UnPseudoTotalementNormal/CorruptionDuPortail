@@ -46,8 +46,7 @@ namespace Characters.Powers
                 return false;
             }
             
-            List<ulong> _possibleTargets = TargetUtils.GetTargetsForCharacters(targetIncludeFlags)
-                .Where(_id => !alreadyTargetedClients.Contains(_id)).ToList();
+            List<ulong> _possibleTargets = TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Where(_id => !alreadyTargetedClients.Contains(_id)).ToList();
             return _possibleTargets.Count > 0;
         }
 

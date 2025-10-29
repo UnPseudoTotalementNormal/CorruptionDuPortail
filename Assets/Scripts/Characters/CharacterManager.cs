@@ -175,8 +175,8 @@ namespace Characters
             
             Power _newPower = Instantiate(_power, null);
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
+            _powerNetworkObject.GetComponent<Power>().idHolderServer = _characterId;
             _powerNetworkObject.Spawn(true);
-            _newPower.ownerClientId.Value = _characterId;
             StartCoroutine(
                 WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), 
                     (_result) => { OnPowerReparentComplete(_newPower, _result); })

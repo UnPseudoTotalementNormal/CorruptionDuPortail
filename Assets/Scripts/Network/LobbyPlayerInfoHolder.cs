@@ -35,6 +35,17 @@ namespace Network
             }
         }
 
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            
+            if (IsServer)
+            {
+                NetworkManager.OnClientConnectedCallback -= OnClientConnected;
+                NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+            }
+        }
+
         private void OnClientDisconnected(ulong clientId)
         {
             for (int i = 0; i < playerInfos.Count; i++)

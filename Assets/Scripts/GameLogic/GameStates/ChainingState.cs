@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using AudioSystem;
 using Characters;
 using Cysharp.Threading.Tasks;
@@ -38,13 +39,17 @@ namespace GameLogic.GameStates
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
-            _ = BoardManager.instance.ShowAllPlayerCards();
         }
 
-        public override async void OnStartStateClient()
+        public override void OnStartStateClient()
         {
             base.OnStartStateClient();
 
+            _ = HandleChainingStateClientAsync();
+        }
+
+        private async Task HandleChainingStateClientAsync()
+        {
             var _chainingCharactersId = gameManager.chainingManager.chainingPlayers;
             foreach (var _chainingCharacterId in _chainingCharactersId)
             {
@@ -56,10 +61,11 @@ namespace GameLogic.GameStates
             if (gameManager.IsServer)
             {
                 gameManager.chainingManager.chainingPlayers.Clear();
+                Debug.Log("ChainingState completed on server, moving to next state.");
                 gameManager.NextGameState();
             }
         }
-        
+
         private async UniTask DoCardChainingAnimation(Character _chainingCharacter)
         {
             await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
@@ -93,6 +99,7 @@ namespace GameLogic.GameStates
             var _tween3 = spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f);
             await UniTask.WaitUntil(() => !_tween3.IsActive());
             _cardInfo.SetChainedOverlay(true);
+            GameAudioManager.instance.PlayOneShot(_cardInfo.roleInfo.onChainingSound.GetPath());
         }
     }
 }

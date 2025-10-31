@@ -254,7 +254,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
         if (_isChained && !_instant)
         {
-            GameAudioManager.instance.PlayOneShot(characterInfo.role.onChainingSound.GetPath());
+            //GameAudioManager.instance.PlayOneShot(characterInfo.role.onChainingSound.GetPath());
         }
         lastIsChainedStatus = _isChained;
     }

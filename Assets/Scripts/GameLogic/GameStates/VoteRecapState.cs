@@ -46,6 +46,7 @@ namespace GameLogic.GameStates
         public override async void OnStartStateClient()
         {
             base.OnStartStateClient();
+            await BoardManager.instance.ShowAllPlayerCards();
 
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             

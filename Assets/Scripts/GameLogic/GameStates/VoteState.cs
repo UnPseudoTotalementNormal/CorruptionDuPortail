@@ -205,6 +205,12 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+            ActivateVoteUI();
+        }
+
+        private async void ActivateVoteUI()
+        {
+            await BoardManager.instance.ShowAllPlayerCards();
 
             foreach (var _c in BoardManager.instance.visibleCards)
             {

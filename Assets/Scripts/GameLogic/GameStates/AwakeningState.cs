@@ -186,6 +186,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+            _ = BoardManager.instance.ShowAllPlayerCards();
         }
         
         public override void OnEndStateClient()

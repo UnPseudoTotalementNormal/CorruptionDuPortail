@@ -32,7 +32,7 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            OnVoteSkipButtonPressedRpc(gameManager.NetworkManager.LocalClientId);
+            OnVoteSkipButtonPressedRpc(NetworkManager.Singleton.LocalClientId);
         }
 
         [Rpc(SendTo.Server)]

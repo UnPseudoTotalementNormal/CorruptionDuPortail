@@ -35,6 +35,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
     - {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
     - {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
+    - {fileID: 11400000, guid: 21114cc25abd3f08eb4c8380e5926718, type: 2}
   - awakeningCharacters:
     - {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
   - awakeningCharacters:
@@ -59,6 +60,3 @@ MonoBehaviour:
       Data3: 74505634
       Data4: 211429031
     Path: event:/Interface/Messages/WaitingforPower
-  references:
-    version: 2
-    RefIds: []

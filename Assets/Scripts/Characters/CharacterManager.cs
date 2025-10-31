@@ -18,7 +18,23 @@ namespace Characters
         [SerializeField] private Transform _charactersParent;
         [SerializeField] private NetworkObject _characterPrefab;
 
-        private List<Character> _characters => new List<Character>(FindObjectsOfType<Character>()); //TODO: BIG TEMPORARY
+        private List<Character> _characters
+        {
+            get
+            {
+                List<Character> _result = new();
+                foreach (var _networkBehaviourReference in networkedCharacters)
+                {
+                    if (_networkBehaviourReference.TryGet(out Character _character))
+                    {
+                        _result.Add(_character);
+                    }
+                }
+                return _result;
+            }
+        }
+
+        private NetworkList<NetworkBehaviourReference> networkedCharacters = new();
         
         public event Action<List<Character>> onCharactersListUpdated;
         
@@ -145,6 +161,7 @@ namespace Characters
                 _newCharacterObject.TrySetParent(_charactersParent, false);
             }
             
+            networkedCharacters.Add(_newCharacterObject.GetComponent<Character>());
             Character _newCharacter = _newCharacterObject.GetComponent<Character>();
             _newCharacter.ownerClientId.Value = _clientId;
             _characters.Add(_newCharacter);

@@ -54,7 +54,7 @@ namespace Characters.Powers
 
         public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
         
-        public ulong idHolderServer;
+        [HideInInspector] public ulong idHolderServer;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

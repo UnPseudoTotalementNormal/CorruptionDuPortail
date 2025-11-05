@@ -47,7 +47,7 @@ namespace Characters.Powers
             {
                 _characterTarget.isEliminated.Value = true;
                 string _characterPseudo = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName.ToString();
-                ChatManager.instance.SendChatMessageServerRpc(
+                ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 
                         (int)ChatWindowIDs.Server));
@@ -60,7 +60,7 @@ namespace Characters.Powers
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
-                        (int)ChatWindowIDs.Server));
+                        (int)ChatWindowIDs.Server), RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
             
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();

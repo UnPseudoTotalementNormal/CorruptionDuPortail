@@ -46,7 +46,7 @@ namespace Characters.Powers
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
-            ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+            ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             switch (_localCharacter.role.factionType)
             {
                 case FactionType.chosen:

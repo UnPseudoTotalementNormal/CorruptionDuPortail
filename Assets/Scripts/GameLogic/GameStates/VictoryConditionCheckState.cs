@@ -25,6 +25,11 @@ namespace GameLogic.GameStates
                 
             foreach (var _currentCharacters in gameManager.characterManager.GetCharacters(false))
             {
+                if (_currentCharacters.isFake)
+                {
+                    continue;
+                }
+                
                 foreach (var _currentWinningCondition in _currentCharacters.role.winningConditions)
                 {
                     if (_currentWinningCondition.CheckCondition())

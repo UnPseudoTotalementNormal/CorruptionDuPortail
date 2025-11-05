@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: e58b440ad13b322428929b1837c0dc0d, type: 3}
   gameStateDependencies: []
+  useLightColorOverride: 1
+  lightColorOverride: {r: 0.46075112, g: 0.47387514, b: 0.5849056, a: 1}
   awakeningOrder:
   - awakeningCharacters:
     - {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}

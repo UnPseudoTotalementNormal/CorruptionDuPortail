@@ -20,6 +20,9 @@ namespace GameLogic
         
         public List<GameState> gameStateDependencies = new();
         
+        public bool useLightColorOverride = false;
+        public Color lightColorOverride = Color.white;
+        
         public event Action onStateStartServer;
         public event Action onStateEndServer;
         public event Action onStateStartClient;

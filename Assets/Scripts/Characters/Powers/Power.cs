@@ -58,7 +58,10 @@ namespace Characters.Powers
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            ownerClientId.Value = idHolderServer;
+            if (IsServer)
+            {
+                ownerClientId.Value = idHolderServer;
+            }
             onPowerSpawned?.Invoke(this);
         }
         

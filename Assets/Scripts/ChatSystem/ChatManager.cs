@@ -166,6 +166,11 @@ namespace ChatSystem
         [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
         public void ReceiveChatMessageRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
         {
+            if (!discoveredChatIds.Contains(_chatMessage.chatId))
+            {
+                return;
+            }
+            
             ChatWindow _window = GetChatWindow(_chatMessage.chatId);
             _window?.AddChatMessage(_chatMessage);
             onChatMessageReceived?.Invoke(_chatMessage);

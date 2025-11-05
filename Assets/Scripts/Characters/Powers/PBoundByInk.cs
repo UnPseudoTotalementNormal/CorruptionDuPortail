@@ -5,7 +5,6 @@ using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
-using Network;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,15 +12,17 @@ using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
-    public class PPrimordialMessages : Power
+    public class PBoundByInk : Power
     {
         private const int PRIMORDIAL_CHAT_ID_BEGIN = 515100;
-        private static List<int> usedPrimordialChatIds = new();
+        private static List<int> usedBoundByInkIds = new();
         
-        private NetworkVariable<int> primordialChatId = new(-1);
+        private NetworkVariable<int> powerChatId = new(-1);
         
         private List<ulong> currentTargets = new();
         private NetworkList<ulong> alreadyTargetedClients = new();
+        
+        private bool isChatAttributed => powerChatId.Value != -1;
         
         public override void StartUse()
         {
@@ -70,7 +71,8 @@ namespace Characters.Powers
                 return;
             }
             
-            ChatManager.instance.DiscoverChatRpc(primordialChatId.Value, new FixedString64Bytes("Lié par l'encre"), RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
+            ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"), 
+                RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
             
             currentTargets.Add(_characterId);
             alreadyTargetedClients.Add(_characterId);
@@ -79,15 +81,15 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            AttributePrimordialChat();
+            AttributeBoundByInkChat();
             var _gameManager = GameManager.instance;
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
-                _awakeningState.onStateEndServer += () =>
+                _awakeningState.onStateStartServer += () =>
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        ChatManager.instance.UndiscoverChatRpc(primordialChatId.Value, RpcTarget.Single(_targetClientId, RpcTargetUse.Persistent));
+                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, RpcTarget.Single(_targetClientId, RpcTargetUse.Persistent));
                     }
                     
                     currentTargets.Clear();
@@ -95,22 +97,28 @@ namespace Characters.Powers
             }
         }
 
-        private void AttributePrimordialChat()
+        private void AttributeBoundByInkChat()
         {
             if (!IsServer)
             {
-                Debug.LogError("AttributePrimordialChat should be called on server only.");
+                Debug.LogError("BoundByInk should be called on server only.");
+                return;
+            }
+            
+            if (isChatAttributed)
+            {
+                Debug.LogError("BoundByInk chat already attributed.");
                 return;
             }
             
             int _chatId = PRIMORDIAL_CHAT_ID_BEGIN;
-            while (usedPrimordialChatIds.Contains(_chatId))
+            while (usedBoundByInkIds.Contains(_chatId))
             {
                 _chatId++;
             }
             
-            primordialChatId.Value = _chatId;
-            usedPrimordialChatIds.Add(_chatId);
+            powerChatId.Value = _chatId;
+            usedBoundByInkIds.Add(_chatId);
             ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }
 

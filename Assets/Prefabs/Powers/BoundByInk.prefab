@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8336163442415474593}
   - component: {fileID: 4643795090714070503}
   m_Layer: 0
-  m_Name: PrimordialMessages
+  m_Name: BoundByInk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -74,30 +74,30 @@ MonoBehaviour:
   ownerClientId:
     m_InternalValue: 0
   powerName:
-    utf8LengthInBytes: 20
+    utf8LengthInBytes: 16
     bytes:
       offset0000:
-        byte0000: 77
-        byte0001: 101
-        byte0002: 115
-        byte0003: 115
-        byte0004: 97
-        byte0005: 103
-        byte0006: 101
-        byte0007: 115
+        byte0000: 76
+        byte0001: 105
+        byte0002: 195
+        byte0003: 169
+        byte0004: 32
+        byte0005: 112
+        byte0006: 97
+        byte0007: 114
         byte0008: 32
-        byte0009: 80
-        byte0010: 114
-        byte0011: 105
-        byte0012: 109
-        byte0013: 111
+        byte0009: 108
+        byte0010: 39
+        byte0011: 101
+        byte0012: 110
+        byte0013: 99
         byte0014: 114
-        byte0015: 100
+        byte0015: 101
       offset0016:
-        byte0000: 105
-        byte0001: 97
-        byte0002: 117
-        byte0003: 120
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
         byte0004: 0
         byte0005: 0
         byte0006: 0
@@ -142,7 +142,7 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 146
+    utf8LengthInBytes: 158
     bytes:
       offset0000:
         byte0000: 67
@@ -290,28 +290,28 @@ MonoBehaviour:
         byte0006: 113
         byte0007: 117
         byte0008: 39
-        byte0009: 97
-        byte0010: 117
+        byte0009: 195
+        byte0010: 160
         byte0011: 32
-        byte0012: 109
+        byte0012: 108
         byte0013: 97
-        byte0014: 116
-        byte0015: 105
+        byte0014: 32
+        byte0015: 112
       offset0144:
-        byte0000: 110
-        byte0001: 46
-        byte0002: 0
-        byte0003: 0
-        byte0004: 0
-        byte0005: 0
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
-        byte0009: 0
-        byte0010: 0
-        byte0011: 0
-        byte0012: 0
-        byte0013: 0
+        byte0000: 114
+        byte0001: 111
+        byte0002: 99
+        byte0003: 104
+        byte0004: 97
+        byte0005: 105
+        byte0006: 110
+        byte0007: 101
+        byte0008: 32
+        byte0009: 110
+        byte0010: 117
+        byte0011: 105
+        byte0012: 116
+        byte0013: 46
         byte0014: 0
         byte0015: 0
       offset0160:
@@ -708,3 +708,4 @@ MonoBehaviour:
       Data4: 0
     Path: 
   powerComponents: []
+  idHolderServer: 0

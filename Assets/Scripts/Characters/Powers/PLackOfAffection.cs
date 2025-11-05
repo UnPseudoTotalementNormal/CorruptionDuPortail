@@ -40,12 +40,13 @@ namespace Characters.Powers
         {
             if (NetworkManager.Singleton.LocalClientId != targetClientId) return;
             Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
+            Character _senderCharacter = GameManager.instance.characterManager.GetCharacter(senderClientId, false);
             if (_localCharacter.role.factionType == FactionType.chosen)
             {
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
                     senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
             }
-            ChatManager.instance.AddMessageLocal("L'orpheline est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+            ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venue vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             switch (_localCharacter.role.factionType)
             {
                 case FactionType.chosen:

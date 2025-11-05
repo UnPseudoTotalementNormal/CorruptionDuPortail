@@ -236,18 +236,18 @@ MonoBehaviour:
     Path: event:/Interface/Messages General + Anomaly/Menu 2
   hoverSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1794442382
+      Data2: 1163313654
+      Data3: -113547853
+      Data4: 2024024420
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 2
   unHoverSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1652283604
+      Data2: 1198001398
+      Data3: -290686321
+      Data4: 1967292025
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 1
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []

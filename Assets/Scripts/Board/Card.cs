@@ -41,6 +41,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public CanvasGroup chainedOverlay;
 
     public CanvasGroup noteCanvasGroup;
+    
+    public Image unknownFogOverlay;
  
     [Header("Info")]
     [SerializeField] private Sprite unknownCardSprite;
@@ -192,6 +194,14 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         bool _factionActive = factionLogoImage.sprite != null;
         factionLogoImage.gameObject.SetActive(_factionActive);
         factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
+        if (_factionType == FactionType.unknown)
+        {
+            unknownFogOverlay.gameObject.SetActive(true);
+        }
+        else
+        {
+            unknownFogOverlay.gameObject.SetActive(false);
+        }
     }
 
     public void CancelShowPseudoWithRevealedInfo()

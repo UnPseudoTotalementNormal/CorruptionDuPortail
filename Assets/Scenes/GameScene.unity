@@ -9002,6 +9002,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _focusCanvasGroup: {fileID: 602487800}
+  _focusParticlePrefab: {fileID: 5786720194925743900, guid: d93b1a1b7034267d596fb90279bebe70, type: 3}
 --- !u!1 &2039005800
 GameObject:
   m_ObjectHideFlags: 0

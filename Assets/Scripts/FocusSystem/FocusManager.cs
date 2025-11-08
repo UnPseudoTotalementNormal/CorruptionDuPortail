@@ -16,8 +16,10 @@ namespace FocusSystem
         public static FocusManager instance;
         
         [SerializeField] private CanvasGroup _focusCanvasGroup;
+        [SerializeField] private ParticleSystem _focusParticlePrefab;
         
         public List<FocusObject> currentFocusObjects = new();
+        
         
         private const int FOCUS_ORDER_IN_LAYER = 500;
         
@@ -97,6 +99,42 @@ namespace FocusSystem
                 _focusCanvasGroup.DOKill();
                 _focusCanvasGroup.DOFade(1, 0.25f);
             }
+            
+            //focus particles
+            if (_focusParticlePrefab == null)
+            {
+                return;
+            }
+            
+            Vector3 worldSize = Vector3.zero;
+
+            foreach (var _canvas in _allCanvas)
+            {
+                RectTransform rt = _canvas.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    Vector3[] corners = new Vector3[4];
+                    rt.GetWorldCorners(corners);
+
+                    float width = Vector3.Distance(corners[0], corners[3]); // coin gauche bas → gauche haut
+                    float height = Vector3.Distance(corners[0], corners[1]); // gauche bas → droite bas
+
+                    Vector3 w = new Vector3(width, height, 0.1f);
+                    worldSize = Vector3.Max(worldSize, w);
+                }
+            }
+
+            ParticleSystem _focusParticles = Instantiate(_focusParticlePrefab);
+            _newFocusObject.focusParticles = _focusParticles;
+            var _transformFollower = _focusParticles.gameObject.AddComponent<TransformFollower>();
+            _transformFollower.transformToFollow = _gameObject.transform;
+            _transformFollower.offset = Vector3.up * 0.1f;
+
+            var shape = _focusParticles.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(worldSize.x, 0.01f, worldSize.y);
+
+            _focusParticles.Play();
         }
         
         public bool IsFocused(GameObject _gameObject)
@@ -131,6 +169,12 @@ namespace FocusSystem
                 _canvas.sortingOrder -= FOCUS_ORDER_IN_LAYER;
             }
             
+            if (_orderObject.focusParticles)
+            {
+                _orderObject.focusParticles.Stop();
+                Destroy(_orderObject.focusParticles.gameObject, 5f);
+            }
+            
             currentFocusObjects.Remove(_orderObject);
             
             if (currentFocusObjects.Count == 0)
@@ -144,6 +188,7 @@ namespace FocusSystem
     public class FocusObject
     {
         public GameObject gameObject;
+        public ParticleSystem focusParticles;
         
         public FocusObject(GameObject _gameObject)
         {

@@ -1271,7 +1271,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   eventCanvasGroup: {fileID: 2934135431164856948}
   baseDuration: 5
-  timeAddedPerMessage: 20
+  timeAddedPerMessage: 5
   titleText: {fileID: 6224848342220633337}
   messageText: {fileID: 5470785463563423795}
   messagesCanvasGroup: {fileID: 5656783747930888834}

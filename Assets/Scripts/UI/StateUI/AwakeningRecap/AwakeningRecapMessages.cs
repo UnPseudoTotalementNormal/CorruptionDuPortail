@@ -15,7 +15,11 @@ namespace UI.Components
 {
     public class AwakeningRecapMessages : AwakeningRecapEventComponent
     {
-        public float timeAddedPerMessage = 15f;
+        [Header("Timing Configuration")]
+        public float baseTimePerMessage = 2f; 
+        public float timePerCharacter = 0.05f; 
+        public float minMessageDisplayTime = 3f;
+        public float maxMessageDisplayTime = 10f; 
         
         [ReadOnly] public Stack<MessageInfo> messagesToReveal = new();
         public TMP_Text titleText;
@@ -26,10 +30,25 @@ namespace UI.Components
         
         public GameObject anonymousMessagePrefab;
         
+        /// <summary>
+        /// Calcule le temps d'affichage pour un message en fonction de sa longueur
+        /// </summary>
+        private float CalculateMessageDisplayTime(string _message)
+        {
+            float _calculatedTime = baseTimePerMessage + (_message.Length * timePerCharacter);
+            return Mathf.Clamp(_calculatedTime, minMessageDisplayTime, maxMessageDisplayTime);
+        }
+        
         public override float EvaluateDuration()
         {
-            int _messageCount = MessageManager.instance.messagesToReveal.Count;
-            return baseDuration + (_messageCount * timeAddedPerMessage);
+            float _totalTime = baseDuration;
+            
+            foreach (var _messageInfo in MessageManager.instance.messagesToReveal)
+            {
+                _totalTime += CalculateMessageDisplayTime(_messageInfo.message.ToString());
+            }
+            
+            return _totalTime;
         }
         
         public override void SetupEvent(AwakeningRecapEvent _recapEvent)
@@ -60,13 +79,15 @@ namespace UI.Components
                 MessageInfo _messageInfo = messagesToReveal.Pop();
                 
                 _messageRevealedCount += 1;
-                var _newMessageObject = SpawnNewMessageText($"{_messageRevealedCount}: \"{_messageInfo.message.ToString()}\"");
+                string _messageContent = _messageInfo.message.ToString();
+                var _newMessageObject = SpawnNewMessageText($"{_messageRevealedCount}: \"{_messageContent}\"");
                 
                 CanvasGroup _messageCanvasGroup = _newMessageObject.GetComponent<CanvasGroup>();
                 _messageCanvasGroup.alpha = 0;
                 _messageCanvasGroup.DOFade(1, 0.5f);
-
-                await UniTask.Delay(TimeSpan.FromSeconds(timeAddedPerMessage));
+                
+                float _displayTime = CalculateMessageDisplayTime(_messageContent);
+                await UniTask.Delay(TimeSpan.FromSeconds(_displayTime));
             }
         }
 

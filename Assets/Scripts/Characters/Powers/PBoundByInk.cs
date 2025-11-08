@@ -5,6 +5,7 @@ using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
+using RoleTarget;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -71,6 +72,7 @@ namespace Characters.Powers
                 return;
             }
             
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterId);
             ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"), 
                 RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
             

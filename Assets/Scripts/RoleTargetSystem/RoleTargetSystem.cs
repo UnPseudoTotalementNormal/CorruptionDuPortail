@@ -53,6 +53,19 @@ namespace RoleTarget
             currentTargetingDataList.Add(_targetingData);
         }
         
+        public HashSet<ulong> GetAllTargetersForTarget(ulong _targetId)
+        {
+            HashSet<ulong> _targeterIdList = new();
+            foreach (var _targetingData in currentTargetingDataList)
+            {
+                if (_targetingData.targetId == _targetId)
+                {
+                    _targeterIdList.Add(_targetingData.targeterId);
+                }
+            }
+            return _targeterIdList;
+        }
+        
         public List<TargetingData> GetAllTargetingDataForTarget(ulong _targetId)
         {
             List<TargetingData> _targetingDataList = new();

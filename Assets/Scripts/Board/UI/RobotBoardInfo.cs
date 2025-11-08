@@ -50,7 +50,7 @@ namespace Board.UI
                 WriteNewTextRpc("0");
                 return;
             }
-            List<TargetingData> _targetingDatas = RoleTargetSystem.instance.GetAllTargetingDataForTarget(_robot.ownerClientId.Value);
+            var _targetingDatas = RoleTargetSystem.instance.GetAllTargetersForTarget(_robot.ownerClientId.Value);
             WriteNewTextRpc($"{_targetingDatas.Count}");
         }
 

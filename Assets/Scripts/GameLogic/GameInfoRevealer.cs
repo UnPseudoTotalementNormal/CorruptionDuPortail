@@ -16,6 +16,8 @@ namespace GameLogic
     public class GameInfoRevealer : NetworkBehaviour
     {
         public Dictionary<ulong, CharacterInfoReveal> charactersInfoRevealed = new();
+        
+        public Action onCharacterInfoRevealedChanged;
 
         public void Start()
         {
@@ -73,6 +75,8 @@ namespace GameLogic
                         .ShowPseudoWithRevealedInfo(true);
                     break;
             }
+            
+            onCharacterInfoRevealedChanged?.Invoke();
         }
 
         [Rpc(SendTo.Everyone, AllowTargetOverride = true)]

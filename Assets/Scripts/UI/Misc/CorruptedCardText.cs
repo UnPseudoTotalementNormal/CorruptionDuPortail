@@ -30,6 +30,7 @@ public class CardCorruptedText : MonoBehaviour
         originalColor = tmpText.color;
         if (card.characterInfo != null)
         {
+            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged += UpdateCorruptedText;
             card.characterInfo.isCorrupted.OnValueChanged += OnCorruptedChanged;
             isSubscribed = true;
             UpdateCorruptedText(card.characterInfo.isCorrupted.Value);
@@ -40,8 +41,17 @@ public class CardCorruptedText : MonoBehaviour
     {
         if (card.characterInfo != null && isSubscribed)
         {
+            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged -= UpdateCorruptedText;
             card.characterInfo.isCorrupted.OnValueChanged -= OnCorruptedChanged;
             isSubscribed = false;
+        }
+    }
+    
+    private void UpdateCorruptedText()
+    {
+        if (card.characterInfo)
+        {
+            UpdateCorruptedText(card.characterInfo.isCorrupted.Value);
         }
     }
 

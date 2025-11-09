@@ -50,7 +50,7 @@ namespace Board.UI.CharacterBar
             };
             customButton.onButtonHovered += OnButtonHovered;
             customButton.onButtonUnhovered += OnButtonUnhovered;
-
+            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged += DoUpdateCharacter;
         }
 
         private void OnButtonHovered()
@@ -98,6 +98,7 @@ namespace Board.UI.CharacterBar
         }
         private void OnDestroy()
         {
+            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
             UnsubscribeFromCharacterEvents();
         }
         private void OnCharacterRoleUpdated()
@@ -131,6 +132,11 @@ namespace Board.UI.CharacterBar
             
             var _rolePortrait = await playerCharacter.GetRole().GetRolePortrait();
             characterImage.sprite = _rolePortrait;
+        }
+        
+        private void DoUpdateCharacter()
+        {
+            _ = UpdateCharacter();
         }
     }
 }

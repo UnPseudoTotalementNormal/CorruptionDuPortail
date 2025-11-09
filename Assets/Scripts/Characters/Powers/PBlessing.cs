@@ -66,6 +66,11 @@ namespace Characters.Powers
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 blessingCharacterIdOnMorning.Add(_blessingCharacterId);
+                ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(
+                    GameValues.FAKE_CLIENT_ID,
+                    $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} sera béni à l'aube.",
+                    (int)ChatWindowIDs.Server),
+                    NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
         }
 
@@ -76,9 +81,9 @@ namespace Characters.Powers
             {
                 GameManager.instance.characterManager.GetCharacter(_characterId).isBlessed.Value = true;
                 var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
-                ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
+                /*ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
                     $"{_playerName} a été béni.",
-                    (int)ChatWindowIDs.Server));
+                    (int)ChatWindowIDs.Server));*/
             }
             blessingCharacterIdOnMorning.Clear();
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();

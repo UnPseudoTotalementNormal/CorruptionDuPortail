@@ -19,9 +19,6 @@ namespace Characters.Powers
     [Serializable]
     public class PBlessing : Power
     {
-        [NonSerialized] private bool isSubscribedToMornings = false;
-        [NonSerialized] private static List<ulong> blessingCharacterIdOnMorning = new();
-        
         [NonSerialized] private Character clickedCharacter;
         
         private void OnCardClicked(Card _clickedCard)
@@ -65,28 +62,14 @@ namespace Characters.Powers
                 GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
                     NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
-                blessingCharacterIdOnMorning.Add(_blessingCharacterId);
+                _blessingCharacter.isBlessed.Value = true;
+                
                 ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(
                     GameValues.FAKE_CLIENT_ID,
-                    $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} sera béni à l'aube.",
+                    $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),
                     NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
-        }
-
-        private static void OnMorningBlessingServer()
-        {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnMorningBlessingServer should only be called on server");
-            foreach (var _characterId in blessingCharacterIdOnMorning)
-            {
-                GameManager.instance.characterManager.GetCharacter(_characterId).isBlessed.Value = true;
-                var _playerName = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_characterId).playerName;
-                /*ChatManager.instance.SendChatMessageServerRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, 
-                    $"{_playerName} a été béni.",
-                    (int)ChatWindowIDs.Server));*/
-            }
-            blessingCharacterIdOnMorning.Clear();
-            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
@@ -124,22 +107,6 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnCardClicked;
             GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
             FocusManager.instance.UnfocusAll();
-        }
-
-        public override void OnGameStartedServer()
-        {
-            base.OnGameStartedServer();
-            if (isSubscribedToMornings)
-            {
-                return;
-            }
-            var _awakeningStates = GameManager.instance.GetGameStates(typeof(AwakeningState));
-            foreach (var _awakeningState in _awakeningStates)
-            {
-                _awakeningState.onStateEndServer += OnMorningBlessingServer;
-            }
-
-            isSubscribedToMornings = true;
         }
     }
 }

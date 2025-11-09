@@ -215,6 +215,22 @@ namespace GameLogic
         {
             return gameStates.Keys.Where(_state => _state.GetType() == _gameStateType).ToArray();
         }
+        
+        public int GetGameStateIndex(GameState _gameState)
+        {
+            int index = 0;
+            foreach (var pair in gameStates)
+            {
+                if (ReferenceEquals(pair.Key, _gameState))
+                {
+                    return index;
+                }
+                index++;
+            }
+            
+            Debug.LogWarning($"GameState {_gameState?.name ?? "null"} not found in gameStates dictionary. This might be because you're passing an uncloned GameState reference.");
+            return -1;
+        }
 
         #endregion
 

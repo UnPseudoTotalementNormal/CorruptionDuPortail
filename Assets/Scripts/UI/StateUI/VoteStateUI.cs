@@ -13,7 +13,28 @@ namespace UI
     {
         [SerializeField] private TMP_Text timerText;
         [SerializeField] private TMP_Text skipVoteAmountText;
-        
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (IsServer)
+            {
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(
+                    "OnVoteSkipButtonPressed",
+                    OnVoteSkipButtonPressedMessageHandler
+                );
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (IsServer)
+            {
+                NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OnVoteSkipButtonPressed");
+            }
+        }
+
         private void Update()
         {
             if (!owningGameState.IsStateActive())
@@ -32,13 +53,36 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            OnVoteSkipButtonPressedRpc(NetworkManager.Singleton.LocalClientId);
+            // Créer le writer avec une capacité suffisante (ajouter un peu plus d'espace pour les headers)
+            var _writer = new FastBufferWriter(128, Unity.Collections.Allocator.Temp);
+            
+            try
+            {
+                _writer.WriteValueSafe(NetworkManager.Singleton.LocalClientId);
+
+                // Envoyer le message au serveur
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
+                    "OnVoteSkipButtonPressed",
+                    NetworkManager.ServerClientId,
+                    _writer
+                );
+            }
+            finally
+            {
+                _writer.Dispose();
+            }
         }
 
-        [Rpc(SendTo.Server)]
+        private void OnVoteSkipButtonPressedMessageHandler(ulong _senderClientId, FastBufferReader _reader)
+        {
+            _reader.ReadValueSafe(out ulong _senderId);
+            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_senderId);
+        }
+        
+        /*[Rpc(SendTo.Server)]
         private void OnVoteSkipButtonPressedRpc(ulong _senderId)
         {
             ((VoteState)owningGameState).OnVoteSkipButtonPressed(_senderId);
-        }
+        }*/
     }
 }

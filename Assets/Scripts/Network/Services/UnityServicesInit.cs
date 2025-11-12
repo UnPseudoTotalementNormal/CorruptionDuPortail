@@ -17,6 +17,8 @@ namespace Network.Services
             await UnityServices.InitializeAsync();
             if (!AuthenticationService.Instance.IsSignedIn)
             {
+                string _profile = "Player_" + System.Guid.NewGuid().ToString("N").Substring(0, 24);
+                AuthenticationService.Instance.SwitchProfile(_profile);
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
             }
         }

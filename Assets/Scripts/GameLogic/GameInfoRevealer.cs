@@ -21,6 +21,11 @@ namespace GameLogic
 
         public void Start()
         {
+            GameManager.instance.onGameStarted += OnGameStarted;
+        }
+
+        private void OnGameStarted()
+        {
             GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First().onStateEndClient += OnRolesAttributed;
         }
 

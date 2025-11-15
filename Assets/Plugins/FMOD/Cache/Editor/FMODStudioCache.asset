@@ -378,6 +378,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1776
+--- !u!114 &-6333864740531548608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/LightOnButton
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/LightOnButton
+  Guid:
+    Data1: 1254915527
+    Data2: 1274543269
+    Data3: -1143340647
+    Data4: 542093456
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 400
 --- !u!114 &-6296362258342101123
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -582,10 +609,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638971944215381142
+  lastModified: 638988338166057107
   FileSizes:
   - Name: Desktop
-    Value: 10240672
+    Value: 10274784
   Exists: 1
 --- !u!114 &-4818972373118919025
 MonoBehaviour:
@@ -777,10 +804,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638971944215555962
+  lastModified: 638988338166128893
   FileSizes:
   - Name: Desktop
-    Value: 2874
+    Value: 2968
   Exists: 1
 --- !u!114 &-3974452291014879238
 MonoBehaviour:
@@ -1486,13 +1513,15 @@ MonoBehaviour:
   - {fileID: 8786495331084554641}
   - {fileID: 7078950324401931055}
   - {fileID: 8903052336178934206}
+  - {fileID: 8231090082839844706}
+  - {fileID: -6333864740531548608}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4866380843273065656}
   StringsBanks:
   - {fileID: -4062503513606897777}
   cacheVersion: 131847
-  cacheTime: 638971944215555962
+  cacheTime: 638988338166128893
   SerializableEventsDict:
   - key: event:/Characters/Orpheline/Canalisation
     index: 0
@@ -1574,6 +1603,10 @@ MonoBehaviour:
     index: 38
   - key: event:/Interface/Messages General + Anomaly/Menu 1
     index: 39
+  - key: event:/Interface/LightOffButton
+    index: 40
+  - key: event:/Interface/LightOnButton
+    index: 41
 --- !u!114 &164057015143093230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3097,6 +3130,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 33796
+--- !u!114 &8231090082839844706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/LightOffButton
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/LightOffButton
+  Guid:
+    Data1: 417274256
+    Data2: 1288174747
+    Data3: -1032867410
+    Data4: -626300355
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1373
 --- !u!114 &8239517096157220316
 MonoBehaviour:
   m_ObjectHideFlags: 0

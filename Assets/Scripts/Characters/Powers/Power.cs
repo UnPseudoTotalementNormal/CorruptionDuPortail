@@ -67,7 +67,7 @@ namespace Characters.Powers
         
         public bool IsTheSamePower(Power _isTheSamePower)
         {
-            return powerName == _isTheSamePower.powerName && powerDescription == _isTheSamePower.powerDescription;
+            return powerName == _isTheSamePower.powerName;
         }
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {

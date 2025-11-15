@@ -32,7 +32,7 @@ namespace Board.UI
         private void OnGameStarted()
         {
             WriteNewTextRpc(
-                $"0/{GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly)}");
+                $"0/{GameManager.instance.characterManager.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake)}");
         }
 
         private void OnAwakeningStateEnd()

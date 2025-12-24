@@ -45,6 +45,12 @@ namespace Network.Action
         {
             if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
+                if (!allowInvokeByClients)
+                {
+                    Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                    return;
+                }
+                
                 FastBufferWriter _writer = new FastBufferWriter(1, Unity.Collections.Allocator.Temp);
                 NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 return; // Early return to avoid invoking listeners twice on the server
@@ -181,6 +187,12 @@ namespace Network.Action
             
             if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
+                if (!allowInvokeByClients)
+                {
+                    Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                    return;
+                }
+                
                 FastBufferWriter _writer = new FastBufferWriter(128, Unity.Collections.Allocator.Temp);
                 try
                 {

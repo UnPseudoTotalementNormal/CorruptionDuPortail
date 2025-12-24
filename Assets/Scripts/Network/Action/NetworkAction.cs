@@ -296,7 +296,7 @@ namespace Network.Action
         {
             var _type = typeof(T);
 
-            // Types primitifs supportés par FastBufferWriter
+            // Primitive types
             if (_type == typeof(int))
                 return (INetworkActionSerializer<T>)new IntSerializer();
             if (_type == typeof(uint))
@@ -334,7 +334,7 @@ namespace Network.Action
             if (_type == typeof(Color32))
                 return (INetworkActionSerializer<T>)new Color32Serializer();
 
-            // Types implémentant INetworkSerializable
+            // INetworkSerializable
             if (typeof(INetworkSerializable).IsAssignableFrom(_type))
             {
                 var _serializerType = typeof(NetworkSerializableSerializer<>).MakeGenericType(_type);
@@ -348,7 +348,7 @@ namespace Network.Action
         }
     }
 
-    // Serializers pour types primitifs
+    // Serializers for primitive types
     internal class IntSerializer : INetworkActionSerializer<int>
     {
         public void Serialize(FastBufferWriter _writer, int _value) => _writer.WriteValueSafe(_value);
@@ -457,7 +457,7 @@ namespace Network.Action
         public Color32 Deserialize(FastBufferReader _reader) { _reader.ReadValueSafe(out Color32 _value); return _value; }
     }
 
-    // Serializer pour INetworkSerializable
+    // Serializer for INetworkSerializable
     internal class NetworkSerializableSerializer<T> : INetworkActionSerializer<T> where T : INetworkSerializable, new()
     {
         public void Serialize(FastBufferWriter _writer, T _value)

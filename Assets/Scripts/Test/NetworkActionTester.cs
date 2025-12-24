@@ -12,6 +12,11 @@ namespace Test
 
         private void Awake()
         {
+            if (NetworkManager.Singleton == null)
+            {
+                return;
+            }
+            
             testBaseNetworkAction += OnTestBaseNetworkActionTriggered;
             intTestNetworkAction += OnIntTestNetworkActionTriggered;
         }

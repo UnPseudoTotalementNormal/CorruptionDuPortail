@@ -11,9 +11,12 @@ namespace Network.Action
         
         public bool isRegistered { get; private set; }
         
-        public NetworkAction(string _messageID)
+        public bool allowInvokeByClients { get; private set; }
+        
+        public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
+            allowInvokeByClients = _allowInvokeByClients;
             Register();
         }
         
@@ -27,11 +30,31 @@ namespace Network.Action
         public void Invoke()
         {
             FastBufferWriter _writer = new FastBufferWriter(1, Unity.Collections.Allocator.Temp);
-            NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+            
+            if (NetworkManager.Singleton.IsServer)
+            {
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+            }
+            else
+            {
+                if (!allowInvokeByClients)
+                {
+                    Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                    return;
+                }
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+            }
         }
         
         private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
         {
+            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            {
+                FastBufferWriter _writer = new FastBufferWriter(1, Unity.Collections.Allocator.Temp);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                return; // Early return to avoid invoking listeners twice on the server
+            }
+            
             foreach (var _listener in listeners)
             {
                 _listener.Invoke();
@@ -115,11 +138,14 @@ namespace Network.Action
         private INetworkActionSerializer<T> serializer;
 
         public bool isRegistered { get; private set; }
+        
+        public bool allowInvokeByClients { get; private set; }
 
-        public NetworkAction(string _messageID)
+        public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
+            allowInvokeByClients = _allowInvokeByClients;
             Register();
         }
         
@@ -136,7 +162,20 @@ namespace Network.Action
             try
             {
                 serializer.Serialize(_writer, _param);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                else
+                {
+                    if (!allowInvokeByClients)
+                    {
+                        Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                        return;
+                    }
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                }
             }
             finally
             {
@@ -147,6 +186,22 @@ namespace Network.Action
         private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
         {
             T _param = serializer.Deserialize(_messagePayload);
+            
+            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            {
+                FastBufferWriter _writer = new FastBufferWriter(128, Unity.Collections.Allocator.Temp);
+                try
+                {
+                    serializer.Serialize(_writer, _param);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                finally
+                {
+                    _writer.Dispose();
+                }
+                return; // Early return to avoid invoking listeners twice on the server
+            }
+            
             foreach (var _listener in listeners)
             {
                 _listener.Invoke(_param);

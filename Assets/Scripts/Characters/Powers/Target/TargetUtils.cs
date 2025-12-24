@@ -7,6 +7,17 @@ namespace Characters.Powers.Target
 {
     public static class TargetUtils
     {
+        public static bool IsTargetValid(Character _target, TargetIncludeFlags _includeFlags)
+        {
+            return IsTargetValid(_target.OwnerClientId, _includeFlags);
+        }
+        
+        public static bool IsTargetValid(ulong _targetId, TargetIncludeFlags _includeFlags)
+        {
+            List<ulong> _validTargets = GetTargetsForCharacters(_includeFlags);
+            return _validTargets.Contains(_targetId);
+        }
+        
         public static List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
         {
             List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();

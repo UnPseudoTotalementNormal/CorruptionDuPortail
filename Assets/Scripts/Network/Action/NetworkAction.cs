@@ -33,7 +33,7 @@ namespace Network.Action
 
         public void Invoke()
         {
-            FastBufferWriter _writer = new FastBufferWriter(1, Unity.Collections.Allocator.Temp);
+            using FastBufferWriter _writer = new(1, Unity.Collections.Allocator.Temp);
             
             if (NetworkManager.Singleton.IsServer)
             {

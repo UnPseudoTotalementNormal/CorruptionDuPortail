@@ -6,6 +6,8 @@ namespace Network.Action
 {
     public class NetworkAction
     {
+        public static HashSet<string> registeredActions = new();
+        
         private string messageID;
         private List<System.Action> listeners = new();
         
@@ -17,6 +19,8 @@ namespace Network.Action
         {
             messageID = _messageID;
             allowInvokeByClients = _allowInvokeByClients;
+            CheckUniqueMessageID(_messageID);
+            Unregister();
             Register();
         }
         
@@ -113,6 +117,14 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
                 return;
             }
+            
+            if (!CheckUniqueMessageID(messageID))
+            {
+                return;
+            }
+            
+            registeredActions.Add(messageID);
+            
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
@@ -124,8 +136,21 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
                 return;
             }
+            
+            registeredActions.Remove(messageID);
+            
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
+        }
+        
+        private bool CheckUniqueMessageID(string _messageID)
+        {
+            var _checkUniqueMessageID = !registeredActions.Contains(_messageID);
+            if (!_checkUniqueMessageID)
+            {
+                Debug.LogError($"The messageID '{_messageID}' is already registered by another NetworkAction, THIS SHOULD NOT HAPPEN please use a unique messageID for each NetworkAction.");
+            }
+            return _checkUniqueMessageID;
         }
 
         #endregion
@@ -146,6 +171,8 @@ namespace Network.Action
             messageID = _messageID;
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
             allowInvokeByClients = _allowInvokeByClients;
+            CheckUniqueMessageID(messageID);
+            Unregister();
             Register();
         }
         
@@ -263,6 +290,13 @@ namespace Network.Action
                 return;
             }
 
+            if (!CheckUniqueMessageID(messageID))
+            {
+                return;
+            }
+
+            NetworkAction.registeredActions.Add(messageID);
+            
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
@@ -274,9 +308,21 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
                 return;
             }
+            
+            NetworkAction.registeredActions.Remove(messageID);
 
             NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
+        }
+        
+        private bool CheckUniqueMessageID(string _messageID)
+        {
+            var _checkUniqueMessageID = !NetworkAction.registeredActions.Contains(_messageID);
+            if (!_checkUniqueMessageID)
+            {
+                Debug.LogError($"The messageID '{_messageID}' is already registered by another NetworkAction, THIS SHOULD NOT HAPPEN please use a unique messageID for each NetworkAction.");
+            }
+            return _checkUniqueMessageID;
         }
         
         #endregion

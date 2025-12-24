@@ -16,6 +16,28 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+        
+        public NetworkAction(string _messageID, NetworkBehaviour _networkBehaviour, bool _allowInvokeByClients = true)
+        {
+            if (!_networkBehaviour.IsSpawned)
+            {
+                Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
+                return;
+            }
+            messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
             allowInvokeByClients = _allowInvokeByClients;
             Register();
         }

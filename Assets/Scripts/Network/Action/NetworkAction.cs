@@ -13,7 +13,7 @@ namespace Network.Action
         
         public bool isRegistered { get; private set; }
         
-        public bool allowInvokeByClients { get; private set; }
+        public bool allowInvokeByClients { get; }
         
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
@@ -164,7 +164,7 @@ namespace Network.Action
 
         public bool isRegistered { get; private set; }
         
-        public bool allowInvokeByClients { get; private set; }
+        public bool allowInvokeByClients { get; }
 
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {

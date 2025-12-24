@@ -53,14 +53,12 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            // Créer le writer avec une capacité suffisante (ajouter un peu plus d'espace pour les headers)
             var _writer = new FastBufferWriter(128, Unity.Collections.Allocator.Temp);
             
             try
             {
                 _writer.WriteValueSafe(NetworkManager.Singleton.LocalClientId);
 
-                // Envoyer le message au serveur
                 NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
                     "OnVoteSkipButtonPressed",
                     NetworkManager.ServerClientId,

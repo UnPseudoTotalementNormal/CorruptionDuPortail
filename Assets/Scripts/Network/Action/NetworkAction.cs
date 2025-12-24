@@ -17,13 +17,7 @@ namespace Network.Action
         {
             messageID = _messageID;
             allowInvokeByClients = _allowInvokeByClients;
-            Unregister();
             Register();
-        }
-        
-        ~NetworkAction()
-        {
-            Unregister();
         }
 
         #region Invoke
@@ -149,13 +143,7 @@ namespace Network.Action
             messageID = _messageID;
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
             allowInvokeByClients = _allowInvokeByClients;
-            Unregister();
             Register();
-        }
-        
-        ~NetworkAction()
-        {
-            Unregister();
         }
 
         #region Invoke

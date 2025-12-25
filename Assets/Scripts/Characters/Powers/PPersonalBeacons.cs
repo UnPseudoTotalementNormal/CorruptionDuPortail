@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers.PowerObjects;
@@ -16,7 +17,25 @@ namespace Characters.Powers
     public class PPersonalBeacons : Power
     {
         List<PersonalBeaconObject> personalBeacons = new();
-        
+
+        private void Awake()
+        {
+            if (NetworkManager.IsServer)
+            { 
+                onPowerReparented += OnPowerReparented;
+                IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
+                foreach (Character _character in _robots)
+                {
+                    CreateBeaconRpc(_character.OwnerClientId, false);
+                }
+            }
+        }
+
+        private void OnPowerReparented()
+        {
+            CreateBeaconRpc(OwnerClientId, true);
+        }
+
         public override void StartUse()
         {
             base.StartUse();
@@ -41,8 +60,7 @@ namespace Characters.Powers
             }
             personalBeacons.Any(_p => _p.targetClientId == _characterClickedId);
             
-            CreateBeaconRpc(_characterClickedId);
-            //TODO: spawn beacon logic here!
+            CreateBeaconRpc(_characterClickedId, true);
         }
 
         protected override void StopUse()
@@ -58,7 +76,7 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Everyone)]
-        private void CreateBeaconRpc(ulong _targetClientId)
+        private void CreateBeaconRpc(ulong _targetClientId, bool _isVisibleOnCard)
         {
             PersonalBeaconObject _newBeacon = new(this, _targetClientId);
             personalBeacons.Add(_newBeacon);
@@ -71,8 +89,21 @@ namespace Characters.Powers
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
-            Debug.Log($"Beacon for {_newBeacon.targetClientId} corrupted state changed to {_newState}");
-            ChatManager.instance.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", ChatManager.SERVER_CLIENT_ID);
+            Character _beaconedCharacter = GameManager.instance.characterManager.GetCharacter(_newBeacon.targetClientId);
+            
+            if (_beaconedCharacter.role.roleID == RoleID.Robot)
+            {
+                ChatManager.instance.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",
+                    ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+                return;
+            }
+            
+            if (_beaconedCharacter.role.factionType != FactionType.chosen)
+            {
+                return;
+            }
+            ChatManager.instance.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", 
+                ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
         }
     }
 }

@@ -48,6 +48,8 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
+            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+            FocusManager.instance.UnfocusAll();
         }
         
         private bool IsTargetValid(ulong _targetId)

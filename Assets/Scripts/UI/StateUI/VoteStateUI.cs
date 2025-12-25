@@ -1,6 +1,7 @@
 #region
 
 using GameLogic.GameStates;
+using Network.Action;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,17 +14,20 @@ namespace UI
     {
         [SerializeField] private TMP_Text timerText;
         [SerializeField] private TMP_Text skipVoteAmountText;
+        private NetworkAction<ulong> onVoteSkipButtonPressedByClient = new($"onVoteSkipButtonPressedVoteStateUI", true);
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             if (IsServer)
             {
-                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(
-                    "OnVoteSkipButtonPressed",
-                    OnVoteSkipButtonPressedMessageHandler
-                );
+                onVoteSkipButtonPressedByClient += OnVoteSkipButtonPressedServer;
             }
+        }
+
+        private void OnVoteSkipButtonPressedServer(ulong _clientId)
+        {
+            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_clientId);
         }
 
         public override void OnNetworkDespawn()
@@ -31,7 +35,8 @@ namespace UI
             base.OnNetworkDespawn();
             if (IsServer)
             {
-                NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("OnVoteSkipButtonPressed");
+                onVoteSkipButtonPressedByClient -= OnVoteSkipButtonPressedServer;
+                onVoteSkipButtonPressedByClient.Unregister();
             }
         }
 
@@ -53,34 +58,7 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            var _writer = new FastBufferWriter(128, Unity.Collections.Allocator.Temp);
-            
-            try
-            {
-                _writer.WriteValueSafe(NetworkManager.Singleton.LocalClientId);
-
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(
-                    "OnVoteSkipButtonPressed",
-                    NetworkManager.ServerClientId,
-                    _writer
-                );
-            }
-            finally
-            {
-                _writer.Dispose();
-            }
+            onVoteSkipButtonPressedByClient?.Invoke(NetworkManager.Singleton.LocalClientId);
         }
-
-        private void OnVoteSkipButtonPressedMessageHandler(ulong _senderClientId, FastBufferReader _reader)
-        {
-            _reader.ReadValueSafe(out ulong _senderId);
-            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_senderId);
-        }
-        
-        /*[Rpc(SendTo.Server)]
-        private void OnVoteSkipButtonPressedRpc(ulong _senderId)
-        {
-            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_senderId);
-        }*/
     }
 }

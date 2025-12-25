@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers.Target;
@@ -40,6 +41,38 @@ namespace FocusSystem
             foreach (var _focusObject in currentFocusObjects.ToList())
             {
                 UnfocusObject(_focusObject);
+            }
+        }
+
+        public void SetFocusOnType(FocusType _focusType, Func<ulong, bool> _checkValidFunc, bool _stopOtherFocus = true)
+        {
+            if (_stopOtherFocus)
+            {
+                UnfocusAll();
+            }
+            
+            switch (_focusType)
+            {
+                case FocusType.Roles:
+                    foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+                    {
+                        if (_checkValidFunc(_characterBarObject.playerCharacter.ownerClientId.Value))
+                        {
+                            FocusObject(_characterBarObject.gameObject);
+                        }
+                    }
+                    break;
+                case FocusType.Cards:
+                    foreach (var _card in BoardManager.instance.visibleCards)
+                    {
+                        if (_checkValidFunc(_card.characterInfo.ownerClientId.Value))
+                        {
+                            FocusObject(_card.gameObject);
+                        }
+                    }
+                    break;
+                case FocusType.Powers:
+                    break;
             }
         }
         

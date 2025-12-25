@@ -169,6 +169,29 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            serializer = NetworkActionSerializerFactory.GetSerializer<T>();
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+
+        public NetworkAction(string _messageID, NetworkBehaviour _networkBehaviour, bool _allowInvokeByClients = true)
+        {
+            if (!_networkBehaviour.IsSpawned)
+            {
+                Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
+                return;
+            }
+            messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
             allowInvokeByClients = _allowInvokeByClients;
             Register();
@@ -273,6 +296,374 @@ namespace Network.Action
         }
 
         public static implicit operator bool(NetworkAction<T> _action)
+        {
+            return _action != null && _action.isRegistered && _action.listeners.Count > 0;
+        }
+
+        #endregion
+
+        #region Message registration
+
+        public void Register()
+        {
+            if (isRegistered)
+            {
+                Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
+                return;
+            }
+
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            isRegistered = true;
+        }
+        
+        public void Unregister()
+        {
+            if (!isRegistered)
+            {
+                Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            isRegistered = false;
+        }
+        
+        #endregion
+    }
+
+    public class NetworkAction<T1, T2>
+    {
+        private string messageID;
+        private List<System.Action<T1, T2>> listeners = new();
+        private INetworkActionSerializer<T1> serializer1;
+        private INetworkActionSerializer<T2> serializer2;
+
+        public bool isRegistered { get; private set; }
+        
+        public bool allowInvokeByClients { get; }
+
+        public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
+        {
+            messageID = _messageID;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
+            serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+
+        public NetworkAction(string _messageID, NetworkBehaviour _networkBehaviour, bool _allowInvokeByClients = true)
+        {
+            if (!_networkBehaviour.IsSpawned)
+            {
+                Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
+                return;
+            }
+            messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
+            serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+
+        #region Invoke
+
+        public void Invoke(T1 _param1, T2 _param2)
+        {
+            FastBufferWriter _writer = new FastBufferWriter(256, Unity.Collections.Allocator.Temp);
+            try
+            {
+                serializer1.Serialize(_writer, _param1);
+                serializer2.Serialize(_writer, _param2);
+                
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                else
+                {
+                    if (!allowInvokeByClients)
+                    {
+                        Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                        return;
+                    }
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                }
+            }
+            finally
+            {
+                _writer.Dispose();
+            }
+        }
+
+        private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
+        {
+            T1 _param1 = serializer1.Deserialize(_messagePayload);
+            T2 _param2 = serializer2.Deserialize(_messagePayload);
+            
+            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            {
+                if (!allowInvokeByClients)
+                {
+                    Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                    return;
+                }
+                
+                FastBufferWriter _writer = new FastBufferWriter(256, Unity.Collections.Allocator.Temp);
+                try
+                {
+                    serializer1.Serialize(_writer, _param1);
+                    serializer2.Serialize(_writer, _param2);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                finally
+                {
+                    _writer.Dispose();
+                }
+                return; // Early return to avoid invoking listeners twice on the server
+            }
+            
+            foreach (var _listener in listeners)
+            {
+                _listener.Invoke(_param1, _param2);
+            }
+        }
+
+        #endregion
+
+        #region Listener management
+
+        public void AddListener(System.Action<T1, T2> _listener)
+        {
+            if (listeners.Contains(_listener))
+            {
+                Debug.Log("Listener already added to NetworkAction: " + messageID + ". Ignoring.");
+                return;
+            }
+
+            listeners.Add(_listener);
+        }
+
+        public void RemoveListener(System.Action<T1, T2> _listener)
+        {
+            if (!listeners.Contains(_listener))
+            {
+                Debug.Log("Listener not found in NetworkAction: " + messageID + ". Ignoring.");
+                return;
+            }
+
+            listeners.Remove(_listener);
+        }
+
+        public static NetworkAction<T1, T2> operator +(NetworkAction<T1, T2> _action, System.Action<T1, T2> _listener)
+        {
+            _action.AddListener(_listener);
+            return _action;
+        }
+
+        public static NetworkAction<T1, T2> operator -(NetworkAction<T1, T2> _action, System.Action<T1, T2> _listener)
+        {
+            _action.RemoveListener(_listener);
+            return _action;
+        }
+
+        public static implicit operator bool(NetworkAction<T1, T2> _action)
+        {
+            return _action != null && _action.isRegistered && _action.listeners.Count > 0;
+        }
+
+        #endregion
+
+        #region Message registration
+
+        public void Register()
+        {
+            if (isRegistered)
+            {
+                Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
+                return;
+            }
+
+            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            isRegistered = true;
+        }
+        
+        public void Unregister()
+        {
+            if (!isRegistered)
+            {
+                Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            isRegistered = false;
+        }
+        
+        #endregion
+    }
+
+    public class NetworkAction<T1, T2, T3>
+    {
+        private string messageID;
+        private List<System.Action<T1, T2, T3>> listeners = new();
+        private INetworkActionSerializer<T1> serializer1;
+        private INetworkActionSerializer<T2> serializer2;
+        private INetworkActionSerializer<T3> serializer3;
+
+        public bool isRegistered { get; private set; }
+        
+        public bool allowInvokeByClients { get; }
+
+        public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
+        {
+            messageID = _messageID;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
+            serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
+            serializer3 = NetworkActionSerializerFactory.GetSerializer<T3>();
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+
+        public NetworkAction(string _messageID, NetworkBehaviour _networkBehaviour, bool _allowInvokeByClients = true)
+        {
+            if (!_networkBehaviour.IsSpawned)
+            {
+                Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
+                return;
+            }
+            messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
+            if (messageID.Length > 64)
+            {
+                messageID = messageID.Substring(0, 64);
+                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+            }
+            serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
+            serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
+            serializer3 = NetworkActionSerializerFactory.GetSerializer<T3>();
+            allowInvokeByClients = _allowInvokeByClients;
+            Register();
+        }
+
+        #region Invoke
+
+        public void Invoke(T1 _param1, T2 _param2, T3 _param3)
+        {
+            FastBufferWriter _writer = new FastBufferWriter(384, Unity.Collections.Allocator.Temp);
+            try
+            {
+                serializer1.Serialize(_writer, _param1);
+                serializer2.Serialize(_writer, _param2);
+                serializer3.Serialize(_writer, _param3);
+                
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                else
+                {
+                    if (!allowInvokeByClients)
+                    {
+                        Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                        return;
+                    }
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                }
+            }
+            finally
+            {
+                _writer.Dispose();
+            }
+        }
+
+        private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
+        {
+            T1 _param1 = serializer1.Deserialize(_messagePayload);
+            T2 _param2 = serializer2.Deserialize(_messagePayload);
+            T3 _param3 = serializer3.Deserialize(_messagePayload);
+            
+            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            {
+                if (!allowInvokeByClients)
+                {
+                    Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
+                    return;
+                }
+                
+                FastBufferWriter _writer = new FastBufferWriter(384, Unity.Collections.Allocator.Temp);
+                try
+                {
+                    serializer1.Serialize(_writer, _param1);
+                    serializer2.Serialize(_writer, _param2);
+                    serializer3.Serialize(_writer, _param3);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                }
+                finally
+                {
+                    _writer.Dispose();
+                }
+                return; // Early return to avoid invoking listeners twice on the server
+            }
+            
+            foreach (var _listener in listeners)
+            {
+                _listener.Invoke(_param1, _param2, _param3);
+            }
+        }
+
+        #endregion
+
+        #region Listener management
+
+        public void AddListener(System.Action<T1, T2, T3> _listener)
+        {
+            if (listeners.Contains(_listener))
+            {
+                Debug.Log("Listener already added to NetworkAction: " + messageID + ". Ignoring.");
+                return;
+            }
+
+            listeners.Add(_listener);
+        }
+
+        public void RemoveListener(System.Action<T1, T2, T3> _listener)
+        {
+            if (!listeners.Contains(_listener))
+            {
+                Debug.Log("Listener not found in NetworkAction: " + messageID + ". Ignoring.");
+                return;
+            }
+
+            listeners.Remove(_listener);
+        }
+
+        public static NetworkAction<T1, T2, T3> operator +(NetworkAction<T1, T2, T3> _action, System.Action<T1, T2, T3> _listener)
+        {
+            _action.AddListener(_listener);
+            return _action;
+        }
+
+        public static NetworkAction<T1, T2, T3> operator -(NetworkAction<T1, T2, T3> _action, System.Action<T1, T2, T3> _listener)
+        {
+            _action.RemoveListener(_listener);
+            return _action;
+        }
+
+        public static implicit operator bool(NetworkAction<T1, T2, T3> _action)
         {
             return _action != null && _action.isRegistered && _action.listeners.Count > 0;
         }

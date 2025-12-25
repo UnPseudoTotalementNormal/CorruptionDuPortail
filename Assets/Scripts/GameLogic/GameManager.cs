@@ -12,6 +12,7 @@ using Characters;
 using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using Network;
+using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -42,9 +43,8 @@ namespace GameLogic
         public int currentDay => gameLoopCount + 1;
 
         public bool hasGameStarted => gameHasStartedFirstLoop;
-        public event Action onGameStarted;
-        public event Action onNewDayPassed;
-        
+        public NetworkAction onGameStarted = new("onGameStarted", false);
+        public NetworkAction onNewDayPassed = new("onNewDayPassed", false);
 
         private void Awake()
         {
@@ -79,24 +79,6 @@ namespace GameLogic
         
             GetGameState(currentGameStateIndex.Value).StateUpdateServer();
         }
-        
-        #region Events Rpc
-        
-        [Rpc(SendTo.Everyone)]
-        private void OnGameStartedRpc()
-        {
-            onGameStarted?.Invoke();
-        }
-        
-        [Rpc(SendTo.Everyone)]
-        private void OnNewDayPassedRpc()
-        {
-            onNewDayPassed?.Invoke();
-        }
-        
-        #endregion
-
-        
 
         #region GameState Methods
 
@@ -161,13 +143,13 @@ namespace GameLogic
             if (!_ignoreGameLoop && _wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
             {
                 _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
-                OnNewDayPassedRpc();
+                onNewDayPassed?.Invoke();
             }
 
             if (gameStates[GetGameState(_newGameStateIndex)].isInGameLoop && !gameHasStartedFirstLoop)
             {
                 gameHasStartedFirstLoop = true;
-                OnGameStartedRpc();
+                onGameStarted?.Invoke();
             }
             
             SwitchGameState(_newGameStateIndex);

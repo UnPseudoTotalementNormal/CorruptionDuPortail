@@ -85,6 +85,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a87bffb8f1cdb374e825c8c2eee3a4fb
+    m_Address: Assets/Art/Sprites/Portraits/LumaLaCroupiere.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e7357924e28151441be8f2912111f7d2
     m_Address: Assets/Art/Sprites/Portraits/Incomplet.jpg
     m_ReadOnly: 0

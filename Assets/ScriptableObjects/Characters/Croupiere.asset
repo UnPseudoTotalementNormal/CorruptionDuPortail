@@ -103,7 +103,8 @@ MonoBehaviour:
         Data4: 0
       Path: 
     ownerClientId: 0
-  powers: []
+  powers:
+  - {fileID: 0}
   references:
     version: 2
     RefIds:

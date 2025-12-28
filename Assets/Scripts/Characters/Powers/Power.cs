@@ -123,9 +123,9 @@ namespace Characters.Powers
             
             OnUsedServer();
             onPowerUsed?.Invoke();
-            if (OwnerClientId != NetworkManager.ServerClientId) //notify owner client
+            if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
-                OnUsedRpc(RpcTarget.Single(OwnerClientId, RpcTargetUse.Persistent));
+                OnUsedRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
             }
         }
         

@@ -9,7 +9,7 @@ namespace Characters.Powers.Target
     {
         public static bool IsTargetValid(Character _target, TargetIncludeFlags _includeFlags)
         {
-            return IsTargetValid(_target.OwnerClientId, _includeFlags);
+            return IsTargetValid(_target.ownerClientId.Value, _includeFlags);
         }
         
         public static bool IsTargetValid(ulong _targetId, TargetIncludeFlags _includeFlags)

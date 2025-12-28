@@ -26,14 +26,14 @@ namespace Characters.Powers
                 IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    CreateBeaconRpc(_character.OwnerClientId, false);
+                    CreateBeaconRpc(_character.ownerClientId.Value, false);
                 }
             }
         }
 
         private void OnPowerReparented()
         {
-            CreateBeaconRpc(OwnerClientId, true);
+            CreateBeaconRpc(ownerClientId.Value, true);
         }
 
         public override void StartUse()

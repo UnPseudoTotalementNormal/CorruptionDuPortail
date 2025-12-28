@@ -10,12 +10,12 @@ namespace Characters.Powers.PowerObjects
 
         public NetworkAction<bool> onCorruptedBeaconChanged;
         
-        public PersonalBeaconObject(NetworkBehaviour _ownerBehaviour, ulong _targetClientId)
+        public PersonalBeaconObject(Power _ownerPower, ulong _targetClientId)
         {
-            ownerClientId = _ownerBehaviour.OwnerClientId;
+            ownerClientId = _ownerPower.ownerClientId.Value;
             targetClientId = _targetClientId;
             
-            onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerBehaviour);
+            onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerPower);
             
             CharacterManager.instance.GetCharacter(targetClientId, false).isCorrupted.OnValueChanged += OnTargetCorruptedChanged;
         }

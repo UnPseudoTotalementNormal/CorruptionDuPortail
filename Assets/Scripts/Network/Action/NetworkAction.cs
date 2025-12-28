@@ -4,6 +4,11 @@ using UnityEngine;
 
 namespace Network.Action
 {
+    internal static class NetworkActionConstants
+    {
+        internal const int MAX_MESSAGE_LENGTH = 300;
+    }
+    
     public class NetworkAction
     {
         private string messageID;
@@ -16,10 +21,10 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             allowInvokeByClients = _allowInvokeByClients;
             Register();
@@ -33,10 +38,10 @@ namespace Network.Action
                 return;
             }
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             allowInvokeByClients = _allowInvokeByClients;
             Register();
@@ -169,10 +174,10 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
             allowInvokeByClients = _allowInvokeByClients;
@@ -187,10 +192,10 @@ namespace Network.Action
                 return;
             }
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer = NetworkActionSerializerFactory.GetSerializer<T>();
             allowInvokeByClients = _allowInvokeByClients;
@@ -345,10 +350,10 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
             serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
@@ -364,10 +369,10 @@ namespace Network.Action
                 return;
             }
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
             serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
@@ -527,10 +532,10 @@ namespace Network.Action
         public NetworkAction(string _messageID, bool _allowInvokeByClients = true)
         {
             messageID = _messageID;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
             serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();
@@ -547,10 +552,10 @@ namespace Network.Action
                 return;
             }
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
-            if (messageID.Length > 64)
+            if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
-                messageID = messageID.Substring(0, 64);
-                Debug.LogWarning("NetworkAction messageID exceeded 64 characters and was truncated: " + messageID);
+                messageID = messageID.Substring(0, NetworkActionConstants.MAX_MESSAGE_LENGTH);
+                Debug.LogWarning($"NetworkAction messageID exceeded {NetworkActionConstants.MAX_MESSAGE_LENGTH} characters and was truncated: " + messageID);
             }
             serializer1 = NetworkActionSerializerFactory.GetSerializer<T1>();
             serializer2 = NetworkActionSerializerFactory.GetSerializer<T2>();

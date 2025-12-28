@@ -10,6 +10,7 @@ using Extensions;
 using FMODUnity;
 using FocusSystem;
 using GameLogic;
+using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -46,7 +47,7 @@ namespace Characters.Powers
 
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
-        public event Action onPowerUsed;
+        public NetworkAction onPowerUsed;
         public event Action onPowerReparented;
         public event Action onPowerGameStartedServerTriggered;
 
@@ -61,6 +62,7 @@ namespace Characters.Powers
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
+                onPowerUsed = new NetworkAction("OnPowerUsed_" + powerName, this);
             }
             onPowerSpawned?.Invoke(this);
         }
@@ -94,30 +96,40 @@ namespace Characters.Powers
             isCurrentlyUsed = true;
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
         }
+        
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void OnUsedRpc(RpcParams _params)
+        {
+            OnUsed(false);
+        }
 
-        public void OnUsed()
+        /// <summary>
+        /// Triggers the use of the power. Calls the server if necessary, then executes server-side logic and notifies the owner client.
+        /// </summary>
+        /// <param name="_callToServer">IMPORTANT: If false, the method must be called directly on the server. if true, sends an RPC to the server to process the usage.</param>
+        
+        public void OnUsed(bool _callToServer = true) //NEEDS TO BE CALLED ON SERVER IF BOOL IS FALSE, it will call on owner client too after
         {
             StopUse();
-            OnUsedOwnerClientRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
-            OnUsedServerRpc();
-            OnUsedRpc();
-        }
 
-        [Rpc(SendTo.Everyone)]
-        protected virtual void OnUsedRpc()
-        {
+            if (!IsServer)
+            {
+                if (_callToServer)
+                {
+                    OnUsedRpc(RpcTarget.Server);
+                }
+                return;
+            }
+            
+            OnUsedServer();
             onPowerUsed?.Invoke();
-        }
-
-        [Rpc(SendTo.SpecifiedInParams)]
-        protected virtual void OnUsedOwnerClientRpc(RpcParams _params = default)
-        {
-            if (!string.IsNullOrEmpty(onUsedSound.GetPath())) RuntimeManager.PlayOneShot(onUsedSound);
-            FocusManager.instance.UnfocusAll();
+            if (OwnerClientId != NetworkManager.ServerClientId) //notify owner client
+            {
+                OnUsedRpc(RpcTarget.Single(OwnerClientId, RpcTargetUse.Persistent));
+            }
         }
         
-        [Rpc(SendTo.Server)]
-        protected virtual void OnUsedServerRpc()
+        protected virtual void OnUsedServer()
         {
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
@@ -135,8 +147,16 @@ namespace Characters.Powers
 
         protected virtual void StopUse()
         {
-            isCurrentlyUsed = false;
+            if (isCurrentlyUsed) //only play if currently being used (avoid double sound effects when stopped by client and then by server)
+            {
+                if (!string.IsNullOrEmpty(onUsedSound.GetPath()))
+                {
+                    RuntimeManager.PlayOneShot(onUsedSound);
+                }
+                FocusManager.instance.UnfocusAll();
+            }
             GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
+            isCurrentlyUsed = false;
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only

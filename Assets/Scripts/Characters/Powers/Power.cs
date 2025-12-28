@@ -50,6 +50,9 @@ namespace Characters.Powers
         public NetworkAction onPowerUsed;
         public event Action onPowerReparented;
         public event Action onPowerGameStartedServerTriggered;
+        
+        public delegate void CheckIsTargetValidDelegate(ulong _targetClientId, ref bool _isValid);
+        public event CheckIsTargetValidDelegate checkIsTargetValid;
 
         public List<PowerComponent> powerComponents = new();
 
@@ -71,6 +74,25 @@ namespace Characters.Powers
         {
             return powerName == _isTheSamePower.powerName;
         }
+        
+        public List<ulong> GetValidTargets()
+        {
+            List<ulong> _validTargets = CharacterManager.instance.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
+            _validTargets = _validTargets.Where(CheckIsTargetValid).ToList();
+            return _validTargets;
+        }
+
+        public bool CheckIsTargetValid(ulong _targetClientId)
+        {
+            bool _isValid;
+            _isValid = TargetUtils.IsTargetValid(_targetClientId, targetIncludeFlags);
+            if (_isValid)
+            {
+                checkIsTargetValid?.Invoke(_targetClientId, ref _isValid);
+            }
+            return _isValid;
+        }
+        
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             var _powerCharacter = ownerCharacter;
@@ -85,7 +107,7 @@ namespace Characters.Powers
             if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
             if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
             if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
-            if (needTargetSelection && TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Count <= 0) return false;
+            if (needTargetSelection && GetValidTargets().Count <= 0) return false;
             if (powerUseLeft.Value <= 0) return false;
 
             return true;

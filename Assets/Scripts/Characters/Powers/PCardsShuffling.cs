@@ -1,46 +1,161 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers.Target;
+using ChatSystem;
 using FocusSystem;
+using GameLogic;
+using Network;
+using RoleTarget;
 using Unity.Netcode;
 
 namespace Characters.Powers
 {
     public class PCardsShuffling : Power
     {
-        public NetworkList<ulong> discoveredClientIds; // List of client id role discovered or if discovered that it's not used
+        public NetworkList<ulong> discoveredClientIds = new(); // List of client id role discovered or if discovered that it's not used
+        private ulong currentRoleGuessClientId;
         
-        private void OnCardClicked(Card _cardClicked)
+        private void OnCharacterBarObjectClicked(Character _character)
         {
-            OnCardClickedRpc(_cardClicked.roleInfo.ownerClientId);
-        }
-
-        [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _clientIdClicked)
-        {
+            ulong _clientIdClicked = _character.ownerClientId.Value;
             if (!IsTargetValid(_clientIdClicked))
             {
                 return;
             }
 
+            currentRoleGuessClientId = _character.ownerClientId.Value;
+            
+            OnCharacterBarObjectClickedRpc(_clientIdClicked);
+            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarObjectClicked;
+        }
+
+        [Rpc(SendTo.Server)]
+        private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked)
+        {
+            // probably redundant check
+            /*if (!IsTargetValid(_clientIdClicked))
+            {
+                return;
+            }*/
+
             Character _character = CharacterManager.instance.GetCharacter(_clientIdClicked);
             if (_character.isFake)
             {
+                ChatMessage _fakeMessage = new ChatMessage
+                {
+                    message = $"Le rôle selectionné ({_character.role.roleName.ToString()}) était une fausse carte.",
+                    senderClientId = ChatManager.SERVER_CLIENT_ID,
+                    chatId = (int)ChatWindowIDs.Server
+                };
+                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
+                return; //character was fake, do nothing else
             }
+            
+            currentRoleGuessClientId = _character.ownerClientId.Value;
+            AskForGuessRoleRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
         }
         
+        private void OnGuessRoleCardClicked(Card _cardClicked)
+        {
+            ulong _clickedId = _cardClicked.roleInfo.ownerClientId;
+            if (!IsGuessValid(_clickedId))
+            {
+                return;
+            }
+            
+            GuessRoleRpc(_clickedId);
+            OnUsed();
+        }
+
+        [Rpc(SendTo.Server)]
+        private void GuessRoleRpc(ulong _clickedId)
+        {
+            Character _clickedCharacter = CharacterManager.instance.GetCharacter(_clickedId);
+            Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
+            bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
+            
+            ChatMessage _resultMessage = new ChatMessage
+            {
+                senderClientId = ChatManager.SERVER_CLIENT_ID,
+                chatId = (int)ChatWindowIDs.Server,
+                message = _isCorrectGuess
+                    ? $"Vous avez correctement deviné que {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} est {_clickedCharacter.role.roleName}."
+                    : $"Votre supposition était incorrecte, {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} n'est pas {_clickedCharacter.role.roleName}."
+            };
+            
+            
+            if (_isCorrectGuess)
+            {
+                discoveredClientIds.Add(_clickedId);
+                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
+                RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            }
+            else
+            {
+                List<TargetingData> _targetedClientIds = RoleTargetSystem.instance.GetAllTargetingDataForTargeter(_guessCharacter.ownerClientId.Value);
+                if (_targetedClientIds.Count == 0)
+                {
+                    _resultMessage.message += $"\nLe role {currentRoleGuessClientId.ToString()} n'a ciblé aucun rôle.";
+                }
+                else
+                {
+                    _resultMessage.message += $"\nLe role {currentRoleGuessClientId.ToString()} a ciblé ces rôles:";
+                    foreach (var _targetData in _targetedClientIds)
+                    {
+                        Character _targetedCharacter = CharacterManager.instance.GetCharacter(_targetData.targetId);
+                        _resultMessage.message += $"\n- {_targetedCharacter.role.roleName}";
+                    }
+                }
+            }
+            
+            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            
+            OnUsed();
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void AskForGuessRoleRpc(RpcParams _rpcParams)
+        {
+            FocusManager.instance.UnfocusAll();
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, IsGuessValid);
+            BoardManager.instance.onCardClicked += OnGuessRoleCardClicked;
+        }
+
+
         public override void StartUse()
         {
             base.StartUse();
             FocusManager.instance.SetFocusOnType(FocusType.Roles, IsTargetValid);
-            BoardManager.instance.onCardClicked += OnCardClicked;
+            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarObjectClicked;
         }
 
         protected override void StopUse()
         {
             base.StopUse();
+            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarObjectClicked;
+            BoardManager.instance.onCardClicked -= OnGuessRoleCardClicked;
+        }
+        
+        private void Start()
+        {
+            checkIsTargetValid += CheckTargetValid;
+        }
+
+        private bool IsGuessValid(ulong _targetId)
+        {
+            return true;
+        }
+        
+        private void CheckTargetValid(ulong _targetClientId, ref bool _isValid)
+        {
+            bool _result = IsTargetValid(_targetClientId);
+            if (!_result)
+            {
+                _isValid = false;
+            }
         }
         
         private bool IsTargetValid(ulong _targetId)
@@ -50,7 +165,8 @@ namespace Characters.Powers
             {
                 _discoveredIds.Add(_discoveredClientId);
             }
-            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags) && _discoveredIds.All(_p => _p != _targetId);
+            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags) && !_discoveredIds.Contains(_targetId);
         }
+
     }
 }

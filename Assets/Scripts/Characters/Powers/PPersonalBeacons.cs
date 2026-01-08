@@ -67,8 +67,6 @@ namespace Characters.Powers
                 return;
             }
             
-            personalBeacons.Any(_p => _p.targetClientId == _characterClickedId);
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);

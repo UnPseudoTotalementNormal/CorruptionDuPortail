@@ -104,7 +104,7 @@ MonoBehaviour:
       Path: 
     ownerClientId: 0
   powers:
-  - {fileID: 0}
+  - {fileID: 2157464328376603699, guid: f8c3f5f0828a028679d553484fd6bb38, type: 3}
   references:
     version: 2
     RefIds:

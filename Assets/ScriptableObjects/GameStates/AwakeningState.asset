@@ -44,6 +44,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
   - awakeningCharacters:
     - {fileID: 11400000, guid: 34376dc154c7c5644bc6282d6d50380f, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 923e2973ad5a4ef1f943951ca1f8a5a8, type: 2}
   currentlyAwakenedCharacters: []
   currentAwakeningIndex: 0
   currentAwakeningTimer: 0

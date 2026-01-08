@@ -77,6 +77,8 @@ namespace Characters.Powers
             Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
             bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
             
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, currentRoleGuessClientId);
+            
             ChatMessage _resultMessage = new ChatMessage
             {
                 senderClientId = ChatManager.SERVER_CLIENT_ID,

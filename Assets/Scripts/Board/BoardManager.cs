@@ -28,6 +28,8 @@ public class BoardManager : NetworkBehaviour
     public event Action<Card> onCardClicked;
     public event Action<Card> onCardHovered;
     public event Action<Card> onCardUnhovered;
+    public event Action<Card> onCardSpawned;
+    public event Action<Card> onCardDestroyed;
     
     public const float CARD_SPACING = 7;
     public const float CARD_LINE_SPACING = 9;
@@ -123,8 +125,7 @@ public class BoardManager : NetworkBehaviour
         
         foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
-            Card _card = AddNewCard();
-            _card.SetInfo(_character);
+            Card _card = AddNewCard(_character);
             _ = _card.ShowPseudoWithRevealedInfo();
             _card.cardPivotTransform.eulerAngles = new Vector3(0, 0, -180);
             
@@ -170,20 +171,27 @@ public class BoardManager : NetworkBehaviour
         _card.onCardClicked -= onCardClicked;
         _card.onCardHovered -= onCardHovered;
         _card.onCardUnhovered -= onCardUnhovered;
+        onCardDestroyed?.Invoke(_card);
         visibleCards.Remove(_card);
         Destroy(_card.gameObject);
     }
     
-    public Card AddNewCard()
+    public Card AddNewCard(Character _characterInfo = null)
     {
         Card _card = Instantiate(cardPrefab, transform);
         _card.transform.localPosition = new Vector3(0, 0, 0);
         
         visibleCards.Add(_card);
 
+        if (_characterInfo)
+        {
+            _card.SetInfo(_characterInfo);
+        }
+        
         _card.onCardClicked += OnCardClicked;
         _card.onCardHovered += OnCardHovered;
         _card.onCardUnhovered += OnCardUnhovered;
+        onCardSpawned?.Invoke(_card);
         return _card;
     }
     

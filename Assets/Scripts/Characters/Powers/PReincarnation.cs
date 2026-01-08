@@ -1,6 +1,7 @@
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
+using RoleTarget;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -34,6 +35,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void ReincarnatePlayerRpc(ulong _characterClickedId)
         {
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
+            
             ChangeIsPassiveRpc(true);
             Character _characterClicked = GameManager.instance.characterManager.GetCharacter(_characterClickedId);
             foreach (var _rolePower in _characterClicked.role.powers)

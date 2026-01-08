@@ -8,6 +8,7 @@ using Extensions;
 using FocusSystem;
 using GameLogic;
 using Network;
+using RoleTarget;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
@@ -39,13 +40,20 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
+            BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, IsTargetValid);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, IsTargetValid);
         }
 
-        private void OnCharacterBarClicked(Character _characterClicked)
+        private void OnCardClicked(Card _card)
         {
+            Character _characterClicked = _card.characterInfo;
+            
+            if (!IsTargetValid(_characterClicked.ownerClientId.Value))
+            {
+                return;
+            }
+            
             OnCharacterClickedRpc(_characterClicked.ownerClientId.Value);
             
             OnUsed();
@@ -58,7 +66,10 @@ namespace Characters.Powers
             {
                 return;
             }
+            
             personalBeacons.Any(_p => _p.targetClientId == _characterClickedId);
+            
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);
         }
@@ -66,7 +77,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+            BoardManager.instance.onCardClicked -= OnCardClicked;
             FocusManager.instance.UnfocusAll();
         }
         
@@ -82,14 +93,18 @@ namespace Characters.Powers
             personalBeacons.Add(_newBeacon);
             if (NetworkManager.LocalClientId != ownerClientId.Value) //only the owner cares about beacon state changes
             {
+                Debug.Log("Not subscribing to corrupted beacon changes, not the owner");
                 return;
             }
+            Debug.Log("Subscribing to corrupted beacon changes");
             _newBeacon.onCorruptedBeaconChanged += (_newState) => OnCorruptedBeaconChanged(_newBeacon, _newState);
         }
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
             Character _beaconedCharacter = GameManager.instance.characterManager.GetCharacter(_newBeacon.targetClientId);
+            
+            Debug.Log("Beaconed character corruption state changed: " + _beaconedCharacter.GetOwnerPseudo() + " New state: " + _newState);
             
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {

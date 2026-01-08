@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
   gameStateDependencies: []
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
   roleAttributionDictionary:
     _serializedList:
     - Key: {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
@@ -25,6 +27,14 @@ MonoBehaviour:
         roleToAttribute: 0
         canBeFake: 1
     - Key: {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: 923e2973ad5a4ef1f943951ca1f8a5a8, type: 2}
       Value:
         roleToAttribute: 0
         canBeFake: 1

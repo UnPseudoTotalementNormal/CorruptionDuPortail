@@ -2053,7 +2053,7 @@ MonoBehaviour:
     _serializedList:
     - Key: 0
       Value:
-        cardEffectPrefab: {fileID: 0}
+        cardEffectPrefab: {fileID: 3144070834554945327, guid: ffdcd429b3afa86c2954c82d15a325d3, type: 3}
 --- !u!1 &552546343
 GameObject:
   m_ObjectHideFlags: 0

@@ -311,6 +311,7 @@ MonoBehaviour:
   cardScalerTransform: {fileID: 8340460404250581213}
   cardDisplacerTransform: {fileID: 1040824015893496145}
   cardPivotTransform: {fileID: 4456429850662113924}
+  cardEffectsParent: {fileID: 677503089896783074}
   cardImage: {fileID: 2429788706011615213}
   factionLogoImage: {fileID: 8618780977505519655}
   factionLogoBackgroundImage: {fileID: 4574760127277184339}
@@ -516,7 +517,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &7941456063628525433
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1541,6 +1542,7 @@ Transform:
   m_Children:
   - {fileID: 2278549343475343433}
   - {fileID: 426370114108699124}
+  - {fileID: 677503089896783074}
   - {fileID: 5916999231339126252}
   - {fileID: 170328732020197592}
   m_Father: {fileID: 4456429850662113924}
@@ -2425,6 +2427,37 @@ Transform:
   m_Children:
   - {fileID: 8340460404250581213}
   m_Father: {fileID: 1040824015893496145}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6369458605031140540
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 677503089896783074}
+  m_Layer: 0
+  m_Name: CardEffects
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &677503089896783074
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6369458605031140540}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8340460404250581213}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6651001870682425803
 GameObject:

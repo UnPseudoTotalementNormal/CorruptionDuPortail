@@ -1,3 +1,4 @@
+using Board;
 using Network.Action;
 using Unity.Netcode;
 using UnityEngine;
@@ -17,6 +18,11 @@ namespace Characters.Powers.PowerObjects
             targetClientId = _targetClientId;
             
             onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerPower);
+
+            if (ownerClientId == NetworkManager.Singleton.LocalClientId)
+            {
+                CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId);
+            }
 
             if (!NetworkManager.Singleton.IsServer)
             {

@@ -16,7 +16,19 @@ namespace Board
         private Dictionary<ulong, List<CardEffectID>> cardEffectsByCardId = new();
         
         private HashSet<CardEffectInfo> currentCardEffects = new();
-        
+
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                instance = this;
+            }
+        }
+
         public void Start()
         {
             BoardManager.instance.onCardSpawned += OnCardSpawned;
@@ -32,19 +44,82 @@ namespace Board
             }
             foreach (CardEffectID _cardEffectID in _cardEffects)
             {
-                CreateCardEffect(_cardEffectID, _cardSpawned);
+                CreateCardEffect(_cardEffectID, _character.ownerClientId.Value);
             }
         }
         
-        public void CreateCardEffect(CardEffectID _cardEffectID, Card _card)
+        public void AddCardEffect(CardEffectID _cardEffectID, Card _card)
+        {
+            AddCardEffect(_cardEffectID, _card.characterInfo.ownerClientId.Value);
+        }
+
+        public void AddCardEffect(CardEffectID _cardEffectID, ulong _targetId)
         {
             if (!cardEffects.ContainsKey(_cardEffectID))
             {
-                Debug.LogError($"CardEffectManager: CreateCardEffect: No card effect found for ID {_cardEffectID}");
+                Debug.LogError($"CardEffectManager: AddCardEffect: No card effect found for ID {_cardEffectID}");
                 return;
             }
             
-            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.transform);
+            if (!cardEffectsByCardId.ContainsKey(_targetId))
+            {
+                cardEffectsByCardId[_targetId] = new List<CardEffectID>();
+            }
+            
+            if (cardEffectsByCardId[_targetId].Contains(_cardEffectID))
+            {
+                Debug.LogWarning($"CardEffectManager: Card effect {_cardEffectID} already exists on target {_targetId}");
+                return;
+            }
+            
+            cardEffectsByCardId[_targetId].Add(_cardEffectID);
+            CreateCardEffect(_cardEffectID, _targetId);
+        }
+        
+        public void RemoveCardEffect(CardEffectID _cardEffectID, ulong _targetId)
+        {
+            if (!cardEffectsByCardId.ContainsKey(_targetId))
+            {
+                return;
+            }
+            
+            cardEffectsByCardId[_targetId].Remove(_cardEffectID);
+            
+            if (cardEffectsByCardId[_targetId].Count == 0)
+            {
+                cardEffectsByCardId.Remove(_targetId);
+            }
+            
+            // Destroy visuals
+            CardEffectInfo _effectToRemove = null;
+            foreach (var _effect in currentCardEffects)
+            {
+                if (_effect.cardEffectID == _cardEffectID && _effect.targetCard.characterInfo.ownerClientId.Value == _targetId)
+                {
+                    _effectToRemove = _effect;
+                    break;
+                }
+            }
+            
+            if (_effectToRemove != null)
+            {
+                if (_effectToRemove.cardEffectComponent != null)
+                {
+                    Destroy(_effectToRemove.cardEffectComponent.gameObject);
+                }
+                currentCardEffects.Remove(_effectToRemove);
+            }
+        }
+
+        private void CreateCardEffect(CardEffectID _cardEffectID, ulong _targetId)
+        {
+            Card _card = BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _targetId);
+            if (_card == null)
+            {
+                return;
+            }
+            
+            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.cardEffectsParent);
             _cardEffectComponent.Initialize(_card);
             
             CardEffectInfo _cardEffectInfo = new CardEffectInfo(_cardEffectID, _card, _cardEffectComponent);

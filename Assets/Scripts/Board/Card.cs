@@ -32,6 +32,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public Transform cardScalerTransform;
     public Transform cardDisplacerTransform;
     public Transform cardPivotTransform;
+    public Transform cardEffectsParent;
     
     public Image cardImage;
     public Image factionLogoImage;

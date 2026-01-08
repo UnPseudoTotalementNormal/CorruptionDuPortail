@@ -7,7 +7,7 @@ namespace Board
     {
         public event Action onObjectDestroyed;
         
-        public void Initialize(Card _card)
+        public virtual void Initialize(Card _card)
         {
             
         }

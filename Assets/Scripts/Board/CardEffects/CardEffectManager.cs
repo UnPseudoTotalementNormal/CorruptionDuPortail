@@ -14,6 +14,7 @@ namespace Board
         [SerializeField] private SerializedDictionary<CardEffectID, CardEffectSettings> cardEffects = new();
         
         private Dictionary<ulong, List<CardEffectID>> cardEffectsByCardId = new();
+        private Dictionary<(CardEffectID, ulong), object> pendingEffectData = new();
         
         private HashSet<CardEffectInfo> currentCardEffects = new();
 
@@ -48,12 +49,12 @@ namespace Board
             }
         }
         
-        public void AddCardEffect(CardEffectID _cardEffectID, Card _card)
+        public void AddCardEffect(CardEffectID _cardEffectID, Card _card, object _effectData = null)
         {
-            AddCardEffect(_cardEffectID, _card.characterInfo.ownerClientId.Value);
+            AddCardEffect(_cardEffectID, _card.characterInfo.ownerClientId.Value, _effectData);
         }
 
-        public void AddCardEffect(CardEffectID _cardEffectID, ulong _targetId)
+        public void AddCardEffect(CardEffectID _cardEffectID, ulong _targetId, object _effectData = null)
         {
             if (!cardEffects.ContainsKey(_cardEffectID))
             {
@@ -73,6 +74,13 @@ namespace Board
             }
             
             cardEffectsByCardId[_targetId].Add(_cardEffectID);
+            
+            // Store effect data for later use if provided
+            if (_effectData != null)
+            {
+                pendingEffectData[(_cardEffectID, _targetId)] = _effectData;
+            }
+            
             CreateCardEffect(_cardEffectID, _targetId);
         }
         
@@ -119,10 +127,33 @@ namespace Board
                 return;
             }
             
-            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.cardEffectsParent);
-            _cardEffectComponent.Initialize(_card);
+            // Validate card effect exists in dictionary
+            if (!cardEffects.ContainsKey(_cardEffectID))
+            {
+                Debug.LogError($"CardEffectManager: CreateCardEffect: No card effect found for ID {_cardEffectID}");
+                return;
+            }
             
-            CardEffectInfo _cardEffectInfo = new CardEffectInfo(_cardEffectID, _card, _cardEffectComponent);
+            // Validate prefab is not null
+            if (cardEffects[_cardEffectID].cardEffectPrefab == null)
+            {
+                Debug.LogError($"CardEffectManager: CreateCardEffect: Card effect prefab for ID {_cardEffectID} is null. Please assign it in the inspector.");
+                return;
+            }
+            
+            // Retrieve effect data if available
+            object _effectData = null;
+            var _key = (_cardEffectID, _targetId);
+            if (pendingEffectData.TryGetValue(_key, out var _data))
+            {
+                _effectData = _data;
+                pendingEffectData.Remove(_key); // Clean up after use
+            }
+            
+            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.cardEffectsParent);
+            _cardEffectComponent.Initialize(_card, _effectData);
+            
+            CardEffectInfo _cardEffectInfo = new CardEffectInfo(_cardEffectID, _card, _cardEffectComponent, _effectData);
             currentCardEffects.Add(_cardEffectInfo);
 
             _cardEffectComponent.onObjectDestroyed += () => currentCardEffects.Remove(_cardEffectInfo);
@@ -140,12 +171,14 @@ namespace Board
         public CardEffectID cardEffectID;
         public Card targetCard;
         public CardEffectComponent cardEffectComponent;
+        public object effectData;
 
-        public CardEffectInfo(CardEffectID _cardEffectID, Card _targetCard, CardEffectComponent _cardEffectComponent)
+        public CardEffectInfo(CardEffectID _cardEffectID, Card _targetCard, CardEffectComponent _cardEffectComponent, object _effectData = null)
         {
             cardEffectID = _cardEffectID;
             targetCard = _targetCard;
             cardEffectComponent = _cardEffectComponent;
+            effectData = _effectData;
         }
     }
 }

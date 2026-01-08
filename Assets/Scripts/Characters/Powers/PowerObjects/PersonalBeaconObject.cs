@@ -21,7 +21,7 @@ namespace Characters.Powers.PowerObjects
 
             if (ownerClientId == NetworkManager.Singleton.LocalClientId)
             {
-                CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId);
+                CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId, this);
             }
 
             if (!NetworkManager.Singleton.IsServer)

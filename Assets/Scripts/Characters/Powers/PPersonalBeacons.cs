@@ -27,7 +27,8 @@ namespace Characters.Powers
                 IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    CreateBeaconRpc(_character.ownerClientId.Value, false);
+                    GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+                        RevealLevel.Personal, true, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
                 }
             }
         }
@@ -62,10 +63,10 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCharacterClickedRpc(ulong _characterClickedId)
         {
-            if (!IsTargetValid(_characterClickedId))
+            /*if (!IsTargetValid(_characterClickedId))  TEMPORARY COMMENT
             {
                 return;
-            }
+            }*/
             
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
             

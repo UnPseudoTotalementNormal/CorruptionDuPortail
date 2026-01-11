@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Board;
 using Characters.Powers;
 using Extensions;
 using FMODUnity;
@@ -34,6 +35,32 @@ namespace Characters
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            isBlessed.OnValueChanged += OnBlessed;
+        }
+
+        private void OnBlessed(bool _previousValue, bool _newValue)
+        {
+            if (!_newValue)
+            {
+                return;
+            }
+            
+            Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter();
+            if (_localCharacter == null)
+            {
+                return;
+            }
+
+            if (_localCharacter.role.factionType == FactionType.anomaly ||
+                _localCharacter.role.roleID == RoleID.Dryade)
+            {
+                CardEffectManager.instance.AddCardEffect(CardEffectID.Blessing, ownerClientId.Value);
+            }
+        }
 
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void AskForRoleUpdateRpc()

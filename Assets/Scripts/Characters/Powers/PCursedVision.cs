@@ -1,4 +1,5 @@
 using System;
+using Board;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
@@ -24,10 +25,12 @@ namespace Characters.Powers
                 _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
             if (_character.role.factionType == FactionType.chosen)
             {
+                CardEffectManager.instance.AddCardEffect(CardEffectID.CursedVision, _character.ownerClientId.Value, false);
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} est un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
             else
             {
+                CardEffectManager.instance.AddCardEffect(CardEffectID.CursedVision, _character.ownerClientId.Value, true);
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
             GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).CorruptPlayerServerRpc();   

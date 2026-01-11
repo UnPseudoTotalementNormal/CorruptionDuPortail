@@ -4,5 +4,6 @@ namespace Board
     {
         TechnoBeacon = 0,
         Blessing = 1,
+        CursedVision = 2,
     }
 }

@@ -1,39 +1,39 @@
 #region
 
+using Steamworks;
 using UnityEngine;
 
 #endregion
 
 namespace Network.Player
 {
-    public class LocalPlayerInfoHolder : MonoBehaviour
+    public static class LocalPlayerInfoHolder
     {
-        public static LocalPlayerInfoHolder Instance { get; private set; }
-        
-        public PlayerInfo playerInfo { get; set; } = new();
-
-        private void Awake()
+        public static PlayerInfo playerInfo { get; set; } = new()
         {
-            if (Instance == null)
+            playerName = "Player" + UnityEngine.Random.Range(1, 9999),
+        };
+        
+        public static void CreateNewClientData(string _playerName)
+        {
+            string _shortName = _playerName;
+            int _hashIndex = _playerName.IndexOf('#');
+            if (_hashIndex >= 0)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                DestroyImmediate(gameObject);
-                return;
+                _shortName = _playerName.Substring(0, _hashIndex);
             }
             
-            InitPlayerInfo();
-        }
-
-        private void InitPlayerInfo()
-        {
-            playerInfo = new PlayerInfo
+            playerInfo = new PlayerInfo()
             {
-                playerName = "Player" + UnityEngine.Random.Range(1, 9999)
+                playerFullName =  _playerName,
+                playerName = _shortName,
+                //playerSteamId = SteamClient.SteamId.Value
             };
+        }
+        
+        public static PlayerInfo GetClientData()
+        {
+            return playerInfo;
         }
     }
 }

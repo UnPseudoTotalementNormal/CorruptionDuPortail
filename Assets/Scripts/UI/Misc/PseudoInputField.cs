@@ -22,8 +22,8 @@ public class PseudoInputField : MonoBehaviour
             return;
         }
 
-        var _info = LocalPlayerInfoHolder.Instance.playerInfo;
+        var _info = LocalPlayerInfoHolder.playerInfo;
         _info.playerName = pseudo;
-        LocalPlayerInfoHolder.Instance.playerInfo = _info;
+        LocalPlayerInfoHolder.playerInfo = _info;
     }
 }

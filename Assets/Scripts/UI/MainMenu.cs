@@ -1,5 +1,6 @@
 #region
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Extensions;
 using Network;
@@ -7,13 +8,15 @@ using Network.Services;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using Netcode.Transports.Facepunch;
 using Unity.Services.Core;
+using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
+using Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 #endregion
@@ -27,17 +30,21 @@ namespace UI
     
         [SerializeField] private Button openJoinMenu;
         [SerializeField] private Button closeJoinMenu;
+        
+        [SerializeField] private Button quitGameButton;
     
         [SerializeField] private CanvasGroup hostMenuCanvasGroup;
         [SerializeField] private CanvasGroup joinMenuCanvasGroup;
     
         [SerializeField] private Button _hostButton;
-        [FormerlySerializedAs("_joinButton")] [SerializeField] private Button _joinWithCodeButton;
+        [SerializeField] private Button _joinWithCodeButton;
     
         [SerializeField] private TMP_InputField joinCodeInputField;
-        [SerializeField] private TextMeshProUGUI hostCodeText;
     
         [SerializeField] private TMP_InputField lobbyNameInputField;
+        [SerializeField] private TMP_InputField lobbyPasswordInputField;
+        
+        [SerializeField] private CanvasGroup loadingCanvasGroup; //shown when loading stuff
 
         private string lobbyCreatingName = "";
     
@@ -52,6 +59,13 @@ namespace UI
             _hostButton.onClick.AddListener(OnHostButtonClicked);
             _joinWithCodeButton.onClick.AddListener(OnJoinButtonClicked);
             lobbyNameInputField.onValueChanged.AddListener(OnLobbyNameValueChange);
+            
+            quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
+        }
+
+        private void OnQuitGameButtonClicked()
+        {
+            Application.Quit();
         }
 
         private void OnCloseJoinMenuButtonClicked()
@@ -81,49 +95,132 @@ namespace UI
 
         public async void OnJoinButtonClicked()
         {
+            if (string.IsNullOrEmpty(joinCodeInputField.text))
+            {
+                return;
+            }
+
             _hostButton.interactable = false;
             _joinWithCodeButton.interactable = false;
+            loadingCanvasGroup.DoShowGroup();
 
-            string _lobbyCode = joinCodeInputField.text;
-
-            if (string.IsNullOrEmpty(_lobbyCode))
+            try
             {
-                Debug.Log("Lobby code is empty");
+                string _lobbyCode = joinCodeInputField.text;
+
+                var _lobby = await LobbyManager.instance.JoinLobbyByCode(_lobbyCode);
+                if (_lobby == null)
+                {
+                    throw new System.Exception("Failed to join lobby");
+                }
+
+                bool joinSuccess = false;
+                if (NetworkTransportDetector.IsUsingFacepunch())
+                {
+                    joinSuccess = JoinWithFacepunch(_lobby);
+                }
+                else if (NetworkTransportDetector.IsUsingUnityRelay())
+                {
+                    joinSuccess = await JoinWithUnityRelay(_lobby);
+                }
+                else
+                {
+                    throw new System.Exception("Unknown transport type!");
+                }
+
+                if (!joinSuccess)
+                {
+                    throw new System.Exception("Failed to join game");
+                }
+
+                GameCode.gameCode = _lobby.LobbyCode;
+                SwitchToGameScene();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error joining game: {e.Message}");
+
+                // Nettoyer l'état du réseau
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                    NetworkManager.Singleton.Shutdown();
+                }
+
+                // Quitter le lobby si rejoint
+                if (LobbyManager.instance != null)
+                {
+                    await LobbyManager.instance.LeaveLobby();
+                }
+
+                // Réactiver l'interface
+                loadingCanvasGroup.DoHideGroup();
                 _hostButton.interactable = true;
                 _joinWithCodeButton.interactable = true;
-                return;
+            }
+        }
+
+
+        private bool JoinWithFacepunch(Unity.Services.Lobbies.Models.Lobby lobby)
+        {
+            // Récupérer le Steam ID de l'hôte depuis les données du lobby
+            if (!lobby.Data.TryGetValue("hostSteamId", out var _value))
+            {
+                Debug.Log("Lobby missing hostSteamId");
+                return false;
             }
 
-            var _lobby = await LobbyManager.instance.JoinLobbyByCode(_lobbyCode);
+            string _hostSteamIdString = _value.Value;
             
-            if (_lobby == null)
+            if (!ulong.TryParse(_hostSteamIdString, out ulong _hostSteamId))
             {
-                Debug.Log("Failed to join lobby");
-                _hostButton.interactable = true;
-                _joinWithCodeButton.interactable = true;
-                return;
+                Debug.LogError($"Invalid Steam ID format: {_hostSteamIdString}");
+                return false;
             }
 
-            if (!_lobby.Data.TryGetValue("joinCode", out var _value))
+            // Configurer le transport FacePunch avec le Steam ID de l'hôte
+            var _transport = NetworkManager.Singleton.GetComponent<FacepunchTransport>();
+            if (_transport == null)
+            {
+                Debug.LogError("FacepunchTransport not found on NetworkManager!");
+                return false;
+            }
+
+            _transport.targetSteamId = _hostSteamId;
+            
+            bool _connected = NetworkManager.Singleton.StartClient();
+            if (!_connected)
+            {
+                Debug.LogError("Failed to start client");
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        {
+            // Récupérer le join code Relay depuis les données du lobby
+            if (!lobby.Data.TryGetValue("joinCode", out var _value))
             {
                 Debug.Log("Lobby missing joinCode");
-                _hostButton.interactable = true;
-                _joinWithCodeButton.interactable = true;
-                return;
+                return false;
             }
 
             string _relayJoinCode = _value.Value;
-            bool _connected = await StartClientWithRelay(_relayJoinCode, "dtls");
 
-            if (!_connected)
+            try
             {
-                _hostButton.interactable = true;
-                _joinWithCodeButton.interactable = true;
-                return;
+                var _allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: _relayJoinCode);
+                NetworkManager.Singleton.GetComponent<UnityTransport>()
+                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
+            }
+            catch (RelayServiceException e)
+            {
+                Debug.LogError($"Relay join failed: {e.Message}");
+                return false;
             }
 
-            GameCode.gameCode = _lobby.LobbyCode;
-            SwitchToGameScene();
+            return NetworkManager.Singleton.StartClient();
         }
 
 
@@ -133,66 +230,141 @@ namespace UI
             {
                 return;
             }
-        
+
             _hostButton.interactable = false;
             _joinWithCodeButton.interactable = false;
-
-            Lobby _lobby = await LobbyManager.instance.CreateLobby(lobbyCreatingName, 15);
-            if (_lobby == null)
-            {
-                _hostButton.interactable = true;
-                _joinWithCodeButton.interactable = true;
-                return;
-            }
-
-            string _joinCode = await StartHostWithRelay(15, "dtls");
-            if (string.IsNullOrEmpty(_joinCode))
-            {
-                _hostButton.interactable = true;
-                _joinWithCodeButton.interactable = true;
-                return;
-            }
-
-            await LobbyManager.instance.UpdateLobbyJoinCode(_lobby.Id, _joinCode);
-
-            hostCodeText.gameObject.SetActive(true);
-
-            GameCode.gameCode = _lobby.LobbyCode;
-            SwitchToGameScene();
-        }
-
-
-        private async Task<string> StartHostWithRelay(int _maxConnections, string _connectionType)
-        {
-            await UnityServices.InitializeAsync();
-            var _allocation = await RelayService.Instance.CreateAllocationAsync(_maxConnections);
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(_allocation.ToRelayServerData("dtls"));
-            var _joinCode = await RelayService.Instance.GetJoinCodeAsync(_allocation.AllocationId);
-            return NetworkManager.Singleton.StartHost() ? _joinCode : null;
-        }
-
-        private async Task<bool> StartClientWithRelay(string _joinCode, string _connectionType)
-        {
-            if (string.IsNullOrEmpty(_joinCode))
-            {
-                Debug.LogError("Join code is null or empty");
-                return false;
-            }
-        
-            await UnityServices.InitializeAsync();
+            loadingCanvasGroup.DoShowGroup();
 
             try
             {
-                var _allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: _joinCode);
-                NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(_allocation.ToRelayServerData(_connectionType));
+                var _lobbySettings = new LobbyCreationSettings();
+                var password = lobbyPasswordInputField.text;
+                if (string.IsNullOrEmpty(password))
+                {
+                    password = null;
+                }
+                _lobbySettings.password = password;
+                _lobbySettings.isLocked = false;
+                _lobbySettings.isPrivate = false;
+                _lobbySettings.lobbyName = lobbyCreatingName;
+                _lobbySettings.maxPlayers = 15;
+                _lobbySettings.data = new Dictionary<string, DataObject>()
+                {
+                    {
+                        nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language),
+                        new DataObject(DataObject.VisibilityOptions.Public,
+                            "Français")
+                    }
+                };
+
+                string connectionData = null;
+                if (NetworkTransportDetector.IsUsingFacepunch())
+                {
+                    connectionData = HostWithFacepunch();
+                    if (!string.IsNullOrEmpty(connectionData))
+                    {
+                        _lobbySettings.data["hostSteamId"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                    }
+                }
+                else if (NetworkTransportDetector.IsUsingUnityRelay())
+                {
+                    connectionData = await HostWithUnityRelay(15);
+                    if (!string.IsNullOrEmpty(connectionData))
+                    {
+                        _lobbySettings.data["joinCode"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                    }
+                }
+                else
+                {
+                    throw new System.Exception("Unknown transport type!");
+                }
+
+                if (string.IsNullOrEmpty(connectionData))
+                {
+                    throw new System.Exception("Failed to get connection data");
+                }
+
+                Unity.Services.Lobbies.Models.Lobby _lobby = await LobbyManager.instance.CreateLobby(_lobbySettings);
+                if (_lobby == null)
+                {
+                    throw new System.Exception("Failed to create lobby");
+                }
+
+                GameCode.gameCode = _lobby.LobbyCode;
+                SwitchToGameScene();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error hosting game: {e.Message}");
+                
+                // Nettoyer l'état du réseau
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                    NetworkManager.Singleton.Shutdown();
+                }
+                
+                // Quitter le lobby si créé
+                if (LobbyManager.instance != null)
+                {
+                    await LobbyManager.instance.LeaveLobby();
+                }
+                
+                // Réactiver l'interface
+                loadingCanvasGroup.DoHideGroup();
+                _hostButton.interactable = true;
+                _joinWithCodeButton.interactable = true;
+            }
+        }
+
+
+        private string HostWithFacepunch()
+        {
+            // Vérifier que Steam est initialisé
+            if (!SteamClient.IsValid)
+            {
+                Debug.LogError("Steam client not initialized!");
+                return null;
+            }
+
+            ulong _hostSteamId = SteamClient.SteamId;
+
+            // Démarrer l'hôte avec FacepunchTransport
+            bool _started = NetworkManager.Singleton.StartHost();
+            if (!_started)
+            {
+                Debug.LogError("Failed to start host");
+                return null;
+            }
+
+            return _hostSteamId.ToString();
+        }
+
+        private async Task<string> HostWithUnityRelay(int maxConnections)
+        {
+            try
+            {
+                var _allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
+                NetworkManager.Singleton.GetComponent<UnityTransport>()
+                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
+                var _joinCode = await RelayService.Instance.GetJoinCodeAsync(_allocation.AllocationId);
+                
+                bool _started = NetworkManager.Singleton.StartHost();
+                if (!_started)
+                {
+                    Debug.LogError("Failed to start host");
+                    return null;
+                }
+
+                return _joinCode;
             }
             catch (RelayServiceException e)
             {
-                Debug.LogError($"Relay join failed: {e.Message}");
-                return false;
+                Debug.LogError($"Relay host failed: {e.Message}");
+                return null;
             }
-            return !string.IsNullOrEmpty(_joinCode) && NetworkManager.Singleton.StartClient();
         }
+
+
 
         private void SwitchToGameScene()
         {

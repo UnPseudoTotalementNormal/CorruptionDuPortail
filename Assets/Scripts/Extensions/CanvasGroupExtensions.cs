@@ -9,6 +9,7 @@ namespace Extensions
             bool _interactable = true, bool _blocksRaycasts = true)
 
         {
+            _canvasGroup.DOKill(true);
             _canvasGroup.interactable = _interactable;
             _canvasGroup.blocksRaycasts = _blocksRaycasts;
             _canvasGroup.DOFade(1, _duration);
@@ -17,6 +18,7 @@ namespace Extensions
         public static void DoHideGroup(this CanvasGroup _canvasGroup, float _duration = 0.5f,
             bool _interactable = false, bool _blocksRaycasts = false)
         {
+            _canvasGroup.DOKill(true);
             _canvasGroup.interactable = _interactable;
             _canvasGroup.blocksRaycasts = _blocksRaycasts;
             _canvasGroup.DOFade(0, _duration);

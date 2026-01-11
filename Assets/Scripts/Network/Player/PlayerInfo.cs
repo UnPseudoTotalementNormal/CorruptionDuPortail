@@ -11,35 +11,40 @@ namespace Network.Player
     public struct PlayerInfo : INetworkSerializable, IEquatable<PlayerInfo>
     {
         public FixedString64Bytes playerName;
+        public FixedString64Bytes playerFullName;
         public ulong playerClientId;
+        public ulong playerSteamId;
         
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
+            serializer.SerializeValue(ref playerName);
+            serializer.SerializeValue(ref playerClientId);
+            serializer.SerializeValue(ref playerFullName);
+            serializer.SerializeValue(ref playerSteamId);
             if (serializer.IsWriter)
             {
-                serializer.SerializeValue(ref playerName);
-                serializer.SerializeValue(ref playerClientId);
             }
             else
             {
-                serializer.SerializeValue(ref playerName);
-                serializer.SerializeValue(ref playerClientId);
             }
         }
 
-        public bool Equals(PlayerInfo other)
+        public bool Equals(PlayerInfo _other)
         {
-            return playerName.Equals(other.playerName) && playerClientId == other.playerClientId;
+            return playerName.Equals(_other.playerName) 
+                   && playerClientId == _other.playerClientId
+                   && playerFullName.Equals(_other.playerFullName)
+                   && playerSteamId == _other.playerSteamId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object _obj)
         {
-            return obj is PlayerInfo other && Equals(other);
+            return _obj is PlayerInfo _other && Equals(_other);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(playerName, playerClientId);
+            return HashCode.Combine(playerName, playerClientId, playerFullName, playerSteamId);
         }
     }
 }

@@ -68,9 +68,9 @@ namespace Network
         [Rpc(SendTo.SpecifiedInParams)]
         private void AskForPlayerInfoRpc(RpcParams rpcParams = default)
         {
-            var _info = LocalPlayerInfoHolder.Instance.playerInfo;
+            var _info = LocalPlayerInfoHolder.playerInfo;
             _info.playerClientId = NetworkManager.LocalClient.ClientId;
-            LocalPlayerInfoHolder.Instance.playerInfo = _info;
+            LocalPlayerInfoHolder.playerInfo = _info;
             
             SavePlayerInfoRpc(_info);
         }

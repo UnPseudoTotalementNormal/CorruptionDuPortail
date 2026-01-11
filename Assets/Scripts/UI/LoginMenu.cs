@@ -53,6 +53,14 @@ public class LoginMenu : MonoBehaviour
             usernameInputField.text = steamUsername;
             _ = OnSignInButtonClicked();
         }
+        else
+        {
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                string _profile = "Player_" + System.Guid.NewGuid().ToString("N").Substring(0, 15);
+                AuthenticationService.Instance.SwitchProfile(_profile);
+            }
+        }
     }
 
     private async Task Init()

@@ -935,11 +935,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: baafa240-7e0a-4edd-95bd-40c6700773e1
+  cloudProjectId: 2d900115-c48d-4e33-8ce9-c867ac405538
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: CorruptionDuPortail
-  organizationId: unity_5e9d663e505f3b71fe36
+  organizationId: azertizeryt
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

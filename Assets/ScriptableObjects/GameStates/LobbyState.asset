@@ -13,3 +13,7 @@ MonoBehaviour:
   m_Name: LobbyState
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: 3913f86641ea22f42819ad705c7bbcc3, type: 3}
+  gameStateDependencies: []
+  forceBoardCamera: 0
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}

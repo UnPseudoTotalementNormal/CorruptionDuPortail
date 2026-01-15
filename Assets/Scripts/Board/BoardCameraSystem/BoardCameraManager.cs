@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Controllers;
 using Controllers.Inputs;
+using GameLogic;
 using UnityEngine;
 
 namespace Board.BoardCameraSystem
@@ -42,6 +43,27 @@ namespace Board.BoardCameraSystem
             InputManager.instance.RegisterAction(InputID.ArrowDown, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Down));
             InputManager.instance.RegisterAction(InputID.ArrowLeft, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Left));
             InputManager.instance.RegisterAction(InputID.ArrowRight, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Right));
+            
+            GameManager.instance.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+        }
+
+        private void OnGameStateChanged(int _previousValue, int _newValue)
+        {
+            GameState _gameState = GameManager.instance.GetGameState(_newValue);
+            if (_gameState == null)
+            {
+                return;
+            }
+            
+            if (_gameState.forceBoardCamera != BoardCameraIdEnum.None)
+            {
+                SetCurrentBoardCamera(_gameState.forceBoardCamera);
+                SetActiveSource(BoardCameraInputActiveSource.GameState, false);
+            }
+            else
+            {
+                SetActiveSource(BoardCameraInputActiveSource.GameState, true);
+            }
         }
 
         public void TrySwitchCameraToNeighbour(NeighbourDirection _neighbourDirection)
@@ -69,6 +91,17 @@ namespace Board.BoardCameraSystem
             currentBoardCamera?.DeactivateCamera();
             currentBoardCamera = _boardCamera;
             currentBoardCamera?.ActivateCamera();
+        }
+        
+        public void SetCurrentBoardCamera(BoardCameraIdEnum _boardCameraId)
+        {
+            BoardCamera _boardCamera = boardCameras.FirstOrDefault(_bc => _bc.boardCameraId == _boardCameraId);
+            if (_boardCamera == null)
+            {
+                Debug.LogWarning("BoardCameraManager: No BoardCamera found with ID " + _boardCameraId);
+                return;
+            }
+            SetCurrentBoardCamera(_boardCamera);
         }
         
         public void SetActiveSource(BoardCameraInputActiveSource _activeSource, bool _isActive)

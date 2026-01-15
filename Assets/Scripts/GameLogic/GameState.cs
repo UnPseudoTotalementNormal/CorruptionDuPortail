@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Board.BoardCameraSystem;
 using UI;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -19,6 +20,8 @@ namespace GameLogic
         public StateUI stateUI { get; protected set; }
         
         public List<GameState> gameStateDependencies = new();
+        
+        public BoardCameraIdEnum forceBoardCamera = BoardCameraIdEnum.None;
         
         public bool useLightColorOverride = false;
         public Color lightColorOverride = Color.white;

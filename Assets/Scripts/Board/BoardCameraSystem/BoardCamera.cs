@@ -7,6 +7,7 @@ namespace Board.BoardCameraSystem
     [RequireComponent(typeof(CinemachineCamera))]
     public class BoardCamera : MonoBehaviour
     {
+        public BoardCameraIdEnum boardCameraId;
         public SerializedDictionary<NeighbourDirection, BoardCamera> neighbours = new();
         private CinemachineCamera cinemachineCamera;
         

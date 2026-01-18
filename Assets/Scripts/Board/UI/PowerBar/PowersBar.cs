@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Characters;
 using Characters.Powers;
+using Extensions;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -64,7 +65,7 @@ namespace Board.UI.PowerBar
                     CreatePowerBar(_rolePowers, GameManager.instance.characterManager.GetLocalCharacter(false));
                     return;
                 }
-                _currentPowerBarObject.customButton.enabled = _playerPower.CanUse(true);
+                _currentPowerBarObject.SetInteractable(_playerPower.CanUse(true));
             }
         }
 
@@ -115,7 +116,7 @@ namespace Board.UI.PowerBar
             }
             powersBarObjects.Clear();
 
-            foreach (var _currentPower in _powers)
+            foreach (Power _currentPower in _powers)
             {
                 if (_currentPower.isPassive)
                 {
@@ -123,11 +124,26 @@ namespace Board.UI.PowerBar
                 }
                 
                 GameObject _powerBarGameObject = Instantiate(powerBarObjectPrefab, powersBarParent);
-                var _powersBarObject = _powerBarGameObject.GetComponent<PowersBarObject>();
+                PowersBarObject _powersBarObject = _powerBarGameObject.GetComponent<PowersBarObject>();
                 _powersBarObject.SetPower(_currentPower, _fromCharacter);
                 _powersBarObject.onPowerBarObjectClicked += OnPowerClicked;
                 
                 powersBarObjects.Add(_powersBarObject);
+            }
+
+            if (powerBarObjectPrefab.GetComponent<PowersBarObject>() is PowerBarObject3D)
+            {
+                for (int _i = 0; _i < powersBarObjects.Count; _i++)
+                {
+                    PowersBarObject _powerBarObject = powersBarObjects[_i];
+                    Vector3 _parentScale = _powerBarObject.transform.parent.lossyScale;
+                    float _parentScaleX = 1f / _parentScale.x;
+                    float _parentScaleY = 1f / _parentScale.y;
+                    float _parentScaleZ = 1f / _parentScale.z;
+                    _powerBarObject.transform.localScale = new Vector3(_parentScaleX, _parentScaleY, _parentScaleZ);
+                    Vector3 _offset = new Vector3(_i * 3 * _parentScaleX, 0, 0);
+                    _powerBarObject.transform.localPosition = _offset;
+                }
             }
         }
 

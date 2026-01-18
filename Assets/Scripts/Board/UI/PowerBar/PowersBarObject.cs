@@ -3,37 +3,31 @@
 using System;
 using Characters;
 using Characters.Powers;
-using TMPro;
-using TooltipSystem;
-using UI;
 using UnityEngine;
-using UnityEngine.UI;
 
 #endregion
 
 namespace Board.UI.PowerBar
 {
-    public class PowersBarObject : MonoBehaviour
+    /// <summary>
+    /// Classe de base abstraite pour les objets de la barre de pouvoirs.
+    /// Les classes dérivées doivent implémenter la logique spécifique (UI, 3D, etc.)
+    /// </summary>
+    public abstract class PowersBarObject : MonoBehaviour
     {
         [HideInInspector] public Power power;
         [HideInInspector] public Character fromCharacter;
         
-        [SerializeField] private Image powerImage;
-        [SerializeField] private TMP_Text powerNameText;
-        [HideInInspector] public CustomButton customButton;
-        [HideInInspector] public HoverTooltipComponent hoverTooltipComponent;
-        
         public event Action<Power> onPowerBarObjectClicked;
 
-        private void Awake()
+        protected virtual void Awake()
         {
-            customButton = GetComponent<CustomButton>();
-            hoverTooltipComponent = GetComponentInChildren<HoverTooltipComponent>();
+            InitializeComponents();
         }
 
-        private void Start()
+        protected virtual void Start()
         {
-            GetComponentInChildren<CustomButton>().onButtonClicked += OnButtonClicked;
+            SetupInteraction();
         }
 
         public void SetPower(Power _power, Character _fromCharacter)
@@ -43,35 +37,35 @@ namespace Board.UI.PowerBar
             Init();
         }
 
-        private void Init()
+        /// <summary>
+        /// Initialise les composants spécifiques (UI, 3D, etc.)
+        /// </summary>
+        protected abstract void InitializeComponents();
+
+        /// <summary>
+        /// Configure l'interaction (boutons, clics, etc.)
+        /// </summary>
+        protected abstract void SetupInteraction();
+
+        /// <summary>
+        /// Initialise l'affichage du pouvoir
+        /// </summary>
+        protected virtual void Init()
         {
-            powerNameText.text = power.powerName.ToString();
-            hoverTooltipComponent.SetTooltipTitle(power.powerName.ToString());
-            
-            var _description = power.powerDescription.ToString();
-            
-            if (power.powerComponents.Count == 0)
-            {
-                hoverTooltipComponent.SetTooltipDescription(_description);
-                return;
-            }
-            
-            _description += "\n";
-            
-            for (var _index = 0; _index < power.powerComponents.Count; _index++)
-            {
-                var _powerComponent = power.powerComponents[_index];
-                if (_index > 0)
-                {
-                    _description += ", ";
-                }
-                _description += $"<link=powercomponent_{power.ownerClientId.Value}_{power.NetworkObjectId}_{_index}>{_powerComponent.componentName.ToString()}</link>";
-            }
-            
-            hoverTooltipComponent.SetTooltipDescription(_description);
+            UpdatePowerDisplay();
         }
 
-        private void OnButtonClicked()
+        /// <summary>
+        /// Met à jour l'affichage du pouvoir (nom, description, icône, etc.)
+        /// </summary>
+        protected abstract void UpdatePowerDisplay();
+
+        /// <summary>
+        /// Active ou désactive l'interactivité de l'objet
+        /// </summary>
+        public abstract void SetInteractable(bool _interactable);
+
+        protected void OnButtonClicked()
         {
             onPowerBarObjectClicked?.Invoke(power);
         }

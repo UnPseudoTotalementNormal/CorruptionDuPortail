@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using Extensions;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Serialization;
@@ -138,8 +139,34 @@ namespace TooltipSystem
             RectTransform _tooltipRect = _newTooltip.GetComponent<RectTransform>();
             var (_tooltipBoundingBoxSize, _tooltipScreenPos) = 
                 GetScreenBoundingBoxAndCenter(_tooltipRect.GetComponentsInChildren<RectTransform>());
-            var (_componentBoundingBoxSize, _componentScreenPos) = 
-                GetScreenBoundingBoxAndCenter(_linkedGameObject.GetComponentsInChildren<RectTransform>(), Camera.main);
+            
+            // Check if the linked game object is a UI element (has RectTransform)
+            RectTransform _linkedRectTransform = _linkedGameObject.GetComponent<RectTransform>();
+            Vector2 _componentBoundingBoxSize;
+            Vector2 _componentScreenPos;
+            
+            if (_linkedRectTransform != null)
+            {
+                (_componentBoundingBoxSize, _componentScreenPos) = 
+                    GetScreenBoundingBoxAndCenter(_linkedGameObject.GetComponentsInChildren<RectTransform>(), Camera.main);
+            }
+            else
+            {
+                // 3D Object - use GetWorldBounds extension
+                Bounds _worldBounds = _linkedGameObject.transform.GetWorldBounds();
+                _componentScreenPos = RectTransformUtility.WorldToScreenPoint(Camera.main, _worldBounds.center);
+                
+                // Calculate screen-space size from world bounds
+                Vector3 _boundsMin = _worldBounds.min;
+                Vector3 _boundsMax = _worldBounds.max;
+                Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(Camera.main, _boundsMin);
+                Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(Camera.main, _boundsMax);
+                _componentBoundingBoxSize = new Vector2(
+                    Mathf.Abs(_screenMax.x - _screenMin.x), 
+                    Mathf.Abs(_screenMax.y - _screenMin.y)
+                );
+            }
+            
             _tooltipRect.position = _componentScreenPos + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f);
         }
 

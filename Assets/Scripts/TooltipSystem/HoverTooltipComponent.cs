@@ -15,12 +15,9 @@ namespace TooltipSystem
         [SerializeField] private string tooltipTitle;
         [SerializeField] private string tooltipDescription;
         [field:SerializeField] public Vector2 tooltipOffsetDirection { get; set; } = Vector2.up;
-
-        private Canvas canvas;
         
         private void Start()
         {
-            canvas = GetComponentInParent<Canvas>();
             tooltipOffsetDirection.Normalize();
         }
 

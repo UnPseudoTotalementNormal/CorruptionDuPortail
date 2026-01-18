@@ -31,7 +31,7 @@ namespace ChatSystem
         
         private ChatWindow observedChatWindow;
         
-        private bool isFullScreen = false;
+        [SerializeField] private bool isFullScreen = false;
         private Vector2 baseSizeDelta;
         [SerializeField] private float fullScreenSwitchDuration = 0.5f;
 

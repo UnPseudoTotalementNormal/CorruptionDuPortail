@@ -141,7 +141,7 @@ namespace Board.UI.PowerBar
                     float _parentScaleY = 1f / _parentScale.y;
                     float _parentScaleZ = 1f / _parentScale.z;
                     _powerBarObject.transform.localScale = new Vector3(_parentScaleX, _parentScaleY, _parentScaleZ);
-                    Vector3 _offset = new Vector3(_i * 3 * _parentScaleX, 0, 0);
+                    Vector3 _offset = new Vector3((_i - ((powersBarObjects.Count - 1) / 2f)) * 3 * _parentScaleX, 0, 0);
                     _powerBarObject.transform.localPosition = _offset;
                 }
             }

@@ -1,5 +1,6 @@
 #region
 
+using Extensions;
 using TooltipSystem;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -13,8 +14,11 @@ namespace Board.UI.PowerBar
     /// </summary>
     public class PowerBarObject3D : PowersBarObject, IPointerClickHandler
     {
+        [SerializeField] private Transform modelParentTransform;
         private Collider powerCollider;
         private HoverTooltipComponent hoverTooltipComponent;
+        
+        [SerializeField] private GameObject defaultPower3DModel;
 
         protected override void InitializeComponents()
         {
@@ -25,6 +29,19 @@ namespace Board.UI.PowerBar
         protected override void SetupInteraction()
         {
             SetTooltip();
+        }
+        
+        protected override void Init()
+        {
+            base.Init();
+
+            GameObject _spawnPrefab = defaultPower3DModel;
+            if (power.power3DObjectPrefab)
+            {
+                _spawnPrefab = power.power3DObjectPrefab;
+            }
+            GameObject _power3DModel = Instantiate(_spawnPrefab, modelParentTransform);
+            _power3DModel.transform.ResetLocalValues();
         }
         
         private void SetTooltip()

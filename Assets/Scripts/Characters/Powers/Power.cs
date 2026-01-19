@@ -26,6 +26,7 @@ namespace Characters.Powers
 
         public FixedString64Bytes powerName;
         public FixedString512Bytes powerDescription;
+        public GameObject power3DObjectPrefab;
         public float maxWaitTime;
 
         public bool isPassive;

@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
   gameStateDependencies: []
+  forceBoardCamera: 2
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
   chainingAnnouncementSound:
     Guid:
       Data1: 798413136

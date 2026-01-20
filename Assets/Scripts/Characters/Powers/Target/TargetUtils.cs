@@ -7,14 +7,28 @@ namespace Characters.Powers.Target
 {
     public static class TargetUtils
     {
-        public static bool IsTargetValid(Character _target, TargetIncludeFlags _includeFlags)
+        public enum TargetType
         {
-            return IsTargetValid(_target.ownerClientId.Value, _includeFlags);
+            Character,
+            Role
         }
         
-        public static bool IsTargetValid(ulong _targetId, TargetIncludeFlags _includeFlags)
+        public static bool IsTargetValid(Character _target, TargetIncludeFlags _includeFlags, TargetType _targetType = TargetType.Character)
         {
-            List<ulong> _validTargets = GetTargetsForCharacters(_includeFlags);
+            return IsTargetValid(_target.ownerClientId.Value, _includeFlags, _targetType);
+        }
+        
+        public static bool IsTargetValid(ulong _targetId, TargetIncludeFlags _includeFlags, TargetType _targetType = TargetType.Character)
+        {
+            List<ulong> _validTargets;
+            if (_targetType == TargetType.Character)
+            {
+                _validTargets = GetTargetsForCharacters(_includeFlags);
+            }
+            else
+            {
+                _validTargets = GetTargetsForRoles(_includeFlags);
+            }
             return _validTargets.Contains(_targetId);
         }
         

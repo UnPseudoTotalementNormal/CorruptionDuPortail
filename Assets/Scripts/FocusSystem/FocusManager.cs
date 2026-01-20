@@ -43,6 +43,35 @@ namespace FocusSystem
                 UnfocusObject(_focusObject);
             }
         }
+        
+        public void SetFocusOnType(FocusType _focusType, Func<ulong, TargetUtils.TargetType, bool> _checkValidFunc)
+        {
+            UnfocusAll();
+            
+            switch (_focusType)
+            {
+                case FocusType.Roles:
+                    foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+                    {
+                        if (_checkValidFunc(_characterBarObject.playerCharacter.ownerClientId.Value, TargetUtils.TargetType.Role))
+                        {
+                            FocusObject(_characterBarObject.gameObject);
+                        }
+                    }
+                    break;
+                case FocusType.Cards:
+                    foreach (var _card in BoardManager.instance.visibleCards)
+                    {
+                        if (_checkValidFunc(_card.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
+                        {
+                            FocusObject(_card.gameObject);
+                        }
+                    }
+                    break;
+                case FocusType.Powers:
+                    break;
+            }
+        }
 
         public void SetFocusOnType(FocusType _focusType, Func<ulong, bool> _checkValidFunc, bool _stopOtherFocus = true)
         {

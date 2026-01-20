@@ -45,6 +45,7 @@ namespace Board.BoardCameraSystem
             InputManager.instance.RegisterAction(InputID.ArrowRight, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Right));
             
             GameManager.instance.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+            OnGameStateChanged(GameManager.instance.currentGameStateIndex.Value, GameManager.instance.currentGameStateIndex.Value);
         }
 
         private void OnGameStateChanged(int _previousValue, int _newValue)

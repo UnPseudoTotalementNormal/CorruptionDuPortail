@@ -14,6 +14,7 @@ using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using static Characters.Powers.Target.TargetUtils;
 
 #endregion
 
@@ -52,7 +53,7 @@ namespace Characters.Powers
         public event Action onPowerReparented;
         public event Action onPowerGameStartedServerTriggered;
         
-        public delegate void CheckIsTargetValidDelegate(ulong _targetClientId, ref bool _isValid);
+        public delegate void CheckIsTargetValidDelegate(ulong _targetClientId, TargetType _targetType, ref bool _isValid);
         public event CheckIsTargetValidDelegate checkIsTargetValid;
 
         public List<PowerComponent> powerComponents = new();
@@ -76,20 +77,20 @@ namespace Characters.Powers
             return powerName == _isTheSamePower.powerName;
         }
         
-        public List<ulong> GetValidTargets()
+        public List<ulong> GetValidTargets(TargetType _targetType = TargetType.Character)
         {
             List<ulong> _validTargets = CharacterManager.instance.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
-            _validTargets = _validTargets.Where(CheckIsTargetValid).ToList();
+            _validTargets = _validTargets.Where(_targetClientId => CheckIsTargetValid(_targetClientId, _targetType)).ToList();
             return _validTargets;
         }
 
-        public bool CheckIsTargetValid(ulong _targetClientId)
+        public bool CheckIsTargetValid(ulong _targetClientId, TargetType _targetType)
         {
             bool _isValid;
-            _isValid = TargetUtils.IsTargetValid(_targetClientId, targetIncludeFlags);
+            _isValid = IsTargetValid(_targetClientId, targetIncludeFlags, _targetType);
             if (_isValid)
             {
-                checkIsTargetValid?.Invoke(_targetClientId, ref _isValid);
+                checkIsTargetValid?.Invoke(_targetClientId, _targetType, ref _isValid);
             }
             return _isValid;
         }

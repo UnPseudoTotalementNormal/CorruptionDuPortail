@@ -19,7 +19,7 @@ namespace Characters.Powers
         private void OnCharacterBarObjectClicked(Character _character)
         {
             ulong _clientIdClicked = _character.ownerClientId.Value;
-            if (!IsTargetValid(_clientIdClicked))
+            if (!IsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
                 return;
             }
@@ -77,15 +77,15 @@ namespace Characters.Powers
             Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
             bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, currentRoleGuessClientId);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
             
             ChatMessage _resultMessage = new ChatMessage
             {
                 senderClientId = ChatManager.SERVER_CLIENT_ID,
                 chatId = (int)ChatWindowIDs.Server,
                 message = _isCorrectGuess
-                    ? $"Vous avez correctement deviné que {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} est {_clickedCharacter.role.roleName}."
-                    : $"Votre supposition était incorrecte, {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} n'est pas {_clickedCharacter.role.roleName}."
+                    ? $"Vous avez correctement deviné que {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
+                    : $"Votre supposition était incorrecte, {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
             };
             
             
@@ -97,14 +97,14 @@ namespace Characters.Powers
             }
             else
             {
-                List<TargetingData> _targetedClientIds = RoleTargetSystem.instance.GetAllTargetingDataForTargeter(_guessCharacter.ownerClientId.Value);
+                List<TargetingData> _targetedClientIds = RoleTargetSystem.instance.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
                 if (_targetedClientIds.Count == 0)
                 {
-                    _resultMessage.message += $"\nLe role {currentRoleGuessClientId.ToString()} n'a ciblé aucun rôle.";
+                    _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} n'a ciblé aucun rôle.";
                 }
                 else
                 {
-                    _resultMessage.message += $"\nLe role {currentRoleGuessClientId.ToString()} a ciblé ces rôles:";
+                    _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} a ciblé ces rôles:";
                     foreach (var _targetData in _targetedClientIds)
                     {
                         Character _targetedCharacter = CharacterManager.instance.GetCharacter(_targetData.targetId);
@@ -151,23 +151,23 @@ namespace Characters.Powers
             return true;
         }
         
-        private void CheckTargetValid(ulong _targetClientId, ref bool _isValid)
+        private void CheckTargetValid(ulong _targetClientId, TargetUtils.TargetType _targetType, ref bool _isValid)
         {
-            bool _result = IsTargetValid(_targetClientId);
+            bool _result = IsTargetValid(_targetClientId, _targetType);
             if (!_result)
             {
                 _isValid = false;
             }
         }
         
-        private bool IsTargetValid(ulong _targetId)
+        private bool IsTargetValid(ulong _targetId, TargetUtils.TargetType _targetType)
         {
             List<ulong> _discoveredIds = new();
             foreach (var _discoveredClientId in discoveredClientIds)
             {
                 _discoveredIds.Add(_discoveredClientId);
             }
-            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags) && !_discoveredIds.Contains(_targetId);
+            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags, _targetType) && !_discoveredIds.Contains(_targetId);
         }
 
     }

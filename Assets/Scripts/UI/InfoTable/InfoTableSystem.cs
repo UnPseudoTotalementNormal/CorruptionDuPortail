@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
 using GameLogic;
-using TMPro;
 using UI.TableSystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,8 +12,12 @@ namespace UI.InfoTable
     {
         [SerializeField] private HorizontalLayoutGroup rowPrefab;
         [SerializeField] private Header headerPrefab;
-        [SerializeField] private ChildHeader childHeaderPrefab;
+        [SerializeField] private Header playerHeaderPrefab;
+        [SerializeField] private ChildHeader roleCheckPrefab;
         [SerializeField] private Transform contentRoot;
+
+        private List<InfoTablePlayerRoleHandler> playerHandlers = new();
+        private Dictionary<Role, int> roleCounts = new();
 
         private void Start()
         {
@@ -26,10 +28,49 @@ namespace UI.InfoTable
         {
             Clean();
             BuildGameUi();
+            
+            // S'abonner aux changements de révélation de rôles
+            if (GameManager.instance.gameInfoRevealer != null)
+            {
+                GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged += OnCharacterInfoRevealedChanged;
+            }
+        }
+
+        private void OnCharacterInfoRevealedChanged()
+        {
+            // Vérifier tous les handlers pour voir si un rôle a été révélé
+            CheckForRevealedRoles();
+        }
+
+        private void CheckForRevealedRoles()
+        {
+            foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
+            {
+                if (_handler.IsLocked())
+                {
+                    continue; // Déjà verrouillé
+                }
+
+                // Vérifier si le rôle du personnage assigné est révélé
+                if (_handler.GetCharacter() != null)
+                {
+                    Character _character = _handler.GetCharacter();
+                    CharacterInfoReveal _info = GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value);
+                    if ((int)_info.isRoleRevealed > 0)
+                    {
+                        _handler.LockWithRevealedRole();
+                    }
+                }
+            }
         }
 
         private void BuildGameUi()
         {
+            
+            // Reset lists
+            playerHandlers.Clear();
+            roleCounts.Clear();
+
             // Create Headers Row
             HorizontalLayoutGroup _headersRow = Instantiate(rowPrefab, contentRoot);
             _headersRow.gameObject.name = "Headers Row";
@@ -39,7 +80,6 @@ namespace UI.InfoTable
             _playerRoleHeader.headerText.SetText("Joueurs / Rôles");
             
             // Create role headers
-            Dictionary<Role, int> _roleCounts = new();
             foreach (Character _character in CharacterManager.instance.GetCharacters(false))
             {
                 if (_character.role == null)
@@ -47,18 +87,18 @@ namespace UI.InfoTable
                     continue;
                 }
 
-                KeyValuePair<Role, int> _keyValuePair = _roleCounts.FirstOrDefault(_rc => _rc.Key.IsTheSameRole(_character.role));
+                KeyValuePair<Role, int> _keyValuePair = roleCounts.FirstOrDefault(_rc => _rc.Key.IsTheSameRole(_character.role));
                 if (_keyValuePair.Key != null)
                 {
-                    _roleCounts[_keyValuePair.Key]++;
+                    roleCounts[_keyValuePair.Key]++;
                 }
                 else
                 {
-                    _roleCounts[_character.role] = 1;
+                    roleCounts[_character.role] = 1;
                 }
             }
             
-            foreach (KeyValuePair<Role, int> _roleCount in _roleCounts)
+            foreach (KeyValuePair<Role, int> _roleCount in roleCounts)
             {
                 Header _roleHeader = Instantiate(headerPrefab, _headersRow.transform);
                 _roleHeader.headerText.SetText($"{_roleCount.Key.roleName}{(_roleCount.Value > 1 ? $" *{_roleCount.Value}" : "")}");
@@ -73,38 +113,154 @@ namespace UI.InfoTable
                 _playerRow.gameObject.name = $"Player Row - {_character.GetOwnerPseudo()}";
 
                 // Create Player Name Cell
-                Header _playerNameCell = Instantiate(headerPrefab, _playerRow.transform);
+                Header _playerNameCell = Instantiate(playerHeaderPrefab, _playerRow.transform);
                 _playerNameCell.headerText.SetText(_character.GetOwnerPseudo());
                 _playerNameCell.gameObject.AddComponent<ChildHeader>().SetHorizontalHeader(_playerRoleHeader);
                 _playerNameCell.layoutElement.preferredHeight = 100;
 
+                InfoTablePlayerRoleHandler _playerRoleHandler = _playerNameCell.GetComponent<InfoTablePlayerRoleHandler>();
+                playerHandlers.Add(_playerRoleHandler);
+                _playerRoleHandler.onConflictChanged += OnAnyConflictChanged;
+                
+                // Assigner le personnage au handler
+                _playerRoleHandler.SetCharacter(_character);
+
                 // Create Role Cells
                 int _roleIndex = 0;
-                foreach (KeyValuePair<Role, int> _roleCount in _roleCounts)
+                foreach (KeyValuePair<Role, int> _roleCount in roleCounts)
                 {
-                    ChildHeader _roleCell = Instantiate(childHeaderPrefab, _playerRow.transform);
-                    if (_character.role != null && _character.role.IsTheSameRole(_roleCount.Key))
-                    {
-                        _roleCell.GetComponentInChildren<TMP_Text>().SetText("X");
-                    }
-                    else
-                    {
-                        _roleCell.GetComponentInChildren<TMP_Text>().SetText("");
-                    }
+                    ChildHeader _roleCell = Instantiate(roleCheckPrefab, _playerRow.transform);
                     
-                    Header _header = contentRoot.GetChild(0).GetChild(_roleIndex).GetComponent<Header>();
+                    Header _header = contentRoot.GetChild(0).GetChild(_roleIndex + 1).GetComponent<Header>();
                     _roleCell.SetHorizontalHeader(_header);
                     _roleCell.SetVerticalHeader(_playerNameCell);
+                    InfoRoleChecker _infoRoleChecker = _roleCell.GetComponent<InfoRoleChecker>();
+                    _infoRoleChecker.Setup(_roleCount.Key);
+
+                    _playerRoleHandler.AddRoleChecker(_infoRoleChecker);
+                    
                     _roleIndex++;
                 }
             }
+            
+            // Vérifier si des rôles sont déjà révélés
+            CheckForRevealedRoles();
         }
         
         private void Clean()
         {
-            for (int i = contentRoot.childCount - 1; i >= 0; i--)
+            // Unsubscribe from events
+            foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
             {
-                Destroy(contentRoot.GetChild(i).gameObject);
+                if (_handler != null)
+                {
+                    _handler.onConflictChanged -= OnAnyConflictChanged;
+                }
+            }
+            
+            // Se désabonner de l'événement de révélation
+            if (GameManager.instance != null && GameManager.instance.gameInfoRevealer != null)
+            {
+                GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged -= OnCharacterInfoRevealedChanged;
+            }
+            
+            playerHandlers.Clear();
+            roleCounts.Clear();
+            
+            for (int _i = contentRoot.childCount - 1; _i >= 0; _i--)
+            {
+                Destroy(contentRoot.GetChild(_i).gameObject);
+            }
+        }
+
+        private void OnAnyConflictChanged()
+        {
+            CheckGlobalConflicts();
+        }
+
+        private void CheckGlobalConflicts()
+        {
+            // First, reset all global conflicts (but keep local conflicts)
+            foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
+            {
+                // Ignorer les handlers verrouillés
+                if (_handler.IsLocked())
+                {
+                    continue;
+                }
+                
+                if (_handler.GetCurrentConflict() == ConflictType.RoleOverCapacity)
+                {
+                    _handler.CheckLocalConflicts(); // Reset to local conflict state
+                }
+            }
+
+            // Count "Sure" selections per role
+            Dictionary<Role, List<InfoTablePlayerRoleHandler>> _sureCountPerRole = new();
+            
+            foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
+            {
+                // Ignorer les handlers verrouillés dans le comptage
+                if (_handler.IsLocked())
+                {
+                    continue;
+                }
+                
+                List<InfoRoleChecker> _checkers = _handler.GetRoleCheckers();
+                
+                foreach (InfoRoleChecker _checker in _checkers)
+                {
+                    if (_checker.GetCurrentCheckerType() == CheckerType.Sure)
+                    {
+                        Role _role = _checker.role;
+                        
+                        if (!_sureCountPerRole.ContainsKey(_role))
+                        {
+                            _sureCountPerRole[_role] = new List<InfoTablePlayerRoleHandler>();
+                        }
+                        
+                        _sureCountPerRole[_role].Add(_handler);
+                    }
+                }
+            }
+
+            // Check for over-capacity conflicts
+            foreach (KeyValuePair<Role, List<InfoTablePlayerRoleHandler>> _pair in _sureCountPerRole)
+            {
+                Role _role = _pair.Key;
+                List<InfoTablePlayerRoleHandler> _handlersWithSure = _pair.Value;
+                
+                // Find the max count for this role
+                KeyValuePair<Role, int> _roleCountPair = roleCounts.FirstOrDefault(_rc => _rc.Key.IsTheSameRole(_role));
+                int _maxCount = _roleCountPair.Key != null ? _roleCountPair.Value : 0;
+                
+                if (_handlersWithSure.Count > _maxCount)
+                {
+                    // Mark all handlers with this "Sure" role as in conflict (unless they already have a local conflict)
+                    foreach (InfoTablePlayerRoleHandler _handler in _handlersWithSure)
+                    {
+                        if (_handler.GetCurrentConflict() != ConflictType.PlayerMultipleRoles)
+                        {
+                            _handler.SetConflict(ConflictType.RoleOverCapacity);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (GameManager.instance != null)
+            {
+                GameManager.instance.onGameStarted -= OnGameStarted;
+            }
+            
+            foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
+            {
+                if (_handler != null)
+                {
+                    _handler.onConflictChanged -= OnAnyConflictChanged;
+                }
             }
         }
     }

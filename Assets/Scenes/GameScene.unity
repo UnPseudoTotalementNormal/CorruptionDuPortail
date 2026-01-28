@@ -340,7 +340,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rowPrefab: {fileID: 7633789388772469960, guid: 395951550becba7808e83022068bb504, type: 3}
   headerPrefab: {fileID: 4607002155257299187, guid: 1181a26bab3b19218beadfc830a58fad, type: 3}
-  childHeaderPrefab: {fileID: 7753068350390532462, guid: 6c3d0ac21087f98a1be9efbfa070a68b, type: 3}
+  playerHeaderPrefab: {fileID: 4607002155257299187, guid: 7b4ece8ac12b204569eebccb29c9513b, type: 3}
+  roleCheckPrefab: {fileID: 7753068350390532462, guid: d488ce96978c1c427ab2ec405eea94e6, type: 3}
   contentRoot: {fileID: 366127600}
 --- !u!1 &143226076
 GameObject:
@@ -1066,8 +1067,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -6.08, y: -7.16, z: -9.06}
+  m_LocalRotation: {x: 0.26387298, y: 0, z: 0, w: 0.96455747}
+  m_LocalPosition: {x: 0, y: -10.31, z: -8.64}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11415,7 +11416,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 52.33
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -11443,7 +11444,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 138.14
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -11531,7 +11532,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 136.05
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x

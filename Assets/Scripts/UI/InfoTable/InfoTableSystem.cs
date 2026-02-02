@@ -121,6 +121,7 @@ namespace UI.InfoTable
                 InfoTablePlayerRoleHandler _playerRoleHandler = _playerNameCell.GetComponent<InfoTablePlayerRoleHandler>();
                 playerHandlers.Add(_playerRoleHandler);
                 _playerRoleHandler.onConflictChanged += OnAnyConflictChanged;
+                _playerRoleHandler.onRoleSelectionChanged += OnAnyRoleSelectionChanged; 
                 
                 // Assigner le personnage au handler
                 _playerRoleHandler.SetCharacter(_character);
@@ -155,6 +156,7 @@ namespace UI.InfoTable
                 if (_handler != null)
                 {
                     _handler.onConflictChanged -= OnAnyConflictChanged;
+                    _handler.onRoleSelectionChanged -= OnAnyRoleSelectionChanged;
                 }
             }
             
@@ -178,17 +180,16 @@ namespace UI.InfoTable
             CheckGlobalConflicts();
         }
 
+        private void OnAnyRoleSelectionChanged()
+        {
+            CheckGlobalConflicts();
+        }
+
         private void CheckGlobalConflicts()
         {
             // First, reset all global conflicts (but keep local conflicts)
             foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
             {
-                // Ignorer les handlers verrouillés
-                if (_handler.IsLocked())
-                {
-                    continue;
-                }
-                
                 if (_handler.GetCurrentConflict() == ConflictType.RoleOverCapacity)
                 {
                     _handler.CheckLocalConflicts(); // Reset to local conflict state
@@ -200,12 +201,6 @@ namespace UI.InfoTable
             
             foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)
             {
-                // Ignorer les handlers verrouillés dans le comptage
-                if (_handler.IsLocked())
-                {
-                    continue;
-                }
-                
                 List<InfoRoleChecker> _checkers = _handler.GetRoleCheckers();
                 
                 foreach (InfoRoleChecker _checker in _checkers)
@@ -239,6 +234,12 @@ namespace UI.InfoTable
                     // Mark all handlers with this "Sure" role as in conflict (unless they already have a local conflict)
                     foreach (InfoTablePlayerRoleHandler _handler in _handlersWithSure)
                     {
+                        // Don't mark locked handlers as in conflict
+                        if (_handler.IsLocked())
+                        {
+                            continue;
+                        }
+                        
                         if (_handler.GetCurrentConflict() != ConflictType.PlayerMultipleRoles)
                         {
                             _handler.SetConflict(ConflictType.RoleOverCapacity);
@@ -260,6 +261,7 @@ namespace UI.InfoTable
                 if (_handler != null)
                 {
                     _handler.onConflictChanged -= OnAnyConflictChanged;
+                    _handler.onRoleSelectionChanged -= OnAnyRoleSelectionChanged;
                 }
             }
         }

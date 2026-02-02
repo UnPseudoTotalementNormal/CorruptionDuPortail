@@ -21,6 +21,7 @@ namespace UI.InfoTable
         private ConflictType currentConflict = ConflictType.None;
 
         public event Action onConflictChanged;
+        public event Action onRoleSelectionChanged;
 
         private void Awake()
         {
@@ -36,6 +37,8 @@ namespace UI.InfoTable
         private void OnRoleCheckerValueChanged(CheckerType _checkerType, bool _value)
         {
             CheckLocalConflicts();
+            
+            onRoleSelectionChanged?.Invoke();
         }
 
         public void CheckLocalConflicts()

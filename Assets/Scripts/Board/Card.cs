@@ -26,24 +26,28 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 {
     public Canvas cardCanvas;
     
-    [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
-    public TMP_Text cardRoleText;
 
     public Transform cardScalerTransform;
     public Transform cardDisplacerTransform;
     public Transform cardPivotTransform;
     public Transform cardEffectsParent;
     
+    public VoteCanvas voteCanvas;
+    
+    [Header("Front Side References")]
+    public List<CanvasGroup> objectsToShowOnFrontSidePlacementOnly = new();
+    [FormerlySerializedAs("cardName")] public TMP_Text cardPlayerPseudo;
+    public TMP_Text cardRoleText;
+    public CanvasGroup chainedOverlay;
     public Image cardImage;
     public Image factionLogoImage;
     public Image factionLogoBackgroundImage;
-
-    public VoteCanvas voteCanvas;
-    public CanvasGroup chainedOverlay;
-
-    public CanvasGroup noteCanvasGroup;
-    
     public Image unknownFogOverlay;
+    
+    [Header("Back Side References")]
+    public List<CanvasGroup> objectsToShowOnBackSidePlacementOnly = new();
+    public TMP_Text bsCardPlayerPseudo;
+    public Image bsFactionLogoImage;
  
     [Header("Info")]
     [SerializeField] private Sprite unknownCardSprite;
@@ -52,6 +56,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     [HideInInspector] public Character characterInfo;
     [HideInInspector] public Role roleInfo;
 
+    public PlaceCardSide placeCardSide = PlaceCardSide.Front;
     private bool isSubscribedToCharacter = false;
 
     [Header("Animation values")]
@@ -65,12 +70,13 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private System.Threading.CancellationTokenSource showPseudoCts;
 
-    private bool isSubscribedToUpdate = false;
     private bool lastIsChainedStatus = false;
     private float lastZoomStartTime = 0;
     
     private bool isPointerOver = false;
     private bool isCardZoomed = false;
+
+    private bool canShowBackInfo = false;
     
     [Header("Sounds")]
     [SerializeField] private EventReference cardFlipSound;
@@ -81,6 +87,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     
     private void Awake()
     {
+        SetCanShowBackInfo(true);
+        SetPlaceSide(PlaceCardSide.Front);
         if (characterInfo == null)
         {
             SetUnknownCard();
@@ -89,11 +97,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     private void Update()
     {
-        if (isPointerOver || !isCardZoomed) 
+        if (isPointerOver || !isCardZoomed)
         {
             return;
         }
-        
+
         if (!CanUnZoomCard())
         {
             return;
@@ -117,6 +125,74 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         roleInfo = characterInfo.GetRole();
         SetChainedOverlay(characterInfo.isChained.Value, true);
         SubscribeToCharacterEvents();
+    }
+
+    public void SetPlaceSide(PlaceCardSide _placeSide)
+    {
+        placeCardSide = _placeSide;
+        
+        if (placeCardSide == PlaceCardSide.Front)
+        {
+            ShowInfoOnFrontSide();
+        }
+        else
+        {
+            if (canShowBackInfo)
+            {
+                ShowInfoOnBackSide();
+            }
+        }
+    }
+    
+    public void SetCanShowBackInfo(bool _shouldShowBackInfo)
+    {
+        canShowBackInfo = _shouldShowBackInfo;
+
+        if (!canShowBackInfo)
+        {
+            ShowInfoOnFrontSide();
+        }
+        
+        if (canShowBackInfo && placeCardSide == PlaceCardSide.Back)
+        {
+            ShowInfoOnBackSide();
+        }
+    }
+
+    private void ShowInfoOnFrontSide()
+    {
+        voteCanvas.transform.localRotation = Quaternion.Euler(0, 0, 0);
+        cardEffectsParent.localRotation = Quaternion.Euler(0, 0, 0);
+        
+        foreach (CanvasGroup _canvasGroup in objectsToShowOnFrontSidePlacementOnly)
+        {
+            _canvasGroup.DOKill();
+            _canvasGroup.DOFade(1, 0.25f);
+        }
+        
+        foreach (CanvasGroup _canvasGroup in objectsToShowOnBackSidePlacementOnly)
+        {
+            _canvasGroup.DOKill();
+            _canvasGroup.DOFade(0, 0.25f);
+        }
+    }
+
+    private void ShowInfoOnBackSide()
+    {
+        voteCanvas.transform.localRotation = Quaternion.Euler(0, 180, 0);
+        cardEffectsParent.localRotation = Quaternion.Euler(0, 0, 180);
+        
+        foreach (CanvasGroup _canvasGroup in objectsToShowOnFrontSidePlacementOnly)
+        {
+            _canvasGroup.DOKill();
+            _canvasGroup.DOFade(0, 0.25f);
+        }
+        
+        foreach (CanvasGroup _canvasGroup in objectsToShowOnBackSidePlacementOnly)
+        {
+            _canvasGroup.DOKill();
+            _canvasGroup.DOFade(1, 0.25f);
+        }
     }
 
     private void SubscribeToCharacterEvents()
@@ -154,55 +230,67 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     #region Info Methods
     
-    public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false)
+    public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false, bool _allowChangeSideInfo = true)
     {
         showPseudoCts?.Cancel();
         showPseudoCts = new System.Threading.CancellationTokenSource();
         var _cancellationToken = showPseudoCts.Token;
         try
         {
-            if (_turnCard)
-            {
-                await ShowBackSide().AttachExternalCancellation(_cancellationToken);
-            }
-            cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+            // If the card is revealed, we can turn it
             if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0)
             {
+                SetPlaceSide(PlaceCardSide.Front);
+                if (_turnCard)
+                {
+                    await ShowBackSide().AttachExternalCancellation(_cancellationToken);
+                }
+                
+                SetCardPseudo( characterInfo.GetOwnerPseudo());
                 cardRoleText.text = roleInfo.roleName.ToString();
                 UpdateFaction(roleInfo.factionType);
                 cardImage.sprite = await roleInfo.GetRolePortrait().AttachExternalCancellation(_cancellationToken);
-                noteCanvasGroup.DoHideGroup();
+                
+                if (_turnCard)
+                {
+                    await ShowFrontSide().AttachExternalCancellation(_cancellationToken);
+                }
             }
-            else
+            else // If not revealed, show the back only
             {
+                if (_allowChangeSideInfo)
+                {
+                    SetPlaceSide(PlaceCardSide.Back);
+                }
+                SetCardPseudo(characterInfo.GetOwnerPseudo());
                 cardRoleText.text = "";
                 cardImage.sprite = unknownCardSprite;
                 UpdateFaction(FactionType.unknown);
-                noteCanvasGroup.DoShowGroup();
-            }
-            if (_turnCard)
-            {
-                await ShowFrontSide().AttachExternalCancellation(_cancellationToken);
+                if (_turnCard)
+                {
+                    await ShowBackSide().AttachExternalCancellation(_cancellationToken);
+                }
             }
         }
         catch (OperationCanceledException) { }
+    }
+    
+    private void SetCardPseudo(string _pseudo)
+    {
+        cardPlayerPseudo.text = _pseudo;
+        bsCardPlayerPseudo.text = _pseudo;
     }
 
     private void UpdateFaction(FactionType _factionType)
     {
         factionLogoImage.sprite = factionLogo[_factionType];
+        bsFactionLogoImage.sprite = factionLogoImage.sprite;
         factionLogoBackgroundImage.sprite = factionLogoBackground[_factionType];
         bool _factionActive = factionLogoImage.sprite != null;
         factionLogoImage.gameObject.SetActive(_factionActive);
+        bsFactionLogoImage.gameObject.SetActive(_factionActive);
         factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
-        if (_factionType == FactionType.unknown)
-        {
-            unknownFogOverlay.gameObject.SetActive(true);
-        }
-        else
-        {
-            unknownFogOverlay.gameObject.SetActive(false);
-        }
+        unknownFogOverlay.gameObject.SetActive(_factionType == FactionType.unknown);
     }
 
     public void CancelShowPseudoWithRevealedInfo()
@@ -212,10 +300,10 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     public async UniTask ShowRoleWithRevealedInfo()
     {
-        cardPlayerPseudo.text = "";
+        SetCardPseudo("");
         if ((int)GameManager.instance.gameInfoRevealer.GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0)
         {
-            cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+            SetCardPseudo( characterInfo.GetOwnerPseudo());
         }
         cardRoleText.text = roleInfo.roleName.ToString();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
@@ -223,14 +311,14 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     public async UniTask ShowRoleOnly()
     {
-        cardPlayerPseudo.text = "";
+        SetCardPseudo("");
         cardRoleText.text = roleInfo.roleName.ToString();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
 
     public async UniTask ShowPseudoWithRole()
     {
-        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+        SetCardPseudo( characterInfo.GetOwnerPseudo());
         cardRoleText.text = roleInfo.roleName.ToString();
         cardImage.sprite = await roleInfo.GetRolePortrait();;
     }
@@ -238,12 +326,12 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public void ShowPseudoOnly()
     {
         SetUnknownCard();
-        cardPlayerPseudo.text = characterInfo.GetOwnerPseudo();
+        SetCardPseudo( characterInfo.GetOwnerPseudo());
     }
     
     public void SetUnknownCard()
     {
-        cardPlayerPseudo.text = "";
+        SetCardPseudo("");
         cardRoleText.text = "";
         cardImage.sprite = unknownCardSprite;
     }
@@ -263,16 +351,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         }
         
         chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
-        if (_isChained && !_instant)
-        {
-            //GameAudioManager.instance.PlayOneShot(characterInfo.role.onChainingSound.GetPath());
-        }
         lastIsChainedStatus = _isChained;
     }
 
     public async UniTask ShowBackSide(bool _isInstant = false)
     {
-        var _rotateTime = (_isInstant) ? 0 : rotateTime;
         if (Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), 180)) // Already on back side
         {
             return;
@@ -285,18 +368,17 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         else
         {
             cardFlipSound.TryPlayOneShot();
-            cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+            cardDisplacerTransform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
-                cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
+                cardDisplacerTransform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
             };
-            cardPivotTransform.DORotate(new Vector3(0, 0, -180), _rotateTime * 0.75f);
-            await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+            cardPivotTransform.DORotate(new Vector3(0, 0, -180), rotateTime * 0.75f);
+            await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
         }
     }
     
     public async UniTask ShowFrontSide(bool _isInstant = false)
     {
-        var _rotateTime = (_isInstant) ? 0 : rotateTime;
         if (Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), 0)) // Already front side
         {
             return;
@@ -309,12 +391,12 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         else
         {
             cardUnflipSound.TryPlayOneShot();
-            cardDisplacerTransform.DOLocalMoveY(4, _rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+            cardDisplacerTransform.DOLocalMoveY(4, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
-                cardDisplacerTransform.DOLocalMoveY(0, _rotateTime / 2f).SetEase(Ease.OutQuint);
+                cardDisplacerTransform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
             };
-            cardPivotTransform.DORotate(Vector3.zero, _rotateTime * 0.75f);
-            await UniTask.Delay(TimeSpan.FromSeconds(_rotateTime));
+            cardPivotTransform.DORotate(Vector3.zero, rotateTime * 0.75f);
+            await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
         }
     }
 
@@ -384,5 +466,11 @@ public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         cardCanvas.sortingOrder -= 1;
         
         cardUnhoverSound.TryPlayOneShot();
+    }
+
+    public enum PlaceCardSide
+    {
+        Front, // used when the role is discovered,
+        Back   // used when the role is not discovered
     }
 }

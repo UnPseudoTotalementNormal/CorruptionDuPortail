@@ -126,10 +126,8 @@ public class BoardManager : NetworkBehaviour
         foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
-            _ = _card.ShowPseudoWithRevealedInfo();
             _card.cardPivotTransform.eulerAngles = new Vector3(0, 0, -180);
-            
-            _ = _card.ShowFrontSide();
+            _ = _card.ShowPseudoWithRevealedInfo(true);
         }
         PlaceAllCardsToPosition();
     }
@@ -146,6 +144,7 @@ public class BoardManager : NetworkBehaviour
         
         foreach (var _card in visibleCards)
         {
+            _card.SetCanShowBackInfo(false);
             _ = _card.ShowBackSide();
         }
 

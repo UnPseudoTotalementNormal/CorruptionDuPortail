@@ -73,9 +73,10 @@ namespace GameLogic.GameStates
             GameAudioManager.instance.PlayOneShot(chainingAnnouncementSound.GetPath());
             await BoardManager.instance.HideAllCards();
             
-            var _cardInfo = BoardManager.instance.AddNewCard();
+            Card _cardInfo = BoardManager.instance.AddNewCard();
+            _cardInfo.SetCanShowBackInfo(false);
             spawnedCard = _cardInfo.transform;
-            var _spawnedCardPivot = _cardInfo.cardPivotTransform;
+            Transform _spawnedCardPivot = _cardInfo.cardPivotTransform;
             
             _cardInfo.SetInfo(_chainingCharacter);
             _cardInfo.ShowPseudoOnly();
@@ -90,7 +91,7 @@ namespace GameLogic.GameStates
             var _tween1 = _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
             await UniTask.WaitUntil(() => !_tween1.IsActive());
             
-            _ = _cardInfo.ShowPseudoWithRevealedInfo();
+            _ = _cardInfo.ShowPseudoWithRevealedInfo(false, false);
             
             _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
             var _tween2 = spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);

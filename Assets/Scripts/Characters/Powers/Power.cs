@@ -42,8 +42,8 @@ namespace Characters.Powers
         [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
         /// <summary>
-        /// A generic validator for target selection. Add your rules here in Awake/Start.
-        /// Example: targetValidator.AddRule(id => IsEnemy(id));
+        /// A generic validator for target selection. Add your rules here in Awake/Start/OnNetworkSpawn().
+        /// Example: targetValidator.AddRule(ctx => ctx.targetId != ownerClientId.Value);
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
 

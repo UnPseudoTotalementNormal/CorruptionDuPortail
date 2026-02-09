@@ -142,6 +142,12 @@ namespace Network.Action
                 return;
             }
             
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
+                return;
+            }
+            
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
@@ -151,6 +157,12 @@ namespace Network.Action
             if (!isRegistered)
             {
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                isRegistered = false;
                 return;
             }
             
@@ -316,6 +328,12 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
                 return;
             }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
+                return;
+            }
 
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
@@ -326,6 +344,13 @@ namespace Network.Action
             if (!isRegistered)
             {
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            // Vérification de sécurité pour l'éditeur
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                isRegistered = false;
                 return;
             }
             
@@ -497,6 +522,12 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
                 return;
             }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
+                return;
+            }
 
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
@@ -507,6 +538,12 @@ namespace Network.Action
             if (!isRegistered)
             {
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                isRegistered = false;
                 return;
             }
             
@@ -546,6 +583,8 @@ namespace Network.Action
 
         public NetworkAction(string _messageID, NetworkBehaviour _networkBehaviour, bool _allowInvokeByClients = true)
         {
+            if (!Application.isPlaying) return;
+            
             if (!_networkBehaviour.IsSpawned)
             {
                 Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
@@ -684,6 +723,12 @@ namespace Network.Action
                 Debug.Log("NetworkAction: " + messageID + " is already registered. Ignoring.");
                 return;
             }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
+                return;
+            }
 
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
@@ -694,6 +739,12 @@ namespace Network.Action
             if (!isRegistered)
             {
                 Debug.Log("NetworkAction: " + messageID + " is not registered. Ignoring.");
+                return;
+            }
+            
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            {
+                isRegistered = false;
                 return;
             }
             

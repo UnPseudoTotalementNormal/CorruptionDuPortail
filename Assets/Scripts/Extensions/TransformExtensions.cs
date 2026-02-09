@@ -28,7 +28,7 @@ namespace Extensions
             {
                 _bounds.Encapsulate(_renderers[i].bounds);
             }
-
+            
             return _bounds;
         }
     }

@@ -52,6 +52,8 @@ namespace Characters.Powers
         public NetworkAction onPowerUsed;
         public event Action onPowerReparented;
         public event Action onPowerGameStartedServerTriggered;
+        public event Action onStartUse;
+        public event Action onStopUse;
         
         public delegate void CheckIsTargetValidDelegate(ulong _targetClientId, TargetType _targetType, ref bool _isValid);
         public event CheckIsTargetValidDelegate checkIsTargetValid;
@@ -119,6 +121,7 @@ namespace Characters.Powers
         {
             isCurrentlyUsed = true;
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
+            onStartUse?.Invoke();
         }
         
         [Rpc(SendTo.SpecifiedInParams)]
@@ -181,6 +184,7 @@ namespace Characters.Powers
             }
             GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
             isCurrentlyUsed = false;
+            onStopUse?.Invoke();
         }
 
         public virtual void UsingPowerUpdate() //note: please make it visuals only

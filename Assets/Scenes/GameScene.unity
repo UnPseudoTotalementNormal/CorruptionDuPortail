@@ -1116,9 +1116,9 @@ MonoBehaviour:
     - Key: 1
       Value: {fileID: 1305324455}
     - Key: 2
-      Value: {fileID: 1480106855}
+      Value: {fileID: 0}
     - Key: 3
-      Value: {fileID: 738321166}
+      Value: {fileID: 0}
 --- !u!114 &256519913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1391,8 +1391,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -6.08, y: -7.16, z: -9.06}
+  m_LocalRotation: {x: 0.5778576, y: 0, z: 0, w: 0.8161377}
+  m_LocalPosition: {x: 0, y: -8.59, z: -6.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4235,7 +4235,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &738321165
 Transform:
   m_ObjectHideFlags: 0
@@ -7370,7 +7370,7 @@ Transform:
   m_GameObject: {fileID: 1305324453}
   serializedVersion: 2
   m_LocalRotation: {x: 0.57785755, y: 0, z: 0, w: 0.8161376}
-  m_LocalPosition: {x: 0, y: -11.29, z: -7.19}
+  m_LocalPosition: {x: 0, y: -8.59, z: -6.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8439,7 +8439,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1480106854
 Transform:
   m_ObjectHideFlags: 0
@@ -15022,7 +15022,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4103307719425347031, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_MinHeight
-      value: 300
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4387441765226569388, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_Layer
@@ -15182,7 +15182,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7584659062811673244, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_MinHeight
-      value: 300
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 7748896521537988042, guid: 4396f612f3f441f4cb092eab643d5923, type: 3}
       propertyPath: m_Layer

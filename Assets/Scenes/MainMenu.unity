@@ -1932,6 +1932,69 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: -20}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &377451885
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 377451887}
+  - component: {fileID: 377451886}
+  m_Layer: 0
+  m_Name: Music
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &377451886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 377451885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -68124227
+      Data2: 1192533384
+      Data3: 27609269
+      Data4: -1061478332
+    Path: event:/Interface/MenuMusic
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 1
+  OverrideMaxDistance: 20
+--- !u!4 &377451887
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 377451885}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &402341240
 GameObject:
   m_ObjectHideFlags: 0
@@ -10288,7 +10351,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 52.33
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -10316,7 +10379,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 138.14
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -10404,7 +10467,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 136.05
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -12522,3 +12585,4 @@ SceneRoots:
   - {fileID: 473400241}
   - {fileID: 308870500}
   - {fileID: 269087623}
+  - {fileID: 377451887}

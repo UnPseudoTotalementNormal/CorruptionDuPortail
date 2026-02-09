@@ -609,10 +609,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638988338166057107
+  lastModified: 639062392089578025
   FileSizes:
   - Name: Desktop
-    Value: 10274784
+    Value: 13002720
   Exists: 1
 --- !u!114 &-4818972373118919025
 MonoBehaviour:
@@ -804,10 +804,10 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638988338166128893
+  lastModified: 639062392089648025
   FileSizes:
   - Name: Desktop
-    Value: 2968
+    Value: 3018
   Exists: 1
 --- !u!114 &-3974452291014879238
 MonoBehaviour:
@@ -1515,13 +1515,14 @@ MonoBehaviour:
   - {fileID: 8903052336178934206}
   - {fileID: 8231090082839844706}
   - {fileID: -6333864740531548608}
+  - {fileID: 6065566868868033222}
   EditorParameters: []
   MasterBanks:
   - {fileID: -4866380843273065656}
   StringsBanks:
   - {fileID: -4062503513606897777}
   cacheVersion: 131847
-  cacheTime: 638988338166128893
+  cacheTime: 639062392089648025
   SerializableEventsDict:
   - key: event:/Characters/Orpheline/Canalisation
     index: 0
@@ -1607,6 +1608,8 @@ MonoBehaviour:
     index: 40
   - key: event:/Interface/LightOnButton
     index: 41
+  - key: event:/Interface/MenuMusic
+    index: 42
 --- !u!114 &164057015143093230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2725,6 +2728,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 19010
+--- !u!114 &6065566868868033222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Interface/MenuMusic
+  m_EditorClassIdentifier: 
+  Path: event:/Interface/MenuMusic
+  Guid:
+    Data1: -68124227
+    Data2: 1192533384
+    Data3: 27609269
+    Data4: -1061478332
+  Banks:
+  - {fileID: -4866380843273065656}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 222171
 --- !u!114 &6194482352631363775
 MonoBehaviour:
   m_ObjectHideFlags: 0

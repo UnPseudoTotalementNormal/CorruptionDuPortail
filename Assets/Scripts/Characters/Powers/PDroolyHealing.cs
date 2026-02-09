@@ -30,20 +30,26 @@ namespace Characters.Powers
 
         public List<ulong> healedCharactersThisNight = new();
 
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+        }
+
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
+            if (!CheckIsTargetValid(_clickedCard.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
             clickedCharacter = _clickedCard.characterInfo;
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
             FocusManager.instance.FocusObject(_clickedCard.gameObject);
         }
         private void OnCharacterBarClicked(Character _character)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_character.ownerClientId.Value))
+            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Role))
             {
                 return;
             }
@@ -127,7 +133,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
 
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
 
             clickedCharacter = null;
         }

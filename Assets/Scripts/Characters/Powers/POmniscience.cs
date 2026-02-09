@@ -12,11 +12,17 @@ namespace Characters.Powers
     {
         public ulong hackedCharacterClientId = HACKED_CHARACTER_DEFAULT;
         public const ulong HACKED_CHARACTER_DEFAULT = 4994996541621;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+        }
         
         private void OnCardClicked(Card _clickedCard)
         {
             var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_character.ownerClientId.Value))
+            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
@@ -53,7 +59,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
         }
 
         public override void Cancel()

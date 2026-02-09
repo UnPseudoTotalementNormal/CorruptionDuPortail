@@ -25,6 +25,12 @@ namespace Characters.Powers
         public event Action<Character> onCharacterCorruptionSuccessful;
         public event Action<Character> onCharacterCorruptionFailed;
 
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+        }
+
         public void InvokeOnCharacterCorruptionSuccessful(ulong characterId)
         {
             var _character = GameManager.instance.characterManager.GetCharacter(characterId);
@@ -38,7 +44,7 @@ namespace Characters.Powers
         private void OnCardClicked(Card _clickedCard)
         {
             var _clickedCharacterId = _clickedCard.characterInfo.ownerClientId.Value;
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacterId))
+            if (!CheckIsTargetValid(_clickedCharacterId, TargetUtils.TargetType.Character))
             {
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;
@@ -86,7 +92,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
         }
 
         public override void Cancel()

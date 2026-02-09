@@ -34,9 +34,9 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
+  - Outline_Used
+  - Outline_Highlight
+  - Outline_Hover
   m_SortingLayers:
   - name: Default
     uniqueID: 0

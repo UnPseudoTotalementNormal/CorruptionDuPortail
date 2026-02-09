@@ -26,7 +26,8 @@ namespace FX
         private void Start()
         {
             shouldShowFog.Set(FogReason.GameState, false);
-            shouldShowFog.Set(FogReason.PlayerAwakened, false);
+            shouldShowFog.Set(FogReason.PlayerAwakened, true);
+            UpdateFogState();
             GameManager.instance.onGameStarted += OnGameStarted;
         }
 

@@ -19,6 +19,13 @@ namespace Characters.Powers
     {
         List<PersonalBeaconObject> personalBeacons = new();
 
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+            targetValidator.AddRule(ctx => personalBeacons.All(_p => _p.targetClientId != ctx.targetId));
+        }
+
         private void Awake()
         {
             if (NetworkManager.IsServer)
@@ -43,14 +50,14 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, IsTargetValid);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
         }
 
         private void OnCardClicked(Card _card)
         {
             Character _characterClicked = _card.characterInfo;
             
-            if (!IsTargetValid(_characterClicked.ownerClientId.Value))
+            if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
@@ -63,11 +70,6 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCharacterClickedRpc(ulong _characterClickedId)
         {
-            /*if (!IsTargetValid(_characterClickedId))  TEMPORARY COMMENT
-            {
-                return;
-            }*/
-            
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);
@@ -78,11 +80,6 @@ namespace Characters.Powers
             base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
             FocusManager.instance.UnfocusAll();
-        }
-        
-        private bool IsTargetValid(ulong _targetId)
-        {
-            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags) && personalBeacons.All(_p => _p.targetClientId != _targetId);
         }
 
         [Rpc(SendTo.Everyone)]

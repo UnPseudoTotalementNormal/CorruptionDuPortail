@@ -25,15 +25,31 @@ namespace Characters.Powers
         
         [NonSerialized] private List<Character> clickedCharacters = new();
         [NonSerialized] private List<Role> clickedRoles = new();
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+            targetValidator.AddRule(ctx => 
+            {
+                // Pour les personnages: ne pas inclure ceux déjà cliqués
+                if (ctx.targetType == TargetUtils.TargetType.Character)
+                {
+                    return !clickedCharacters.Any(c => c.ownerClientId.Value == ctx.targetId);
+                }
+                // Pour les rôles: ne pas inclure ceux déjà cliqués
+                else
+                {
+                    var character = GameManager.instance.characterManager.GetCharacter(ctx.targetId, false);
+                    return character == null || !clickedRoles.Any(_r => _r.IsTheSameRole(character.role));
+                }
+            });
+        }
         
         private void OnCardClicked(Card _cardClicked)
         {
             var _clickedCharacter = _cardClicked.characterInfo;
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCharacter.ownerClientId.Value))
-            {
-                return;
-            }
-            if (clickedCharacters.Contains(_clickedCharacter))
+            if (!CheckIsTargetValid(_clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
@@ -45,17 +61,13 @@ namespace Characters.Powers
             {
                 BoardManager.instance.onCardClicked -= OnCardClicked;
                 GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-                FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
+                FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
             }
         }
 
         private void OnCharacterBarClicked(Character _characterClicked)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId.Value))
-            {
-                return;
-            }
-            if (clickedRoles.Any(_r => _r.IsTheSameRole(_characterClicked.role)))
+            if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Role))
             {
                 return;
             }
@@ -122,7 +134,7 @@ namespace Characters.Powers
             
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
         }
 
         public override void Cancel()

@@ -24,12 +24,19 @@ namespace Characters.Powers
         private NetworkList<ulong> alreadyTargetedClients = new();
         
         private bool isChatAttributed => powerChatId.Value != -1;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+            targetValidator.AddRule(ctx => !alreadyTargetedClients.Contains(ctx.targetId));
+        }
         
         public override void StartUse()
         {
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
             
             foreach (var _clientId in alreadyTargetedClients)
             {
@@ -43,19 +50,14 @@ namespace Characters.Powers
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
-            if (!base.CanUse(_ignoreCurrentlyUsed))
-            {
-                return false;
-            }
-            
-            List<ulong> _possibleTargets = TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Where(_id => !alreadyTargetedClients.Contains(_id)).ToList();
-            return _possibleTargets.Count > 0;
+            // La vérification des cibles valides est déjà faite par base.CanUse()
+            // via GetValidTargets() qui utilise notre targetValidator
+            return base.CanUse(_ignoreCurrentlyUsed);
         }
 
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value) ||
-                alreadyTargetedClients.Contains(_clickedCard.characterInfo.ownerClientId.Value))
+            if (!CheckIsTargetValid(_clickedCard.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }

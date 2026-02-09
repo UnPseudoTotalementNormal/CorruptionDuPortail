@@ -9,22 +9,30 @@ namespace Characters.Powers
 {
     public class PReincarnation : Power
     {
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+            targetValidator.AddRule(ctx => 
+            {
+                // Ne pas pouvoir se réincarner en son propre rôle
+                var targetCharacter = GameManager.instance.characterManager.GetCharacter(ctx.targetId, false);
+                return targetCharacter == null || !ownerCharacter.role.IsTheSameRole(targetCharacter.role);
+            });
+        }
+
         public override void StartUse()
         {
             base.StartUse();
             
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
         }
 
         private void OnCharacterBarClicked(Character _characterClicked)
         {
-            if (!TargetUtils.GetTargetsForRoles(targetIncludeFlags).Contains(_characterClicked.ownerClientId.Value))
-            {
-                return;
-            }
-            if (ownerCharacter.role.IsTheSameRole(_characterClicked.role))
+            if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Role))
             {
                 return;
             }

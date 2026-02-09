@@ -22,10 +22,16 @@ namespace Characters.Powers
         public EventReference onContactedAsChosenSound;
         public EventReference onContactedAsMarginalSound;
         public EventReference onContactedAsAnomalySound;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+        }
         
         private void OnCardClicked(Card _clickedCard)
         {
-            if (!TargetUtils.GetTargetsForCharacters(targetIncludeFlags).Contains(_clickedCard.characterInfo.ownerClientId.Value))
+            if (!CheckIsTargetValid(_clickedCard.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
@@ -76,7 +82,7 @@ namespace Characters.Powers
             base.StartUse();
             BoardManager.instance.onCardClicked += OnCardClicked;
             
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, targetIncludeFlags);
+            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
         }
 
         public override void Cancel()

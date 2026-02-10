@@ -9,6 +9,7 @@ using Network;
 using RoleTarget;
 using Unity.Netcode;
 using FocusType = FocusSystem.FocusType;
+using Board;
 
 #endregion
 

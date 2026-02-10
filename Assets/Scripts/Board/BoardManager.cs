@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Board;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
@@ -58,7 +59,7 @@ public class BoardManager : NetworkBehaviour
             Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
             if (_card)
             {
-                _card.characterInfo = _character;
+                _card.SetInfo(_character);
             }
         }
     }

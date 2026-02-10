@@ -3,6 +3,7 @@ using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using Board;
 using Unity.Netcode;
 
 namespace Characters.Powers

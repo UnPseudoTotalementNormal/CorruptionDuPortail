@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using AudioSystem;
+using Board;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;

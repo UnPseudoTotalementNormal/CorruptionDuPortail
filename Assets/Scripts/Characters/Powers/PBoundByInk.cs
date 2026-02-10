@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
+using Board;
 
 namespace Characters.Powers
 {

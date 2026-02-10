@@ -364,6 +364,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4935191678616157150}
   - component: {fileID: 3564681152801350707}
+  - component: {fileID: 7260315726049248800}
+  - component: {fileID: 4538953433115110518}
+  - component: {fileID: 460727394197249063}
   - component: {fileID: 422508917166547416}
   - component: {fileID: 5845128801636504836}
   - component: {fileID: 7941456063628525433}
@@ -407,45 +410,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardCanvas: {fileID: 422508917166547416}
-  cardScalerTransform: {fileID: 8340460404250581213}
-  cardDisplacerTransform: {fileID: 1040824015893496145}
-  cardPivotTransform: {fileID: 4456429850662113924}
   cardEffectsParent: {fileID: 677503089896783074}
   voteCanvas: {fileID: 6534977542599041295}
-  objectsToShowOnFrontSidePlacementOnly: []
-  cardPlayerPseudo: {fileID: 7225565607081040501}
-  cardRoleText: {fileID: 7497138110590187071}
-  chainedOverlay: {fileID: 1535649323081278993}
-  cardImage: {fileID: 2429788706011615213}
-  factionLogoImage: {fileID: 8618780977505519655}
-  factionLogoBackgroundImage: {fileID: 4574760127277184339}
-  unknownFogOverlay: {fileID: 2834525348253230907}
-  objectsToShowOnBackSidePlacementOnly:
-  - {fileID: 996379987536300829}
-  - {fileID: 6060598245442153707}
-  bsCardPlayerPseudo: {fileID: 4873643886185039208}
-  bsFactionLogoImage: {fileID: 1851783640154181134}
-  unknownCardSprite: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
-  factionLogo:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 21300000, guid: a54dfb5f1be7ff944a3b634f687e25d3, type: 3}
-    - Key: 1
-      Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
-    - Key: 2
-      Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
-    - Key: 3
-      Value: {fileID: 0}
-  factionLogoBackground:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 21300000, guid: 60d7128af5f0d284796cdeb0eff0dcbb, type: 3}
-    - Key: 1
-      Value: {fileID: 21300000, guid: 28be9f44c0d173940bfb6635f6cce559, type: 3}
-    - Key: 2
-      Value: {fileID: 21300000, guid: 685299ce002f5334da7109febd65caf5, type: 3}
-    - Key: 3
-      Value: {fileID: 0}
+  visualUpdater: {fileID: 7260315726049248800}
+  animationHandler: {fileID: 4538953433115110518}
+  soundHandler: {fileID: 460727394197249063}
   characterInfo: {fileID: 0}
   roleInfo:
     roleName:
@@ -537,10 +506,84 @@ MonoBehaviour:
         Data4: 0
       Path: 
     ownerClientId: 0
-  placeCardSide: 0
-  hoverZoom: 1.35
-  rotateTime: 1
+  references:
+    version: 2
+    RefIds: []
+--- !u!114 &7260315726049248800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417900098678493395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 559160e3456546d6bffc99c06f7eeb5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardVisualUpdater
+  cardPlayerPseudo: {fileID: 7225565607081040501}
+  cardRoleText: {fileID: 7497138110590187071}
+  cardImage: {fileID: 2429788706011615213}
+  factionLogoImage: {fileID: 8618780977505519655}
+  factionLogoBackgroundImage: {fileID: 4574760127277184339}
+  unknownFogOverlay: {fileID: 2834525348253230907}
+  chainedOverlay: {fileID: 1535649323081278993}
+  objectsToShowOnFrontSidePlacementOnly: []
+  bsCardPlayerPseudo: {fileID: 4873643886185039208}
+  bsFactionLogoImage: {fileID: 1851783640154181134}
+  objectsToShowOnBackSidePlacementOnly:
+  - {fileID: 996379987536300829}
+  - {fileID: 6060598245442153707}
+  unknownCardSprite: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
+  factionLogo:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: a54dfb5f1be7ff944a3b634f687e25d3, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
+    - Key: 3
+      Value: {fileID: 0}
+  factionLogoBackground:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: 60d7128af5f0d284796cdeb0eff0dcbb, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 28be9f44c0d173940bfb6635f6cce559, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: 685299ce002f5334da7109febd65caf5, type: 3}
   chainFadeTime: 0.5
+--- !u!114 &4538953433115110518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417900098678493395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96c0cb4ccb094d7fb51d79bf0470ff6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardAnimationHandler
+  cardScalerTransform: {fileID: 8340460404250581213}
+  cardDisplacerTransform: {fileID: 1040824015893496145}
+  cardPivotTransform: {fileID: 4456429850662113924}
+  hoverZoom: 1.15
+  rotateTime: 0.75
+  isCardZoomed: 0
+--- !u!114 &460727394197249063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417900098678493395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 936459002e094da482ffbf6dbe764c50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardSoundHandler
   cardFlipSound:
     Guid:
       Data1: -2102862649
@@ -564,21 +607,18 @@ MonoBehaviour:
     Path: event:/Interface/Messages General + Anomaly/Touch Card 2
   cardUnhoverSound:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  cardClickSound:
-    Guid:
       Data1: 1652283604
       Data2: 1198001398
       Data3: -290686321
       Data4: 1967292025
     Path: event:/Interface/Messages General + Anomaly/Touch Card 1
-  references:
-    version: 2
-    RefIds: []
+  cardClickSound:
+    Guid:
+      Data1: -1794442382
+      Data2: 1163313654
+      Data3: -113547853
+      Data4: 2024024420
+    Path: event:/Interface/Messages General + Anomaly/Touch Card 2
 --- !u!223 &422508917166547416
 Canvas:
   m_ObjectHideFlags: 0
@@ -3087,6 +3127,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -3108,6 +3150,7 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0

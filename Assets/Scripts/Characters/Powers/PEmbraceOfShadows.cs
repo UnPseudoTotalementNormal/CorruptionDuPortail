@@ -11,6 +11,7 @@ using RoleTarget;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
+using Board;
 
 #endregion
 

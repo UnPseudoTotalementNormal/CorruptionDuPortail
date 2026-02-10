@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using Board;
 using Characters;
 using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;

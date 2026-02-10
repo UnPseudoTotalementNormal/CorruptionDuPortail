@@ -1,6 +1,7 @@
 #region
 
 using System.Collections.Generic;
+using Board;
 using Characters;
 using GameLogic;
 using TMPro;

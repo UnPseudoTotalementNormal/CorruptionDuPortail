@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Board;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;

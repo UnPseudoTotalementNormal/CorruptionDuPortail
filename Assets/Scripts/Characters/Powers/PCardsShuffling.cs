@@ -8,6 +8,7 @@ using GameLogic;
 using Network;
 using RoleTarget;
 using Unity.Netcode;
+using Board;
 
 namespace Characters.Powers
 {

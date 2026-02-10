@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Board;
 using System.Linq;
 using Characters.Powers.PowerObjects;
 using Characters.Powers.Target;

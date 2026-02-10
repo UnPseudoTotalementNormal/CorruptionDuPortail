@@ -6,6 +6,7 @@ using FocusSystem;
 using GameLogic;
 using RoleTarget;
 using Unity.Netcode;
+using Board;
 
 #endregion
 

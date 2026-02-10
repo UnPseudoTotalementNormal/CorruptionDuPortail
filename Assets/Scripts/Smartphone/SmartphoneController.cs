@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Board.BoardCameraSystem;
 using Controllers;
+using Controllers.Inputs;
 using DG.Tweening;
 using Extensions;
 using Unity.Cinemachine;
@@ -68,6 +69,11 @@ namespace Smartphone
                 IsOpen = true;
                 TryClosePanel();
             }
+            
+            InputManager.instance.RegisterAction(InputID.ArrowLeft, InputState.Started, () => OnSwipe(SwipeDirection.Left));
+            InputManager.instance.RegisterAction(InputID.ArrowRight, InputState.Started, () => OnSwipe(SwipeDirection.Right));
+            InputManager.instance.RegisterAction(InputID.ArrowUp, InputState.Started, () => OnSwipe(SwipeDirection.Up));
+            InputManager.instance.RegisterAction(InputID.ArrowDown, InputState.Started, () => OnSwipe(SwipeDirection.Down));
         }
 
         
@@ -99,6 +105,11 @@ namespace Smartphone
 
         public void OnSwipe(SwipeDirection swipeDirection)
         {
+            if (!IsOpen)
+            {
+                return;
+            }
+            
             SmartphoneApp nextApp = currentApp.GetNeighborApp(swipeDirection);
             if (nextApp == null)
             {

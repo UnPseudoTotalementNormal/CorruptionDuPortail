@@ -67,6 +67,15 @@ namespace Board.UI.PowerBar
                 Destroy(_collider);
             }
         }
+        
+        private void OnDestroy()
+        {
+            if (power != null)
+            {
+                power.onStartUse -= StartUsePower;
+                power.onStopUse -= StopUsePower;
+            }
+        }
 
         private void SetTooltip()
         {

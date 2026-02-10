@@ -15,11 +15,18 @@ namespace Characters.Powers
     {
         public NetworkList<ulong> discoveredClientIds = new(); // List of client id role discovered or if discovered that it's not used
         private ulong currentRoleGuessClientId;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
+            targetValidator.AddRule(ctx => !discoveredClientIds.Contains(ctx.targetId));
+        }
         
         private void OnCharacterBarObjectClicked(Character _character)
         {
             ulong _clientIdClicked = _character.ownerClientId.Value;
-            if (!IsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
+            if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
                 return;
             }
@@ -130,7 +137,8 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, IsTargetValid);
+            // Utiliser une lambda qui redirige vers notre CheckIsTargetValid centralisé
+            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
             GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarObjectClicked;
         }
 
@@ -141,34 +149,11 @@ namespace Characters.Powers
             BoardManager.instance.onCardClicked -= OnGuessRoleCardClicked;
         }
         
-        private void Start()
-        {
-            checkIsTargetValid += CheckTargetValid;
-        }
-
         private bool IsGuessValid(ulong _targetId)
         {
             return true;
         }
         
-        private void CheckTargetValid(ulong _targetClientId, TargetUtils.TargetType _targetType, ref bool _isValid)
-        {
-            bool _result = IsTargetValid(_targetClientId, _targetType);
-            if (!_result)
-            {
-                _isValid = false;
-            }
-        }
-        
-        private bool IsTargetValid(ulong _targetId, TargetUtils.TargetType _targetType)
-        {
-            List<ulong> _discoveredIds = new();
-            foreach (var _discoveredClientId in discoveredClientIds)
-            {
-                _discoveredIds.Add(_discoveredClientId);
-            }
-            return TargetUtils.IsTargetValid(_targetId, targetIncludeFlags, _targetType) && !_discoveredIds.Contains(_targetId);
-        }
 
     }
 }

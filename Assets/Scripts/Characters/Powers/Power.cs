@@ -10,6 +10,7 @@ using Extensions;
 using FMODUnity;
 using FocusSystem;
 using GameLogic;
+using GameLogic.Validation;
 using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
@@ -40,6 +41,12 @@ namespace Characters.Powers
         public int maxPowerUse = 1;
         [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
+        /// <summary>
+        /// A generic validator for target selection. Add your rules here in Awake/Start/OnNetworkSpawn().
+        /// Example: targetValidator.AddRule(ctx => ctx.targetId != ownerClientId.Value);
+        /// </summary>
+        protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
+
         [Header("Sounds")] 
         public EventReference canalisationSound;
         public EventReference onUsedSound;
@@ -54,9 +61,6 @@ namespace Characters.Powers
         public event Action onPowerGameStartedServerTriggered;
         public event Action onStartUse;
         public event Action onStopUse;
-        
-        public delegate void CheckIsTargetValidDelegate(ulong _targetClientId, TargetType _targetType, ref bool _isValid);
-        public event CheckIsTargetValidDelegate checkIsTargetValid;
 
         public List<PowerComponent> powerComponents = new();
 
@@ -85,16 +89,9 @@ namespace Characters.Powers
             _validTargets = _validTargets.Where(_targetClientId => CheckIsTargetValid(_targetClientId, _targetType)).ToList();
             return _validTargets;
         }
-
         public bool CheckIsTargetValid(ulong _targetClientId, TargetType _targetType)
         {
-            bool _isValid;
-            _isValid = IsTargetValid(_targetClientId, targetIncludeFlags, _targetType);
-            if (_isValid)
-            {
-                checkIsTargetValid?.Invoke(_targetClientId, _targetType, ref _isValid);
-            }
-            return _isValid;
+            return targetValidator.Evaluate((_targetClientId, _targetType));
         }
         
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
@@ -233,3 +230,4 @@ namespace Characters.Powers
         }
     }
 }
+

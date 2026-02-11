@@ -34,6 +34,7 @@ namespace UI.CardUI
             
             if (_character.ownerClientId.Value != NetworkManager.Singleton.LocalClientId)
             {
+                isMoving = true;
                 return;
             }
             

@@ -34,11 +34,12 @@ namespace Board
 
         private PlaceCardSide placeCardSide = PlaceCardSide.Front;
         private bool isSubscribedToCharacter;
-        private bool isPointerOver;
+        public bool isPointerOver { get; private set; }
         private bool canShowBackInfo;
         
         private readonly CancellableTaskHandler showPseudoTaskHandler = new();
 
+        public event Action<Character> onCardSetInfo;
         public event Action<Card> onCardClicked;
         public event Action<Card> onCardHovered;
         public event Action<Card> onCardUnhovered;
@@ -107,6 +108,7 @@ namespace Board
             roleInfo = characterInfo.GetRole();
             visualUpdater.SetChainedOverlay(characterInfo.isChained.Value, true);
             SubscribeToCharacterEvents();
+            onCardSetInfo?.Invoke(_character);
         }
 
         public void SetPlaceSide(PlaceCardSide _placeSide)

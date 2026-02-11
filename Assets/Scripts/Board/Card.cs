@@ -42,6 +42,17 @@ namespace Board
         public event Action<Card> onCardClicked;
         public event Action<Card> onCardHovered;
         public event Action<Card> onCardUnhovered;
+        public event Action onCardStartMoving
+        {
+            add => animationHandler.onCardStartMoving += value;
+            remove => animationHandler.onCardStartMoving -= value;
+        }
+        
+        public event Action onCardStopMoving
+        {
+            add => animationHandler.onCardStopMoving += value;
+            remove => animationHandler.onCardStopMoving -= value;
+        }
 
         [HideInInspector] public Character characterInfo;
         [HideInInspector] public Role roleInfo;

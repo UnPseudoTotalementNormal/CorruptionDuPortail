@@ -36,6 +36,20 @@ namespace Board.CardComponents
         private float lastZoomStartTime;
 
         public bool isCardZoomed;
+        
+        private Vector3 oldPosition;
+        private Vector3 oldRotation;
+        public Vector3 velocity { get; private set; }
+        public Vector3 angularVelocity { get; private set; }
+        public bool isCardMoving { get; private set; }
+        
+        public Action onCardStartMoving;
+        public Action onCardStopMoving;
+        
+        private void Update()
+        {
+            CalculateVelocity();
+        }
 
         public bool CanUnZoom()
         {
@@ -143,6 +157,47 @@ namespace Board.CardComponents
             {
                 cardDisplacerTransform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
             };
+        }
+        
+        private void CalculateVelocity()
+        {
+            Transform downTransform = cardScalerTransform;
+            
+            velocity = (downTransform.position - oldPosition) / Time.deltaTime;
+            angularVelocity = (downTransform.eulerAngles - oldRotation) / Time.deltaTime;
+            
+            oldPosition = downTransform.position;
+            oldRotation = downTransform.eulerAngles;
+            
+            IsMoving();
+        }
+        
+        /// <summary>
+        /// Check if card is moving based on calculated velocity.
+        /// </summary>
+        private void IsMoving()
+        {
+            float velocityMagnitude = velocity.magnitude;
+            float angularVelocityMagnitude = angularVelocity.magnitude;
+            const float velocityThreshold = 0.01f; 
+            const float angularVelocityThreshold = 0.01f;
+
+            if (velocityMagnitude > velocityThreshold || angularVelocityMagnitude > angularVelocityThreshold)
+            {
+                if (!isCardMoving)
+                {
+                    onCardStartMoving?.Invoke();
+                    isCardMoving = true;
+                }
+            }
+            else
+            {
+                if (isCardMoving)
+                {
+                    isCardMoving = false;
+                    onCardStopMoving?.Invoke();
+                }
+            }
         }
     }
 }

@@ -19,6 +19,8 @@ namespace Characters.Powers.PowerObjects
             
             onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerPower);
 
+            Character _targetCharacter = CharacterManager.instance.GetCharacter(targetClientId, false);
+            
             if (ownerClientId == NetworkManager.Singleton.LocalClientId)
             {
                 CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId, this);
@@ -28,8 +30,11 @@ namespace Characters.Powers.PowerObjects
             {
                 return;
             }
-            //server only
-            CharacterManager.instance.GetCharacter(targetClientId, false).isCorrupted.OnValueChanged += OnTargetCorruptedChanged;
+            
+            if (_targetCharacter.role.factionType == FactionType.chosen)
+            {
+                _targetCharacter.isCorrupted.OnValueChanged += OnTargetCorruptedChanged;
+            }
         }
 
         private void OnTargetCorruptedChanged(bool _previousValue, bool _newValue)

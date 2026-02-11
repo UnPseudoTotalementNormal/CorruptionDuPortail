@@ -24,7 +24,7 @@ namespace Board.Components
             
             beacon.onCorruptedBeaconChanged += OnCorruptedStateChanged;
             
-            UpdateMaterial(Characters.CharacterManager.instance.GetCharacter(beacon.targetClientId, false).isCorrupted.Value);
+            UpdateMaterial(beacon.isCorruptedValue);
         }
         
         private void OnCorruptedStateChanged(bool isCorrupted)

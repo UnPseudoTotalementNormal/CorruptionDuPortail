@@ -10,6 +10,7 @@ namespace Characters.Powers.PowerObjects
         public ulong ownerClientId;
         public ulong targetClientId;
 
+        public bool isCorruptedValue = false;
         public NetworkAction<bool> onCorruptedBeaconChanged;
         
         public PersonalBeaconObject(Power _ownerPower, ulong _targetClientId)
@@ -31,8 +32,11 @@ namespace Characters.Powers.PowerObjects
                 return;
             }
             
-            if (_targetCharacter.role.factionType == FactionType.chosen)
+            if (_targetCharacter.role.factionType == FactionType.chosen || 
+                _targetCharacter.role.roleID == RoleID.Robot)
             {
+                isCorruptedValue = _targetCharacter.isCorrupted.Value;
+                OnTargetCorruptedChanged(isCorruptedValue, isCorruptedValue);
                 _targetCharacter.isCorrupted.OnValueChanged += OnTargetCorruptedChanged;
             }
         }
@@ -40,6 +44,7 @@ namespace Characters.Powers.PowerObjects
         private void OnTargetCorruptedChanged(bool _previousValue, bool _newValue)
         {
             Debug.Log("PersonalBeaconObject: OnTargetCorruptedChanged: " + targetClientId + " is now corrupted: " + _newValue);
+            isCorruptedValue = _newValue;
             onCorruptedBeaconChanged.Invoke(_newValue);
         }
     }

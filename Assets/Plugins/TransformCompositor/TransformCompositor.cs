@@ -5,7 +5,6 @@ namespace TransformComposition
 {
     /// <summary>
     /// Manages multiple TransformLayers and composes them into a final transformation.
-    /// Position and rotation are additive, scale is multiplicative.
     /// </summary>
     [System.Serializable]
     public class TransformCompositor
@@ -13,7 +12,7 @@ namespace TransformComposition
         [SerializeField] private SerializableDictionary<string, TransformLayer> layers = new();
 
         /// <summary>
-        /// Gets or creates a layer by name.
+        /// Gets a layer by name.
         /// If the layer doesn't exist, it will be created with default values.
         /// </summary>
         public TransformLayer GetLayer(string layerName)
@@ -26,25 +25,16 @@ namespace TransformComposition
             return layers[layerName];
         }
 
-        /// <summary>
-        /// Checks if a layer exists.
-        /// </summary>
         public bool HasLayer(string layerName)
         {
             return layers.ContainsKey(layerName);
         }
 
-        /// <summary>
-        /// Removes a layer by name.
-        /// </summary>
         public void RemoveLayer(string layerName)
         {
             layers.Remove(layerName);
         }
 
-        /// <summary>
-        /// Removes all layers.
-        /// </summary>
         public void ClearLayers()
         {
             layers.Clear();
@@ -52,7 +42,6 @@ namespace TransformComposition
 
         /// <summary>
         /// Computes the composite transformation from all layers.
-        /// Position and rotation are additive, scale is multiplicative.
         /// </summary>
         public ComposedTransform GetComposedTransform()
         {
@@ -62,13 +51,10 @@ namespace TransformComposition
 
             foreach (var layer in layers.Values)
             {
-                // Additive for position
                 compositePosition += layer.localPosition;
 
-                // Additive for rotation (euler angles)
                 compositeEulerAngles += layer.localEulerAngles;
 
-                // Multiplicative for scale
                 compositeScale.x *= layer.localScale.x;
                 compositeScale.y *= layer.localScale.y;
                 compositeScale.z *= layer.localScale.z;
@@ -91,12 +77,23 @@ namespace TransformComposition
         }
 
         /// <summary>
-        /// Gets all layers.
+        /// Gets all layer transforms.
         /// </summary>
         public IEnumerable<TransformLayer> GetAllLayers()
         {
             return layers.Values;
         }
+
+        /// <summary>
+        /// Gets all layer names and their corresponding transforms as tuples.
+        /// </summary>
+        public IEnumerable<(string, TransformLayer)> GetAllLayersNamesAndTransforms()
+        {
+            foreach (var kvp in layers)
+            {
+                yield return (kvp.Key, kvp.Value);
+            }
+        } 
 
         /// <summary>
         /// Structure containing the composed transformation values.
@@ -121,11 +118,6 @@ namespace TransformComposition
         }
     }
 
-    /// <summary>
-    /// Simple serializable dictionary for Unity inspector support.
-    /// If you have a better serializable dictionary (like AYellowpaper.SerializedCollections),
-    /// you can replace this with that implementation.
-    /// </summary>
     [System.Serializable]
     public class SerializableDictionary<TKey, TValue> : Dictionary<TKey, TValue>, ISerializationCallbackReceiver
     {

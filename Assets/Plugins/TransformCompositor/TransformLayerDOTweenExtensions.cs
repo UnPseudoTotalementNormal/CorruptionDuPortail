@@ -1,3 +1,4 @@
+#if DOTWEEN
 using DG.Tweening;
 using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
@@ -215,4 +216,4 @@ namespace TransformComposition
         #endregion
     }
 }
-
+#endif

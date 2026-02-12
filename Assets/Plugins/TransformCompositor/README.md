@@ -15,6 +15,11 @@ A Unity plugin for compositing multiple animation layers on a single Transform. 
 
 Simply copy the `TransformCompositor` folder into your Unity project's `Assets/Plugins` directory.
 
+### DOTween Integration 
+
+You can also control layers using DOTween for smooth animations.
+It will be enabled automatically if DOTween is detected.
+
 ## Quick Start
 
 ### 1. Add the Component

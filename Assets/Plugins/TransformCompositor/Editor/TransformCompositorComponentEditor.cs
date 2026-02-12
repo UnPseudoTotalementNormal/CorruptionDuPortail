@@ -10,7 +10,13 @@ public class TransformCompositorComponentEditor : Editor
     private bool showSettings = false;
     private bool showLayers = false;
     
-    private static Dictionary<string, Vector3> editorEulerAngles = new Dictionary<string, Vector3>();
+    private struct RotationCache
+    {
+        public Vector3 displayedEulerAngles;  // What we show in the Inspector
+        public Quaternion lastQuaternion;     // To detect real changes
+    }
+    private static Dictionary<string, RotationCache> rotationCache = new();
+    private const float ROTATION_CHANGE_THRESHOLD = 0.1f;
     
     public override void OnInspectorGUI()
     {
@@ -87,9 +93,26 @@ public class TransformCompositorComponentEditor : Editor
         TransformLayer layer = component.Compositor.GetLayer(layerName);
         
         string cacheKey = $"{component.GetInstanceID()}_{layerName}";
-        if (!editorEulerAngles.ContainsKey(cacheKey))
+        
+        if (!rotationCache.ContainsKey(cacheKey))
         {
-            editorEulerAngles[cacheKey] = layer.localEulerAngles;
+            rotationCache[cacheKey] = new RotationCache
+            {
+                displayedEulerAngles = layer.localEulerAngles,
+                lastQuaternion = layer.localRotation
+            };
+        }
+        
+        // Detect real rotation changes by comparing Quaternions
+        RotationCache cache = rotationCache[cacheKey];
+        float angleDifference = Quaternion.Angle(cache.lastQuaternion, layer.localRotation);
+        
+        // If the rotation actually changed (external modification via code, gizmo, animation, etc.)
+        if (angleDifference > ROTATION_CHANGE_THRESHOLD)
+        {
+            cache.displayedEulerAngles = layer.localEulerAngles;
+            cache.lastQuaternion = layer.localRotation;
+            rotationCache[cacheKey] = cache;
         }
         
         if (displayInsideBox)
@@ -111,13 +134,14 @@ public class TransformCompositorComponentEditor : Editor
         }
                 
         EditorGUI.BeginChangeCheck();
-        // Display the cached Euler angles instead of reading from layer (avoids gimbal lock visual issues)
-        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation Offset (Euler)", editorEulerAngles[cacheKey]);
+        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation Offset (Euler)", cache.displayedEulerAngles);
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Layer Rotation");
-            editorEulerAngles[cacheKey] = newRotation;
             layer.localEulerAngles = newRotation;
+            cache.displayedEulerAngles = newRotation;
+            cache.lastQuaternion = layer.localRotation;
+            rotationCache[cacheKey] = cache;
             EditorUtility.SetDirty(component);
         }
                 
@@ -134,7 +158,8 @@ public class TransformCompositorComponentEditor : Editor
         {
             Undo.RecordObject(component, "Remove Layer");
             component.RemoveLayer(layerName);
-            editorEulerAngles.Remove(cacheKey);
+            // Clean up the cache for this layer
+            rotationCache.Remove(cacheKey);
             EditorUtility.SetDirty(component);
             return true; 
         }

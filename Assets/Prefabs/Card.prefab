@@ -262,7 +262,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.5019608}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -642,9 +642,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96c0cb4ccb094d7fb51d79bf0470ff6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardAnimationHandler
-  <cardScalerTransform>k__BackingField: {fileID: 8340460404250581213}
-  <cardDisplacerTransform>k__BackingField: {fileID: 1040824015893496145}
-  <cardPivotTransform>k__BackingField: {fileID: 4456429850662113924}
+  compositor:
+    layers:
+      keys: []
+      values: []
+  targetTransform: {fileID: 1040824015893496145}
+  autoUpdate: 1
   <hoverZoom>k__BackingField: 1.15
   <rotateTime>k__BackingField: 1
   isCardZoomed: 0
@@ -2954,6 +2957,7 @@ MonoBehaviour:
   canvasGroup: {fileID: 8722272518138699700}
   shownAlpha: 0.75
   fadeDuration: 0.25
+  notMovingDurationNeeded: 0.5
 --- !u!1 &6684356567982549446
 GameObject:
   m_ObjectHideFlags: 0

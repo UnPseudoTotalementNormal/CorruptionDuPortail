@@ -128,7 +128,7 @@ public class BoardManager : NetworkBehaviour
         foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
-            _card.cardPivotTransform.eulerAngles = new Vector3(0, 0, -180);
+            _card.AnimationHandler.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
             _ = _card.ShowPseudoWithRevealedInfo(true);
         }
 
@@ -157,7 +157,7 @@ public class BoardManager : NetworkBehaviour
             _ = _card.ShowBackSide();
         }
 
-        await UniTask.Delay(TimeSpan.FromSeconds(visibleCards[0].rotateTime), cancellationToken: _cancelToken.Token);
+        await UniTask.Delay(TimeSpan.FromSeconds(visibleCards[0].AnimationHandler.rotateTime), cancellationToken: _cancelToken.Token);
         
         foreach (var _card in visibleCards)
         {

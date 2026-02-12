@@ -7,6 +7,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Extensions;
 using FMODUnity;
+using TransformComposition;
 using UnityEngine;
 
 namespace GameLogic.GameStates
@@ -77,7 +78,6 @@ namespace GameLogic.GameStates
             Card _cardInfo = BoardManager.instance.AddNewCard();
             _cardInfo.SetCanShowBackInfo(false);
             spawnedCard = _cardInfo.transform;
-            Transform _spawnedCardPivot = _cardInfo.cardPivotTransform;
             
             _cardInfo.SetInfo(_chainingCharacter);
             _cardInfo.ShowPseudoOnly();
@@ -88,13 +88,16 @@ namespace GameLogic.GameStates
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
+            // Get the flip layer for rotation animations
+            var flipLayer = _cardInfo.AnimationHandler.GetLayer("Flip");
+            
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            var _tween1 = _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
+            var _tween1 = flipLayer.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
             await UniTask.WaitUntil(() => !_tween1.IsActive());
             
             _ = _cardInfo.ShowPseudoWithRevealedInfo(false, false);
             
-            _spawnedCardPivot.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+            flipLayer.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
             var _tween2 = spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);
             await UniTask.WaitUntil(() => !_tween2.IsActive());
             

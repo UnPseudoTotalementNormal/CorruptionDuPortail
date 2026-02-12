@@ -32,6 +32,8 @@ namespace Board
         [SerializeField] private CardAnimationHandler animationHandler;
         [SerializeField] private CardSoundHandler soundHandler;
 
+        public CardAnimationHandler AnimationHandler => animationHandler;
+
         private PlaceCardSide placeCardSide = PlaceCardSide.Front;
         private bool isSubscribedToCharacter;
         public bool isPointerOver { get; private set; }
@@ -57,12 +59,6 @@ namespace Board
 
         [HideInInspector] public Character characterInfo;
         [HideInInspector] public Role roleInfo;
-        
-        // Backwards compatibility properties - delegates to components
-        public Transform cardScalerTransform => animationHandler.cardScalerTransform;
-        public Transform cardDisplacerTransform => animationHandler.cardDisplacerTransform;
-        public Transform cardPivotTransform => animationHandler.cardPivotTransform;
-        public float rotateTime => animationHandler.rotateTime;
 
         #region Unity Lifecycle
 

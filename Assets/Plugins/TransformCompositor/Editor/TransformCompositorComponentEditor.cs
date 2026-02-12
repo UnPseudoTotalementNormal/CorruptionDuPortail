@@ -1,4 +1,4 @@
-using System.Linq;
+using System.Collections.Generic;
 using TransformComposition;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +9,8 @@ public class TransformCompositorComponentEditor : Editor
     private string newLayerName = "New Layer";
     private bool showSettings = false;
     private bool showLayers = false;
+    
+    private static Dictionary<string, Vector3> editorEulerAngles = new Dictionary<string, Vector3>();
     
     public override void OnInspectorGUI()
     {
@@ -83,6 +85,13 @@ public class TransformCompositorComponentEditor : Editor
     private static bool DisplayLayer(TransformCompositorComponent component, string layerName, bool showLayerName, bool showRemoveLayerButton, bool displayInsideBox = true)
     {
         TransformLayer layer = component.Compositor.GetLayer(layerName);
+        
+        string cacheKey = $"{component.GetInstanceID()}_{layerName}";
+        if (!editorEulerAngles.ContainsKey(cacheKey))
+        {
+            editorEulerAngles[cacheKey] = layer.localEulerAngles;
+        }
+        
         if (displayInsideBox)
         {
             EditorGUILayout.BeginVertical("box");
@@ -102,10 +111,12 @@ public class TransformCompositorComponentEditor : Editor
         }
                 
         EditorGUI.BeginChangeCheck();
-        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation Offset (Euler)", layer.localEulerAngles);
+        // Display the cached Euler angles instead of reading from layer (avoids gimbal lock visual issues)
+        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation Offset (Euler)", editorEulerAngles[cacheKey]);
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Layer Rotation");
+            editorEulerAngles[cacheKey] = newRotation;
             layer.localEulerAngles = newRotation;
             EditorUtility.SetDirty(component);
         }
@@ -123,6 +134,7 @@ public class TransformCompositorComponentEditor : Editor
         {
             Undo.RecordObject(component, "Remove Layer");
             component.RemoveLayer(layerName);
+            editorEulerAngles.Remove(cacheKey);
             EditorUtility.SetDirty(component);
             return true; 
         }

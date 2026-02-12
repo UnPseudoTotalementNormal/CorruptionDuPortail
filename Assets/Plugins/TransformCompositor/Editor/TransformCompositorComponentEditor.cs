@@ -18,6 +18,8 @@ public class TransformCompositorComponentEditor : Editor
     private static Dictionary<string, RotationCache> rotationCache = new();
     private const float ROTATION_CHANGE_THRESHOLD = 0.1f;
     
+    private static bool scaleLinked = true;
+    
     public override void OnInspectorGUI()
     {
         TransformCompositorComponent component = (TransformCompositorComponent)target;
@@ -125,7 +127,7 @@ public class TransformCompositorComponentEditor : Editor
         }
                 
         EditorGUI.BeginChangeCheck();
-        Vector3 newPosition = EditorGUILayout.Vector3Field("Position Offset", layer.localPosition);
+        Vector3 newPosition = EditorGUILayout.Vector3Field("Position", layer.localPosition);
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Layer Position");
@@ -134,7 +136,7 @@ public class TransformCompositorComponentEditor : Editor
         }
                 
         EditorGUI.BeginChangeCheck();
-        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation Offset (Euler)", cache.displayedEulerAngles);
+        Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation", cache.displayedEulerAngles);
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Layer Rotation");
@@ -144,12 +146,41 @@ public class TransformCompositorComponentEditor : Editor
             rotationCache[cacheKey] = cache;
             EditorUtility.SetDirty(component);
         }
-                
+        
         EditorGUI.BeginChangeCheck();
-        Vector3 newScale = EditorGUILayout.Vector3Field("Scale Multiplier", layer.localScale);
+        Vector3 newScale = EditorGUILayout.Vector3Field("Scale", layer.localScale);
+        
+        Rect lastRect = GUILayoutUtility.GetLastRect();
+        float labelWidth = EditorGUIUtility.labelWidth;
+        Rect linkRect = new Rect(
+            lastRect.x + labelWidth - 21,
+            lastRect.y + 0,
+            16,
+            16
+        );
+        GUIContent linkIcon = EditorGUIUtility.IconContent(scaleLinked ? "d_Linked" : "d_UnLinked");
+        if (GUI.Button(linkRect, linkIcon, GUIStyle.none))
+        {
+            scaleLinked = !scaleLinked;
+        }
+        
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Layer Scale");
+            
+            if (scaleLinked)
+            {
+                Vector3 oldScale = layer.localScale;
+                Vector3 scaleDelta = newScale - oldScale;
+                
+                float delta = Mathf.Max(Mathf.Abs(scaleDelta.x), Mathf.Abs(scaleDelta.y), Mathf.Abs(scaleDelta.z));
+                
+                if (delta > 0.0001f)
+                {
+                    newScale = oldScale + Vector3.one * (delta * Mathf.Sign(scaleDelta.x + scaleDelta.y + scaleDelta.z));
+                }
+            }
+            
             layer.localScale = newScale;
             EditorUtility.SetDirty(component);
         }
@@ -158,7 +189,6 @@ public class TransformCompositorComponentEditor : Editor
         {
             Undo.RecordObject(component, "Remove Layer");
             component.RemoveLayer(layerName);
-            // Clean up the cache for this layer
             rotationCache.Remove(cacheKey);
             EditorUtility.SetDirty(component);
             return true; 

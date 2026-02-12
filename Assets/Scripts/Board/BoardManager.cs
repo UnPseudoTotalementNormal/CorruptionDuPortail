@@ -8,6 +8,7 @@ using Board;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using Extensions;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -130,6 +131,13 @@ public class BoardManager : NetworkBehaviour
             _card.cardPivotTransform.eulerAngles = new Vector3(0, 0, -180);
             _ = _card.ShowPseudoWithRevealedInfo(true);
         }
+
+        Card ownedCard = visibleCards.SingleOrDefault(c =>
+            c.characterInfo.ownerClientId.Value == NetworkManager.Singleton.LocalClientId);
+        if (ownedCard)
+        {
+            visibleCards.ChangeIndex(visibleCards.IndexOf(ownedCard), 0);
+        }
         PlaceAllCardsToPosition();
     }
     
@@ -208,13 +216,6 @@ public class BoardManager : NetworkBehaviour
     private void OnCardUnhovered(Card _card)
     {
         onCardUnhovered?.Invoke(_card);
-    }
-
-    [Rpc(SendTo.Everyone)]
-    public void UpdateCardChainStatusRpc(ulong _clientId, bool _instant = false)
-    {
-        var _card = visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _clientId);
-        _card?.UpdateChainOverlay(_instant);
     }
 }
 

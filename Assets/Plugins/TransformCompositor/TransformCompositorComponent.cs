@@ -10,11 +10,12 @@ namespace TransformComposition
     [ExecuteInEditMode]
     public class TransformCompositorComponent : MonoBehaviour
     {
-        private const string BASE_TRANSFORM_LAYER_NAME = "Transform";
+        public const string BASE_TRANSFORM_LAYER_NAME = "Transform";
         private const float CHANGE_DETECTION_EPSILON = 0.0001f;
         
         [SerializeField] private TransformCompositor compositor = new();
         public bool autoUpdate = true;
+        public bool detectExternalChanges = true; // Disable if you don't need external change detection for better performance
 
         private Vector3 previousComposedPosition;
         private Vector3 previousComposedRotation;
@@ -36,8 +37,6 @@ namespace TransformComposition
         
         private void LateUpdate()
         {
-            DetectExternalChanges();
-            
             if (autoUpdate)
             {
                 ApplyComposedTransform();
@@ -56,8 +55,6 @@ namespace TransformComposition
                 return;
             }
 
-            var expectedComposedTransform = compositor.GetComposedTransform();
-            
             Vector3 currentPosition = transform.localPosition;
             Vector3 currentRotation = transform.localEulerAngles;
             Vector3 currentScale = transform.localScale;
@@ -70,14 +67,16 @@ namespace TransformComposition
             {
                 TransformLayer baseLayer = compositor.GetLayer(BASE_TRANSFORM_LAYER_NAME);
                 
-                Vector3 positionDelta = currentPosition - expectedComposedTransform.localPosition;
-                Vector3 rotationDelta = currentRotation - expectedComposedTransform.localEulerAngles;
+                // Calculate the delta: what changed externally
+                Vector3 positionDelta = currentPosition - previousComposedPosition;
+                Vector3 rotationDelta = currentRotation - previousComposedRotation;
                 Vector3 scaleDelta = new Vector3(
-                    expectedComposedTransform.localScale.x != 0 ? currentScale.x / expectedComposedTransform.localScale.x : 1f,
-                    expectedComposedTransform.localScale.y != 0 ? currentScale.y / expectedComposedTransform.localScale.y : 1f,
-                    expectedComposedTransform.localScale.z != 0 ? currentScale.z / expectedComposedTransform.localScale.z : 1f
+                    previousComposedScale.x != 0 ? currentScale.x / previousComposedScale.x : 1f,
+                    previousComposedScale.y != 0 ? currentScale.y / previousComposedScale.y : 1f,
+                    previousComposedScale.z != 0 ? currentScale.z / previousComposedScale.z : 1f
                 );
 
+                // Apply the external delta to the base layer
                 baseLayer.localPosition += positionDelta;
                 baseLayer.localEulerAngles += rotationDelta;
                 baseLayer.localScale = new Vector3(
@@ -119,10 +118,14 @@ namespace TransformComposition
         /// </summary>
         public void ApplyComposedTransform()
         {
+            if (detectExternalChanges)
+            {
+                DetectExternalChanges();
+            }
+            
             var composed = compositor.GetComposedTransform();
             composed.ApplyTo(transform);
             
-            // Store the values we just applied for next frame's change detection
             previousComposedPosition = composed.localPosition;
             previousComposedRotation = composed.localEulerAngles;
             previousComposedScale = composed.localScale;

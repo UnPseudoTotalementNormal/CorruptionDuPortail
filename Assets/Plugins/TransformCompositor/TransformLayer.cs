@@ -11,23 +11,23 @@ namespace TransformComposition
     {
         public Vector3 localPosition;
 
-        public Vector3 localEulerAngles;
+        public Quaternion localRotation = Quaternion.identity;
 
         /// <summary>
         /// Default is (1, 1, 1) to have no effect on composition.
         /// </summary>
         public Vector3 localScale = Vector3.one;
 
-        public Quaternion localRotation
+        public Vector3 localEulerAngles
         {
-            get => Quaternion.Euler(localEulerAngles);
-            set => localEulerAngles = value.eulerAngles;
+            get => localRotation.eulerAngles;
+            set => localRotation = Quaternion.Euler(value);
         }
 
         public void Reset()
         {
             localPosition = Vector3.zero;
-            localEulerAngles = Vector3.zero;
+            localRotation = Quaternion.identity;
             localScale = Vector3.one;
         }
 
@@ -52,19 +52,34 @@ namespace TransformComposition
         public float rotationX
         {
             get => localEulerAngles.x;
-            set => localEulerAngles.x = value;
+            set
+            {
+                Vector3 euler = localEulerAngles;
+                euler.x = value;
+                localEulerAngles = euler;
+            }
         }
 
         public float rotationY
         {
             get => localEulerAngles.y;
-            set => localEulerAngles.y = value;
+            set
+            {
+                Vector3 euler = localEulerAngles;
+                euler.y = value;
+                localEulerAngles = euler;
+            }
         }
 
         public float rotationZ
         {
             get => localEulerAngles.z;
-            set => localEulerAngles.z = value;
+            set
+            {
+                Vector3 euler = localEulerAngles;
+                euler.z = value;
+                localEulerAngles = euler;
+            }
         }
 
         public float scaleX

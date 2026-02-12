@@ -3,6 +3,7 @@
 using System;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using TransformComposition;
 using UnityEngine;
 
 #endregion
@@ -13,24 +14,24 @@ namespace Board.CardComponents
     /// Handles all card animations (hover, flip, etc.).
     /// Single responsibility: animations and visual transformations.
     /// </summary>
-    public class CardAnimationHandler : MonoBehaviour
+    public class CardAnimationHandler : TransformCompositorComponent
     {
         private const float ZOOM_ANIMATION_DURATION = 0.35f;
         private const float HOVER_DISPLACEMENT_Y = 0.35f;
+        private const float HOVER_SCALE = 1.15f;
         private const float FLIP_DISPLACEMENT_Y = 4f;
         private const float FLIP_ROTATION_ANGLE = 180f;
         private const float PUNCH_SCALE_INTENSITY = 0.15f;
         private const float PUNCH_DURATION = 0.2f;
         private const float MIN_ZOOM_DURATION = 0.15f;
 
-
-        [Header("Transform References")]
-        [field:SerializeField] public Transform cardScalerTransform { get; private set; }
-        [field:SerializeField] public Transform cardDisplacerTransform { get; private set; }
-        [field:SerializeField] public Transform cardPivotTransform { get; private set; }
+        // Layer names
+        private const string HOVER_LAYER = "Hover";
+        private const string FLIP_LAYER = "Flip";
+        private const string PUNCH_LAYER = "Punch";
 
         [Header("Animation Settings")]
-        [field:SerializeField] public float hoverZoom { get; private set; } = 1.15f;
+        [field:SerializeField] public float hoverZoom { get; private set; } = HOVER_SCALE;
         [field:SerializeField] public float rotateTime { get; private set; } = 1f;
 
         private float lastZoomStartTime;
@@ -63,11 +64,11 @@ namespace Board.CardComponents
                 return;
             }
             
-            cardScalerTransform.DOKill();
-            cardScalerTransform.DOScale(Vector3.one * hoverZoom, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            var hoverLayer = GetLayer(HOVER_LAYER);
             
-            cardDisplacerTransform.DOKill();
-            cardDisplacerTransform.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            hoverLayer.DOKill();
+            hoverLayer.DOScale(hoverZoom, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
             
             lastZoomStartTime = Time.time;
             isCardZoomed = true;
@@ -83,11 +84,11 @@ namespace Board.CardComponents
                 return;
             }
             
-            cardScalerTransform.DOKill();
-            cardScalerTransform.DOScale(Vector3.one, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            var hoverLayer = GetLayer(HOVER_LAYER);
             
-            cardDisplacerTransform.DOKill();
-            cardDisplacerTransform.DOLocalMoveY(0, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            hoverLayer.DOKill();
+            hoverLayer.DOScale(1f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            hoverLayer.DOLocalMoveY(0, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
             
             isCardZoomed = false;
             _cardCanvas.sortingOrder -= 1;
@@ -97,8 +98,9 @@ namespace Board.CardComponents
 
         public void PunchScale()
         {
-            cardScalerTransform.DOKill(true);
-            cardScalerTransform.DOPunchScale(Vector3.one * PUNCH_SCALE_INTENSITY, PUNCH_DURATION, 1, 0.2f);
+            var punchLayer = GetLayer(PUNCH_LAYER);
+            punchLayer.DOKill(true);
+            punchLayer.DOPunchScale(Vector3.one * PUNCH_SCALE_INTENSITY, PUNCH_DURATION, 1, 0.2f);
         }
 
         public async UniTask FlipToBack(bool _instant = false, Action _onFlipStart = null)
@@ -108,15 +110,17 @@ namespace Board.CardComponents
                 return;
             }
 
+            var flipLayer = GetLayer(FLIP_LAYER);
+
             if (_instant)
             {
-                cardPivotTransform.eulerAngles = new Vector3(0, 0, FLIP_ROTATION_ANGLE);
+                flipLayer.localEulerAngles = new Vector3(0, 0, FLIP_ROTATION_ANGLE);
             }
             else
             {
                 _onFlipStart?.Invoke();
                 AnimateFlipDisplacement();
-                cardPivotTransform.DORotate(new Vector3(0, 0, -FLIP_ROTATION_ANGLE), rotateTime * 0.75f);
+                flipLayer.DOLocalRotate(new Vector3(0, 0, -FLIP_ROTATION_ANGLE), rotateTime * 0.75f);
                 await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
             }
         }
@@ -128,46 +132,49 @@ namespace Board.CardComponents
                 return;
             }
 
+            var flipLayer = GetLayer(FLIP_LAYER);
+
             if (_instant)
             {
-                cardPivotTransform.eulerAngles = Vector3.zero;
+                flipLayer.localEulerAngles = Vector3.zero;
             }
             else
             {
                 _onFlipStart?.Invoke();
                 AnimateFlipDisplacement();
-                cardPivotTransform.DORotate(Vector3.zero, rotateTime * 0.75f);
+                flipLayer.DOLocalRotate(Vector3.zero, rotateTime * 0.75f);
                 await UniTask.Delay(TimeSpan.FromSeconds(rotateTime));
             }
         }
 
         private bool IsOnBackSide()
         {
-            return Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), FLIP_ROTATION_ANGLE);
+            var flipLayer = GetLayer(FLIP_LAYER);
+            return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), FLIP_ROTATION_ANGLE);
         }
 
         private bool IsOnFrontSide()
         {
-            return Mathf.Approximately(Mathf.Abs(cardPivotTransform.eulerAngles.z), 0);
+            var flipLayer = GetLayer(FLIP_LAYER);
+            return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), 0);
         }
 
         private void AnimateFlipDisplacement()
         {
-            cardDisplacerTransform.DOLocalMoveY(FLIP_DISPLACEMENT_Y, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
+            var flipLayer = GetLayer(FLIP_LAYER);
+            flipLayer.DOLocalMoveY(FLIP_DISPLACEMENT_Y, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
-                cardDisplacerTransform.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
+                flipLayer.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);
             };
         }
         
         private void CalculateVelocity()
         {
-            Transform downTransform = cardScalerTransform;
+            velocity = (transform.position - oldPosition) / Time.deltaTime;
+            angularVelocity = (transform.eulerAngles - oldRotation) / Time.deltaTime;
             
-            velocity = (downTransform.position - oldPosition) / Time.deltaTime;
-            angularVelocity = (downTransform.eulerAngles - oldRotation) / Time.deltaTime;
-            
-            oldPosition = downTransform.position;
-            oldRotation = downTransform.eulerAngles;
+            oldPosition = transform.position;
+            oldRotation = transform.eulerAngles;
             
             IsMoving();
         }

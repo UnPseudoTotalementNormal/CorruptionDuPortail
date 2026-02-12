@@ -12,16 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20f76429b85746619ac7d8f0c20a3634, type: 3}
   m_Name: VoteRecapState
   m_EditorClassIdentifier: 
-  stateUIPrefab: {fileID: 0}
+  stateUIPrefab: {fileID: 1309300777674755838, guid: 7cdd01ca0da418a46bee2855634834b2, type: 3}
   gameStateDependencies:
   - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
+  forceBoardCamera: 0
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
   recapDuration: 10
   cardPrefab: {fileID: 417900098678493395, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
   spawnedCard: {fileID: 0}
-  chainingAnnouncementSound:
-    Guid:
-      Data1: 798413136
-      Data2: 1152599177
-      Data3: 681112481
-      Data4: 1095025765
-    Path: event:/Interface/ChainingAnnoucement

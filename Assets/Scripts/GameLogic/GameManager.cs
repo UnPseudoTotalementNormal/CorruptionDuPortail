@@ -214,6 +214,53 @@ namespace GameLogic
             return -1;
         }
 
+        /// <summary>
+        /// Gets the closest previous game state of type T before the current game state.
+        /// Handles circular game loop properly.
+        /// </summary>
+        /// <typeparam name="T">The type of GameState to find</typeparam>
+        /// <returns>The closest previous state of type T, or null if not found</returns>
+        public T GetClosestPreviousState<T>() where T : GameState
+        {
+            GameState[] statesOfType = GetGameStates(typeof(T));
+            if (statesOfType.Length == 0)
+            {
+                return null;
+            }
+
+            int currentIndex = currentGameStateIndex.Value;
+            T closestPreviousState = null;
+            int closestDistance = int.MaxValue;
+
+            foreach (GameState state in statesOfType)
+            {
+                int stateIndex = GetGameStateIndex(state);
+                if (stateIndex < 0)
+                {
+                    continue;
+                }
+
+                // Calculate distance (handling circular loop)
+                int distance;
+                if (stateIndex < currentIndex)
+                {
+                    distance = currentIndex - stateIndex;
+                }
+                else
+                {
+                    distance = gameStates.Count - stateIndex + currentIndex;
+                }
+
+                if (distance > 0 && distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestPreviousState = state as T;
+                }
+            }
+
+            return closestPreviousState;
+        }
+
         #endregion
 
         #region StateMethodRpc

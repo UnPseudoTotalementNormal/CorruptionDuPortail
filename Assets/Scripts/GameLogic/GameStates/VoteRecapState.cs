@@ -27,6 +27,9 @@ namespace GameLogic.GameStates
 
         [HideInInspector] public Transform spawnedCard;
         
+        public event Action onShowVoteRecap;
+        public event Action onHideVoteRecap;
+        
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -101,8 +104,10 @@ namespace GameLogic.GameStates
             }
 
             SetVoteCanvasVisibility(true);
+            onShowVoteRecap?.Invoke();
             await UniTask.Delay(TimeSpan.FromSeconds(5));
             SetVoteCanvasVisibility(false);
+            onHideVoteRecap?.Invoke();
             await UniTask.Delay(TimeSpan.FromSeconds(1));
         }
 

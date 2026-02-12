@@ -6,6 +6,7 @@ using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
+using UI.CardUI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,9 +18,12 @@ namespace Board.CardComponents
     /// Handles all visual updates of the card (texts, images, factions).
     /// Single responsibility: visual display of card information.
     /// </summary>
-    public class CardVisualUpdater : MonoBehaviour, ICardDisplay
+    public class CardPlayerVisualUpdater : MonoBehaviour, ICardDisplay
     {
         private const float FADE_DURATION = 0.25f;
+        
+        [Header("Both Side References")] 
+        [SerializeField] private MeIconCard meIconCard;
 
         [Header("Front Side References")]
         [SerializeField] private TMP_Text cardPlayerPseudo;
@@ -146,6 +150,8 @@ namespace Board.CardComponents
         }
 
         #endregion
+        
+        public void SetMeIconActive(bool _isActive) { meIconCard.gameObject.SetActive(_isActive); }
 
         private void FadeCanvasGroups(List<CanvasGroup> _canvasGroups, float _targetAlpha)
         {

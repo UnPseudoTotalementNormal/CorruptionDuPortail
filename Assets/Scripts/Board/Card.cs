@@ -11,6 +11,7 @@ using GameLogic;
 using UI.Panel;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 
 #endregion
 
@@ -27,8 +28,11 @@ namespace Board
         [field:SerializeField] public Transform cardEffectsParent { get; private set; }
         [field:SerializeField] public VoteCanvas voteCanvas { get; private set; }
 
+        
         [Header("Card Components")]
-        [SerializeField] private CardVisualUpdater visualUpdater;
+        [Tooltip("Should be ICardDisplay"), SerializeField] private MonoBehaviour _visualUpdater;
+
+        private ICardDisplay visualUpdater => _visualUpdater as ICardDisplay;
         [SerializeField] private CardAnimationHandler animationHandler;
         [SerializeField] private CardSoundHandler soundHandler;
 

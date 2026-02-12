@@ -488,7 +488,7 @@ MonoBehaviour:
   cardCanvas: {fileID: 422508917166547416}
   <cardEffectsParent>k__BackingField: {fileID: 677503089896783074}
   <voteCanvas>k__BackingField: {fileID: 6534977542599041295}
-  visualUpdater: {fileID: 7260315726049248800}
+  _visualUpdater: {fileID: 7260315726049248800}
   animationHandler: {fileID: 4538953433115110518}
   soundHandler: {fileID: 460727394197249063}
   characterInfo: {fileID: 0}
@@ -597,6 +597,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 559160e3456546d6bffc99c06f7eeb5d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardVisualUpdater
+  meIconCard: {fileID: 845519996604528795}
   cardPlayerPseudo: {fileID: 7225565607081040501}
   cardRoleText: {fileID: 7497138110590187071}
   cardImage: {fileID: 2429788706011615213}

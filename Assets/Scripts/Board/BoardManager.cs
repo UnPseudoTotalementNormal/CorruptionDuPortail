@@ -189,7 +189,6 @@ public class BoardManager : NetworkBehaviour
     {
         Card _card = Instantiate(cardPrefab, transform);
         _card.transform.localPosition = new Vector3(0, 0, 0);
-        _card.AnimationHandler.compositor.ApplyComposedTransform();
         
         visibleCards.Add(_card);
 

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace TransformComposition
@@ -29,6 +28,9 @@ namespace TransformComposition
             baseLayer.localPosition = transform.localPosition;
             baseLayer.localRotation = transform.localRotation;
             baseLayer.localScale = transform.localScale;
+            #if UNITY_EDITOR
+            while (UnityEditorInternal.ComponentUtility.MoveComponentUp(this)) { }
+            #endif
         }
 
         private void OnDestroy()
@@ -38,7 +40,15 @@ namespace TransformComposition
                 transform.hideFlags = HideFlags.None;
             }
         }
-        
+
+        private void OnValidate()
+        {
+            if (this != null)
+            {
+                transform.hideFlags = HideFlags.HideInInspector;
+            }
+        }
+
         private void LateUpdate()
         {
             if (autoUpdate)
@@ -141,4 +151,3 @@ namespace TransformComposition
         }
     }
 }
-

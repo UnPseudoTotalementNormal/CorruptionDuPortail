@@ -89,7 +89,7 @@ namespace GameLogic.GameStates
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
             // Get the flip layer for rotation animations
-            var flipLayer = _cardInfo.AnimationHandler.GetLayer("Flip");
+            var flipLayer = _cardInfo.AnimationHandler.compositor.GetLayer("Flip");
             
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
             var _tween1 = flipLayer.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);

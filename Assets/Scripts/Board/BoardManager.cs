@@ -10,6 +10,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Extensions;
 using GameLogic;
+using TransformComposition;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -89,9 +90,9 @@ public class BoardManager : NetworkBehaviour
             //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
             Vector3 _localTargetPosition = GetCardPlacedPosition(_i);
             
-            _card.transform.DOLocalMoveX(_localTargetPosition.x, 0.5f);
-            _card.transform.DOLocalMoveY(_localTargetPosition.y, 0.5f);
-            _card.transform.DOLocalMoveZ(_localTargetPosition.z, 0.5f);
+            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveX(_localTargetPosition.x, 0.5f);
+            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveY(_localTargetPosition.y, 0.5f);
+            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveZ(_localTargetPosition.z, 0.5f);
         }
     }
 
@@ -128,7 +129,7 @@ public class BoardManager : NetworkBehaviour
         foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
-            _card.AnimationHandler.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
+            _card.AnimationHandler.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
             _ = _card.ShowPseudoWithRevealedInfo(true);
         }
 
@@ -188,6 +189,7 @@ public class BoardManager : NetworkBehaviour
     {
         Card _card = Instantiate(cardPrefab, transform);
         _card.transform.localPosition = new Vector3(0, 0, 0);
+        _card.AnimationHandler.compositor.ApplyComposedTransform();
         
         visibleCards.Add(_card);
 

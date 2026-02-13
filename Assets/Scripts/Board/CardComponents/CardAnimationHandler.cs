@@ -14,7 +14,7 @@ namespace Board.CardComponents
     /// Handles all card animations (hover, flip, etc.).
     /// Single responsibility: animations and visual transformations.
     /// </summary>
-    public class CardAnimationHandler : TransformCompositorComponent
+    public class CardAnimationHandler : MonoBehaviour
     {
         private const float ZOOM_ANIMATION_DURATION = 0.35f;
         private const float HOVER_DISPLACEMENT_Y = 0.35f;
@@ -31,6 +31,7 @@ namespace Board.CardComponents
         private const string PUNCH_LAYER = "Punch";
 
         [Header("Animation Settings")]
+        [field:SerializeField] public TransformCompositorComponent compositor { get; private set; }
         [field:SerializeField] public float hoverZoom { get; private set; } = HOVER_SCALE;
         [field:SerializeField] public float rotateTime { get; private set; } = 1f;
 
@@ -64,7 +65,7 @@ namespace Board.CardComponents
                 return;
             }
             
-            var hoverLayer = GetLayer(HOVER_LAYER);
+            var hoverLayer = compositor.GetLayer(HOVER_LAYER);
             
             hoverLayer.DOKill();
             hoverLayer.DOScale(hoverZoom, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
@@ -84,7 +85,7 @@ namespace Board.CardComponents
                 return;
             }
             
-            var hoverLayer = GetLayer(HOVER_LAYER);
+            var hoverLayer = compositor.GetLayer(HOVER_LAYER);
             
             hoverLayer.DOKill();
             hoverLayer.DOScale(1f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
@@ -98,7 +99,7 @@ namespace Board.CardComponents
 
         public void PunchScale()
         {
-            var punchLayer = GetLayer(PUNCH_LAYER);
+            var punchLayer = compositor.GetLayer(PUNCH_LAYER);
             punchLayer.DOKill(true);
             punchLayer.DOPunchScale(Vector3.one * PUNCH_SCALE_INTENSITY, PUNCH_DURATION, 1, 0.2f);
         }
@@ -110,7 +111,7 @@ namespace Board.CardComponents
                 return;
             }
 
-            var flipLayer = GetLayer(FLIP_LAYER);
+            var flipLayer = compositor.GetLayer(FLIP_LAYER);
 
             if (_instant)
             {
@@ -132,7 +133,7 @@ namespace Board.CardComponents
                 return;
             }
 
-            var flipLayer = GetLayer(FLIP_LAYER);
+            var flipLayer = compositor.GetLayer(FLIP_LAYER);
 
             if (_instant)
             {
@@ -149,19 +150,19 @@ namespace Board.CardComponents
 
         private bool IsOnBackSide()
         {
-            var flipLayer = GetLayer(FLIP_LAYER);
+            var flipLayer = compositor.GetLayer(FLIP_LAYER);
             return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), FLIP_ROTATION_ANGLE);
         }
 
         private bool IsOnFrontSide()
         {
-            var flipLayer = GetLayer(FLIP_LAYER);
+            var flipLayer = compositor.GetLayer(FLIP_LAYER);
             return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), 0);
         }
 
         private void AnimateFlipDisplacement()
         {
-            var flipLayer = GetLayer(FLIP_LAYER);
+            var flipLayer = compositor.GetLayer(FLIP_LAYER);
             flipLayer.DOLocalMoveY(FLIP_DISPLACEMENT_Y, rotateTime / 2f).SetEase(Ease.OutQuint).onComplete = () =>
             {
                 flipLayer.DOLocalMoveY(0, rotateTime / 2f).SetEase(Ease.OutQuint);

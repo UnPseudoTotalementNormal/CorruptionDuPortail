@@ -25,6 +25,10 @@ namespace TransformComposition
         private void Reset()
         {
             transform.hideFlags = HideFlags.HideInInspector;
+            TransformLayer baseLayer = compositor.GetLayer(BASE_TRANSFORM_LAYER_NAME);
+            baseLayer.localPosition = transform.localPosition;
+            baseLayer.localRotation = transform.localRotation;
+            baseLayer.localScale = transform.localScale;
         }
 
         private void OnDestroy()

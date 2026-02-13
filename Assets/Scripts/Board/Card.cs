@@ -25,14 +25,12 @@ namespace Board
     {
         [Header("Core References")]
         [SerializeField] private Canvas cardCanvas;
-        [field:SerializeField] public Transform cardEffectsParent { get; private set; }
         [field:SerializeField] public VoteCanvas voteCanvas { get; private set; }
 
         
         [Header("Card Components")]
-        [Tooltip("Should be ICardDisplay"), SerializeField] private MonoBehaviour _visualUpdater;
-
-        private ICardDisplay visualUpdater => _visualUpdater as ICardDisplay;
+        [field:SerializeField] public CardVisualComponents visualComponents { get; private set; }
+        [SerializeReference, SerializeField] private ICardDisplay visualUpdater = new CardPlayerVisualUpdater();
         [SerializeField] private CardAnimationHandler animationHandler;
         [SerializeField] private CardSoundHandler soundHandler;
 
@@ -68,6 +66,11 @@ namespace Board
 
         private void Awake()
         {
+            if (visualUpdater != null && visualComponents != null)
+            {
+                visualUpdater.Initialize(visualComponents);
+            }
+            
             SetCanShowBackInfo(true);
             SetPlaceSide(PlaceCardSide.Front);
             if (characterInfo == null)
@@ -110,6 +113,32 @@ namespace Board
             SubscribeToCharacterEvents();
             onCardSetInfo?.Invoke(_character);
         }
+        
+        /// <summary>
+        /// Change the visual updater implementation at runtime.
+        /// Allows switching between different ICardDisplay implementations (e.g., Player vs Role card display).
+        /// </summary>
+        public void SetVisualUpdater(ICardDisplay _newVisualUpdater)
+        {
+            if (_newVisualUpdater == null)
+            {
+                Debug.LogError("Cannot set a null visual updater");
+                return;
+            }
+            
+            visualUpdater = _newVisualUpdater;
+            
+            if (visualComponents != null)
+            {
+                _newVisualUpdater.Initialize(visualComponents);
+            }
+            
+            if (characterInfo != null)
+            {
+                visualUpdater.SetChainedOverlay(characterInfo.isChained.Value, true);
+                SetPlaceSide(placeCardSide);
+            }
+        }
 
         public void SetPlaceSide(PlaceCardSide _placeSide)
         {
@@ -117,11 +146,11 @@ namespace Board
             
             if (placeCardSide == PlaceCardSide.Front)
             {
-                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, cardEffectsParent);
+                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
             }
             else if (canShowBackInfo)
             {
-                visualUpdater.ShowBackSideInfo(voteCanvas.transform, cardEffectsParent);
+                visualUpdater.ShowBackSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
             }
         }
 
@@ -131,12 +160,12 @@ namespace Board
 
             if (!canShowBackInfo)
             {
-                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, cardEffectsParent);
+                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
             }
             
             if (canShowBackInfo && placeCardSide == PlaceCardSide.Back)
             {
-                visualUpdater.ShowBackSideInfo(voteCanvas.transform, cardEffectsParent);
+                visualUpdater.ShowBackSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
             }
         }
 

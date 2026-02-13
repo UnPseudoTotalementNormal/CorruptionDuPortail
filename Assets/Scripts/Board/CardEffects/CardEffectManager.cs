@@ -150,7 +150,7 @@ namespace Board
                 pendingEffectData.Remove(_key); // Clean up after use
             }
             
-            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.cardEffectsParent);
+            CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.visualComponents.cardEffectsParent);
             _cardEffectComponent.Initialize(_card, _effectData);
             
             CardEffectInfo _cardEffectInfo = new CardEffectInfo(_cardEffectID, _card, _cardEffectComponent, _effectData);

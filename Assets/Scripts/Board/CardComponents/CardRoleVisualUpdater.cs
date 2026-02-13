@@ -10,28 +10,24 @@ using UnityEngine.UI;
 
 namespace Board.CardComponents
 {
-    public class CardRoleVisualUpdater : MonoBehaviour, ICardDisplay
+    [Serializable]
+    public class CardRoleVisualUpdater : ICardDisplay
     {
-        [Header("Front Side References")]
-        [SerializeField] private TMP_Text cardPlayerPseudo;
-        [SerializeField] private TMP_Text cardRoleText;
-        [SerializeField] private Image cardImage;
-        [SerializeField] private Image factionLogoImage;
-        [SerializeField] private Image factionLogoBackgroundImage;
-        [SerializeField] private Image unknownFogOverlay;
-        [SerializeField] private CanvasGroup chainedOverlay;
-        [SerializeField] private List<CanvasGroup> objectsToShowOnFrontSidePlacementOnly = new();
-        
-        [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogo;
-        [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogoBackground;
+        private CardVisualComponents _visualComponents;
 
-        private void Start()
+        public void Initialize(CardVisualComponents _visualComponents)
         {
-            cardPlayerPseudo.gameObject.SetActive(false);
-            unknownFogOverlay.gameObject.SetActive(false);
-            chainedOverlay.gameObject.SetActive(false);
+            this._visualComponents = _visualComponents;
+            
+            // Initialize role card specific settings
+            if (this._visualComponents != null)
+            {
+                this._visualComponents.cardPlayerPseudo.gameObject.SetActive(false);
+                this._visualComponents.unknownFogOverlay.gameObject.SetActive(false);
+                this._visualComponents.chainedOverlay.gameObject.SetActive(false);
+            }
         }
-
+        
         public void SetPseudo(string _pseudo)
         {
             Debug.LogWarning("SetPseudo should not be called as this is a role card");
@@ -39,7 +35,7 @@ namespace Board.CardComponents
 
         public void SetRoleText(string _roleText)
         {
-            cardRoleText.text = _roleText;
+            _visualComponents.cardRoleText.text = _roleText;
         }
         
         public void SetUnknownWithPseudo(string _pseudo)
@@ -49,28 +45,28 @@ namespace Board.CardComponents
 
         public void SetFaction(FactionType _factionType)
         {
-            if (factionLogo.ContainsKey(_factionType))
+            if (_visualComponents.factionLogo.ContainsKey(_factionType))
             {
-                factionLogoImage.sprite = factionLogo[_factionType];
+                _visualComponents.factionLogoImage.sprite = _visualComponents.factionLogo[_factionType];
             }
             else
             {
-                factionLogoImage.sprite = null;
+                _visualComponents.factionLogoImage.sprite = null;
             }
 
-            if (factionLogoBackground.ContainsKey(_factionType))
+            if (_visualComponents.factionLogoBackground.ContainsKey(_factionType))
             {
-                factionLogoBackgroundImage.sprite = factionLogoBackground[_factionType];
+                _visualComponents.factionLogoBackgroundImage.sprite = _visualComponents.factionLogoBackground[_factionType];
             }
             else
             {
-                factionLogoBackgroundImage.sprite = null;
+                _visualComponents.factionLogoBackgroundImage.sprite = null;
             }
             
-            bool _factionActive = factionLogoImage.sprite != null;
-            factionLogoImage.gameObject.SetActive(_factionActive);
-            factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
-            unknownFogOverlay.gameObject.SetActive(_factionType == FactionType.unknown);
+            bool _factionActive = _visualComponents.factionLogoImage.sprite != null;
+            _visualComponents.factionLogoImage.gameObject.SetActive(_factionActive);
+            _visualComponents.factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
+            _visualComponents.unknownFogOverlay.gameObject.SetActive(_factionType == FactionType.unknown);
         }
 
         public void SetUnknown()
@@ -85,7 +81,7 @@ namespace Board.CardComponents
 
         public async UniTask SetRolePortrait(Role _role)
         {
-            cardImage.sprite = await _role.GetRolePortrait();
+            _visualComponents.cardImage.sprite = await _role.GetRolePortrait();
         }
         
         public void ShowFrontSideInfo(Transform _voteCanvasTransform, Transform _cardEffectsParent)

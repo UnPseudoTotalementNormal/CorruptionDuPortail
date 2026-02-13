@@ -440,9 +440,9 @@ GameObject:
   - component: {fileID: 4935191678616157150}
   - component: {fileID: 8048510344224736120}
   - component: {fileID: 3564681152801350707}
-  - component: {fileID: 7260315726049248800}
   - component: {fileID: 4538953433115110518}
   - component: {fileID: 460727394197249063}
+  - component: {fileID: 1785735415685486711}
   - component: {fileID: 422508917166547416}
   - component: {fileID: 5845128801636504836}
   - component: {fileID: 7941456063628525433}
@@ -509,9 +509,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardCanvas: {fileID: 422508917166547416}
-  <cardEffectsParent>k__BackingField: {fileID: 677503089896783074}
   <voteCanvas>k__BackingField: {fileID: 6534977542599041295}
-  _visualUpdater: {fileID: 7260315726049248800}
+  <visualComponents>k__BackingField: {fileID: 1785735415685486711}
+  visualUpdater:
+    rid: 1000
   animationHandler: {fileID: 4538953433115110518}
   soundHandler: {fileID: 460727394197249063}
   characterInfo: {fileID: 0}
@@ -607,53 +608,11 @@ MonoBehaviour:
     ownerClientId: 0
   references:
     version: 2
-    RefIds: []
---- !u!114 &7260315726049248800
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 417900098678493395}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 559160e3456546d6bffc99c06f7eeb5d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardVisualUpdater
-  meIconCard: {fileID: 845519996604528795}
-  cardPlayerPseudo: {fileID: 7225565607081040501}
-  cardRoleText: {fileID: 7497138110590187071}
-  cardImage: {fileID: 2429788706011615213}
-  factionLogoImage: {fileID: 8618780977505519655}
-  factionLogoBackgroundImage: {fileID: 4574760127277184339}
-  unknownFogOverlay: {fileID: 2834525348253230907}
-  chainedOverlay: {fileID: 1535649323081278993}
-  objectsToShowOnFrontSidePlacementOnly: []
-  bsCardPlayerPseudo: {fileID: 4873643886185039208}
-  bsFactionLogoImage: {fileID: 1851783640154181134}
-  objectsToShowOnBackSidePlacementOnly:
-  - {fileID: 996379987536300829}
-  - {fileID: 6060598245442153707}
-  unknownCardSprite: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
-  factionLogo:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 21300000, guid: a54dfb5f1be7ff944a3b634f687e25d3, type: 3}
-    - Key: 1
-      Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
-    - Key: 2
-      Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
-    - Key: 3
-      Value: {fileID: 0}
-  factionLogoBackground:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 21300000, guid: 60d7128af5f0d284796cdeb0eff0dcbb, type: 3}
-    - Key: 1
-      Value: {fileID: 21300000, guid: 28be9f44c0d173940bfb6635f6cce559, type: 3}
-    - Key: 2
-      Value: {fileID: 21300000, guid: 685299ce002f5334da7109febd65caf5, type: 3}
-  chainFadeTime: 0.5
+    RefIds:
+    - rid: 1000
+      type: {class: CardPlayerVisualUpdater, ns: Board.CardComponents, asm: Assembly-CSharp}
+      data:
+        chainFadeTime: 0.5
 --- !u!114 &4538953433115110518
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -717,6 +676,52 @@ MonoBehaviour:
       Data3: -113547853
       Data4: 2024024420
     Path: event:/Interface/Messages General + Anomaly/Touch Card 2
+--- !u!114 &1785735415685486711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417900098678493395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 203526dd38ea48e4833b936df9ae8232, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardUIComponents
+  <cardEffectsParent>k__BackingField: {fileID: 677503089896783074}
+  <meIconCard>k__BackingField: {fileID: 845519996604528795}
+  <cardPlayerPseudo>k__BackingField: {fileID: 7225565607081040501}
+  <cardRoleText>k__BackingField: {fileID: 7497138110590187071}
+  <cardImage>k__BackingField: {fileID: 2429788706011615213}
+  <factionLogoImage>k__BackingField: {fileID: 8618780977505519655}
+  <factionLogoBackgroundImage>k__BackingField: {fileID: 4574760127277184339}
+  <unknownFogOverlay>k__BackingField: {fileID: 2834525348253230907}
+  <chainedOverlay>k__BackingField: {fileID: 1535649323081278993}
+  <objectsToShowOnFrontSidePlacementOnly>k__BackingField: []
+  <bsCardPlayerPseudo>k__BackingField: {fileID: 4873643886185039208}
+  <bsFactionLogoImage>k__BackingField: {fileID: 1851783640154181134}
+  <objectsToShowOnBackSidePlacementOnly>k__BackingField:
+  - {fileID: 996379987536300829}
+  - {fileID: 6060598245442153707}
+  <unknownCardSprite>k__BackingField: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
+  <factionLogo>k__BackingField:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: a54dfb5f1be7ff944a3b634f687e25d3, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
+    - Key: 3
+      Value: {fileID: 0}
+  <factionLogoBackground>k__BackingField:
+    _serializedList:
+    - Key: 0
+      Value: {fileID: 21300000, guid: 60d7128af5f0d284796cdeb0eff0dcbb, type: 3}
+    - Key: 1
+      Value: {fileID: 21300000, guid: 28be9f44c0d173940bfb6635f6cce559, type: 3}
+    - Key: 2
+      Value: {fileID: 21300000, guid: 685299ce002f5334da7109febd65caf5, type: 3}
 --- !u!223 &422508917166547416
 Canvas:
   m_ObjectHideFlags: 0

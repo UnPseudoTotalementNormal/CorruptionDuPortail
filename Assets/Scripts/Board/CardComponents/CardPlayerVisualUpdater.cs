@@ -18,85 +18,71 @@ namespace Board.CardComponents
     /// Handles all visual updates of the card (texts, images, factions).
     /// Single responsibility: visual display of card information.
     /// </summary>
-    public class CardPlayerVisualUpdater : MonoBehaviour, ICardDisplay
+    [System.Serializable]
+    public class CardPlayerVisualUpdater : ICardDisplay
     {
         private const float FADE_DURATION = 0.25f;
         
-        [Header("Both Side References")] 
-        [SerializeField] private MeIconCard meIconCard;
-
-        [Header("Front Side References")]
-        [SerializeField] private TMP_Text cardPlayerPseudo;
-        [SerializeField] private TMP_Text cardRoleText;
-        [SerializeField] private Image cardImage;
-        [SerializeField] private Image factionLogoImage;
-        [SerializeField] private Image factionLogoBackgroundImage;
-        [SerializeField] private Image unknownFogOverlay;
-        [SerializeField] private CanvasGroup chainedOverlay;
-        [SerializeField] private List<CanvasGroup> objectsToShowOnFrontSidePlacementOnly = new();
-
-        [Header("Back Side References")]
-        [SerializeField] private TMP_Text bsCardPlayerPseudo;
-        [SerializeField] private Image bsFactionLogoImage;
-        [SerializeField] private List<CanvasGroup> objectsToShowOnBackSidePlacementOnly = new();
-
-        [Header("Assets")]
-        [SerializeField] private Sprite unknownCardSprite;
-        [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogo;
-        [SerializeField] private SerializedDictionary<FactionType, Sprite> factionLogoBackground;
-
-        [Header("Animation Settings")]
         [SerializeField] private float chainFadeTime = 0.5f;
-
+        private CardVisualComponents _visualComponents;
         private bool lastIsChainedStatus = false;
+        
+        #region Initialization
+
+        public void Initialize(CardVisualComponents _visualComponents)
+        {
+            this._visualComponents = _visualComponents;
+        }
+
+        #endregion
 
         #region ICardDisplay Implementation
 
         public void SetPseudo(string _pseudo)
         {
-            cardPlayerPseudo.text = _pseudo;
-            bsCardPlayerPseudo.text = _pseudo;
+            _visualComponents.cardPlayerPseudo.text = _pseudo;
+            _visualComponents.bsCardPlayerPseudo.text = _pseudo;
         }
 
         public void SetRoleText(string _roleText)
         {
-            cardRoleText.text = _roleText;
+            _visualComponents.cardRoleText.text = _roleText;
         }
 
         public void SetFaction(FactionType _factionType)
         {
-            if (factionLogo.ContainsKey(_factionType))
+            if (_visualComponents.factionLogo.ContainsKey(_factionType))
             {
-                factionLogoImage.sprite = factionLogo[_factionType];
-                bsFactionLogoImage.sprite = factionLogoImage.sprite;
+                _visualComponents.factionLogoImage.sprite = _visualComponents.factionLogo[_factionType];
+                _visualComponents.bsFactionLogoImage.sprite = _visualComponents.factionLogoImage.sprite;
             }
             else
             {
-                factionLogoImage.sprite = null;
-                bsFactionLogoImage.sprite = null;
+                _visualComponents.factionLogoImage.sprite = null;
+                _visualComponents.bsFactionLogoImage.sprite = null;
             }
 
-            if (factionLogoBackground.ContainsKey(_factionType))
+            if (_visualComponents.factionLogoBackground.ContainsKey(_factionType))
             {
-                factionLogoBackgroundImage.sprite = factionLogoBackground[_factionType];
+                _visualComponents.factionLogoBackgroundImage.sprite = _visualComponents.factionLogoBackground[_factionType];
             }
             else
             {
-                factionLogoBackgroundImage.sprite = null;
+                _visualComponents.factionLogoBackgroundImage.sprite = null;
             }
             
-            bool _factionActive = factionLogoImage.sprite != null;
-            factionLogoImage.gameObject.SetActive(_factionActive);
-            bsFactionLogoImage.gameObject.SetActive(_factionActive);
-            factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
-            unknownFogOverlay.gameObject.SetActive(_factionType == FactionType.unknown);
+            bool _factionActive = _visualComponents.factionLogoImage.sprite != null;
+            _visualComponents.factionLogoImage.gameObject.SetActive(_factionActive);
+            _visualComponents.bsFactionLogoImage.gameObject.SetActive(_factionActive);
+            _visualComponents.factionLogoBackgroundImage.gameObject.SetActive(_factionActive);
+            _visualComponents.unknownFogOverlay.gameObject.SetActive(_factionType == FactionType.unknown);
         }
 
         public void SetUnknown()
         {
             SetPseudo("");
             SetRoleText("");
-            cardImage.sprite = unknownCardSprite;
+            _visualComponents.cardImage.sprite = _visualComponents.unknownCardSprite;
             SetFaction(FactionType.unknown);
         }
 
@@ -104,7 +90,7 @@ namespace Board.CardComponents
         {
             SetPseudo(_pseudo);
             SetRoleText("");
-            cardImage.sprite = unknownCardSprite;
+            _visualComponents.cardImage.sprite = _visualComponents.unknownCardSprite;
             SetFaction(FactionType.unknown);
         }
 
@@ -115,13 +101,13 @@ namespace Board.CardComponents
                 return;
             }
             
-            chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
+            _visualComponents.chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
             lastIsChainedStatus = _isChained;
         }
 
         public async UniTask SetRolePortrait(Role _role)
         {
-            cardImage.sprite = await _role.GetRolePortrait();
+            _visualComponents.cardImage.sprite = await _role.GetRolePortrait();
         }
 
         #endregion
@@ -133,8 +119,8 @@ namespace Board.CardComponents
             _voteCanvasTransform.localRotation = Quaternion.Euler(0, 0, 0);
             _cardEffectsParent.localRotation = Quaternion.Euler(0, 0, 0);
             
-            FadeCanvasGroups(objectsToShowOnFrontSidePlacementOnly, 1);
-            FadeCanvasGroups(objectsToShowOnBackSidePlacementOnly, 0);
+            FadeCanvasGroups(_visualComponents.objectsToShowOnFrontSidePlacementOnly, 1);
+            FadeCanvasGroups(_visualComponents.objectsToShowOnBackSidePlacementOnly, 0);
         }
 
         public void ShowBackSideInfo(Transform _voteCanvasTransform, Transform _cardEffectsParent)
@@ -145,13 +131,13 @@ namespace Board.CardComponents
             _voteCanvasTransform.localRotation = Quaternion.Euler(0, BACK_ROTATION_Y, 0);
             _cardEffectsParent.localRotation = Quaternion.Euler(0, 0, BACK_ROTATION_Z);
             
-            FadeCanvasGroups(objectsToShowOnFrontSidePlacementOnly, 0);
-            FadeCanvasGroups(objectsToShowOnBackSidePlacementOnly, 1);
+            FadeCanvasGroups(_visualComponents.objectsToShowOnFrontSidePlacementOnly, 0);
+            FadeCanvasGroups(_visualComponents.objectsToShowOnBackSidePlacementOnly, 1);
         }
 
         #endregion
         
-        public void SetMeIconActive(bool _isActive) { meIconCard.gameObject.SetActive(_isActive); }
+        public void SetMeIconActive(bool _isActive) { _visualComponents.meIconCard.gameObject.SetActive(_isActive); }
 
         private void FadeCanvasGroups(List<CanvasGroup> _canvasGroups, float _targetAlpha)
         {

@@ -183,10 +183,11 @@ public class TransformCompositorComponentEditor : Editor
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Composed Rotation");
-            Vector3 otherLayersRotation = GetOtherLayersContribution(component).localEulerAngles;
-            baseLayer.localEulerAngles = newComposedRotation - otherLayersRotation;
             
-            // Update cache with new composed values
+            Quaternion desiredComposedRotation = Quaternion.Euler(newComposedRotation);
+            Quaternion otherLayersRotation = GetOtherLayersContribution(component).localRotation;
+            baseLayer.localRotation = desiredComposedRotation * Quaternion.Inverse(otherLayersRotation);
+            
             cache.displayedEulerAngles = newComposedRotation;
             composed = component.GetComposedTransform(); // Recalculate
             cache.lastQuaternion = composed.localRotation;
@@ -249,7 +250,7 @@ public class TransformCompositorComponentEditor : Editor
     private static TransformCompositor.ComposedTransform GetOtherLayersContribution(TransformCompositorComponent component)
     {
         Vector3 compositePosition = Vector3.zero;
-        Vector3 compositeEulerAngles = Vector3.zero;
+        Quaternion compositeRotation = Quaternion.identity;
         Vector3 compositeScale = Vector3.one;
 
         foreach (var (layerName, layer) in component.Compositor.GetAllLayersNamesAndTransforms())
@@ -260,7 +261,7 @@ public class TransformCompositorComponentEditor : Editor
             }
 
             compositePosition += layer.localPosition;
-            compositeEulerAngles += layer.localEulerAngles;
+            compositeRotation *= layer.localRotation;
             compositeScale.x *= layer.localScale.x;
             compositeScale.y *= layer.localScale.y;
             compositeScale.z *= layer.localScale.z;
@@ -269,7 +270,7 @@ public class TransformCompositorComponentEditor : Editor
         return new TransformCompositor.ComposedTransform
         {
             localPosition = compositePosition,
-            localEulerAngles = compositeEulerAngles,
+            localRotation = compositeRotation,
             localScale = compositeScale
         };
     }

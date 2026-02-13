@@ -46,14 +46,14 @@ namespace TransformComposition
         public ComposedTransform GetComposedTransform()
         {
             Vector3 compositePosition = Vector3.zero;
-            Vector3 compositeEulerAngles = Vector3.zero;
+            Quaternion compositeRotation = Quaternion.identity;
             Vector3 compositeScale = Vector3.one;
 
             foreach (var layer in layers.Values)
             {
                 compositePosition += layer.localPosition;
 
-                compositeEulerAngles += layer.localEulerAngles;
+                compositeRotation *= layer.localRotation;
 
                 compositeScale.x *= layer.localScale.x;
                 compositeScale.y *= layer.localScale.y;
@@ -63,7 +63,7 @@ namespace TransformComposition
             return new ComposedTransform
             {
                 localPosition = compositePosition,
-                localEulerAngles = compositeEulerAngles,
+                localRotation = compositeRotation,
                 localScale = compositeScale
             };
         }
@@ -101,10 +101,14 @@ namespace TransformComposition
         public struct ComposedTransform
         {
             public Vector3 localPosition;
-            public Vector3 localEulerAngles;
+            public Quaternion localRotation;
             public Vector3 localScale;
 
-            public Quaternion localRotation => Quaternion.Euler(localEulerAngles);
+            public Vector3 localEulerAngles
+            {
+                get => localRotation.eulerAngles;
+                set => localRotation = Quaternion.Euler(value);
+            }
 
             /// <summary>
             /// Applies this composed transform to a Unity Transform.
@@ -112,7 +116,7 @@ namespace TransformComposition
             public void ApplyTo(Transform target)
             {
                 target.localPosition = localPosition;
-                target.localEulerAngles = localEulerAngles;
+                target.localRotation = localRotation;
                 target.localScale = localScale;
             }
         }

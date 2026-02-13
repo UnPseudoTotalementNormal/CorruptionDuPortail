@@ -77,6 +77,10 @@ public class TransformCompositorComponentEditor : Editor
                 }
             }
             
+            GUIStyle indentedStyle = new GUIStyle();
+            indentedStyle.margin.left = EditorGUI.indentLevel * 30;
+            EditorGUILayout.BeginVertical(indentedStyle);
+            
             newLayerName = GUILayout.TextField(newLayerName);
 
             if (GUILayout.Button("Add New Layer") && !string.IsNullOrEmpty(newLayerName) && !component.HasLayer(newLayerName))
@@ -85,7 +89,17 @@ public class TransformCompositorComponentEditor : Editor
                 component.GetLayer(newLayerName);
                 EditorUtility.SetDirty(component);
             }
+            
+            EditorGUILayout.EndVertical();
             EditorGUI.indentLevel--;
+        }
+
+        if (!component.autoUpdate)
+        {
+            if (GUILayout.Button("Apply Composed Transform"))
+            {
+                component.ApplyComposedTransform();
+            }
         }
     }
 
@@ -119,7 +133,15 @@ public class TransformCompositorComponentEditor : Editor
         
         if (displayInsideBox)
         {
-            EditorGUILayout.BeginVertical("box");
+            GUIStyle indentedBox = new GUIStyle("box");
+            indentedBox.margin.left = EditorGUI.indentLevel * 30;
+            EditorGUILayout.BeginVertical(indentedBox);
+        }
+        else
+        {
+            GUIStyle indentedStyle = new GUIStyle();
+            indentedStyle.margin.left = EditorGUI.indentLevel * 30;
+            EditorGUILayout.BeginVertical(indentedStyle);
         }
         if (showLayerName)
         {
@@ -191,13 +213,12 @@ public class TransformCompositorComponentEditor : Editor
             component.RemoveLayer(layerName);
             rotationCache.Remove(cacheKey);
             EditorUtility.SetDirty(component);
+            
+            EditorGUILayout.EndVertical();
             return true; 
         }
 
-        if (displayInsideBox)
-        {
-            EditorGUILayout.EndVertical();
-        }
+        EditorGUILayout.EndVertical();
         return false;
     }
 }

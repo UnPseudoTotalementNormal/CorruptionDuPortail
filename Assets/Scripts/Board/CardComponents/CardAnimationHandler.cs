@@ -58,7 +58,7 @@ namespace Board.CardComponents
             return Time.time - lastZoomStartTime >= MIN_ZOOM_DURATION;
         }
 
-        public void ZoomIn(Canvas _cardCanvas, Action _onZoomStarted = null)
+        public void OnHover(Canvas _cardCanvas, Action _onZoomStarted = null)
         {
             if (isCardZoomed)
             {
@@ -78,7 +78,7 @@ namespace Board.CardComponents
             _onZoomStarted?.Invoke();
         }
 
-        public void ZoomOut(Canvas _cardCanvas, Action _onZoomEnded = null)
+        public void OnUnHover(Canvas _cardCanvas, Action _onZoomEnded = null)
         {
             if (!isCardZoomed)
             {
@@ -97,7 +97,7 @@ namespace Board.CardComponents
             _onZoomEnded?.Invoke();
         }
 
-        public void PunchScale()
+        public void OnClick()
         {
             var punchLayer = compositor.GetLayer(PUNCH_LAYER);
             punchLayer.DOKill(true);

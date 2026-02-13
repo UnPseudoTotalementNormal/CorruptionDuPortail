@@ -88,7 +88,7 @@ namespace Board
                 return;
             }
             
-            animationHandler.ZoomOut(cardCanvas, soundHandler.PlayUnhoverSound);
+            animationHandler.OnUnHover(cardCanvas, soundHandler.PlayUnhoverSound);
         }
 
         private void OnDestroy()
@@ -245,14 +245,14 @@ namespace Board
         public void OnPointerClick(PointerEventData _eventData)
         {
             onCardClicked?.Invoke(this);
-            animationHandler.PunchScale();
+            animationHandler.OnClick();
             soundHandler.PlayClickSound();
         }
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
             onCardHovered?.Invoke(this);
-            animationHandler.ZoomIn(cardCanvas, soundHandler.PlayHoverSound);
+            animationHandler.OnHover(cardCanvas, soundHandler.PlayHoverSound);
             isPointerOver = true;
         }
 
@@ -262,7 +262,7 @@ namespace Board
             
             if (CanUnZoomCard())
             {
-                animationHandler.ZoomOut(cardCanvas, soundHandler.PlayUnhoverSound);
+                animationHandler.OnUnHover(cardCanvas, soundHandler.PlayUnhoverSound);
             }
             
             isPointerOver = false;

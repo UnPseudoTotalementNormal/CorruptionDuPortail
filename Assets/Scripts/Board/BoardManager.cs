@@ -185,22 +185,28 @@ public class BoardManager : NetworkBehaviour
         Destroy(_card.gameObject);
     }
     
-    public Card AddNewCard(Character _characterInfo = null)
+    public Card AddNewCard(Character _characterInfo = null, bool _assignCardToBoard = true)
     {
         Card _card = Instantiate(cardPrefab, transform);
         _card.transform.localPosition = new Vector3(0, 0, 0);
-        
-        visibleCards.Add(_card);
+
+        if (_assignCardToBoard)
+        {
+            visibleCards.Add(_card);
+        }
 
         if (_characterInfo)
         {
             _card.SetInfo(_characterInfo);
         }
-        
-        _card.onCardClicked += OnCardClicked;
-        _card.onCardHovered += OnCardHovered;
-        _card.onCardUnhovered += OnCardUnhovered;
-        onCardSpawned?.Invoke(_card);
+
+        if (_assignCardToBoard)
+        {
+            _card.onCardClicked += OnCardClicked;
+            _card.onCardHovered += OnCardHovered;
+            _card.onCardUnhovered += OnCardUnhovered;
+            onCardSpawned?.Invoke(_card);
+        }
         return _card;
     }
     

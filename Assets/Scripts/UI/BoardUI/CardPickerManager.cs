@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Board;
+using Board.CardComponents;
 using Characters;
 using DG.Tweening;
 using GameLogic;
@@ -62,13 +63,18 @@ namespace UI.BoardUI
             {
                 Character _validRole = _validRoles[i];
                 _cards.Add(BoardManager.instance.AddNewCard(_validRole, false));
-                TransformLayer transformLayer = _cards[i].GetTransformCompositor().GetLayer("RolePicker");
+                Card _card = _cards[i];
+                _card.SetAnimationHandler(new CardRoleAnimation());
+                _card.SetVisualUpdater(new CardRoleVisualUpdater());
+                TransformLayer transformLayer = _card.GetTransformCompositor().GetLayer("RolePicker");
                 
                 float _angle = startAngle + (i * rolePickerCardSpacingAngle);
                 
                 float angleRad = _angle * Mathf.Deg2Rad;
                 
-                float radius = rolePickerCardSpacing * _validRoles.Count * 0.5f;
+                float radius = _validRoles.Count > 1 
+                    ? rolePickerCardSpacing / (2f * Mathf.Sin(rolePickerCardSpacingAngle * Mathf.Deg2Rad / 2f))
+                    : rolePickerCardSpacing;
                 float xPos = Mathf.Sin(angleRad) * radius;
                 float zPos = (Mathf.Cos(angleRad) * radius) - radius;
                 
@@ -76,7 +82,7 @@ namespace UI.BoardUI
                 
                 transformLayer.DOLocalRotate(new Vector3(0, _angle, 0), 0.5f).SetEase(Ease.OutQuint);
                 transformLayer.DOLocalMove(targetPosition, 0.5f).SetEase(Ease.OutQuint);
-                _cards[i].onCardClicked += (clicked) =>
+                _card.onCardClicked += (clicked) =>
                 {
                     onRoleSelected?.Invoke(clicked.roleInfo);
                 };

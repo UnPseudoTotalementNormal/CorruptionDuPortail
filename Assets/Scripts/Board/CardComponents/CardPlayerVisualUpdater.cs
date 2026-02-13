@@ -14,29 +14,20 @@ using UnityEngine.UI;
 
 namespace Board.CardComponents
 {
-    /// <summary>
-    /// Handles all visual updates of the card (texts, images, factions).
-    /// Single responsibility: visual display of card information.
-    /// </summary>
     [System.Serializable]
     public class CardPlayerVisualUpdater : ICardDisplay
     {
         private const float FADE_DURATION = 0.25f;
         
-        [SerializeField] private float chainFadeTime = 0.5f;
+        private float chainFadeTime = 0.5f;
         private CardVisualComponents _visualComponents;
         private bool lastIsChainedStatus = false;
-        
-        #region Initialization
 
         public void Initialize(CardVisualComponents _visualComponents)
         {
             this._visualComponents = _visualComponents;
         }
 
-        #endregion
-
-        #region ICardDisplay Implementation
 
         public void SetPseudo(string _pseudo)
         {
@@ -110,10 +101,6 @@ namespace Board.CardComponents
             _visualComponents.cardImage.sprite = await _role.GetRolePortrait();
         }
 
-        #endregion
-
-        #region Side Display Methods
-
         public void ShowFrontSideInfo(Transform _voteCanvasTransform, Transform _cardEffectsParent)
         {
             _voteCanvasTransform.localRotation = Quaternion.Euler(0, 0, 0);
@@ -134,8 +121,6 @@ namespace Board.CardComponents
             FadeCanvasGroups(_visualComponents.objectsToShowOnFrontSidePlacementOnly, 0);
             FadeCanvasGroups(_visualComponents.objectsToShowOnBackSidePlacementOnly, 1);
         }
-
-        #endregion
         
         public void SetMeIconActive(bool _isActive) { _visualComponents.meIconCard.gameObject.SetActive(_isActive); }
 

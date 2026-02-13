@@ -31,10 +31,9 @@ namespace Board
         [Header("Card Components")]
         [field:SerializeField] public CardVisualComponents visualComponents { get; private set; }
         [SerializeReference, SerializeField] private ICardDisplay visualUpdater = new CardPlayerVisualUpdater();
-        [SerializeField] private CardAnimationHandler animationHandler;
+        [SerializeReference, SerializeField] private ICardAnimation animationHandler = new CardPlayerAnimation();
         [SerializeField] private CardSoundHandler soundHandler;
 
-        public CardAnimationHandler AnimationHandler => animationHandler;
 
         private PlaceCardSide placeCardSide = PlaceCardSide.Front;
         private bool isSubscribedToCharacter;
@@ -71,6 +70,11 @@ namespace Board
                 visualUpdater.Initialize(visualComponents);
             }
             
+            if (animationHandler != null && visualComponents != null)
+            {
+                animationHandler.Initialize(visualComponents);
+            }
+            
             SetCanShowBackInfo(true);
             SetPlaceSide(PlaceCardSide.Front);
             if (characterInfo == null)
@@ -81,6 +85,8 @@ namespace Board
 
         private void Update()
         {
+            animationHandler?.Update();
+            
             if (isPointerOver || !animationHandler.isCardZoomed)
             {
                 return;
@@ -116,7 +122,6 @@ namespace Board
         
         /// <summary>
         /// Change the visual updater implementation at runtime.
-        /// Allows switching between different ICardDisplay implementations (e.g., Player vs Role card display).
         /// </summary>
         public void SetVisualUpdater(ICardDisplay _newVisualUpdater)
         {
@@ -137,6 +142,25 @@ namespace Board
             {
                 visualUpdater.SetChainedOverlay(characterInfo.isChained.Value, true);
                 SetPlaceSide(placeCardSide);
+            }
+        }
+        
+        /// <summary>
+        /// Change the animation handler implementation at runtime.
+        /// </summary>
+        public void SetAnimationHandler(ICardAnimation _newAnimationHandler)
+        {
+            if (_newAnimationHandler == null)
+            {
+                Debug.LogError("Cannot set a null animation handler");
+                return;
+            }
+            
+            animationHandler = _newAnimationHandler;
+            
+            if (visualComponents != null)
+            {
+                _newAnimationHandler.Initialize(visualComponents);
             }
         }
 

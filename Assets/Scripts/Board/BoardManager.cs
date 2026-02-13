@@ -90,9 +90,9 @@ public class BoardManager : NetworkBehaviour
             //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
             Vector3 _localTargetPosition = GetCardPlacedPosition(_i);
             
-            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveX(_localTargetPosition.x, 0.5f);
-            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveY(_localTargetPosition.y, 0.5f);
-            _card.AnimationHandler.compositor.GetLayer("Transform").DOLocalMoveZ(_localTargetPosition.z, 0.5f);
+            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveX(_localTargetPosition.x, 0.5f);
+            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveY(_localTargetPosition.y, 0.5f);
+            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveZ(_localTargetPosition.z, 0.5f);
         }
     }
 
@@ -129,7 +129,7 @@ public class BoardManager : NetworkBehaviour
         foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
-            _card.AnimationHandler.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
+            _card.visualComponents.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
             _ = _card.ShowPseudoWithRevealedInfo(true);
         }
 
@@ -158,7 +158,7 @@ public class BoardManager : NetworkBehaviour
             _ = _card.ShowBackSide();
         }
 
-        await UniTask.Delay(TimeSpan.FromSeconds(visibleCards[0].AnimationHandler.rotateTime), cancellationToken: _cancelToken.Token);
+        await UniTask.Delay(TimeSpan.FromSeconds(visibleCards[0].visualComponents.rotateTime), cancellationToken: _cancelToken.Token);
         
         foreach (var _card in visibleCards)
         {

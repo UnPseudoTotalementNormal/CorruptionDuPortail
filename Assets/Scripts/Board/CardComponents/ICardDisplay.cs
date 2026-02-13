@@ -8,15 +8,8 @@ using UnityEngine;
 
 namespace Board.CardComponents
 {
-    /// <summary>
-    /// Interface for card display.
-    /// </summary>
     public interface ICardDisplay
     {
-        /// <summary>
-        /// Initialize the display with UI components.
-        /// Must be called before using any other methods.
-        /// </summary>
         void Initialize(CardVisualComponents _visualComponents);
         
         void SetPseudo(string _pseudo);

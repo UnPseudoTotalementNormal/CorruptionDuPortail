@@ -440,7 +440,6 @@ GameObject:
   - component: {fileID: 4935191678616157150}
   - component: {fileID: 8048510344224736120}
   - component: {fileID: 3564681152801350707}
-  - component: {fileID: 4538953433115110518}
   - component: {fileID: 460727394197249063}
   - component: {fileID: 1785735415685486711}
   - component: {fileID: 422508917166547416}
@@ -513,7 +512,8 @@ MonoBehaviour:
   <visualComponents>k__BackingField: {fileID: 1785735415685486711}
   visualUpdater:
     rid: 1000
-  animationHandler: {fileID: 4538953433115110518}
+  animationHandler:
+    rid: 178735816936259691
   soundHandler: {fileID: 460727394197249063}
   characterInfo: {fileID: 0}
   roleInfo:
@@ -611,24 +611,10 @@ MonoBehaviour:
     RefIds:
     - rid: 1000
       type: {class: CardPlayerVisualUpdater, ns: Board.CardComponents, asm: Assembly-CSharp}
-      data:
-        chainFadeTime: 0.5
---- !u!114 &4538953433115110518
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 417900098678493395}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 96c0cb4ccb094d7fb51d79bf0470ff6e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardAnimationHandler
-  <compositor>k__BackingField: {fileID: 8048510344224736120}
-  <hoverZoom>k__BackingField: 1.15
-  <rotateTime>k__BackingField: 1
-  isCardZoomed: 0
+      data: 
+    - rid: 178735816936259691
+      type: {class: CardPlayerAnimation, ns: Board.CardComponents, asm: Assembly-CSharp}
+      data: 
 --- !u!114 &460727394197249063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -689,9 +675,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Board.CardComponents.CardUIComponents
   <cardEffectsParent>k__BackingField: {fileID: 677503089896783074}
+  <compositor>k__BackingField: {fileID: 8048510344224736120}
+  <hoverZoom>k__BackingField: 1.15
+  <rotateTime>k__BackingField: 1
   <meIconCard>k__BackingField: {fileID: 845519996604528795}
   <cardPlayerPseudo>k__BackingField: {fileID: 7225565607081040501}
+  <cardPlayerPseudoHolder>k__BackingField: {fileID: 4161368764948520219}
   <cardRoleText>k__BackingField: {fileID: 7497138110590187071}
+  <cardRoleTextHolder>k__BackingField: {fileID: 8359697888759508424}
   <cardImage>k__BackingField: {fileID: 2429788706011615213}
   <factionLogoImage>k__BackingField: {fileID: 8618780977505519655}
   <factionLogoBackgroundImage>k__BackingField: {fileID: 4574760127277184339}
@@ -1928,7 +1919,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -370}
+  m_AnchoredPosition: {x: 0, y: -375}
   m_SizeDelta: {x: 546, y: 75.3}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1814040953602910517

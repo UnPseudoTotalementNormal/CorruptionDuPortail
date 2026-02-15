@@ -14,7 +14,15 @@ namespace TransformComposition
         
         [SerializeField] private TransformCompositor compositor = new();
         public bool autoUpdate = true;
-        public bool detectExternalChanges = true; // Disable if you don't need external change detection for better performance
+        public bool detectExternalChanges = true;
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor-only: Specifies which layer receives external changes from scene gizmos.
+        /// </summary>
+        [System.NonSerialized]
+        public string ActiveLayerForSceneEdit = null;
+#endif
 
         private Vector3 previousComposedPosition;
         private Vector3 previousComposedRotation;
@@ -59,7 +67,7 @@ namespace TransformComposition
 
         /// <summary>
         /// Detects if the transform was modified externally (e.g., via Inspector or other scripts)
-        /// and updates the base layer accordingly.
+        /// and updates the target layer accordingly.
         /// </summary>
         private void DetectExternalChanges()
         {
@@ -79,25 +87,74 @@ namespace TransformComposition
 
             if (positionChanged || rotationChanged || scaleChanged)
             {
-                TransformLayer baseLayer = compositor.GetLayer(BASE_TRANSFORM_LAYER_NAME);
+#if UNITY_EDITOR
+                string targetLayerName = string.IsNullOrEmpty(ActiveLayerForSceneEdit) 
+                    ? BASE_TRANSFORM_LAYER_NAME 
+                    : ActiveLayerForSceneEdit;
+#else
+                string targetLayerName = BASE_TRANSFORM_LAYER_NAME;
+#endif
                 
-                // Calculate the delta: what changed externally
-                Vector3 positionDelta = currentPosition - previousComposedPosition;
-                Vector3 rotationDelta = currentRotation - previousComposedRotation;
-                Vector3 scaleDelta = new Vector3(
-                    previousComposedScale.x != 0 ? currentScale.x / previousComposedScale.x : 1f,
-                    previousComposedScale.y != 0 ? currentScale.y / previousComposedScale.y : 1f,
-                    previousComposedScale.z != 0 ? currentScale.z / previousComposedScale.z : 1f
-                );
-
-                // Apply the external delta to the base layer
-                baseLayer.localPosition += positionDelta;
-                baseLayer.localEulerAngles += rotationDelta;
-                baseLayer.localScale = new Vector3(
-                    baseLayer.localScale.x * scaleDelta.x,
-                    baseLayer.localScale.y * scaleDelta.y,
-                    baseLayer.localScale.z * scaleDelta.z
-                );
+                TransformLayer targetLayer = compositor.GetLayer(targetLayerName);
+                
+                var composedBefore = compositor.GetComposedTransformUpTo(targetLayerName);
+                var composedAfter = compositor.GetComposedTransformAfter(targetLayerName);
+                
+                Vector3 transformWithoutAfter;
+                Quaternion rotationWithoutAfter;
+                Vector3 scaleWithoutAfter;
+                
+                if (targetLayer.compositeMode == CompositeMode.Local)
+                {
+                    scaleWithoutAfter = new Vector3(
+                        composedAfter.localScale.x != 0 ? currentScale.x / composedAfter.localScale.x : currentScale.x,
+                        composedAfter.localScale.y != 0 ? currentScale.y / composedAfter.localScale.y : currentScale.y,
+                        composedAfter.localScale.z != 0 ? currentScale.z / composedAfter.localScale.z : currentScale.z
+                    );
+                    
+                    rotationWithoutAfter = Quaternion.Euler(currentRotation) * Quaternion.Inverse(composedAfter.localRotation);
+                    
+                    Vector3 afterPosInCurrentSpace = rotationWithoutAfter * Vector3.Scale(composedAfter.localPosition, scaleWithoutAfter);
+                    transformWithoutAfter = currentPosition - afterPosInCurrentSpace;
+                }
+                else
+                {
+                    scaleWithoutAfter = new Vector3(
+                        composedAfter.localScale.x != 0 ? currentScale.x / composedAfter.localScale.x : currentScale.x,
+                        composedAfter.localScale.y != 0 ? currentScale.y / composedAfter.localScale.y : currentScale.y,
+                        composedAfter.localScale.z != 0 ? currentScale.z / composedAfter.localScale.z : currentScale.z
+                    );
+                    
+                    rotationWithoutAfter = Quaternion.Inverse(composedAfter.localRotation) * Quaternion.Euler(currentRotation);
+                    transformWithoutAfter = currentPosition - composedAfter.localPosition;
+                }
+                
+                if (targetLayer.compositeMode == CompositeMode.Local)
+                {
+                    Vector3 localPosition = transformWithoutAfter - composedBefore.localPosition;
+                    localPosition = Quaternion.Inverse(composedBefore.localRotation) * localPosition;
+                    if (composedBefore.localScale.x != 0) localPosition.x /= composedBefore.localScale.x;
+                    if (composedBefore.localScale.y != 0) localPosition.y /= composedBefore.localScale.y;
+                    if (composedBefore.localScale.z != 0) localPosition.z /= composedBefore.localScale.z;
+                    
+                    targetLayer.localPosition = localPosition;
+                    targetLayer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * rotationWithoutAfter;
+                    targetLayer.localScale = new Vector3(
+                        composedBefore.localScale.x != 0 ? scaleWithoutAfter.x / composedBefore.localScale.x : scaleWithoutAfter.x,
+                        composedBefore.localScale.y != 0 ? scaleWithoutAfter.y / composedBefore.localScale.y : scaleWithoutAfter.y,
+                        composedBefore.localScale.z != 0 ? scaleWithoutAfter.z / composedBefore.localScale.z : scaleWithoutAfter.z
+                    );
+                }
+                else
+                {
+                    targetLayer.localPosition = transformWithoutAfter - composedBefore.localPosition;
+                    targetLayer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * rotationWithoutAfter;
+                    targetLayer.localScale = new Vector3(
+                        composedBefore.localScale.x != 0 ? scaleWithoutAfter.x / composedBefore.localScale.x : scaleWithoutAfter.x,
+                        composedBefore.localScale.y != 0 ? scaleWithoutAfter.y / composedBefore.localScale.y : scaleWithoutAfter.y,
+                        composedBefore.localScale.z != 0 ? scaleWithoutAfter.z / composedBefore.localScale.z : scaleWithoutAfter.z
+                    );
+                }
             }
         }
 
@@ -124,6 +181,46 @@ namespace TransformComposition
         public void ClearLayers()
         {
             compositor.ClearLayers();
+        }
+
+        /// <summary>
+        /// Gets the index of a layer in the evaluation order.
+        /// </summary>
+        public int GetLayerIndex(string layerName)
+        {
+            return compositor.GetLayerIndex(layerName);
+        }
+
+        /// <summary>
+        /// Gets the total number of layers.
+        /// </summary>
+        public int GetLayerCount()
+        {
+            return compositor.GetLayerCount();
+        }
+
+        /// <summary>
+        /// Moves a layer up in the evaluation order (earlier evaluation).
+        /// </summary>
+        public bool MoveLayerUp(string layerName)
+        {
+            return compositor.MoveLayerUp(layerName);
+        }
+
+        /// <summary>
+        /// Moves a layer down in the evaluation order (later evaluation).
+        /// </summary>
+        public bool MoveLayerDown(string layerName)
+        {
+            return compositor.MoveLayerDown(layerName);
+        }
+
+        /// <summary>
+        /// Moves a layer to a specific index in the evaluation order.
+        /// </summary>
+        public bool MoveLayerToIndex(string layerName, int newIndex)
+        {
+            return compositor.MoveLayerToIndex(layerName, newIndex);
         }
 
         /// <summary>

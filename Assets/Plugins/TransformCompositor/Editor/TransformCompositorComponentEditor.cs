@@ -11,6 +11,10 @@ public class TransformCompositorComponentEditor : Editor
     private bool showLayers = false;
     private bool showComposedTransform = false;
     
+    // Scene editing tracking
+    private static string activeLayerForSceneEdit = null;
+    private static TransformCompositorComponent activeComponent = null;
+    
     private struct RotationCache
     {
         public Vector3 displayedEulerAngles;  // What we show in the Inspector
@@ -26,6 +30,42 @@ public class TransformCompositorComponentEditor : Editor
     private void OnEnable()
     {
         showComposedTransform = EditorPrefs.GetBool(SHOW_COMPOSED_PREF_KEY, false);
+    }
+    
+    private void OnDisable()
+    {
+        // Cleanup if this was the active component
+        TransformCompositorComponent component = (TransformCompositorComponent)target;
+        if (activeComponent == component)
+        {
+            activeLayerForSceneEdit = null;
+            activeComponent = null;
+            if (component != null)
+            {
+                component.ActiveLayerForSceneEdit = null;
+            }
+        }
+    }
+    
+    private void OnSceneGUI()
+    {
+        TransformCompositorComponent component = (TransformCompositorComponent)target;
+        
+        if (component != null && !string.IsNullOrEmpty(component.ActiveLayerForSceneEdit))
+        {
+            // Draw label in scene
+            GUIStyle labelStyle = new GUIStyle();
+            labelStyle.normal.textColor = new Color(0.3f, 0.7f, 1f);
+            labelStyle.fontSize = 12;
+            labelStyle.fontStyle = FontStyle.Bold;
+            labelStyle.alignment = TextAnchor.MiddleCenter;
+            
+            Handles.Label(
+                component.transform.position + Vector3.up * 2f,
+                $"✏ Editing Layer: {component.ActiveLayerForSceneEdit}",
+                labelStyle
+            );
+        }
     }
     
     public override void OnInspectorGUI()
@@ -93,16 +133,32 @@ public class TransformCompositorComponentEditor : Editor
         if (showLayers)
         {
             EditorGUI.indentLevel++;
-            foreach (var layerName in component.Compositor.GetLayerNames())
+            
+            EditorGUILayout.HelpBox("Layers are evaluated in order from top to bottom. Use ↑↓ buttons to reorder.", MessageType.Info);
+            
+            var layerNamesList = new List<string>(component.Compositor.GetLayerNames());
+            
+            int index = 0;
+            foreach (var layerName in layerNamesList)
             {
                 if (layerName == TransformCompositorComponent.BASE_TRANSFORM_LAYER_NAME)
                 {
+                    if (showComposedTransform)
+                    {
+                        DisplayLayerWithOrder(component, layerName, index, false, false);
+                    }
+                    index++;
                     continue;
                 }
-                if (DisplayLayer(component, layerName, true, true))
+                
+                bool canMoveUp = index > 1; // Can't move above base layer (index 0)
+                bool canMoveDown = index < component.Compositor.GetLayerCount() - 1;
+                
+                if (DisplayLayerWithOrder(component, layerName, index, canMoveUp, canMoveDown))
                 {
                     break;
                 }
+                index++;
             }
             
             GUIStyle indentedStyle = new GUIStyle();
@@ -293,13 +349,28 @@ public class TransformCompositorComponentEditor : Editor
         };
     }
 
-    // Displays the UI for a single layer. Returns true if the layer was removed.
-    private static bool DisplayLayer(TransformCompositorComponent component, string layerName, bool showLayerName, bool showRemoveLayerButton, bool displayInsideBox = true)
+    /// <summary>
+    /// Core function that displays a layer with all possible UI options.
+    /// Returns true if the layer was removed.
+    /// </summary>
+    private static bool DisplayLayerCore(
+        TransformCompositorComponent component,
+        string layerName,
+        bool showLayerName = false,
+        bool showOrderNumber = false,
+        int orderIndex = 0,
+        bool showReorderButtons = false,
+        bool canMoveUp = false,
+        bool canMoveDown = false,
+        bool showRemoveButton = false,
+        bool displayInsideBox = true,
+        bool showCompositeModeField = true)
     {
         TransformLayer layer = component.Compositor.GetLayer(layerName);
+        bool isBaseLayer = layerName == TransformCompositorComponent.BASE_TRANSFORM_LAYER_NAME;
         
+        // Initialize rotation cache
         string cacheKey = $"{component.GetInstanceID()}_{layerName}";
-        
         if (!rotationCache.ContainsKey(cacheKey))
         {
             rotationCache[cacheKey] = new RotationCache
@@ -309,7 +380,6 @@ public class TransformCompositorComponentEditor : Editor
             };
         }
         
-        // Detect real rotation changes by comparing Quaternions
         RotationCache cache = rotationCache[cacheKey];
         float angleDifference = Quaternion.Angle(cache.lastQuaternion, layer.localRotation);
         
@@ -320,6 +390,7 @@ public class TransformCompositorComponentEditor : Editor
             rotationCache[cacheKey] = cache;
         }
         
+        // Begin vertical container
         if (displayInsideBox)
         {
             GUIStyle indentedBox = new GUIStyle("box");
@@ -332,24 +403,132 @@ public class TransformCompositorComponentEditor : Editor
             indentedStyle.margin.left = EditorGUI.indentLevel * 30;
             EditorGUILayout.BeginVertical(indentedStyle);
         }
-        if (showLayerName)
+        
+        // Header
+        if (showOrderNumber || showReorderButtons)
+        {
+            EditorGUILayout.BeginHorizontal();
+            
+            string displayName = isBaseLayer ? $"[{orderIndex}] {layerName} (BASE)" : $"[{orderIndex}] {layerName}";
+            GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
+            if (layer.compositeMode == CompositeMode.Local)
+            {
+                headerStyle.normal.textColor = new Color(0.3f, 0.7f, 1f);
+            }
+            EditorGUILayout.LabelField(displayName, headerStyle);
+            
+            GUILayout.FlexibleSpace();
+            
+            // Scene Edit Toggle Button
+            if (showReorderButtons && !isBaseLayer)
+            {
+                bool isActiveForSceneEdit = (activeComponent == component && activeLayerForSceneEdit == layerName);
+                
+                GUIContent iconContent = EditorGUIUtility.IconContent("Transform Icon");
+                iconContent.tooltip = isActiveForSceneEdit 
+                    ? "Click to stop editing this layer in Scene view" 
+                    : "Click to edit this layer using Scene view gizmos";
+                
+                Color originalColor = GUI.backgroundColor;
+                if (isActiveForSceneEdit)
+                {
+                    GUI.backgroundColor = new Color(0.3f, 0.7f, 1f, 1f); // Highlight in blue
+                }
+                
+                if (GUILayout.Button(iconContent, GUILayout.Width(25), GUILayout.Height(18)))
+                {
+                    if (isActiveForSceneEdit)
+                    {
+                        // Deactivate
+                        activeLayerForSceneEdit = null;
+                        activeComponent = null;
+                        component.ActiveLayerForSceneEdit = null;
+                    }
+                    else
+                    {
+                        // Activate this layer for scene editing
+                        // First deactivate previous if any
+                        if (activeComponent != null)
+                        {
+                            activeComponent.ActiveLayerForSceneEdit = null;
+                        }
+                        
+                        activeLayerForSceneEdit = layerName;
+                        activeComponent = component;
+                        component.ActiveLayerForSceneEdit = layerName;
+                        
+                        // Ensure detectExternalChanges is enabled
+                        if (!component.detectExternalChanges)
+                        {
+                            component.detectExternalChanges = true;
+                        }
+                        
+
+                        // Focus Scene view
+                        SceneView sceneView = SceneView.lastActiveSceneView;
+                        if (sceneView != null)
+                        {
+                            sceneView.Focus();
+                            Selection.activeGameObject = component.gameObject;
+                        }
+                    }
+                    EditorUtility.SetDirty(component);
+                }
+                
+                GUI.backgroundColor = originalColor;
+            }
+            
+            // Reorder buttons
+            if (showReorderButtons && !isBaseLayer)
+            {
+                GUI.enabled = canMoveUp;
+                if (GUILayout.Button("↑", GUILayout.Width(25)))
+                {
+                    Undo.RecordObject(component, "Move Layer Up");
+                    component.MoveLayerUp(layerName);
+                    EditorUtility.SetDirty(component);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    return false;
+                }
+                GUI.enabled = canMoveDown;
+                if (GUILayout.Button("↓", GUILayout.Width(25)))
+                {
+                    Undo.RecordObject(component, "Move Layer Down");
+                    component.MoveLayerDown(layerName);
+                    EditorUtility.SetDirty(component);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    return false;
+                }
+                GUI.enabled = true;
+            }
+            
+            EditorGUILayout.EndHorizontal();
+        }
+        else if (showLayerName)
         {
             EditorGUILayout.LabelField(layerName, EditorStyles.boldLabel);
         }
         
-        EditorGUI.BeginChangeCheck();
-        CompositeMode newCompositeMode = (CompositeMode)EditorGUILayout.EnumPopup(
-            new GUIContent("Composite Mode", 
-                "Global: Rotations applied around global axes (position added, rotation multiplied left, scale multiplied).\n" +
-                "Local: Applied in local space of previous layers (position rotated & scaled, rotation multiplied right, like parent-child)."), 
-            layer.compositeMode);
-        if (EditorGUI.EndChangeCheck())
+        // Composite Mode
+        if (showCompositeModeField && !isBaseLayer)
         {
-            Undo.RecordObject(component, "Change Composite Mode");
-            layer.compositeMode = newCompositeMode;
-            EditorUtility.SetDirty(component);
+            EditorGUI.BeginChangeCheck();
+            CompositeMode newCompositeMode = (CompositeMode)EditorGUILayout.EnumPopup(
+                new GUIContent("Composite Mode",
+                    "Global: Rotations applied around global axes (position added, rotation multiplied left, scale multiplied).\n" +
+                    "Local: Applied in local space of previous layers (position rotated & scaled, rotation multiplied right, like parent-child)."),
+                layer.compositeMode);
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(component, "Change Composite Mode");
+                layer.compositeMode = newCompositeMode;
+                EditorUtility.SetDirty(component);
+            }
         }
-                
+        
+        // Position
         EditorGUI.BeginChangeCheck();
         Vector3 newPosition = EditorGUILayout.Vector3Field("Position", layer.localPosition);
         if (EditorGUI.EndChangeCheck())
@@ -358,7 +537,8 @@ public class TransformCompositorComponentEditor : Editor
             layer.localPosition = newPosition;
             EditorUtility.SetDirty(component);
         }
-                
+        
+        // Rotation
         EditorGUI.BeginChangeCheck();
         Vector3 newRotation = EditorGUILayout.Vector3Field("Rotation", cache.displayedEulerAngles);
         if (EditorGUI.EndChangeCheck())
@@ -371,6 +551,7 @@ public class TransformCompositorComponentEditor : Editor
             EditorUtility.SetDirty(component);
         }
         
+        // Scale
         EditorGUI.BeginChangeCheck();
         Vector3 newScale = EditorGUILayout.Vector3Field("Scale", layer.localScale);
         
@@ -408,8 +589,8 @@ public class TransformCompositorComponentEditor : Editor
             layer.localScale = newScale;
             EditorUtility.SetDirty(component);
         }
-                
-        if (showRemoveLayerButton && GUILayout.Button("Remove Layer"))
+        
+        if (showRemoveButton && !isBaseLayer && GUILayout.Button("Remove Layer"))
         {
             Undo.RecordObject(component, "Remove Layer");
             component.RemoveLayer(layerName);
@@ -417,10 +598,46 @@ public class TransformCompositorComponentEditor : Editor
             EditorUtility.SetDirty(component);
             
             EditorGUILayout.EndVertical();
-            return true; 
+            return true;
         }
-
+        
         EditorGUILayout.EndVertical();
         return false;
+    }
+
+    /// <summary>
+    /// Displays a layer with order number and reorder buttons.
+    /// Returns true if the layer was removed.
+    /// </summary>
+    private static bool DisplayLayerWithOrder(TransformCompositorComponent component, string layerName, int index, bool canMoveUp, bool canMoveDown)
+    {
+        return DisplayLayerCore(
+            component: component,
+            layerName: layerName,
+            showOrderNumber: true,
+            orderIndex: index,
+            showReorderButtons: true,
+            canMoveUp: canMoveUp,
+            canMoveDown: canMoveDown,
+            showRemoveButton: true,
+            displayInsideBox: true,
+            showCompositeModeField: true
+        );
+    }
+
+    /// <summary>
+    /// Displays the UI for a single layer.
+    /// Returns true if the layer was removed.
+    /// </summary>
+    private static bool DisplayLayer(TransformCompositorComponent component, string layerName, bool showLayerName, bool showRemoveLayerButton, bool displayInsideBox = true)
+    {
+        return DisplayLayerCore(
+            component: component,
+            layerName: layerName,
+            showLayerName: showLayerName,
+            showRemoveButton: showRemoveLayerButton,
+            displayInsideBox: displayInsideBox,
+            showCompositeModeField: true
+        );
     }
 }

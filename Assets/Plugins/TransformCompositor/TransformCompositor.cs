@@ -47,16 +47,32 @@ namespace TransformComposition
         /// </summary>
         public ComposedTransform GetComposedTransform()
         {
+            return GetComposedTransformUpTo(null);
+        }
+
+        /// <summary>
+        /// Computes the composite transformation up to (excluding) a specific layer.
+        /// If layerName is null, computes all layers.
+        /// </summary>
+        public ComposedTransform GetComposedTransformUpTo(string stopBeforeLayerName)
+        {
             Vector3 compositePosition = Vector3.zero;
             Quaternion compositeRotation = Quaternion.identity;
             Vector3 compositeScale = Vector3.one;
 
-            foreach (var layer in layers.Values)
+            foreach (var kvp in layers)
             {
+                // Stop before the specified layer
+                if (stopBeforeLayerName != null && kvp.Key == stopBeforeLayerName)
+                {
+                    break;
+                }
+                
+                var layer = kvp.Value;
+                
                 if (layer.compositeMode == CompositeMode.Global)
                 {
                     compositePosition += layer.localPosition;
-                    // Global mode: rotation applied around global axes (multiply on the left)
                     compositeRotation = layer.localRotation * compositeRotation;
                     compositeScale.x *= layer.localScale.x;
                     compositeScale.y *= layer.localScale.y;
@@ -64,12 +80,66 @@ namespace TransformComposition
                 }
                 else // CompositeMode.Local
                 {
-                    // Position: rotate by accumulated rotation, then scale, then add
                     Vector3 rotatedPosition = compositeRotation * layer.localPosition;
                     Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
                     compositePosition += scaledPosition;
                     
-                    // Local mode: rotation applied in local space (multiply on the right)
+                    compositeRotation *= layer.localRotation;
+                    
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
+            }
+
+            return new ComposedTransform
+            {
+                localPosition = compositePosition,
+                localRotation = compositeRotation,
+                localScale = compositeScale
+            };
+        }
+
+        /// <summary>
+        /// Computes the composite transformation starting after (excluding) a specific layer.
+        /// Returns identity transform if layerName is null or not found.
+        /// </summary>
+        public ComposedTransform GetComposedTransformAfter(string startAfterLayerName)
+        {
+            Vector3 compositePosition = Vector3.zero;
+            Quaternion compositeRotation = Quaternion.identity;
+            Vector3 compositeScale = Vector3.one;
+
+            bool foundLayer = false;
+
+            foreach (var kvp in layers)
+            {
+                // Skip until we pass the specified layer
+                if (!foundLayer)
+                {
+                    if (kvp.Key == startAfterLayerName)
+                    {
+                        foundLayer = true;
+                    }
+                    continue;
+                }
+                
+                var layer = kvp.Value;
+                
+                if (layer.compositeMode == CompositeMode.Global)
+                {
+                    compositePosition += layer.localPosition;
+                    compositeRotation = layer.localRotation * compositeRotation;
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
+                else // CompositeMode.Local
+                {
+                    Vector3 rotatedPosition = compositeRotation * layer.localPosition;
+                    Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
+                    compositePosition += scaledPosition;
+                    
                     compositeRotation *= layer.localRotation;
                     
                     compositeScale.x *= layer.localScale.x;
@@ -111,6 +181,77 @@ namespace TransformComposition
             {
                 yield return (kvp.Key, kvp.Value);
             }
+        }
+
+        /// <summary>
+        /// Gets the index of a layer in the evaluation order.
+        /// Returns -1 if the layer doesn't exist.
+        /// </summary>
+        public int GetLayerIndex(string layerName)
+        {
+            return layers.Keys.IndexOf(layerName);
+        }
+
+        /// <summary>
+        /// Gets the total number of layers.
+        /// </summary>
+        public int GetLayerCount()
+        {
+            return layers.Count;
+        }
+
+        /// <summary>
+        /// Moves a layer up in the evaluation order (decreases index).
+        /// Returns true if successful, false if already at top or layer doesn't exist.
+        /// </summary>
+        public bool MoveLayerUp(string layerName)
+        {
+            int index = GetLayerIndex(layerName);
+            if (index <= 0) return false;
+            
+            return MoveLayerToIndex(layerName, index - 1);
+        }
+
+        /// <summary>
+        /// Moves a layer down in the evaluation order (increases index).
+        /// Returns true if successful, false if already at bottom or layer doesn't exist.
+        /// </summary>
+        public bool MoveLayerDown(string layerName)
+        {
+            int index = GetLayerIndex(layerName);
+            if (index < 0 || index >= layers.Count - 1) return false;
+            
+            return MoveLayerToIndex(layerName, index + 1);
+        }
+
+        /// <summary>
+        /// Moves a layer to a specific index in the evaluation order.
+        /// Returns true if successful, false if layer doesn't exist or index is out of range.
+        /// </summary>
+        public bool MoveLayerToIndex(string layerName, int newIndex)
+        {
+            int currentIndex = GetLayerIndex(layerName);
+            if (currentIndex < 0) return false;
+            
+            if (newIndex < 0 || newIndex >= layers.Count) return false;
+            if (currentIndex == newIndex) return true;
+            
+            var key = layers.Keys[currentIndex];
+            var value = layers.Values[currentIndex];
+            
+            layers.Keys.RemoveAt(currentIndex);
+            layers.Values.RemoveAt(currentIndex);
+            
+            layers.Keys.Insert(newIndex, key);
+            layers.Values.Insert(newIndex, value);
+            
+            layers.Clear();
+            for (int i = 0; i < layers.Keys.Count; i++)
+            {
+                layers[layers.Keys[i]] = layers.Values[i];
+            }
+            
+            return true;
         } 
 
         /// <summary>
@@ -145,6 +286,9 @@ namespace TransformComposition
     {
         [SerializeField] private List<TKey> keys = new();
         [SerializeField] private List<TValue> values = new();
+
+        public new List<TKey> Keys => keys;
+        public new List<TValue> Values => values;
 
         public void OnBeforeSerialize()
         {

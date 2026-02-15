@@ -13,13 +13,16 @@ namespace TransformComposition
 
         /// <summary>
         /// Gets a layer by name.
-        /// If the layer doesn't exist, it will be created with default values.
+        /// If the layer doesn't exist, it will be created with default values and added at the end of the evaluation order.
         /// </summary>
         public TransformLayer GetLayer(string layerName)
         {
             if (!layers.ContainsKey(layerName))
             {
-                layers[layerName] = new TransformLayer();
+                TransformLayer newLayer = new TransformLayer();
+                layers.Keys.Add(layerName);
+                layers.Values.Add(newLayer);
+                layers[layerName] = newLayer;
             }
 
             return layers[layerName];
@@ -60,15 +63,16 @@ namespace TransformComposition
             Quaternion compositeRotation = Quaternion.identity;
             Vector3 compositeScale = Vector3.one;
 
-            foreach (var kvp in layers)
+            for (int i = 0; i < layers.Keys.Count; i++)
             {
-                // Stop before the specified layer
-                if (stopBeforeLayerName != null && kvp.Key == stopBeforeLayerName)
+                string layerName = layers.Keys[i];
+                
+                if (stopBeforeLayerName != null && layerName == stopBeforeLayerName)
                 {
                     break;
                 }
                 
-                var layer = kvp.Value;
+                var layer = layers.Values[i];
                 
                 if (layer.compositeMode == CompositeMode.Global)
                 {
@@ -78,7 +82,7 @@ namespace TransformComposition
                     compositeScale.y *= layer.localScale.y;
                     compositeScale.z *= layer.localScale.z;
                 }
-                else // CompositeMode.Local
+                else
                 {
                     Vector3 rotatedPosition = compositeRotation * layer.localPosition;
                     Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
@@ -111,20 +115,21 @@ namespace TransformComposition
             Vector3 compositeScale = Vector3.one;
 
             bool foundLayer = false;
-
-            foreach (var kvp in layers)
+            
+            for (int i = 0; i < layers.Keys.Count; i++)
             {
-                // Skip until we pass the specified layer
+                string layerName = layers.Keys[i];
+                
                 if (!foundLayer)
                 {
-                    if (kvp.Key == startAfterLayerName)
+                    if (layerName == startAfterLayerName)
                     {
                         foundLayer = true;
                     }
                     continue;
                 }
                 
-                var layer = kvp.Value;
+                var layer = layers.Values[i];
                 
                 if (layer.compositeMode == CompositeMode.Global)
                 {
@@ -134,7 +139,7 @@ namespace TransformComposition
                     compositeScale.y *= layer.localScale.y;
                     compositeScale.z *= layer.localScale.z;
                 }
-                else // CompositeMode.Local
+                else
                 {
                     Vector3 rotatedPosition = compositeRotation * layer.localPosition;
                     Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
@@ -177,9 +182,9 @@ namespace TransformComposition
         /// </summary>
         public IEnumerable<(string, TransformLayer)> GetAllLayersNamesAndTransforms()
         {
-            foreach (var kvp in layers)
+            for (int i = 0; i < layers.Keys.Count; i++)
             {
-                yield return (kvp.Key, kvp.Value);
+                yield return (layers.Keys[i], layers.Values[i]);
             }
         }
 
@@ -245,12 +250,6 @@ namespace TransformComposition
             layers.Keys.Insert(newIndex, key);
             layers.Values.Insert(newIndex, value);
             
-            layers.Clear();
-            for (int i = 0; i < layers.Keys.Count; i++)
-            {
-                layers[layers.Keys[i]] = layers.Values[i];
-            }
-            
             return true;
         } 
 
@@ -292,24 +291,69 @@ namespace TransformComposition
 
         public void OnBeforeSerialize()
         {
-            keys.Clear();
-            values.Clear();
-
-            foreach (var kvp in this)
-            {
-                keys.Add(kvp.Key);
-                values.Add(kvp.Value);
-            }
+            SyncListsFromDictionary();
         }
 
         public void OnAfterDeserialize()
+        {
+            SyncDictionaryFromLists();
+        }
+
+        private void SyncListsFromDictionary()
+        {
+            for (int i = keys.Count - 1; i >= 0; i--)
+            {
+                if (!ContainsKey(keys[i]))
+                {
+                    keys.RemoveAt(i);
+                    values.RemoveAt(i);
+                }
+            }
+
+            foreach (var kvp in this)
+            {
+                int index = keys.IndexOf(kvp.Key);
+                if (index >= 0)
+                {
+                    values[index] = kvp.Value;
+                }
+                else
+                {
+                    keys.Add(kvp.Key);
+                    values.Add(kvp.Value);
+                }
+            }
+        }
+
+        private void SyncDictionaryFromLists()
         {
             Clear();
 
             for (int i = 0; i < keys.Count && i < values.Count; i++)
             {
-                this[keys[i]] = values[i];
+                if (!ContainsKey(keys[i]))
+                {
+                    this[keys[i]] = values[i];
+                }
             }
+        }
+
+        public new void Remove(TKey key)
+        {
+            int index = keys.IndexOf(key);
+            if (index >= 0)
+            {
+                keys.RemoveAt(index);
+                values.RemoveAt(index);
+            }
+            base.Remove(key);
+        }
+
+        public new void Clear()
+        {
+            keys.Clear();
+            values.Clear();
+            base.Clear();
         }
     }
 }

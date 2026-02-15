@@ -96,63 +96,53 @@ namespace TransformComposition
 #endif
                 
                 TransformLayer targetLayer = compositor.GetLayer(targetLayerName);
-                
                 var composedBefore = compositor.GetComposedTransformUpTo(targetLayerName);
                 var composedAfter = compositor.GetComposedTransformAfter(targetLayerName);
                 
-                Vector3 transformWithoutAfter;
-                Quaternion rotationWithoutAfter;
-                Vector3 scaleWithoutAfter;
+                // Step 1: Remove the contribution of layers after the target layer
+                Vector3 composedIncludingTargetPosition;
+                Quaternion composedIncludingTargetRotation;
+                Vector3 composedIncludingTargetScale;
                 
+                composedIncludingTargetScale = new Vector3(
+                    composedAfter.localScale.x != 0 ? currentScale.x / composedAfter.localScale.x : currentScale.x,
+                    composedAfter.localScale.y != 0 ? currentScale.y / composedAfter.localScale.y : currentScale.y,
+                    composedAfter.localScale.z != 0 ? currentScale.z / composedAfter.localScale.z : currentScale.z
+                );
+                
+                composedIncludingTargetRotation = Quaternion.Euler(currentRotation) * Quaternion.Inverse(composedAfter.localRotation);
+                
+                Vector3 afterPositionInFinalSpace = composedIncludingTargetRotation * composedAfter.localPosition;
+                afterPositionInFinalSpace = Vector3.Scale(afterPositionInFinalSpace, composedIncludingTargetScale);
+                composedIncludingTargetPosition = currentPosition - afterPositionInFinalSpace;
+                
+                // Step 2: Extract the target layer values
                 if (targetLayer.compositeMode == CompositeMode.Local)
                 {
-                    scaleWithoutAfter = new Vector3(
-                        composedAfter.localScale.x != 0 ? currentScale.x / composedAfter.localScale.x : currentScale.x,
-                        composedAfter.localScale.y != 0 ? currentScale.y / composedAfter.localScale.y : currentScale.y,
-                        composedAfter.localScale.z != 0 ? currentScale.z / composedAfter.localScale.z : currentScale.z
+                    targetLayer.localScale = new Vector3(
+                        composedBefore.localScale.x != 0 ? composedIncludingTargetScale.x / composedBefore.localScale.x : composedIncludingTargetScale.x,
+                        composedBefore.localScale.y != 0 ? composedIncludingTargetScale.y / composedBefore.localScale.y : composedIncludingTargetScale.y,
+                        composedBefore.localScale.z != 0 ? composedIncludingTargetScale.z / composedBefore.localScale.z : composedIncludingTargetScale.z
                     );
                     
-                    rotationWithoutAfter = Quaternion.Euler(currentRotation) * Quaternion.Inverse(composedAfter.localRotation);
+                    targetLayer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * composedIncludingTargetRotation;
                     
-                    Vector3 afterPosInCurrentSpace = rotationWithoutAfter * Vector3.Scale(composedAfter.localPosition, scaleWithoutAfter);
-                    transformWithoutAfter = currentPosition - afterPosInCurrentSpace;
+                    Vector3 deltaPosition = composedIncludingTargetPosition - composedBefore.localPosition;
+                    Vector3 unscaledDelta = new Vector3(
+                        composedBefore.localScale.x != 0 ? deltaPosition.x / composedBefore.localScale.x : deltaPosition.x,
+                        composedBefore.localScale.y != 0 ? deltaPosition.y / composedBefore.localScale.y : deltaPosition.y,
+                        composedBefore.localScale.z != 0 ? deltaPosition.z / composedBefore.localScale.z : deltaPosition.z
+                    );
+                    targetLayer.localPosition = Quaternion.Inverse(composedBefore.localRotation) * unscaledDelta;
                 }
                 else
                 {
-                    scaleWithoutAfter = new Vector3(
-                        composedAfter.localScale.x != 0 ? currentScale.x / composedAfter.localScale.x : currentScale.x,
-                        composedAfter.localScale.y != 0 ? currentScale.y / composedAfter.localScale.y : currentScale.y,
-                        composedAfter.localScale.z != 0 ? currentScale.z / composedAfter.localScale.z : currentScale.z
-                    );
-                    
-                    rotationWithoutAfter = Quaternion.Inverse(composedAfter.localRotation) * Quaternion.Euler(currentRotation);
-                    transformWithoutAfter = currentPosition - composedAfter.localPosition;
-                }
-                
-                if (targetLayer.compositeMode == CompositeMode.Local)
-                {
-                    Vector3 localPosition = transformWithoutAfter - composedBefore.localPosition;
-                    localPosition = Quaternion.Inverse(composedBefore.localRotation) * localPosition;
-                    if (composedBefore.localScale.x != 0) localPosition.x /= composedBefore.localScale.x;
-                    if (composedBefore.localScale.y != 0) localPosition.y /= composedBefore.localScale.y;
-                    if (composedBefore.localScale.z != 0) localPosition.z /= composedBefore.localScale.z;
-                    
-                    targetLayer.localPosition = localPosition;
-                    targetLayer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * rotationWithoutAfter;
+                    targetLayer.localPosition = composedIncludingTargetPosition - composedBefore.localPosition;
+                    targetLayer.localRotation = composedIncludingTargetRotation * Quaternion.Inverse(composedBefore.localRotation);
                     targetLayer.localScale = new Vector3(
-                        composedBefore.localScale.x != 0 ? scaleWithoutAfter.x / composedBefore.localScale.x : scaleWithoutAfter.x,
-                        composedBefore.localScale.y != 0 ? scaleWithoutAfter.y / composedBefore.localScale.y : scaleWithoutAfter.y,
-                        composedBefore.localScale.z != 0 ? scaleWithoutAfter.z / composedBefore.localScale.z : scaleWithoutAfter.z
-                    );
-                }
-                else
-                {
-                    targetLayer.localPosition = transformWithoutAfter - composedBefore.localPosition;
-                    targetLayer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * rotationWithoutAfter;
-                    targetLayer.localScale = new Vector3(
-                        composedBefore.localScale.x != 0 ? scaleWithoutAfter.x / composedBefore.localScale.x : scaleWithoutAfter.x,
-                        composedBefore.localScale.y != 0 ? scaleWithoutAfter.y / composedBefore.localScale.y : scaleWithoutAfter.y,
-                        composedBefore.localScale.z != 0 ? scaleWithoutAfter.z / composedBefore.localScale.z : scaleWithoutAfter.z
+                        composedBefore.localScale.x != 0 ? composedIncludingTargetScale.x / composedBefore.localScale.x : composedIncludingTargetScale.x,
+                        composedBefore.localScale.y != 0 ? composedIncludingTargetScale.y / composedBefore.localScale.y : composedIncludingTargetScale.y,
+                        composedBefore.localScale.z != 0 ? composedIncludingTargetScale.z / composedBefore.localScale.z : composedIncludingTargetScale.z
                     );
                 }
             }

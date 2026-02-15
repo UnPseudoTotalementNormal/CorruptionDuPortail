@@ -103,6 +103,56 @@ namespace TransformComposition
         }
 
         /// <summary>
+        /// Computes the composite transformation up to and including a specific layer.
+        /// Returns identity transform if layerName is null or not found.
+        /// </summary>
+        public ComposedTransform GetComposedTransformIncluding(string includeLayerName)
+        {
+            Vector3 compositePosition = Vector3.zero;
+            Quaternion compositeRotation = Quaternion.identity;
+            Vector3 compositeScale = Vector3.one;
+
+            for (int i = 0; i < layers.Keys.Count; i++)
+            {
+                string layerName = layers.Keys[i];
+                var layer = layers.Values[i];
+                
+                if (layer.compositeMode == CompositeMode.Global)
+                {
+                    compositePosition += layer.localPosition;
+                    compositeRotation = layer.localRotation * compositeRotation;
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
+                else
+                {
+                    Vector3 rotatedPosition = compositeRotation * layer.localPosition;
+                    Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
+                    compositePosition += scaledPosition;
+                    
+                    compositeRotation *= layer.localRotation;
+                    
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
+                
+                if (layerName == includeLayerName)
+                {
+                    break;
+                }
+            }
+
+            return new ComposedTransform
+            {
+                localPosition = compositePosition,
+                localRotation = compositeRotation,
+                localScale = compositeScale
+            };
+        }
+
+        /// <summary>
         /// Computes the composite transformation starting after (excluding) a specific layer.
         /// Returns identity transform if layerName is null or not found.
         /// </summary>

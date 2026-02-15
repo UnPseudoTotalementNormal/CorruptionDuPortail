@@ -8,8 +8,10 @@ public class TransformCompositorComponentEditor : Editor
 {
     private string newLayerName = "New Layer";
     private bool showSettings = false;
-    private bool showLayers = false;
+    private static bool showLayers = false;
     private bool showComposedTransform = false;
+    private bool showLayerGizmos = false;
+    private float gizmoSize = 1.0f;
     
     // Scene editing tracking
     private static string activeLayerForSceneEdit = null;
@@ -26,15 +28,18 @@ public class TransformCompositorComponentEditor : Editor
     private static bool scaleLinked = true;
     
     private const string SHOW_COMPOSED_PREF_KEY = "TransformCompositor_ShowComposed";
+    private const string SHOW_LAYER_GIZMOS_PREF_KEY = "TransformCompositor_ShowLayerGizmos";
+    private const string GIZMO_SIZE_PREF_KEY = "TransformCompositor_GizmoSize";
     
     private void OnEnable()
     {
         showComposedTransform = EditorPrefs.GetBool(SHOW_COMPOSED_PREF_KEY, false);
+        showLayerGizmos = EditorPrefs.GetBool(SHOW_LAYER_GIZMOS_PREF_KEY, false);
+        gizmoSize = EditorPrefs.GetFloat(GIZMO_SIZE_PREF_KEY, 2.5f);
     }
     
     private void OnDisable()
     {
-        // Cleanup if this was the active component
         TransformCompositorComponent component = (TransformCompositorComponent)target;
         if (activeComponent == component)
         {
@@ -53,7 +58,6 @@ public class TransformCompositorComponentEditor : Editor
         
         if (component != null && !string.IsNullOrEmpty(component.ActiveLayerForSceneEdit))
         {
-            // Draw label in scene
             GUIStyle labelStyle = new GUIStyle();
             labelStyle.normal.textColor = new Color(0.3f, 0.7f, 1f);
             labelStyle.fontSize = 12;
@@ -66,6 +70,95 @@ public class TransformCompositorComponentEditor : Editor
                 labelStyle
             );
         }
+        
+        if (showLayerGizmos && component != null)
+        {
+            DrawLayerGizmos(component);
+        }
+    }
+    
+    private void DrawLayerGizmos(TransformCompositorComponent component)
+    {
+        var layerNames = new List<string>(component.Compositor.GetLayerNames());
+        int layerCount = layerNames.Count;
+        
+        if (layerCount == 0) return;
+        
+        for (int i = 0; i < layerCount; i++)
+        {
+            string layerName = layerNames[i];
+            
+            TransformCompositor.ComposedTransform composedTransform = 
+                component.Compositor.GetComposedTransformIncluding(layerName);
+            
+            Vector3 worldPosition;
+            Quaternion worldRotation;
+            
+            if (component.transform.parent != null)
+            {
+                worldPosition = component.transform.parent.TransformPoint(composedTransform.localPosition);
+                worldRotation = component.transform.parent.rotation * composedTransform.localRotation;
+            }
+            else
+            {
+                worldPosition = composedTransform.localPosition;
+                worldRotation = composedTransform.localRotation;
+            }
+            
+            Color layerColor = GetLayerColor(i, layerCount, layerName);
+            float handleSize = HandleUtility.GetHandleSize(worldPosition) * 0.15f * gizmoSize;
+            
+            Handles.color = layerColor;
+            Handles.SphereHandleCap(0, worldPosition, Quaternion.identity, handleSize, EventType.Repaint);
+            
+            Vector3 forwardDirection = worldRotation * Vector3.forward;
+            float arrowLength = handleSize * 2f;
+            Handles.color = layerColor;
+            Handles.ArrowHandleCap(0, worldPosition, Quaternion.LookRotation(forwardDirection), 
+                arrowLength, EventType.Repaint);
+            
+            GUIStyle labelStyle = new GUIStyle();
+            labelStyle.normal.textColor = layerColor;
+            labelStyle.fontSize = 10;
+            labelStyle.fontStyle = FontStyle.Bold;
+            labelStyle.alignment = TextAnchor.UpperCenter;
+            
+            Vector3 labelOffset = Vector3.down * (handleSize * 1.5f);
+            Handles.Label(worldPosition + labelOffset, layerName, labelStyle);
+            
+            Handles.color = new Color(layerColor.r, layerColor.g, layerColor.b, 0.3f);
+            if (Handles.Button(worldPosition, Quaternion.identity, handleSize, handleSize, Handles.SphereHandleCap))
+            {
+                if (activeComponent != null && activeComponent != component)
+                {
+                    activeComponent.ActiveLayerForSceneEdit = null;
+                }
+                
+                activeLayerForSceneEdit = layerName;
+                activeComponent = component;
+                component.ActiveLayerForSceneEdit = layerName;
+                
+                if (!component.detectExternalChanges)
+                {
+                    component.detectExternalChanges = true;
+                }
+                
+                EditorUtility.SetDirty(component);
+                Repaint();
+            }
+        }
+    }
+    
+    private Color GetLayerColor(int index, int totalLayers, string layerName)
+    {
+        if (layerName == TransformCompositorComponent.BASE_TRANSFORM_LAYER_NAME)
+        {
+            return new Color(0.8f, 0.8f, 0.8f, 1f);
+        }
+        
+        float hue = (float)index / Mathf.Max(1, totalLayers - 1);
+        Color color = Color.HSVToRGB(hue, 0.8f, 1f);
+        return color;
     }
     
     public override void OnInspectorGUI()
@@ -123,6 +216,33 @@ public class TransformCompositorComponentEditor : Editor
                 Undo.RecordObject(component, "Change Detect External Changes");
                 component.detectExternalChanges = newDetectExternalChanges;
                 EditorUtility.SetDirty(component);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            showLayerGizmos = EditorGUILayout.Toggle(
+                new GUIContent("Show Layer Gizmos", 
+                    "Display visual gizmos in the Scene view showing the composed position and rotation of each layer."), 
+                showLayerGizmos);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(SHOW_LAYER_GIZMOS_PREF_KEY, showLayerGizmos);
+                SceneView.RepaintAll();
+            }
+
+            if (showLayerGizmos)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUI.BeginChangeCheck();
+                gizmoSize = EditorGUILayout.Slider(
+                    new GUIContent("Gizmo Size", 
+                        "Adjusts the size of the layer gizmos in the Scene view."), 
+                    gizmoSize, 0.1f, 5f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetFloat(GIZMO_SIZE_PREF_KEY, gizmoSize);
+                    SceneView.RepaintAll();
+                }
+                EditorGUI.indentLevel--;
             }
 
             EditorGUI.indentLevel--;

@@ -42,6 +42,8 @@ namespace TransformComposition
 
         /// <summary>
         /// Computes the composite transformation from all layers.
+        /// - Global mode: Simple offset addition (position += layer.pos, rotation *= layer.rot, scale *= layer.scale)
+        /// - Local mode: Applied in the space of accumulated transform (like parent-child hierarchy)
         /// </summary>
         public ComposedTransform GetComposedTransform()
         {
@@ -51,13 +53,27 @@ namespace TransformComposition
 
             foreach (var layer in layers.Values)
             {
-                compositePosition += layer.localPosition;
-
-                compositeRotation *= layer.localRotation;
-
-                compositeScale.x *= layer.localScale.x;
-                compositeScale.y *= layer.localScale.y;
-                compositeScale.z *= layer.localScale.z;
+                if (layer.compositeMode == CompositeMode.Global)
+                {
+                    compositePosition += layer.localPosition;
+                    compositeRotation *= layer.localRotation;
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
+                else // CompositeMode.Local
+                {
+                    // Position: rotate by accumulated rotation, then scale, then add
+                    Vector3 rotatedPosition = compositeRotation * layer.localPosition;
+                    Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
+                    compositePosition += scaledPosition;
+                    
+                    compositeRotation *= layer.localRotation;
+                    
+                    compositeScale.x *= layer.localScale.x;
+                    compositeScale.y *= layer.localScale.y;
+                    compositeScale.z *= layer.localScale.z;
+                }
             }
 
             return new ComposedTransform

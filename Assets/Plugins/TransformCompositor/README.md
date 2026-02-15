@@ -62,24 +62,21 @@ customLayer.rotationZ = 45f;
 
 ### Composition Rules
 
-- **Position**: All layer positions are **added** together
-- **Rotation**: All layer rotations (euler angles) are **added** together
-- **Scale**: All layer scales are **multiplied** together
+#### Global Mode (Default)
+
+- **Rotation**: All layer rotations (quaternions) are **multiplied** together
+- **Scale**: All layer scales are **multiplied** component-wise
 
 Example:
 ```csharp
-// Layer 1: position (0, 0.5, 0), scale (1.15, 1.15, 1.15)
-// Layer 2: position (0, 2, 0), scale (1.1, 1.1, 1.1)
+- **Rotation**: All layer rotations (euler angles) are **added** together
+- **Scale**: All layer scales are **multiplied** together
 // Result: position (0, 2.5, 0), scale (1.265, 1.265, 1.265)
 ```
 
-### Update Cycle
+#### Local Mode
 
-The composed transformation is applied in `LateUpdate()` automatically if `autoUpdate` is enabled (default).
-
-## API Reference
-
-### TransformCompositorComponent
+Transformations are applied in the **local space of previous layers**, simulating a parent-child transform hierarchy:
 
 Main component to attach to GameObjects.
 

@@ -260,11 +260,26 @@ public class TransformCompositorComponentEditor : Editor
                 continue;
             }
 
-            compositePosition += layer.localPosition;
-            compositeRotation *= layer.localRotation;
-            compositeScale.x *= layer.localScale.x;
-            compositeScale.y *= layer.localScale.y;
-            compositeScale.z *= layer.localScale.z;
+            if (layer.compositeMode == CompositeMode.Global)
+            {
+                compositePosition += layer.localPosition;
+                compositeRotation *= layer.localRotation;
+                compositeScale.x *= layer.localScale.x;
+                compositeScale.y *= layer.localScale.y;
+                compositeScale.z *= layer.localScale.z;
+            }
+            else // CompositeMode.Local
+            {
+                Vector3 rotatedPosition = compositeRotation * layer.localPosition;
+                Vector3 scaledPosition = Vector3.Scale(rotatedPosition, compositeScale);
+                compositePosition += scaledPosition;
+                
+                compositeRotation *= layer.localRotation;
+                
+                compositeScale.x *= layer.localScale.x;
+                compositeScale.y *= layer.localScale.y;
+                compositeScale.z *= layer.localScale.z;
+            }
         }
 
         return new TransformCompositor.ComposedTransform
@@ -295,7 +310,6 @@ public class TransformCompositorComponentEditor : Editor
         RotationCache cache = rotationCache[cacheKey];
         float angleDifference = Quaternion.Angle(cache.lastQuaternion, layer.localRotation);
         
-        // If the rotation actually changed (external modification via code, gizmo, animation, etc.)
         if (angleDifference > ROTATION_CHANGE_THRESHOLD)
         {
             cache.displayedEulerAngles = layer.localEulerAngles;
@@ -318,6 +332,19 @@ public class TransformCompositorComponentEditor : Editor
         if (showLayerName)
         {
             EditorGUILayout.LabelField(layerName, EditorStyles.boldLabel);
+        }
+        
+        EditorGUI.BeginChangeCheck();
+        CompositeMode newCompositeMode = (CompositeMode)EditorGUILayout.EnumPopup(
+            new GUIContent("Composite Mode", 
+                "Global: Simple offset addition (position added, rotation multiplied).\n" +
+                "Local: Applied in the space of previous layers (like parent-child transforms)."), 
+            layer.compositeMode);
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(component, "Change Composite Mode");
+            layer.compositeMode = newCompositeMode;
+            EditorUtility.SetDirty(component);
         }
                 
         EditorGUI.BeginChangeCheck();

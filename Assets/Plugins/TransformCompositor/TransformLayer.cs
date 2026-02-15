@@ -3,8 +3,24 @@ using UnityEngine;
 namespace TransformComposition
 {
     /// <summary>
+    /// Defines how a layer's transformation is applied during composition.
+    /// </summary>
+    public enum CompositeMode
+    {
+        /// <summary>
+        /// Layer transformations are applied in global space.
+        /// </summary>
+        Global,
+        
+        /// <summary>
+        /// Layer transformations are applied in the local space of the previous layers.
+        /// Simulates a parent-child transform hierarchy.
+        /// </summary>
+        Local
+    }
+
+    /// <summary>
     /// Represents an animation layer with position, rotation, and scale offsets.
-    /// Can be animated by DOTween or set manually.
     /// </summary>
     [System.Serializable]
     public class TransformLayer
@@ -17,6 +33,11 @@ namespace TransformComposition
         /// Default is (1, 1, 1) to have no effect on composition.
         /// </summary>
         public Vector3 localScale = Vector3.one;
+
+        /// <summary>
+        /// Determines how this layer is composed with others.
+        /// </summary>
+        public CompositeMode compositeMode = CompositeMode.Global;
 
         public Vector3 localEulerAngles
         {

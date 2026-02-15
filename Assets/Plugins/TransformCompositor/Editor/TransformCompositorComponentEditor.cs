@@ -172,8 +172,11 @@ public class TransformCompositorComponentEditor : Editor
         if (EditorGUI.EndChangeCheck())
         {
             Undo.RecordObject(component, "Change Composed Position");
-            Vector3 otherLayersPosition = GetOtherLayersContribution(component).localPosition;
-            baseLayer.localPosition = newComposedPosition - otherLayersPosition;
+            
+            var otherContribution = GetOtherLayersContribution(component);
+            Vector3 transformedOtherPosition = baseLayer.localRotation * Vector3.Scale(otherContribution.localPosition, baseLayer.localScale);
+            
+            baseLayer.localPosition = newComposedPosition - transformedOtherPosition;
             EditorUtility.SetDirty(component);
         }
         
@@ -263,7 +266,7 @@ public class TransformCompositorComponentEditor : Editor
             if (layer.compositeMode == CompositeMode.Global)
             {
                 compositePosition += layer.localPosition;
-                compositeRotation *= layer.localRotation;
+                compositeRotation = layer.localRotation * compositeRotation;
                 compositeScale.x *= layer.localScale.x;
                 compositeScale.y *= layer.localScale.y;
                 compositeScale.z *= layer.localScale.z;
@@ -337,8 +340,8 @@ public class TransformCompositorComponentEditor : Editor
         EditorGUI.BeginChangeCheck();
         CompositeMode newCompositeMode = (CompositeMode)EditorGUILayout.EnumPopup(
             new GUIContent("Composite Mode", 
-                "Global: Simple offset addition (position added, rotation multiplied).\n" +
-                "Local: Applied in the space of previous layers (like parent-child transforms)."), 
+                "Global: Rotations applied around global axes (position added, rotation multiplied left, scale multiplied).\n" +
+                "Local: Applied in local space of previous layers (position rotated & scaled, rotation multiplied right, like parent-child)."), 
             layer.compositeMode);
         if (EditorGUI.EndChangeCheck())
         {

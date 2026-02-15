@@ -58,6 +58,8 @@ public class TransformCompositorComponentEditor : Editor
         
         if (component != null && !string.IsNullOrEmpty(component.ActiveLayerForSceneEdit))
         {
+            DrawCustomTransformHandles(component, component.ActiveLayerForSceneEdit);
+            
             GUIStyle labelStyle = new GUIStyle();
             labelStyle.normal.textColor = new Color(0.3f, 0.7f, 1f);
             labelStyle.fontSize = 12;
@@ -87,6 +89,7 @@ public class TransformCompositorComponentEditor : Editor
         for (int i = 0; i < layerCount; i++)
         {
             string layerName = layerNames[i];
+            bool isActiveLayer = (activeComponent == component && activeLayerForSceneEdit == layerName);
             
             TransformCompositor.ComposedTransform composedTransform = 
                 component.Compositor.GetComposedTransformIncluding(layerName);
@@ -126,26 +129,135 @@ public class TransformCompositorComponentEditor : Editor
             Vector3 labelOffset = Vector3.down * (handleSize * 1.5f);
             Handles.Label(worldPosition + labelOffset, layerName, labelStyle);
             
-            Handles.color = new Color(layerColor.r, layerColor.g, layerColor.b, 0.3f);
-            if (Handles.Button(worldPosition, Quaternion.identity, handleSize, handleSize, Handles.SphereHandleCap))
+            if (!isActiveLayer)
             {
-                if (activeComponent != null && activeComponent != component)
+                Handles.color = new Color(layerColor.r, layerColor.g, layerColor.b, 0.3f);
+                if (Handles.Button(worldPosition, Quaternion.identity, handleSize, handleSize, Handles.SphereHandleCap))
                 {
-                    activeComponent.ActiveLayerForSceneEdit = null;
+                    if (activeComponent != null && activeComponent != component)
+                    {
+                        activeComponent.ActiveLayerForSceneEdit = null;
+                    }
+                    
+                    activeLayerForSceneEdit = layerName;
+                    activeComponent = component;
+                    component.ActiveLayerForSceneEdit = layerName;
+                    
+                    if (!component.detectExternalChanges)
+                    {
+                        component.detectExternalChanges = true;
+                    }
+                    
+                    EditorUtility.SetDirty(component);
+                    Repaint();
                 }
-                
-                activeLayerForSceneEdit = layerName;
-                activeComponent = component;
-                component.ActiveLayerForSceneEdit = layerName;
-                
-                if (!component.detectExternalChanges)
-                {
-                    component.detectExternalChanges = true;
-                }
-                
-                EditorUtility.SetDirty(component);
-                Repaint();
             }
+        }
+    }
+
+    private void DrawCustomTransformHandles(TransformCompositorComponent component, string layerName)
+    {
+        TransformLayer layer = component.Compositor.GetLayer(layerName);
+        var composedUpToLayer = component.Compositor.GetComposedTransformIncluding(layerName);
+        var composedBefore = component.Compositor.GetComposedTransformUpTo(layerName);
+        
+        Vector3 worldPosition;
+        Quaternion worldRotation;
+        
+        if (component.transform.parent != null)
+        {
+            worldPosition = component.transform.parent.TransformPoint(composedUpToLayer.localPosition);
+            worldRotation = component.transform.parent.rotation * composedUpToLayer.localRotation;
+        }
+        else
+        {
+            worldPosition = composedUpToLayer.localPosition;
+            worldRotation = composedUpToLayer.localRotation;
+        }
+        
+        worldRotation = Quaternion.Normalize(worldRotation);
+        
+        EditorGUI.BeginChangeCheck();
+        
+        Vector3 newWorldPosition = worldPosition;
+        Quaternion newWorldRotation = worldRotation;
+        Vector3 newScale = composedUpToLayer.localScale;
+        
+        switch (Tools.current)
+        {
+            case Tool.Move:
+                newWorldPosition = Handles.PositionHandle(worldPosition, 
+                    Tools.pivotRotation == PivotRotation.Local ? worldRotation : Quaternion.identity);
+                break;
+                
+            case Tool.Rotate:
+                newWorldRotation = Handles.RotationHandle(worldRotation, worldPosition);
+                break;
+                
+            case Tool.Scale:
+                newScale = Handles.ScaleHandle(composedUpToLayer.localScale, worldPosition, worldRotation, 
+                    HandleUtility.GetHandleSize(worldPosition));
+                break;
+        }
+        
+        if (EditorGUI.EndChangeCheck())
+        {
+            Undo.RecordObject(component, $"Transform Layer {layerName}");
+            ApplyWorldTransformToLayer(component, layer, layerName, composedBefore, newWorldPosition, newWorldRotation, newScale);
+            EditorUtility.SetDirty(component);
+        }
+    }
+
+    private void ApplyWorldTransformToLayer(
+        TransformCompositorComponent component,
+        TransformLayer layer,
+        string layerName,
+        TransformCompositor.ComposedTransform composedBefore,
+        Vector3 worldPosition,
+        Quaternion worldRotation,
+        Vector3 scale)
+    {
+        Vector3 localPosition;
+        Quaternion localRotation;
+        
+        if (component.transform.parent != null)
+        {
+            localPosition = component.transform.parent.InverseTransformPoint(worldPosition);
+            localRotation = Quaternion.Inverse(component.transform.parent.rotation) * worldRotation;
+        }
+        else
+        {
+            localPosition = worldPosition;
+            localRotation = worldRotation;
+        }
+        
+        if (layer.compositeMode == CompositeMode.Local)
+        {
+            Vector3 deltaPosition = localPosition - composedBefore.localPosition;
+            Vector3 unscaledDelta = new Vector3(
+                composedBefore.localScale.x != 0 ? deltaPosition.x / composedBefore.localScale.x : deltaPosition.x,
+                composedBefore.localScale.y != 0 ? deltaPosition.y / composedBefore.localScale.y : deltaPosition.y,
+                composedBefore.localScale.z != 0 ? deltaPosition.z / composedBefore.localScale.z : deltaPosition.z
+            );
+            layer.localPosition = Quaternion.Inverse(composedBefore.localRotation) * unscaledDelta;
+            
+            layer.localRotation = Quaternion.Inverse(composedBefore.localRotation) * localRotation;
+            
+            layer.localScale = new Vector3(
+                composedBefore.localScale.x != 0 ? scale.x / composedBefore.localScale.x : scale.x,
+                composedBefore.localScale.y != 0 ? scale.y / composedBefore.localScale.y : scale.y,
+                composedBefore.localScale.z != 0 ? scale.z / composedBefore.localScale.z : scale.z
+            );
+        }
+        else
+        {
+            layer.localPosition = localPosition - composedBefore.localPosition;
+            layer.localRotation = localRotation * Quaternion.Inverse(composedBefore.localRotation);
+            layer.localScale = new Vector3(
+                composedBefore.localScale.x != 0 ? scale.x / composedBefore.localScale.x : scale.x,
+                composedBefore.localScale.y != 0 ? scale.y / composedBefore.localScale.y : scale.y,
+                composedBefore.localScale.z != 0 ? scale.z / composedBefore.localScale.z : scale.z
+            );
         }
     }
     

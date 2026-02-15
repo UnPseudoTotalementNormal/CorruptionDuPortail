@@ -20,8 +20,6 @@ namespace TransformComposition
             if (!layers.ContainsKey(layerName))
             {
                 TransformLayer newLayer = new TransformLayer();
-                layers.Keys.Add(layerName);
-                layers.Values.Add(newLayer);
                 layers[layerName] = newLayer;
             }
 
@@ -288,6 +286,48 @@ namespace TransformComposition
 
         public new List<TKey> Keys => keys;
         public new List<TValue> Values => values;
+        
+        public new TValue this[TKey key]
+        {
+            get
+            {
+                if (base.ContainsKey(key))
+                    return base[key];
+                
+                int index = keys.IndexOf(key);
+                if (index >= 0 && index < values.Count)
+                    return values[index];
+                
+                throw new KeyNotFoundException($"The given key '{key}' was not present in the dictionary.");
+            }
+            set
+            {
+                bool isNewKey = !ContainsKey(key);
+                base[key] = value;
+                
+                if (isNewKey)
+                {
+                    keys.Add(key);
+                    values.Add(value);
+                }
+                else
+                {
+                    int index = keys.IndexOf(key);
+                    if (index >= 0)
+                    {
+                        values[index] = value;
+                    }
+                }
+            }
+        }
+        
+        public new bool ContainsKey(TKey key)
+        {
+            if (base.ContainsKey(key))
+                return true;
+            
+            return keys.Contains(key);
+        }
 
         public void OnBeforeSerialize()
         {
@@ -296,6 +336,9 @@ namespace TransformComposition
 
         public void OnAfterDeserialize()
         {
+            if (keys == null) keys = new();
+            if (values == null) values = new();
+            
             SyncDictionaryFromLists();
         }
 
@@ -303,7 +346,7 @@ namespace TransformComposition
         {
             for (int i = keys.Count - 1; i >= 0; i--)
             {
-                if (!ContainsKey(keys[i]))
+                if (!base.ContainsKey(keys[i]))
                 {
                     keys.RemoveAt(i);
                     values.RemoveAt(i);
@@ -327,13 +370,13 @@ namespace TransformComposition
 
         private void SyncDictionaryFromLists()
         {
-            Clear();
+            base.Clear();
 
             for (int i = 0; i < keys.Count && i < values.Count; i++)
             {
-                if (!ContainsKey(keys[i]))
+                if (keys[i] != null && !base.ContainsKey(keys[i]))
                 {
-                    this[keys[i]] = values[i];
+                    base[keys[i]] = values[i];
                 }
             }
         }

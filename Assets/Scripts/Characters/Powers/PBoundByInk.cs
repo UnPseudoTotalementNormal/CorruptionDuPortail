@@ -77,7 +77,7 @@ namespace Characters.Powers
             
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterId);
             ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"), 
-                RpcTarget.Single(_characterId, RpcTargetUse.Persistent));
+                CharacterManager.instance.GetSafeRpcTarget(_characterId));
             
             currentTargets.Add(_characterId);
             alreadyTargetedClients.Add(_characterId);
@@ -94,7 +94,7 @@ namespace Characters.Powers
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, RpcTarget.Single(_targetClientId, RpcTargetUse.Persistent));
+                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.instance.GetSafeRpcTarget(_targetClientId));
                     }
                     
                     currentTargets.Clear();
@@ -124,7 +124,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
 
         protected override void StopUse()

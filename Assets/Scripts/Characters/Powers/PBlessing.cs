@@ -66,16 +66,15 @@ namespace Characters.Powers
                 {
                     _blessingCharacter.HealPlayerServerRpc();
                 }
-                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 _blessingCharacter.isBlessed.Value = true;
                 
                 ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(
                     GameValues.FAKE_CLIENT_ID,
                     $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),
-                    NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                    CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
 

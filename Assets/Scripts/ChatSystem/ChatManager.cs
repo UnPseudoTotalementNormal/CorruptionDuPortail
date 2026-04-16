@@ -8,6 +8,7 @@ using Extensions;
 using FMODUnity;
 using Network;
 using TMPro;
+using Characters;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -81,7 +82,7 @@ namespace ChatSystem
             }
             
             FixedString512Bytes _message = new FixedString512Bytes(_text);
-            SendChatMessageServerRpc(new ChatMessage(NetworkManager.Singleton.LocalClientId, _message, activeChatId));
+            SendChatMessageServerRpc(new ChatMessage(Characters.CharacterManager.instance.GetLocalClientId(), _message, activeChatId));
         }
 
         public void DiscoverChat(int _chatId, string _overrideName = null)
@@ -154,7 +155,7 @@ namespace ChatSystem
         public void SendChatMessageServerRpc(ChatMessage _chatMessage)
         {
             ReceiveChatMessageRpc(_chatMessage);
-            OnMessageSentRpc(_chatMessage, RpcTarget.Single(_chatMessage.senderClientId, RpcTargetUse.Persistent));
+            OnMessageSentRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_chatMessage.senderClientId));
         }
         
         [Rpc(SendTo.SpecifiedInParams)]

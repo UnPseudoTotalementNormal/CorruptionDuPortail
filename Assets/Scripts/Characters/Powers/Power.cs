@@ -121,10 +121,16 @@ namespace Characters.Powers
             onStartUse?.Invoke();
         }
         
-        [Rpc(SendTo.SpecifiedInParams)]
-        public void OnUsedRpc(RpcParams _params)
+        [Rpc(SendTo.Server)]
+        public void OnUsedServerRpc()
         {
             OnUsed(false);
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void OnUsedClientRpc(RpcParams _params)
+        {
+            StopUse();
         }
 
         /// <summary>
@@ -140,7 +146,7 @@ namespace Characters.Powers
             {
                 if (_callToServer)
                 {
-                    OnUsedRpc(RpcTarget.Server);
+                    OnUsedServerRpc();
                 }
                 return;
             }
@@ -149,7 +155,7 @@ namespace Characters.Powers
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
-                OnUsedRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                OnUsedClientRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
         

@@ -115,7 +115,7 @@ namespace Characters.Powers
                 _message = "Aucun personnage n'a été trouvé.";
             }
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                _rpcParams:CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

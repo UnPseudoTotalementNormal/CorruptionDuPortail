@@ -22,7 +22,7 @@ namespace Characters.Powers.PowerObjects
 
             Character _targetCharacter = CharacterManager.instance.GetCharacter(targetClientId, false);
             
-            if (ownerClientId == NetworkManager.Singleton.LocalClientId)
+            if (ownerClientId == CharacterManager.instance.GetLocalClientId())
             {
                 CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId, this);
             }

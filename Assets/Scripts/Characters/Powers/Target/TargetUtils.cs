@@ -38,7 +38,7 @@ namespace Characters.Powers.Target
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Self))
             {
-                ulong _localClientId = NetworkManager.Singleton.LocalClientId;
+                ulong _localClientId = CharacterManager.instance.GetLocalClientId();
                 _targets.RemoveAll(_t => _t.ownerClientId.Value == _localClientId);
             }
 

@@ -35,8 +35,8 @@ namespace Characters.Powers
                 IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
-                        RevealLevel.Personal, true, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                    GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+                        RevealLevel.Personal, ownerClientId.Value);
                 }
             }
         }
@@ -88,11 +88,14 @@ namespace Characters.Powers
         {
             PersonalBeaconObject _newBeacon = new(this, _targetClientId);
             personalBeacons.Add(_newBeacon);
-            if (NetworkManager.LocalClientId != ownerClientId.Value) //only the owner cares about beacon state changes
+            
+            // Only the owner processes beacon state changes. Simulated players on host must subscribe too.
+            if (!CharacterManager.instance.IsLocalOrSimulated(ownerClientId.Value)) 
             {
-                Debug.Log("Not subscribing to corrupted beacon changes, not the owner");
+                Debug.Log("Not subscribing to corrupted beacon changes, not the owner or host simulating");
                 return;
             }
+            
             Debug.Log("Subscribing to corrupted beacon changes");
             _newBeacon.onCorruptedBeaconChanged += (_newState) => OnCorruptedBeaconChanged(_newBeacon, _newState);
         }
@@ -103,6 +106,9 @@ namespace Characters.Powers
             
             Debug.Log("Beaconed character corruption state changed: " + _beaconedCharacter.GetOwnerPseudo() + " New state: " + _newState);
             
+            // Do not show local visual/chat cues if the Host is not currently possessing the owner
+            if (CharacterManager.instance.GetLocalClientId() != ownerClientId.Value) return;
+
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {
                 ChatManager.instance.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",

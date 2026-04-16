@@ -28,7 +28,7 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             _character.CorruptPlayerServerRpc();
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             if (_character.role.factionType == FactionType.chosen)
             {
                 CardEffectManager.instance.AddCardEffect(CardEffectID.CursedVision, _character.ownerClientId.Value, false);
@@ -40,7 +40,7 @@ namespace Characters.Powers
                 ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
             }
             GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).CorruptPlayerServerRpc();   
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+            GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             OnUsed();
         }
         

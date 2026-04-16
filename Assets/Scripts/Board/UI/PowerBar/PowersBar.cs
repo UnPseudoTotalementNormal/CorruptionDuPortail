@@ -25,18 +25,38 @@ namespace Board.UI.PowerBar
         
         public event Action<Power> onPowerClicked;
 
+        private Character _currentSubscribedCharacter;
+
         private void Start()
         {
-            GameManager.instance.onGameStarted += () =>
+            GameManager.instance.onGameStarted += SubscribeToLocalCharacter;
+            CharacterManager.instance.onLocalIdentityChanged += SubscribeToLocalCharacter;
+        }
+
+        private void SubscribeToLocalCharacter()
+        {
+            if (_currentSubscribedCharacter)
             {
-                var _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
-                if (_localCharacter)
-                {
-                    _localCharacter.onPowersUpdated += () => { RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value); };
-                    _localCharacter.onRoleUpdated += () => { RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value); };
-                    RefreshCharacterPowerBar(_localCharacter.ownerClientId.Value);
-                }
-            };
+                _currentSubscribedCharacter.onPowersUpdated -= OnPowersUpdated;
+                _currentSubscribedCharacter.onRoleUpdated -= OnPowersUpdated;
+            }
+
+            _currentSubscribedCharacter = CharacterManager.instance.GetLocalCharacter(false);
+            
+            if (_currentSubscribedCharacter)
+            {
+                _currentSubscribedCharacter.onPowersUpdated += OnPowersUpdated;
+                _currentSubscribedCharacter.onRoleUpdated += OnPowersUpdated;
+                RefreshCharacterPowerBar(_currentSubscribedCharacter.ownerClientId.Value);
+            }
+        }
+
+        private void OnPowersUpdated()
+        {
+            if (_currentSubscribedCharacter)
+            {
+                RefreshCharacterPowerBar(_currentSubscribedCharacter.ownerClientId.Value);
+            }
         }
 
         private void Update()
@@ -101,7 +121,7 @@ namespace Board.UI.PowerBar
                 }
                 
                 var _powerBarObject = powersBarObjects.FirstOrDefault(_obj => _obj.power == _power);
-                if (_powerBarObject)
+                if (_powerBarObject && _powerBarObject.fromCharacter != _character)
                 {
                     _powerBarObject.SetPower(_power, _character);
                 }

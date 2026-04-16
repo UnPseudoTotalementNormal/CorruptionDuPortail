@@ -35,8 +35,8 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
             return;
         }
         
-        MessageManager.instance.SendMessageRpc(NetworkManager.LocalClientId, messageInputField.text);
-        OnMessageSentRpc(NetworkManager.LocalClientId, messageInputField.text);
+        MessageManager.instance.SendMessageRpc(Characters.CharacterManager.instance.GetLocalClientId(), messageInputField.text);
+        OnMessageSentRpc(Characters.CharacterManager.instance.GetLocalClientId(), messageInputField.text);
         ClosePanel();
     }
     

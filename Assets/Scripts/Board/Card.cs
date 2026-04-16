@@ -81,6 +81,15 @@ namespace Board
             {
                 visualUpdater.SetUnknown();
             }
+
+            CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+        }
+
+        private void OnLocalIdentityChanged()
+        {
+            if (characterInfo == null) return;
+            
+            _ = ShowPseudoWithRevealedInfo(true);
         }
 
         private void Update()
@@ -103,6 +112,7 @@ namespace Board
         private void OnDestroy()
         {
             UnsubscribeFromCharacterEvents();
+            CharacterManager.instance.onLocalIdentityChanged -= OnLocalIdentityChanged;
             showPseudoTaskHandler.Dispose();
         }
 

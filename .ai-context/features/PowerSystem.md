@@ -8,17 +8,15 @@ Incarne la logique asymétrique du jeu : chaque compétence, effet passif, ou at
 - **Exécution :** L'AwakeningState requière un targetting via des appels réseaux (`OnPowerUsedServer`).
 
 ## Composants Clés
-- `PowerManager` : Singleton Server-Authoritative qui trace la parenté (`ReparentPowerToCharacterServer`) et les spawns.
-- `Power` (Classe parente + Enfants `P_...`) : Composant monolithique contenant l'identifiant asymétrique et la logique brute de son exécution.
-- `PowerDataObject` : ScriptableObject ou structure contenant les métadonnées pour l'UI, le nom et le clonage.
+- `PowerManager` : Singleton Server-Authoritative qui trace la parenté et les spawns.
+- `Power` : Classe de base gérant le flux d'exécution. Utilise désormais un split **OnUsedServerRpc** / **OnUsedClientRpc** pour éviter les boucles infinies (Stack Overflow) lors de l'exécution par l'Host au nom d'un joueur simulé.
 
 ## Données & État
-- Chaque instance de `Power` instancié possède dynamiquement un ID vers son `ownerCharacter` et est parente (Unity Hierarchy) de son maître.
+- `CharacterManager.instance.GetSafeRpcTarget(ownerClientId)` : Gateway indispensable pour adresser les RPC aux joueurs simulés (IDs >= 100) en redirigeant le flux vers l'Host (ID 0).
 
 ## Couplage & Dépendances
-- Extrêmement dispersé. Les enfants de `Power` (ex: `PCorruptingMark`) dépendent potentiellement de toutes sortes de systèmes externes (`ChainingManager`, faction logic, etc.) pour réaliser leur effet unique.
-- Couplé au `CharacterManager` pour injecter physiquement l'objet GameObject du pouvoir sous celui du personnage.
+- Couplé au `CharacterManager` pour injecter physiquement l'objet GameObject du pouvoir sous celui du personnage et pour le routage des identités.
 
 ## Points d'attention
-- Des douzaines de composants `Power` sont conçus en POO (`PCardsShuffling.cs`, `PReincarnation.cs`). L'architecture NetworkBehaviour pour tous les pouvoirs peut vite surcharger le Netcode si les NetworkObjectId explosent en nombre et en appels non-essentiels.
-- Complexité potentielle d'équilibrage : il faut scruter de très près l'Event `OnPowerReparentedServer` car certains objets Networked peuvent mal supporter un changement de parenté dynamique multi-clients en pleine game-loop.
+- **Stack Overflow Prevention** : Ne jamais appeler une méthode RPC qui boucle sur le déclencheur original sans passer par le switch Server/Client dédié.
+- Les clones de `Power` sont des NetworkBehaviours persistants. Leur cycle de vie est lié à celui du `Character`.

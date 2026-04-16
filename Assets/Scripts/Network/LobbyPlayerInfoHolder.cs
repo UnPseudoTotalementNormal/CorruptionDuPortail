@@ -2,6 +2,7 @@
 
 using Network.Player;
 using Unity.Netcode;
+using Characters;
 
 #endregion
 
@@ -62,7 +63,12 @@ namespace Network
 
         private void OnClientConnected(ulong clientId)
         {
-            AskForPlayerInfoRpc(RpcTarget.Single(clientId, RpcTargetUse.Temp));
+            AskForPlayerInfo(clientId);
+        }
+
+        public void AskForPlayerInfo(ulong clientId)
+        {
+            AskForPlayerInfoRpc(CharacterManager.instance.GetSafeRpcTarget(clientId));
         }
         
         [Rpc(SendTo.SpecifiedInParams)]
@@ -91,6 +97,19 @@ namespace Network
                 }
             }
             return default;
+        }
+
+        public void AddDebugPlayer(ulong _clientId, string _name)
+        {
+            if (!IsServer) return;
+            
+            playerInfos.Add(new Network.Player.PlayerInfo
+            {
+                playerClientId = _clientId,
+                playerName = _name,
+                playerFullName = _name,
+                playerSteamId = 0
+            });
         }
     }
 }

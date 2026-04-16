@@ -18,6 +18,16 @@ namespace GameLogic
         private void Start()
         {
             GameManager.instance.powersBar.onPowerClicked += OnPowerClicked;
+            Characters.CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+        }
+
+        private void OnLocalIdentityChanged()
+        {
+            if (currentPower != null)
+            {
+                currentPower.Cancel();
+                currentPower = null;
+            }
         }
 
         private void TrySelectPower(Power _power)

@@ -134,7 +134,7 @@ public class BoardManager : NetworkBehaviour
         }
 
         Card ownedCard = visibleCards.SingleOrDefault(c =>
-            c.characterInfo.ownerClientId.Value == NetworkManager.Singleton.LocalClientId);
+            c.characterInfo.ownerClientId.Value == CharacterManager.instance.GetLocalClientId());
         if (ownedCard)
         {
             visibleCards.ChangeIndex(visibleCards.IndexOf(ownedCard), 0);

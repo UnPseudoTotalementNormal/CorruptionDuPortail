@@ -43,8 +43,23 @@ namespace Board.UI.PowerBar
         {
             base.Init();
             
-            power.onStartUse += StartUsePower;
-            power.onStopUse += StopUsePower;
+            if (power != null)
+            {
+                power.onStartUse -= StartUsePower;
+                power.onStopUse -= StopUsePower;
+                
+                power.onStartUse += StartUsePower;
+                power.onStopUse += StopUsePower;
+            }
+
+            if (powerViusalTransform != null)
+            {
+                Destroy(powerViusalTransform.gameObject);
+            }
+            if (powerColliderTransform != null)
+            {
+                Destroy(powerColliderTransform.gameObject);
+            }
 
             GameObject _spawnPrefab = defaultPower3DModel;
             if (power.power3DObjectPrefab)
@@ -137,8 +152,11 @@ namespace Board.UI.PowerBar
             {
                 return;
             }
-            int hoverLayer = LayerMask.NameToLayer("Outline_Hover");
-            powerViusalTransform.gameObject.SetLayerRecursively(hoverLayer);
+            if (powerViusalTransform != null)
+            {
+                int hoverLayer = LayerMask.NameToLayer("Outline_Hover");
+                powerViusalTransform.gameObject.SetLayerRecursively(hoverLayer);
+            }
         }
 
         public void OnPointerExit(PointerEventData _eventData)
@@ -148,25 +166,32 @@ namespace Board.UI.PowerBar
             {
                 return;
             }
-            int defaultLayer = 0;
-            powerViusalTransform.gameObject.SetLayerRecursively(defaultLayer);
+            if (powerViusalTransform != null)
+            {
+                int defaultLayer = 0;
+                powerViusalTransform.gameObject.SetLayerRecursively(defaultLayer);
+            }
         }
         
         private void StartUsePower()
         {
+            if (powerViusalTransform == null) return;
+            
             int usedLayer = LayerMask.NameToLayer("Outline_Used");
             powerViusalTransform.gameObject.SetLayerRecursively(usedLayer);
         }
         
         private void StopUsePower()
         {
+            if (powerViusalTransform == null) return;
+            
             int defaultLayer = 0;
             powerViusalTransform.gameObject.SetLayerRecursively(defaultLayer);
         }
 
         private void Update()
         {
-            if (power.isCurrentlyUsed || hovering || !power.CanUse())
+            if (power == null || powerViusalTransform == null || power.isCurrentlyUsed || hovering || !power.CanUse())
             {
                 return;
             }

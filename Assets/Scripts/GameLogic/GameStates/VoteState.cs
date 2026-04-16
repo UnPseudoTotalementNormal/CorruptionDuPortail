@@ -44,7 +44,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
                 new NetworkSerializableObject[]
                 {
-                    new(gameManager.NetworkManager.LocalClientId),
+                    new(CharacterManager.instance.GetLocalClientId()),
                     new(_playerId),
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.server));

@@ -67,7 +67,7 @@ namespace Characters.Powers
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
-                        (int)ChatWindowIDs.Server), RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                        (int)ChatWindowIDs.Server), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
             }
             
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();

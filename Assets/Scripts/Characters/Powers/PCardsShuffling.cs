@@ -56,14 +56,14 @@ namespace Characters.Powers
                     senderClientId = ChatManager.SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
                 return; //character was fake, do nothing else
             }
             
             currentRoleGuessClientId = _character.ownerClientId.Value;
-            AskForGuessRoleRpc(RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            AskForGuessRoleRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
         
         private void OnGuessRoleCardClicked(Card _cardClicked)
@@ -100,8 +100,7 @@ namespace Characters.Powers
             if (_isCorrectGuess)
             {
                 discoveredClientIds.Add(_clickedId);
-                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
             }
             else
             {
@@ -121,7 +120,7 @@ namespace Characters.Powers
                 }
             }
             
-            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
             
             OnUsed();
         }

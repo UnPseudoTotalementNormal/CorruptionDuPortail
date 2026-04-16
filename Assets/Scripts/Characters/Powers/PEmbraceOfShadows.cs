@@ -55,9 +55,9 @@ namespace Characters.Powers
                 clickedCharacter.CorruptPlayerServerRpc();
                 InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
                 onCorruptionSuccessfulSound.TryPlayOneShot();
             }
             else

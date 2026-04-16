@@ -58,7 +58,7 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            onVoteSkipButtonPressedByClient?.Invoke(NetworkManager.Singleton.LocalClientId);
+            onVoteSkipButtonPressedByClient?.Invoke(Characters.CharacterManager.instance.GetLocalClientId());
         }
     }
 }

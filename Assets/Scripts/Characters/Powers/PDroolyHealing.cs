@@ -54,7 +54,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            var _senderId = NetworkManager.Singleton.LocalClientId;
+            var _senderId = CharacterManager.instance.GetLocalClientId();
             TryHealServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
             OnUsed();
         }
@@ -74,17 +74,17 @@ namespace Characters.Powers
                     GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
                 }
                 healedCharactersThisNight.Add(_healingCharacterId);
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
             }
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
-                NetworkManager.Singleton.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
         {
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal);
+                _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
         }
 
         public override void OnGameStartedServer()

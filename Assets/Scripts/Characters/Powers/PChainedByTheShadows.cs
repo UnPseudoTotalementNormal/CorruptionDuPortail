@@ -51,9 +51,8 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
-                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                    _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                    GameManager.instance.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                    _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
                     ChainingManager.instance.AddCharacterToChainingList(_corruptingCharacterId);

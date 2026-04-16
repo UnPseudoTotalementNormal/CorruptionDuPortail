@@ -52,7 +52,7 @@ namespace Characters.Powers
             }
             OnCardClickedRpc(_clickedCharacterId);
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal);
+                _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             OnUsed();
         }
 
@@ -116,9 +116,8 @@ namespace Characters.Powers
         
         public void OnConcentratedEffectServer()
         {
-            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(
-                lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true,
-                NetworkManager.RpcTarget.Single(ownerClientId.Value, RpcTargetUse.Persistent));
+            GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
         }
     }
 }

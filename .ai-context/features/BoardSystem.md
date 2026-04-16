@@ -10,7 +10,8 @@ Désigner et actualiser la représentation physique et spatiale des joueurs part
 ## Composants Clés
 - `BoardManager` : Singleton NetworkBehaviour. Maintient la physicalité (les GameObjects) des joueurs connectés.
 - `Card` : Le composant physique lié. Hérite potentiellement des données du `Character`.
-- Animations asynchrones : Combinaison pure de `DOTween` et `UniTask` (`ShowAllPlayerCards`, `PlaceAllCardsToPosition`).
+- `MeIconCard` : Composant UI attaché à la carte affichant un feedback visuel "Moi" en fonction de l'identité possédée (voir `IdentitySystem.md`).
+- Animations asynchrones : Combinaison pure de `DOTween` et `UniTask`.
 
 ## Données & État
 - `visibleCards` : (List<Card>) Suivi local des entités physiques de type Carte.

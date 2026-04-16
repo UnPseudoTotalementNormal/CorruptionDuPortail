@@ -609,7 +609,7 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639062392089578025
+  lastModified: 639119776071302686
   FileSizes:
   - Name: Desktop
     Value: 13002720
@@ -804,7 +804,7 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639062392089648025
+  lastModified: 639119776071312738
   FileSizes:
   - Name: Desktop
     Value: 3018
@@ -1522,7 +1522,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -4062503513606897777}
   cacheVersion: 131847
-  cacheTime: 639062392089648025
+  cacheTime: 639119776071312738
   SerializableEventsDict:
   - key: event:/Characters/Orpheline/Canalisation
     index: 0

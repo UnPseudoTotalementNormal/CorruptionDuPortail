@@ -22,6 +22,6 @@ Agit comme la source de vérité pour déterminer quelles informations cachées 
 
 ## Points d'attention
 - **Réflexion C#** : Risque en cas de fautes de frappe dans les chaînes de caractères transmises par RPC.
-- **Routage de Simulation** : Les révélations destinées aux simulés ne sont PAS perdues ; elles sont centralisées sur l'Host. Lors d'un switch d'identité, l'Host recharge le visuel local en fonction de ce dictionnaire de simulation.
+- **Routage de Simulation** : Les révélations destinées aux simulés sont centralisées sur l'Host (voir `NetworkGatewaySystem.md`). Lors d'un switch d'identité (voir `IdentitySystem.md`), l'Host recharge le visuel local en fonction de ce dictionnaire de simulation.
 - `GetCharacterInfo` s'assure qu'une clé existe en l'ajoutant si manquante. 
 

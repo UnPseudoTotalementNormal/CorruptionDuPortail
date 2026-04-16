@@ -14,7 +14,7 @@ Gère la validation en direct et la machine à états de l'utilisation physique 
 - `currentPower` : Mémorise quel pouvoir est actuellement "équipé" ou "en cours d'attribution" (pour ciblage par exemple). S'assure que *currentPower* est nettoyé via l'appel `Cancel()` si un clic annule l'ordre.
 
 ## Couplage & Dépendances
-- Purement orienté sur le client local (`GetLocalCharacter()`), il ne manipule que les compétences du joueur appelant (il n'est pas Autoritaire ni Synchro Réseau, ce sont les conséquences du Pouvoir qui le seront).
+- Orienté sur le client local (`GetLocalCharacter()`), il utilise `IsLocalOrSimulated` pour permettre à l'Host de manipuler les pouvoirs de ses bots via l'interface de possession.
 
 ## Points d'attention
 - Le flow logique force une annulation explicite de l'ancien pouvoir (`currentPower.Cancel()`) si le joueur change de sélection. Si l'un des pouvoirs personnalisés (POO) oublie d'implémenter son propre reset d'états dans `Cancel()`, l'UI ou des filtres de focus pourraient rester bloqués.

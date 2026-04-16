@@ -12,11 +12,11 @@ Incarne la logique asymétrique du jeu : chaque compétence, effet passif, ou at
 - `Power` : Classe de base gérant le flux d'exécution. Utilise désormais un split **OnUsedServerRpc** / **OnUsedClientRpc** pour éviter les boucles infinies (Stack Overflow) lors de l'exécution par l'Host au nom d'un joueur simulé.
 
 ## Données & État
-- `CharacterManager.instance.GetSafeRpcTarget(ownerClientId)` : Gateway indispensable pour adresser les RPC aux joueurs simulés (IDs >= 100) en redirigeant le flux vers l'Host (ID 0).
+- **Lien ID** : Le `Power` est lié à un `ownerClientId`. Pour adresser des RPC à ce propriétaire, il est **impératif** d'utiliser le système de Gateway (voir `NetworkGatewaySystem.md`).
 
 ## Couplage & Dépendances
-- Couplé au `CharacterManager` pour injecter physiquement l'objet GameObject du pouvoir sous celui du personnage et pour le routage des identités.
+- `CharacterManager` : Injection du pouvoir et routage des identités via `GetSafeRpcTarget`.
 
 ## Points d'attention
-- **Stack Overflow Prevention** : Ne jamais appeler une méthode RPC qui boucle sur le déclencheur original sans passer par le switch Server/Client dédié.
-- Les clones de `Power` sont des NetworkBehaviours persistants. Leur cycle de vie est lié à celui du `Character`.
+- **Stack Overflow Prevention** : Ne jamais appeler une méthode RPC qui boucle sur le déclencheur original sans passer par le switch Server/Client dédié. C'est crucial car l'Host exécute souvent le code pour ses bots.
+- **Routage Gateway** : N'utilisez pas `RpcTarget.Single(clientId)` directement si le pouvoir peut appartenir à un bot (ID >= 100).

@@ -8,13 +8,13 @@ Identifie, stocke, et gère le cycle de vie de chaque participant à la partie, 
 - Les modifications d'état (élimination, altération) peuvent être commanditées par le `GameManager` ou le `PowerManager`.
 
 ## Composants Clés
-- `CharacterManager` : NetworkBehaviour (Singleton) qui maintient la collection de tous les personnages. Gère le **Possession Identity Swap** (`_debugPossessedId`) et le routage RPC sécurisé pour les simulations.
-- `Character` : L'entité fondamentale synchronisée. Possède la propriété `isFake` (robots) vs joueurs (réels/simulés).
+- `CharacterManager` : NetworkBehaviour (Singleton) qui maintient la collection de tous les personnages. Gère l'identité abstraite (voir `IdentitySystem.md`) et le routage RPC (voir `NetworkGatewaySystem.md`).
+- `Character` : L'entité fondamentale synchronisée. Possède la propriété `isFake` (robots IA) vs joueurs (réels/simulés).
 
 ## Données & État
 - `_characters` : Liste dynamique maintenue par le `CharacterManager`.
-- `ownerClientId` : Clé de résolution.
-- `IsLocalOrSimulated(ulong id)` : Helper permettant à l'Host de traiter des données pour des IDs de simulation (>= 100) en bypassant les gardes d'identité locale.
+- `ownerClientId` : Clé de résolution (0-99 réels, >=100 simulés).
+- `IsLocalOrSimulated(ulong id)` : Helper d'identité centralisé.
 - Rôle / Factions / États : `Role`, `isEliminated`, etc., exposés pour la réplication ciblée.
 
 ## Couplage & Dépendances

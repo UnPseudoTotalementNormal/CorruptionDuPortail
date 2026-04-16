@@ -63,3 +63,7 @@ Pour éviter de surcharger cette cartographie globale, la logique métier de cha
 - `PowerUsageSystem.md` : Validation locale d'assignation et reset d'un ciblage de Pouvoir par un joueur humain.
 - `BoardCameraSystem.md` : Orchestration des cinématiques et Focus Cinemachine.
 - `LightAndFXSystem.md` : Réaction chromatique (Jour/Nuit/Corruption) interfacée sur les GameStates.
+- `IdentitySystem.md` : [Debug] Système de possession d'identité et abstraction du LocalClientId.
+- `NetworkGatewaySystem.md` : [Net] Routage intelligent des RPC (Gateway) pour supporter les joueurs simulés.
+- `InfoTableSystem.md` : [UI] Système de déduction, traçage des rôles et gestion des conflits.
+- `technical_utilities.md` : [Tech] Boîte à outils (Extensions, Polymorphisme, Attributs) pour le développement.

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers;
 using GameLogic;
+using Network;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -15,6 +16,15 @@ namespace Characters
     {
         public static CharacterManager instance;
         
+        public RpcParams GetSafeRpcTarget(ulong _clientId)
+        {
+            var _target = _clientId >= 100 
+                ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent) 
+                : NetworkManager.RpcTarget.Single(_clientId, RpcTargetUse.Persistent);
+                
+            return new RpcParams { Send = new RpcSendParams { Target = _target } };
+        }
+
         [SerializeField] private Transform _charactersParent;
         [SerializeField] private NetworkObject _characterPrefab;
 
@@ -37,6 +47,9 @@ namespace Characters
         private NetworkList<NetworkBehaviourReference> networkedCharacters = new();
         
         public event Action<List<Character>> onCharactersListUpdated;
+        public event Action onLocalIdentityChanged;
+
+        private ulong? _debugPossessedId = null;
         
         private void Awake()
         {
@@ -50,13 +63,22 @@ namespace Characters
             }
         }
         
+        public ulong GetLocalClientId() => _debugPossessedId ?? NetworkManager.LocalClientId;
+        
+        public bool IsLocalOrSimulated(ulong _clientId)
+        {
+            if (_clientId == GetLocalClientId()) return true;
+            if (_clientId >= 100 && IsServer) return true;
+            return false;
+        }
+
         public Character GetLocalCharacter(bool _triggerUpdate = true)
         {
             if (_triggerUpdate)
             {
                 StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
             }
-            return _characters.FirstOrDefault(_character => _character.ownerClientId.Value == NetworkManager.LocalClientId);
+            return _characters.FirstOrDefault(_character => _character.ownerClientId.Value == GetLocalClientId());
         }
 
         public Character GetCharacter(ulong _characterId, bool _triggerUpdate = true)
@@ -141,6 +163,25 @@ namespace Characters
         {
             ulong _newFakeClientId = GameValues.FAKE_CLIENT_ID - (ulong)instance.GetCharacters().Count(_c => _c.isFake);
             return AddNewCharacter(_newFakeClientId);
+        }
+
+        public void SpawnSimulatedPlayer()
+        {
+            Assert.IsTrue(IsServer, "SpawnSimulatedPlayer can only be called on server");
+            
+            // Debug range starting at 100
+            ulong _debugId = 100 + (ulong)instance.GetCharacters().Count(_c => !_c.isFake && _c.ownerClientId.Value >= 100);
+            
+            // Add to LobbyPlayerInfoHolder first so name/info is available
+            LobbyPlayerInfoHolder.instance.AddDebugPlayer(_debugId, $"Simulated {_debugId - 99}");
+            
+            AddNewCharacter(_debugId);
+        }
+
+        public void SetPossessedIdentity(ulong? _id)
+        {
+            _debugPossessedId = _id;
+            onLocalIdentityChanged?.Invoke();
         }
 
         public Character AddNewCharacter(ulong _clientId) //todo: create all characters on start, and simply change ownerID when starting the game, to not have spawn issues

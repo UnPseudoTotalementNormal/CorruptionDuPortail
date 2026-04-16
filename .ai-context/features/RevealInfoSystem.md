@@ -13,12 +13,15 @@ Agit comme la source de vérité pour déterminer quelles informations cachées 
 - `RevealLevel` : Énumérateur délimitant la portée de l'information (`False`, `Personal`, `Public`).
 
 ## Données & État
-- `charactersInfoRevealed` : Dictionnaire localisant quel ClientID dispose de quel niveau de révélation sur ses propres attributs.
-- Utilise massivement la **Réflexion C#** (`GetField()`, `SetValue()`) pour mapper les Enum "noms de variables" (`FixedString64Bytes`) directement à l'instance de `CharacterInfoReveal`.
+- `charactersInfoRevealed` : Dictionnaire Client -> Données de révélation.
+- `simulationsKnowledge` : Dictionnaire spécifique stocké sur l'Host pour mémoriser les révélations faites aux joueurs simulés (IDs >= 100).
+- Utilise la **Réflexion C#** pour mapper les variables ciblées. Les appels vers des IDs >= 100 sont redirigés vers l'Host via `SetRevealLevelSimulatedRpc`.
 
 ## Couplage & Dépendances
 - **Couplage Front-end agressif :** Dépend du `BoardManager.instance.visibleCards`. Par exemple, le déblocage visuel de la carte d'un rôle (retournement complet) est hard-codé dans un `switch-case` qui observe le nom de variable "isRoleRevealed".
 
 ## Points d'attention
-- **Réflexion C# :** L'usage de `typeof(CharacterInfoReveal).GetField(_revealVariableName.ToString())` pour éviter du boiler-plate peut avoir un coût de performance (mineur) mais surtout un risque silenicieux. Si le nom d'une variable de `CharacterInfoReveal` est mal typé lors d'un appel RPC, le système lèvera une assertion et plantera.
-- La méthode `GetCharacterInfo` s'assure silencieusement qu'une clé existe en l'ajoutant si manquante. Si envoyée sur des Fake IDs corrompus, la dictionnaire absorbera indéfiniment de la fuite de donnée.
+- **Réflexion C#** : Risque en cas de fautes de frappe dans les chaînes de caractères transmises par RPC.
+- **Routage de Simulation** : Les révélations destinées aux simulés ne sont PAS perdues ; elles sont centralisées sur l'Host. Lors d'un switch d'identité, l'Host recharge le visuel local en fonction de ce dictionnaire de simulation.
+- `GetCharacterInfo` s'assure qu'une clé existe en l'ajoutant si manquante. 
+

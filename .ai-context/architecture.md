@@ -8,8 +8,9 @@
 # Global Architecture
 
 - **State Machine Centralisée (GameManager) :** Le coeur du jeu tourne sur un système de `GameState` géré par le `GameManager`. Chaque état gère sa logique côté serveur (`StateUpdateServer`, `OnStartStateServer`) et côté client (`StateUpdateClient`, `OnStartStateClient`).
-- **Autorité Serveur (Server-Authoritative) :** La logique critique (transitions d'états, attribution des rôles, calcul des votes) est réalisée uniquement sur le serveur.
-- **Réplication et RPC :** Les informations sont propagées via des RPC Customs (`DoStateMethodRpc`) qui passent par le GameManager pour atteindre le bon State et invoquer la méthode par réflexion (`ReflectionHelper.cs` potentiel, ou `MethodInfo.Invoke`). L'utilisation intensive de RPC assure la synchronisation.
+- **Autorité Serveur (Server-Authoritative) :** La logique critique est réalisée uniquement sur le serveur.
+- **Réplication et RPC :** Les informations sont propagées via des RPC Customs.
+- **Debug Simulation & Possession (Nouveauté) :** L'Host peut simuler plusieurs joueurs (IDs >= 100). Un mécanisme de **Gateway RPC** (`GetSafeRpcTarget`) redirige les messages destinés à ces IDs vers l'Host. Le `CharacterManager` gère une identité possédée locale qui trompe temporairement les systèmes UI pour qu'ils affichent les données du joueur simulé à la place du Host.
 
 # Main Dependencies & Routing
 
@@ -29,6 +30,13 @@ Le cycle du jeu est une succession stricte définie par les `GameState` :
 5. Vote
 6. Recap & Victory Condition Check
 7. Game Ending
+
+# Conventions & Règles de Développement
+
+Pour garantir la compatibilité avec le système de simulation debug (contrôle multi-bots par l'Host), les règles suivantes **doivent** être respectées :
+
+- **Routage RPC Ciblé (Gateway RPC)** : N'utilisez JAMAIS `RpcTarget.Single(clientId)` directement si le message peut cibler un joueur. Vous **devez** utiliser `CharacterManager.instance.GetSafeRpcTarget(clientId)`. Cela garantit que les messages destinés aux robots/simulés (IDs >= 100) soient correctement reroutés vers l'Host.
+- **Vérification d'Identité Locale** : Pour vérifier si le client local est concerné par une action, n'utilisez pas `clientId == NetworkManager.LocalClientId`. Utilisez plutôt `CharacterManager.instance.IsLocalOrSimulated(clientId)` pour que les joueurs simulés passent les gardes d'identité sur la machine hôte.
 
 # Modules & Features détaillés (`.ai-context/features/`)
 

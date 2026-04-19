@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers;
+using Cysharp.Threading.Tasks;
 using GameLogic;
 using Network;
 using Unity.Netcode;
@@ -15,6 +16,31 @@ namespace Characters
     public class CharacterManager : NetworkBehaviour
     {
         public static CharacterManager instance;
+        
+        private Dictionary<ulong, UniTaskCompletionSource<Character>> _spawnPromises = new();
+
+        public async UniTask<Character> GetCharacterAsync(ulong _clientId)
+        {
+            var _character = GetCharacter(_clientId, false);
+            if (_character != null) return _character;
+
+            if (!_spawnPromises.ContainsKey(_clientId))
+            {
+                _spawnPromises[_clientId] = new UniTaskCompletionSource<Character>();
+            }
+
+            return await _spawnPromises[_clientId].Task;
+        }
+
+        public void RegisterSpawnedCharacter(Character _character)
+        {
+            ulong _id = _character.ownerClientId.Value;
+            if (_spawnPromises.TryGetValue(_id, out var _promise))
+            {
+                _promise.TrySetResult(_character);
+                _spawnPromises.Remove(_id);
+            }
+        }
         
         public RpcParams GetSafeRpcTarget(ulong _clientId)
         {
@@ -98,28 +124,12 @@ namespace Characters
         [Rpc(SendTo.Everyone, RequireOwnership = true)]
         public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
         {
-            StartCoroutine(GiveRoleToCharacterCoroutine(_characterId, _role));
+            _ = GiveRoleToCharacterAsync(_characterId, _role);
         }
 
-        private IEnumerator GiveRoleToCharacterCoroutine(ulong _characterId, Role _role)
+        private async UniTaskVoid GiveRoleToCharacterAsync(ulong _characterId, Role _role)
         {
-            const int _maxTries = 20;
-            int _tries = 0;
-            Character _character = null;
-            while (_tries < _maxTries)
-            {
-                _character = GetCharacter(_characterId, false);
-                if (_character)
-                {
-                    break;
-                }
-                _tries++;
-                yield return null;
-            }
-            if (!_character)
-            {
-                yield break;
-            }
+            Character _character = await GetCharacterAsync(_characterId);
 
             _character.role = _role;
             _character.UpdateRoleRpc(_role);

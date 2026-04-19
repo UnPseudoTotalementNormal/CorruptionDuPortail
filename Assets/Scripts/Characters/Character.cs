@@ -39,7 +39,30 @@ namespace Characters
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            
+            if (CharacterManager.instance != null)
+            {
+                // Verify if identity is already set, otherwise listen for it
+                if (!ownerClientId.Value.IsFakeClientId())
+                {
+                    CharacterManager.instance.RegisterSpawnedCharacter(this);
+                }
+                else
+                {
+                    ownerClientId.OnValueChanged += OnIdentityChanged;
+                }
+            }
+            
             isBlessed.OnValueChanged += OnBlessed;
+        }
+
+        private void OnIdentityChanged(ulong previousValue, ulong newValue)
+        {
+            if (!newValue.IsFakeClientId())
+            {
+                ownerClientId.OnValueChanged -= OnIdentityChanged;
+                CharacterManager.instance.RegisterSpawnedCharacter(this);
+            }
         }
 
         private void OnBlessed(bool _previousValue, bool _newValue)

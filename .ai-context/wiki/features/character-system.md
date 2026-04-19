@@ -29,7 +29,8 @@ graph TD
 
 ## ⚠️ Points d'Attention & Risques
 - [ ] **Fragilité des IDs** : La génération d'IDs pour les *Fake Characters* (`FAKE_CLIENT_ID - N`) peut poser problème en cas de reconnexion ou migration d'Host.
-- [ ] **Latence UI** : Utilisation de coroutines pour désynchroniser l'update UI du flux réseau afin d'éviter les surcharges.
+- [x] ~~**Latence UI** : Utilisation de coroutines pour désynchroniser l'update UI.~~ -> **Remplacé par UniTask**.
+- [ ] **Async Race Conditions** : Bien que résolu par `GetCharacterAsync`, la suppression d'un objet en cours d'attente doit être gérée via CancellationToken.
 
 ---
 > [!SUCCESS]

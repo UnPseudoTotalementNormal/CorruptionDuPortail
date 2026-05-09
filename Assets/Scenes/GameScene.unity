@@ -7211,6 +7211,10 @@ MonoBehaviour:
   rolePickerCardSpacing: 5
   rolePickerCardHeightOffset: 0.15
   rolePickerCenter: {fileID: 1006790937}
+  characterPickerCardSpacingAngle: 8
+  characterPickerCardSpacing: 5
+  characterPickerCardHeightOffset: 0.15
+  characterPickerCenter: {fileID: 1006790937}
 --- !u!1 &1237554685
 GameObject:
   m_ObjectHideFlags: 0

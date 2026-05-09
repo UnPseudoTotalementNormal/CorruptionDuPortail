@@ -1,14 +1,15 @@
-#region
+﻿#region
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Board.UI.CharacterBar;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 using FocusType = FocusSystem.FocusType;
@@ -61,26 +62,19 @@ namespace Characters.Powers
             if (clickedCharacters.Count >= charactersToSelect)
             {
                 BoardManager.instance.onCardClicked -= OnCardClicked;
-                GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-                FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
+                StartRoleSelection();
             }
         }
 
-        private void OnCharacterBarClicked(Character _characterClicked)
+        private void OnRolePicked(Role _roleClicked)
         {
-            if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Role))
+            if (!CheckIsTargetValid(_roleClicked.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            clickedRoles.Add(_characterClicked.role);
-            List<CharactersBarObject> _characterBarObjects = GameManager.instance.charactersBar.GetCharacterBarObject(_characterClicked.role);
-            foreach (var _characterBarObject in _characterBarObjects)
-            {
-                FocusManager.instance.UnfocusObject(_characterBarObject.gameObject);
-            }
+            clickedRoles.Add(_roleClicked);
             if (clickedRoles.Count >= rolesToSelect)
             {
-                GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
                 FocusManager.instance.UnfocusAll();
                 
                 OnUsed();
@@ -88,7 +82,15 @@ namespace Characters.Powers
                 OnVisionGuessServerRpc(
                     clickedCharacters.Select(_c => _c.ownerClientId.Value).ToArray(),
                     clickedRoles.ToArray());
+                return;
             }
+
+            StartRoleSelection();
+        }
+
+        private void StartRoleSelection()
+        {
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
         }
 
         [Rpc(SendTo.Server)]
@@ -132,6 +134,9 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
+
+            clickedCharacters.Clear();
+            clickedRoles.Clear();
             
             BoardManager.instance.onCardClicked += OnCardClicked;
             
@@ -151,7 +156,7 @@ namespace Characters.Powers
         {
             base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+            SelectionFlowService.instance.CancelSelection();
             FocusManager.instance.UnfocusAll();
         }
     }

@@ -1,4 +1,4 @@
-#region
+﻿#region
 
 using System;
 using Characters.Powers.Interfaces;
@@ -8,6 +8,8 @@ using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine;
 using FocusType = FocusSystem.FocusType;
@@ -39,18 +41,17 @@ namespace Characters.Powers
                 return;
             }
             clickedCharacter = _clickedCard.characterInfo;
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
-            FocusManager.instance.FocusObject(_clickedCard.gameObject);
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
         }
-        private void OnCharacterBarClicked(Character _character)
+        private void OnRolePicked(Role _role)
         {
-            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Role))
+            if (!clickedCharacter ||
+                !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, clickedCharacter.ownerClientId.Value);
-            if (clickedCharacter.role.IsTheSameRole(_character.role))
+            if (clickedCharacter.role.IsTheSameRole(_role))
             {
                 clickedCharacter.CorruptPlayerServerRpc();
                 InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
@@ -118,8 +119,7 @@ namespace Characters.Powers
         {
             base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
     }
 }

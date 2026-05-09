@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers.Target;
@@ -7,6 +7,8 @@ using FocusSystem;
 using GameLogic;
 using Network;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using Board;
 
@@ -24,18 +26,17 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => !discoveredClientIds.Contains(ctx.targetId));
         }
         
-        private void OnCharacterBarObjectClicked(Character _character)
+        private void OnRolePicked(Role _role)
         {
-            ulong _clientIdClicked = _character.ownerClientId.Value;
+            ulong _clientIdClicked = _role.ownerClientId;
             if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
                 return;
             }
 
-            currentRoleGuessClientId = _character.ownerClientId.Value;
+            currentRoleGuessClientId = _clientIdClicked;
             
             OnCharacterBarObjectClickedRpc(_clientIdClicked);
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarObjectClicked;
         }
 
         [Rpc(SendTo.Server)]
@@ -137,15 +138,13 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            // Utiliser une lambda qui redirige vers notre CheckIsTargetValid centralisé
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarObjectClicked;
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
         }
 
         protected override void StopUse()
         {
             base.StopUse();
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarObjectClicked;
+            SelectionFlowService.instance.CancelSelection();
             BoardManager.instance.onCardClicked -= OnGuessRoleCardClicked;
         }
         

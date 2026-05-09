@@ -1,10 +1,12 @@
-#region
+﻿#region
 
 using System;
 using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using Board;
 
@@ -30,18 +32,16 @@ namespace Characters.Powers
             {
                 return;
             }
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
-            FocusManager.instance.FocusObject(_clickedCard.gameObject);
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
         }
-        private void OnCharacterBarClicked(Character _character)
+        private void OnRolePicked(Role _role)
         {
-            var _roleClicked = _character.role;
-            if (!CheckIsTargetValid(clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Role))
+            if (!clickedCharacter ||
+                !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            TryCorruptCharacterServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
+            TryCorruptCharacterServerRpc(clickedCharacter.ownerClientId.Value, _role);
             OnUsed();
         }
         [Rpc(SendTo.Server)]
@@ -93,8 +93,7 @@ namespace Characters.Powers
         {
             base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
 
         public override void OnGameStartedServer()

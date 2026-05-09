@@ -1,4 +1,4 @@
-#region
+﻿#region
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,8 @@ using GameLogic;
 using GameLogic.GameStates;
 using Network;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 
@@ -37,20 +39,18 @@ namespace Characters.Powers
                 return;
             }
             
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
-            FocusManager.instance.FocusObject(_clickedCard.gameObject);
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
         }
         
-        private void OnCharacterBarClicked(Character _character)
+        private void OnRolePicked(Role _role)
         {
-            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Role))
+            if (!clickedCharacter ||
+                !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
             
-            TryBlessCharacterServerRpc(clickedCharacter.ownerClientId.Value, _character.role);
+            TryBlessCharacterServerRpc(clickedCharacter.ownerClientId.Value, _role);
             OnUsed();
         }
 
@@ -111,8 +111,7 @@ namespace Characters.Powers
         {
             base.StopUse();
             BoardManager.instance.onCardClicked -= OnCardClicked;
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
     }
 }

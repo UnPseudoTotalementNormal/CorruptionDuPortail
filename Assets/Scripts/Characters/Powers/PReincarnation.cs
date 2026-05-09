@@ -1,7 +1,9 @@
-using Characters.Powers.Target;
+﻿using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -24,19 +26,16 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            
-            GameManager.instance.charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Roles, id => CheckIsTargetValid(id, TargetUtils.TargetType.Role));
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
         }
 
-        private void OnCharacterBarClicked(Character _characterClicked)
+        private void OnRolePicked(Role _roleClicked)
         {
-            if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Role))
+            if (!CheckIsTargetValid(_roleClicked.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            ReincarnatePlayerRpc(_characterClicked.ownerClientId.Value);
+            ReincarnatePlayerRpc(_roleClicked.ownerClientId);
             OnUsed();
         }
 
@@ -62,9 +61,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            
-            GameManager.instance.charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
     }
 }

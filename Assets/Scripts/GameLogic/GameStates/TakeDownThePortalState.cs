@@ -10,10 +10,14 @@ using Cysharp.Threading.Tasks;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
+using GameLogic.Validation;
 using Network;
+using UI.BoardUI;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static Characters.Powers.Target.TargetUtils;
 using FocusType = FocusSystem.FocusType;
 
 #endregion
@@ -50,10 +54,15 @@ namespace GameLogic.GameStates
                 new NetworkSerializableObject[] { new(_characterOwnerId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
         }
         
-        private void OnRoleClickClient(Character _character)
+        private void OnRoleClickClient(Role _role)
         {
+            if (_role == null)
+            {
+                return;
+            }
+            
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(OnRoleClickServer), 
-                new NetworkSerializableObject[] { new(_character.ownerClientId.Value)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                new NetworkSerializableObject[] { new(_role.ownerClientId)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
         }
         
         private void OnCharacterClickServer(ulong _ownerId)
@@ -92,11 +101,21 @@ namespace GameLogic.GameStates
 
         private void SubscribeToCharacterClick() => BoardManager.instance.onCardClicked += OnCharacterClickClient;
         
-        private void SubscribeToRoleClick() => gameManager.charactersBar.onCharacterBarClicked += OnRoleClickClient;
+        private void SubscribeToRoleClick()
+        {
+            if (!CardPickerManager.instance)
+            {
+                return;
+            }
+            
+            Validator<(ulong targetId, TargetType targetType)> _validator = new();
+            _validator.AddRule(_ctx => _ctx.targetType == TargetType.Role);
+            SelectionFlowService.instance.StartRoleSelection(_validator, OnRoleClickClient);
+        }
         
         private void UnsubscribeToCharacterClick() => BoardManager.instance.onCardClicked -= OnCharacterClickClient;
         
-        private void UnsubscribeToRoleClick() => gameManager.charactersBar.onCharacterBarClicked -= OnRoleClickClient;
+        private void UnsubscribeToRoleClick() => SelectionFlowService.instance.CancelSelection();
         
 
         private void WaitForCharacterClickServer()
@@ -248,6 +267,8 @@ namespace GameLogic.GameStates
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
+            UnsubscribeToCharacterClick();
+            UnsubscribeToRoleClick();
         }
 
         public override void StateUpdateServer()

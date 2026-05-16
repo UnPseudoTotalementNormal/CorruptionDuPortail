@@ -41,12 +41,32 @@ public class BoardManager : NetworkBehaviour
     
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         instance = this;
     }
 
     private void Start()
     {
         GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (GameManager.instance != null && GameManager.instance.characterManager != null)
+        {
+            GameManager.instance.characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
+        }
+
+        if (instance == this)
+        {
+            instance = null;
+        }
+
+        base.OnNetworkDespawn();
     }
 
     private void OnCharacterListUpdated(List<Character> _characters)

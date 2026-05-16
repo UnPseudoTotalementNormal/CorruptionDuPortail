@@ -48,14 +48,19 @@ namespace GameLogic
 
         private void Awake()
         {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             instance = this;
             onNewDayPassed += () => gameLoopCount++;
         }
-    
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-        
+
             SetupGameStates();
         
             if (IsServer)
@@ -66,6 +71,21 @@ namespace GameLogic
             }
         
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer)
+            {
+                NetworkManager.OnClientDisconnectCallback -= OnPlayerDisconnectedServer;
+            }
+
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
         }
 
         private void Update()
@@ -304,7 +324,7 @@ namespace GameLogic
                 switch (customRpcParams.targetType)
                 {
                     case CustomRpcParams.RpcTargetType.single:
-                        rpcParams = RpcTarget.Single(customRpcParams.clientId[0], RpcTargetUse.Temp);
+                        rpcParams = characterManager.GetSafeRpcTarget(customRpcParams.clientId[0]);
                         break;
                     case CustomRpcParams.RpcTargetType.server:
                         rpcParams = RpcTarget.Server;

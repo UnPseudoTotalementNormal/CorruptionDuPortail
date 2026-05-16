@@ -24,7 +24,20 @@ namespace TooltipSystem
 
         private void Awake()
         {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
         }
 
         private void Update()

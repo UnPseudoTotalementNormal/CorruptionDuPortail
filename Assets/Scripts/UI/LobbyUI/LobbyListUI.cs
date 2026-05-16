@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using Network.Services;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,19 +13,48 @@ namespace UI.LobbyUI
         [SerializeField] LobbyEntryUI lobbyEntryPrefab;
         [SerializeField] Button refreshButton;
 
+        // Garde de rentrance pour éviter le double déclenchement du rafraîchissement.
+        private bool _isBusy;
+
         void Start()
         {
             refreshButton.onClick.AddListener(Refresh);
             Refresh();
         }
 
-        public async void Refresh()
+        public void Refresh()
         {
-            Clear();
+            if (_isBusy)
+            {
+                return;
+            }
+            _isBusy = true;
 
-            List<Unity.Services.Lobbies.Models.Lobby> _lobbies = await LobbyManager.instance.GetLobbies();
-            foreach (Unity.Services.Lobbies.Models.Lobby _lobby in _lobbies)
-                CreateEntry(_lobby);
+            RefreshAsync().Forget();
+        }
+
+        private async UniTaskVoid RefreshAsync()
+        {
+            try
+            {
+                Clear();
+
+                List<Unity.Services.Lobbies.Models.Lobby> _lobbies = await LobbyManager.instance.GetLobbies();
+                foreach (Unity.Services.Lobbies.Models.Lobby _lobby in _lobbies)
+                    CreateEntry(_lobby);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec du rafraîchissement de la liste des lobbies: {e}");
+            }
+            finally
+            {
+                _isBusy = false;
+            }
         }
 
         void CreateEntry(Unity.Services.Lobbies.Models.Lobby _lobby)

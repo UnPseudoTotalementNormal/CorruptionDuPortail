@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
@@ -84,8 +85,8 @@ namespace Network.Services
                     _settings.maxPlayers,
                     _settings.Options);
 
-                StartHeartbeat();
-                StartLobbyPolling();
+                StartHeartbeat().Forget();
+                StartLobbyPolling().Forget();
                 OnLobbyCreated?.Invoke(currentLobby);
                 
                 Debug.Log($"Lobby créé: {currentLobby.Name} (ID: {currentLobby.Id})");
@@ -133,8 +134,8 @@ namespace Network.Services
                 }
                 
                 currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(_lobbyId, options);
-                StartHeartbeat();
-                StartLobbyPolling();
+                StartHeartbeat().Forget();
+                StartLobbyPolling().Forget();
                 OnLobbyJoined?.Invoke(currentLobby);
                 
                 Debug.Log($"Lobby rejoint: {currentLobby.Name} (ID: {currentLobby.Id})");
@@ -159,8 +160,8 @@ namespace Network.Services
             try
             {
                 currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(_lobbyCode);
-                StartHeartbeat();
-                StartLobbyPolling();
+                StartHeartbeat().Forget();
+                StartLobbyPolling().Forget();
                 OnLobbyJoined?.Invoke(currentLobby);
                 
                 Debug.Log($"Lobby rejoint par code: {currentLobby.Name} (Code: {_lobbyCode})");
@@ -339,35 +340,39 @@ namespace Network.Services
             }
         }
 
-        private async void StartHeartbeat()
+        private async UniTaskVoid StartHeartbeat()
         {
             StopHeartbeat();
-            
+
             heartbeatCancellation = new CancellationTokenSource();
-            
-            while (!heartbeatCancellation.Token.IsCancellationRequested && currentLobby != null)
+            CancellationToken _token = heartbeatCancellation.Token;
+
+            try
             {
-                try
+                while (!_token.IsCancellationRequested && currentLobby != null)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(HEARTBEAT_INTERVAL), heartbeatCancellation.Token);
-                    
+                    await UniTask.Delay(TimeSpan.FromSeconds(HEARTBEAT_INTERVAL), cancellationToken: _token);
+
                     if (currentLobby != null)
                     {
                         await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
                         Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby.Name}");
                     }
                 }
-                catch (TaskCanceledException)
-                {
-                    // Normal lors de l'arrêt
-                    break;
-                }
-                catch (LobbyServiceException e)
-                {
-                    Debug.LogError($"Échec du heartbeat: {e.Message}");
-                    OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
-                    break;
-                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal lors de l'arrêt (annulation du heartbeat) : sortie silencieuse
+            }
+            catch (LobbyServiceException e)
+            {
+                Debug.LogError($"Échec du heartbeat: {e.Message}");
+                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Erreur inattendue dans le heartbeat: {e}");
+                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
             }
         }
 
@@ -378,18 +383,19 @@ namespace Network.Services
             heartbeatCancellation = null;
         }
 
-        private async void StartLobbyPolling()
+        private async UniTaskVoid StartLobbyPolling()
         {
             StopLobbyPolling();
-            
+
             pollCancellation = new CancellationTokenSource();
-            
-            while (!pollCancellation.Token.IsCancellationRequested && currentLobby != null)
+            CancellationToken _token = pollCancellation.Token;
+
+            try
             {
-                try
+                while (!_token.IsCancellationRequested && currentLobby != null)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(LOBBY_POLL_INTERVAL), pollCancellation.Token);
-                    
+                    await UniTask.Delay(TimeSpan.FromSeconds(LOBBY_POLL_INTERVAL), cancellationToken: _token);
+
                     if (currentLobby != null)
                     {
                         var updatedLobby = await RefreshLobby(currentLobby.Id);
@@ -399,16 +405,15 @@ namespace Network.Services
                         }
                     }
                 }
-                catch (TaskCanceledException)
-                {
-                    // Normal lors de l'arrêt
-                    break;
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"Échec du polling du lobby: {e.Message}");
-                    break;
-                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal lors de l'arrêt (annulation du polling) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec du polling du lobby: {e}");
+                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
             }
         }
 

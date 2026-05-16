@@ -46,30 +46,46 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
         }
         
-        public override async void OnStartStateClient()
+        public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            await BoardManager.instance.ShowAllPlayerCards();
+            OnStartStateClientAsync().Forget();
+        }
 
-            await UniTask.Delay(TimeSpan.FromSeconds(1));
-            
-            await ShowVoteResult();
-            
-            if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
+        private async UniTaskVoid OnStartStateClientAsync()
+        {
+            try
             {
-                if (gameManager.IsServer)
+                await BoardManager.instance.ShowAllPlayerCards();
+
+                await UniTask.Delay(TimeSpan.FromSeconds(1));
+
+                await ShowVoteResult();
+
+                if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
                 {
-                    gameManager.NextGameState();
+                    if (gameManager.IsServer)
+                    {
+                        gameManager.NextGameState();
+                    }
+                }
+                else
+                {
+
+                    Character _chainingCharacter = gameManager.characterManager.GetCharacter(VoteState.mostVotedPlayer);
+                    if (gameManager.IsServer)
+                    {
+                        gameManager.NextGameState();
+                    }
                 }
             }
-            else
+            catch (OperationCanceledException)
             {
-                
-                Character _chainingCharacter = gameManager.characterManager.GetCharacter(VoteState.mostVotedPlayer);
-                if (gameManager.IsServer)
-                {
-                    gameManager.NextGameState();
-                }
+                // Annulation normale (changement d'état / destruction) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Erreur dans VoteRecapState.OnStartStateClientAsync: {e}");
             }
         }
 

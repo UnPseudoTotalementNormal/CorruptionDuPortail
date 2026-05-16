@@ -19,12 +19,10 @@ namespace GameLogic
         {
             if (instance != null && instance != this)
             {
-                Destroy(this);
+                Destroy(gameObject);
+                return;
             }
-            else
-            {
-                instance = this;
-            }
+            instance = this;
         }
 
         private void Start()
@@ -146,6 +144,11 @@ namespace GameLogic
         private void OnDestroy()
         {
             Power.onPowerSpawned -= OnPowerSpawned;
+
+            if (instance == this)
+            {
+                instance = null;
+            }
         }
     }
 }

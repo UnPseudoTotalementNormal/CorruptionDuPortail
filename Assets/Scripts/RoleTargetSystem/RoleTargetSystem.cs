@@ -15,7 +15,22 @@ namespace RoleTarget
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            if (instance != null && instance != this)
+            {
+                return;
+            }
             instance = this;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
         }
 
         private void Start()

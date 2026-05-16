@@ -8,6 +8,7 @@ using Board;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
+using Cysharp.Threading.Tasks;
 using Network;
 using UI.SelectPanels;
 using UnityEngine;
@@ -206,20 +207,31 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            ActivateVoteUI();
+            ActivateVoteUI().Forget();
         }
 
-        private async void ActivateVoteUI()
+        private async UniTaskVoid ActivateVoteUI()
         {
-            await BoardManager.instance.ShowAllPlayerCards();
-
-            foreach (var _c in BoardManager.instance.visibleCards)
+            try
             {
-                VoteCanvas _voteCanvas = _c.voteCanvas;
-                _voteCanvas.SetVoteState(this);
-                _voteCanvas.ResetVoteText();
-                _voteCanvas.ActivateVoteCanvas();
-                _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
+                await BoardManager.instance.ShowAllPlayerCards();
+
+                foreach (var _c in BoardManager.instance.visibleCards)
+                {
+                    VoteCanvas _voteCanvas = _c.voteCanvas;
+                    _voteCanvas.SetVoteState(this);
+                    _voteCanvas.ResetVoteText();
+                    _voteCanvas.ActivateVoteCanvas();
+                    _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (changement d'état / destruction) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Erreur dans VoteState.ActivateVoteUI: {e}");
             }
         }
 

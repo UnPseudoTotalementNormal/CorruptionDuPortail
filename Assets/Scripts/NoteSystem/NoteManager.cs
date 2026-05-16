@@ -28,6 +28,14 @@ namespace NoteSystem
             }
             instance = this;
         }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+        }
         
         public List<Role> GetNotesForPlayer(ulong _playerID, NoteType _noteType)
         {

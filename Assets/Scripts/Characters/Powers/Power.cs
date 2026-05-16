@@ -24,7 +24,7 @@ namespace Characters.Powers
     [Serializable]
     public class Power : NetworkBehaviour
     {
-        public NetworkVariable<ulong> ownerClientId;
+        public NetworkVariable<ulong> ownerClientId = new();
 
         public FixedString64Bytes powerName;
         public FixedString512Bytes powerDescription;
@@ -37,7 +37,7 @@ namespace Characters.Powers
         public TargetIncludeFlags targetIncludeFlags;
         public bool needTargetSelection => targetIncludeFlags != 0;
         
-        public NetworkVariable<int> powerUseLeft;
+        public NetworkVariable<int> powerUseLeft = new();
         public int maxPowerUse = 1;
         [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
@@ -183,9 +183,15 @@ namespace Characters.Powers
                 {
                     RuntimeManager.PlayOneShot(onUsedSound);
                 }
-                FocusManager.instance.UnfocusAll();
+                if (FocusManager.instance != null)
+                {
+                    FocusManager.instance.UnfocusAll();
+                }
             }
-            GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
+            if (GameAudioManager.instance != null)
+            {
+                GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
+            }
             isCurrentlyUsed = false;
             onStopUse?.Invoke();
         }

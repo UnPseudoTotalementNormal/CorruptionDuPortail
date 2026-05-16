@@ -1,0 +1,10 @@
+{
+    "name": "TimeRecorder.Editor",
+    "references": [
+        "TimeRecorder"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": true
+}

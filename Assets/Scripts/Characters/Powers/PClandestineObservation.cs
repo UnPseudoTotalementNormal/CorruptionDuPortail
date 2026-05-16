@@ -43,7 +43,6 @@ namespace Characters.Powers
 
         public void DeclareAllTargetFocusServer()
         {
-            Debug.Log("decalre all target focus");
             if (!CanUse())
             {
                 return;

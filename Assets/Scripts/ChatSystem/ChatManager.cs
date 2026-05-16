@@ -44,6 +44,11 @@ namespace ChatSystem
 
         private void Awake()
         {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             instance = this;
             DiscoverChat((int)ChatWindowIDs.Server);
             DiscoverChat((int)ChatWindowIDs.General);
@@ -60,7 +65,17 @@ namespace ChatSystem
                 GameAudioManager.instance.PlayOneShot(switchChatSound.GetPath());
             };
         }
-        
+
+        public override void OnNetworkDespawn()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
+        }
+
         public void ChangeActiveChat(int _chatId)
         {
             if (discoveredChatIds.Contains(_chatId))

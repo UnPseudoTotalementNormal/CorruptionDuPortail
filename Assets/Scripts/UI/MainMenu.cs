@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
 using Network.Services;
@@ -47,7 +48,10 @@ namespace UI
         [SerializeField] private CanvasGroup loadingCanvasGroup; //shown when loading stuff
 
         private string lobbyCreatingName = "";
-    
+
+        // Garde de rentrance pour éviter le double déclenchement Host/Join.
+        private bool _isBusy;
+
         private void Start()
         {
             closeHostMenu.onClick.AddListener(OnCloseHostButtonClicked);
@@ -93,13 +97,24 @@ namespace UI
             lobbyCreatingName = _text;
         }
 
-        public async void OnJoinButtonClicked()
+        public void OnJoinButtonClicked()
         {
             if (string.IsNullOrEmpty(joinCodeInputField.text))
             {
                 return;
             }
 
+            if (_isBusy)
+            {
+                return;
+            }
+            _isBusy = true;
+
+            OnJoinButtonClickedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnJoinButtonClickedAsync()
+        {
             _hostButton.interactable = false;
             _joinWithCodeButton.interactable = false;
             loadingCanvasGroup.DoShowGroup();
@@ -138,7 +153,7 @@ namespace UI
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Error joining game: {e.Message}");
+                Debug.LogError($"Error joining game: {e}");
 
                 // Nettoyer l'état du réseau
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
@@ -156,6 +171,10 @@ namespace UI
                 loadingCanvasGroup.DoHideGroup();
                 _hostButton.interactable = true;
                 _joinWithCodeButton.interactable = true;
+            }
+            finally
+            {
+                _isBusy = false;
             }
         }
 
@@ -224,13 +243,24 @@ namespace UI
         }
 
 
-        public async void OnHostButtonClicked()
+        public void OnHostButtonClicked()
         {
             if (string.IsNullOrEmpty(lobbyCreatingName) || lobbyCreatingName.Length < 3)
             {
                 return;
             }
 
+            if (_isBusy)
+            {
+                return;
+            }
+            _isBusy = true;
+
+            OnHostButtonClickedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnHostButtonClickedAsync()
+        {
             _hostButton.interactable = false;
             _joinWithCodeButton.interactable = false;
             loadingCanvasGroup.DoShowGroup();
@@ -295,24 +325,28 @@ namespace UI
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Error hosting game: {e.Message}");
-                
+                Debug.LogError($"Error hosting game: {e}");
+
                 // Nettoyer l'état du réseau
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {
                     NetworkManager.Singleton.Shutdown();
                 }
-                
+
                 // Quitter le lobby si créé
                 if (LobbyManager.instance != null)
                 {
                     await LobbyManager.instance.LeaveLobby();
                 }
-                
+
                 // Réactiver l'interface
                 loadingCanvasGroup.DoHideGroup();
                 _hostButton.interactable = true;
                 _joinWithCodeButton.interactable = true;
+            }
+            finally
+            {
+                _isBusy = false;
             }
         }
 

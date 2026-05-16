@@ -16,9 +16,9 @@ namespace Network
 
         private void Awake()
         {
-            if (instance != null)
+            if (instance != null && instance != this)
             {
-                Destroy(instance.gameObject);
+                Destroy(gameObject);
                 return;
             }
             instance = this;
@@ -39,11 +39,16 @@ namespace Network
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            
+
             if (IsServer)
             {
                 NetworkManager.OnClientConnectedCallback -= OnClientConnected;
                 NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+            }
+
+            if (instance == this)
+            {
+                instance = null;
             }
         }
 

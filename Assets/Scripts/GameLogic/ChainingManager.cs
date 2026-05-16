@@ -24,6 +24,16 @@ namespace GameLogic
             }
             instance = this;
         }
+
+        public override void OnNetworkDespawn()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
+        }
         
         public void AddCharacterToChainingList(ulong _characterId)
         {

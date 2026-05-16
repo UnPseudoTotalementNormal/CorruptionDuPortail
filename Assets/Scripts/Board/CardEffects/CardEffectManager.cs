@@ -23,10 +23,16 @@ namespace Board
             if (instance != null && instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
-            else
+            instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
             {
-                instance = this;
+                instance = null;
             }
         }
 

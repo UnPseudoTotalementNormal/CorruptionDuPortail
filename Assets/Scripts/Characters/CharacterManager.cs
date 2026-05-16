@@ -54,20 +54,55 @@ namespace Characters
         [SerializeField] private Transform _charactersParent;
         [SerializeField] private NetworkObject _characterPrefab;
 
+        // Backing cache for the resolved characters. Rebuilt only when
+        // networkedCharacters actually changes (OnListChanged) or on spawn, so
+        // the very frequent reads below allocate nothing per access.
+        private readonly List<Character> _charactersCache = new();
+
+        // Set to true when the last rebuild could not resolve every
+        // NetworkBehaviourReference (network spawn still in flight). While dirty,
+        // reads will retry the rebuild so a late-resolving Character eventually
+        // appears, preserving the original per-access TryGet tolerance without
+        // paying its cost in steady state.
+        private bool _cacheDirty = true;
+
         private List<Character> _characters
         {
             get
             {
-                List<Character> _result = new();
-                foreach (var _networkBehaviourReference in networkedCharacters)
+                if (_cacheDirty)
                 {
-                    if (_networkBehaviourReference.TryGet(out Character _character))
-                    {
-                        _result.Add(_character);
-                    }
+                    RebuildCharactersCache();
                 }
-                return _result;
+                return _charactersCache;
             }
+        }
+
+        private void RebuildCharactersCache()
+        {
+            _charactersCache.Clear();
+            bool _allResolved = true;
+            foreach (var _networkBehaviourReference in networkedCharacters)
+            {
+                if (_networkBehaviourReference.TryGet(out Character _character))
+                {
+                    _charactersCache.Add(_character);
+                }
+                else
+                {
+                    // Character network object not resolvable yet (spawn in
+                    // flight): skip it (no crash) and keep the cache dirty so a
+                    // later read picks it up.
+                    _allResolved = false;
+                }
+            }
+            _cacheDirty = !_allResolved;
+        }
+
+        private void OnNetworkedCharactersChanged(NetworkListEvent<NetworkBehaviourReference> _changeEvent)
+        {
+            // Authoritative source changed: force a rebuild on next access.
+            _cacheDirty = true;
         }
 
         private NetworkList<NetworkBehaviourReference> networkedCharacters = new();
@@ -82,13 +117,50 @@ namespace Characters
             if (instance != null && instance != this)
             {
                 Destroy(this.gameObject);
+                return;
             }
-            else
-            {
-                instance = this;
-            }
+            instance = this;
         }
         
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            // Subscribe to the authoritative list so the cache is invalidated
+            // whenever it changes.
+            networkedCharacters.OnListChanged += OnNetworkedCharactersChanged;
+
+            // The NetworkList is delivered already populated to late joiners
+            // without raising OnListChanged for the initial state, so force a
+            // rebuild here (kept dirty until every reference resolves).
+            _cacheDirty = true;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
+
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
+        }
+
+        private void OnDestroy()
+        {
+            // Safety net: the duplicate singleton instance is destroyed in Awake
+            // and may never spawn/despawn; also covers teardown ordering where
+            // OnNetworkDespawn was not invoked. Unsubscribing twice is harmless.
+            networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
+
+            if (instance == this)
+            {
+                instance = null;
+            }
+        }
+
         public ulong GetLocalClientId() => _debugPossessedId ?? NetworkManager.LocalClientId;
         
         public bool IsLocalOrSimulated(ulong _clientId)
@@ -118,7 +190,13 @@ namespace Characters
             {
                 StartCoroutine(TriggerOnCharactersListUpdatedAtEndOfFrame());
             }
-            return _characters;
+            // Return a defensive copy: the previous implementation handed back a
+            // freshly built list on every call, so external callers that mutate
+            // the result (e.g. RoleAttributionState calls GetCharacters().Add(..))
+            // never affected the real state. Preserve that exact behaviour and
+            // protect the backing cache from external mutation. The expensive
+            // TryGet iteration is gone; this only copies already-resolved refs.
+            return new List<Character>(_characters);
         }
         
         [Rpc(SendTo.Everyone, RequireOwnership = true)]
@@ -212,26 +290,49 @@ namespace Characters
                 _newCharacterObject.TrySetParent(_charactersParent, false);
             }
             
-            networkedCharacters.Add(_newCharacterObject.GetComponent<Character>());
             Character _newCharacter = _newCharacterObject.GetComponent<Character>();
             _newCharacter.ownerClientId.Value = _clientId;
-            _characters.Add(_newCharacter);
+
+            // Authoritative source. Adding here raises OnListChanged on the
+            // server and invalidates the cache; the previous _characters.Add(..)
+            // on the throwaway list was a silent no-op.
+            networkedCharacters.Add(_newCharacter);
+
+            // Force the cache to include the just-spawned character (its
+            // NetworkObject is already spawned locally so TryGet resolves) and
+            // notify listeners with the up-to-date list, as before.
+            _cacheDirty = true;
             onCharactersListUpdated?.Invoke(_characters);
             return _newCharacter;
         }
 
         public void RemoveCharacter(ulong _clientId)
         {
-            Character _characterToRemove = GetCharacters(false).FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
+            Character _characterToRemove = _characters.FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
             if (_characterToRemove != null)
             {
+                // Remove from the authoritative source BEFORE despawning: once
+                // the NetworkObject is despawned its NetworkBehaviourReference no
+                // longer resolves, so we must match the entry while it is still
+                // valid. The previous _characters.Remove(..) on the throwaway
+                // list was a silent no-op.
+                for (int _i = networkedCharacters.Count - 1; _i >= 0; _i--)
+                {
+                    if (networkedCharacters[_i].TryGet(out Character _c) && _c == _characterToRemove)
+                    {
+                        networkedCharacters.RemoveAt(_i);
+                    }
+                }
+
                 var _networkObject = _characterToRemove.GetComponent<NetworkObject>();
                 if (_networkObject != null && _networkObject.IsSpawned)
                 {
                     _networkObject.Despawn();
                 }
-                _characters.Remove(_characterToRemove);
             }
+            // Removal raises OnListChanged on the server; also force it for the
+            // immediate host-side read, then notify with the up-to-date list.
+            _cacheDirty = true;
             onCharactersListUpdated?.Invoke(_characters);
         }
         

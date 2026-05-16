@@ -15,7 +15,22 @@ namespace MessageSystem
         
         private void Awake()
         {
+            if (instance != null && instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             instance = this;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            base.OnNetworkDespawn();
         }
 
         [Rpc(SendTo.Server)]

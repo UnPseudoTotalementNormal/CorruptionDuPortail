@@ -20,17 +20,23 @@ namespace ArrowSystem
         
         private void Awake()
         {
-            if (instance == null)
-            {
-                instance = this;
-            }
-            else
+            if (instance != null && instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
+            instance = this;
 
             var _colliderTransform = arrowMouseCollider.transform;
             _colliderTransform.position = new Vector3(_colliderTransform.position.x, arrowPrefab.yPos, _colliderTransform.position.z);
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
         }
         
         public ArrowObject GetLastArrow()

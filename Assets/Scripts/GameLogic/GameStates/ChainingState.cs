@@ -88,16 +88,22 @@ namespace GameLogic.GameStates
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
-            var flipLayer = _cardInfo.visualComponents.compositor.GetLayer("Flip");
+            var chainingLayer = _cardInfo.visualComponents.compositor.GetLayer("ChainingFlip");
+            Vector3 rot = Vector3.zero;
             
-            spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            var _tween1 = flipLayer.DOLocalRotate(new Vector3(0, 0, -180), 1f, RotateMode.FastBeyond360).SetEase(Ease.OutSine);
+            Vector3 targetWorldPos = spawnedCard.position;
+            targetWorldPos.y = -5f;
+            Vector3 targetLocalPos = spawnedCard.parent.InverseTransformPoint(targetWorldPos);
+            float targetLocalY = targetLocalPos.y - spawnedCard.localPosition.y;
+            
+            chainingLayer.DOLocalMoveY(targetLocalY, 1f).SetEase(Ease.OutQuint);
+            var _tween1 = DOTween.To(() => rot, x => { rot = x; chainingLayer.localEulerAngles = rot; }, new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
             await UniTask.WaitUntil(() => !_tween1.IsActive());
             
             _ = _cardInfo.ShowPseudoWithRevealedInfo(false, false);
             
-            flipLayer.DOLocalRotate(new Vector3(0, 0, -360), 1f, RotateMode.FastBeyond360).SetEase(Ease.InSine);
-            var _tween2 = spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);
+            var _tween2 = DOTween.To(() => rot, x => { rot = x; chainingLayer.localEulerAngles = rot; }, new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+            var _tweenMove = chainingLayer.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);
             await UniTask.WaitUntil(() => !_tween2.IsActive());
             
             var _tween3 = spawnedCard.DOPunchScale(new Vector3(0.25f, 0f, 0.1f), 0.35f);

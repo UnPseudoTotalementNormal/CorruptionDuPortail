@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
 using Network.Services;
@@ -31,6 +32,10 @@ namespace UI.Lobby
         private const float AUTO_REFRESH_INTERVAL = 7f;
         private float refreshTimer = 0f;
 
+        // Gardes de rentrance pour éviter le double déclenchement.
+        private bool _isRefreshing;
+        private bool _isJoining;
+
         private Unity.Services.Lobbies.Models.Lobby currentLobbySelected;
         private LobbyEntryUI currentLobbyEntryUISelected;
         
@@ -57,7 +62,7 @@ namespace UI.Lobby
             Refresh();
         }
 
-        private async void OnSubmitPasswordButtonClicked()
+        private void OnSubmitPasswordButtonClicked()
         {
             if (currentLobbySelected == null)
                 return;
@@ -66,21 +71,47 @@ namespace UI.Lobby
             if (string.IsNullOrEmpty(password))
                 return;
 
-            loadingCanvasGroup.DoShowGroup();
-
-            bool result = await JoinLobby(currentLobbySelected, password);
-            
-            loadingCanvasGroup.DoHideGroup();
-            
-            if (!result)
-            {
-                Debug.LogError("Failed to join lobby with password.");
-                passwordInputField.text = "";
+            if (_isJoining)
                 return;
+            _isJoining = true;
+
+            OnSubmitPasswordButtonClickedAsync(password).Forget();
+        }
+
+        private async UniTaskVoid OnSubmitPasswordButtonClickedAsync(string password)
+        {
+            try
+            {
+                loadingCanvasGroup.DoShowGroup();
+
+                bool result = await JoinLobby(currentLobbySelected, password);
+
+                loadingCanvasGroup.DoHideGroup();
+
+                if (!result)
+                {
+                    Debug.LogError("Failed to join lobby with password.");
+                    passwordInputField.text = "";
+                    return;
+                }
+
+                enterPasswordCanvasGroup.DoHideGroup();
+                passwordInputField.text = "";
             }
-            
-            enterPasswordCanvasGroup.DoHideGroup();
-            passwordInputField.text = "";
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec de la connexion au lobby avec mot de passe: {e}");
+                loadingCanvasGroup.DoHideGroup();
+                passwordInputField.text = "";
+            }
+            finally
+            {
+                _isJoining = false;
+            }
         }
 
         private void OnConnectButtonClicked()
@@ -104,63 +135,89 @@ namespace UI.Lobby
             }
         }
 
-        public async void Refresh()
+        public void Refresh()
         {
             if (!AuthenticationService.Instance.IsSignedIn)
             {
                 return;
             }
 
-            List<Unity.Services.Lobbies.Models.Lobby> lobbies;
+            if (_isRefreshing)
+            {
+                return;
+            }
+            _isRefreshing = true;
+
+            RefreshAsync().Forget();
+        }
+
+        private async UniTaskVoid RefreshAsync()
+        {
             try
             {
-                lobbies = await LobbyManager.instance.GetLobbies();
+                List<Unity.Services.Lobbies.Models.Lobby> lobbies;
+                try
+                {
+                    lobbies = await LobbyManager.instance.GetLobbies();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Failed to get lobbies: {e.Message}");
+                    return;
+                }
+
+                HashSet<string> currentLobbyIds = new HashSet<string>();
+                foreach (Unity.Services.Lobbies.Models.Lobby lobby in lobbies)
+                {
+                    if (lobby.IsLocked)
+                    {
+                        continue;
+                    }
+
+                    currentLobbyIds.Add(lobby.Id);
+
+                    if (!existingEntries.ContainsKey(lobby.Id))
+                    {
+                        CreateEntry(lobby);
+                    }
+                    else
+                    {
+                        existingEntries[lobby.Id].Setup(lobby);
+                    }
+                }
+
+                List<string> entriesToRemove = new List<string>();
+                foreach (var kvp in existingEntries)
+                {
+                    if (!currentLobbyIds.Contains(kvp.Key))
+                    {
+                        entriesToRemove.Add(kvp.Key);
+                        if (kvp.Value)
+                        {
+                            Destroy(kvp.Value.gameObject);
+                        }
+                    }
+                }
+
+                foreach (string id in entriesToRemove)
+                {
+                    existingEntries.Remove(id);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to get lobbies: {e.Message}");
-                return;
+                Debug.LogError($"Échec du rafraîchissement de la liste des lobbies: {e}");
             }
-            
-            HashSet<string> currentLobbyIds = new HashSet<string>();
-            foreach (Unity.Services.Lobbies.Models.Lobby lobby in lobbies)
+            finally
             {
-                if (lobby.IsLocked)
-                {
-                    continue;
-                }
-                
-                currentLobbyIds.Add(lobby.Id);
-                
-                if (!existingEntries.ContainsKey(lobby.Id))
-                {
-                    CreateEntry(lobby);
-                }
-                else
-                {
-                    existingEntries[lobby.Id].Setup(lobby);
-                }
-            }
-            
-            List<string> entriesToRemove = new List<string>();
-            foreach (var kvp in existingEntries)
-            {
-                if (!currentLobbyIds.Contains(kvp.Key))
-                {
-                    entriesToRemove.Add(kvp.Key);
-                    if (kvp.Value)
-                    {
-                        Destroy(kvp.Value.gameObject);
-                    }
-                }
-            }
-            
-            foreach (string id in entriesToRemove)
-            {
-                existingEntries.Remove(id);
+                _isRefreshing = false;
             }
         }
-        
+
         private void CreateEntry(Unity.Services.Lobbies.Models.Lobby _lobby)
         {
             LobbyEntryUI _entry = Instantiate(lobbyEntryPrefab, contentRoot);

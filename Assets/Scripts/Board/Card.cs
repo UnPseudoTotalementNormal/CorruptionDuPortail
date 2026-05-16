@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Board.CardComponents;
 using Board.UI.VoteCanvas;
 using Characters;
@@ -61,6 +60,9 @@ namespace Board
         [HideInInspector] public Character characterInfo;
         [HideInInspector] public Role roleInfo;
 
+        // Assumption: child IPanelOpen set is fixed at Awake (no panels instantiated/added to the card hierarchy at runtime).
+        private IPanelOpen[] panelOpenComponents;
+
         #region Unity Lifecycle
 
         private void Awake()
@@ -81,6 +83,8 @@ namespace Board
             {
                 visualUpdater.SetUnknown();
             }
+
+            panelOpenComponents = GetComponentsInChildren<IPanelOpen>(true);
 
             CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
         }
@@ -371,7 +375,16 @@ namespace Board
             {
                 return false;
             }
-            return !GetComponentsInChildren<IPanelOpen>().Any(_ip => _ip.isPanelOpen);
+
+            for (int _i = 0; _i < panelOpenComponents.Length; _i++)
+            {
+                if (panelOpenComponents[_i].isPanelOpen)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private async UniTask ShowRevealedCard(bool _turnCard, System.Threading.CancellationToken _cancellationToken)

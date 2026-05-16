@@ -21,6 +21,14 @@ public class GameAssetHolder : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+
     public Power GetPowerDataObject(string _powerName)
     {
         var _powerDataObject = powerDataObjects.Find(_p => _p.powerName.ToString().ToLower() == _powerName.ToLower());

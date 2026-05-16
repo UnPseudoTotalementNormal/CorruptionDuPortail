@@ -12,7 +12,22 @@ namespace UI
         
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
+            base.OnNetworkDespawn();
         }
     }
 }

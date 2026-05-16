@@ -78,7 +78,7 @@ public class BoardManager : NetworkBehaviour
     {
         foreach (var _character in _characters)
         {
-            Card _card = visibleCards.FirstOrDefault(_char => _char.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
+            Card _card = visibleCards.FirstOrDefault(_char => _char != null && _char.characterInfo != null && _char.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
             if (_card)
             {
                 _card.SetInfo(_character);

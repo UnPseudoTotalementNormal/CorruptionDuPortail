@@ -55,6 +55,7 @@ namespace Board.CardComponents
             {
                 return;
             }
+            isBackSide = true;
 
             var flipLayer = visualComponents.compositor.GetLayer(FLIP_LAYER);
 
@@ -77,6 +78,7 @@ namespace Board.CardComponents
             {
                 return;
             }
+            isBackSide = false;
 
             var flipLayer = visualComponents.compositor.GetLayer(FLIP_LAYER);
 
@@ -93,16 +95,16 @@ namespace Board.CardComponents
             }
         }
 
+        private bool isBackSide = false;
+
         private bool IsOnBackSide()
         {
-            var flipLayer = visualComponents.compositor.GetLayer(FLIP_LAYER);
-            return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), FLIP_ROTATION_ANGLE);
+            return isBackSide;
         }
 
         private bool IsOnFrontSide()
         {
-            var flipLayer = visualComponents.compositor.GetLayer(FLIP_LAYER);
-            return Mathf.Approximately(Mathf.Abs(flipLayer.localEulerAngles.z), 0);
+            return !isBackSide;
         }
 
         private void AnimateFlipDisplacement()

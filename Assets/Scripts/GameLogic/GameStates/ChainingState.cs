@@ -88,16 +88,15 @@ namespace GameLogic.GameStates
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
             
-            // Get the flip layer for rotation animations
             var flipLayer = _cardInfo.visualComponents.compositor.GetLayer("Flip");
             
             spawnedCard.DOMoveY(-5, 1f).SetEase(Ease.OutQuint);
-            var _tween1 = flipLayer.DOLocalRotate(new Vector3(0, 0, -180), 1f).SetEase(Ease.OutSine);
+            var _tween1 = flipLayer.DOLocalRotate(new Vector3(0, 0, -180), 1f, RotateMode.FastBeyond360).SetEase(Ease.OutSine);
             await UniTask.WaitUntil(() => !_tween1.IsActive());
             
             _ = _cardInfo.ShowPseudoWithRevealedInfo(false, false);
             
-            flipLayer.DOLocalRotate(new Vector3(0, 0, -360), 1f).SetEase(Ease.InSine);
+            flipLayer.DOLocalRotate(new Vector3(0, 0, -360), 1f, RotateMode.FastBeyond360).SetEase(Ease.InSine);
             var _tween2 = spawnedCard.DOLocalMoveY(0, 1f).SetEase(Ease.InQuint);
             await UniTask.WaitUntil(() => !_tween2.IsActive());
             

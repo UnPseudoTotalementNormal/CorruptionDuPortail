@@ -38,7 +38,7 @@ namespace Characters.Powers
         }
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
+            RoleTargetSystem.instance?.NewTargeting(ownerClientId.Value, _targetClientId);
             hackedCharacterClientId = _targetClientId;
             GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_targetClientId,
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);

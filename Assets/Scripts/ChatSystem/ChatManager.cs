@@ -53,10 +53,12 @@ namespace ChatSystem
             DiscoverChat((int)ChatWindowIDs.Server);
             DiscoverChat((int)ChatWindowIDs.General);
             
-            onChatMessageSent += (_) => { GameAudioManager.instance.PlayOneShot(sendMessageSound.GetPath()); };
-            onChatMessageReceived += (_) => { GameAudioManager.instance.PlayOneShot(receiveMessageSound.GetPath()); };
+            onChatMessageSent += (_) => { GameAudioManager.instance?.PlayOneShot(sendMessageSound.GetPath()); };
+            onChatMessageReceived += (_) => { GameAudioManager.instance?.PlayOneShot(receiveMessageSound.GetPath()); };
             onActiveChatChanged += (_newChatId) =>
             {
+                if (GameAudioManager.instance == null) return;
+
                 if (switchChatSoundOverride.TryGetValue(_newChatId, out EventReference _overrideSound) && !string.IsNullOrEmpty(_overrideSound.GetPath()))
                 {
                     GameAudioManager.instance.PlayOneShot(_overrideSound.GetPath());
@@ -102,7 +104,6 @@ namespace ChatSystem
 
         public void DiscoverChat(int _chatId, string _overrideName = null)
         {
-            Debug.Log("Discovering chat with ID: " + _chatId);
             discoveredChatIds.Add(_chatId);
             if (!string.IsNullOrEmpty(_overrideName))
             {

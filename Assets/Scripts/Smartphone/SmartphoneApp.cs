@@ -35,12 +35,12 @@ namespace Smartphone
         public Action onPanelOpened { get; set; }
         public event Action isActiveChanged;
 
-        public SmartphoneApp GetNeighborApp(SwipeDirection direction)
+        public virtual SmartphoneApp GetNeighborApp(SwipeDirection direction)
         {
             return neighborApps[direction];
         }
 
-        public void TryClosePanel()
+        public virtual void TryClosePanel()
         {
             if (!IsOpen)
             {
@@ -52,7 +52,7 @@ namespace Smartphone
             onPanelClosed?.Invoke();
         }
 
-        public void TryOpenPanel()
+        public virtual void TryOpenPanel()
         {
             if (IsOpen)
             {

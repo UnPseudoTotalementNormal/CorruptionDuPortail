@@ -3,6 +3,7 @@
 using Network.Player;
 using Unity.Netcode;
 using Characters;
+using UnityEngine;
 
 #endregion
 
@@ -38,9 +39,7 @@ namespace Network
 
         public override void OnNetworkDespawn()
         {
-            base.OnNetworkDespawn();
-
-            if (IsServer)
+            if (IsServer && NetworkManager != null)
             {
                 NetworkManager.OnClientConnectedCallback -= OnClientConnected;
                 NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
@@ -50,10 +49,14 @@ namespace Network
             {
                 instance = null;
             }
+
+            base.OnNetworkDespawn();
         }
 
         private void OnClientDisconnected(ulong clientId)
         {
+            if (!IsSpawned) return;
+
             for (int i = 0; i < playerInfos.Count; i++)
             {
                 if (playerInfos[i].playerClientId != clientId)
@@ -89,11 +92,14 @@ namespace Network
         [Rpc(SendTo.Server)]
         private void SavePlayerInfoRpc(PlayerInfo playerInfo)
         {
+            if (!IsSpawned || playerInfos == null) return;
             playerInfos.Add(playerInfo);
         }
 
         public PlayerInfo GetPlayerInfo(ulong _clientId)
         { 
+            if (!IsSpawned || playerInfos == null) return default;
+
             foreach (var info in playerInfos)
             {
                 if (info.playerClientId == _clientId)
@@ -106,7 +112,7 @@ namespace Network
 
         public void AddDebugPlayer(ulong _clientId, string _name)
         {
-            if (!IsServer) return;
+            if (!IsServer || !IsSpawned || playerInfos == null) return;
             
             playerInfos.Add(new Network.Player.PlayerInfo
             {

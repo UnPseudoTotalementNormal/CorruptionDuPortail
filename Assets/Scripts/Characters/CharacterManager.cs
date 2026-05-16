@@ -148,8 +148,9 @@ namespace Characters
             base.OnNetworkDespawn();
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
+            base.OnDestroy();
             // Safety net: the duplicate singleton instance is destroyed in Awake
             // and may never spawn/despawn; also covers teardown ordering where
             // OnNetworkDespawn was not invoked. Unsubscribing twice is harmless.
@@ -220,7 +221,7 @@ namespace Characters
         [Rpc(SendTo.Server)]
         public void AskForUpdateAllCharactersRpc()
         {
-            if (!IsServer)
+            if (!IsSpawned || !IsServer)
             {
                 return;
             }
@@ -382,7 +383,7 @@ namespace Characters
                 return;
             }
 
-            PowerManager.instance.OnPowerReparentedServer(_power);
+            PowerManager.instance?.OnPowerReparentedServer(_power);
         }
         
         private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent, Action<bool> _callback = null)

@@ -7,7 +7,7 @@ namespace Misc
     {
         [SerializeField] private Vector3 positionOffset;
         [SerializeField] private Vector3 rotationOffset;
-        [SerializeField] private Camera camera;
+        [SerializeField] private new Camera camera;
         
         private void Start()
         {

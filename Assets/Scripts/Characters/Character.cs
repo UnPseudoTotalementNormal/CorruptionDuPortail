@@ -1,5 +1,3 @@
-#region
-
 using System;
 using Board;
 using Characters.Powers;
@@ -10,8 +8,6 @@ using Network;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
-
-#endregion
 
 namespace Characters
 {
@@ -67,13 +63,13 @@ namespace Characters
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
-            if (!_newValue)
+            if (!_newValue || CharacterManager.instance == null || GameManager.instance == null)
             {
                 return;
             }
             
             Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter();
-            if (_localCharacter == null)
+            if (_localCharacter == null || _localCharacter.role == null)
             {
                 return;
             }
@@ -81,7 +77,10 @@ namespace Characters
             if (_localCharacter.role.factionType == FactionType.anomaly ||
                 _localCharacter.role.roleID == RoleID.Dryade)
             {
-                CardEffectManager.instance.AddCardEffect(CardEffectID.Blessing, ownerClientId.Value);
+                if (CardEffectManager.instance != null)
+                {
+                    CardEffectManager.instance.AddCardEffect(CardEffectID.Blessing, ownerClientId.Value);
+                }
             }
         }
 
@@ -161,17 +160,18 @@ namespace Characters
 
         public string GetOwnerPseudo()
         {
+            if (LobbyPlayerInfoHolder.instance == null) return "Unknown";
             return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
         }
 
         
-        [Rpc(SendTo.Server)]
+        [Rpc(SendTo.Server, RequireOwnership = false)]
         public void CorruptPlayerServerRpc()
         {
             isCorrupted.Value = true;
         }
 
-        [Rpc(SendTo.Server)]
+        [Rpc(SendTo.Server, RequireOwnership = false)]
         public void HealPlayerServerRpc()
         {
             if (isHealed.Value)

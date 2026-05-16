@@ -49,15 +49,27 @@ namespace Smartphone
 
         private void Awake()
         {
-            foreach (SmartphoneApp smartphoneApp in appParent.GetComponentsInChildren<SmartphoneApp>(true))
+            if (appParent != null && phoneCanvasTransform != null)
             {
-                smartphoneApp.canvasGroupTransform.anchoredPosition = phoneCanvasTransform.sizeDelta * new Vector2(10f, 10f);
+                foreach (SmartphoneApp smartphoneApp in appParent.GetComponentsInChildren<SmartphoneApp>(true))
+                {
+                    if (smartphoneApp.canvasGroupTransform != null)
+                    {
+                        smartphoneApp.canvasGroupTransform.anchoredPosition = phoneCanvasTransform.sizeDelta * new Vector2(10f, 10f);
+                    }
+                }
             }
             
-            GoToApp(defaultApp);
+            if (defaultApp != null)
+            {
+                GoToApp(defaultApp);
+            }
 
-            openOnCamera.onCameraActivated += TryOpenPanel;
-            openOnCamera.onCameraDeactivated += TryClosePanel;
+            if (openOnCamera != null)
+            {
+                openOnCamera.onCameraActivated += TryOpenPanel;
+                openOnCamera.onCameraDeactivated += TryClosePanel;
+            }
         }
 
         private void Start()
@@ -113,7 +125,6 @@ namespace Smartphone
             SmartphoneApp nextApp = currentApp.GetNeighborApp(swipeDirection);
             if (nextApp == null)
             {
-                Debug.Log("Swiped " + swipeDirection + ", no neighbor app");
                 return;
             }
             while (!nextApp.isActive)
@@ -124,7 +135,6 @@ namespace Smartphone
                     break;
                 }
             }
-            Debug.Log("Swiped " + swipeDirection + ", next app: " + (nextApp != null ? nextApp.name : "null"));
             if (nextApp != null)
             {
                 GoToApp(nextApp, swipeDirection);

@@ -19,6 +19,12 @@ namespace Characters.Powers
             var _charactersForLegacy = CharacterManager.instance.GetCharacters(false).Where(_c => _c.role.roleID == roleForLegacy).ToList();
             foreach (var _character in _charactersForLegacy)
             {
+                // Check if already chained
+                if (_character.isChained.Value)
+                {
+                    OnCharacterChainChanged(false, true);
+                }
+                
                 _character.isChained.OnValueChanged += OnCharacterChainChanged;
             }
         }

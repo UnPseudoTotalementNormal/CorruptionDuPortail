@@ -1,0 +1,23 @@
+{
+    "name": "DOTween.Editor",
+    "rootNamespace": "",
+    "references": [
+        "DOTween.Runtime",
+        "DOTween.Modules",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "DOTweenEditor.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

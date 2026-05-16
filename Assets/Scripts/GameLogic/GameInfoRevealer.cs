@@ -126,8 +126,11 @@ namespace GameLogic
 
             if (_showInfo && _observerId == CharacterManager.instance.GetLocalClientId())
             {
-                _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId.Value == _clientId)
-                    ?.ShowPseudoWithRevealedInfo(true);
+                if (BoardManager.instance != null && BoardManager.instance.visibleCards != null)
+                {
+                    _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId.Value == _clientId)
+                        ?.ShowPseudoWithRevealedInfo(true);
+                }
             }
             
             if (_observerId == CharacterManager.instance.GetLocalClientId())

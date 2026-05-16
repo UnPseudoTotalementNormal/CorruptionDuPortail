@@ -36,7 +36,7 @@ public class GameManagerEditor : Editor
 
         EditorGUILayout.LabelField("GameStates properties", EditorStyles.boldLabel);
 
-        foreach (var gameState in ((GameManager)target).gameStates.Keys)
+        foreach (var gameState in (target as GameLogic.GameManager).gameStates.Keys)
         {
             if (!foldouts.ContainsKey(gameState))
             {

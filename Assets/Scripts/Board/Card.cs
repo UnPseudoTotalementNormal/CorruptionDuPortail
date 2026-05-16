@@ -78,15 +78,18 @@ namespace Board
             }
             
             SetCanShowBackInfo(true);
-            SetPlaceSide(PlaceCardSide.Front);
-            if (characterInfo == null)
+            SetPlaceSide(placeCardSide);
+            if (characterInfo == null && visualUpdater != null)
             {
                 visualUpdater.SetUnknown();
             }
 
             panelOpenComponents = GetComponentsInChildren<IPanelOpen>(true);
 
-            CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+            if (CharacterManager.instance != null)
+            {
+                CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+            }
         }
 
         private void OnLocalIdentityChanged()
@@ -98,7 +101,9 @@ namespace Board
 
         private void Update()
         {
-            animationHandler?.Update();
+            if (animationHandler == null) return;
+            
+            animationHandler.Update();
             
             if (isPointerOver || !animationHandler.isCardZoomed)
             {
@@ -110,13 +115,16 @@ namespace Board
                 return;
             }
             
-            animationHandler.OnUnHover(cardCanvas, soundHandler.PlayUnhoverSound);
+            animationHandler.OnUnHover(cardCanvas, soundHandler != null ? soundHandler.PlayUnhoverSound : null);
         }
 
         private void OnDestroy()
         {
             UnsubscribeFromCharacterEvents();
-            CharacterManager.instance.onLocalIdentityChanged -= OnLocalIdentityChanged;
+            if (CharacterManager.instance != null)
+            {
+                CharacterManager.instance.onLocalIdentityChanged -= OnLocalIdentityChanged;
+            }
             showPseudoTaskHandler.Dispose();
         }
 
@@ -181,14 +189,16 @@ namespace Board
         public void SetPlaceSide(PlaceCardSide _placeSide)
         {
             placeCardSide = _placeSide;
+
+            if (visualUpdater == null || visualComponents == null) return;
             
             if (placeCardSide == PlaceCardSide.Front)
             {
-                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
+                visualUpdater.ShowFrontSideInfo(voteCanvas != null ? voteCanvas.transform : null, visualComponents.cardEffectsParent);
             }
             else if (canShowBackInfo)
             {
-                visualUpdater.ShowBackSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
+                visualUpdater.ShowBackSideInfo(voteCanvas != null ? voteCanvas.transform : null, visualComponents.cardEffectsParent);
             }
         }
 
@@ -196,14 +206,16 @@ namespace Board
         {
             canShowBackInfo = _shouldShowBackInfo;
 
+            if (visualUpdater == null || visualComponents == null) return;
+
             if (!canShowBackInfo)
             {
-                visualUpdater.ShowFrontSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
+                visualUpdater.ShowFrontSideInfo(voteCanvas != null ? voteCanvas.transform : null, visualComponents.cardEffectsParent);
             }
             
             if (canShowBackInfo && placeCardSide == PlaceCardSide.Back)
             {
-                visualUpdater.ShowBackSideInfo(voteCanvas.transform, visualComponents.cardEffectsParent);
+                visualUpdater.ShowBackSideInfo(voteCanvas != null ? voteCanvas.transform : null, visualComponents.cardEffectsParent);
             }
         }
 

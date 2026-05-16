@@ -92,19 +92,15 @@ namespace Characters.Powers
             // Only the owner processes beacon state changes. Simulated players on host must subscribe too.
             if (!CharacterManager.instance.IsLocalOrSimulated(ownerClientId.Value)) 
             {
-                Debug.Log("Not subscribing to corrupted beacon changes, not the owner or host simulating");
                 return;
             }
             
-            Debug.Log("Subscribing to corrupted beacon changes");
             _newBeacon.onCorruptedBeaconChanged += (_newState) => OnCorruptedBeaconChanged(_newBeacon, _newState);
         }
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
             Character _beaconedCharacter = GameManager.instance.characterManager.GetCharacter(_newBeacon.targetClientId);
-            
-            Debug.Log("Beaconed character corruption state changed: " + _beaconedCharacter.GetOwnerPseudo() + " New state: " + _newState);
             
             // Do not show local visual/chat cues if the Host is not currently possessing the owner
             if (CharacterManager.instance.GetLocalClientId() != ownerClientId.Value) return;

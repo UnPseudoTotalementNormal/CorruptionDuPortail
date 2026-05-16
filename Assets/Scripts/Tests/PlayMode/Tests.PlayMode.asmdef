@@ -11,7 +11,9 @@
         "AYellowpaper.SerializedCollections",
         "Unity.Collections",
         "TNRD.NSubstitute",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Cinemachine",
+        "Unity.Services.Multiplayer"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

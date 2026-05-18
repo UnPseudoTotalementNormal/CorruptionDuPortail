@@ -1,0 +1,118 @@
+name: Unity Tests
+
+on:
+  push:
+    branches:
+      - Dev
+  pull_request:
+    branches:
+      - Dev
+
+env:
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+jobs:
+  testRunner:
+    name: Exécution des tests unitaires
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Libérer espace disque
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - name: Run Unity Tests
+        uses: game-ci/unity-test-runner@v4
+        with:
+          projectPath: ./
+          unityVersion: 6000.2.6f2
+          testMode: all
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Résultats des Tests Unity
+
+      - name: Parser les résultats
+        id: results
+        if: always()
+        run: |
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET, glob, os
+          total = passed = failed = 0
+          failed_tests = []
+          for f in glob.glob('artifacts/*.xml'):
+              root = ET.parse(f).getroot()
+              total  += int(root.get('total',  0))
+              passed += int(root.get('passed', 0))
+              failed += int(root.get('failed', 0))
+              for tc in root.iter('test-case'):
+                  if tc.get('result') == 'Failed':
+                      failed_tests.append(tc.get('name', '?').split('.')[-1])
+          names = '\n'.join(f'- {t}' for t in failed_tests[:5]) or 'Aucun'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f'total={total}\n')
+              out.write(f'passed={passed}\n')
+              out.write(f'failed={failed}\n')
+              out.write(f'failed_tests<<EOF\n{names}\nEOF\n')
+          PYEOF
+
+      - name: Discord — Résultats tests
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_DEV_WEBHOOK }}
+          TOTAL: ${{ steps.results.outputs.total }}
+          PASSED: ${{ steps.results.outputs.passed }}
+          FAILED: ${{ steps.results.outputs.failed }}
+          FAILED_TESTS: ${{ steps.results.outputs.failed_tests }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$FAILED" -gt 0 ]; then
+            COLOR=15548997
+            TITLE="❌ Tests échoués — Corruption du Portail"
+          else
+            COLOR=5763719
+            TITLE="✅ Tests passés — Corruption du Portail"
+          fi
+          curl -s -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg title "$TITLE" \
+              --argjson color "$COLOR" \
+              --arg total "$TOTAL" \
+              --arg passed "$PASSED" \
+              --arg failed "$FAILED" \
+              --arg tests "$FAILED_TESTS" \
+              --arg url "$RUN_URL" \
+              '{embeds:[{title:$title,color:$color,fields:([{name:"Total",value:$total,inline:true},{name:"✅ Passés",value:$passed,inline:true},{name:"❌ Échoués",value:$failed,inline:true}] + (if $failed != "0" then [{name:"Tests échoués",value:$tests,inline:false}] else [] end)),url:$url}]}')"
+
+      - name: Upload résultats
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Test-Results
+          path: artifacts

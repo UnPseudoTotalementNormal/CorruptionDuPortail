@@ -1,0 +1,42 @@
+name: DevPROpened
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - Dev
+
+jobs:
+  notif-pr-ouverte:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord — PR ouverte
+        uses: actions/github-script@v7
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_DEV_WEBHOOK }}
+        with:
+          script: |
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+            const list = commits.data
+              .map(c => `- ${c.commit.message.split('\n')[0]}`)
+              .join('\n') || 'Aucun commit';
+
+            await fetch(process.env.DISCORD_WEBHOOK, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                embeds: [{
+                  title: `📥 Nouvelle PR — ${context.payload.pull_request.title}`,
+                  color: 3447003,
+                  fields: [
+                    { name: 'Auteur', value: context.payload.pull_request.user.login, inline: true },
+                    { name: `Commits (${commits.data.length})`, value: list, inline: false }
+                  ],
+                  url: context.payload.pull_request.html_url
+                }]
+              })
+            });

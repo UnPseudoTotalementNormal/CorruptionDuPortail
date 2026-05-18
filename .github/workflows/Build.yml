@@ -36,6 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Libérer espace disque
         uses: jlumbroso/free-disk-space@main
@@ -102,6 +103,49 @@ jobs:
               console.log(`Deleted: ${a.id} — ${a.created_at}`);
             }
 
+      - name: Récupérer SHA build précédente
+        id: prev_build
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'Build.yml',
+              branch: 'main',
+              status: 'success',
+              per_page: 10
+            });
+            const prev = runs.data.workflow_runs.find(r => r.id !== context.runId);
+            core.setOutput('sha', prev ? prev.head_sha : '');
+
+      - name: Générer changelog (Gemini Flash)
+        id: changelog
+        if: success()
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PREV_SHA: ${{ steps.prev_build.outputs.sha }}
+        run: |
+          if [ -z "$PREV_SHA" ]; then
+            echo "text=Première build — pas de changelog." >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          COMMITS=$(git log "$PREV_SHA".."$GITHUB_SHA" --oneline --no-merges 2>/dev/null || echo "")
+          if [ -z "$COMMITS" ]; then
+            echo "text=Améliorations internes." >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          RESPONSE=$(curl -s -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg commits "$COMMITS" \
+              '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Ignore les commits ci/chore/test/refactor. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}')")
+          TEXT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // "Changelog indisponible."')
+          echo "text<<EOF" >> $GITHUB_OUTPUT
+          echo "$TEXT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Calculer durée
         id: duration
         if: always()
@@ -117,6 +161,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.DISCORD_BUILD_WEBHOOK }}
           BUILD_NAME: CorruptionDuPortail_b${{ github.run_number }}
           DURATION: ${{ steps.duration.outputs.value }}
+          CHANGELOG: ${{ steps.changelog.outputs.text }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           curl -s -X POST "$WEBHOOK_URL" \
@@ -124,8 +169,9 @@ jobs:
             -d "$(jq -n \
               --arg name "$BUILD_NAME" \
               --arg dur "$DURATION" \
+              --arg log "$CHANGELOG" \
               --arg url "$RUN_URL" \
-              '{embeds:[{title:"✅ Build réussie — Corruption du Portail",color:5763719,fields:[{name:"Build",value:$name,inline:true},{name:"Durée",value:$dur,inline:true},{name:"Artifact",value:("[Télécharger]("+$url+")"),inline:false}],url:$url}]}')"
+              '{embeds:[{title:"✅ Build réussie — Corruption du Portail",color:5763719,fields:[{name:"Build",value:$name,inline:true},{name:"Durée",value:$dur,inline:true},{name:"Changelog",value:$log,inline:false},{name:"Artifact",value:("[Télécharger]("+$url+")"),inline:false}],url:$url}]}')"
 
       - name: Discord — Échec
         if: failure()

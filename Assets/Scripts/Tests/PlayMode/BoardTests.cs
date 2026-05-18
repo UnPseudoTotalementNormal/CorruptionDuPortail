@@ -50,7 +50,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _gameManagerGo = new GameObject("GameManager");
             _gameManagerGo.AddComponent<NetworkObject>();
@@ -76,14 +76,15 @@ namespace Tests.PlayMode
             _boardManager = _boardManagerGo.AddComponent<BoardManager>();
             _boardManager.GetComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned && _boardManager.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _boardManager);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(GameManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(CharacterManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(BoardManager), "instance", null);
@@ -120,7 +121,7 @@ namespace Tests.PlayMode
             _boardManager.visibleCards.Add(card);
 
             Character character = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
-            yield return new WaitUntil(() => character.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(character);
 
             card.characterInfo = character;
             
@@ -135,7 +136,7 @@ namespace Tests.PlayMode
             Card card = CreateMockCard("CardInstance_SetInfo");
             
             Character character = _characterManager.AddNewCharacter(111);
-            yield return new WaitUntil(() => character.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(character);
             
             Role role = new Role { roleName = "TestRole" };
             character.role = role;

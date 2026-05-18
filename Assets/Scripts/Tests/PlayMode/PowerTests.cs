@@ -48,7 +48,7 @@ namespace Tests.PlayMode
             
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _audioManagerGo = new GameObject("AudioManager");
             _audioManager = _audioManagerGo.AddComponent<GameAudioManager>();
@@ -88,6 +88,7 @@ namespace Tests.PlayMode
             {
                 _networkManager.Shutdown();
             }
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
 
             // Cleanup objects
             Object.Destroy(_gameManagerGo);

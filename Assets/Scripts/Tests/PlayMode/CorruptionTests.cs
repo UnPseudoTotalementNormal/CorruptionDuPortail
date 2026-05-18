@@ -51,7 +51,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             // 1. Setup GameManager
             _gameManagerGo = new GameObject("GameManager");
@@ -104,17 +104,15 @@ namespace Tests.PlayMode
             lobbyGo.AddComponent<LobbyPlayerInfoHolder>();
             lobbyGo.AddComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned && _revealer.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _revealer);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            // Expect the disposal exception during shutdown as it's inevitable with dynamic NetworkLists in tests
-            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("ObjectDisposedException"));
-
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(GameManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(CharacterManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(RoleTargetSystem), "instance", null);
@@ -140,7 +138,7 @@ namespace Tests.PlayMode
         public IEnumerator PAutoCorruption_CorruptsOwnerAtStart()
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
-            yield return new WaitUntil(() => owner.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
             
             Assert.IsFalse(owner.isCorrupted.Value);
 
@@ -149,7 +147,7 @@ namespace Tests.PlayMode
             power.ownerClientId.Value = _networkManager.LocalClientId;
             powerGo.AddComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             power.OnGameStartedServer();
             yield return null;
@@ -162,14 +160,14 @@ namespace Tests.PlayMode
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             Character target = _characterManager.AddNewCharacter(999);
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             GameObject powerGo = new GameObject("CorruptingMark");
             var power = powerGo.AddComponent<PCorruptingMark>();
             power.ownerClientId.Value = _networkManager.LocalClientId;
             powerGo.AddComponent<NetworkObject>().Spawn();
             
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
             yield return null;
@@ -181,7 +179,7 @@ public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
 {
     Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
     Character target = _characterManager.AddNewCharacter(888);
-    yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+    yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
     GameObject powerGo = new GameObject("Blessing");
     var blessingPower = powerGo.AddComponent<PBlessing>();
@@ -193,7 +191,7 @@ public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
     corruptPower.targetIncludeFlags = TargetIncludeFlags.Anomaly | TargetIncludeFlags.Chosen | TargetIncludeFlags.Marginal; 
     corruptGo.AddComponent<NetworkObject>().Spawn();
 
-    yield return new WaitUntil(() => blessingPower.IsSpawned && corruptPower.IsSpawned);
+    yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(blessingPower, corruptPower);
 
     // 1. Target is NOT blessed -> Should be targetable
     Assert.IsTrue(corruptPower.CheckIsTargetValid(target.ownerClientId.Value, TargetUtils.TargetType.Character), "Target should be valid before blessing");

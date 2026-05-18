@@ -45,7 +45,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _gameManagerGo = new GameObject("GameManager");
             _gameManagerGo.AddComponent<NetworkObject>();
@@ -66,14 +66,15 @@ namespace Tests.PlayMode
             ReflectionHelper.SetPrivateField(_characterManager, "_charactersParent", charactersParent.transform);
             ReflectionHelper.SetPrivateField(_characterManager, "_characterPrefab", _dummyCharPrefab.GetComponent<NetworkObject>());
 
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(GameManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(CharacterManager), "instance", null);
 
@@ -89,7 +90,7 @@ namespace Tests.PlayMode
         {
             Character c1 = _characterManager.AddNewCharacter(1);
             Character c2 = _characterManager.AddNewCharacter(2);
-            yield return new WaitUntil(() => c1.IsSpawned && c2.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(c1, c2);
 
             c1.isCorrupted.Value = true;
             c2.isCorrupted.Value = true;
@@ -103,7 +104,7 @@ namespace Tests.PlayMode
         {
             Character c1 = _characterManager.AddNewCharacter(1);
             Character c2 = _characterManager.AddNewCharacter(2);
-            yield return new WaitUntil(() => c1.IsSpawned && c2.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(c1, c2);
 
             c1.isCorrupted.Value = true;
             c2.isCorrupted.Value = false;
@@ -117,7 +118,7 @@ namespace Tests.PlayMode
         {
             Character anomaly = _characterManager.AddNewCharacter(1);
             Character chosen = _characterManager.AddNewCharacter(2);
-            yield return new WaitUntil(() => anomaly.IsSpawned && chosen.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(anomaly, chosen);
 
             anomaly.role = new Role { factionType = FactionType.anomaly };
             chosen.role = new Role { factionType = FactionType.chosen };
@@ -134,7 +135,7 @@ namespace Tests.PlayMode
         {
             Character anomaly1 = _characterManager.AddNewCharacter(1);
             Character anomaly2 = _characterManager.AddNewCharacter(2);
-            yield return new WaitUntil(() => anomaly1.IsSpawned && anomaly2.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(anomaly1, anomaly2);
 
             anomaly1.role = new Role { factionType = FactionType.anomaly };
             anomaly2.role = new Role { factionType = FactionType.anomaly };

@@ -37,7 +37,7 @@ namespace Tests.PlayMode
                 NetworkTransport = _networkManagerGo.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>(),
                 EnableSceneManagement = false 
             };
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             // Mock InputManager (Singleton)
             GameObject inputGo = new GameObject("InputManager");
@@ -78,14 +78,15 @@ namespace Tests.PlayMode
             _smartphoneGo.SetActive(true);
             _smartphone.GetComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => _smartphone.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(_smartphone);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(InputManager), "instance", null);
 
             Object.Destroy(_smartphoneGo);

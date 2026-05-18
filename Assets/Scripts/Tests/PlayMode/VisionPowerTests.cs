@@ -47,7 +47,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _gameManagerGo = new GameObject("GameManager");
             _gameManagerGo.AddComponent<NetworkObject>();
@@ -91,14 +91,15 @@ namespace Tests.PlayMode
             audioGo.AddComponent<GameAudioManager>();
 
             // Deterministic wait for all network objects to be ready
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned && _revealer.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _revealer);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             // Note: Singletons are cleaned up by Object.Destroy calling OnDestroy in original scripts
             // or automatically handled by Unity on scene/test teardown.
             // Explicitly setting back to null via reflection if needed for read-only ones.
@@ -126,7 +127,7 @@ namespace Tests.PlayMode
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             // Create Target
             Character target = _characterManager.AddNewCharacter(12345); // Other client
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             GameObject powerGo = new GameObject("CorruptionInsight");
             var powerNetObj = powerGo.AddComponent<NetworkObject>();
@@ -134,7 +135,7 @@ namespace Tests.PlayMode
             powerNetObj.Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
             
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             // Initial state: not revealed
             var info = _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value);
@@ -156,7 +157,7 @@ namespace Tests.PlayMode
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             // Create Target
             Character target = _characterManager.AddNewCharacter(54321);
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             GameObject powerGo = new GameObject("Omniscience");
             var powerNetObj = powerGo.AddComponent<NetworkObject>();
@@ -164,7 +165,7 @@ namespace Tests.PlayMode
             powerNetObj.Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
 
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             // Manual trigger of the "OnClick" logic because BoardManager is too complex to mock here
             ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);

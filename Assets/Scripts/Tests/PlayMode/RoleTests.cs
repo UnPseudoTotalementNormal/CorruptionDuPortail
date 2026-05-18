@@ -29,7 +29,7 @@ namespace Tests.PlayMode
                 EnableSceneManagement = false 
             };
             
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _testRole = new Role();
             
@@ -58,6 +58,7 @@ namespace Tests.PlayMode
             {
                 _networkManager.Shutdown();
             }
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
             Object.Destroy(_networkManagerGo);
             yield return null;
         }

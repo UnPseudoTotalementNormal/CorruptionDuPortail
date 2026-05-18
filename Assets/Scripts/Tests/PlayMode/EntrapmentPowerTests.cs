@@ -49,7 +49,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _gameManagerGo = new GameObject("GameManager");
             _gameManagerGo.AddComponent<NetworkObject>();
@@ -79,16 +79,15 @@ namespace Tests.PlayMode
             new GameObject("ChainingManager").AddComponent<ChainingManager>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("PowerManager").AddComponent<PowerManager>().gameObject.AddComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            LogAssert.Expect(LogType.Exception, new System.Text.RegularExpressions.Regex("ObjectDisposedException"));
-
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(GameManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(CharacterManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(RoleTargetSystem), "instance", null);
@@ -118,7 +117,7 @@ namespace Tests.PlayMode
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             Character target = _characterManager.AddNewCharacter(777);
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             // Target is Anomaly
             target.role = new Role { factionType = FactionType.anomaly };
@@ -127,7 +126,7 @@ namespace Tests.PlayMode
             var power = powerGo.AddComponent<PTruthChains>();
             powerGo.AddComponent<NetworkObject>().Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
             yield return null;
@@ -141,7 +140,7 @@ namespace Tests.PlayMode
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             Character target = _characterManager.AddNewCharacter(666);
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             // Target is NOT Anomaly (e.g. Chosen)
             target.role = new Role { factionType = FactionType.chosen };
@@ -150,7 +149,7 @@ namespace Tests.PlayMode
             var power = powerGo.AddComponent<PTruthChains>();
             powerGo.AddComponent<NetworkObject>().Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
             yield return null;
@@ -164,7 +163,7 @@ namespace Tests.PlayMode
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
             Character target = _characterManager.AddNewCharacter(555);
-            yield return new WaitUntil(() => owner.IsSpawned && target.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             target.role = new Role { roleID = RoleID.Omniscient }; // Target role
             owner.role = new Role { roleID = RoleID.Dryade }; // Owner role
@@ -184,7 +183,7 @@ namespace Tests.PlayMode
 
             powerGo.AddComponent<NetworkObject>().Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
-            yield return new WaitUntil(() => power.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
 
             // Trigger StartServer logic to subscribe to events
             power.OnGameStartedServer();

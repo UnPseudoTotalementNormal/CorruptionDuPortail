@@ -23,7 +23,7 @@ namespace Tests.PlayMode
             {
                 NetworkTransport = _networkManagerGo.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
             };
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _chainingManagerGo = new GameObject("ChainingManager");
             // Important: ChainingManager must have a NetworkObject to use NetworkList/Rpc
@@ -42,6 +42,7 @@ namespace Tests.PlayMode
             {
                 _networkManager.Shutdown();
             }
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
 
             Object.Destroy(_chainingManagerGo);
             Object.Destroy(_networkManagerGo);

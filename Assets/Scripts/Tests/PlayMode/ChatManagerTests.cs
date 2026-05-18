@@ -48,7 +48,7 @@ namespace Tests.PlayMode
             _dummyCharPrefab.AddComponent<Character>();
             _networkManager.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _dummyCharPrefab });
 
-            _networkManager.StartHost();
+            Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
 
             _gameManagerGo = new GameObject("GameManager");
             _gameManagerGo.AddComponent<NetworkObject>();
@@ -81,14 +81,15 @@ namespace Tests.PlayMode
             _chatManagerGo.SetActive(true);
             _chatManager.GetComponent<NetworkObject>().Spawn();
 
-            yield return new WaitUntil(() => _gameManager.IsSpawned && _characterManager.IsSpawned && _chatManager.IsSpawned);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _chatManager);
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             if (_networkManager != null && _networkManager.IsListening) _networkManager.Shutdown();
-            
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+
             ReflectionHelper.SetPrivateField(typeof(GameManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(CharacterManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(ChatManager), "instance", null);

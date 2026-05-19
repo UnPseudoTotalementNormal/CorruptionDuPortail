@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80a3b3505e384287bf712bc9896dbcfb, type: 3}
+  m_Name: GameIntroductionState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 1309300777674755838, guid: ceaab6d0c4406e04faf453ff0c4d03ac, type: 3}
+  gameStateDependencies: []
+  timeBeforePreRoleText: 1
+  timeBeforeRoleText: 3
+  timeBeforeGameStart: 7.5
+  gameOpeningSound:
+    Guid:
+      Data1: -1018522590
+      Data2: 1085794016
+      Data3: -698886753
+      Data4: -1296589212
+    Path: event:/Interface/Opening

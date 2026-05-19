@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1bc12adc5904029922ba9b4a2a63669, type: 3}
+  m_Name: Oracle
+  m_EditorClassIdentifier: 
+  role:
+    roleName:
+      utf8LengthInBytes: 22
+      bytes:
+        offset0000:
+          byte0000: 78
+          byte0001: 97
+          byte0002: 114
+          byte0003: 97
+          byte0004: 44
+          byte0005: 32
+          byte0006: 108
+          byte0007: 39
+          byte0008: 111
+          byte0009: 114
+          byte0010: 97
+          byte0011: 99
+          byte0012: 108
+          byte0013: 101
+          byte0014: 32
+          byte0015: 98
+        offset0016:
+          byte0000: 114
+          byte0001: 105
+          byte0002: 115
+          byte0003: 195
+          byte0004: 169
+          byte0005: 101
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+    roleType: 2
+    factionType: 1
+    roleID: 8239
+    rolePortrait: 823899898
+    roleDifficulty: 1
+    powers: []
+    winningConditions:
+    - rid: 7121802106355843694
+    onChainingSound:
+      Guid:
+        Data1: 2030048620
+        Data2: 1237141960
+        Data3: 1016564663
+        Data4: -457265924
+      Path: event:/Characters/Oracle/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    isAwakened: 0
+    ownerClientId: 0
+  powers:
+  - {fileID: 7059444924863602008, guid: 924953fecbc96ae9bb6719018cc0e762, type: 3}
+  references:
+    version: 2
+    RefIds:
+    - rid: 7121802106355843694
+      type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 18446744073709551611

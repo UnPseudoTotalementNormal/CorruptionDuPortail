@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1bc12adc5904029922ba9b4a2a63669, type: 3}
+  m_Name: MageOcculte
+  m_EditorClassIdentifier: 
+  role:
+    roleName:
+      utf8LengthInBytes: 23
+      bytes:
+        offset0000:
+          byte0000: 86
+          byte0001: 97
+          byte0002: 39
+          byte0003: 97
+          byte0004: 104
+          byte0005: 108
+          byte0006: 44
+          byte0007: 32
+          byte0008: 76
+          byte0009: 101
+          byte0010: 32
+          byte0011: 77
+          byte0012: 97
+          byte0013: 103
+          byte0014: 101
+          byte0015: 32
+        offset0016:
+          byte0000: 79
+          byte0001: 99
+          byte0002: 99
+          byte0003: 117
+          byte0004: 108
+          byte0005: 116
+          byte0006: 101
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+    roleType: 2
+    factionType: 0
+    roleID: 3307
+    rolePortrait: 1384333719
+    roleDifficulty: 3
+    powers: []
+    winningConditions:
+    - rid: 7121802106355843690
+    onChainingSound:
+      Guid:
+        Data1: 525785248
+        Data2: 1088511385
+        Data3: 1126606771
+        Data4: 1171405699
+      Path: event:/Characters/Mage Occulte/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: -1940016562
+        Data2: 1204164765
+        Data3: 1579141820
+        Data4: -1406215027
+      Path: event:/Characters/Mage Occulte/Opening
+    ownerClientId: 0
+  powers:
+  - {fileID: 1936720183572497299, guid: bca5e2c58326a8bbe9d0b4149d3625f8, type: 3}
+  - {fileID: 5930367012452364025, guid: b90903ce095e7db979159327ef32ffa0, type: 3}
+  - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
+  - {fileID: 8296718483155507466, guid: 4be4aaf929ad584e6b113b69c1ef5a31, type: 3}
+  - {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}
+  references:
+    version: 2
+    RefIds:
+    - rid: 7121802106355843690
+      type: {class: WAnomalyCorruption, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 0

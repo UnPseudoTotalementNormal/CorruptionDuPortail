@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2106b58dc3e47869e37bb0eca941691, type: 3}
+  m_Name: VoteState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 1309300777674755838, guid: 19c36c39a176ad2459a7860cf2c8c7b7, type: 3}
+  gameStateDependencies: []
+  voteDuration: 300
+  takeDownThePortalPowerDataObject: {fileID: 11400000, guid: 4dca6b257df02de46a1ab5a0b95f9735, type: 2}
+  voteTimer: 0

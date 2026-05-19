@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51b62f7e10084613a6c56b26c96d38bd, type: 3}
+  m_Name: ChainingState2
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 0}
+  gameStateDependencies: []
+  forceBoardCamera: 2
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
+  chainingAnnouncementSound:
+    Guid:
+      Data1: 798413136
+      Data2: 1152599177
+      Data3: 681112481
+      Data4: 1095025765
+    Path: event:/Interface/ChainingAnnoucement

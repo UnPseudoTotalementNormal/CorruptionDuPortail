@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{a114edbc-5c8a-4bc4-b015-bf5b96be668a}">
+		<property name="assetPath">
+			<value>Reception du pouvoir par un élu.mp3</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.6799999999999999</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e66d3d08-7377-46a7-824d-08ed54029370}</destination>
+		</relationship>
+	</object>
+</objects>

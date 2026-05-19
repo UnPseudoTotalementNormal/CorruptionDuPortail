@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4dcd17d462340459947dc97ca8ca65f, type: 3}
+  m_Name: TakeDownThePortalState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 4316038992594077676, guid: 7098b1abd484dd54d81c1c7787464ee1, type: 3}
+  gameStateDependencies:
+  - {fileID: 11400000, guid: 9d90cade1c4610043935fc4688f9c173, type: 2}
+  shouldActivate: 0
+  mageCharacterOwnerId: 999
+  takeDownThePortalMusic:
+    Guid:
+      Data1: 1482311113
+      Data2: 1187093067
+      Data3: 1797484173
+      Data4: -1763425129
+    Path: event:/Interface/AbattreLePortail

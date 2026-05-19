@@ -1,0 +1,11 @@
+{
+    "name": "TransformCompositor.Editor",
+    "references": [
+        "TransformCompositor",
+        "DOTween.Modules"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": true
+}

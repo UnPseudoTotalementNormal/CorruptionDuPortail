@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 003efe4579a74392974570ccab23884d, type: 3}
+  m_Name: GameEndingState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 4316038992594077676, guid: bc26d17e9b4881a4d87f0cab1ff27ddb, type: 3}
+  gameStateDependencies:
+  - {fileID: 11400000, guid: 11d24de3438a578469e19f0acfaa4fc7, type: 2}

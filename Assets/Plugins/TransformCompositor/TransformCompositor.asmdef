@@ -1,0 +1,7 @@
+{
+    "name": "TransformCompositor",
+    "references": [
+        "DOTween.Modules"
+    ],
+    "autoReferenced": true
+}

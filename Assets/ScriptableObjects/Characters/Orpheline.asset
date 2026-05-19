@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1bc12adc5904029922ba9b4a2a63669, type: 3}
+  m_Name: Orpheline
+  m_EditorClassIdentifier: 
+  role:
+    roleName:
+      utf8LengthInBytes: 11
+      bytes:
+        offset0000:
+          byte0000: 76
+          byte0001: 39
+          byte0002: 79
+          byte0003: 114
+          byte0004: 112
+          byte0005: 104
+          byte0006: 101
+          byte0007: 108
+          byte0008: 105
+          byte0009: 110
+          byte0010: 101
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0016:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        offset0032:
+          byte0000: 0
+          byte0001: 0
+          byte0002: 0
+          byte0003: 0
+          byte0004: 0
+          byte0005: 0
+          byte0006: 0
+          byte0007: 0
+          byte0008: 0
+          byte0009: 0
+          byte0010: 0
+          byte0011: 0
+          byte0012: 0
+          byte0013: 0
+          byte0014: 0
+          byte0015: 0
+        byte0048: 0
+        byte0049: 0
+        byte0050: 0
+        byte0051: 0
+        byte0052: 0
+        byte0053: 0
+        byte0054: 0
+        byte0055: 0
+        byte0056: 0
+        byte0057: 0
+        byte0058: 0
+        byte0059: 0
+        byte0060: 0
+        byte0061: 0
+    roleType: 5
+    factionType: 1
+    roleID: 6592
+    rolePortrait: 1124117774
+    roleDifficulty: 1
+    powers: []
+    winningConditions:
+    - rid: 5827652778058055943
+    onChainingSound:
+      Guid:
+        Data1: -556041060
+        Data2: 1252347014
+        Data3: 8791958
+        Data4: 2087231293
+      Path: event:/Characters/Orpheline/Chaining
+    onGameStartRoleRevealSound:
+      Guid:
+        Data1: 379267383
+        Data2: 1239452801
+        Data3: -791614831
+        Data4: -1324382327
+      Path: event:/Characters/Orpheline/Annoucement
+    ownerClientId: 0
+  powers:
+  - {fileID: 5928142297490688375, guid: 96fe74f3610084a9d872a2f255f69132, type: 3}
+  - {fileID: 4186362527338676593, guid: 487847a75662496b09d32f94a06a1fd8, type: 3}
+  references:
+    version: 2
+    RefIds:
+    - rid: 5827652778058055943
+      type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+      data:
+        ownerClientId: 0

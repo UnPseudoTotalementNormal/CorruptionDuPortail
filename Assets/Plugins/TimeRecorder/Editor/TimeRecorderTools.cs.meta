@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 24c718009b085c94e830b3aa71198031
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 190927
+  packageName: Time Recorder
+  packageVersion: 1.2
+  assetPath: Assets/Plugins/TimeRecorder/Editor/TimeRecorderTools.cs
+  uploadId: 469391

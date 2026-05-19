@@ -1,0 +1,29 @@
+#region
+
+using Network.Player;
+using TMPro;
+using UnityEngine;
+
+#endregion
+
+public class PseudoInputField : MonoBehaviour
+{
+    private void Awake()
+    {
+        GetComponentInChildren<TMP_InputField>().onSubmit.AddListener(OnSubmitPseudo);
+        GetComponentInChildren<TMP_InputField>().onDeselect.AddListener(OnSubmitPseudo);
+    }
+
+    private void OnSubmitPseudo(string pseudo)
+    {
+        if (string.IsNullOrEmpty(pseudo))
+        {
+            Debug.LogWarning("Pseudo is empty");
+            return;
+        }
+
+        var _info = LocalPlayerInfoHolder.playerInfo;
+        _info.playerName = pseudo;
+        LocalPlayerInfoHolder.playerInfo = _info;
+    }
+}

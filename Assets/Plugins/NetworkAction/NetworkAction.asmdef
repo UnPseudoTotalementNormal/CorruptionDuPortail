@@ -1,0 +1,7 @@
+{
+    "name": "NetworkAction",
+    "references": [
+        "Unity.Netcode.Runtime"
+    ],
+    "autoReferenced": true
+}

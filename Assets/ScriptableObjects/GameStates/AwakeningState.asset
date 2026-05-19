@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b107cc35268454888d7d785756ac28e, type: 3}
+  m_Name: AwakeningState
+  m_EditorClassIdentifier: 
+  stateUIPrefab: {fileID: 1309300777674755838, guid: e58b440ad13b322428929b1837c0dc0d, type: 3}
+  gameStateDependencies: []
+  useLightColorOverride: 1
+  lightColorOverride: {r: 0.46075112, g: 0.47387514, b: 0.5849056, a: 1}
+  awakeningOrder:
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
+    - {fileID: 11400000, guid: 21114cc25abd3f08eb4c8380e5926718, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 90f32399e33a9fb489c671312b995815, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 795505cbed82e72468f5ed5ccfc4668d, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: dfeef97d534114540b5f13e732c7ad7c, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
+    - {fileID: 11400000, guid: d098867bc1478f840bb1eafeefe04fc9, type: 2}
+    - {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
+    - {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
+    - {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 34376dc154c7c5644bc6282d6d50380f, type: 2}
+  - awakeningCharacters:
+    - {fileID: 11400000, guid: 923e2973ad5a4ef1f943951ca1f8a5a8, type: 2}
+  currentlyAwakenedCharacters: []
+  currentAwakeningIndex: 0
+  currentAwakeningTimer: 0
+  currentAwakeningMaxTime: 0
+  awakeningAnnouncementSound:
+    Guid:
+      Data1: -1018522590
+      Data2: 1085794016
+      Data3: -698886753
+      Data4: -1296589212
+    Path: event:/Interface/Opening
+  awakenedLoopSound:
+    Guid:
+      Data1: 554727870
+      Data2: 1183354671
+      Data3: 74505634
+      Data4: 211429031
+    Path: event:/Interface/WaitingforPower

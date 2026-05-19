@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a689d91966dfb46499fb63f130d9b905, type: 3}
+  m_Name: 5 Player (MVP)
+  m_EditorClassIdentifier: 
+  m_Description: 
+  m_EnableEditors: 1
+  m_MainEditorInstance:
+    Name: Main Editor
+    <CorrespondingNodeId>k__BackingField: Main Editor|0_run
+    m_Nodes:
+    - Main Editor|0_run
+    - Main Editor|0_deploy
+    m_PlayerTag: 
+    m_InitialScene: {fileID: 0}
+  m_EditorInstances: []
+  m_LocalInstances:
+  - Name: Instance 1
+    <CorrespondingNodeId>k__BackingField: Instance 1 - Run
+    m_Nodes:
+    - Instance 1 - Build
+    - Instance 1 - Run
+    m_BuildProfile: {fileID: 11400000, guid: 438838358f8d8094e8ca514bcf7f58bc, type: 2}
+    advancedConfiguration:
+      m_StreamLogsToMainEditor: 1
+      m_LogsColor: {r: 0.3643, g: 0.581, b: 0.8679, a: 1}
+      m_Arguments: -screen-fullscreen 0 -screen-width 1024 -screen-height 720
+  - Name: Instance 2
+    <CorrespondingNodeId>k__BackingField: Instance 2 - Run
+    m_Nodes:
+    - Instance 2 - Build
+    - Instance 2 - Run
+    m_BuildProfile: {fileID: 11400000, guid: 438838358f8d8094e8ca514bcf7f58bc, type: 2}
+    advancedConfiguration:
+      m_StreamLogsToMainEditor: 1
+      m_LogsColor: {r: 0.43188825, g: 0.8666667, b: 0.36470592, a: 1}
+      m_Arguments: -screen-fullscreen 0 -screen-width 1024 -screen-height 720
+  - Name: Instance 3
+    <CorrespondingNodeId>k__BackingField: Instance 3 - Run
+    m_Nodes:
+    - Instance 3 - Build
+    - Instance 3 - Run
+    m_BuildProfile: {fileID: 11400000, guid: 438838358f8d8094e8ca514bcf7f58bc, type: 2}
+    advancedConfiguration:
+      m_StreamLogsToMainEditor: 1
+      m_LogsColor: {r: 0.8666667, g: 0.5002247, b: 0.36470592, a: 1}
+      m_Arguments: -screen-fullscreen 0 -screen-width 1024 -screen-height 720
+  - Name: Instance 4
+    <CorrespondingNodeId>k__BackingField: Instance 4 - Run
+    m_Nodes:
+    - Instance 4 - Build
+    - Instance 4 - Run
+    m_BuildProfile: {fileID: 11400000, guid: 438838358f8d8094e8ca514bcf7f58bc, type: 2}
+    advancedConfiguration:
+      m_StreamLogsToMainEditor: 1
+      m_LogsColor: {r: 0.64340633, g: 0.36470592, b: 0.8666667, a: 1}
+      m_Arguments: -screen-fullscreen 0 -screen-width 1024 -screen-height 720
+  m_RemoteInstances: []
+  m_OverridePort: 0
+  m_Port: 0
+  m_MainEditorInstanceObsolete:
+    rid: -2
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }

@@ -1,0 +1,38 @@
+#region
+
+using System;
+using System.Linq;
+using GameLogic;
+
+#endregion
+
+namespace Characters.WinningConditions
+{
+    [Serializable]
+    public class WChosenChainedAllAnomaly : WinningCondition
+    {
+        public override WinningTeam GetWinningTeam()
+        {
+            return WinningTeam.chosen;
+        }
+        
+        public override bool CheckCondition()
+        {
+            var _characters = GameManager.instance.characterManager.GetCharacters(false).Where(_c => !_c.isFake).ToList();
+            
+            foreach (var _character in _characters)
+            {
+                if (_character.role.factionType != FactionType.anomaly)
+                {
+                    continue;
+                }
+                
+                if (!_character.isChained.Value)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+}

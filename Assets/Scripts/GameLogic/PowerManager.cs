@@ -28,13 +28,13 @@ namespace GameLogic
         private void Start()
         {
             Power.onPowerSpawned += OnPowerSpawned;
-            
-            if (!NetworkManager.Singleton.IsServer)
+
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             {
                 return;
             }
             //server only
-            
+
             GameManager.instance.onGameStarted += OnGameStarted;
         }
 

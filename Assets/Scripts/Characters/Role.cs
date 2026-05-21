@@ -102,7 +102,8 @@ public class Role : INetworkSerializable, ICloneable
         onGameStartRoleRevealSound.NetworkSerialize(_serializer);
 
         int _winningConditionsCount = 0;
-        _winningConditionsCount = winningConditions.Count;
+        if (!_serializer.IsReader)
+            _winningConditionsCount = winningConditions.Count(_c => _c != null);
         _serializer.SerializeValue(ref _winningConditionsCount);
         if (_serializer.IsReader)
         {
@@ -119,7 +120,7 @@ public class Role : INetworkSerializable, ICloneable
         }
         else
         {
-            foreach (var _condition in winningConditions)
+            foreach (var _condition in winningConditions.Where(_c => _c != null))
             {
                 string _conditionTypeName = _condition.GetType().AssemblyQualifiedName;
                 _serializer.SerializeValue(ref _conditionTypeName);

@@ -26,6 +26,9 @@ namespace UI.BoardUI
         [SerializeField] private float rolePickerCardHeightOffset = -0.1f;
         [SerializeField] private Transform rolePickerCenter;
 
+        [Header("Instruction UI")]
+        [SerializeField] private CanvasGroup instructionCanvasGroup;
+
         [Header("Character picker settings")]
         [SerializeField] private float characterPickerCardSpacingAngle = 8f;
         [SerializeField] private float characterPickerCardSpacing = 1.4f;
@@ -35,6 +38,7 @@ namespace UI.BoardUI
         private const string CHARACTER_PICKER_LAYER = "CharacterPicker";
         private const string ROLE_PICKER_LAYER = "RolePicker";
         private const float TWEEN_DURATION = 0.5f;
+        private const float INSTRUCTION_FADE_DURATION = 0.25f;
 
         private readonly List<Card> spawnedRoleCards = new();
         private readonly Dictionary<Card, Action<Card>> cardClickHandlers = new();
@@ -94,6 +98,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
+            ShowInstructionPanel();
 
             if (_callback != null)
             {
@@ -170,6 +175,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
+            ShowInstructionPanel();
 
             if (_callback != null)
             {
@@ -248,6 +254,7 @@ namespace UI.BoardUI
         {
             bool _wasActive = isPickerActive;
             isPickerActive = false;
+            HideInstructionPanel(_instantCharacterReset);
 
             foreach (KeyValuePair<Card, Action<Card>> _kvp in cardClickHandlers)
             {
@@ -304,6 +311,27 @@ namespace UI.BoardUI
             {
                 onPickerCanceled?.Invoke();
             }
+        }
+
+        private void ShowInstructionPanel()
+        {
+            if (!instructionCanvasGroup) return;
+            instructionCanvasGroup.DOKill();
+            instructionCanvasGroup.blocksRaycasts = false;
+            instructionCanvasGroup.DOFade(1f, INSTRUCTION_FADE_DURATION).SetEase(Ease.OutQuad);
+        }
+
+        private void HideInstructionPanel(bool _instant)
+        {
+            if (!instructionCanvasGroup) return;
+            instructionCanvasGroup.DOKill();
+            instructionCanvasGroup.blocksRaycasts = false;
+            if (_instant)
+            {
+                instructionCanvasGroup.alpha = 0f;
+                return;
+            }
+            instructionCanvasGroup.DOFade(0f, INSTRUCTION_FADE_DURATION).SetEase(Ease.OutQuad);
         }
 
         private static bool IsTargetValidForPicker(Validator<(ulong targetId, TargetType targetType)> _validator,

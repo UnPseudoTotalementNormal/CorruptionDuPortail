@@ -86,9 +86,8 @@ MonoBehaviour:
     roleID: 3307
     rolePortrait: 1384333719
     roleDifficulty: 3
-    powers: []
     winningConditions:
-    - rid: 7121802106355843690
+    - rid: 1145719094804218094
     onChainingSound:
       Guid:
         Data1: 525785248
@@ -113,7 +112,7 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 7121802106355843690
-      type: {class: WAnomalyCorruption, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+    - rid: 1145719094804218094
+      type: {class: WAnomalyCorruption, ns: Characters.WinningConditions, asm: Game}
       data:
         ownerClientId: 0

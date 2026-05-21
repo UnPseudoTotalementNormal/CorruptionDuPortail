@@ -86,10 +86,9 @@ MonoBehaviour:
     roleID: 3917
     rolePortrait: 683198692
     roleDifficulty: 3
-    powers: []
     winningConditions:
-    - rid: 5230312567992221785
-    - rid: 5230312634475610202
+    - rid: 1145719094804218077
+    - rid: 1145719094804218078
     onChainingSound:
       Guid:
         Data1: 0
@@ -111,11 +110,11 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 5230312567992221785
-      type: {class: WMarginalIsChainedWin, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+    - rid: 1145719094804218077
+      type: {class: WOmniscienceHackedCharacter, ns: Characters.WinningConditions, asm: Game}
       data:
-        ownerClientId: 2
-    - rid: 5230312634475610202
-      type: {class: WOmniscienceHackedCharacter, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+        ownerClientId: 0
+    - rid: 1145719094804218078
+      type: {class: WMarginalIsChainedWin, ns: Characters.WinningConditions, asm: Game}
       data:
-        ownerClientId: 2
+        ownerClientId: 0

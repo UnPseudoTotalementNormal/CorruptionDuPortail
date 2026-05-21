@@ -610,10 +610,10 @@ MonoBehaviour:
     version: 2
     RefIds:
     - rid: 1000
-      type: {class: CardPlayerVisualUpdater, ns: Board.CardComponents, asm: Assembly-CSharp}
-      data: 
+      type: {class: CardPlayerVisualUpdater, ns: Board.CardComponents, asm: Game}
+      data:
     - rid: 178735816936259691
-      type: {class: CardPlayerAnimation, ns: Board.CardComponents, asm: Assembly-CSharp}
+      type: {class: CardPlayerAnimation, ns: Board.CardComponents, asm: Game}
       data: 
 --- !u!114 &460727394197249063
 MonoBehaviour:

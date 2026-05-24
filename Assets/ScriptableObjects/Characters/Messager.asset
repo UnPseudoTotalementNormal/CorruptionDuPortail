@@ -87,7 +87,7 @@ MonoBehaviour:
     rolePortrait: 883583601
     roleDifficulty: 1
     winningConditions:
-    - rid: 5827652982069002328
+    - rid: 1145719094804218090
     onChainingSound:
       Guid:
         Data1: 0
@@ -108,7 +108,7 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
-    - rid: 5827652982069002328
-      type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Assembly-CSharp}
+    - rid: 1145719094804218090
+      type: {class: WChosenChainedAllAnomaly, ns: Characters.WinningConditions, asm: Game}
       data:
         ownerClientId: 0

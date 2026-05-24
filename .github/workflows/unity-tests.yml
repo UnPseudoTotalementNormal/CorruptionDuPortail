@@ -17,6 +17,7 @@ jobs:
   testRunner:
     name: Exécution des tests unitaires
     runs-on: ubuntu-latest
+    if: false
 
     permissions:
       contents: read

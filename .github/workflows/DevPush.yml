@@ -14,12 +14,16 @@ jobs:
           WEBHOOK_URL: ${{ secrets.DISCORD_DEV_WEBHOOK }}
           ACTOR: ${{ github.actor }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMITS_JSON: ${{ toJSON(github.event.commits) }}
           COMPARE_URL: ${{ github.event.compare }}
         run: |
+          MSG=$(printf '%s' "$COMMITS_JSON" | jq -r '[.[] | "• " + (.message | split("\n")[0]) + " (" + (.id[0:7]) + ")"] | join("\n")')
+          if [ -z "$MSG" ]; then MSG="$COMMIT_MSG"; fi
+          MSG=$(printf '%s' "$MSG" | head -c 1000)
           curl -s -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
               --arg actor "$ACTOR" \
-              --arg msg "$COMMIT_MSG" \
+              --arg msg "$MSG" \
               --arg url "$COMPARE_URL" \
-              '{embeds:[{title:"⚠️ Push direct sur Dev — Corruption du Portail",color:16776960,fields:[{name:"Auteur",value:$actor,inline:true},{name:"Message",value:$msg,inline:false}],url:$url}]}')"
+              '{embeds:[{title:"⚠️ Push direct sur Dev — Corruption du Portail",color:16776960,fields:[{name:"Auteur",value:$actor,inline:true},{name:"Commits",value:$msg,inline:false}],url:$url}]}')"

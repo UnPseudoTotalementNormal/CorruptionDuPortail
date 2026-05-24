@@ -10,6 +10,10 @@ Stack: Unity + Netcode for GameObjects (NGO) + FMOD + UniTask + DOTween + Facepu
 
 Main branch: `Dev` (target for PRs).
 
+## Commits
+
+- **Never** add Claude / AI as a commit author or co-author. Do not add `Co-Authored-By: Claude ...` trailers or any AI attribution to commits or PRs.
+
 ## Build / Test / Run
 
 **Use Unity MCP whenever possible** — direct CLI Unity builds are not the primary workflow.

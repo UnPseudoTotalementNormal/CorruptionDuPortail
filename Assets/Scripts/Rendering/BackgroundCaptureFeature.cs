@@ -94,6 +94,13 @@ public class BackgroundCaptureFeature : ScriptableRendererFeature
             var resourceData = frameData.Get<UniversalResourceData>();
             var cameraData   = frameData.Get<UniversalCameraData>();
 
+            // Seule la caméra Base capture/floute. Les overlays du stack (Frost, AboveBlur,
+            // Phone) ne relancent pas la passe ni n'écrasent _BackgroundBlurSource.
+            // NB: garde ici (UniversalCameraData) et non dans AddRenderPasses — le
+            // renderType de la legacy RenderingData n'est pas fiable sous RenderGraph.
+            if (cameraData.renderType != CameraRenderType.Base)
+                return;
+
             if (resourceData.isActiveTargetBackBuffer)
                 return;
 

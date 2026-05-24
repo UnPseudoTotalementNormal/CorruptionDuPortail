@@ -10,6 +10,7 @@ using FocusSystem;
 using GameLogic.Validation;
 using TMPro;
 using TransformComposition;
+using UI.BoardUI.Selection;
 using UnityEngine;
 using static Characters.Powers.Target.TargetUtils;
 
@@ -43,6 +44,10 @@ namespace UI.BoardUI
         [Header("Character picker settings")]
         [SerializeField] private float characterPickerLiftHeight = 0.15f;
 
+        [Header("Pinned Card Settings")]
+        [Tooltip("Transform définissant la position, rotation et échelle de la carte épinglée à droite.")]
+        [SerializeField] private Transform pinnedCardRightAnchor;
+
         [Header("Blur veil")]
         [Tooltip("CanvasGroup du FrostCanvas (voile flou rendu par FrostCamera).")]
         [SerializeField] private CanvasGroup frostCanvasGroup;
@@ -62,6 +67,7 @@ namespace UI.BoardUI
         private readonly List<Action<Role>> subscribedRoleCallbacks = new();
         private readonly List<Action<Character>> subscribedCharacterCallbacks = new();
         private bool isPickerActive;
+        private Card currentPinnedCardInstance;
 
         private void Awake()
         {
@@ -103,7 +109,7 @@ namespace UI.BoardUI
         }
 
         public void ShowRolePicker(Validator<(ulong targetId, TargetType targetType)> _validator, Action<Role> _callback,
-            string _description = null)
+            string _description = null, SelectionFlowOptions _options = null)
         {
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
 
@@ -116,6 +122,7 @@ namespace UI.BoardUI
 
             isPickerActive = true;
             ShowInstructionPanel(PickerType.Role, _description);
+            SetupPinnedCard(_options);
 
             if (_callback != null)
             {
@@ -179,7 +186,7 @@ namespace UI.BoardUI
         }
 
         public void ShowCharacterPicker(Validator<(ulong targetId, TargetType targetType)> _validator,
-            Action<Character> _callback, string _description = null)
+            Action<Character> _callback, string _description = null, SelectionFlowOptions _options = null)
         {
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
 
@@ -195,6 +202,7 @@ namespace UI.BoardUI
 
             isPickerActive = true;
             ShowInstructionPanel(PickerType.Character, _description);
+            SetupPinnedCard(_options);
 
             if (_callback != null)
             {
@@ -231,6 +239,55 @@ namespace UI.BoardUI
             {
                 CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
                 onPickerCanceled?.Invoke();
+            }
+        }
+
+        private void SetupPinnedCard(SelectionFlowOptions _options)
+        {
+            if (_options == null || (!pinnedCardRightAnchor)) return;
+
+            if (_options.pinnedRole != null)
+            {
+                Character _roleCharacter = CharacterManager.instance.GetCharacter(_options.pinnedRole.ownerClientId);
+                currentPinnedCardInstance = BoardManager.instance.AddNewCard(_roleCharacter, false);
+                if (currentPinnedCardInstance)
+                {
+                    currentPinnedCardInstance.SetAnimationHandler(new CardRoleAnimation());
+                    currentPinnedCardInstance.SetVisualUpdater(new CardRoleVisualUpdater());
+                    HidePlayerIdentity(currentPinnedCardInstance);
+                }
+            }
+            else if (_options.pinnedCharacter != null)
+            {
+                currentPinnedCardInstance = BoardManager.instance.AddNewCard(_options.pinnedCharacter, false);
+                if (currentPinnedCardInstance)
+                {
+                    TransformCompositorComponent _comp = currentPinnedCardInstance.GetTransformCompositor();
+                    if (_comp != null)
+                    {
+                        TransformLayer _flipLayer = _comp.GetLayer("Flip");
+                        if (_flipLayer != null) _flipLayer.localEulerAngles = new Vector3(0, 0, -180);
+                    }
+                    _ = currentPinnedCardInstance.ShowPseudoWithRevealedInfo(false, false);
+                }
+            }
+
+            if (currentPinnedCardInstance != null)
+            {
+                // L'ancre peut être un placeholder désactivé, on copie juste ses valeurs
+                // ou on le parente au parent de l'ancre pour qu'il reste actif.
+                currentPinnedCardInstance.transform.SetParent(pinnedCardRightAnchor.parent, false);
+                currentPinnedCardInstance.transform.position = pinnedCardRightAnchor.position;
+                currentPinnedCardInstance.transform.rotation = pinnedCardRightAnchor.rotation;
+                currentPinnedCardInstance.transform.localScale = pinnedCardRightAnchor.localScale;
+
+                currentPinnedCardInstance.gameObject.SetLayerRecursively(ABOVE_BLUR_LAYER);
+
+                TransformCompositorComponent _compositor = currentPinnedCardInstance.GetTransformCompositor();
+                if (_compositor != null)
+                {
+                    _compositor.enabled = false;
+                }
             }
         }
 
@@ -271,6 +328,24 @@ namespace UI.BoardUI
                 }
             }
             cardClickHandlers.Clear();
+
+            if (currentPinnedCardInstance != null)
+            {
+                if (_instantCharacterReset)
+                {
+                    Destroy(currentPinnedCardInstance.gameObject);
+                }
+                else
+                {
+                    Card _capturedPinned = currentPinnedCardInstance;
+                    _capturedPinned.transform.DOScale(Vector3.zero, TWEEN_DURATION)
+                        .SetEase(Ease.InBack)
+                        .OnComplete(() => {
+                            if (_capturedPinned) Destroy(_capturedPinned.gameObject);
+                        });
+                }
+                currentPinnedCardInstance = null;
+            }
 
             Vector3 _roleCenterLocal = rolePickerCenter ? rolePickerCenter.localPosition : Vector3.zero;
             foreach (Card _card in spawnedRoleCards)

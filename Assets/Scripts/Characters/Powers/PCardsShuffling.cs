@@ -122,11 +122,14 @@ namespace Characters.Powers
         [Rpc(SendTo.SpecifiedInParams)]
         public void AskForGuessRoleRpc(RpcParams _rpcParams)
         {
+            Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
+
             SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
                 new SelectionFlowOptions
                 {
                     focusType        = FocusType.Cards,
                     stepDescriptions = new[] { guessCharacterPickerDescription },
+                    pinnedRole       = _guessCharacter.role
                 });
         }
 

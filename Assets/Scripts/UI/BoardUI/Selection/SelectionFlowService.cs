@@ -42,7 +42,7 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onRoleSelected?.Invoke(_role);
-            }, _resolvedOptions.GetStepDescription(0));
+            }, _resolvedOptions.GetStepDescription(0), _resolvedOptions);
         }
 
         public void StartCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
@@ -64,7 +64,7 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onCharacterSelected?.Invoke(_character);
-            }, _resolvedOptions.GetStepDescription(0));
+            }, _resolvedOptions.GetStepDescription(0), _resolvedOptions);
         }
 
         public void StartCharacterThenRoleSelection(
@@ -92,12 +92,19 @@ namespace UI.BoardUI.Selection
                     FocusManager.instance?.FocusObject(_chosenCard.gameObject);
                 }
 
+                SelectionFlowOptions _step2Options = new SelectionFlowOptions 
+                { 
+                    focusType = _resolvedOptions.focusType,
+                    stepDescriptions = _resolvedOptions.stepDescriptions,
+                    pinnedCharacter = _character
+                };
+
                 CardPickerManager.instance.ShowRolePicker(_validator, _role =>
                 {
                     CompleteFlow();
                     _onComplete?.Invoke(_character, _role);
-                }, _resolvedOptions.GetStepDescription(1));
-            }, _resolvedOptions.GetStepDescription(0));
+                }, _step2Options.GetStepDescription(1), _step2Options);
+            }, _resolvedOptions.GetStepDescription(0), _resolvedOptions);
         }
 
         public void CancelSelection(bool _invokeCanceled = false)

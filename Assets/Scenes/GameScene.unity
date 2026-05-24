@@ -213,7 +213,7 @@ Canvas:
   serializedVersion: 3
   m_RenderMode: 1
   m_Camera: {fileID: 330585545}
-  m_PlaneDistance: 5
+  m_PlaneDistance: 12.5
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
@@ -7611,6 +7611,7 @@ MonoBehaviour:
   rolePickerCardSpacingAngle: 8
   rolePickerCardSpacing: 5
   rolePickerCardHeightOffset: 0.15
+  rolePickerSpawnOffset: {x: 0, y: 0, z: -10}
   rolePickerCenter: {fileID: 1006790937}
   instructionCanvasGroup: {fileID: 36138300}
   instructionParent: {fileID: 962588891}
@@ -7620,10 +7621,7 @@ MonoBehaviour:
   instructionPlayerTitle: Choissisez un joueur !
   instructionRoleSelectionPosition: {fileID: 1600648899}
   instructionPlayerSelectionPosition: {fileID: 802840500}
-  characterPickerCardSpacingAngle: 8
-  characterPickerCardSpacing: 5
-  characterPickerCardHeightOffset: 0.15
-  characterPickerCenter: {fileID: 1006790937}
+  characterPickerLiftHeight: 1.5
 --- !u!1 &1237554685
 GameObject:
   m_ObjectHideFlags: 0

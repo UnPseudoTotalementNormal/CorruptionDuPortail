@@ -26,6 +26,7 @@ namespace UI.BoardUI
         [SerializeField] private float rolePickerCardSpacingAngle = 5f;
         [SerializeField] private float rolePickerCardSpacing = 1f;
         [SerializeField] private float rolePickerCardHeightOffset = -0.1f;
+        [SerializeField] private Vector3 rolePickerSpawnOffset;
         [SerializeField] private Transform rolePickerCenter;
 
         [Header("Instruction UI")]
@@ -39,10 +40,7 @@ namespace UI.BoardUI
         [SerializeField] private RectTransform instructionPlayerSelectionPosition;
 
         [Header("Character picker settings")]
-        [SerializeField] private float characterPickerCardSpacingAngle = 8f;
-        [SerializeField] private float characterPickerCardSpacing = 1.4f;
-        [SerializeField] private float characterPickerCardHeightOffset = -0.05f;
-        [SerializeField] private Transform characterPickerCenter;
+        [SerializeField] private float characterPickerLiftHeight = 0.15f;
 
         private const string CHARACTER_PICKER_LAYER = "CharacterPicker";
         private const string ROLE_PICKER_LAYER = "RolePicker";
@@ -153,6 +151,7 @@ namespace UI.BoardUI
 
                 Vector3 _targetPosition = _centerLocal + new Vector3(_xPos, rolePickerCardHeightOffset * _i, _zPos);
 
+                _layer.localPosition = _centerLocal + rolePickerSpawnOffset;
                 _layer.DOLocalRotate(new Vector3(0, _angle, 0), TWEEN_DURATION).SetEase(Ease.OutQuint);
                 _layer.DOLocalMove(_targetPosition, TWEEN_DURATION).SetEase(Ease.OutQuint);
 
@@ -193,15 +192,6 @@ namespace UI.BoardUI
                 subscribedCharacterCallbacks.Add(_callback);
             }
 
-            float _totalAngle = (_validCards.Count - 1) * characterPickerCardSpacingAngle;
-            float _startAngle = -_totalAngle / 2f;
-
-            float _radius = _validCards.Count > 1
-                ? characterPickerCardSpacing / (2f * Mathf.Sin(characterPickerCardSpacingAngle * Mathf.Deg2Rad / 2f))
-                : characterPickerCardSpacing;
-
-            Vector3 _centerLocal = characterPickerCenter ? characterPickerCenter.localPosition : Vector3.zero;
-
             for (int _i = 0; _i < _validCards.Count; _i++)
             {
                 Card _card = _validCards[_i];
@@ -216,17 +206,7 @@ namespace UI.BoardUI
                 TransformLayer _layer = _compositor.GetLayer(CHARACTER_PICKER_LAYER);
                 _layer.DOKill();
 
-                float _angle = _startAngle + (_i * characterPickerCardSpacingAngle);
-                float _angleRad = _angle * Mathf.Deg2Rad;
-                float _xLocal = Mathf.Sin(_angleRad) * _radius;
-                float _zLocal = (Mathf.Cos(_angleRad) * _radius) - _radius;
-
-                Vector3 _slotLocal = _centerLocal + new Vector3(_xLocal, characterPickerCardHeightOffset * _i, _zLocal);
-                Vector3 _composedBefore = _compositor.Compositor.GetComposedTransformUpTo(CHARACTER_PICKER_LAYER).localPosition;
-                Vector3 _delta = _slotLocal - _composedBefore;
-
-                _layer.DOLocalMove(_delta, TWEEN_DURATION).SetEase(Ease.OutQuint);
-                _layer.DOLocalRotate(new Vector3(0, _angle, 0), TWEEN_DURATION).SetEase(Ease.OutQuint);
+                _layer.DOLocalMove(new Vector3(0, characterPickerLiftHeight, 0), TWEEN_DURATION).SetEase(Ease.OutQuint);
 
                 Character _capturedChar = _card.characterInfo;
                 Action<Card> _clickHandler = _ => OnCharacterSelectedInternal(_capturedChar);
@@ -279,12 +259,30 @@ namespace UI.BoardUI
             }
             cardClickHandlers.Clear();
 
+            Vector3 _roleCenterLocal = rolePickerCenter ? rolePickerCenter.localPosition : Vector3.zero;
             foreach (Card _card in spawnedRoleCards)
             {
-                if (_card)
+                if (!_card) continue;
+
+                if (_instantCharacterReset)
                 {
                     Destroy(_card.gameObject);
+                    continue;
                 }
+
+                TransformCompositorComponent _compositor = _card.GetTransformCompositor();
+                if (_compositor == null)
+                {
+                    Destroy(_card.gameObject);
+                    continue;
+                }
+
+                Card _captured = _card;
+                TransformLayer _layer = _compositor.GetLayer(ROLE_PICKER_LAYER);
+                _layer.DOKill();
+                _layer.DOLocalRotate(Vector3.zero, TWEEN_DURATION).SetEase(Ease.OutQuint);
+                _layer.DOLocalMove(_roleCenterLocal + rolePickerSpawnOffset, TWEEN_DURATION).SetEase(Ease.OutQuint)
+                    .OnComplete(() => { if (_captured) Destroy(_captured.gameObject); });
             }
             spawnedRoleCards.Clear();
 

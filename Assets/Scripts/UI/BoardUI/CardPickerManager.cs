@@ -6,6 +6,7 @@ using Board.CardComponents;
 using Characters;
 using DG.Tweening;
 using Extensions;
+using FocusSystem;
 using GameLogic.Validation;
 using TMPro;
 using TransformComposition;
@@ -207,6 +208,7 @@ namespace UI.BoardUI
                 liftedCharacterCards.Add(_card);
                 liftedCharacterOriginalLayers[_card] = _card.gameObject.layer;
                 _card.gameObject.SetLayerRecursively(ABOVE_BLUR_LAYER);
+                MoveFocusParticlesToLayer(_card.gameObject, LayerMask.NameToLayer(ABOVE_BLUR_LAYER));
 
                 TransformCompositorComponent _compositor = _card.GetTransformCompositor();
                 if (_compositor == null)
@@ -302,7 +304,10 @@ namespace UI.BoardUI
                 if (!_card) continue;
 
                 if (liftedCharacterOriginalLayers.TryGetValue(_card, out int _origLayer))
+                {
                     _card.gameObject.SetLayerRecursively(_origLayer);
+                    MoveFocusParticlesToLayer(_card.gameObject, _origLayer);
+                }
 
                 TransformCompositorComponent _compositor = _card.GetTransformCompositor();
                 if (_compositor == null) continue;
@@ -396,6 +401,16 @@ namespace UI.BoardUI
             ulong _targetId, TargetType _targetType)
         {
             return _validator == null || _validator.Evaluate((_targetId, _targetType));
+        }
+
+        private static void MoveFocusParticlesToLayer(GameObject _target, int _layer)
+        {
+            if (FocusManager.instance == null) return;
+            foreach (FocusObject _fo in FocusManager.instance.currentFocusObjects)
+            {
+                if (_fo.gameObject == _target && _fo.focusParticles != null)
+                    _fo.focusParticles.gameObject.SetLayerRecursively(_layer);
+            }
         }
 
         private static void HidePlayerIdentity(Card _card)

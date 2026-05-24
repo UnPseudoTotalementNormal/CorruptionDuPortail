@@ -44,10 +44,13 @@ namespace Characters.Powers
             CreateBeaconRpc(ownerClientId.Value, true);
         }
 
+        [SerializeField] private string pickerDescription;
+
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
         private void OnCharacterPicked(Character _characterClicked)

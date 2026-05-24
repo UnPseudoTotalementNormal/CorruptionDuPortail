@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -692,6 +693,7 @@ MonoBehaviour:
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 0
@@ -707,3 +709,5 @@ MonoBehaviour:
       Data4: 0
     Path: 
   powerComponents: []
+  idHolderServer: 0
+  pickerDescription: Choisissez un joueur sur lequel utiliser votre vision.

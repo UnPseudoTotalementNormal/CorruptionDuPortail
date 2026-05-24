@@ -42,7 +42,7 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onRoleSelected?.Invoke(_role);
-            }, _resolvedOptions.description);
+            }, _resolvedOptions.GetStepDescription(0));
         }
 
         public void StartCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
@@ -54,7 +54,8 @@ namespace UI.BoardUI.Selection
             }
 
             ResetCurrentSelection(_invokeCanceled: false, _clearFocus: true);
-            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions { focusType = FocusType.Cards };
+            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions();
+            _resolvedOptions.focusType ??= FocusType.Cards;
 
             StartFlow(_resolvedOptions);
             ApplyFocus(_resolvedOptions.focusType, _validator);
@@ -63,7 +64,7 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onCharacterSelected?.Invoke(_character);
-            }, _resolvedOptions.description);
+            }, _resolvedOptions.GetStepDescription(0));
         }
 
         public void StartCharacterThenRoleSelection(
@@ -76,7 +77,8 @@ namespace UI.BoardUI.Selection
             }
 
             ResetCurrentSelection(_invokeCanceled: false, _clearFocus: true);
-            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions { focusType = FocusType.Cards };
+            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions();
+            _resolvedOptions.focusType ??= FocusType.Cards;
 
             StartFlow(_resolvedOptions);
             ApplyFocus(_resolvedOptions.focusType, _validator);
@@ -94,8 +96,8 @@ namespace UI.BoardUI.Selection
                 {
                     CompleteFlow();
                     _onComplete?.Invoke(_character, _role);
-                }, _resolvedOptions.description);
-            }, _resolvedOptions.description);
+                }, _resolvedOptions.GetStepDescription(1));
+            }, _resolvedOptions.GetStepDescription(0));
         }
 
         public void CancelSelection(bool _invokeCanceled = false)

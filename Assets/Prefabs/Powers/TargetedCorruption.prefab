@@ -686,6 +686,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -693,6 +694,7 @@ MonoBehaviour:
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 1078989102
@@ -708,8 +710,10 @@ MonoBehaviour:
       Data4: -243499154
     Path: event:/Characters/Mage Occulte/Corrupting brand
   powerComponents: []
+  idHolderServer: 0
   <concentratedEffectDescription>k__BackingField: "il apprend \xE9galement le r\xF4le
     du joueur corrompu."
+  pickerDescription: "Choisissez un joueur \xE0 corrompre."
 --- !u!114 &-8193735104216260977
 MonoBehaviour:
   m_ObjectHideFlags: 0

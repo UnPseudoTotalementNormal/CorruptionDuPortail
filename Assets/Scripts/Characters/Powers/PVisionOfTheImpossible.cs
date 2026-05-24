@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
@@ -61,10 +62,17 @@ namespace Characters.Powers
             StartCharacterSelection();
         }
 
+        [SerializeField] private string characterPickerDescription;
+        [SerializeField] private string rolePickerDescription;
+
         private void StartCharacterSelection()
         {
             SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
-                new SelectionFlowOptions { focusType = FocusType.Cards });
+                new SelectionFlowOptions
+                {
+                    focusType        = FocusType.Cards,
+                    stepDescriptions = new[] { characterPickerDescription },
+                });
         }
 
         private void OnRolePicked(Role _roleClicked)
@@ -91,7 +99,8 @@ namespace Characters.Powers
 
         private void StartRoleSelection()
         {
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
         [Rpc(SendTo.Server)]

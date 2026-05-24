@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 0
   isPassive: 0
   hasToBeAwakened: 1
@@ -708,3 +709,5 @@ MonoBehaviour:
       Data4: 0
     Path: 
   powerComponents: []
+  idHolderServer: 0
+  pickerDescription: "Choisissez un joueur \xE0 lier par les cha\xEEnes de la v\xE9rit\xE9."

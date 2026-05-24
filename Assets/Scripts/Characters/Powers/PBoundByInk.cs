@@ -30,10 +30,13 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => !alreadyTargetedClients.Contains(ctx.targetId));
         }
         
+        [SerializeField] private string pickerDescription;
+
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -9,6 +9,11 @@ namespace UI.BoardUI.Selection
         public FocusType? focusType;
         public bool clearFocusOnFinish = true;
         public Action onCanceled;
-        public string description;
+        public string[] stepDescriptions;
+
+        public string GetStepDescription(int _step) =>
+            stepDescriptions != null && _step < stepDescriptions.Length
+                ? stepDescriptions[_step]
+                : null;
     }
 }

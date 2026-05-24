@@ -686,6 +686,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -709,6 +710,7 @@ MonoBehaviour:
       Data4: 0
     Path: 
   powerComponents: []
+  idHolderServer: 0
   onCorruptionSuccessfulSound:
     Guid:
       Data1: 1862133295
@@ -723,6 +725,9 @@ MonoBehaviour:
       Data3: -19726450
       Data4: 2001007959
     Path: event:/Characters/Mage Occulte/embrace of shadows - Failure
+  pickerStepDescriptions:
+  - "Choisissez un joueur \xE0 corrompre."
+  - "Choisissez le r\xF4le suppos\xE9 de ce joueur."
 --- !u!114 &2373894903789642903
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -8,12 +8,10 @@ using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine.Assertions;
 using FocusType = FocusSystem.FocusType;
-using Board;
 
 #endregion
 
@@ -48,22 +46,25 @@ namespace Characters.Powers
             });
         }
         
-        private void OnCardClicked(Card _cardClicked)
+        private void OnCharacterPicked(Character _clickedCharacter)
         {
-            var _clickedCharacter = _cardClicked.characterInfo;
             if (!CheckIsTargetValid(_clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
             clickedCharacters.Add(_clickedCharacter);
-            var _clickedCard = BoardManager.instance.visibleCards.First(_card =>
-                _card.characterInfo.ownerClientId.Value == _clickedCharacter.ownerClientId.Value);
-            FocusManager.instance.UnfocusObject(_clickedCard.gameObject);
             if (clickedCharacters.Count >= charactersToSelect)
             {
-                BoardManager.instance.onCardClicked -= OnCardClicked;
                 StartRoleSelection();
+                return;
             }
+            StartCharacterSelection();
+        }
+
+        private void StartCharacterSelection()
+        {
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+                new SelectionFlowOptions { focusType = FocusType.Cards });
         }
 
         private void OnRolePicked(Role _roleClicked)
@@ -137,10 +138,8 @@ namespace Characters.Powers
 
             clickedCharacters.Clear();
             clickedRoles.Clear();
-            
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
+
+            StartCharacterSelection();
         }
 
         public override void Cancel()
@@ -155,7 +154,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
             SelectionFlowService.instance.CancelSelection();
             FocusManager.instance.UnfocusAll();
         }

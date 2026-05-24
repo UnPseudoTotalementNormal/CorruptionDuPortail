@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
 using GameLogic;
 using Network;
 using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
-using Board;
 
 namespace Characters.Powers
 {
@@ -67,15 +64,9 @@ namespace Characters.Powers
             AskForGuessRoleRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
         
-        private void OnGuessRoleCardClicked(Card _cardClicked)
+        private void OnGuessCharacterPicked(Character _character)
         {
-            ulong _clickedId = _cardClicked.roleInfo.ownerClientId;
-            if (!IsGuessValid(_clickedId))
-            {
-                return;
-            }
-            
-            GuessRoleRpc(_clickedId);
+            GuessRoleRpc(_character.ownerClientId.Value);
             OnUsed();
         }
 
@@ -129,9 +120,8 @@ namespace Characters.Powers
         [Rpc(SendTo.SpecifiedInParams)]
         public void AskForGuessRoleRpc(RpcParams _rpcParams)
         {
-            FocusManager.instance.UnfocusAll();
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, IsGuessValid);
-            BoardManager.instance.onCardClicked += OnGuessRoleCardClicked;
+            SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
+                new SelectionFlowOptions { focusType = FocusType.Cards });
         }
 
 
@@ -145,14 +135,6 @@ namespace Characters.Powers
         {
             base.StopUse();
             SelectionFlowService.instance.CancelSelection();
-            BoardManager.instance.onCardClicked -= OnGuessRoleCardClicked;
         }
-        
-        private bool IsGuessValid(ulong _targetId)
-        {
-            return true;
-        }
-        
-
     }
 }

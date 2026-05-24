@@ -5,15 +5,11 @@ using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
 using Extensions;
 using FMODUnity;
-using FocusSystem;
 using GameLogic;
 using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine;
-using FocusType = FocusSystem.FocusType;
-using Board;
 
 #endregion
 
@@ -22,7 +18,6 @@ namespace Characters.Powers
     [Serializable]
     public class PEmbraceOfShadows : Power, IFailablePower
     {
-        [NonSerialized] private Character clickedCharacter;
         public EventReference onCorruptionSuccessfulSound;
         public EventReference onCorruptionFailedSound;
         public event Action onPowerSuccessful;
@@ -34,36 +29,28 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
         
-        private void OnCardClicked(Card _clickedCard)
+        private void OnCharacterAndRolePicked(Character _character, Role _role)
         {
-            if (!CheckIsTargetValid(_clickedCard.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
-            {
-                return;
-            }
-            clickedCharacter = _clickedCard.characterInfo;
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
-        }
-        private void OnRolePicked(Role _role)
-        {
-            if (!clickedCharacter ||
+            if (!_character ||
+                !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
                 !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, clickedCharacter.ownerClientId.Value);
-            if (clickedCharacter.role.IsTheSameRole(_role))
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            if (_character.role.IsTheSameRole(_role))
             {
-                clickedCharacter.CorruptPlayerServerRpc();
-                InvokeOnCharacterCorruptedRpc(clickedCharacter.ownerClientId.Value);
+                _character.CorruptPlayerServerRpc();
+                InvokeOnCharacterCorruptedRpc(_character.ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
+                    _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
                 GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                    clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
+                    _character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
                 onCorruptionSuccessfulSound.TryPlayOneShot();
             }
             else
             {
-                InvokeOnCharacterCorruptionFailedRpc(clickedCharacter.ownerClientId.Value);
+                InvokeOnCharacterCorruptionFailedRpc(_character.ownerClientId.Value);
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
@@ -99,13 +86,9 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
-
-            clickedCharacter = null;
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked);
         }
-        
+
         public override void Cancel()
         {
             if (!isCurrentlyUsed)
@@ -118,7 +101,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
             SelectionFlowService.instance.CancelSelection();
         }
     }

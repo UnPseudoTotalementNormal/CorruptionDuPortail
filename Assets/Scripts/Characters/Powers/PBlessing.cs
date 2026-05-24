@@ -2,15 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using Board;
 using Characters.Powers.Target;
 using ChatSystem;
-using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
 using Network;
 using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine.Assertions;
@@ -22,35 +19,22 @@ namespace Characters.Powers
     [Serializable]
     public class PBlessing : Power
     {
-        [NonSerialized] private Character clickedCharacter;
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
-        
-        private void OnCardClicked(Card _clickedCard)
-        {
-            clickedCharacter = _clickedCard.characterInfo;
 
-            if (!CheckIsTargetValid(clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
-            {
-                return;
-            }
-            
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
-        }
-        
-        private void OnRolePicked(Role _role)
+        private void OnCharacterAndRolePicked(Character _character, Role _role)
         {
-            if (!clickedCharacter ||
+            if (!_character ||
+                !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
                 !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            
-            TryBlessCharacterServerRpc(clickedCharacter.ownerClientId.Value, _role);
+
+            TryBlessCharacterServerRpc(_character.ownerClientId.Value, _role);
             OnUsed();
         }
 
@@ -91,11 +75,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
-
-            clickedCharacter = null;
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked);
         }
 
         public override void Cancel()
@@ -110,7 +90,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
             SelectionFlowService.instance.CancelSelection();
         }
     }

@@ -1,9 +1,8 @@
 using System;
 using Characters.Powers.Target;
-using FocusSystem;
 using GameLogic;
 using RoleTarget;
-using Board;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 
 namespace Characters.Powers
@@ -20,14 +19,13 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
         
-        private void OnCardClicked(Card _clickedCard)
+        private void OnCharacterPicked(Character _character)
         {
-            var _character = GameManager.instance.characterManager.GetCharacter(_clickedCard.characterInfo.ownerClientId.Value);
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCard.characterInfo.ownerClientId.Value);
+            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }
@@ -57,9 +55,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
         }
 
         public override void Cancel()
@@ -70,13 +66,11 @@ namespace Characters.Powers
             }
             base.Cancel();
         }
-        
+
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
-            
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
     }
 }

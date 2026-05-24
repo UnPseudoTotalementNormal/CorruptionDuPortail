@@ -9,5 +9,6 @@ namespace UI.BoardUI.Selection
         public FocusType? focusType;
         public bool clearFocusOnFinish = true;
         public Action onCanceled;
+        public string description;
     }
 }

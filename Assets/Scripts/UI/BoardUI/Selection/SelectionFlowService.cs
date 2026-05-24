@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Board;
 using Characters;
 using FocusSystem;
@@ -41,7 +42,7 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onRoleSelected?.Invoke(_role);
-            });
+            }, _resolvedOptions.description);
         }
 
         public void StartCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
@@ -62,11 +63,11 @@ namespace UI.BoardUI.Selection
             {
                 CompleteFlow();
                 _onCharacterSelected?.Invoke(_character);
-            });
+            }, _resolvedOptions.description);
         }
 
-        public void StartCharacterThenRoleSelection(Card _focusedCharacterCard,
-            Validator<(ulong targetId, TargetType targetType)> _roleValidator, Action<Role> _onRoleSelected,
+        public void StartCharacterThenRoleSelection(
+            Validator<(ulong targetId, TargetType targetType)> _validator, Action<Character, Role> _onComplete,
             SelectionFlowOptions _options = null)
         {
             if (!CanUsePicker())
@@ -75,21 +76,26 @@ namespace UI.BoardUI.Selection
             }
 
             ResetCurrentSelection(_invokeCanceled: false, _clearFocus: true);
-            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions();
+            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions { focusType = FocusType.Cards };
 
             StartFlow(_resolvedOptions);
+            ApplyFocus(_resolvedOptions.focusType, _validator);
 
-            if (_focusedCharacterCard)
+            CardPickerManager.instance.ShowCharacterPicker(_validator, _character =>
             {
+                Card _chosenCard = FindBoardCard(_character);
                 FocusManager.instance?.UnfocusAll();
-                FocusManager.instance?.FocusObject(_focusedCharacterCard.gameObject);
-            }
+                if (_chosenCard)
+                {
+                    FocusManager.instance?.FocusObject(_chosenCard.gameObject);
+                }
 
-            CardPickerManager.instance.ShowRolePicker(_roleValidator, _role =>
-            {
-                CompleteFlow();
-                _onRoleSelected?.Invoke(_role);
-            });
+                CardPickerManager.instance.ShowRolePicker(_validator, _role =>
+                {
+                    CompleteFlow();
+                    _onComplete?.Invoke(_character, _role);
+                }, _resolvedOptions.description);
+            }, _resolvedOptions.description);
         }
 
         public void CancelSelection(bool _invokeCanceled = false)
@@ -221,6 +227,18 @@ namespace UI.BoardUI.Selection
             ulong _targetId, TargetType _targetType)
         {
             return _validator == null || _validator.Evaluate((_targetId, _targetType));
+        }
+
+        private static Card FindBoardCard(Character _character)
+        {
+            if (_character == null || BoardManager.instance == null)
+            {
+                return null;
+            }
+
+            return BoardManager.instance.visibleCards.FirstOrDefault(_card =>
+                _card && _card.characterInfo &&
+                _card.characterInfo.ownerClientId.Value == _character.ownerClientId.Value);
         }
     }
 }

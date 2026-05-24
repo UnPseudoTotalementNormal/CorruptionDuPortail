@@ -1,16 +1,13 @@
 using System.Collections.Generic;
-using System.Linq;
 using Characters.Powers.Target;
 using ChatSystem;
-using FocusSystem;
 using GameLogic;
 using GameLogic.GameStates;
 using RoleTarget;
+using UI.BoardUI.Selection;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using FocusType = FocusSystem.FocusType;
-using Board;
 
 namespace Characters.Powers
 {
@@ -36,17 +33,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
-            
-            foreach (var _clientId in alreadyTargetedClients)
-            {
-                var _card = BoardManager.instance.visibleCards.FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _clientId);
-                if (_card != null)
-                {
-                    FocusManager.instance.UnfocusObject(_card.gameObject);
-                }
-            }
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
@@ -56,14 +43,14 @@ namespace Characters.Powers
             return base.CanUse(_ignoreCurrentlyUsed);
         }
 
-        private void OnCardClicked(Card _clickedCard)
+        private void OnCharacterPicked(Character _character)
         {
-            if (!CheckIsTargetValid(_clickedCard.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
+            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
 
-            OnCardClickedRpc(_clickedCard.characterInfo.ownerClientId.Value);
+            OnCardClickedRpc(_character.ownerClientId.Value);
             OnUsed();
         }
 
@@ -130,7 +117,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
+            SelectionFlowService.instance.CancelSelection();
         }
     }
 }

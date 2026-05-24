@@ -4,13 +4,11 @@ using System;
 using ArrowSystem;
 using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
-using FocusSystem;
 using GameLogic;
 using RoleTarget;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine;
-using FocusType = FocusSystem.FocusType;
-using Board;
 
 #endregion
 
@@ -42,9 +40,9 @@ namespace Characters.Powers
             var _character = GameManager.instance.characterManager.GetCharacter(characterId);
             onCharacterCorruptionFailed?.Invoke(_character);
         }
-        private void OnCardClicked(Card _clickedCard)
+        private void OnCharacterPicked(Character _character)
         {
-            var _clickedCharacterId = _clickedCard.characterInfo.ownerClientId.Value;
+            var _clickedCharacterId = _character.ownerClientId.Value;
             if (!CheckIsTargetValid(_clickedCharacterId, TargetUtils.TargetType.Character))
             {
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
@@ -91,9 +89,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
         }
 
         public override void Cancel()
@@ -104,14 +100,12 @@ namespace Characters.Powers
             }
             base.Cancel();
         }
-        
+
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
+            SelectionFlowService.instance.CancelSelection();
             ArrowManager.instance.DestroyAllArrows();
-            
-            FocusManager.instance.UnfocusAll();
         }
         
         public void OnConcentratedEffectServer()

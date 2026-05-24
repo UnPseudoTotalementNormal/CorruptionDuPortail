@@ -2,13 +2,10 @@
 
 using System;
 using Characters.Powers.Target;
-using FocusSystem;
 using GameLogic;
 using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
-using Board;
 
 #endregion
 
@@ -17,31 +14,21 @@ namespace Characters.Powers
     [Serializable]
     public class PChainedByTheShadows : Power
     {
-        [NonSerialized] private Character clickedCharacter;
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
-        
-        private void OnCardClicked(Card _clickedCard)
+
+        private void OnCharacterAndRolePicked(Character _character, Role _role)
         {
-            clickedCharacter = _clickedCard.characterInfo;
-            if (!CheckIsTargetValid(clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
-            {
-                return;
-            }
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(_clickedCard, targetValidator, OnRolePicked);
-        }
-        private void OnRolePicked(Role _role)
-        {
-            if (!clickedCharacter ||
+            if (!_character ||
+                !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
                 !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
                 return;
             }
-            TryCorruptCharacterServerRpc(clickedCharacter.ownerClientId.Value, _role);
+            TryCorruptCharacterServerRpc(_character.ownerClientId.Value, _role);
             OnUsed();
         }
         [Rpc(SendTo.Server)]
@@ -73,11 +60,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
-
-            clickedCharacter = null;
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked);
         }
 
         public override void Cancel()
@@ -92,7 +75,6 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
             SelectionFlowService.instance.CancelSelection();
         }
 

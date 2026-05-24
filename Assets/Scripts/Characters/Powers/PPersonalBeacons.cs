@@ -1,18 +1,16 @@
 using System;
 using System.Collections.Generic;
-using Board;
 using System.Linq;
 using Characters.Powers.PowerObjects;
 using Characters.Powers.Target;
 using ChatSystem;
 using Extensions;
-using FocusSystem;
 using GameLogic;
 using Network;
 using RoleTarget;
+using UI.BoardUI.Selection;
 using Unity.Netcode;
 using UnityEngine;
-using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
@@ -49,22 +47,18 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            BoardManager.instance.onCardClicked += OnCardClicked;
-            
-            FocusManager.instance.SetFocusOnType(FocusType.Cards, id => CheckIsTargetValid(id, TargetUtils.TargetType.Character));
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
         }
 
-        private void OnCardClicked(Card _card)
+        private void OnCharacterPicked(Character _characterClicked)
         {
-            Character _characterClicked = _card.characterInfo;
-            
             if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
-            
+
             OnCharacterClickedRpc(_characterClicked.ownerClientId.Value);
-            
+
             OnUsed();
         }
         
@@ -79,8 +73,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            BoardManager.instance.onCardClicked -= OnCardClicked;
-            FocusManager.instance.UnfocusAll();
+            SelectionFlowService.instance.CancelSelection();
         }
 
         [Rpc(SendTo.Everyone)]

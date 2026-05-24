@@ -5,7 +5,9 @@ using Board;
 using Board.CardComponents;
 using Characters;
 using DG.Tweening;
+using Extensions;
 using GameLogic.Validation;
+using TMPro;
 using TransformComposition;
 using UnityEngine;
 using static Characters.Powers.Target.TargetUtils;
@@ -28,6 +30,13 @@ namespace UI.BoardUI
 
         [Header("Instruction UI")]
         [SerializeField] private CanvasGroup instructionCanvasGroup;
+        [SerializeField] private RectTransform instructionParent;
+        [SerializeField] private TMP_Text instructionTitle;
+        [SerializeField] private TMP_Text instructionDescription;
+        [SerializeField] private string instructionRoleTitle;
+        [SerializeField] private string instructionPlayerTitle;
+        [SerializeField] private RectTransform instructionRoleSelectionPosition;
+        [SerializeField] private RectTransform instructionPlayerSelectionPosition;
 
         [Header("Character picker settings")]
         [SerializeField] private float characterPickerCardSpacingAngle = 8f;
@@ -86,7 +95,8 @@ namespace UI.BoardUI
             ShowCharacterPicker(_validator, _c => Debug.Log("Selected character: " + _c.ownerClientId.Value));
         }
 
-        public void ShowRolePicker(Validator<(ulong targetId, TargetType targetType)> _validator, Action<Role> _callback)
+        public void ShowRolePicker(Validator<(ulong targetId, TargetType targetType)> _validator, Action<Role> _callback,
+            string _description = null)
         {
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
 
@@ -98,7 +108,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
-            ShowInstructionPanel();
+            ShowInstructionPanel(PickerType.Role, _description);
 
             if (_callback != null)
             {
@@ -160,7 +170,7 @@ namespace UI.BoardUI
         }
 
         public void ShowCharacterPicker(Validator<(ulong targetId, TargetType targetType)> _validator,
-            Action<Character> _callback)
+            Action<Character> _callback, string _description = null)
         {
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
 
@@ -175,7 +185,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
-            ShowInstructionPanel();
+            ShowInstructionPanel(PickerType.Character, _description);
 
             if (_callback != null)
             {
@@ -234,15 +244,19 @@ namespace UI.BoardUI
         private void OnRoleSelectedInternal(Role _role)
         {
             if (!isPickerActive) return;
-            onRoleSelected?.Invoke(_role);
+            // Tear down BEFORE invoking so a callback that starts a new picker (chained
+            // selection) is not destroyed by the trailing cancel.
+            Action<Role> _handler = onRoleSelected;
             CancelPicker(_invokeCanceled: false);
+            _handler?.Invoke(_role);
         }
 
         private void OnCharacterSelectedInternal(Character _character)
         {
             if (!isPickerActive) return;
-            onCharacterSelected?.Invoke(_character);
+            Action<Character> _handler = onCharacterSelected;
             CancelPicker(_invokeCanceled: false);
+            _handler?.Invoke(_character);
         }
 
         public void CancelPicker()
@@ -313,25 +327,40 @@ namespace UI.BoardUI
             }
         }
 
-        private void ShowInstructionPanel()
+        private enum PickerType { Role, Character }
+
+        private void ShowInstructionPanel(PickerType _type, string _description)
         {
             if (!instructionCanvasGroup) return;
+
+            if (instructionParent)
+            {
+                RectTransform _anchor = _type == PickerType.Role
+                    ? instructionRoleSelectionPosition
+                    : instructionPlayerSelectionPosition;
+                if (_anchor)
+                    instructionParent.anchoredPosition = _anchor.anchoredPosition;
+            }
+
+            if (instructionTitle)
+                instructionTitle.text = _type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle;
+            if (instructionDescription && _description != null)
+                instructionDescription.text = _description;
+
             instructionCanvasGroup.DOKill();
-            instructionCanvasGroup.blocksRaycasts = false;
-            instructionCanvasGroup.DOFade(1f, INSTRUCTION_FADE_DURATION).SetEase(Ease.OutQuad);
+            instructionCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);
         }
 
         private void HideInstructionPanel(bool _instant)
         {
             if (!instructionCanvasGroup) return;
             instructionCanvasGroup.DOKill();
-            instructionCanvasGroup.blocksRaycasts = false;
             if (_instant)
             {
                 instructionCanvasGroup.alpha = 0f;
                 return;
             }
-            instructionCanvasGroup.DOFade(0f, INSTRUCTION_FADE_DURATION).SetEase(Ease.OutQuad);
+            instructionCanvasGroup.DoHideGroup(INSTRUCTION_FADE_DURATION, false, false);
         }
 
         private static bool IsTargetValidForPicker(Validator<(ulong targetId, TargetType targetType)> _validator,

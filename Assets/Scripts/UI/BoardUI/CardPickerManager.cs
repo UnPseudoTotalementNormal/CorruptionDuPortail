@@ -6,6 +6,7 @@ using Board.CardComponents;
 using Characters;
 using DG.Tweening;
 using Extensions;
+using FocusSystem;
 using GameLogic.Validation;
 using TMPro;
 using TransformComposition;
@@ -42,14 +43,22 @@ namespace UI.BoardUI
         [Header("Character picker settings")]
         [SerializeField] private float characterPickerLiftHeight = 0.15f;
 
+        [Header("Blur veil")]
+        [Tooltip("CanvasGroup du FrostCanvas (voile flou rendu par FrostCamera).")]
+        [SerializeField] private CanvasGroup frostCanvasGroup;
+
+        // Layers de composition (TransformCompositor), pas des layers Unity.
         private const string CHARACTER_PICKER_LAYER = "CharacterPicker";
         private const string ROLE_PICKER_LAYER = "RolePicker";
+        // Layer Unity rendu par AboveBlurCamera (au-dessus du voile flou).
+        private const string ABOVE_BLUR_LAYER = "AboveBlur";
         private const float TWEEN_DURATION = 0.5f;
         private const float INSTRUCTION_FADE_DURATION = 0.25f;
 
         private readonly List<Card> spawnedRoleCards = new();
         private readonly Dictionary<Card, Action<Card>> cardClickHandlers = new();
         private readonly List<Card> liftedCharacterCards = new();
+        private readonly Dictionary<Card, int> liftedCharacterOriginalLayers = new();
         private readonly List<Action<Role>> subscribedRoleCallbacks = new();
         private readonly List<Action<Character>> subscribedCharacterCallbacks = new();
         private bool isPickerActive;
@@ -130,6 +139,7 @@ namespace UI.BoardUI
                     continue;
                 }
                 spawnedRoleCards.Add(_card);
+                _card.gameObject.SetLayerRecursively(ABOVE_BLUR_LAYER);
 
                 _card.SetAnimationHandler(new CardRoleAnimation());
                 _card.SetVisualUpdater(new CardRoleVisualUpdater());
@@ -196,6 +206,9 @@ namespace UI.BoardUI
             {
                 Card _card = _validCards[_i];
                 liftedCharacterCards.Add(_card);
+                liftedCharacterOriginalLayers[_card] = _card.gameObject.layer;
+                _card.gameObject.SetLayerRecursively(ABOVE_BLUR_LAYER);
+                MoveFocusParticlesToLayer(_card.gameObject, LayerMask.NameToLayer(ABOVE_BLUR_LAYER));
 
                 TransformCompositorComponent _compositor = _card.GetTransformCompositor();
                 if (_compositor == null)
@@ -289,6 +302,13 @@ namespace UI.BoardUI
             foreach (Card _card in liftedCharacterCards)
             {
                 if (!_card) continue;
+
+                if (liftedCharacterOriginalLayers.TryGetValue(_card, out int _origLayer))
+                {
+                    _card.gameObject.SetLayerRecursively(_origLayer);
+                    MoveFocusParticlesToLayer(_card.gameObject, _origLayer);
+                }
+
                 TransformCompositorComponent _compositor = _card.GetTransformCompositor();
                 if (_compositor == null) continue;
 
@@ -306,6 +326,7 @@ namespace UI.BoardUI
                 _layer.DOLocalRotate(Vector3.zero, TWEEN_DURATION).SetEase(Ease.OutQuint);
             }
             liftedCharacterCards.Clear();
+            liftedCharacterOriginalLayers.Clear();
 
             foreach (Action<Role> _cb in subscribedRoleCallbacks)
             {
@@ -347,10 +368,25 @@ namespace UI.BoardUI
 
             instructionCanvasGroup.DOKill();
             instructionCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);
+
+            if (frostCanvasGroup)
+            {
+                frostCanvasGroup.DOKill();
+                frostCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);
+            }
         }
 
         private void HideInstructionPanel(bool _instant)
         {
+            if (frostCanvasGroup)
+            {
+                frostCanvasGroup.DOKill();
+                if (_instant)
+                    frostCanvasGroup.alpha = 0f;
+                else
+                    frostCanvasGroup.DoHideGroup(INSTRUCTION_FADE_DURATION, false, false);
+            }
+
             if (!instructionCanvasGroup) return;
             instructionCanvasGroup.DOKill();
             if (_instant)
@@ -365,6 +401,16 @@ namespace UI.BoardUI
             ulong _targetId, TargetType _targetType)
         {
             return _validator == null || _validator.Evaluate((_targetId, _targetType));
+        }
+
+        private static void MoveFocusParticlesToLayer(GameObject _target, int _layer)
+        {
+            if (FocusManager.instance == null) return;
+            foreach (FocusObject _fo in FocusManager.instance.currentFocusObjects)
+            {
+                if (_fo.gameObject == _target && _fo.focusParticles != null)
+                    _fo.focusParticles.gameObject.SetLayerRecursively(_layer);
+            }
         }
 
         private static void HidePlayerIdentity(Card _card)

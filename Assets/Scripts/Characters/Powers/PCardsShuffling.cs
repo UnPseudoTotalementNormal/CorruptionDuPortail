@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 using Characters.Powers.Target;
 using ChatSystem;
 using FocusSystem;
@@ -8,6 +9,7 @@ using Network;
 using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
+using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
@@ -121,14 +123,21 @@ namespace Characters.Powers
         public void AskForGuessRoleRpc(RpcParams _rpcParams)
         {
             SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
-                new SelectionFlowOptions { focusType = FocusType.Cards });
+                new SelectionFlowOptions
+                {
+                    focusType        = FocusType.Cards,
+                    stepDescriptions = new[] { guessCharacterPickerDescription },
+                });
         }
 
+        [SerializeField] private string rolePickerDescription;
+        [SerializeField] private string guessCharacterPickerDescription;
 
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
         protected override void StopUse()

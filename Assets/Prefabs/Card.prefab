@@ -493,6 +493,7 @@ MonoBehaviour:
       - localPosition: {x: 0, y: 0, z: 0}
         localRotation: {x: 0, y: 0, z: 0, w: 1}
         localScale: {x: 1, y: 1, z: 1}
+        compositeMode: 0
   autoUpdate: 1
   detectExternalChanges: 1
 --- !u!114 &3564681152801350707
@@ -611,7 +612,7 @@ MonoBehaviour:
     RefIds:
     - rid: 1000
       type: {class: CardPlayerVisualUpdater, ns: Board.CardComponents, asm: Game}
-      data:
+      data: 
     - rid: 178735816936259691
       type: {class: CardPlayerAnimation, ns: Board.CardComponents, asm: Game}
       data: 
@@ -758,7 +759,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &7941456063628525433
 MonoBehaviour:
   m_ObjectHideFlags: 0

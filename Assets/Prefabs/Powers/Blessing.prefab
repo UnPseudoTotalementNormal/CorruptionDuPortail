@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -708,3 +709,7 @@ MonoBehaviour:
       Data4: 1133840612
     Path: event:/Characters/Dryade/GoodAnswer
   powerComponents: []
+  idHolderServer: 0
+  pickerStepDescriptions:
+  - "Choisissez un joueur \xE0 b\xE9nir."
+  - "Choisissez le r\xF4le suppos\xE9 de ce joueur."

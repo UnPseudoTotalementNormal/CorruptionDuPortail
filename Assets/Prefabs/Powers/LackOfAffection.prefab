@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -692,6 +693,7 @@ MonoBehaviour:
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 655096577
@@ -707,6 +709,7 @@ MonoBehaviour:
       Data4: 1212795465
     Path: event:/Characters/Orpheline/SendPower
   powerComponents: []
+  idHolderServer: 0
   onContactedAsChosenSound:
     Guid:
       Data1: -175124592
@@ -728,3 +731,4 @@ MonoBehaviour:
       Data3: -775239272
       Data4: 384024150
     Path: event:/Characters/Orpheline/ReceivePower_Anomaly
+  pickerDescription: "Choisissez un joueur \xE0 aller voir."

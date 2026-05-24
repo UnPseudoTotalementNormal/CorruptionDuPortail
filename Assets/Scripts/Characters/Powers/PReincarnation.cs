@@ -1,4 +1,5 @@
-﻿using Characters.Powers.Target;
+﻿using UnityEngine;
+using Characters.Powers.Target;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
@@ -23,10 +24,13 @@ namespace Characters.Powers
             });
         }
 
+        [SerializeField] private string pickerDescription;
+
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked);
+            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
         private void OnRolePicked(Role _roleClicked)

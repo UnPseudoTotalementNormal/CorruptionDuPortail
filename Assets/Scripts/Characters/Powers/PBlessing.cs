@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using Characters.Powers.Target;
 using ChatSystem;
 using GameLogic;
@@ -72,10 +73,13 @@ namespace Characters.Powers
             return true;
         }
 
+        [SerializeField] private string[] pickerStepDescriptions;
+
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked);
+            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
+                new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
 
         public override void Cancel()

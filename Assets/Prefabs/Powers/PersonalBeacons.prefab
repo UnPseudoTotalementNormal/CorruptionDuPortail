@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -709,3 +710,4 @@ MonoBehaviour:
     Path: 
   powerComponents: []
   idHolderServer: 0
+  pickerDescription: Choisissez un joueur sur lequel placer une balise.

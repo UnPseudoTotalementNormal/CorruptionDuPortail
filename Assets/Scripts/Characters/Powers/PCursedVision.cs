@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using Board;
 using Characters.Powers.Target;
 using ChatSystem;
@@ -53,10 +54,13 @@ namespace Characters.Powers
             return true;
         }
 
+        [SerializeField] private string pickerDescription;
+
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked);
+            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+                new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
         public override void Cancel()

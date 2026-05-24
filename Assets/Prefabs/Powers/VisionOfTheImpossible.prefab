@@ -685,6 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
@@ -692,6 +693,7 @@ MonoBehaviour:
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 1172022985
@@ -707,5 +709,8 @@ MonoBehaviour:
       Data4: 1381209960
     Path: event:/Characters/Oracle/SendPower
   powerComponents: []
+  idHolderServer: 0
   charactersToSelect: 2
   rolesToSelect: 2
+  characterPickerDescription: Choisissez vos cibles.
+  rolePickerDescription: "Choisissez les r\xF4les suppos\xE9s."

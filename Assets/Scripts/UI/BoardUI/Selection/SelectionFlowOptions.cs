@@ -1,4 +1,5 @@
 using System;
+using Characters;
 using FocusSystem;
 
 namespace UI.BoardUI.Selection
@@ -11,9 +12,13 @@ namespace UI.BoardUI.Selection
         public Action onCanceled;
         public string[] stepDescriptions;
 
+        public Character pinnedCharacter;
+        public Role pinnedRole;
+
         public string GetStepDescription(int _step) =>
             stepDescriptions != null && _step < stepDescriptions.Length
                 ? stepDescriptions[_step]
                 : null;
     }
 }
+

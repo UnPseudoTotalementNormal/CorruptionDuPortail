@@ -13,6 +13,20 @@ Main branch: `Dev` (target for PRs).
 ## Commits
 
 - **Never** add Claude / AI as a commit author or co-author. Do not add `Co-Authored-By: Claude ...` trailers or any AI attribution to commits or PRs.
+- **Always write commits in English** — subject and body.
+- **Always include a body** that explains the *why* of the change. Never commit with a subject line only, even for `ci`/`chore`/`docs`.
+- Subject line = technical (conventional commits). The body adds a `UX:` line when the change affects the player experience. Skip the `UX:` line for pure infra/CI/tooling commits, but still write a descriptive body.
+
+**Format:**
+```
+feat(ui): animate role picker entrance/exit
+
+Tween the role card in and out on a dedicated layer so the reveal is progressive.
+
+UX: the player sees their role appear gradually — reduces confusion during role distribution.
+```
+
+These commit bodies appear in Discord build notifications via `Build.yml`, so the UX line serves as a real-time team briefing.
 
 ## Build / Test / Run
 

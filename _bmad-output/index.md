@@ -1,6 +1,7 @@
 # Project Documentation Index
 
 > Generated 2026-05-27 by `/gds-document-project` (Deep scan) — entry point for AI-assisted development.
+> Re-validated 2026-05-29 (incremental diff scan): no code/asset/stack changes since generation — docs current.
 
 ## Project overview
 
@@ -31,6 +32,10 @@
 
 - `CLAUDE.md` (repo root) — primary AI-agent contract: architecture, critical patterns, commit conventions, gotchas. Points to this `_bmad-output/` set as the doc source of truth.
 
+## Planning artifacts
+
+- [GDD — Corruption Du Portail](./planning-artifacts/gdds/gdd-Corruption%20Du%20Portail-2026-05-29/gdd.md) — design document (descriptive capture; design-owned sections may be incomplete). Companion: `decision-log.md`.
+
 ## Getting started (for AI agents)
 
 1. **Always read `CLAUDE.md` first** — it carries the load-bearing patterns (Gateway RPC, server authority, FMOD, UniTask).
@@ -59,6 +64,7 @@ The project's `documentation-requirements.csv` profile (`project_type_id = game`
 
 ## Verification recap
 
-- **Tests/extractions executed:** project type detection (game), tech-stack parse from `Packages/manifest.json`, scenes enumeration, asmdef enumeration, asset counts across `Assets/`, sample reads of `GameLogic/`, `Characters/`, `Network/`, `Tests/`.
+- **2026-05-29 incremental re-scan:** `git diff 63b00f4..df2c15d` over `Assets/`, `Packages/manifest.json`, `ProjectSettings/` returned **empty** — no gameplay code, asset, or stack changes since 2026-05-27 generation. Only tooling (`.agent`/`.claude`/`_bmad`), CI agent defs, `.ai-context` wiki removal, and `CLAUDE.md` update landed. CI workflows (`Build.yml`, `unity-tests.yml`) unchanged. Docs confirmed current; not regenerated.
+- **Tests/extractions executed (2026-05-27):** project type detection (game), tech-stack parse from `Packages/manifest.json`, scenes enumeration, asmdef enumeration, asset counts across `Assets/`, sample reads of `GameLogic/`, `Characters/`, `Network/`, `Tests/`.
 - **Outstanding risks / follow-ups:** several `Scenes/` files are legacy/backup (`(old)MenuScene.unity`, `GameScene_backup.unity`); consider archiving.
 - **Recommended next checks before relying on these docs:** open Unity, hit Play in `BootScene`, run `mcp__UnityMCP__run_tests` to baseline test health; cross-read `GameManager.cs` once for the actual state-transition wiring if precise control-flow matters.

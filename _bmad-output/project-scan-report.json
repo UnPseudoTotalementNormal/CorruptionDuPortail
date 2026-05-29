@@ -2,10 +2,10 @@
   "workflow_version": "1.2.0",
   "timestamps": {
     "started": "2026-05-27T22:17:11+02:00",
-    "last_updated": "2026-05-27T22:30:00+02:00",
-    "completed": "2026-05-27T22:30:00+02:00"
+    "last_updated": "2026-05-29T00:00:00+02:00",
+    "completed": "2026-05-29T00:00:00+02:00"
   },
-  "mode": "initial_scan",
+  "mode": "full_rescan",
   "scan_level": "deep",
   "project_root": "C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail",
   "output_folder": "C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail/_bmad-output",
@@ -21,7 +21,8 @@
     {"step": "step_9", "status": "completed", "timestamp": "2026-05-27T22:28:00+02:00", "summary": "Supporting docs written: project-overview, source-tree-analysis, development-guide, state-management, asset-inventory"},
     {"step": "step_10", "status": "completed", "timestamp": "2026-05-27T22:29:00+02:00", "summary": "Master index generated"},
     {"step": "step_11", "status": "completed", "timestamp": "2026-05-27T22:30:00+02:00", "summary": "No (To be generated) markers present; doc set complete for game project profile"},
-    {"step": "step_12", "status": "completed", "timestamp": "2026-05-27T22:30:00+02:00", "summary": "Workflow finalized"}
+    {"step": "step_12", "status": "completed", "timestamp": "2026-05-27T22:30:00+02:00", "summary": "Workflow finalized"},
+    {"step": "rescan_2026-05-29", "status": "completed", "timestamp": "2026-05-29T00:00:00+02:00", "summary": "Incremental full_rescan: git diff 63b00f4..df2c15d over Assets/, Packages/manifest.json, ProjectSettings/ returned empty. No code/asset/stack changes since 2026-05-27 generation. Only BMad/GDS tooling, CI agent defs, .ai-context wiki removal (AI_WIKI_GUIDE.md now gone), CLAUDE.md update. Docs validated current; not regenerated. Added GDD pointer + re-validation note to index.md."}
   ],
   "current_step": "completed",
   "findings": {
@@ -56,5 +57,5 @@
     "asset-inventory.md",
     "index.md"
   ],
-  "resume_instructions": "Workflow complete. Re-run /gds-document-project to refresh or deep-dive."
+  "resume_instructions": "Workflow complete; last re-validated 2026-05-29 (no code changes since 2026-05-27). Re-run /gds-document-project to refresh or deep-dive. Last code commit at scan: 63b00f4."
 }

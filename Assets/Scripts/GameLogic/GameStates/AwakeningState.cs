@@ -9,6 +9,7 @@ using Characters.Powers;
 using Extensions;
 using FMODUnity;
 using Network;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -32,11 +33,46 @@ namespace GameLogic.GameStates
         private float updateAwakeningTimer;
         private const float UpdateAwakeningTimerInterval = 1f;
         
+        private Dictionary<FixedString64Bytes, int> _awakeningLayerCache;
+        
         private Dictionary<Character, NetworkVariable<bool>.OnValueChangedDelegate> characterAwakeningCallbacks = new();
         
         public EventReference awakeningAnnouncementSound;
         public EventReference awakenedLoopSound;
         public const string AWAKENED_LOOP_KEY = "AwakenedLoopFeedback";
+
+        public int GetAwakeningLayerIndex(Role _role)
+        {
+            if (_role == null)
+            {
+                return int.MaxValue;
+            }
+
+            if (_awakeningLayerCache == null)
+            {
+                _awakeningLayerCache = new Dictionary<FixedString64Bytes, int>();
+                for (int i = 0; i < awakeningOrder.Count; i++)
+                {
+                    foreach (var _rdo in awakeningOrder[i].awakeningCharacters)
+                    {
+                        if (_rdo != null && _rdo.role != null)
+                        {
+                            if (!_awakeningLayerCache.ContainsKey(_rdo.role.roleName))
+                            {
+                                _awakeningLayerCache[_rdo.role.roleName] = i;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (_awakeningLayerCache.TryGetValue(_role.roleName, out int _index))
+            {
+                return _index;
+            }
+
+            return int.MaxValue;
+        }
 
         private void AwakeLayer(int _layerToAwake)
         {
@@ -102,6 +138,7 @@ namespace GameLogic.GameStates
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
+            _awakeningLayerCache = null;
             gameManager.onGameStarted += () =>
             {
                 var _localCharacter = gameManager.characterManager.GetLocalCharacter(false);
@@ -156,9 +193,7 @@ namespace GameLogic.GameStates
             }
             
             var _character = gameManager.characterManager.GetCharacter(_ownerId, false);
-            int _awakeningIndexForCharacter = awakeningOrder.FindIndex(_layer =>
-                _layer.awakeningCharacters.Any(_rdo => _character.role.IsTheSameRole(_rdo.role))
-            );
+            int _awakeningIndexForCharacter = GetAwakeningLayerIndex(_character.role);
             
             if (_awakeningIndexForCharacter != currentAwakeningIndex)
             {

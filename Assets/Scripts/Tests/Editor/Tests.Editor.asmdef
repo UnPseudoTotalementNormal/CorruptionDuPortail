@@ -9,7 +9,8 @@
         "DOTween.Runtime",
         "DOTween.Modules",
         "TNRD.NSubstitute",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.Netcode.Runtime"
     ],
     "includePlatforms": [
         "Editor"

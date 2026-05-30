@@ -157,10 +157,18 @@ namespace TooltipSystem
             RectTransform _linkedRectTransform = _linkedGameObject.GetComponent<RectTransform>();
             Vector2 _componentBoundingBoxSize;
             Vector2 _componentScreenPos;
-            
-            if (_linkedRectTransform != null)
+
+            RectTransform _boundsOverride = _tooltipTrigger.TooltipBoundsOverride;
+
+            if (_boundsOverride != null)
             {
-                (_componentBoundingBoxSize, _componentScreenPos) = 
+                // Anchor to a fixed rect (e.g. a resting slot) so animated visuals don't drag the tooltip.
+                (_componentBoundingBoxSize, _componentScreenPos) =
+                    GetScreenBoundingBoxAndCenter(new[] { _boundsOverride }, Camera.main);
+            }
+            else if (_linkedRectTransform != null)
+            {
+                (_componentBoundingBoxSize, _componentScreenPos) =
                     GetScreenBoundingBoxAndCenter(_linkedGameObject.GetComponentsInChildren<RectTransform>(), Camera.main);
             }
             else

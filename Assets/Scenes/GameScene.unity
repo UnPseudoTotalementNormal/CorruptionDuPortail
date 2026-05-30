@@ -2621,7 +2621,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 463595593}
   m_LocalRotation: {x: -0.21643952, y: 0, z: 0, w: 0.97629607}
-  m_LocalPosition: {x: 0, y: 0, z: -79.06}
+  m_LocalPosition: {x: 0, y: 0, z: -80}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2631,7 +2631,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: -25, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -0.51, y: 1007.26}
+  m_AnchoredPosition: {x: -0.51, y: 1007}
   m_SizeDelta: {x: 1206.12, y: 174.73}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &463595595
@@ -2658,9 +2658,17 @@ MonoBehaviour:
       Value: {fileID: 21300000, guid: 7e1ac76a48f47c245b0b1fbcf93656d1, type: 3}
     - Key: 2
       Value: {fileID: 21300000, guid: bbdbbf0c245e5914ab9898655bba17e8, type: 3}
+  factionTextColors:
+    _serializedList:
+    - Key: 0
+      Value: {r: 1, g: 0.19215687, b: 0.19215687, a: 1}
+    - Key: 1
+      Value: {r: 0.49411765, g: 0.8509804, b: 0.34117648, a: 1}
+    - Key: 2
+      Value: {r: 1, g: 0.7411765, b: 0.34901962, a: 1}
   intraGroupSpacing: 5
-  interGroupSpacing: 120
-  titleToGroupSpacing: 20
+  interGroupSpacing: 60
+  titleToGroupSpacing: 10
   charactersBarObjects: []
 --- !u!1 &465352332
 GameObject:

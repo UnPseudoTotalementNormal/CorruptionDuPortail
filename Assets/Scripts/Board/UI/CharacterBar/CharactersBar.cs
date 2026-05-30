@@ -23,6 +23,7 @@ namespace Board.UI.CharacterBar
 
         [Header("Faction Visuals")]
         [SerializeField] private SerializedDictionary<FactionType, Sprite> factionIcons = new();
+        [SerializeField] private SerializedDictionary<FactionType, Color> factionTextColors = new();
 
         [Header("Spacing Settings")]
         [SerializeField] private float intraGroupSpacing = 5f;
@@ -154,6 +155,13 @@ namespace Board.UI.CharacterBar
                     if (_tmp != null)
                     {
                         _tmp.text = _faction.ToString().ToUpper();
+
+                        // Tint the faction title per faction (e.g. green for chosen, orange
+                        // for marginal). Falls back to the prefab's color when unmapped.
+                        if (factionTextColors.TryGetValue(_faction, out var _factionColor))
+                        {
+                            _tmp.color = _factionColor;
+                        }
                     }
 
                     // Set the dynamic faction icon (hidden when no sprite is mapped for this faction)

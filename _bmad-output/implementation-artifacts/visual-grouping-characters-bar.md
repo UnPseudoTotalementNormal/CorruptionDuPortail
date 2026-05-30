@@ -18,21 +18,29 @@ Implement visual separators or spacing between character groups in the `Characte
 
 ## Technical Notes
 - **Input Reference:** `clipboard-1780078637169.png` (Current contiguous display issue).
-- **Existing Logic:** The current sorting logic (Faction -> Awakening Order) is used to detect group transitions.
-- **Component:** `CharactersBar.cs` updated to handle dynamic injection of labels and spacers.
+- **Existing Logic:** The sorting logic (Awakening Order -> RoleID -> ClientID) feeds a consecutive-run grouping (`GroupConsecutiveByFaction`). Per design decision, a new faction group starts every time the faction changes in awakening order — so a faction awakening at two non-contiguous layers yields two separate groups (awakening order always wins over faction merging).
+- **Component:** `CharactersBar.cs` builds one `FactionGroupPrefab` container per faction.
+
+## Implementation Approach (as built)
+Visual grouping is achieved with a **nested container**, not separate spacer/label objects:
+- Each faction renders a `FactionGroupPrefab` instance: a `VerticalLayoutGroup` with a faction title (`TextMeshProUGUI`) on top and a `CharactersContainer` (`HorizontalLayoutGroup`) holding the character icons below.
+- Group-to-group separation is produced by the parent `HorizontalLayoutGroup.spacing` (`interGroupSpacing`), driven from the `CharactersBar` inspector — no dedicated spacer object.
+- Faction title text is set to the `FactionType` name on the prefab's embedded TMP.
 
 ## Tasks
-- [x] Create `FactionLabelPrefab` with TextMeshPro and background image.
-- [x] Create `SpacerPrefab` for visual "holes" between groups.
-- [x] Add prefab references to `CharactersBar` component.
-- [x] Update `CharactersBar.ResetCharactersBar` to detect faction transitions.
-- [x] Instantiate spacers and faction labels at transition points.
-- [x] Assign prefab references in the GameScene.
+- [x] Create `FactionGroupPrefab` (VerticalLayoutGroup: title TMP + `CharactersContainer` HorizontalLayoutGroup).
+- [x] Add `factionGroupPrefab` + spacing fields to the `CharactersBar` component.
+- [x] Update `CharactersBar.ResetCharactersBar` to group sorted characters by faction and instantiate one container per group.
+- [x] Drive inter-group / intra-group / title spacing from inspector fields.
+- [x] Assign `factionGroupPrefab` in the GameScene.
 
 ## Dev Agent Record
-- Created `Assets/Art/Sprites/UI/FactionLabelBG.png`.
-- Created `Assets/Prefabs/CharacterBar/FactionLabelPrefab.prefab`.
-- Created `Assets/Prefabs/CharacterBar/SpacerPrefab.prefab`.
-- Modified `CharactersBar.cs` to inject visual grouping logic.
-- Linked prefabs to the `CharactersBar` object in `GameScene` (Instance ID: 87938).
+- Created `Assets/Prefabs/CharacterBar/FactionGroupPrefab.prefab`.
+- Modified `CharactersBar.cs` to sort, group by faction, and instantiate per-faction containers.
+- Linked `factionGroupPrefab` to the `CharactersBar` object in `GameScene` (Instance ID: 87938).
+
+### Cleanup (post-review)
+- Removed dead artifacts created during exploration but never wired: `FactionLabelPrefab.prefab`, `SpacerPrefab.prefab` (empty stub, no RectTransform), `Assets/Art/Sprites/UI/FactionLabelBG.png`, and the unused `factionLabelPrefab` field (code + GameScene reference).
+- Hardening: `CharactersBar` re-fetches `AwakeningState` on every rebuild (no stale reference across rematches); warnings replace silent fallbacks when `factionGroupPrefab` / `CharactersContainer` is missing.
+- Verified: clean compile, 57/57 EditMode tests passing.
 

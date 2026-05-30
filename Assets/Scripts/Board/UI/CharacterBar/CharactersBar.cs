@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AYellowpaper.SerializedCollections;
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
@@ -18,9 +19,11 @@ namespace Board.UI.CharacterBar
         public Transform charactersBarParent;
         
         [SerializeField] private GameObject characterBarObjectPrefab;
-        [SerializeField] private GameObject factionLabelPrefab;
         [SerializeField] private GameObject factionGroupPrefab;
-        
+
+        [Header("Faction Visuals")]
+        [SerializeField] private SerializedDictionary<FactionType, Sprite> factionIcons = new();
+
         [Header("Spacing Settings")]
         [SerializeField] private float intraGroupSpacing = 5f;
         [SerializeField] private float interGroupSpacing = 40f;
@@ -78,8 +81,43 @@ namespace Board.UI.CharacterBar
                 .ThenBy(_c => _c.ownerClientId.Value);
         }
 
+        private static FactionType GetFaction(Character _character)
+        {
+            return _character != null && _character.role != null ? _character.role.factionType : FactionType.unknown;
+        }
+
+        // Groups an already-sorted character sequence into consecutive runs of the same
+        // faction. A new group starts every time the faction changes in awakening order,
+        // so a faction that awakens at two non-contiguous layers yields two separate groups.
+        public List<List<Character>> GroupConsecutiveByFaction(IEnumerable<Character> _sortedCharacters)
+        {
+            var _groups = new List<List<Character>>();
+            List<Character> _currentGroup = null;
+            bool _hasFaction = false;
+            FactionType _currentFaction = FactionType.unknown;
+
+            foreach (Character _character in _sortedCharacters)
+            {
+                FactionType _faction = GetFaction(_character);
+                if (_currentGroup == null || !_hasFaction || _faction != _currentFaction)
+                {
+                    _currentGroup = new List<Character>();
+                    _groups.Add(_currentGroup);
+                    _currentFaction = _faction;
+                    _hasFaction = true;
+                }
+                _currentGroup.Add(_character);
+            }
+
+            return _groups;
+        }
+
         public void ResetCharactersBar(List<Character> _characters)
         {
+            // Re-fetch the awakening state on every rebuild so a new game session
+            // (rematch) cannot keep a stale reference to a previous state instance.
+            _awakeningState = null;
+
             // Set inter-group spacing on the main parent layout
             if (charactersBarParent.TryGetComponent<UnityEngine.UI.HorizontalLayoutGroup>(out var _parentHlg))
             {
@@ -94,11 +132,11 @@ namespace Board.UI.CharacterBar
             charactersBarObjects.Clear();
             
             var _sortedCharacters = SortCharacters(_characters).ToList();
-            var _groups = _sortedCharacters.GroupBy(_c => _c.role != null ? _c.role.factionType : FactionType.unknown);
+            var _groups = GroupConsecutiveByFaction(_sortedCharacters);
 
             foreach (var _group in _groups)
             {
-                FactionType _faction = _group.Key;
+                FactionType _faction = GetFaction(_group[0]);
                 Transform _currentGroupContainer = null;
 
                 if (factionGroupPrefab != null)
@@ -118,6 +156,21 @@ namespace Board.UI.CharacterBar
                         _tmp.text = _faction.ToString().ToUpper();
                     }
 
+                    // Set the dynamic faction icon (hidden when no sprite is mapped for this faction)
+                    var _iconTransform = _groupObj.transform.Find("FactionTitleWrapper/FactionIcon");
+                    if (_iconTransform != null && _iconTransform.TryGetComponent<UnityEngine.UI.Image>(out var _iconImage))
+                    {
+                        if (factionIcons.TryGetValue(_faction, out var _factionSprite) && _factionSprite != null)
+                        {
+                            _iconImage.sprite = _factionSprite;
+                            _iconImage.enabled = true;
+                        }
+                        else
+                        {
+                            _iconImage.enabled = false;
+                        }
+                    }
+
                     // Find the container for icons and set intra-group spacing
                     _currentGroupContainer = _groupObj.transform.Find("CharactersContainer");
                     if (_currentGroupContainer != null)
@@ -129,11 +182,15 @@ namespace Board.UI.CharacterBar
                     }
                     else
                     {
+                        Debug.LogWarning($"[CharactersBar] '{factionGroupPrefab.name}' has no 'CharactersContainer' child; " +
+                                         "character icons will be parented to the group root instead.", _groupObj);
                         _currentGroupContainer = _groupObj.transform; // Fallback
                     }
                 }
                 else
                 {
+                    Debug.LogWarning("[CharactersBar] factionGroupPrefab is not assigned; " +
+                                     "characters will be shown flat without faction grouping.", this);
                     _currentGroupContainer = charactersBarParent;
                 }
 

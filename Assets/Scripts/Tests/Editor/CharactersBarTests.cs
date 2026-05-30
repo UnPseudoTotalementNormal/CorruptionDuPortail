@@ -134,6 +134,57 @@ namespace Tests.Editor
             Assert.AreEqual(_charUnknown, _sorted[1], "Unknown role should be at the end");
         }
 
+        [Test]
+        public void GroupConsecutiveByFaction_SplitsSameFactionAtNonContiguousLayers()
+        {
+            // Awakening order: factionA (layer 0) -> factionB (layer 1) -> factionA (layer 2).
+            // The two factionA characters must NOT be merged: factionB awakens between them.
+            Role _roleA1 = new Role { roleName = "A1", roleID = RoleID.Abyss, factionType = FactionType.chosen };
+            Role _roleB = new Role { roleName = "B", roleID = RoleID.Abyss, factionType = FactionType.anomaly };
+            Role _roleA2 = new Role { roleName = "A2", roleID = RoleID.Abyss, factionType = FactionType.chosen };
+
+            _mockAwakeningState.awakeningOrder.Add(new AwakeningLayerObject {
+                awakeningCharacters = new List<RoleDataObject> { CreateRoleDataObject(_roleA1) } });
+            _mockAwakeningState.awakeningOrder.Add(new AwakeningLayerObject {
+                awakeningCharacters = new List<RoleDataObject> { CreateRoleDataObject(_roleB) } });
+            _mockAwakeningState.awakeningOrder.Add(new AwakeningLayerObject {
+                awakeningCharacters = new List<RoleDataObject> { CreateRoleDataObject(_roleA2) } });
+
+            Character _charA1 = CreateCharacter(_roleA1, 1);
+            Character _charB = CreateCharacter(_roleB, 2);
+            Character _charA2 = CreateCharacter(_roleA2, 3);
+
+            var _sorted = _charactersBar.SortCharacters(
+                new List<Character> { _charA2, _charB, _charA1 }, _mockAwakeningState);
+            var _groups = _charactersBar.GroupConsecutiveByFaction(_sorted);
+
+            Assert.AreEqual(3, _groups.Count, "Three consecutive runs expected");
+            Assert.AreEqual(_charA1, _groups[0].Single());
+            Assert.AreEqual(_charB, _groups[1].Single());
+            Assert.AreEqual(_charA2, _groups[2].Single(), "Second factionA run must stay after factionB");
+        }
+
+        [Test]
+        public void GroupConsecutiveByFaction_MergesContiguousSameFaction()
+        {
+            Role _roleA1 = new Role { roleName = "A1", roleID = RoleID.Abyss, factionType = FactionType.chosen };
+            Role _roleA2 = new Role { roleName = "A2", roleID = RoleID.DrGloubi, factionType = FactionType.chosen };
+
+            _mockAwakeningState.awakeningOrder.Add(new AwakeningLayerObject {
+                awakeningCharacters = new List<RoleDataObject> {
+                    CreateRoleDataObject(_roleA1), CreateRoleDataObject(_roleA2) } });
+
+            Character _charA1 = CreateCharacter(_roleA1, 1);
+            Character _charA2 = CreateCharacter(_roleA2, 2);
+
+            var _sorted = _charactersBar.SortCharacters(
+                new List<Character> { _charA2, _charA1 }, _mockAwakeningState);
+            var _groups = _charactersBar.GroupConsecutiveByFaction(_sorted);
+
+            Assert.AreEqual(1, _groups.Count, "Same faction at contiguous layers stays one group");
+            Assert.AreEqual(2, _groups[0].Count);
+        }
+
         private RoleDataObject CreateRoleDataObject(Role _role)
         {
             RoleDataObject _rdo = ScriptableObject.CreateInstance<RoleDataObject>();

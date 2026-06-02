@@ -9,6 +9,9 @@ on:
 jobs:
   notif-pr-ouverte:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
     steps:
       - name: Discord — PR ouverte
         uses: actions/github-script@v7

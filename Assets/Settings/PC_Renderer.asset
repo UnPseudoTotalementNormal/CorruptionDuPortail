@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BackgroundCaptureFeature
   m_EditorClassIdentifier: Game.Rendering::BackgroundCaptureFeature
   m_Active: 1
+  blurShader: {fileID: 4800000, guid: c4981f9cfb1bb284a9ce3ecea387f682, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

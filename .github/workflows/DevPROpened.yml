@@ -10,33 +10,31 @@ jobs:
   notif-pr-ouverte:
     runs-on: ubuntu-latest
     steps:
-      - name: Discord — PR ouverte
-        uses: actions/github-script@v7
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_DEV_WEBHOOK }}
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          script: |
-            const commits = await github.rest.pulls.listCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number
-            });
-            const list = commits.data
-              .map(c => `- ${c.commit.message.split('\n')[0]}`)
-              .join('\n') || 'Aucun commit';
+          fetch-depth: 0
 
-            await fetch(process.env.DISCORD_WEBHOOK, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                embeds: [{
-                  title: `📥 Nouvelle PR — ${context.payload.pull_request.title}`,
-                  color: 3447003,
-                  fields: [
-                    { name: 'Auteur', value: context.payload.pull_request.user.login, inline: true },
-                    { name: `Commits (${commits.data.length})`, value: list, inline: false }
-                  ],
-                  url: context.payload.pull_request.html_url
-                }]
-              })
-            });
+      - name: Discord — PR ouverte
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_DEV_WEBHOOK }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          LIST=$(git log "$BASE_SHA".."$HEAD_SHA" --no-merges --pretty=format:'%s (%h)' \
+            | sed 's/^/- /')
+          COUNT=$(printf '%s' "$LIST" | grep -c '^-' || true)
+          if [ -z "$LIST" ]; then LIST="Aucun commit"; COUNT=0; fi
+          LIST=$(printf '%s' "$LIST" | head -c 1000)
+          curl -s -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg author "$AUTHOR" \
+              --arg title "$PR_TITLE" \
+              --arg url "$PR_URL" \
+              --arg list "$LIST" \
+              --arg count "$COUNT" \
+              '{embeds:[{title:("📥 Nouvelle PR — "+$title),color:3447003,fields:[{name:"Auteur",value:$author,inline:true},{name:("Commits ("+$count+")"),value:$list,inline:false}],url:$url}]}')"

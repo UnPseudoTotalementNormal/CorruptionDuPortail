@@ -33,14 +33,22 @@ public class BackgroundCaptureFeature : ScriptableRendererFeature
     [Tooltip("Écart entre les taps du gaussien.")]
     [SerializeField, Range(0.5f, 4f)] float spread = 1.5f;
 
+    [Tooltip("Shader Hidden/BackgroundBlur. Référence sérialisée pour garantir l'inclusion " +
+             "en build (un Shader.Find seul est strippé : pas de flou en build).")]
+    [SerializeField] Shader blurShader;
+
     Material blurMaterial;
     BackgroundCapturePass pass;
 
     public override void Create()
     {
-        var shader = Shader.Find("Hidden/BackgroundBlur");
+        // Référence sérialisée d'abord (survit au stripping en build), Shader.Find en secours.
+        var shader = blurShader != null ? blurShader : Shader.Find("Hidden/BackgroundBlur");
         if (shader != null)
             blurMaterial = CoreUtils.CreateEngineMaterial(shader);
+        else
+            Debug.LogError("[BackgroundCaptureFeature] Shader Hidden/BackgroundBlur introuvable — " +
+                           "assigner le champ Blur Shader dans le Renderer (sinon strippé en build).");
 
         pass = new BackgroundCapturePass
         {

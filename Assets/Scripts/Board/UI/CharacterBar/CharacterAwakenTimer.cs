@@ -30,11 +30,7 @@ namespace Board.UI.CharacterBar
             awakeningState = (AwakeningState)GameManager.instance.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
             Assert.IsNotNull(awakeningState, "AwakeningState is null");
             
-            AwakeningLayerObject _awakeningLayerObject = awakeningState.awakeningOrder.FirstOrDefault(
-                _a => _a.awakeningCharacters.Any(_r => _r.role.IsTheSameRole(role)));
-            Assert.IsNotNull(_awakeningLayerObject, "AwakeningLayerObject is null");
-
-            awakeningLayerIndex = awakeningState.awakeningOrder.IndexOf(_awakeningLayerObject);
+            awakeningLayerIndex = awakeningState.GetAwakeningLayerIndex(role);
         }
 
         public void Update()

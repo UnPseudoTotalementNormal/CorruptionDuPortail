@@ -104,3 +104,9 @@ fmod_editor.log
 
 # Unity Linux local cache
 /[Ll]ibrary/ShaderCache/
+
+# BMad / GDS tooling and generated docs
+/_bmad/
+/_bmad-output/
+*.bmad
+.bmad/

@@ -51,12 +51,13 @@ namespace GameLogic
                 }
             }
 
-            var _characterInfoReveal = new CharacterInfoReveal();
-            if (_character.ownerClientId.Value == _observerId)
-            {
-                _characterInfoReveal.isRoleRevealed = RevealLevel.Personal;
-            }
-            charactersInfoRevealed.TryAdd(_character.ownerClientId.Value, _characterInfoReveal);
+            // Own-role reveal is no longer stamped here. It used to be computed
+            // from a fragile "ownerClientId == localId" snapshot taken the instant
+            // roles were attributed: if any id was still mid-replication, Personal
+            // could land on the wrong card and was never reconciled. The invariant
+            // "a player always sees their own role" is now enforced at read time in
+            // GetCharacterInfo (see investigation role-reveal-wrong-card).
+            charactersInfoRevealed.TryAdd(_character.ownerClientId.Value, new CharacterInfoReveal());
         }
 
         private void AddCharacterToSimulatedInfoList(Character _character, ulong _observerId)
@@ -67,17 +68,14 @@ namespace GameLogic
                 // Prefill with existing public knowledge if needed
                 foreach (var _c in GameManager.instance.characterManager.GetCharacters())
                 {
-                    var _info = new CharacterInfoReveal();
-                    if (_c.ownerClientId.Value == _observerId) _info.isRoleRevealed = RevealLevel.Personal;
-                    simulationsKnowledge[_observerId].TryAdd(_c.ownerClientId.Value, _info);
+                    // Own-role reveal enforced at read time (GetCharacterInfo), not stamped here.
+                    simulationsKnowledge[_observerId].TryAdd(_c.ownerClientId.Value, new CharacterInfoReveal());
                 }
             }
-            
+
             if (!simulationsKnowledge[_observerId].ContainsKey(_character.ownerClientId.Value))
             {
-                var _info = new CharacterInfoReveal();
-                if (_character.ownerClientId.Value == _observerId) _info.isRoleRevealed = RevealLevel.Personal;
-                simulationsKnowledge[_observerId].TryAdd(_character.ownerClientId.Value, _info);
+                simulationsKnowledge[_observerId].TryAdd(_character.ownerClientId.Value, new CharacterInfoReveal());
             }
         }
 
@@ -99,14 +97,35 @@ namespace GameLogic
                 {
                     AddCharacterToSimulatedInfoList(GameManager.instance.characterManager.GetCharacter(_clientId, false), _observerId);
                 }
-                return _observerBrain[_clientId];
+                var _simInfo = _observerBrain[_clientId];
+                EnsureOwnRoleRevealed(_clientId, _observerId, _simInfo);
+                return _simInfo;
             }
 
             if (!charactersInfoRevealed.ContainsKey(_clientId))
             {
                 AddCharacterToInfoList(GameManager.instance.characterManager.GetCharacter(_clientId, false), _observerId);
             }
-            return charactersInfoRevealed[_clientId];
+            var _info = charactersInfoRevealed[_clientId];
+            // Real (non-simulated) brain: "self" is the actual local client, NOT the
+            // _observerId passed in. The RPC write-path hardcodes _observerId = 0 as a
+            // "local main dict" sentinel, which collides with the host's real clientId 0;
+            // using it here would reveal the host's role to every other client.
+            EnsureOwnRoleRevealed(_clientId, CharacterManager.instance.GetLocalClientId(), _info);
+            return _info;
+        }
+
+        // Invariant: a player always sees their own role. Evaluated at read time so
+        // a transient identity/replication hiccup at role attribution can never
+        // reveal another player's card (see investigation role-reveal-wrong-card).
+        // _selfId is the id that owns this knowledge: the local client for the real
+        // brain, or the simulated client (>=100) for a bot brain.
+        private static void EnsureOwnRoleRevealed(ulong _clientId, ulong _selfId, CharacterInfoReveal _info)
+        {
+            if (_clientId == _selfId && _info.isRoleRevealed < RevealLevel.Personal)
+            {
+                _info.isRoleRevealed = RevealLevel.Personal;
+            }
         }
         
         public void SetRevealLevel(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, ulong _observerId, bool _showInfo = true)
@@ -116,7 +135,7 @@ namespace GameLogic
             
             CharacterInfoReveal _info = GetCharacterInfo(_clientId, _observerId);
             RevealLevel _currentRevealLevel = (RevealLevel)_field.GetValue(_info);
-            
+
             if ((int)_currentRevealLevel >= (int)_revealLevel)
             {
                 return;
@@ -196,9 +215,8 @@ namespace GameLogic
                 simulationsKnowledge[_id] = new Dictionary<ulong, CharacterInfoReveal>();
                 foreach (var _c in GameManager.instance.characterManager.GetCharacters())
                 {
-                    var _info = new CharacterInfoReveal();
-                    if (_c.ownerClientId.Value == _id) _info.isRoleRevealed = RevealLevel.Personal;
-                    simulationsKnowledge[_id].TryAdd(_c.ownerClientId.Value, _info);
+                    // Own-role reveal enforced at read time (GetCharacterInfo), not stamped here.
+                    simulationsKnowledge[_id].TryAdd(_c.ownerClientId.Value, new CharacterInfoReveal());
                 }
             }
             return simulationsKnowledge[_id];

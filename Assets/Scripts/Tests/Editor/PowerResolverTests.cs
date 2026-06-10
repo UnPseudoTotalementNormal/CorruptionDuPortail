@@ -63,5 +63,29 @@ namespace Tests.Editor
             Assert.AreEqual(new CorruptPlayer(Target), trace[1]);
             Assert.AreEqual(new CorruptPlayer(Owner), trace[5]); // owner self-corrupt last
         }
+
+        // ---- Story 4.2: PBoundByInk click path -------------------------------------------
+        [Test]
+        public void BoundByInkClick_OrderedTrace_IsPinned()
+        {
+            const int chatId = 515100;
+            var trace = _resolver.ResolveBoundByInkClick(Owner, Target, chatId);
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(Owner, Target),
+                new DiscoverChat(chatId, "Lié par l'encre", PowerEffectAudience.Specific(Target)),
+                new RegisterInkTarget(Target),
+            }, trace);
+        }
+
+        [Test]
+        public void BoundByInkClick_DiscoverChat_TargetsThePickedSlot_NotOwner()
+        {
+            var trace = _resolver.ResolveBoundByInkClick(Owner, Target, -1);
+            var discover = (DiscoverChat)trace[1];
+            Assert.AreEqual(PowerEffectAudience.Specific(Target), discover.Audience);
+            Assert.AreEqual(-1, discover.ChatId); // unassigned chat id echoed verbatim
+        }
     }
 }

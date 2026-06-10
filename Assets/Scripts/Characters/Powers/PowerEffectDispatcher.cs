@@ -4,6 +4,7 @@ using ChatSystem;
 using CorruptionDuPortail.Domain;
 using GameLogic;
 using RoleTarget;
+using Unity.Collections;
 
 namespace Characters.Powers
 {
@@ -20,7 +21,13 @@ namespace Characters.Powers
     /// </summary>
     public static class PowerEffectDispatcher
     {
-        public static void Dispatch(EffectDescriptor effect)
+        /// <param name="effect">The brick to record + execute.</param>
+        /// <param name="powerLocal">
+        /// Optional handler for power-LOCAL bricks (state-store / NetworkList writes that touch a
+        /// concrete power's private fields, e.g. <see cref="RegisterInkTarget"/>). Shared bricks are
+        /// executed here; anything else is routed to <paramref name="powerLocal"/>, or throws if none.
+        /// </param>
+        public static void Dispatch(EffectDescriptor effect, Action<EffectDescriptor> powerLocal = null)
         {
             PowerEffectTrace.Record(effect);
 
@@ -28,6 +35,11 @@ namespace Characters.Powers
             {
                 case NewTargeting e:
                     RoleTargetSystem.instance.NewTargeting((ulong)e.OwnerSlot, (ulong)e.TargetSlot);
+                    break;
+
+                case DiscoverChat e:
+                    ChatManager.instance.DiscoverChatRpc(
+                        e.ChatId, new FixedString64Bytes(e.ChatName), ResolveTarget(e.Audience));
                     break;
 
                 case CorruptPlayer e:
@@ -61,11 +73,24 @@ namespace Characters.Powers
                     break;
 
                 default:
+                    if (powerLocal != null)
+                    {
+                        powerLocal(effect);
+                        return;
+                    }
                     throw new NotSupportedException(
                         $"PowerEffectDispatcher: no dispatch wired for brick '{effect}'. " +
                         "Per-power bricks are added by their migration story (Epic 4.x).");
             }
         }
+
+        // Audience -> RPC target. Specific(slot) maps slot -> clientId -> GetSafeRpcTarget; the
+        // clientId >= 100 bot interception lives HERE only (NFR5), never in the Domain descriptor.
+        private static Unity.Netcode.RpcParams ResolveTarget(PowerEffectAudience audience) => audience.Kind switch
+        {
+            PowerEffectAudienceKind.Specific => CharacterManager.instance.GetSafeRpcTarget((ulong)audience.LogicalSlot),
+            _ => throw new NotSupportedException($"PowerEffectDispatcher: audience {audience} not yet mapped.")
+        };
 
         private static string RevealFieldName(RevealField field) => field switch
         {

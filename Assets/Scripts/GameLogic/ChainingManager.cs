@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using Network;
 using Unity.Netcode;
@@ -43,7 +45,15 @@ namespace GameLogic
                 return;
             }
             
-            if (!chainingPlayers.Contains(_characterId))
+            // Story 2.10 — the dedup/membership rule is a pure Domain POCO (ChainingResolver). The adapter snapshots
+            // the replicated list and applies the decision; behavior identical to the previous Contains-guard.
+            var _current = new List<ulong>();
+            foreach (var _id in chainingPlayers)
+            {
+                _current.Add(_id);
+            }
+
+            if (new ChainingResolver().IsNewMember(_current, _characterId))
             {
                 chainingPlayers.Add(_characterId);
             }

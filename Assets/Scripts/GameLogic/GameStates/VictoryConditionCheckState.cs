@@ -3,6 +3,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
+using CorruptionDuPortail.Domain;
+using GameLogic.Snapshot;
 using UnityEngine;
 
 #endregion
@@ -22,17 +24,23 @@ namespace GameLogic.GameStates
             base.OnStartStateServer();
 
             Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new();
-                
+
+            // Story 2.7 — production now evaluates off the immutable snapshot (built once, synchronously, before
+            // any await) via the snapshot-facing IWinningCondition path. Behavior-preserving by composition of the
+            // builder losslessness (2.1) + per-condition differentials (2.3–2.6). The legacy pull is retained only
+            // as the differential oracle until Story 2.7b.
+            GameSnapshot _snapshot = GameSnapshotBuilder.FromLiveState(gameManager);
+
             foreach (var _currentCharacters in gameManager.characterManager.GetCharacters(false))
             {
                 if (_currentCharacters.isFake)
                 {
                     continue;
                 }
-                
+
                 foreach (var _currentWinningCondition in _currentCharacters.role.winningConditions)
                 {
-                    if (_currentWinningCondition.CheckCondition())
+                    if (_currentWinningCondition.CheckCondition(_snapshot))
                     {
                         if (!_winningTeams.ContainsKey(_currentWinningCondition.GetWinningTeam()))
                         {

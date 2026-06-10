@@ -10,6 +10,7 @@ using Board.UI.CharacterBar;
 using Board.UI.PowerBar;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Network;
 using Network.Action;
@@ -38,6 +39,7 @@ namespace GameLogic
         public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
         [HideInInspector] public bool ignoreGameLoop = false;
+        private readonly GameLoopMachine _gameLoopMachine = new();
         private bool gameHasStartedFirstLoop = false;
         public int gameLoopCount { get; private set; } = 0;
         public int currentDay => gameLoopCount + 1;
@@ -152,45 +154,53 @@ namespace GameLogic
         public void NextGameState(bool _ignoreGameLoop = false)
         {
             Assert.IsTrue(IsServer, "NextGameState can only be called on the server");
-        
-            bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
-            int _newGameStateIndex = currentGameStateIndex.Value + 1;
-            if (_newGameStateIndex >= gameStates.Count)
-            {
-                _newGameStateIndex = 0;
-            }
 
-            if (!_ignoreGameLoop && _wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
+            // Decision-only POCO (Story 2.11b): the arithmetic lives in Domain; the adapter keeps
+            // the NetworkVariable ownership + event raising + SwitchGameState ordering (HELD to Epic 5).
+            GameLoopTransition _transition = _gameLoopMachine.Advance(
+                currentGameStateIndex.Value,
+                BuildIsInGameLoopList(),
+                gameHasStartedFirstLoop,
+                ignoreGameLoop,
+                _ignoreGameLoop);
+
+            if (_transition.FireNewDayPassed)
             {
-                _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
                 onNewDayPassed?.Invoke();
             }
 
-            if (gameStates[GetGameState(_newGameStateIndex)].isInGameLoop && !gameHasStartedFirstLoop)
+            gameHasStartedFirstLoop = _transition.GameHasStartedFirstLoop;
+            if (_transition.FireGameStarted)
             {
-                gameHasStartedFirstLoop = true;
                 onGameStarted?.Invoke();
             }
-            
-            SwitchGameState(_newGameStateIndex);
+
+            SwitchGameState(_transition.NewIndex);
         }
 
         public void PreviousGameState()
         {
             Assert.IsTrue(IsServer, "PreviousGameState can only be called on the server");
-    
-            bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
-            int _newGameStateIndex = currentGameStateIndex.Value - 1;
-            if (_newGameStateIndex < 0)
-            {
-                _newGameStateIndex = gameStates.Count - 1;
-            }
-    
-            if (_wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
-            {
-                _newGameStateIndex = gameStates.ToList().FindLastIndex(pair => pair.Value.isInGameLoop);
-            }
+
+            int _newGameStateIndex = _gameLoopMachine.Rewind(
+                currentGameStateIndex.Value,
+                BuildIsInGameLoopList(),
+                ignoreGameLoop);
+
             SwitchGameState(_newGameStateIndex);
+        }
+
+        // The per-state isInGameLoop flags in dictionary order — the same order as
+        // GetGameState(index) (gameStates.Keys.ElementAt(index)) — so the POCO's positional
+        // indices line up with the live state indices.
+        private List<bool> BuildIsInGameLoopList()
+        {
+            var _flags = new List<bool>(gameStates.Count);
+            foreach (var _pair in gameStates)
+            {
+                _flags.Add(_pair.Value.isInGameLoop);
+            }
+            return _flags;
         }
     
         private void SwitchGameState(int newGameStateIndex)

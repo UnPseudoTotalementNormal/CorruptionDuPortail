@@ -1,0 +1,52 @@
+using System.Collections.Generic;
+
+namespace CorruptionDuPortail.Domain
+{
+    /// <summary>
+    /// Pure, decision-only power-effect resolution (Wave 3, FR11). Each method maps a power's
+    /// inputs to the ORDERED <see cref="EffectDescriptor"/> list the adapter then dispatches.
+    /// No NGO / FMOD / singleton / clientId — engine-specific ids (card id, chat window) are
+    /// passed in as plain ints by the adapter, so the Domain holds no magic constant tied to a
+    /// Game enum. Decision-only (NFR4): the list is data; the adapter applies it.
+    /// </summary>
+    public sealed class PowerResolver
+    {
+        /// <summary>
+        /// PCursedVision (Story 4.1): target is targeted, corrupted, and its corruption revealed
+        /// to the owner; a card effect + a server chat line announce whether the target is a
+        /// "chosen" (élu); finally the owner corrupts itself and reveals its own corruption.
+        /// The verdict text and the card flag branch on <paramref name="targetIsChosen"/>.
+        /// </summary>
+        /// <param name="ownerSlot">Logical slot of the power owner.</param>
+        /// <param name="targetSlot">Logical slot of the picked target.</param>
+        /// <param name="targetIsChosen">Whether the target's faction is "chosen" (élu).</param>
+        /// <param name="targetPseudo">Display pseudo of the target (composed into the chat line).</param>
+        /// <param name="cursedVisionCardEffectId">Adapter-supplied id of the CursedVision card effect.</param>
+        /// <param name="serverChatWindowId">Adapter-supplied id of the server chat window.</param>
+        public IReadOnlyList<EffectDescriptor> ResolveCursedVision(
+            int ownerSlot,
+            int targetSlot,
+            bool targetIsChosen,
+            string targetPseudo,
+            int cursedVisionCardEffectId,
+            int serverChatWindowId)
+        {
+            // Chosen: card NOT hidden (flag false) + "est un élu." — else hidden (flag true) + "n'est pas un élu."
+            bool cardHidden = !targetIsChosen;
+            string verdict = targetIsChosen
+                ? $"{targetPseudo} est un élu."
+                : $"{targetPseudo} n'est pas un élu.";
+
+            return new EffectDescriptor[]
+            {
+                new NewTargeting(ownerSlot, targetSlot),
+                new CorruptPlayer(targetSlot),
+                new RevealInfo(targetSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ownerSlot, false),
+                new AddCardEffect(cursedVisionCardEffectId, targetSlot, cardHidden),
+                new ChatLocal(verdict, serverChatWindowId),
+                new CorruptPlayer(ownerSlot),
+                new RevealInfo(ownerSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ownerSlot, false),
+            };
+        }
+    }
+}

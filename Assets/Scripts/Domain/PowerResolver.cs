@@ -64,5 +64,21 @@ namespace CorruptionDuPortail.Domain
                 new RegisterInkTarget(targetSlot),
             };
         }
+
+        /// <summary>
+        /// PCorruptingMark (Story 4.3), server click body: target the picked character, store it as
+        /// the last-corrupted, raise the corruption-succeeded event, and corrupt it. Validity is an
+        /// adapter precondition (the invalid branch raises corruption-failed before resolving).
+        /// </summary>
+        public IReadOnlyList<EffectDescriptor> ResolveCorruptingMarkClick(int ownerSlot, int targetSlot)
+        {
+            return new EffectDescriptor[]
+            {
+                new NewTargeting(ownerSlot, targetSlot),
+                new StoreLastCorrupted(targetSlot),
+                new CorruptionSucceeded(targetSlot),
+                new CorruptPlayer(targetSlot),
+            };
+        }
     }
 }

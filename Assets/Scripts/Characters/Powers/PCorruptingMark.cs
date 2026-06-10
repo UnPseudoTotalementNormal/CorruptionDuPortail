@@ -58,18 +58,33 @@ namespace Characters.Powers
             OnUsed();
         }
 
+        private readonly PowerResolver _resolver = new();
+
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _clickedCharacterId)
         {
-            PowerEffectTrace.Record(new NewTargeting((int)ownerClientId.Value, (int)_clickedCharacterId));
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacterId);
-            PowerEffectTrace.Record(new StoreLastCorrupted((int)_clickedCharacterId));
-            lastCorruptedCharacterId.Value = _clickedCharacterId;
-            PowerEffectTrace.Record(new CorruptionSucceeded((int)_clickedCharacterId));
-            InvokeOnCharacterCorruptionSuccessfulRpc(_clickedCharacterId);
-            Character _clickedCharacter = GameManager.instance.characterManager.GetCharacter(_clickedCharacterId, false);
-            PowerEffectTrace.Record(new CorruptPlayer((int)_clickedCharacterId));
-            _clickedCharacter.CorruptPlayerServerRpc();
+            // Story 4.3: decision-only resolution in Domain; the adapter dispatches the bricks.
+            // StoreLastCorrupted (private NV) + CorruptionSucceeded (power event RPC) are power-LOCAL.
+            var _effects = _resolver.ResolveCorruptingMarkClick((int)ownerClientId.Value, (int)_clickedCharacterId);
+            foreach (var _effect in _effects)
+            {
+                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
+            }
+        }
+
+        private void ApplyLocalEffect(EffectDescriptor _effect)
+        {
+            switch (_effect)
+            {
+                case StoreLastCorrupted _store:
+                    lastCorruptedCharacterId.Value = (ulong)_store.TargetSlot;
+                    break;
+                case CorruptionSucceeded _succeeded:
+                    InvokeOnCharacterCorruptionSuccessfulRpc((ulong)_succeeded.Slot);
+                    break;
+                default:
+                    throw new NotSupportedException($"PCorruptingMark: unexpected local brick {_effect}");
+            }
         }
 
         [Rpc(SendTo.Everyone)]

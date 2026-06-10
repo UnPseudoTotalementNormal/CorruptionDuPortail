@@ -48,5 +48,21 @@ namespace CorruptionDuPortail.Domain
                 new RevealInfo(ownerSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ownerSlot, false),
             };
         }
+
+        /// <summary>
+        /// PBoundByInk (Story 4.2), click path: target the picked character, reveal its private
+        /// "Lié par l'encre" chat to it, and register it as an ink target. The dedupe guard
+        /// (already-targeted) is a precondition the adapter checks before resolving. The chat id
+        /// is the power's current chat id (passed in; the adapter owns the NetworkVariable).
+        /// </summary>
+        public IReadOnlyList<EffectDescriptor> ResolveBoundByInkClick(int ownerSlot, int targetSlot, int chatId)
+        {
+            return new EffectDescriptor[]
+            {
+                new NewTargeting(ownerSlot, targetSlot),
+                new DiscoverChat(chatId, "Lié par l'encre", PowerEffectAudience.Specific(targetSlot)),
+                new RegisterInkTarget(targetSlot),
+            };
+        }
     }
 }

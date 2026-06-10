@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using Characters.Powers.Target;
 using ChatSystem;
 using CorruptionDuPortail.Domain;
@@ -58,6 +59,8 @@ namespace Characters.Powers
             OnUsed();
         }
 
+        private readonly PowerResolver _resolver = new();
+
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _characterId)
         {
@@ -65,16 +68,27 @@ namespace Characters.Powers
             {
                 return;
             }
-            
-            PowerEffectTrace.Record(new NewTargeting((int)ownerClientId.Value, (int)_characterId));
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterId);
-            PowerEffectTrace.Record(new DiscoverChat(powerChatId.Value, "Lié par l'encre", PowerEffectAudience.Specific((int)_characterId)));
-            ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"),
-                CharacterManager.instance.GetSafeRpcTarget(_characterId));
 
-            PowerEffectTrace.Record(new RegisterInkTarget((int)_characterId));
-            currentTargets.Add(_characterId);
-            alreadyTargetedClients.Add(_characterId);
+            // Story 4.2: decision-only resolution in Domain; the adapter dispatches the bricks.
+            // RegisterInkTarget is power-LOCAL (NetworkList writes) → handled via ApplyLocalEffect.
+            var _effects = _resolver.ResolveBoundByInkClick((int)ownerClientId.Value, (int)_characterId, powerChatId.Value);
+            foreach (var _effect in _effects)
+            {
+                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
+            }
+        }
+
+        private void ApplyLocalEffect(EffectDescriptor _effect)
+        {
+            switch (_effect)
+            {
+                case RegisterInkTarget _reg:
+                    currentTargets.Add((ulong)_reg.TargetSlot);
+                    alreadyTargetedClients.Add((ulong)_reg.TargetSlot);
+                    break;
+                default:
+                    throw new NotSupportedException($"PBoundByInk: unexpected local brick {_effect}");
+            }
         }
 
         public override void OnGameStartedServer()

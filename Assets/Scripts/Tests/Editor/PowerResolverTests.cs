@@ -102,5 +102,31 @@ namespace Tests.Editor
                 new CorruptPlayer(Target),
             }, trace);
         }
+
+        // ---- Story 4.4: POmniscience (the hack) click body -------------------------------
+        [Test]
+        public void OmniscienceClick_OrderedTrace_IsPinned()
+        {
+            var trace = _resolver.ResolveOmniscienceClick(Owner, Target);
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(Owner, Target),
+                new StoreHackTarget(Target),
+                new RevealInfo(Target, RevealField.RoleRevealed, RevealVisibility.Personal, Owner, true),
+                RequestCharacterRefresh.Instance,
+            }, trace);
+        }
+
+        [Test]
+        public void OmniscienceClick_RevealToTarget_IsBroadcastNotifyIntention()
+        {
+            // The hack's notify-to-target: reveal the target's ROLE to the owner, broadcast (true).
+            var reveal = (RevealInfo)_resolver.ResolveOmniscienceClick(Owner, Target)[2];
+            Assert.AreEqual(RevealField.RoleRevealed, reveal.Field);
+            Assert.IsTrue(reveal.Broadcast, "Omniscience reveal must broadcast (SendRevealLevelRpc).");
+            Assert.AreEqual(Target, reveal.TargetSlot);
+            Assert.AreEqual(Owner, reveal.ViewerSlot);
+        }
     }
 }

@@ -25,7 +25,8 @@
         "TransformCompositor",
         "DOTween.Runtime",
         "DOTween.Modules",
-        "Booleans"
+        "Booleans",
+        "CorruptionDuPortail.Domain"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

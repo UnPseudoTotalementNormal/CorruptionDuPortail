@@ -10,7 +10,8 @@
         "DOTween.Modules",
         "TNRD.NSubstitute",
         "Unity.Collections",
-        "Unity.Netcode.Runtime"
+        "Unity.Netcode.Runtime",
+        "AYellowpaper.SerializedCollections"
     ],
     "includePlatforms": [
         "Editor"

@@ -78,11 +78,29 @@ namespace GameLogic.GameStates
             }
         }
 
+        // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored
+        // SerializedDictionary order. A plain Dictionary's key enumeration order is
+        // implementation-defined and can shift after asset reload / removals, so the
+        // random *selection* must index into this frozen sequence (filtered to the
+        // still-available roles), not into Dictionary.Keys. The selection itself is
+        // untouched — only the list it indexes into is now order-stable.
+        // Behavior-preserving: SerializedDictionary enumerates in serialized (authored)
+        // order, which is exactly the de-facto order the old Dictionary.Keys produced
+        // for this add-only-then-remove flow. Frozen now to remove the latent drift.
+        internal IReadOnlyList<RoleDataObject> GetFrozenRolePoolOrder()
+        {
+            return new List<RoleDataObject>(roleAttributionDictionary.Keys);
+        }
+
         private void GiveRandomRole(Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute, Character _character, out RoleDataObject _removedRole)
         {
             _removedRole = null;
-            int _randomRoleIndex = Random.Range(0, _rolesToAttribute.Count);
-            RoleDataObject _randomRole = _rolesToAttribute.Keys.ToList()[_randomRoleIndex];
+            // [DETERMINISM §3b A] Index into the frozen authored order filtered to the
+            // roles still available in _rolesToAttribute (relative order preserved),
+            // instead of _rolesToAttribute.Keys.ToList() whose order can drift.
+            List<RoleDataObject> _availableRoles = GetFrozenRolePoolOrder().Where(_rolesToAttribute.ContainsKey).ToList();
+            int _randomRoleIndex = Random.Range(0, _availableRoles.Count);
+            RoleDataObject _randomRole = _availableRoles[_randomRoleIndex];
             RoleAttributionSetting _randomRoleSettings = _rolesToAttribute[_randomRole];
 
             

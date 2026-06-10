@@ -72,6 +72,10 @@ namespace Characters.Powers
                     ChatManager.instance.AddMessageLocal(e.Message, GameValues.CHAT_SERVER_CLIENT_ID, e.WindowId);
                     break;
 
+                case RequestCharacterRefresh:
+                    GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+                    break;
+
                 default:
                     if (powerLocal != null)
                     {

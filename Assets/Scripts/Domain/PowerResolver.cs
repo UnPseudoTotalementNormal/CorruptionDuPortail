@@ -80,5 +80,23 @@ namespace CorruptionDuPortail.Domain
                 new CorruptPlayer(targetSlot),
             };
         }
+
+        /// <summary>
+        /// POmniscience (Story 4.4) — the hack. Server click body: target the picked character,
+        /// store it as the hacked target, and reveal its role to the owner. The
+        /// <see cref="RevealInfo"/> with <c>Broadcast:true</c> IS the notify-to-target intention
+        /// (what the hack tells the target's client). The hardest power is migrated LAST with the
+        /// vocabulary already proven on three powers.
+        /// </summary>
+        public IReadOnlyList<EffectDescriptor> ResolveOmniscienceClick(int ownerSlot, int targetSlot)
+        {
+            return new EffectDescriptor[]
+            {
+                new NewTargeting(ownerSlot, targetSlot),
+                new StoreHackTarget(targetSlot),
+                new RevealInfo(targetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ownerSlot, true),
+                RequestCharacterRefresh.Instance,
+            };
+        }
     }
 }

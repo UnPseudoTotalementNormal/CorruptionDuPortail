@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -37,10 +38,15 @@ namespace Characters.Powers
         }
         private void OnCardClickedRpc(ulong _targetClientId)
         {
+            PowerEffectTrace.Record(new NewTargeting((int)ownerClientId.Value, (int)_targetClientId));
             RoleTargetSystem.instance?.NewTargeting(ownerClientId.Value, _targetClientId);
+            PowerEffectTrace.Record(new StoreHackTarget((int)_targetClientId));
             hackedCharacterClientId = _targetClientId;
+            PowerEffectTrace.Record(new RevealInfo((int)_targetClientId, RevealField.RoleRevealed,
+                RevealVisibility.Personal, (int)ownerClientId.Value, true));
             GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_targetClientId,
                 nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
+            PowerEffectTrace.Record(RequestCharacterRefresh.Instance);
             GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
         }
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using GameLogic.GameStates;
 using RoleTarget;
@@ -65,10 +66,13 @@ namespace Characters.Powers
                 return;
             }
             
+            PowerEffectTrace.Record(new NewTargeting((int)ownerClientId.Value, (int)_characterId));
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterId);
-            ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"), 
+            PowerEffectTrace.Record(new DiscoverChat(powerChatId.Value, "Lié par l'encre", PowerEffectAudience.Specific((int)_characterId)));
+            ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"),
                 CharacterManager.instance.GetSafeRpcTarget(_characterId));
-            
+
+            PowerEffectTrace.Record(new RegisterInkTarget((int)_characterId));
             currentTargets.Add(_characterId);
             alreadyTargetedClients.Add(_characterId);
         }
@@ -84,6 +88,7 @@ namespace Characters.Powers
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
+                        PowerEffectTrace.Record(new UndiscoverChat(powerChatId.Value, PowerEffectAudience.Specific((int)_targetClientId)));
                         ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.instance.GetSafeRpcTarget(_targetClientId));
                     }
                     
@@ -112,8 +117,10 @@ namespace Characters.Powers
                 _chatId++;
             }
             
+            PowerEffectTrace.Record(new AssignChatId(_chatId));
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
+            PowerEffectTrace.Record(new DiscoverChat(_chatId, "Lié par l'encre", PowerEffectAudience.Specific((int)ownerClientId.Value)));
             ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
 

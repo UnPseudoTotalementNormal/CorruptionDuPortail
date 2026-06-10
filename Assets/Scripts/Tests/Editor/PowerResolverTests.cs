@@ -87,5 +87,20 @@ namespace Tests.Editor
             Assert.AreEqual(PowerEffectAudience.Specific(Target), discover.Audience);
             Assert.AreEqual(-1, discover.ChatId); // unassigned chat id echoed verbatim
         }
+
+        // ---- Story 4.3: PCorruptingMark click body ---------------------------------------
+        [Test]
+        public void CorruptingMarkClick_OrderedTrace_IsPinned()
+        {
+            var trace = _resolver.ResolveCorruptingMarkClick(Owner, Target);
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(Owner, Target),
+                new StoreLastCorrupted(Target),
+                new CorruptionSucceeded(Target),
+                new CorruptPlayer(Target),
+            }, trace);
+        }
     }
 }

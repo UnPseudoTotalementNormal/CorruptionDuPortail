@@ -23,14 +23,13 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
 
-            Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new();
-
-            // Story 2.7 — production now evaluates off the immutable snapshot (built once, synchronously, before
-            // any await) via the snapshot-facing IWinningCondition path. Behavior-preserving by composition of the
-            // builder losslessness (2.1) + per-condition differentials (2.3–2.6). The legacy pull is retained only
-            // as the differential oracle until Story 2.7b.
+            // Story 2.7 — evaluate off an immutable snapshot built once, synchronously, before any await.
             GameSnapshot _snapshot = GameSnapshotBuilder.FromLiveState(gameManager);
 
+            // Story 2.8 — the win-team aggregation is a pure Domain POCO (VictoryEvaluator). The adapter only maps
+            // live state in (fakes filtered at the source) and applies the returned decision (NFR4 — no transition
+            // inside the POCO).
+            var _owners = new List<ConditionsForOwner>();
             foreach (var _currentCharacters in gameManager.characterManager.GetCharacters(false))
             {
                 if (_currentCharacters.isFake)
@@ -38,19 +37,10 @@ namespace GameLogic.GameStates
                     continue;
                 }
 
-                foreach (var _currentWinningCondition in _currentCharacters.role.winningConditions)
-                {
-                    if (_currentWinningCondition.CheckCondition(_snapshot))
-                    {
-                        if (!_winningTeams.ContainsKey(_currentWinningCondition.GetWinningTeam()))
-                        {
-                            _winningTeams[_currentWinningCondition.GetWinningTeam()] = new HashSet<ulong>();
-                        }
-                        
-                        _winningTeams[_currentWinningCondition.GetWinningTeam()].Add(_currentCharacters.ownerClientId.Value);
-                    }
-                }
+                _owners.Add(new ConditionsForOwner(_currentCharacters.ownerClientId.Value, _currentCharacters.role.winningConditions));
             }
+
+            Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new VictoryEvaluator().Evaluate(_snapshot, _owners);
 
             if (_winningTeams.Count == 0)
             {

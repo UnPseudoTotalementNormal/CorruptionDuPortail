@@ -8,6 +8,7 @@ using Board;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Network;
 using UI.SelectPanels;
@@ -183,18 +184,20 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
             gameManager.StopCoroutine(updateVoteTimerCoroutine);
             
-            // Get the character who has the most votes
-            var _charactersWithMostVotes = votesForPlayer.OrderByDescending(v => v.Value.Count).ToList();
-            int _numberOfCharacterWithTheMostVotes = _charactersWithMostVotes.Count(v => v.Value.Count == _charactersWithMostVotes.First().Value.Count);
-            if (_numberOfCharacterWithTheMostVotes == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
+            // Story 2.9 — vote-count → outcome is a pure Domain POCO (VoteTally). The adapter maps the vote buckets
+            // (in insertion order — the stable-sort tie-break contract) and applies the returned decision (NFR4).
+            var _votes = new List<VoteCount>();
+            foreach (var _kvp in votesForPlayer)
             {
-                Character _votedCharacter = gameManager.characterManager.GetCharacters().Find(_character => _character.ownerClientId.Value == _charactersWithMostVotes.First().Key);
-                mostVotedPlayer = _votedCharacter.ownerClientId.Value;
-                ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
+                _votes.Add(new VoteCount(_kvp.Key, _kvp.Value.Count));
             }
-            else
+
+            ulong _winner = new VoteTally().Resolve(_votes, SKIP_VOTE_ID);
+            mostVotedPlayer = _winner;
+            if (_winner != SKIP_VOTE_ID)
             {
-                mostVotedPlayer = SKIP_VOTE_ID;
+                Character _votedCharacter = gameManager.characterManager.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
+                ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
             }
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateMostVotedPlayer), 

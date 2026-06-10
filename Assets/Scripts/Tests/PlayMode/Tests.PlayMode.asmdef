@@ -8,6 +8,7 @@
         "Unity.Netcode.Components",
         "UniTask",
         "Game",
+        "CorruptionDuPortail.Domain",
         "AYellowpaper.SerializedCollections",
         "Unity.Collections",
         "TNRD.NSubstitute",

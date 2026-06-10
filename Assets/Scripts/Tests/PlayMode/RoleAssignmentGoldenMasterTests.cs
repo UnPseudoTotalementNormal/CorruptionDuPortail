@@ -131,6 +131,48 @@ namespace Tests.PlayMode
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(outChars.ToArray());
         }
 
+        // Fakeable pool (canBeFake = true) for the fake-path golden (sum > N → CreateNewFakeCharacter runs).
+        private RoleAttributionState BuildFakeableState(params (string name, int count)[] pool)
+        {
+            var state = ScriptableObject.CreateInstance<RoleAttributionState>();
+            state.gameManager = _gameManager;
+            foreach (var (name, count) in pool)
+            {
+                var roleData = ScriptableObject.CreateInstance<RoleDataObject>();
+                roleData.role = new Role { roleName = name };
+                roleData.powers = new List<Power>();
+                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { roleToAttribute = count, canBeFake = true });
+            }
+            return state;
+        }
+
+        // Runs the live two-loop selection (fakes created during the run) and returns
+        // (fake roles in creation order, real roles in add order).
+        private (List<string> fakes, List<string> reals) RunWithFakes(RoleAttributionState state, List<Character> reals, int seed)
+        {
+            Random.InitState(seed);
+            state.OnStartStateServer();
+            var fakeRoles = _characterManager.GetCharacters(false).Where(c => c.isFake).Select(c => c.role.roleName.ToString()).ToList();
+            var realRoles = reals.Select(c => c.role.roleName.ToString()).ToList();
+            return (fakeRoles, realRoles);
+        }
+
+        [UnityTest]
+        public IEnumerator RoleAssignment_FakePath_Exhaustion() // fake-path discovery
+        {
+            // N=2 reals, pool [A:2, B:2] canBeFake → sum=4, fakeCount=|2-4|=2. Two fake characters are
+            // created and drawn from {A,B}, then the two reals draw from the depleted remainder.
+            var chars = new List<Character>();
+            yield return AddCharacters(2, chars);
+
+            var (fakes, reals) = RunWithFakes(BuildFakeableState(("A", 2), ("B", 2)), chars, seed: 5);
+
+            // GOLDEN — the current fake-then-real draw order under InitState(5): the two fakes drain B,
+            // then the two reals take the remaining A. Pins the shared-count depletion across both loops.
+            CollectionAssert.AreEqual(new[] { "B", "B" }, fakes, "Fake characters draw first, exhausting B.");
+            CollectionAssert.AreEqual(new[] { "A", "A" }, reals, "Reals draw from the depleted remainder (A).");
+        }
+
         [UnityTest]
         public IEnumerator RoleAssignment_MinPlayers_SingleRole() // M-single
         {

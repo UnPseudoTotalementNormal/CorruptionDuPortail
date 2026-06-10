@@ -8,6 +8,12 @@ using NUnit.Framework;
 namespace Tests.PlayMode
 {
     /// <summary>
+    /// SUPERSEDED (Story 2.7b): the standing oracle for the snapshot signature is now
+    /// <c>WinningConditionSnapshotOracleTests</c> (snapshot verdict vs the frozen Epic-1 vectors), not this
+    /// pull-vs-snapshot differential. This harness + its `Differential_*`/Migration callers are RETAINED as a
+    /// redundant cross-check while the legacy pull still exists; they will be removed when the pull is finally
+    /// deleted. Kept (not deleted) deliberately — never reduce the net at the net-critical swap.
+    ///
     /// Story 2.2 — stateless differential harness for the WinningCondition dual signature.
     ///
     /// NO in-prod canary is shipped: the differential lives only here, in the test harness. There is therefore no

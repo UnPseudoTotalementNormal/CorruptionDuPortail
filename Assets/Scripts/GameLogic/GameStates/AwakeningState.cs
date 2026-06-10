@@ -247,6 +247,7 @@ namespace GameLogic.GameStates
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
+                    // [DETERMINISM-QUARANTINE §3b B] Frame-timed RNG: call count depends on framerate. Out of scope for Phase 0 / Wave 1 — needs IGameClock + seed isolation (Wave). MUST NOT feed any golden. Proven isolated by AwakeningStateIsolationTests (no WinningCondition reads awakening state).
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < 0.00045f)
                     {

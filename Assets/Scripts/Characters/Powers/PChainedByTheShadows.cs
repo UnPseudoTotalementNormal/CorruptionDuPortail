@@ -39,7 +39,7 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
-                GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(
+                gameInfoRevealer.SendRevealLevelRpc(
                     _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {

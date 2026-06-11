@@ -42,9 +42,9 @@ namespace Characters.Powers
             {
                 _character.CorruptPlayerServerRpc();
                 InvokeOnCharacterCorruptedRpc(_character.ownerClientId.Value);
-                GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
-                GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     _character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
                 onCorruptionSuccessfulSound.TryPlayOneShot();
             }

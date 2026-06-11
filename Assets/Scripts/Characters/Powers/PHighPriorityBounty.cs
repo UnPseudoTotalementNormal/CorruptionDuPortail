@@ -56,7 +56,7 @@ namespace Characters.Powers
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 
                         (int)ChatWindowIDs.Server));
-                GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
+                gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
                 //TODO: do actual elimination logic & visual
             }
             else

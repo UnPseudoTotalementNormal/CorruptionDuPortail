@@ -70,7 +70,7 @@ namespace Characters.Powers
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
         {
-            GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
+            gameInfoRevealer.SetRevealLevel(
                 _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
         }
 

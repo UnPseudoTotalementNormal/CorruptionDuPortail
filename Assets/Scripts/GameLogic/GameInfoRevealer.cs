@@ -7,6 +7,7 @@ using Characters;
 using GameLogic.GameStates;
 using Unity.Collections;
 using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 #endregion
@@ -20,8 +21,13 @@ namespace GameLogic
         
         public Action onCharacterInfoRevealedChanged;
 
+        // Story 7.3 lane A: GameInfoRevealer is itself a CONSUMER of CharacterManager; scene-wired here
+        // (its GameManager.For onGameStarted / GetGameStates game-loop reads stay for Epic 8).
+        [SerializeField] private CharacterManager characterManager;
+
         public void Start()
         {
+            Assert.IsNotNull(characterManager, "GameInfoRevealer.characterManager is not wired — wire it in GameScene (the composition root).");
             GameManager.For(NetworkManager).onGameStarted += OnGameStarted;
         }
 
@@ -33,7 +39,7 @@ namespace GameLogic
         private void OnRolesAttributed()
         {
             charactersInfoRevealed = new Dictionary<ulong, CharacterInfoReveal>();
-            foreach (var _character in GameManager.For(NetworkManager).characterManager.GetCharacters())
+            foreach (var _character in characterManager.GetCharacters())
             {
                 AddCharacterToInfoList(_character);
             }
@@ -43,7 +49,7 @@ namespace GameLogic
         {
             if (_observerId == ulong.MaxValue)
             {
-                _observerId = CharacterManager.For(NetworkManager).GetLocalClientId();
+                _observerId = characterManager.GetLocalClientId();
                 if (_observerId >= 100)
                 {
                     AddCharacterToSimulatedInfoList(_character, _observerId);
@@ -66,7 +72,7 @@ namespace GameLogic
             {
                 simulationsKnowledge[_observerId] = new Dictionary<ulong, CharacterInfoReveal>();
                 // Prefill with existing public knowledge if needed
-                foreach (var _c in GameManager.For(NetworkManager).characterManager.GetCharacters())
+                foreach (var _c in characterManager.GetCharacters())
                 {
                     // Own-role reveal enforced at read time (GetCharacterInfo), not stamped here.
                     simulationsKnowledge[_observerId].TryAdd(_c.ownerClientId.Value, new CharacterInfoReveal());
@@ -83,19 +89,19 @@ namespace GameLogic
         {
             if (_observerId == ulong.MaxValue)
             {
-                _observerId = CharacterManager.For(NetworkManager).GetLocalClientId();
+                _observerId = characterManager.GetLocalClientId();
             }
             
             if (_observerId >= 100)
             {
                 if (!simulationsKnowledge.ContainsKey(_observerId))
                 {
-                    AddCharacterToSimulatedInfoList(GameManager.For(NetworkManager).characterManager.GetCharacter(_clientId, false), _observerId);
+                    AddCharacterToSimulatedInfoList(characterManager.GetCharacter(_clientId, false), _observerId);
                 }
                 var _observerBrain = simulationsKnowledge[_observerId];
                 if (!_observerBrain.ContainsKey(_clientId))
                 {
-                    AddCharacterToSimulatedInfoList(GameManager.For(NetworkManager).characterManager.GetCharacter(_clientId, false), _observerId);
+                    AddCharacterToSimulatedInfoList(characterManager.GetCharacter(_clientId, false), _observerId);
                 }
                 var _simInfo = _observerBrain[_clientId];
                 EnsureOwnRoleRevealed(_clientId, _observerId, _simInfo);
@@ -104,14 +110,14 @@ namespace GameLogic
 
             if (!charactersInfoRevealed.ContainsKey(_clientId))
             {
-                AddCharacterToInfoList(GameManager.For(NetworkManager).characterManager.GetCharacter(_clientId, false), _observerId);
+                AddCharacterToInfoList(characterManager.GetCharacter(_clientId, false), _observerId);
             }
             var _info = charactersInfoRevealed[_clientId];
             // Real (non-simulated) brain: "self" is the actual local client, NOT the
             // _observerId passed in. The RPC write-path hardcodes _observerId = 0 as a
             // "local main dict" sentinel, which collides with the host's real clientId 0;
             // using it here would reveal the host's role to every other client.
-            EnsureOwnRoleRevealed(_clientId, CharacterManager.For(NetworkManager).GetLocalClientId(), _info);
+            EnsureOwnRoleRevealed(_clientId, characterManager.GetLocalClientId(), _info);
             return _info;
         }
 
@@ -143,7 +149,7 @@ namespace GameLogic
             
             _field.SetValue(_info, _revealLevel);
 
-            if (_showInfo && _observerId == CharacterManager.For(NetworkManager).GetLocalClientId())
+            if (_showInfo && _observerId == characterManager.GetLocalClientId())
             {
                 if (BoardManager.instance != null && BoardManager.instance.visibleCards != null)
                 {
@@ -152,7 +158,7 @@ namespace GameLogic
                 }
             }
             
-            if (_observerId == CharacterManager.For(NetworkManager).GetLocalClientId())
+            if (_observerId == characterManager.GetLocalClientId())
             {
                 onCharacterInfoRevealedChanged?.Invoke();
             }
@@ -213,7 +219,7 @@ namespace GameLogic
             if (!simulationsKnowledge.ContainsKey(_id))
             {
                 simulationsKnowledge[_id] = new Dictionary<ulong, CharacterInfoReveal>();
-                foreach (var _c in GameManager.For(NetworkManager).characterManager.GetCharacters())
+                foreach (var _c in characterManager.GetCharacters())
                 {
                     // Own-role reveal enforced at read time (GetCharacterInfo), not stamped here.
                     simulationsKnowledge[_id].TryAdd(_c.ownerClientId.Value, new CharacterInfoReveal());

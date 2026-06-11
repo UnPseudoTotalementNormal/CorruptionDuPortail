@@ -102,6 +102,7 @@ namespace Tests.PlayMode
             _revealer = _revealerGo.AddComponent<GameInfoRevealer>();
             _revealer.GetComponent<NetworkObject>().Spawn();
             _gameManager.gameInfoRevealer = _revealer;
+            ReflectionHelper.SetPrivateField(_revealer, "characterManager", _characterManager);
 
             // Plain singletons. BoardManager BEFORE CardEffectManager (its Start subscribes to it).
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();

@@ -6840,6 +6840,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::GameLogic.CompositionRoot
   gameManager: {fileID: 704980999}
   characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
 --- !u!4 &1024404297
 Transform:
   m_ObjectHideFlags: 0
@@ -8234,6 +8235,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   cardPrefab: {fileID: 3564681152801350707, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
   characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
   spawnCardPosition: {fileID: 1636735881}
   maxCardPosition: {fileID: 886355730}
   visibleCards: []
@@ -12601,6 +12603,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  characterManager: {fileID: 1541735909}
 --- !u!114 &1771149312
 MonoBehaviour:
   m_ObjectHideFlags: 0

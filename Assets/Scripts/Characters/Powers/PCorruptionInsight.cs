@@ -16,7 +16,7 @@ namespace Characters.Powers
             base.OnGameStartedServer();
             foreach (var _character in characterManager.GetCharacters())
             {
-                GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed),
+                gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed),
                     RevealLevel.Personal, ownerClientId.Value);
             }
         }

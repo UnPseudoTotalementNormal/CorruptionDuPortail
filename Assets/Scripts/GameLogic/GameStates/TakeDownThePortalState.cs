@@ -93,7 +93,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            gameManager.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
+            gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
                 gameManager.RpcTarget.Everyone);
             
             WaitForCharacterClickServer();
@@ -211,7 +211,7 @@ namespace GameLogic.GameStates
                     continue;
                 }
                 
-                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isRoleRevealed >= RevealLevel.Public)
+                if (gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isRoleRevealed >= RevealLevel.Public)
                 {
                     _ignoreCharactersList.Add(_character.ownerClientId.Value);
                     continue;

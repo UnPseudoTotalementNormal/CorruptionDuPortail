@@ -75,6 +75,7 @@ namespace Tests.PlayMode
             _revealer = _revealerGo.AddComponent<GameInfoRevealer>();
             _revealer.GetComponent<NetworkObject>().Spawn();
             _gameManager.gameInfoRevealer = _revealer;
+            ReflectionHelper.SetPrivateField(_revealer, "characterManager", _characterManager);
 
             // Setup RoleTargetSystem (singleton)
             GameObject rtsGo = new GameObject("RoleTargetSystem");

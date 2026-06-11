@@ -24,6 +24,8 @@ public class BoardManager : NetworkBehaviour
 
     // Story 7.2 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
     [SerializeField] private CharacterManager characterManager;
+    // Story 7.3 lane A: scene-wired GameInfoRevealer, pushed into each Card it creates.
+    [SerializeField] private GameInfoRevealer gameInfoRevealer;
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -59,6 +61,8 @@ public class BoardManager : NetworkBehaviour
         // serialized field by reflection after AddComponent — AddComponent runs Awake synchronously.
         // The authoritative scene-wiring check is SceneWiringGuard (CI); this is the runtime backstop.
         Assert.IsNotNull(characterManager, "BoardManager.characterManager is not wired — wire it in GameScene (the composition root).");
+        // gameInfoRevealer is only forwarded to the Cards this board creates (BoardManager never uses
+        // it directly), so it is not asserted at runtime — SceneWiringGuard (CI) is its wiring check.
         characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
@@ -218,7 +222,7 @@ public class BoardManager : NetworkBehaviour
     public Card AddNewCard(Character _characterInfo = null, bool _assignCardToBoard = true)
     {
         Card _card = Instantiate(cardPrefab, transform);
-        _card.Initialize(characterManager); // lane B push: the card is prefab-instantiated, cannot serialize a scene ref.
+        _card.Initialize(characterManager, gameInfoRevealer); // lane B push: the card is prefab-instantiated, cannot serialize a scene ref.
         _card.transform.localPosition = new Vector3(0, 0, 0);
 
         if (_assignCardToBoard)

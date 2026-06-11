@@ -74,7 +74,7 @@ namespace GameLogic.GameStates
             
             foreach (var _character in characterManager.GetCharacters(false))
             {
-                gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
+                gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
                     nameof(CharacterInfoReveal.isRoleRevealed),
                     RevealLevel.Public, false);
             }

@@ -33,7 +33,7 @@ namespace Characters.Powers
                 IEnumerable<Character> _robots = GameManager.For(NetworkManager).characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+                    gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
                         RevealLevel.Personal, ownerClientId.Value);
                 }
             }

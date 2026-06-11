@@ -19,6 +19,8 @@ namespace GameLogic
         // Story 7.2 lane B: CharacterManager pushed directly by SetupGameStates alongside gameManager,
         // so states stop hub-hopping through gameManager.characterManager (deleted in 7.5).
         public CharacterManager characterManager { get; set; }
+        // Story 7.3 lane B: GameInfoRevealer pushed the same way.
+        public GameInfoRevealer gameInfoRevealer { get; set; }
 
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }

@@ -94,7 +94,7 @@ namespace Characters.Powers
             if (_isCorrectGuess)
             {
                 discoveredClientIds.Add(_clickedId);
-                GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
+                gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
             }
             else
             {

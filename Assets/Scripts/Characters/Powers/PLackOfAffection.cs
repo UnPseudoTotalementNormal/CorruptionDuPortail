@@ -51,7 +51,7 @@ namespace Characters.Powers
             
             if (_targetCharacter.role.factionType == FactionType.chosen)
             {
-                GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, targetClientId);
             }
             

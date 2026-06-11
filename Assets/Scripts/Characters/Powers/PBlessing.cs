@@ -51,7 +51,7 @@ namespace Characters.Powers
                 {
                     _blessingCharacter.HealPlayerServerRpc();
                 }
-                GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(
+                gameInfoRevealer.SendRevealLevelRpc(
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 _blessingCharacter.isBlessed.Value = true;
                 

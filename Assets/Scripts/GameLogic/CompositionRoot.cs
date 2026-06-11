@@ -34,6 +34,9 @@ namespace GameLogic
         // For(Singleton) returns exactly these wired managers.
         [SerializeField] private GameManager gameManager;
         [SerializeField] private CharacterManager characterManager;
+        // Story 7.3: GameInfoRevealer is NOT de-singletonised (no GameInfoRevealer.For(nm)), so the
+        // root carries it as a lane-A scene ref and resolves it from the registered scene root.
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
 
         private NetworkManager _networkManager;
 
@@ -54,6 +57,24 @@ namespace GameLogic
         // and For(nm) share one resolution path.
         public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
         public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
+        public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+
+        // GameInfoRevealer has no per-NM registry of its own, so it is resolved from the scene root
+        // registered for the NM (production: the single Singleton-bound root). Returns null for NMs
+        // with no scene root (e.g. the fixture's second NM, which spawns no revealer-using consumer).
+        private static GameInfoRevealer ResolveGameInfoRevealer(NetworkManager _networkManager)
+        {
+            if (_networkManager != null && s_byNetworkManager.TryGetValue(_networkManager, out var _root) && _root != null && _root.gameInfoRevealer != null)
+            {
+                return _root.gameInfoRevealer;
+            }
+            // Fallback for an NM with no scene-placed root (PlayMode harnesses): the GameManager's
+            // still-present gameInfoRevealer pass-through field. In production the scene root above
+            // always answers, and both point at the same scene GameInfoRevealer — behaviour-identical.
+            // Revisited in 7.5 when the GameManager pass-through field is removed.
+            var _gameManager = GameManager.For(_networkManager);
+            return _gameManager != null ? _gameManager.gameInfoRevealer : null;
+        }
 
         private void Awake()
         {
@@ -66,6 +87,8 @@ namespace GameLogic
                 "CompositionRoot.gameManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(characterManager,
                 "CompositionRoot.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(gameInfoRevealer,
+                "CompositionRoot.gameInfoRevealer is not wired — wire it in GameScene (the composition root).");
 
             if (_networkManager != null)
             {
@@ -118,6 +141,7 @@ namespace GameLogic
 
             public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
             public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
+            public GameInfoRevealer GameInfoRevealer => ResolveGameInfoRevealer(_networkManager);
         }
     }
 }

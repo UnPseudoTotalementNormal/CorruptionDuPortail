@@ -52,6 +52,10 @@ namespace Characters.Powers
         // Story 7.1 lane C: CharacterManager resolved ONCE in OnNetworkSpawn (via the composition
         // root) and consumed by this base AND every concrete power, replacing the GameManager hub-hop.
         protected CharacterManager characterManager;
+        // Story 7.3 lane C: GameInfoRevealer, same seam. Null-tolerant (no Assert) — not every power
+        // uses it, and minimal harnesses spawn bare powers with no revealer; reveal-using powers
+        // always have it in production (scene root) and in their own harnesses.
+        protected GameInfoRevealer gameInfoRevealer;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -80,6 +84,7 @@ namespace Characters.Powers
             Assert.IsNotNull(characterManager,
                 "Power.characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager. " +
                 "Did a subclass override OnNetworkSpawn without calling base.OnNetworkSpawn()?");
+            gameInfoRevealer = CompositionRoot.For(NetworkManager).GameInfoRevealer;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;

@@ -45,6 +45,18 @@ namespace Tests.Editor
             // Character (lane C, OnNetworkSpawn) + BoardManager (lane A, scene-wired [SerializeField]).
             typeof(Character),
             typeof(BoardManager),
+            // Story 7.3 — powers that became fully locator-free once their gameInfoRevealer slice was
+            // also migrated onto the Power.gameInfoRevealer base field.
+            typeof(PBlessing),
+            typeof(PCardsShuffling),
+            typeof(PChainedByTheShadows),
+            typeof(PCorruptingMark),
+            typeof(PCorruptionInsight),
+            typeof(PCorruptionKnowledge),
+            typeof(PHighPriorityBounty),
+            typeof(PLackOfAffection),
+            typeof(PEmbraceOfShadows),
+            typeof(PCorruptionParanoia),
         };
 
         /// <summary>
@@ -61,10 +73,10 @@ namespace Tests.Editor
             typeof(PCPowerUnlockWhenChain),
             typeof(PCReparentOnChain),
             typeof(PersonalBeaconObject),
-            // Story 7.2 note: Card was migrated onto a lane-B CharacterManager (pushed by
-            // BoardManager.AddNewCard) but still holds a GameManager.instance.gameInfoRevealer hop,
-            // so it stays OFF the registry until 7.3 (guard #1 cannot tell the two hops apart) —
-            // mirrors the mixed powers of 7.1.
+            // Story 7.3 — Card is now fully locator-free (CharacterManager + GameInfoRevealer both
+            // pushed by BoardManager.AddNewCard). Prefab-placed but its injected deps are plain pushed
+            // fields (not [SerializeField]), so guard #1 source-scan only.
+            typeof(Card),
         };
 
         /// <summary>
@@ -78,6 +90,7 @@ namespace Tests.Editor
         {
             typeof(GameManager),
             typeof(CharacterManager), // 6.3 — CompositionRoot.characterManager wiring is guard-checked.
+            typeof(GameInfoRevealer), // 7.3 — CompositionRoot/BoardManager gameInfoRevealer wiring is guard-checked.
         };
 
         /// <summary>

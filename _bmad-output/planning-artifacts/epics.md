@@ -721,3 +721,74 @@ So that no strangler façade remains anywhere (NFR7 DoD).
 **And** the NFR7 definition of done is met: **no strangler façade remains; the codebase carries the POCO core only, not the singleton graph**
 
 **Epic 5 summary:** 10 stories (5.0a–5.0e de-singletonisation prerequisites, 5.0 fixture, 5.1 wire-format guard, 5.2 leaf-façade reconciliation, 5.3 index ownership, 5.4 final façade removal), covering FR12 (5.3/5.4) and the descoped FR13 (5.1). Execution order: 5.1 + 5.2 already shipped (#51/#52) → 5.0a → 5.0b → 5.0c → 5.0d → 5.0e (coexistence gate) → 5.0 → 5.3 (hot, atomic, max review) → 5.4. Highest-risk story of the whole refactor: 5.3 (silent desync), gated by the 5.0 real-client fixture + the parameterized client-trace suite. Full reflection-dispatch refonte explicitly out of scope (separate protocol effort). Final gate: full EditMode + PlayMode suite green, no façade remains, boot smoke-test green.
+
+---
+
+# Despaghettification track — Epics 6–12 (D0–D6)
+
+Source of truth: `_bmad-output/refactor-architecture-despaghetti.md` (validated 2026-06-11). Branch: `refactor-despaghetti` (from `dev-refactor`). Goal: replace the Service-Locator + God-Object architecture with dependency injection + narrow interfaces + tested POCOs, behaviour-preserving, shippable per commit. NFR5 (`GetSafeRpcTarget`/`IsLocalOrSimulated`/`clientId >= 100`) relocated, never edited. Safety net: Wave 1–4 goldens + wire-format guard (5.1) + leaf-POCO guard (5.2) + `MultiClientGameFixture` (5.0). Baseline PM 145 / EM 155.
+
+**Naming note:** the architecture doc labels these D0–D6; they map to numeric Epics 6–12 for sprint-status story-key compatibility (D0=6, D1=7, … D6=12).
+
+**Measured target (recon 2026-06-11):** GameManager fan-in 72 / CharacterManager 37; GameManager is mostly a locator hub — `.characterManager` used 78×, `.gameInfoRevealer` 31×. Inject those directly and the God Object collapses to its real game-loop surface.
+
+## Epic 6 (D0): Composition root & injection-seam convention
+
+**Goal:** establish *the* reusable decoupling pattern other epics copy — how a scene manager is injected (`[SerializeField]`), how a runtime-spawned object is initialised (`Initialize(deps)`), where the graph is wired, and a static-absence guard test — proven on ONE small worked example. Low risk, unblocks everything.
+
+### Story 6.1: Establish the injection seam + composition root on a worked example
+
+As a developer,
+I want a documented, tested dependency-injection seam proven on one real consumer rerouted off a static lookup,
+so that every later despaghetti story has a copy-paste pattern instead of re-inventing the wiring.
+
+**Acceptance Criteria:**
+
+**Given** consumers today resolve managers via `GameManager.instance` / `CharacterManager.For(nm)` (Service Locator), and the project already injects `gameManager` into `GameState` in `GameManager.SetupGameStates`
+**When** the seam convention is established
+**Then** one small consumer (a single power or board component, low fan-in, chosen in Dev Notes) is rerouted to receive its dependency via `[SerializeField]` (scene/prefab-wired) or `Initialize(deps)` (runtime-spawned), with NO remaining static lookup in that consumer
+**And** the composition root (where the dependency is wired) is explicit and documented — scene-placed managers expose themselves; spawned objects get `Initialize` at their existing spawn site
+**And** a static-absence guard EditMode test (assembly-scan, like `LeafPocoNoFacadeGuardTests`) is scaffolded so a forbidden static lookup in the migrated consumer fails a test
+**And** the full suite passes unchanged (PM 145 / EM 155) and the boot smoke-test is green
+**And** the pattern is written up (a short section the next stories reference) covering the `[SerializeField]`-vs-`Initialize` decision rule and the NFR5 relocation rule
+
+## Epic 7 (D1): Dismantle GameManager-as-a-locator
+
+**Goal:** stop routing through `GameManager.instance`/`For()` to reach OTHER managers. Inject `CharacterManager` (78 hits), `GameInfoRevealer` (31), `ChainingManager`, `CharactersBar`/`PowersBar` directly into consumers. Pure reference-resolution change, low network risk, golden-gated. Biggest single maintainability win — collapses the majority of GameManager's fan-in. Each story migrates a batch the compiler enumerates (destructive deletion of the accessor → CS-errors → reroute), gated at baseline.
+
+### Story 7.1: Inject CharacterManager into the powers
+**Given** the powers reach `CharacterManager` via `GameManager.For(nm).characterManager` / the locator **When** they declare the dependency via `Initialize`/`[SerializeField]` at their spawn site **Then** every power resolves the injected `CharacterManager`, no power holds a `GameManager`-via-locator hop for it, `GetSafeRpcTarget`/bot path is verbatim (NFR5), and the golden + multi-client fixture pass unchanged.
+
+### Story 7.2: Inject CharacterManager into GameStates, Board, and Character
+**Given** the remaining `.characterManager` consumers outside powers **When** they receive `CharacterManager` injected **Then** all non-power `.characterManager` locator hops are gone and the suite is unchanged.
+
+### Story 7.3: Inject GameInfoRevealer into its consumers
+**Given** `.gameInfoRevealer` is reached via the GameManager hub (31×) **When** consumers receive `GameInfoRevealer` injected **Then** no consumer hops through GameManager for the revealer and the reveal goldens are unchanged.
+
+### Story 7.4: Inject the remaining GameManager pass-throughs (ChainingManager, CharactersBar, PowersBar)
+**Given** the smaller pass-through fields **When** their consumers receive them injected **Then** the only thing left reaching for GameManager is its real game-loop/state surface.
+
+### Story 7.5: Remove GameManager pass-through fields + add the static-absence guard
+**Given** D1's consumers are all injected **When** the pass-through fields (`characterManager`, `gameInfoRevealer`, `chainingManager`, `charactersBar`, `powersBar`) are removed from GameManager **Then** removal is by destructive deletion (compiler enumerates stragglers), a static-absence guard forbids re-introducing the hub hop, and the suite + boot smoke-test pass unchanged.
+
+## Epic 8 (D2): Narrow the GameManager game-loop surface
+
+**Goal:** extract `IGameLoop` (`NextGameState`/`PreviousGameState`/`SetGameState`/`currentDay`/`hasGameStarted`/`onGameStarted`/`onNewDayPassed`) and `IGameStateQuery` (`GetGameState`/`GetGameStates`/`GetGameStateIndex`/`GetClosestPreviousState`/`currentGameStateIndex` read); consumers depend on the interface, injected. GameManager keeps owning the `NetworkVariable` + RPC dispatch as the network adapter but is no longer a grab-bag. The parked Story 5.3/5.4 (index ownership) folds in here *only if* it still earns its risk once the surface is narrow — decided then. (Stories detailed via create-story when reached.)
+
+## Epic 9 (D3): Split CharacterManager
+
+**Goal:** `ICharacterQuery` (reads) vs `ICharacterCommand` (server-authority mutations/spawn); inject; keep `GetSafeRpcTarget` / bot flow verbatim in the adapter (NFR5). Gated by `MultiClientGameFixture`. (Stories detailed when reached.)
+
+## Epic 10 (D4): Remaining NetworkBehaviour singletons → injection
+
+**Goal:** the 8 replicated singletons the de-singleton pass deferred (ChatManager, BoardManager, RoleTargetSystem, StatesCanvas, MessageManager, GameAudioManager, ChainingManager, LobbyPlayerInfoHolder) → injection, same recipe, on demand by fan-in. (Stories detailed when reached.)
+
+## Epic 11 (D5): Per-system logic → POCO + unit tests
+
+**Goal:** push remaining decision logic out of MonoBehaviours into `Domain`/POCOs with EditMode tests; thin the adapters. Powers, Board, Chat, Focus, Tooltip. (Stories detailed when reached.)
+
+## Epic 12 (D6): UI layer
+
+**Goal:** last. 48 files, inherently bound to the local player; reroute off managers to injected view-models where it helps, otherwise leave on façades by the verify-don't-force rule. (Stories detailed when reached.)
+
+**Despaghetti track summary:** 7 epics D0–D6 (numeric 6–12). Execution order strict 6→12; value-per-risk descending. Each story behaviour-preserving, golden-gated, individually shippable, authored via gds-create-story + executed via gds-dev-story. Whole-effort DoD: no God Object remains a grab-bag, consumers depend on narrow injected interfaces not locators, decision logic in tested POCOs, static-absence guards forbid regression, full suite + boot smoke green, merged to `Dev` once at the very end.

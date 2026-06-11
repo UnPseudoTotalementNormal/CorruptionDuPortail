@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-11 (5-0 → done; code-review PASS + 4 patches, PM 145 / EM 155, 5.3 unblocked)
+last_updated: 2026-06-11 (despaghetti track added: Epics 6–12 / D0–D6, D0+D1 stories backlog; 5.3/5.4 parked)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -106,6 +106,41 @@ development_status:
   5-0-build-the-host-real-client-simulated-bot-multi-client-playmode-fixture: done  # REVIEW-REQUIRED: gds-code-review PASS (4 patches applied: AC3 bot-intercept tautology fixed, baseline heisenbug hardened, SO leak + LogAssert reset; 3 deferred, 7 dismissed); MultiClientGameFixture; spawn-payload char = FALSE; PM 145 / EM 155; unblocks 5.3
   5-1-defensive-wire-format-guard-over-the-rpc-dispatch-table: done  # #51 (epic5-network) — EditMode wire-format golden, 11 states pinned + FixedString64 cap; no refonte
   5-2-reconcile-the-leaf-facades-from-waves-1-3: done  # #52 (epic5-network) — satisfied-by-construction (no façades created); permanent NFR7 leaf-POCO guard added
-  5-3-complete-gameloopmachine-index-ownership: blocked  # depends on 5.0 fixture (issue #50) — highest-risk, silent-desync; NOT attempted
-  5-4-remove-the-final-gameloopmachine-index-facade: blocked  # depends on 5.3 (issue #50)
+  5-3-complete-gameloopmachine-index-ownership: blocked  # PARKED by Poyo — pure-archi, highest-risk silent-desync, no gameplay gain; folds into Epic 8 (D2) IF it still earns its risk
+  5-4-remove-the-final-gameloopmachine-index-facade: blocked  # PARKED — depends on 5.3
   epic-5-retrospective: optional
+
+  # ==========================================================================
+  # Despaghettification track — Epics 6–12 (D0–D6). Branch: refactor-despaghetti.
+  # Source of truth: _bmad-output/refactor-architecture-despaghetti.md (validated 2026-06-11).
+  # DI + narrow interfaces + tested POCOs replace Service-Locator + God Objects.
+  # Behaviour-preserving, golden-gated, shippable per commit. Execute strictly 6→12.
+  # D0+D1 stories enumerated below; D2–D6 stories created via create-story when reached.
+  # ==========================================================================
+
+  # Epic 6 (D0): composition root & injection-seam convention
+  epic-6: backlog
+  6-1-establish-injection-seam-and-composition-root-on-a-worked-example: backlog
+
+  # Epic 7 (D1): dismantle GameManager-as-a-locator (inject the pass-through managers directly)
+  epic-7: backlog
+  7-1-inject-charactermanager-into-the-powers: backlog
+  7-2-inject-charactermanager-into-gamestates-board-and-character: backlog
+  7-3-inject-gameinforevealer-into-its-consumers: backlog
+  7-4-inject-remaining-gamemanager-passthroughs-chaining-bars: backlog
+  7-5-remove-gamemanager-passthrough-fields-and-add-static-absence-guard: backlog
+
+  # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery); 5.3/5.4 fold in here IF justified
+  epic-8: backlog
+
+  # Epic 9 (D3): split CharacterManager (ICharacterQuery / ICharacterCommand); fixture-gated; NFR5 verbatim
+  epic-9: backlog
+
+  # Epic 10 (D4): remaining 8 NetworkBehaviour singletons → injection (on demand by fan-in)
+  epic-10: backlog
+
+  # Epic 11 (D5): per-system logic → POCO + unit tests (Powers/Board/Chat/Focus/Tooltip)
+  epic-11: backlog
+
+  # Epic 12 (D6): UI layer (48 files) — last, lowest archi payoff, partial opt-out via verify-don't-force
+  epic-12: backlog

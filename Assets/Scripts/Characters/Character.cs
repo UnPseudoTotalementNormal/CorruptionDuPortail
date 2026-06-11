@@ -32,23 +32,31 @@ namespace Characters
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
 
+        // Story 7.2 lane C: CharacterManager resolved once in OnNetworkSpawn via the composition root.
+        // Kept null-tolerant (no Assert) — this consumer already guards on a null CharacterManager,
+        // so the field preserves that behaviour. For(nm) is a stable per-NM singleton, so caching the
+        // result is equivalent to the previous per-call re-resolution.
+        private CharacterManager characterManager;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
-            if (CharacterManager.For(NetworkManager) != null)
+
+            characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+
+            if (characterManager != null)
             {
                 // Verify if identity is already set, otherwise listen for it
                 if (!ownerClientId.Value.IsFakeClientId())
                 {
-                    CharacterManager.For(NetworkManager).RegisterSpawnedCharacter(this);
+                    characterManager.RegisterSpawnedCharacter(this);
                 }
                 else
                 {
                     ownerClientId.OnValueChanged += OnIdentityChanged;
                 }
             }
-            
+
             isBlessed.OnValueChanged += OnBlessed;
         }
 
@@ -57,18 +65,18 @@ namespace Characters
             if (!newValue.IsFakeClientId())
             {
                 ownerClientId.OnValueChanged -= OnIdentityChanged;
-                CharacterManager.For(NetworkManager).RegisterSpawnedCharacter(this);
+                characterManager.RegisterSpawnedCharacter(this);
             }
         }
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
-            if (!_newValue || CharacterManager.For(NetworkManager) == null || GameManager.For(NetworkManager) == null)
+            if (!_newValue || characterManager == null)
             {
                 return;
             }
-            
-            Character _localCharacter = GameManager.For(NetworkManager).characterManager.GetLocalCharacter();
+
+            Character _localCharacter = characterManager.GetLocalCharacter();
             if (_localCharacter == null || _localCharacter.role == null)
             {
                 return;

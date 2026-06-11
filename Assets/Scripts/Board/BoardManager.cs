@@ -13,6 +13,7 @@ using GameLogic;
 using TransformComposition;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #endregion
 
@@ -20,6 +21,9 @@ public class BoardManager : NetworkBehaviour
 {
     public static BoardManager instance;
     public Card cardPrefab;
+
+    // Story 7.2 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
+    [SerializeField] private CharacterManager characterManager;
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -37,7 +41,7 @@ public class BoardManager : NetworkBehaviour
     public const float CARD_SPACING = 7;
     public const float CARD_LINE_SPACING = 9;
     
-    public bool hasAllCardsShown => visibleCards.Count == GameManager.For(NetworkManager).characterManager.GetCharacters().Count(_c => !_c.isFake);
+    public bool hasAllCardsShown => visibleCards.Count == characterManager.GetCharacters().Count(_c => !_c.isFake);
     
     private void Awake()
     {
@@ -51,18 +55,20 @@ public class BoardManager : NetworkBehaviour
 
     private void Start()
     {
-        GameManager.For(NetworkManager).characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+        // Story 7.2 lane A: assert at first use (Start, not Awake) so PlayMode harnesses can wire the
+        // serialized field by reflection after AddComponent — AddComponent runs Awake synchronously.
+        // The authoritative scene-wiring check is SceneWiringGuard (CI); this is the runtime backstop.
+        Assert.IsNotNull(characterManager, "BoardManager.characterManager is not wired — wire it in GameScene (the composition root).");
+        characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     public override void OnNetworkDespawn()
     {
-        // Snapshot the resolved manager once: the guard must be authoritative for
-        // the unsubscribe deref (For() re-resolves through NetworkManager + the
-        // registry, which can change under a second NetworkManager during teardown).
-        GameManager _gameManager = GameManager.For(NetworkManager);
-        if (_gameManager != null && _gameManager.characterManager != null)
+        // Story 7.2: the injected field is the authoritative ref for the unsubscribe deref
+        // (no For() re-resolution through a possibly-changed registry during teardown).
+        if (characterManager != null)
         {
-            _gameManager.characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
+            characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
         }
 
         if (instance == this)
@@ -150,7 +156,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.For(NetworkManager).characterManager.GetCharacters().Where(_c => !_c.isFake))
+        foreach (var _character in characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
             _card.visualComponents.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
@@ -158,7 +164,7 @@ public class BoardManager : NetworkBehaviour
         }
 
         Card ownedCard = visibleCards.SingleOrDefault(c =>
-            c.characterInfo.ownerClientId.Value == CharacterManager.For(NetworkManager).GetLocalClientId());
+            c.characterInfo.ownerClientId.Value == characterManager.GetLocalClientId());
         if (ownedCard)
         {
             visibleCards.ChangeIndex(visibleCards.IndexOf(ownedCard), 0);
@@ -212,6 +218,7 @@ public class BoardManager : NetworkBehaviour
     public Card AddNewCard(Character _characterInfo = null, bool _assignCardToBoard = true)
     {
         Card _card = Instantiate(cardPrefab, transform);
+        _card.Initialize(characterManager); // lane B push: the card is prefab-instantiated, cannot serialize a scene ref.
         _card.transform.localPosition = new Vector3(0, 0, 0);
 
         if (_assignCardToBoard)

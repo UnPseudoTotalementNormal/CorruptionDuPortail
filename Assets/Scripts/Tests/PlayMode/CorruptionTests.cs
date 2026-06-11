@@ -88,7 +88,8 @@ namespace Tests.PlayMode
 
             // 5. Setup Board
             GameObject boardGo = new GameObject("BoardManager");
-            boardGo.AddComponent<BoardManager>();
+            var _boardManager = boardGo.AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(_boardManager, "characterManager", _characterManager);
 
             // 6. Setup Audio
             GameObject audioGo = new GameObject("AudioManager");

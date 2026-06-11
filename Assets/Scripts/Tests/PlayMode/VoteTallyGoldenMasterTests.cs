@@ -82,6 +82,7 @@ namespace Tests.PlayMode
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
             _gameManager.characterManager = _characterManager;
+            _voteState.characterManager = _characterManager; // wire after _characterManager exists (it is created here, not above).
             _characterManager.GetComponent<NetworkObject>().Spawn();
 
             GameObject charactersParent = new GameObject("CharactersParent");

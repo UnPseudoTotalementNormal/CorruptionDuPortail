@@ -131,6 +131,7 @@ namespace Tests.PlayMode
             // internal DoStateMethodRpc dispatch resolves the state.
             var voteState = ScriptableObject.CreateInstance<VoteState>();
             voteState.gameManager = _gameManager;
+            voteState.characterManager = _characterManager;
             _gameManager.gameStates.Add(voteState, new GameStateSettings());
 
             voteState.OnStartStateServer();

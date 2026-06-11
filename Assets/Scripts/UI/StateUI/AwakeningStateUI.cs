@@ -23,7 +23,7 @@ namespace UI
 
         private void OnGameStarted()
         {
-            gameManager.characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
+            characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
         }
 
         private void OnAwakeningChanged(bool _previousValue, bool _newValue)

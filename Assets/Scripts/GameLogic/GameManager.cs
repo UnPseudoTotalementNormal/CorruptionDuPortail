@@ -226,6 +226,7 @@ namespace GameLogic
                 gameStates.Add(clonedGameState, gameState.Value);
             
                 clonedGameState.gameManager = this;
+                clonedGameState.characterManager = characterManager;
                 clonedGameState.OnStateCreated();
             }
         }

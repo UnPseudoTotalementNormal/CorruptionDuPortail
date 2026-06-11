@@ -60,6 +60,13 @@ namespace Board
         [HideInInspector] public Character characterInfo;
         [HideInInspector] public Role roleInfo;
 
+        // Story 7.2 lane B: pushed by BoardManager.AddNewCard (the sole creator). A card is
+        // prefab-instantiated and its CharacterManager target is a scene object, so neither lane A
+        // ([SerializeField] can't ref a scene object from a prefab) nor lane C (not NGO-spawned)
+        // applies — the creator injects it, and the local-identity subscription is deferred from
+        // Awake to Initialize so the dependency is available when it is used.
+        private CharacterManager characterManager;
+
         // Assumption: child IPanelOpen set is fixed at Awake (no panels instantiated/added to the card hierarchy at runtime).
         private IPanelOpen[] panelOpenComponents;
 
@@ -85,10 +92,16 @@ namespace Board
             }
 
             panelOpenComponents = GetComponentsInChildren<IPanelOpen>(true);
+        }
 
-            if (CharacterManager.instance != null)
+        // Lane B injection point (BoardManager.AddNewCard). Carries the deferred local-identity
+        // subscription that used to live in Awake on the manager instance facade.
+        public void Initialize(CharacterManager _characterManager)
+        {
+            characterManager = _characterManager;
+            if (characterManager != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+                characterManager.onLocalIdentityChanged += OnLocalIdentityChanged;
             }
         }
 
@@ -121,9 +134,9 @@ namespace Board
         private void OnDestroy()
         {
             UnsubscribeFromCharacterEvents();
-            if (CharacterManager.instance != null)
+            if (characterManager != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged -= OnLocalIdentityChanged;
+                characterManager.onLocalIdentityChanged -= OnLocalIdentityChanged;
             }
             showPseudoTaskHandler.Dispose();
         }

@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            clickedCharacter = gameManager.characterManager.GetCharacter(_ownerId);
+            clickedCharacter = characterManager.GetCharacter(_ownerId);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -82,7 +82,7 @@ namespace GameLogic.GameStates
         
         private void OnRoleClickServer(ulong _ownerId)
         {
-            var _clickedRole = gameManager.characterManager.GetCharacter(_ownerId).role;
+            var _clickedRole = characterManager.GetCharacter(_ownerId).role;
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -128,12 +128,12 @@ namespace GameLogic.GameStates
             var _ignoreCharactersList = GetIgnoreCharacters();
             ignoreCharacters = _ignoreCharactersList.ToList();
 
-            if (ignoreCharacters.Count == gameManager.characterManager.GetCharacters(false).Count)
+            if (ignoreCharacters.Count == characterManager.GetCharacters(false).Count)
             {
                 var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
                 var _newWinners = new Dictionary<WinningTeam, HashSet<ulong>>()
                 {
-                    { WinningTeam.anomaly , new HashSet<ulong>(gameManager.characterManager.GetCharacters(false)
+                    { WinningTeam.anomaly , new HashSet<ulong>(characterManager.GetCharacters(false)
                         .Where(_c => _c.role.factionType == FactionType.anomaly)
                         .Select(_c => _c.ownerClientId.Value)) },
                 };
@@ -197,7 +197,7 @@ namespace GameLogic.GameStates
         private List<ulong> GetIgnoreCharacters()
         {
             List<ulong> _ignoreCharactersList = new();
-            foreach (var _character in gameManager.characterManager.GetCharacters())
+            foreach (var _character in characterManager.GetCharacters())
             {
                 if (_character.isFake)
                 {

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Board.BoardCameraSystem;
+using Characters;
 using UI;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -15,7 +16,10 @@ namespace GameLogic
     public abstract class GameState : ScriptableObject
     {
         public GameManager gameManager { get; set; }
-        
+        // Story 7.2 lane B: CharacterManager pushed directly by SetupGameStates alongside gameManager,
+        // so states stop hub-hopping through gameManager.characterManager (deleted in 7.5).
+        public CharacterManager characterManager { get; set; }
+
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }
         
@@ -38,6 +42,7 @@ namespace GameLogic
                 stateUI = Instantiate(stateUIPrefab, StatesCanvas.Instance.transform).GetComponentInChildren<StateUI>();
                 Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
+                stateUI.characterManager = characterManager;
                 stateUI.HideStateUI(true);
             }
         }

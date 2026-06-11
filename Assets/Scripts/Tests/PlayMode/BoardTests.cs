@@ -74,6 +74,7 @@ namespace Tests.PlayMode
             _boardManagerGo = new GameObject("BoardManager");
             _boardManagerGo.AddComponent<NetworkObject>();
             _boardManager = _boardManagerGo.AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(_boardManager, "characterManager", _characterManager);
             _boardManager.GetComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _boardManager);

@@ -48,7 +48,7 @@ public class GameIntroductionUI : StateUI
     
     private void ShowRoleText()
     {
-        var _localCharacter = gameManager.characterManager.GetLocalCharacter(false);
+        var _localCharacter = characterManager.GetLocalCharacter(false);
         roleText.text = _localCharacter.role.roleName.ToString();
         roleText.color = factionColors[_localCharacter.role.factionType];
         roleText.alpha = 0;

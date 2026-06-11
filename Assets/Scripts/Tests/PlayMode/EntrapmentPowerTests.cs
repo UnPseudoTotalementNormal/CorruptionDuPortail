@@ -72,7 +72,7 @@ namespace Tests.PlayMode
 
             // Singletons
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();
-            new GameObject("BoardManager").AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(new GameObject("BoardManager").AddComponent<BoardManager>(), "characterManager", _characterManager);
             new GameObject("AudioManager").AddComponent<GameAudioManager>();
             new GameObject("ChatManager").AddComponent<ChatManager>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("LobbyPlayerInfoHolder").AddComponent<LobbyPlayerInfoHolder>().gameObject.AddComponent<NetworkObject>().Spawn();

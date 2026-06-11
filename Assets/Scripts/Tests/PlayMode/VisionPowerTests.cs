@@ -84,7 +84,7 @@ namespace Tests.PlayMode
 
             // Setup BoardManager (singleton - in root namespace)
             GameObject boardManagerGo = new GameObject("BoardManager");
-            boardManagerGo.AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(boardManagerGo.AddComponent<BoardManager>(), "characterManager", _characterManager);
 
             // Setup AudioManager (needed for Power)
             GameObject audioGo = new GameObject("AudioManager");

@@ -8233,6 +8233,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   cardPrefab: {fileID: 3564681152801350707, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
+  characterManager: {fileID: 1541735909}
   spawnCardPosition: {fileID: 1636735881}
   maxCardPosition: {fileID: 886355730}
   visibleCards: []

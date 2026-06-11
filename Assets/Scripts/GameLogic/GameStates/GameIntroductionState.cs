@@ -62,7 +62,7 @@ namespace GameLogic.GameStates
             base.OnEndStateClient();
             
             _ = BoardManager.instance.ShowAllPlayerCards();
-            gameManager.charactersBar.ResetCharactersBar(gameManager.characterManager.GetCharacters());
+            gameManager.charactersBar.ResetCharactersBar(characterManager.GetCharacters());
         }
 
         public override void StateUpdateServer()
@@ -83,7 +83,7 @@ namespace GameLogic.GameStates
             
             if (!showRoleText && stateTimer >= timeBeforeRoleText)
             {
-                var _eventPath = gameManager.characterManager.GetLocalCharacter(false).role.onGameStartRoleRevealSound.GetPath();
+                var _eventPath = characterManager.GetLocalCharacter(false).role.onGameStartRoleRevealSound.GetPath();
                 GameAudioManager.instance.PlayOneShot(_eventPath);
                 showRoleText = true;
                 onRoleTextShown?.Invoke();

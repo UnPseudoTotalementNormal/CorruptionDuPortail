@@ -104,6 +104,7 @@ namespace Tests.PlayMode
         {
             var state = ScriptableObject.CreateInstance<RoleAttributionState>();
             state.gameManager = _gameManager;
+            state.characterManager = _characterManager;
             foreach (var (name, count) in pool)
             {
                 var roleData = ScriptableObject.CreateInstance<RoleDataObject>();
@@ -136,6 +137,7 @@ namespace Tests.PlayMode
         {
             var state = ScriptableObject.CreateInstance<RoleAttributionState>();
             state.gameManager = _gameManager;
+            state.characterManager = _characterManager;
             foreach (var (name, count) in pool)
             {
                 var roleData = ScriptableObject.CreateInstance<RoleDataObject>();

@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (7-1 inject CharacterManager into powers → review; EM 162 / PM 146 green)
+last_updated: 2026-06-12 (7-2 inject CharacterManager into gamestates/board/character → review; EM 162 / PM 146 green)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -131,7 +131,7 @@ development_status:
   # Epic 7 (D1): dismantle GameManager-as-a-locator (inject the pass-through managers directly)
   epic-7: in-progress
   7-1-inject-charactermanager-into-the-powers: review  # Power.characterManager base field (lane C), resolved once in Power.OnNetworkSpawn; 22 power files rerouted off the locator (characterManager slice); PersonalBeaconObject lane B; clean→All/NoLocatorOnly guards, mixed gameInfoRevealer files deferred to 7.3; PPersonalBeacons.Awake L33 recorded pre-spawn exception; RoleTests harness +CharacterManager; EM 162 / PM 146 green
-  7-2-inject-charactermanager-into-gamestates-board-and-character: ready-for-dev  # lanes B/A/C per family
+  7-2-inject-charactermanager-into-gamestates-board-and-character: review  # GameStates/StateUIs lane B (SetupGameStates push), BoardManager lane A (scene-wired), Card lane B (recorded prefab precedent, Initialize push), Character lane C (null-tolerant); All += Character,BoardManager; Card+mixed gameInfoRevealer → 7.3; 8 PlayMode harnesses fixed; EM 162 / PM 146 green
   7-3-inject-gameinforevealer-into-its-consumers: ready-for-dev  # 31 sites, mixed lanes
   7-4-inject-remaining-gamemanager-passthroughs-and-ui-hub-hops: ready-for-dev  # ChainingManager/CharactersBar/PowersBar + mechanical UI reroutes (lane A)
   7-5-remove-gamemanager-passthrough-fields-and-freeze-with-the-guards: ready-for-dev  # destructive deletion; hub cannot come back

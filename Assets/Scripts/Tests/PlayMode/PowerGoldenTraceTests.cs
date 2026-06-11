@@ -105,7 +105,7 @@ namespace Tests.PlayMode
 
             // Plain singletons. BoardManager BEFORE CardEffectManager (its Start subscribes to it).
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();
-            new GameObject("BoardManager").AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(new GameObject("BoardManager").AddComponent<BoardManager>(), "characterManager", _characterManager);
             new GameObject("AudioManager").AddComponent<GameAudioManager>();
             new GameObject("CardEffectManager").AddComponent<CardEffectManager>();
             new GameObject("ChatManager").AddComponent<ChatManager>().gameObject.AddComponent<NetworkObject>().Spawn();

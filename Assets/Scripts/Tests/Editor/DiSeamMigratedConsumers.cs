@@ -1,4 +1,5 @@
 using System;
+using Board;
 using Characters;
 using Characters.Powers;
 using Characters.Powers.PowerComponents;
@@ -40,6 +41,10 @@ namespace Tests.Editor
             typeof(PLegacy),
             typeof(PReincarnation),
             typeof(PVisionOfTheImpossible),
+            // Story 7.2 — non-power locator consumers migrated onto an injected CharacterManager:
+            // Character (lane C, OnNetworkSpawn) + BoardManager (lane A, scene-wired [SerializeField]).
+            typeof(Character),
+            typeof(BoardManager),
         };
 
         /// <summary>
@@ -56,6 +61,10 @@ namespace Tests.Editor
             typeof(PCPowerUnlockWhenChain),
             typeof(PCReparentOnChain),
             typeof(PersonalBeaconObject),
+            // Story 7.2 note: Card was migrated onto a lane-B CharacterManager (pushed by
+            // BoardManager.AddNewCard) but still holds a GameManager.instance.gameInfoRevealer hop,
+            // so it stays OFF the registry until 7.3 (guard #1 cannot tell the two hops apart) —
+            // mirrors the mixed powers of 7.1.
         };
 
         /// <summary>

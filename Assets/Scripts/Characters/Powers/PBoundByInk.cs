@@ -102,7 +102,7 @@ namespace Characters.Powers
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.For(NetworkManager).GetSafeRpcTarget(_targetClientId));
+                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, characterManager.GetSafeRpcTarget(_targetClientId));
                     }
                     
                     currentTargets.Clear();
@@ -132,7 +132,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
 
         protected override void StopUse()

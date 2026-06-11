@@ -47,7 +47,7 @@ namespace Characters.Powers
                 return;
             }*/
 
-            Character _character = CharacterManager.For(NetworkManager).GetCharacter(_clientIdClicked);
+            Character _character = characterManager.GetCharacter(_clientIdClicked);
             if (_character.isFake)
             {
                 ChatMessage _fakeMessage = new ChatMessage
@@ -56,14 +56,14 @@ namespace Characters.Powers
                     senderClientId = ChatManager.SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
                 return; //character was fake, do nothing else
             }
             
             currentRoleGuessClientId = _character.ownerClientId.Value;
-            AskForGuessRoleRpc(CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+            AskForGuessRoleRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
         
         private void OnGuessCharacterPicked(Character _character)
@@ -75,8 +75,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void GuessRoleRpc(ulong _clickedId)
         {
-            Character _clickedCharacter = CharacterManager.For(NetworkManager).GetCharacter(_clickedId);
-            Character _guessCharacter = CharacterManager.For(NetworkManager).GetCharacter(currentRoleGuessClientId);
+            Character _clickedCharacter = characterManager.GetCharacter(_clickedId);
+            Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
             bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
             
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
@@ -108,13 +108,13 @@ namespace Characters.Powers
                     _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} a ciblé ces rôles:";
                     foreach (var _targetData in _targetedClientIds)
                     {
-                        Character _targetedCharacter = CharacterManager.For(NetworkManager).GetCharacter(_targetData.targetId);
+                        Character _targetedCharacter = characterManager.GetCharacter(_targetData.targetId);
                         _resultMessage.message += $"\n- {_targetedCharacter.role.roleName}";
                     }
                 }
             }
             
-            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             
             OnUsed();
         }
@@ -122,7 +122,7 @@ namespace Characters.Powers
         [Rpc(SendTo.SpecifiedInParams)]
         public void AskForGuessRoleRpc(RpcParams _rpcParams)
         {
-            Character _guessCharacter = CharacterManager.For(NetworkManager).GetCharacter(currentRoleGuessClientId);
+            Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
 
             SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
                 new SelectionFlowOptions

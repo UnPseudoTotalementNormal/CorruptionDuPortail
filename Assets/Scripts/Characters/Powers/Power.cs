@@ -16,6 +16,7 @@ using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 using static Characters.Powers.Target.TargetUtils;
 
 #endregion
@@ -48,6 +49,10 @@ namespace Characters.Powers
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
 
+        // Story 7.1 lane C: CharacterManager resolved ONCE in OnNetworkSpawn (via the composition
+        // root) and consumed by this base AND every concrete power, replacing the GameManager hub-hop.
+        protected CharacterManager characterManager;
+
         [Header("Sounds")] 
         public EventReference canalisationSound;
         public EventReference onUsedSound;
@@ -65,12 +70,16 @@ namespace Characters.Powers
 
         public List<PowerComponent> powerComponents = new();
 
-        public Character ownerCharacter => GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value, false);
+        public Character ownerCharacter => characterManager.GetCharacter(ownerClientId.Value, false);
         
         [HideInInspector] public ulong idHolderServer;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            Assert.IsNotNull(characterManager,
+                "Power.characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager. " +
+                "Did a subclass override OnNetworkSpawn without calling base.OnNetworkSpawn()?");
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
@@ -86,7 +95,7 @@ namespace Characters.Powers
         
         public List<ulong> GetValidTargets(TargetType _targetType = TargetType.Character)
         {
-            List<ulong> _validTargets = CharacterManager.For(NetworkManager).GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
+            List<ulong> _validTargets = characterManager.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
             _validTargets = _validTargets.Where(_targetClientId => CheckIsTargetValid(_targetClientId, _targetType)).ToList();
             return _validTargets;
         }
@@ -158,7 +167,7 @@ namespace Characters.Powers
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
                 PowerEffectTrace.Record(new NotifyOwnerUsed((int)ownerClientId.Value));
-                OnUsedClientRpc(CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                OnUsedClientRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
         
@@ -168,7 +177,7 @@ namespace Characters.Powers
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
             PowerEffectTrace.Record(RequestCharacterRefresh.Instance);
-            GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public virtual void Cancel()
@@ -231,8 +240,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
-            var _oldParentCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_oldParentId, false);
-            var _newParentCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_newParentId, false);
+            var _oldParentCharacter = characterManager.GetCharacter(_oldParentId, false);
+            var _newParentCharacter = characterManager.GetCharacter(_newParentId, false);
             if (_oldParentCharacter)
             {
                 _oldParentCharacter.role.powers.Remove(this);

@@ -28,10 +28,12 @@ namespace Tests.Editor
     [Category("DiSeamGuard")]
     public class DiSeamNoLocatorGuardTests
     {
-        // Curated set of consumers proven to no longer use the locator — shared with
-        // SceneWiringGuardTests since story 6.2. Epic 7 appends each migrated type to
-        // DiSeamMigratedConsumers.All as it is rerouted onto injection; both guards pick it up.
-        private static readonly Type[] MigratedConsumers = DiSeamMigratedConsumers.All;
+        // Curated set of consumers proven to no longer use the locator. Guard #1 (source scan)
+        // covers All (also guard-#2 scene-wired) PLUS NoLocatorOnly (story 7.1 — clean types with
+        // no scene/prefab instance that guard #2 cannot find). Epic 7+ appends migrated types to
+        // one of the two lists as they are rerouted onto injection.
+        private static readonly Type[] MigratedConsumers =
+            DiSeamMigratedConsumers.All.Concat(DiSeamMigratedConsumers.NoLocatorOnly).ToArray();
 
         // The Service-Locator accessors a migrated consumer must never reference again.
         private static readonly string[] ForbiddenLocators =

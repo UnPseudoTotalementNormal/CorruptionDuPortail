@@ -37,7 +37,7 @@ namespace Characters.Powers
         {
             base.OnGameStartedServer();
             
-            GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value, false).onCharacterAwakened += DeclareAllTargetFocusServer;
+            characterManager.GetCharacter(ownerClientId.Value, false).onCharacterAwakened += DeclareAllTargetFocusServer;
         }
         
 
@@ -47,14 +47,14 @@ namespace Characters.Powers
             {
                 return;
             }
-            List<Character> _targetedCharacters = GameManager.For(NetworkManager).characterManager.GetCharacters(false)
+            List<Character> _targetedCharacters = characterManager.GetCharacters(false)
                 .Where(_c => _c.role.roleID == targetRoleID).ToList();
             if (_targetedCharacters.Count == 0)
             {
                 ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
                     $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.", 
                     (int)ChatWindowIDs.Server),
-                    CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                    characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 return;
             }
             List<TargetingData> _targetingDataList = new();
@@ -65,7 +65,7 @@ namespace Characters.Powers
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                 $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Distinct().Count()}",
                 (int)ChatWindowIDs.Server),
-                CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
     }
 }

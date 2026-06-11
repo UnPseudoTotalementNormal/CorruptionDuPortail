@@ -38,16 +38,16 @@ namespace Characters.Powers
 
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnUsed();
-            OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, CharacterManager.For(NetworkManager).GetSafeRpcTarget(_character.ownerClientId.Value));
+            OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, characterManager.GetSafeRpcTarget(_character.ownerClientId.Value));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnPlayerContactedRpc(ulong targetClientId, ulong senderClientId, RpcParams rpcParams = default)
         {
-            if (!CharacterManager.For(NetworkManager).IsLocalOrSimulated(targetClientId)) return;
+            if (!characterManager.IsLocalOrSimulated(targetClientId)) return;
             
-            Character _targetCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(targetClientId, false);
-            Character _senderCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(senderClientId, false);
+            Character _targetCharacter = characterManager.GetCharacter(targetClientId, false);
+            Character _senderCharacter = characterManager.GetCharacter(senderClientId, false);
             
             if (_targetCharacter.role.factionType == FactionType.chosen)
             {
@@ -55,7 +55,7 @@ namespace Characters.Powers
                     senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, targetClientId);
             }
             
-            if (CharacterManager.For(NetworkManager).GetLocalClientId() == targetClientId)
+            if (characterManager.GetLocalClientId() == targetClientId)
             {
                 ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
                 switch (_targetCharacter.role.factionType)

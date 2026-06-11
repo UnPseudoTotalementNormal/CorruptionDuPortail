@@ -41,7 +41,7 @@ namespace Characters.Powers
                 // Pour les rôles: ne pas inclure ceux déjà cliqués
                 else
                 {
-                    var character = GameManager.For(NetworkManager).characterManager.GetCharacter(ctx.targetId, false);
+                    var character = characterManager.GetCharacter(ctx.targetId, false);
                     return character == null || !clickedRoles.Any(_r => _r.IsTheSameRole(character.role));
                 }
             });
@@ -110,7 +110,7 @@ namespace Characters.Powers
             string _message = string.Empty;
             foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
-                var _guessedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_guessedCharacterId, false);
+                var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
                 RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
@@ -127,7 +127,7 @@ namespace Characters.Powers
                 _message = "Aucun personnage n'a été trouvé.";
             }
             ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                _rpcParams:characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

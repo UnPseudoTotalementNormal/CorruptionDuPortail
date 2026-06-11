@@ -42,7 +42,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
-            Character _blessingCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_blessingCharacterId, false);
+            Character _blessingCharacter = characterManager.GetCharacter(_blessingCharacterId, false);
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _blessingCharacterId);
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
@@ -59,7 +59,7 @@ namespace Characters.Powers
                     GameValues.FAKE_CLIENT_ID,
                     $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),
-                    CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                    characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
 

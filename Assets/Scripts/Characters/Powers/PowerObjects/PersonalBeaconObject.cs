@@ -13,16 +13,18 @@ namespace Characters.Powers.PowerObjects
         public bool isCorruptedValue = false;
         public NetworkAction<bool> onCorruptedBeaconChanged;
         
-        public PersonalBeaconObject(Power _ownerPower, ulong _targetClientId)
+        // Story 7.1 lane B: CharacterManager is pushed in by the owning power (which resolved it in
+        // OnNetworkSpawn) instead of this PowerObject reaching for the locator itself.
+        public PersonalBeaconObject(Power _ownerPower, ulong _targetClientId, CharacterManager _characterManager)
         {
             ownerClientId = _ownerPower.ownerClientId.Value;
             targetClientId = _targetClientId;
-            
+
             onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerPower);
 
-            Character _targetCharacter = CharacterManager.For(_ownerPower.NetworkManager).GetCharacter(targetClientId, false);
-            
-            if (ownerClientId == CharacterManager.For(_ownerPower.NetworkManager).GetLocalClientId())
+            Character _targetCharacter = _characterManager.GetCharacter(targetClientId, false);
+
+            if (ownerClientId == _characterManager.GetLocalClientId())
             {
                 CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId, this);
             }

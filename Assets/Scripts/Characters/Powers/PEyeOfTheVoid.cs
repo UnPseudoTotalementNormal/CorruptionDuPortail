@@ -13,13 +13,13 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            List<ulong> _anomalyIds = GameManager.For(NetworkManager).characterManager.GetCharacters(false)
+            List<ulong> _anomalyIds = characterManager.GetCharacters(false)
                 .Where(_c => _c.role.factionType == FactionType.anomaly)
                 .Select(_c => _c.ownerClientId.Value)
                 .ToList();
             foreach (var _anomalyId in _anomalyIds)
             {
-                var _rpcTarget = CharacterManager.For(NetworkManager).GetSafeRpcTarget(_anomalyId);
+                var _rpcTarget = characterManager.GetSafeRpcTarget(_anomalyId);
                 ChatManager.instance.DiscoverChatRpc((int)ChatWindowIDs.AnomalyOnly, _rpcParams: _rpcTarget);
             }
         }

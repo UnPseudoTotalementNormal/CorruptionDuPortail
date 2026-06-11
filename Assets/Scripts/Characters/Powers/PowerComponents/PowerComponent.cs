@@ -11,7 +11,10 @@ namespace Characters.Powers.PowerComponents
         public FixedString512Bytes description;
         
         protected Power power;
-        protected Character ownerCharacter => GameLogic.GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId, false);
+        // Story 7.1 lane C: CharacterManager resolved once in OnNetworkSpawn (via the composition
+        // root), consumed by this base and every concrete component instead of the GameManager hub-hop.
+        protected CharacterManager characterManager;
+        protected Character ownerCharacter => characterManager.GetCharacter(ownerClientId, false);
         protected ulong ownerClientId => power.ownerClientId.Value;
         protected virtual void Awake()
         {
@@ -23,6 +26,9 @@ namespace Characters.Powers.PowerComponents
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            characterManager = GameLogic.CompositionRoot.For(NetworkManager).CharacterManager;
+            Assert.IsNotNull(characterManager,
+                "PowerComponent.characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager.");
             Init();
         }
 

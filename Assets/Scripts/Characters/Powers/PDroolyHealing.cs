@@ -49,8 +49,8 @@ namespace Characters.Powers
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
-            var _choosedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_healingCharacterId, false);
+            PDroolyHealing _power = (PDroolyHealing)characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            var _choosedCharacter = characterManager.GetCharacter(_healingCharacterId, false);
             bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
@@ -58,14 +58,14 @@ namespace Characters.Powers
                 {
                     _healSuccess = true;
                     _choosedCharacter.HealPlayerServerRpc();
-                    GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
+                    characterManager.AskForUpdateAllCharactersRpc();
                 }
                 healedCharactersThisNight.Add(_healingCharacterId);
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
-                CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
@@ -88,7 +88,7 @@ namespace Characters.Powers
         {
             foreach (ulong _healedCharacterId in healedCharactersThisNight)
             {
-                Character _healedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_healedCharacterId, false);
+                Character _healedCharacter = characterManager.GetCharacter(_healedCharacterId, false);
                 if (!_healedCharacter)
                 {
                     continue;

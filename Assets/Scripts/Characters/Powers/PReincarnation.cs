@@ -19,7 +19,7 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => 
             {
                 // Ne pas pouvoir se réincarner en son propre rôle
-                var targetCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(ctx.targetId, false);
+                var targetCharacter = characterManager.GetCharacter(ctx.targetId, false);
                 return targetCharacter == null || !ownerCharacter.role.IsTheSameRole(targetCharacter.role);
             });
         }
@@ -49,10 +49,10 @@ namespace Characters.Powers
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             ChangeIsPassiveRpc(true);
-            Character _characterClicked = GameManager.For(NetworkManager).characterManager.GetCharacter(_characterClickedId);
+            Character _characterClicked = characterManager.GetCharacter(_characterClickedId);
             foreach (var _rolePower in _characterClicked.role.powers)
             {
-                GameManager.For(NetworkManager).characterManager.GivePowerToCharacter(ownerClientId.Value, _rolePower);
+                characterManager.GivePowerToCharacter(ownerClientId.Value, _rolePower);
             }
         }
 

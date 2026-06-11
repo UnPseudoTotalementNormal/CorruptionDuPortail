@@ -46,8 +46,8 @@ namespace Characters.Powers
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, ownerClientId.Value);
             
-            var _characterTarget = GameManager.For(NetworkManager).characterManager.GetCharacter(_targetClientId);
-            var _characterOwner = GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value);
+            var _characterTarget = characterManager.GetCharacter(_targetClientId);
+            var _characterOwner = characterManager.GetCharacter(ownerClientId.Value);
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
                 _characterTarget.isEliminated.Value = true;
@@ -65,10 +65,10 @@ namespace Characters.Powers
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
-                        (int)ChatWindowIDs.Server), CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
+                        (int)ChatWindowIDs.Server), characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
             
-            GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

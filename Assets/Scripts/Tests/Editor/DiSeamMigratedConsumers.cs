@@ -1,6 +1,8 @@
 using System;
 using Characters;
 using Characters.Powers;
+using Characters.Powers.PowerComponents;
+using Characters.Powers.PowerObjects;
 using GameLogic;
 
 namespace Tests.Editor
@@ -26,6 +28,34 @@ namespace Tests.Editor
         {
             typeof(LightManager),
             typeof(PTruthChains), // 6.3 lane C worked example — resolves via CompositionRoot in OnNetworkSpawn.
+            // Story 7.1 — powers migrated off the GameManager/CharacterManager locator onto the
+            // Power.characterManager base field (lane C, resolved in Power.OnNetworkSpawn). These are
+            // prefab-present, so both guards cover them. Mixed powers that still hold a GameManager.For
+            // hop for OTHER members (gameInfoRevealer) are deferred to 7.3 (they would trip guard #1).
+            typeof(Power),
+            typeof(PAutoCorruption),
+            typeof(PClandestineObservation),
+            typeof(PEyeOfTheVoid),
+            typeof(PInfiniteMessage),
+            typeof(PLegacy),
+            typeof(PReincarnation),
+            typeof(PVisionOfTheImpossible),
+        };
+
+        /// <summary>
+        /// Story 7.1 — clean migrated types that guard #1 source-scans but guard #2 must NOT (they
+        /// have no scene/prefab instance of their own: a plain C# class, or lane-C
+        /// <see cref="PowerComponent"/>s whose prefab presence is not guaranteed). They carry no
+        /// serialized injected field, so guard #2 would add no coverage anyway — it would only
+        /// false-fail on the "instance not found" staleness assert. Guard #1 reads
+        /// <see cref="All"/> ∪ this; guard #2 reads <see cref="All"/> ∪ <see cref="SceneWiredOnly"/>.
+        /// </summary>
+        public static readonly Type[] NoLocatorOnly =
+        {
+            typeof(PowerComponent),
+            typeof(PCPowerUnlockWhenChain),
+            typeof(PCReparentOnChain),
+            typeof(PersonalBeaconObject),
         };
 
         /// <summary>

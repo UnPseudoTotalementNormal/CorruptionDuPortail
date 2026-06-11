@@ -82,11 +82,11 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         private void CreateBeaconRpc(ulong _targetClientId, bool _isVisibleOnCard)
         {
-            PersonalBeaconObject _newBeacon = new(this, _targetClientId);
+            PersonalBeaconObject _newBeacon = new(this, _targetClientId, characterManager);
             personalBeacons.Add(_newBeacon);
             
             // Only the owner processes beacon state changes. Simulated players on host must subscribe too.
-            if (!CharacterManager.For(NetworkManager).IsLocalOrSimulated(ownerClientId.Value)) 
+            if (!characterManager.IsLocalOrSimulated(ownerClientId.Value)) 
             {
                 return;
             }
@@ -96,10 +96,10 @@ namespace Characters.Powers
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
-            Character _beaconedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_newBeacon.targetClientId);
+            Character _beaconedCharacter = characterManager.GetCharacter(_newBeacon.targetClientId);
             
             // Do not show local visual/chat cues if the Host is not currently possessing the owner
-            if (CharacterManager.For(NetworkManager).GetLocalClientId() != ownerClientId.Value) return;
+            if (characterManager.GetLocalClientId() != ownerClientId.Value) return;
 
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {

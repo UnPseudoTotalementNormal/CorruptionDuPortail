@@ -33,12 +33,12 @@ namespace Characters.Powers
 
         public void InvokeOnCharacterCorruptionSuccessful(ulong characterId)
         {
-            var _character = GameManager.For(NetworkManager).characterManager.GetCharacter(characterId);
+            var _character = characterManager.GetCharacter(characterId);
             onCharacterCorruptionSuccessful?.Invoke(_character);
         }
         public void InvokeOnCharacterCorruptionFailed(ulong characterId)
         {
-            var _character = GameManager.For(NetworkManager).characterManager.GetCharacter(characterId);
+            var _character = characterManager.GetCharacter(characterId);
             onCharacterCorruptionFailed?.Invoke(_character);
         }
         private void OnCharacterPicked(Character _character)

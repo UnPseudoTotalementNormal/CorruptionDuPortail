@@ -6952,6 +6952,7 @@ MonoBehaviour:
   mainLight: {fileID: 1050513848}
   baseLightColor: {r: 1, g: 0.7664091, b: 0.5518868, a: 1}
   colorTransitionDuration: 1
+  gameManager: {fileID: 704980999}
 --- !u!1 &1057320483
 GameObject:
   m_ObjectHideFlags: 0

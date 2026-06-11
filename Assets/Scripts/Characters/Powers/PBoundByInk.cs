@@ -102,7 +102,6 @@ namespace Characters.Powers
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        PowerEffectTrace.Record(new UndiscoverChat(powerChatId.Value, PowerEffectAudience.Specific((int)_targetClientId)));
                         ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.instance.GetSafeRpcTarget(_targetClientId));
                     }
                     
@@ -131,10 +130,8 @@ namespace Characters.Powers
                 _chatId++;
             }
             
-            PowerEffectTrace.Record(new AssignChatId(_chatId));
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            PowerEffectTrace.Record(new DiscoverChat(_chatId, "Lié par l'encre", PowerEffectAudience.Specific((int)ownerClientId.Value)));
             ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
         }
 

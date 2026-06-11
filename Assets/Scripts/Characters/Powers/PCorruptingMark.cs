@@ -46,13 +46,10 @@ namespace Characters.Powers
             var _clickedCharacterId = _character.ownerClientId.Value;
             if (!CheckIsTargetValid(_clickedCharacterId, TargetUtils.TargetType.Character))
             {
-                PowerEffectTrace.Record(new CorruptionFailed((int)_clickedCharacterId));
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;
             }
             OnCardClickedRpc(_clickedCharacterId);
-            PowerEffectTrace.Record(new RevealInfo((int)_clickedCharacterId, RevealField.CorruptRevealed,
-                RevealVisibility.Personal, (int)ownerClientId.Value, false));
             GameManager.instance.gameInfoRevealer.SetRevealLevel(
                 _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             OnUsed();
@@ -131,14 +128,11 @@ namespace Characters.Powers
         {
             base.StopUse();
             SelectionFlowService.instance.CancelSelection();
-            PowerEffectTrace.Record(DestroyAllArrows.Instance);
             ArrowManager.instance.DestroyAllArrows();
         }
         
         public void OnConcentratedEffectServer()
         {
-            PowerEffectTrace.Record(new RevealInfo((int)lastCorruptedCharacterId.Value, RevealField.RoleRevealed,
-                RevealVisibility.Personal, (int)ownerClientId.Value, true));
             GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
                 lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
         }

@@ -1,5 +1,5 @@
 # generated: 2026-06-10
-# last_updated: 2026-06-11 (5-0c → done, code-review PASS)
+# last_updated: 2026-06-12 (26 despaghetti story files created → ready-for-dev)
 # project: Corruption Du Portail
 # project_key: NOKEY
 # tracking_system: file-system
@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-11 (despaghetti track added: Epics 6–12 / D0–D6, D0+D1 stories backlog; 5.3/5.4 parked)
+last_updated: 2026-06-12 (6-2 SceneWiringGuard → review; EM 160 / PM 145 green)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -112,35 +112,60 @@ development_status:
 
   # ==========================================================================
   # Despaghettification track — Epics 6–12 (D0–D6). Branch: refactor-despaghetti.
-  # Source of truth: _bmad-output/refactor-architecture-despaghetti.md (validated 2026-06-11).
-  # DI + narrow interfaces + tested POCOs replace Service-Locator + God Objects.
+  # Source of truth: _bmad-output/refactor-architecture-despaghetti.md
+  # (SPEC ARRÊTÉE 2026-06-11: three-lane injection / one-surviving-static / two-guards).
+  # Lanes: A=[SerializeField] scene-placed, B=Initialize(deps) code-created,
+  # C=OnNetworkSpawn→CompositionRoot NGO-spawned. Guards: DiSeamNoLocatorGuard +
+  # SceneWiringGuard over ONE shared curated migrated-consumers set.
   # Behaviour-preserving, golden-gated, shippable per commit. Execute strictly 6→12.
-  # D0+D1 stories enumerated below; D2–D6 stories created via create-story when reached.
+  # Epic 6 (6.2+6.3) is a HARD PREREQUISITE of Epic 7 (lane C before the hub dismantle).
+  # Story files created via gds-create-story when reached (backlog = epic file only).
   # ==========================================================================
 
-  # Epic 6 (D0): composition root & injection-seam convention
-  epic-6: backlog
-  6-1-establish-injection-seam-and-composition-root-on-a-worked-example: backlog
+  # Epic 6 (D0): composition root, the three-lane seam & the two guards
+  epic-6: in-progress
+  6-1-establish-injection-seam-and-composition-root-on-a-worked-example: done  # lane A canonical example: LightManager rerouted + GameScene-wired + Awake null-guard; DiSeamNoLocatorGuard green (source-scan mechanism recorded); convention doc §3
+  6-2-add-the-scene-wiring-guard-over-injected-references: review  # guard #2 green (3 tests incl. 2 permanent bites); shared DiSeamMigratedConsumers registry for both guards; repaired silent compile-exclusion of 6.1's DiSeamNoLocatorGuardTests; EM 160 / PM 145
+  6-3-create-the-composition-root-and-prove-lane-c-on-one-ngo-spawned-consumer: ready-for-dev  # the ONE surviving static; For(nm) over 5.0c/d registries; DiSeam lane-C whitelist (CompositionRoot only in OnNetworkSpawn); BLOCKS epic-7
 
   # Epic 7 (D1): dismantle GameManager-as-a-locator (inject the pass-through managers directly)
-  epic-7: backlog
-  7-1-inject-charactermanager-into-the-powers: backlog
-  7-2-inject-charactermanager-into-gamestates-board-and-character: backlog
-  7-3-inject-gameinforevealer-into-its-consumers: backlog
-  7-4-inject-remaining-gamemanager-passthroughs-chaining-bars: backlog
-  7-5-remove-gamemanager-passthrough-fields-and-add-static-absence-guard: backlog
+  epic-7: in-progress
+  7-1-inject-charactermanager-into-the-powers: ready-for-dev  # lane B server spawn site + lane C replicas; NFR5 byte-identical
+  7-2-inject-charactermanager-into-gamestates-board-and-character: ready-for-dev  # lanes B/A/C per family
+  7-3-inject-gameinforevealer-into-its-consumers: ready-for-dev  # 31 sites, mixed lanes
+  7-4-inject-remaining-gamemanager-passthroughs-and-ui-hub-hops: ready-for-dev  # ChainingManager/CharactersBar/PowersBar + mechanical UI reroutes (lane A)
+  7-5-remove-gamemanager-passthrough-fields-and-freeze-with-the-guards: ready-for-dev  # destructive deletion; hub cannot come back
 
-  # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery); 5.3/5.4 fold in here IF justified
-  epic-8: backlog
+  # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery)
+  epic-8: in-progress
+  8-1-extract-igameloop-and-igamestatequery-gamemanager-implements: ready-for-dev  # inert commit, interfaces in Game asmdef, root exposes both slices
+  8-2-migrate-presentation-subscribers-onto-igamestatequery: ready-for-dev  # ~10 OnValueChanged components, LightManager template; 2.11a golden unchanged
+  8-3-migrate-game-loop-command-consumers-onto-igameloop: ready-for-dev  # server authority unchanged; RPC dispatch stays GameManager-internal
+  8-4-close-the-parked-5-3-index-ownership-decision: ready-for-dev  # fold in (then REVIEW-REQUIRED, original 5.3 ACs) or close as won't-do, recorded either way
 
   # Epic 9 (D3): split CharacterManager (ICharacterQuery / ICharacterCommand); fixture-gated; NFR5 verbatim
-  epic-9: backlog
+  epic-9: in-progress
+  9-1-extract-icharacterquery-and-migrate-read-consumers: ready-for-dev
+  9-2-extract-icharactercommand-and-migrate-command-consumers: ready-for-dev  # REVIEW-REQUIRED: bot flow byte-identical, fixture proves clientId>=100 path
+  9-3-narrow-charactermanager-statics-to-the-root-backed-resolution: ready-for-dev  # façade leftovers recorded; final kill in 12.3
 
-  # Epic 10 (D4): remaining 8 NetworkBehaviour singletons → injection (on demand by fan-in)
-  epic-10: backlog
+  # Epic 10 (D4): remaining singletons → injection (descending fan-in; recorded opt-outs allowed)
+  epic-10: in-progress
+  10-1-inject-chatmanager: ready-for-dev  # fan-in 17
+  10-2-inject-roletargetsystem: ready-for-dev  # fan-in 16
+  10-3-inject-boardmanager: ready-for-dev  # fan-in 13
+  10-4-inject-remaining-replicated-singletons-batch-and-record-opt-outs: ready-for-dev  # StatesCanvas/MessageManager/GameAudioManager/ChainingManager/LobbyPlayerInfoHolder; GameAudioManager = opt-out candidate
+  10-5-mono-statics-by-fan-in-inject-or-record: ready-for-dev  # SelectionFlowService 16, FocusManager, …; census update in archi doc §4
 
-  # Epic 11 (D5): per-system logic → POCO + unit tests (Powers/Board/Chat/Focus/Tooltip)
-  epic-11: backlog
+  # Epic 11 (D5): per-system logic → POCO + unit tests
+  epic-11: in-progress
+  11-1-powers-remaining-decision-logic-to-poco: ready-for-dev
+  11-2-board-decision-logic-to-poco: ready-for-dev
+  11-3-chat-decision-logic-to-poco: ready-for-dev
+  11-4-focus-tooltip-decision-logic-and-presentation-lifecycle-hygiene: ready-for-dev  # incl. deliberate OnValueChanged unsubscribe fixes (recorded leak from 6.1)
 
-  # Epic 12 (D6): UI layer (48 files) — last, lowest archi payoff, partial opt-out via verify-don't-force
-  epic-12: backlog
+  # Epic 12 (D6): UI layer + final sweep — last, lowest archi payoff, partial opt-out via verify-don't-force
+  epic-12: in-progress
+  12-1-ui-inventory-and-triage-verify-dont-force: ready-for-dev  # triage table only, no code
+  12-2-reroute-the-justified-ui-consumers: ready-for-dev
+  12-3-final-sweep-kill-remaining-statics-and-whole-track-dod-gate: ready-for-dev  # endgame census: 1 surviving static (CompositionRoot) + recorded exceptions; merge-to-Dev prep

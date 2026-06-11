@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Assertions;
 using Characters.Powers.Target;
 using ChatSystem;
 using GameLogic;
@@ -11,9 +12,17 @@ namespace Characters.Powers
 {
     public class PTruthChains : Power
     {
+        // Lane C (NGO-spawned): resolve the dependency ONCE in OnNetworkSpawn from the one
+        // allowed static, store it in a field, and never look it up again
+        // (refactor-architecture-despaghetti.md §3 lane C).
+        private CharacterManager _characterManager;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            Assert.IsNotNull(_characterManager,
+                "PTruthChains._characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager.");
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
 
@@ -32,7 +41,7 @@ namespace Characters.Powers
         private void OnCardClickedRpc(ulong _targetClientId)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
-            var _targetCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_targetClientId, false);
+            var _targetCharacter = _characterManager.GetCharacter(_targetClientId, false);
             if (_targetCharacter == null)
             {
                 return;

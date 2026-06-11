@@ -1,4 +1,6 @@
 using System;
+using Characters;
+using Characters.Powers;
 using GameLogic;
 
 namespace Tests.Editor
@@ -23,6 +25,7 @@ namespace Tests.Editor
         public static readonly Type[] All =
         {
             typeof(LightManager),
+            typeof(PTruthChains), // 6.3 lane C worked example — resolves via CompositionRoot in OnNetworkSpawn.
         };
 
         /// <summary>
@@ -35,6 +38,20 @@ namespace Tests.Editor
         public static readonly Type[] InjectedManagerTypes =
         {
             typeof(GameManager),
+            typeof(CharacterManager), // 6.3 — CompositionRoot.characterManager wiring is guard-checked.
+        };
+
+        /// <summary>
+        /// Scene-wired types that are NOT no-locator consumers and so must stay OUT of
+        /// <see cref="All"/> (guard #1 would flag them). The <see cref="CompositionRoot"/> is the
+        /// one surviving static — it legitimately calls <c>GameManager.For(</c> /
+        /// <c>CharacterManager.For(</c> — but its own lane A <c>[SerializeField]</c> manager refs
+        /// must still be wired, so SceneWiringGuard (guard #2) covers it via this set (story 6.3
+        /// AC4 caution). Guard #1 never reads this list.
+        /// </summary>
+        public static readonly Type[] SceneWiredOnly =
+        {
+            typeof(CompositionRoot),
         };
     }
 }

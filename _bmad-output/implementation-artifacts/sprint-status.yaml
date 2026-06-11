@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (6-2 SceneWiringGuard → review; EM 160 / PM 145 green)
+last_updated: 2026-06-12 (6-3 CompositionRoot + lane C → review; EM 162 / PM 146 green; epic-7 unblocked)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -126,7 +126,7 @@ development_status:
   epic-6: in-progress
   6-1-establish-injection-seam-and-composition-root-on-a-worked-example: done  # lane A canonical example: LightManager rerouted + GameScene-wired + Awake null-guard; DiSeamNoLocatorGuard green (source-scan mechanism recorded); convention doc §3
   6-2-add-the-scene-wiring-guard-over-injected-references: review  # guard #2 green (3 tests incl. 2 permanent bites); shared DiSeamMigratedConsumers registry for both guards; repaired silent compile-exclusion of 6.1's DiSeamNoLocatorGuardTests; EM 160 / PM 145
-  6-3-create-the-composition-root-and-prove-lane-c-on-one-ngo-spawned-consumer: ready-for-dev  # the ONE surviving static; For(nm) over 5.0c/d registries; DiSeam lane-C whitelist (CompositionRoot only in OnNetworkSpawn); BLOCKS epic-7
+  6-3-create-the-composition-root-and-prove-lane-c-on-one-ngo-spawned-consumer: review  # CompositionRoot (the ONE static) + Services value-resolver For(nm) delegating to 5.0c/d; PTruthChains lane C migrated; guard #1 +For() hub-hop +OnNetworkSpawn whitelist; SceneWiredOnly split; EM 162 / PM 146 green + boot smoke; unblocks epic-7
 
   # Epic 7 (D1): dismantle GameManager-as-a-locator (inject the pass-through managers directly)
   epic-7: in-progress

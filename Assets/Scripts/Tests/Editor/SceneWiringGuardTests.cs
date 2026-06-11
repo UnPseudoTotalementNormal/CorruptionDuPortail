@@ -79,7 +79,10 @@ namespace Tests.Editor
         [Test]
         public void MigratedConsumers_HaveAllInjectedFieldsWired()
         {
-            foreach (Type consumer in DiSeamMigratedConsumers.All)
+            // Guard #2 also covers SceneWiredOnly (the CompositionRoot): scene-wired types whose
+            // injected [SerializeField] refs must be wired, but which are NOT no-locator consumers
+            // (so they stay out of guard #1's set). See DiSeamMigratedConsumers.SceneWiredOnly.
+            foreach (Type consumer in DiSeamMigratedConsumers.All.Concat(DiSeamMigratedConsumers.SceneWiredOnly))
             {
                 Component[] instances = FindSceneInstances(consumer);
                 if (instances.Length == 0)

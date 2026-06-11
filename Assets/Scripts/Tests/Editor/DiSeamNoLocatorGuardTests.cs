@@ -38,6 +38,13 @@ namespace Tests.Editor
         {
             "GameManager.instance",
             "CharacterManager.instance",
+            // 6.3 (AC4a): the For() hub-hop blind spot. The powers population reaches managers via
+            // GameManager.For(nm).characterManager / CharacterManager.For(nm) — NOT .instance. Without
+            // these two entries an Epic 7 migration could "pass" the guard while still hub-hopping
+            // through the locator. CompositionRoot itself legitimately calls For( — which is exactly
+            // why it is NOT in DiSeamMigratedConsumers.All (it lives in SceneWiredOnly instead).
+            "GameManager.For(",
+            "CharacterManager.For(",
         };
 
         [Test]
@@ -70,9 +77,114 @@ namespace Tests.Editor
                 "The guard false-positived on injected access — it must only flag the static locator.");
         }
 
+        [Test]
+        public void MigratedConsumers_OnlyReferenceCompositionRootInsideOnNetworkSpawn()
+        {
+            // 6.3 (AC4b): the lane C whitelist. The one surviving static (CompositionRoot) may be
+            // resolved by a migrated consumer ONLY inside OnNetworkSpawn (refactor-architecture-
+            // despaghetti.md §3 lane C). Consumers that never touch it (LightManager) pass trivially.
+            foreach (var consumer in MigratedConsumers)
+            {
+                string source = ReadSource(consumer);
+                Assert.IsFalse(CompositionRootUsedOutsideOnNetworkSpawn(source),
+                    $"{consumer.Name} references CompositionRoot outside OnNetworkSpawn — the lane C root may be " +
+                    "resolved ONLY once inside OnNetworkSpawn, then stored in a field. See §3 lane C / §5.");
+            }
+        }
+
+        [Test]
+        public void Guard_Bites_OnForHubHopAndCompositionRootOutsideOnNetworkSpawn()
+        {
+            // (AC4a) the For() hub-hop must now be caught alongside .instance.
+            const string badForSource = "void X() { var c = GameManager.For(NetworkManager).characterManager; }";
+            CollectionAssert.IsNotEmpty(FindForbiddenLocators(badForSource),
+                "The guard failed to detect a GameManager.For() hub-hop — the AC4a mechanism is broken.");
+
+            const string badCmForSource = "void X() { var c = CharacterManager.For(NetworkManager); }";
+            CollectionAssert.IsNotEmpty(FindForbiddenLocators(badCmForSource),
+                "The guard failed to detect a CharacterManager.For() hub-hop — the AC4a mechanism is broken.");
+
+            // (AC4b) CompositionRoot used outside OnNetworkSpawn is a violation...
+            const string badRootSource = "void Start() { var s = CompositionRoot.For(NetworkManager); }";
+            Assert.IsTrue(CompositionRootUsedOutsideOnNetworkSpawn(badRootSource),
+                "The guard failed to flag CompositionRoot used outside OnNetworkSpawn — the AC4b mechanism is broken.");
+
+            // ...but inside OnNetworkSpawn it is the sanctioned lane C resolution.
+            const string goodRootSource =
+                "public override void OnNetworkSpawn() { base.OnNetworkSpawn(); _cm = CompositionRoot.For(NetworkManager).CharacterManager; }";
+            Assert.IsFalse(CompositionRootUsedOutsideOnNetworkSpawn(goodRootSource),
+                "The guard false-positived on the sanctioned lane C resolution inside OnNetworkSpawn.");
+
+            // A consumer that never references the root must trivially pass.
+            const string noRootSource = "void Start() { gameManager.currentGameStateIndex.OnValueChanged += X; }";
+            Assert.IsFalse(CompositionRootUsedOutsideOnNetworkSpawn(noRootSource),
+                "The guard false-positived on a consumer that does not reference CompositionRoot at all.");
+        }
+
         private static string[] FindForbiddenLocators(string source)
         {
             return ForbiddenLocators.Where(source.Contains).ToArray();
+        }
+
+        // (AC4b) MECHANISM (source scan, recorded per task 3): a migrated lane C consumer may
+        // reference the one allowed static `CompositionRoot` ONLY inside its OnNetworkSpawn body.
+        // We locate the OnNetworkSpawn method span by brace-matching from the first '{' after the
+        // signature token "OnNetworkSpawn(" (the "(" excludes prose mentions like "// see
+        // OnNetworkSpawn" from being mistaken for the signature), then require every
+        // "CompositionRoot" occurrence to fall inside that span. A consumer that uses CompositionRoot
+        // but has no OnNetworkSpawn (or a malformed body) is a violation; one with no "CompositionRoot"
+        // at all passes trivially. Consistent with guard #1's substring-scan rigor.
+        private static bool CompositionRootUsedOutsideOnNetworkSpawn(string source)
+        {
+            const string token = "CompositionRoot";
+            if (!source.Contains(token))
+            {
+                return false;
+            }
+
+            int signatureIndex = source.IndexOf("OnNetworkSpawn(", StringComparison.Ordinal);
+            if (signatureIndex < 0)
+            {
+                return true; // references the root but has no OnNetworkSpawn to host it.
+            }
+
+            int openBrace = source.IndexOf('{', signatureIndex);
+            if (openBrace < 0)
+            {
+                return true;
+            }
+
+            int depth = 0;
+            int closeBrace = -1;
+            for (int i = openBrace; i < source.Length; i++)
+            {
+                if (source[i] == '{')
+                {
+                    depth++;
+                }
+                else if (source[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        closeBrace = i;
+                        break;
+                    }
+                }
+            }
+            if (closeBrace < 0)
+            {
+                return true;
+            }
+
+            for (int i = source.IndexOf(token, StringComparison.Ordinal); i >= 0; i = source.IndexOf(token, i + token.Length, StringComparison.Ordinal))
+            {
+                if (i < openBrace || i > closeBrace)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static string ReadSource(Type type)

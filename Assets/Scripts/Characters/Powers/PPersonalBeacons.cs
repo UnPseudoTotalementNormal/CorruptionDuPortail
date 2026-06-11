@@ -30,10 +30,10 @@ namespace Characters.Powers
             if (NetworkManager.IsServer)
             { 
                 onPowerReparented += OnPowerReparented;
-                IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
+                IEnumerable<Character> _robots = GameManager.For(NetworkManager).characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+                    GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
                         RevealLevel.Personal, ownerClientId.Value);
                 }
             }
@@ -86,7 +86,7 @@ namespace Characters.Powers
             personalBeacons.Add(_newBeacon);
             
             // Only the owner processes beacon state changes. Simulated players on host must subscribe too.
-            if (!CharacterManager.instance.IsLocalOrSimulated(ownerClientId.Value)) 
+            if (!CharacterManager.For(NetworkManager).IsLocalOrSimulated(ownerClientId.Value)) 
             {
                 return;
             }
@@ -96,10 +96,10 @@ namespace Characters.Powers
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
-            Character _beaconedCharacter = GameManager.instance.characterManager.GetCharacter(_newBeacon.targetClientId);
+            Character _beaconedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_newBeacon.targetClientId);
             
             // Do not show local visual/chat cues if the Host is not currently possessing the owner
-            if (CharacterManager.instance.GetLocalClientId() != ownerClientId.Value) return;
+            if (CharacterManager.For(NetworkManager).GetLocalClientId() != ownerClientId.Value) return;
 
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {

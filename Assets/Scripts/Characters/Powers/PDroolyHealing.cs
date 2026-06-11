@@ -49,8 +49,8 @@ namespace Characters.Powers
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
-            var _choosedCharacter = GameManager.instance.characterManager.GetCharacter(_healingCharacterId, false);
+            PDroolyHealing _power = (PDroolyHealing)GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            var _choosedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_healingCharacterId, false);
             bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
@@ -58,26 +58,26 @@ namespace Characters.Powers
                 {
                     _healSuccess = true;
                     _choosedCharacter.HealPlayerServerRpc();
-                    GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+                    GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
                 }
                 healedCharactersThisNight.Add(_healingCharacterId);
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
             }
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
-                CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
         {
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(
+            GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
                 _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
         }
 
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            var _gameManager = GameManager.instance;
+            var _gameManager = GameManager.For(NetworkManager);
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
                 _awakeningState.onStateEndServer += OnNightEndedServer;
@@ -88,7 +88,7 @@ namespace Characters.Powers
         {
             foreach (ulong _healedCharacterId in healedCharactersThisNight)
             {
-                Character _healedCharacter = GameManager.instance.characterManager.GetCharacter(_healedCharacterId, false);
+                Character _healedCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_healedCharacterId, false);
                 if (!_healedCharacter)
                 {
                     continue;

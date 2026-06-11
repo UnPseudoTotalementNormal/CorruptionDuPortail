@@ -36,12 +36,12 @@ namespace Characters
         {
             base.OnNetworkSpawn();
             
-            if (CharacterManager.instance != null)
+            if (CharacterManager.For(NetworkManager) != null)
             {
                 // Verify if identity is already set, otherwise listen for it
                 if (!ownerClientId.Value.IsFakeClientId())
                 {
-                    CharacterManager.instance.RegisterSpawnedCharacter(this);
+                    CharacterManager.For(NetworkManager).RegisterSpawnedCharacter(this);
                 }
                 else
                 {
@@ -57,18 +57,18 @@ namespace Characters
             if (!newValue.IsFakeClientId())
             {
                 ownerClientId.OnValueChanged -= OnIdentityChanged;
-                CharacterManager.instance.RegisterSpawnedCharacter(this);
+                CharacterManager.For(NetworkManager).RegisterSpawnedCharacter(this);
             }
         }
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
-            if (!_newValue || CharacterManager.instance == null || GameManager.instance == null)
+            if (!_newValue || CharacterManager.For(NetworkManager) == null || GameManager.For(NetworkManager) == null)
             {
                 return;
             }
             
-            Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter();
+            Character _localCharacter = GameManager.For(NetworkManager).characterManager.GetLocalCharacter();
             if (_localCharacter == null || _localCharacter.role == null)
             {
                 return;

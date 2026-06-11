@@ -16,7 +16,44 @@ namespace Characters
     public class CharacterManager : NetworkBehaviour
     {
         public static CharacterManager instance;
-        
+
+        // Per-NetworkManager registry: lets a second in-process client's replica
+        // coexist (resolved via For(NetworkManager)) instead of clobbering or
+        // destroying the primary's static instance. The primary manager keeps the
+        // historical `instance` façade so the Awake->spawn window is unchanged.
+        private static readonly Dictionary<NetworkManager, CharacterManager> s_byNetworkManager = new();
+
+        /// <summary>
+        /// Resolves the CharacterManager owned by the given NetworkManager. For the
+        /// primary (Singleton) manager this falls back to the Awake-claimed instance
+        /// so the pre-spawn window behaves exactly as the historical static access.
+        /// </summary>
+        public static CharacterManager For(NetworkManager _networkManager)
+        {
+            if (_networkManager != null && s_byNetworkManager.TryGetValue(_networkManager, out var _manager) && _manager != null)
+            {
+                return _manager;
+            }
+            return _networkManager == NetworkManager.Singleton ? instance : null;
+        }
+
+#if UNITY_EDITOR
+        // Play-restart backstop ONLY. Domain reload is disabled in this project, so
+        // statics survive across Play Mode sessions; this fires once at Play entry
+        // (SubsystemRegistration) to drop any manager/registry left over from a prior
+        // session. It does NOT run on scene loads and is NOT a subscription cleanup:
+        // the networkedCharacters.OnListChanged unsubscribe and the registry/instance
+        // teardown for normal scene exit (incl. menu -> scene -> menu round-trips) live
+        // in OnNetworkDespawn and OnDestroy, which fire because CharacterManager is
+        // scene-placed in GameScene (Shutdown despawns, single-mode LoadScene destroys).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticsForDomainReloadDisabled()
+        {
+            s_byNetworkManager.Clear();
+            instance = null;
+        }
+#endif
+
         private Dictionary<ulong, UniTaskCompletionSource<Character>> _spawnPromises = new();
 
         public async UniTask<Character> GetCharacterAsync(ulong _clientId)
@@ -114,17 +151,53 @@ namespace Characters
         
         private void Awake()
         {
-            if (instance != null && instance != this)
+            // Design B (NGO probe: NetworkManagerOwner is assigned AFTER
+            // Object.Instantiate returns - NetworkSpawnManager.cs:881 vs
+            // SpawnNetworkObjectLocally:1055 - so it is not visible here). Awake
+            // cannot tell a foreign-NM replica from a true duplicate, so it only
+            // claims the façade if free; same-NM duplicate destruction and
+            // foreign-replica reconciliation happen in OnNetworkSpawn where
+            // NetworkManager is authoritative. Production has exactly one
+            // scene-placed CharacterManager, so this is behaviour-identical there.
+            if (instance == null)
             {
-                Destroy(this.gameObject);
-                return;
+                instance = this;
             }
-            instance = this;
         }
         
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            var _networkManager = NetworkManager;
+
+            // Same-NM duplicate (today's semantics, one frame later than the
+            // historical Awake destroy): a live manager is already registered for
+            // this NetworkManager -> this is an extra instance, destroy it.
+            if (s_byNetworkManager.TryGetValue(_networkManager, out var _existing) && _existing != null && _existing != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            // Façade reconciliation: the primary (Singleton) manager owns `instance`,
+            // a foreign-NM replica must not. Because Awake claims-if-free, whichever
+            // CharacterManager awoke first holds the claim - release/transfer it here
+            // now that NetworkManager is authoritative.
+            if (_networkManager != NetworkManager.Singleton)
+            {
+                if (instance == this)
+                {
+                    instance = null;
+                }
+            }
+            else if (instance == null)
+            {
+                instance = this;
+            }
+
+            // Registry claim (the inherited NetworkManager property is valid here).
+            s_byNetworkManager[_networkManager] = this;
 
             // Subscribe to the authoritative list so the cache is invalidated
             // whenever it changes.
@@ -140,6 +213,8 @@ namespace Characters
         {
             networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
 
+            UnregisterFromRegistry();
+
             if (instance == this)
             {
                 instance = null;
@@ -151,14 +226,37 @@ namespace Characters
         public override void OnDestroy()
         {
             base.OnDestroy();
-            // Safety net: the duplicate singleton instance is destroyed in Awake
-            // and may never spawn/despawn; also covers teardown ordering where
+            // Safety net: a same-NM duplicate is destroyed in OnNetworkSpawn and may
+            // never despawn cleanly; also covers teardown ordering where
             // OnNetworkDespawn was not invoked. Unsubscribing twice is harmless.
             networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
+
+            UnregisterFromRegistry();
 
             if (instance == this)
             {
                 instance = null;
+            }
+        }
+
+        // Removes this manager from the per-NetworkManager registry by value, so
+        // teardown ordering (NGO: NetworkManager.Singleton may be null in OnDestroy
+        // during shutdown) can never strand a stale entry or throw on a stale key.
+        // The registry holds at most a handful of entries, so the scan is trivial.
+        private void UnregisterFromRegistry()
+        {
+            NetworkManager _key = null;
+            foreach (var _pair in s_byNetworkManager)
+            {
+                if (_pair.Value == this)
+                {
+                    _key = _pair.Key;
+                    break;
+                }
+            }
+            if (_key != null)
+            {
+                s_byNetworkManager.Remove(_key);
             }
         }
 
@@ -339,7 +437,7 @@ namespace Characters
         
         public void GivePowerToCharacter(ulong _characterId, Power _power)
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, "GivePowerToCharacter should only be called on the server");
+            Assert.IsTrue(NetworkManager.IsServer, "GivePowerToCharacter should only be called on the server");
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
             
@@ -355,7 +453,7 @@ namespace Characters
         
         public void RemovePowerFromCharacter(ulong _characterId, Power _power)
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, "RemovePowerFromCharacter should only be called on the server");
+            Assert.IsTrue(NetworkManager.IsServer, "RemovePowerFromCharacter should only be called on the server");
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power {_power.powerName}");
             

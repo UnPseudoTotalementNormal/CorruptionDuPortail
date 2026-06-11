@@ -33,12 +33,12 @@ namespace Characters.Powers
 
         public void InvokeOnCharacterCorruptionSuccessful(ulong characterId)
         {
-            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
+            var _character = GameManager.For(NetworkManager).characterManager.GetCharacter(characterId);
             onCharacterCorruptionSuccessful?.Invoke(_character);
         }
         public void InvokeOnCharacterCorruptionFailed(ulong characterId)
         {
-            var _character = GameManager.instance.characterManager.GetCharacter(characterId);
+            var _character = GameManager.For(NetworkManager).characterManager.GetCharacter(characterId);
             onCharacterCorruptionFailed?.Invoke(_character);
         }
         private void OnCharacterPicked(Character _character)
@@ -50,7 +50,7 @@ namespace Characters.Powers
                 return;
             }
             OnCardClickedRpc(_clickedCharacterId);
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(
+            GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevel(
                 _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             OnUsed();
         }
@@ -133,7 +133,7 @@ namespace Characters.Powers
         
         public void OnConcentratedEffectServer()
         {
-            GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+            GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(
                 lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
         }
     }

@@ -16,7 +16,7 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            var _charactersForLegacy = CharacterManager.instance.GetCharacters(false).Where(_c => _c.role.roleID == roleForLegacy).ToList();
+            var _charactersForLegacy = CharacterManager.For(NetworkManager).GetCharacters(false).Where(_c => _c.role.roleID == roleForLegacy).ToList();
             foreach (var _character in _charactersForLegacy)
             {
                 // Check if already chained
@@ -37,7 +37,7 @@ namespace Characters.Powers
             }
             
             isLegacyInherited = true;
-            CharacterManager.instance.GivePowerToCharacter(ownerClientId.Value, legacyPower);
+            CharacterManager.For(NetworkManager).GivePowerToCharacter(ownerClientId.Value, legacyPower);
         }
         
         private void Reset()

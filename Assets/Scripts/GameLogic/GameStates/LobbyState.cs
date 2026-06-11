@@ -50,16 +50,16 @@ namespace GameLogic.GameStates
         { 
             base.OnStateCreated();
             
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 return;
             }
-            
-            foreach (var connectedClient in NetworkManager.Singleton.ConnectedClients)
+
+            foreach (var connectedClient in gameManager.NetworkManager.ConnectedClients)
             {
                 AddNewCharacter(connectedClient.Key);
             }
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            gameManager.NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
         public override void OnStartStateServer()

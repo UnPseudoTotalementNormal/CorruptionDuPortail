@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            clickedCharacter = GameManager.instance.characterManager.GetCharacter(_ownerId);
+            clickedCharacter = gameManager.characterManager.GetCharacter(_ownerId);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -82,7 +82,7 @@ namespace GameLogic.GameStates
         
         private void OnRoleClickServer(ulong _ownerId)
         {
-            var _clickedRole = GameManager.instance.characterManager.GetCharacter(_ownerId).role;
+            var _clickedRole = gameManager.characterManager.GetCharacter(_ownerId).role;
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -93,7 +93,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
+            gameManager.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
                 gameManager.RpcTarget.Everyone);
             
             WaitForCharacterClickServer();
@@ -120,7 +120,7 @@ namespace GameLogic.GameStates
 
         private void WaitForCharacterClickServer()
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer);
+            Assert.IsTrue(gameManager.NetworkManager.IsServer);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnHighlightAll), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
@@ -168,7 +168,7 @@ namespace GameLogic.GameStates
         
         private void WaitForRoleClickServer()
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer);
+            Assert.IsTrue(gameManager.NetworkManager.IsServer);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
                 new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId.Value)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
@@ -238,7 +238,7 @@ namespace GameLogic.GameStates
             }
 
             GameAudioManager.instance.PlayMusicRpc(takeDownThePortalMusic.GetPath(), 
-                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
+                gameManager.NetworkManager.RpcTarget.ClientsAndHost);
 
             _ = WaitForCardsToBeVisible();
         }
@@ -255,7 +255,7 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
             
             GameAudioManager.instance.StopMusicRpc(takeDownThePortalMusic.GetPath(), 
-                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
+                gameManager.NetworkManager.RpcTarget.ClientsAndHost);
         }
         
         public override void OnStartStateClient()

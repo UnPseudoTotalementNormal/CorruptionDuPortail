@@ -35,7 +35,7 @@ namespace RoleTarget
 
         private void Start()
         {
-            foreach (var _awakeningState in GameManager.instance.GetGameStates(typeof(AwakeningState)))
+            foreach (var _awakeningState in GameManager.For(NetworkManager).GetGameStates(typeof(AwakeningState)))
             {
                 _awakeningState.onStateStartClient += ResetTargetingData;
             }

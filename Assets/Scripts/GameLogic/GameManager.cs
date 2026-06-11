@@ -28,6 +28,42 @@ namespace GameLogic
     {
         public static GameManager instance { get; private set; }
 
+        // Per-NetworkManager registry: lets a second in-process client's replica
+        // coexist (resolved via For(NetworkManager)) instead of clobbering or
+        // destroying the primary's static instance. The primary manager keeps the
+        // historical `instance` façade so the Awake->spawn window is unchanged.
+        private static readonly Dictionary<NetworkManager, GameManager> s_byNetworkManager = new();
+
+        /// <summary>
+        /// Resolves the GameManager owned by the given NetworkManager. For the
+        /// primary (Singleton) manager this falls back to the Awake-claimed instance
+        /// so the pre-spawn window behaves exactly as the historical static access.
+        /// </summary>
+        public static GameManager For(NetworkManager _networkManager)
+        {
+            if (_networkManager != null && s_byNetworkManager.TryGetValue(_networkManager, out var _manager) && _manager != null)
+            {
+                return _manager;
+            }
+            return _networkManager == NetworkManager.Singleton ? instance : null;
+        }
+
+#if UNITY_EDITOR
+        // Play-restart backstop ONLY. Domain reload is disabled in this project, so
+        // statics survive across Play Mode sessions; this fires once at Play entry
+        // (SubsystemRegistration) to drop any manager/registry left over from a prior
+        // session. It does NOT run on scene loads and is NOT a subscription cleanup:
+        // the OnClientDisconnectCallback unsubscribe and the registry/instance
+        // teardown for normal scene exit live in OnNetworkDespawn and OnDestroy, which
+        // fire because GameManager is scene-placed in GameScene.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticsForDomainReloadDisabled()
+        {
+            s_byNetworkManager.Clear();
+            instance = null;
+        }
+#endif
+
         public GameInfoRevealer gameInfoRevealer;
         public CharactersBar charactersBar;
         public PowersBar powersBar;
@@ -50,18 +86,56 @@ namespace GameLogic
 
         private void Awake()
         {
-            if (instance != null && instance != this)
+            // Design B (NGO probe in 5.0c: NetworkManagerOwner is assigned AFTER
+            // Object.Instantiate returns, so it is not visible here). Awake cannot
+            // tell a foreign-NM replica from a true duplicate, so it only claims the
+            // façade if free; same-NM duplicate destruction and foreign-replica
+            // reconciliation happen in OnNetworkSpawn where NetworkManager is
+            // authoritative. Production has exactly one scene-placed GameManager, so
+            // this is behaviour-identical there.
+            if (instance == null)
             {
-                Destroy(gameObject);
-                return;
+                instance = this;
             }
-            instance = this;
+            // Per-instance wiring: this mutates per-instance state (gameLoopCount),
+            // not a static, so it must run on EVERY replica - keep it outside the
+            // claim guard.
             onNewDayPassed += () => gameLoopCount++;
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            var _networkManager = NetworkManager;
+
+            // Same-NM duplicate (today's semantics, one frame later than the
+            // historical Awake destroy): a live manager is already registered for
+            // this NetworkManager -> this is an extra instance, destroy it.
+            if (s_byNetworkManager.TryGetValue(_networkManager, out var _existing) && _existing != null && _existing != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            // Façade reconciliation: the primary (Singleton) manager owns `instance`,
+            // a foreign-NM replica must not. Because Awake claims-if-free, whichever
+            // GameManager awoke first holds the claim - release/transfer it here now
+            // that NetworkManager is authoritative.
+            if (_networkManager != NetworkManager.Singleton)
+            {
+                if (instance == this)
+                {
+                    instance = null;
+                }
+            }
+            else if (instance == null)
+            {
+                instance = this;
+            }
+
+            // Registry claim (the inherited NetworkManager property is valid here).
+            s_byNetworkManager[_networkManager] = this;
 
             SetupGameStates();
         
@@ -82,12 +156,49 @@ namespace GameLogic
                 NetworkManager.OnClientDisconnectCallback -= OnPlayerDisconnectedServer;
             }
 
+            UnregisterFromRegistry();
+
             if (instance == this)
             {
                 instance = null;
             }
 
             base.OnNetworkDespawn();
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            // Safety net: a same-NM duplicate is destroyed in OnNetworkSpawn and may
+            // never despawn cleanly; also covers teardown ordering where
+            // OnNetworkDespawn was not invoked.
+            UnregisterFromRegistry();
+
+            if (instance == this)
+            {
+                instance = null;
+            }
+        }
+
+        // Removes this manager from the per-NetworkManager registry by value, so
+        // teardown ordering (NGO: NetworkManager.Singleton may be null in OnDestroy
+        // during shutdown) can never strand a stale entry or throw on a stale key.
+        // The registry holds at most a handful of entries, so the scan is trivial.
+        private void UnregisterFromRegistry()
+        {
+            NetworkManager _key = null;
+            foreach (var _pair in s_byNetworkManager)
+            {
+                if (_pair.Value == this)
+                {
+                    _key = _pair.Key;
+                    break;
+                }
+            }
+            if (_key != null)
+            {
+                s_byNetworkManager.Remove(_key);
+            }
         }
 
         private void Update()
@@ -397,7 +508,7 @@ namespace GameLogic
         private async UniTaskVoid ShutOffGame()
         {
             await UniTask.WaitForSeconds(1);
-            NetworkManager.Singleton.Shutdown();
+            NetworkManager.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene(1); // Loading menu
         }
 

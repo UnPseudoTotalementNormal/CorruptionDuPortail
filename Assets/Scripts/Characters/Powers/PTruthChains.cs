@@ -32,7 +32,7 @@ namespace Characters.Powers
         private void OnCardClickedRpc(ulong _targetClientId)
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
-            var _targetCharacter = GameManager.instance.characterManager.GetCharacter(_targetClientId, false);
+            var _targetCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_targetClientId, false);
             if (_targetCharacter == null)
             {
                 return;

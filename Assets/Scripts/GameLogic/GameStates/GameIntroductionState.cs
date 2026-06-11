@@ -83,7 +83,7 @@ namespace GameLogic.GameStates
             
             if (!showRoleText && stateTimer >= timeBeforeRoleText)
             {
-                var _eventPath = GameManager.instance.characterManager.GetLocalCharacter(false).role.onGameStartRoleRevealSound.GetPath();
+                var _eventPath = gameManager.characterManager.GetLocalCharacter(false).role.onGameStartRoleRevealSound.GetPath();
                 GameAudioManager.instance.PlayOneShot(_eventPath);
                 showRoleText = true;
                 onRoleTextShown?.Invoke();

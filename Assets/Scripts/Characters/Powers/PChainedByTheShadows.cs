@@ -35,11 +35,11 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
-            Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
+            Character _corruptingCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_corruptingCharacterId, false);
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
-                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                GameManager.For(NetworkManager).gameInfoRevealer.SendRevealLevelRpc(
                     _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {

@@ -62,7 +62,7 @@ namespace GameLogic
         [Rpc(SendTo.Server)]
         public void ChainCharacterRpc(ulong _characterId)
         {
-            var _gameManager = GameManager.instance;
+            var _gameManager = GameManager.For(NetworkManager);
             var _character = _gameManager.characterManager.GetCharacter(_characterId);
             
             _character.ChainCharacterServer();

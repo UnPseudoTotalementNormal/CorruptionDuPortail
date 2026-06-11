@@ -20,9 +20,9 @@ namespace Characters.Powers.PowerObjects
             
             onCorruptedBeaconChanged = new NetworkAction<bool>($"onCorruptedBeaconChanged_{ownerClientId}_{targetClientId}", _ownerPower);
 
-            Character _targetCharacter = CharacterManager.instance.GetCharacter(targetClientId, false);
+            Character _targetCharacter = CharacterManager.For(_ownerPower.NetworkManager).GetCharacter(targetClientId, false);
             
-            if (ownerClientId == CharacterManager.instance.GetLocalClientId())
+            if (ownerClientId == CharacterManager.For(_ownerPower.NetworkManager).GetLocalClientId())
             {
                 CardEffectManager.instance.AddCardEffect(CardEffectID.TechnoBeacon, targetClientId, this);
             }

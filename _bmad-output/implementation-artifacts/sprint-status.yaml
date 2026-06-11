@@ -1,0 +1,111 @@
+# generated: 2026-06-10
+# last_updated: 2026-06-11 (5-0c → done, code-review PASS)
+# project: Corruption Du Portail
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# CODE-REVIEW POLICY (quota-aware, decided 2026-06-10):
+# - Per-story code-review is SKIPPED by default — the golden/differential masters
+#   + per-wave test-gate are the primary safety net (cheaper, already enforced).
+# - EXCEPT stories tagged "# REVIEW-REQUIRED" below: run code-review on these
+#   (silent breakage that tests don't catch / point-of-no-return for the safety net).
+#   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
+
+generated: 2026-06-10
+last_updated: 2026-06-11 (5-0 → done; code-review PASS + 4 patches, PM 145 / EM 155, 5.3 unblocked)
+project: Corruption Du Portail
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Foundations — characterization harness & Domain boundary
+  epic-1: done
+  1-0-prove-the-playmode-harness-is-faithful-before-trusting-any-golden: done
+  1-1-pin-and-quarantine-the-non-random-non-determinism-sources: done
+  1-2-golden-masters-of-the-4-winningconditions-derived-from-a-boundary-matrix: done
+  1-3-create-domain-asmdef-with-structural-skeleton-and-permanent-purity-guard: done
+  1-4-birth-the-snapshot-value-objects-with-structural-invariant-tests: done
+  1-5-characterization-golden-masters-for-votetally-and-chainingresolver: done
+  epic-1-retrospective: optional
+
+  # Epic 2: Wave 1 — extract victory + loop + vote + chaining
+  epic-2: done
+  2-1-field-read-inventory-synchronous-gamesnapshotbuilder-fromlivestate-losslessness-battery: done
+  2-2-dual-signature-checkcondition-snapshot-stateless-differential-harness: done
+  2-3-migrate-wmarginalischainedwin: done
+  2-4-migrate-wanomalycorruption: done
+  2-5-migrate-wchosenchainedallanomaly: done
+  2-6-migrate-womnisciencehackedcharacter: done
+  2-7-cut-the-old-signature-promote-iwinningcondition-into-domain: done  # REVIEW-REQUIRED: done #33, gds-code-review PASS
+  2-7b-swap-the-differential-oracle-to-the-frozen-golden-re-point-the-sentinel: done  # REVIEW-REQUIRED: done #34, gds-code-review PASS
+  2-8-extract-victoryevaluator-migrate-its-tests-to-editmode: done
+  2-9-extract-votetally-migrate-its-tests-to-editmode: done
+  2-10-extract-chainingresolver-ordering-property-tests-migrate-to-editmode: done
+  2-11a-characterize-the-gameloopmachine-state-transition-effect-ordering: done
+  2-11b-extract-gameloopmachine-arithmetic-under-the-sequence-net: done  # REVIEW-REQUIRED: done #39, gds-code-review PASS
+  2-12-mop-up-convert-remaining-victory-chaining-playmode-tests: done
+  epic-2-retrospective: optional
+
+  # Epic 3: Wave 2 — determinism & role distribution
+  epic-3: done
+  3-1-add-the-irandomprovider-port-with-unity-backed-and-seeded-implementations: done  # #41
+  3-2-characterize-current-role-assignment-under-a-fixed-seed: done  # #42
+  3-3-extract-the-deterministic-roledistributor-migrate-tests-to-editmode: done  # #43
+  epic-3-retrospective: optional
+
+  # Epic 4: Wave 3 — power resolution (restructured by party-mode review: 3 -> 6 stories, per-power)
+  epic-4: done
+  4-0-inventory-define-effectdescriptor-union-seams-global-golden: done  # #44 — EffectDescriptor union + observation seam + 4-power golden; 140 EM + 138 PM
+  4-1-migrate-pvision: done  # #45 — PCursedVision → PowerResolver + PowerEffectDispatcher; golden unchanged; 144 EM + 138 PM
+  4-2-migrate-pentrapment: done  # #46 — PBoundByInk click path → resolver; dispatcher DiscoverChat + powerLocal callback; golden unchanged; 146 EM + 138 PM
+  4-3-migrate-pcorruption: done  # #47 — PCorruptingMark click body → resolver; 147 EM + 138 PM; manual A/B playtest deferred
+  4-4-migrate-pomniscience: done  # #48 REVIEW-REQUIRED: the hack; code-review PASS (autonomous, night mode); double-pin golden unchanged; 149 EM + 138 PM
+  4-5-cleanup-remove-legacy-inline-effect-path: done  # #49 — removed 7 vestigial inline Records; NFR7 grep-absence proof; golden unchanged; 149 EM + 138 PM
+  epic-4-retrospective: optional
+
+  # Epic 5: Wave 4 — network-critical (HELD lifted by Poyo; work on SEPARATE branch epic5-network, never dev-refactor)
+  # De-singletonisation prerequisites 5-0a..5-0e added 2026-06-11 (issue #50 unblock plan;
+  # source of truth: _bmad-output/refactor-architecture-desingleton.md). Execute strictly in order.
+  epic-5: in-progress
+  5-0a-mechanical-networkmanager-resolution: review  # e2049fd (epic5-network) — 14 sites + TryGet optional param; 155 EM + 138 PM = baseline
+  5-0b-networkaction-networkmanager-injection: review  # injected NetworkManager into all 4 NetworkAction variants; 155 EM + 138 PM = baseline; wire format frozen
+  5-0c-charactermanager-per-networkmanager-registry: done  # REVIEW-REQUIRED: gds-code-review PASS (1 patch fixed e0942d9, 1 deferred to dispatcher de-singleton); Design B, bot flow byte-identical, 155 EM + 138 PM
+  5-0d-gamemanager-per-networkmanager-registry: done  # REVIEW-REQUIRED: gds-code-review PASS (1 patch applied BoardManager.OnNetworkDespawn snapshot, re-gated 155 EM + 138 PM; 2 deferred to 5.0e); 70/161 migrated (4 batches b754fc7/df33136/90988d4/fb2e5be); 91 on façade (deferred+UI); Design B; goldens unchanged
+  5-0e-coexistence-gate-two-clients-in-process: review  # gate GREEN (4 PlayMode tests, PM 142, EM 155); flipped 5-0 below
+  5-0-build-the-host-real-client-simulated-bot-multi-client-playmode-fixture: done  # REVIEW-REQUIRED: gds-code-review PASS (4 patches applied: AC3 bot-intercept tautology fixed, baseline heisenbug hardened, SO leak + LogAssert reset; 3 deferred, 7 dismissed); MultiClientGameFixture; spawn-payload char = FALSE; PM 145 / EM 155; unblocks 5.3
+  5-1-defensive-wire-format-guard-over-the-rpc-dispatch-table: done  # #51 (epic5-network) — EditMode wire-format golden, 11 states pinned + FixedString64 cap; no refonte
+  5-2-reconcile-the-leaf-facades-from-waves-1-3: done  # #52 (epic5-network) — satisfied-by-construction (no façades created); permanent NFR7 leaf-POCO guard added
+  5-3-complete-gameloopmachine-index-ownership: blocked  # depends on 5.0 fixture (issue #50) — highest-risk, silent-desync; NOT attempted
+  5-4-remove-the-final-gameloopmachine-index-facade: blocked  # depends on 5.3 (issue #50)
+  epic-5-retrospective: optional

@@ -166,7 +166,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
-            foreach (var _character in CharacterManager.instance.GetCharacters(false))
+            foreach (var _character in gameManager.characterManager.GetCharacters(false))
             {
                 // Créer une fonction anonyme avec le paramètre ownerId et la stocker
                 NetworkVariable<bool>.OnValueChangedDelegate _callback = (_previousValue, _newValue) => 
@@ -181,7 +181,7 @@ namespace GameLogic.GameStates
 
         private void OnCharacterAwakeningChanged(bool _previousValue, bool _newValue, ulong _ownerId)
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 Debug.LogError("OnCharacterAwakeningChanged can only be called on the server");
                 return;
@@ -322,7 +322,7 @@ namespace GameLogic.GameStates
 
         public void OnPowerUsedServer(Power _newPower)
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 Debug.LogError("OnPowerUsedServer can only be called on the server");
                 return;

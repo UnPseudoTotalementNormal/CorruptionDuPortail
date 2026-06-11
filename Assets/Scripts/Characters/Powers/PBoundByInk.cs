@@ -95,14 +95,14 @@ namespace Characters.Powers
         {
             base.OnGameStartedServer();
             AttributeBoundByInkChat();
-            var _gameManager = GameManager.instance;
+            var _gameManager = GameManager.For(NetworkManager);
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
                 _awakeningState.onStateStartServer += () =>
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.instance.GetSafeRpcTarget(_targetClientId));
+                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.For(NetworkManager).GetSafeRpcTarget(_targetClientId));
                     }
                     
                     currentTargets.Clear();
@@ -132,7 +132,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
         }
 
         protected override void StopUse()

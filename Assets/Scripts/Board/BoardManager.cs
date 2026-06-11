@@ -37,7 +37,7 @@ public class BoardManager : NetworkBehaviour
     public const float CARD_SPACING = 7;
     public const float CARD_LINE_SPACING = 9;
     
-    public bool hasAllCardsShown => visibleCards.Count == GameManager.instance.characterManager.GetCharacters().Count(_c => !_c.isFake);
+    public bool hasAllCardsShown => visibleCards.Count == GameManager.For(NetworkManager).characterManager.GetCharacters().Count(_c => !_c.isFake);
     
     private void Awake()
     {
@@ -51,14 +51,18 @@ public class BoardManager : NetworkBehaviour
 
     private void Start()
     {
-        GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+        GameManager.For(NetworkManager).characterManager.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     public override void OnNetworkDespawn()
     {
-        if (GameManager.instance != null && GameManager.instance.characterManager != null)
+        // Snapshot the resolved manager once: the guard must be authoritative for
+        // the unsubscribe deref (For() re-resolves through NetworkManager + the
+        // registry, which can change under a second NetworkManager during teardown).
+        GameManager _gameManager = GameManager.For(NetworkManager);
+        if (_gameManager != null && _gameManager.characterManager != null)
         {
-            GameManager.instance.characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
+            _gameManager.characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
         }
 
         if (instance == this)
@@ -146,7 +150,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake))
+        foreach (var _character in GameManager.For(NetworkManager).characterManager.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
             _card.visualComponents.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
@@ -154,7 +158,7 @@ public class BoardManager : NetworkBehaviour
         }
 
         Card ownedCard = visibleCards.SingleOrDefault(c =>
-            c.characterInfo.ownerClientId.Value == CharacterManager.instance.GetLocalClientId());
+            c.characterInfo.ownerClientId.Value == CharacterManager.For(NetworkManager).GetLocalClientId());
         if (ownedCard)
         {
             visibleCards.ChangeIndex(visibleCards.IndexOf(ownedCard), 0);

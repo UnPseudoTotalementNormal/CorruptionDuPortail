@@ -11,7 +11,7 @@ namespace Characters.Powers.PowerComponents
         public FixedString512Bytes description;
         
         protected Power power;
-        protected Character ownerCharacter => GameLogic.GameManager.instance.characterManager.GetCharacter(ownerClientId, false);
+        protected Character ownerCharacter => GameLogic.GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId, false);
         protected ulong ownerClientId => power.ownerClientId.Value;
         protected virtual void Awake()
         {

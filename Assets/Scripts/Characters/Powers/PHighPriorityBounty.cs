@@ -46,8 +46,8 @@ namespace Characters.Powers
         {
             RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, ownerClientId.Value);
             
-            var _characterTarget = GameManager.instance.characterManager.GetCharacter(_targetClientId);
-            var _characterOwner = GameManager.instance.characterManager.GetCharacter(ownerClientId.Value);
+            var _characterTarget = GameManager.For(NetworkManager).characterManager.GetCharacter(_targetClientId);
+            var _characterOwner = GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value);
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
                 _characterTarget.isEliminated.Value = true;
@@ -56,7 +56,7 @@ namespace Characters.Powers
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 
                         (int)ChatWindowIDs.Server));
-                GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
+                GameManager.For(NetworkManager).gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
                 //TODO: do actual elimination logic & visual
             }
             else
@@ -65,10 +65,10 @@ namespace Characters.Powers
                 ChatManager.instance.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
-                        (int)ChatWindowIDs.Server), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                        (int)ChatWindowIDs.Server), CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
             }
             
-            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+            GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

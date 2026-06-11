@@ -65,7 +65,7 @@ namespace Characters.Powers
 
         public List<PowerComponent> powerComponents = new();
 
-        public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
+        public Character ownerCharacter => GameManager.For(NetworkManager).characterManager.GetCharacter(ownerClientId.Value, false);
         
         [HideInInspector] public ulong idHolderServer;
         public override void OnNetworkSpawn()
@@ -86,7 +86,7 @@ namespace Characters.Powers
         
         public List<ulong> GetValidTargets(TargetType _targetType = TargetType.Character)
         {
-            List<ulong> _validTargets = CharacterManager.instance.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
+            List<ulong> _validTargets = CharacterManager.For(NetworkManager).GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
             _validTargets = _validTargets.Where(_targetClientId => CheckIsTargetValid(_targetClientId, _targetType)).ToList();
             return _validTargets;
         }
@@ -158,7 +158,7 @@ namespace Characters.Powers
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
                 PowerEffectTrace.Record(new NotifyOwnerUsed((int)ownerClientId.Value));
-                OnUsedClientRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                OnUsedClientRpc(CharacterManager.For(NetworkManager).GetSafeRpcTarget(ownerClientId.Value));
             }
         }
         
@@ -168,7 +168,7 @@ namespace Characters.Powers
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
             PowerEffectTrace.Record(RequestCharacterRefresh.Instance);
-            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+            GameManager.For(NetworkManager).characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public virtual void Cancel()
@@ -231,8 +231,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
-            var _oldParentCharacter = GameManager.instance.characterManager.GetCharacter(_oldParentId, false);
-            var _newParentCharacter = GameManager.instance.characterManager.GetCharacter(_newParentId, false);
+            var _oldParentCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_oldParentId, false);
+            var _newParentCharacter = GameManager.For(NetworkManager).characterManager.GetCharacter(_newParentId, false);
             if (_oldParentCharacter)
             {
                 _oldParentCharacter.role.powers.Remove(this);

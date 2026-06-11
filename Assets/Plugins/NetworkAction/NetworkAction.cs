@@ -13,6 +13,10 @@ namespace Network.Action
     {
         private string messageID;
         private List<System.Action> listeners = new();
+
+        private NetworkManager boundNetworkManager;
+
+        private NetworkManager Manager => boundNetworkManager != null ? boundNetworkManager : NetworkManager.Singleton;
         
         public bool isRegistered { get; private set; }
         
@@ -37,6 +41,7 @@ namespace Network.Action
                 Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
                 return;
             }
+            boundNetworkManager = _networkBehaviour.NetworkManager;
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
             if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
@@ -53,9 +58,9 @@ namespace Network.Action
         {
             using FastBufferWriter _writer = new(1, Unity.Collections.Allocator.Temp);
             
-            if (NetworkManager.Singleton.IsServer)
+            if (Manager.IsServer)
             {
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
             }
             else
             {
@@ -64,13 +69,13 @@ namespace Network.Action
                     Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
                     return;
                 }
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                Manager.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
             }
         }
         
         private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
         {
-            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            if (Manager.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
                 if (!allowInvokeByClients)
                 {
@@ -79,7 +84,7 @@ namespace Network.Action
                 }
                 
                 FastBufferWriter _writer = new FastBufferWriter(1, Unity.Collections.Allocator.Temp);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 return; // Early return to avoid invoking listeners twice on the server
             }
             
@@ -142,13 +147,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
                 return;
             }
             
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            Manager.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
         
@@ -160,13 +165,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 isRegistered = false;
                 return;
             }
             
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            Manager.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
         }
 
@@ -177,6 +182,10 @@ namespace Network.Action
     {
         private string messageID;
         private List<System.Action<T>> listeners = new();
+
+        private NetworkManager boundNetworkManager;
+
+        private NetworkManager Manager => boundNetworkManager != null ? boundNetworkManager : NetworkManager.Singleton;
         private INetworkActionSerializer<T> serializer;
 
         public bool isRegistered { get; private set; }
@@ -203,6 +212,7 @@ namespace Network.Action
                 Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
                 return;
             }
+            boundNetworkManager = _networkBehaviour.NetworkManager;
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
             if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
@@ -223,9 +233,9 @@ namespace Network.Action
             {
                 serializer.Serialize(_writer, _param);
                 
-                if (NetworkManager.Singleton.IsServer)
+                if (Manager.IsServer)
                 {
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 else
                 {
@@ -234,7 +244,7 @@ namespace Network.Action
                         Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
                         return;
                     }
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
                 }
             }
             finally
@@ -247,7 +257,7 @@ namespace Network.Action
         {
             T _param = serializer.Deserialize(_messagePayload);
             
-            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            if (Manager.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
                 if (!allowInvokeByClients)
                 {
@@ -259,7 +269,7 @@ namespace Network.Action
                 try
                 {
                     serializer.Serialize(_writer, _param);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 finally
                 {
@@ -329,13 +339,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
                 return;
             }
 
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            Manager.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
         
@@ -348,13 +358,13 @@ namespace Network.Action
             }
             
             // Vérification de sécurité pour l'éditeur
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 isRegistered = false;
                 return;
             }
             
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            Manager.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
         }
         
@@ -365,6 +375,10 @@ namespace Network.Action
     {
         private string messageID;
         private List<System.Action<T1, T2>> listeners = new();
+
+        private NetworkManager boundNetworkManager;
+
+        private NetworkManager Manager => boundNetworkManager != null ? boundNetworkManager : NetworkManager.Singleton;
         private INetworkActionSerializer<T1> serializer1;
         private INetworkActionSerializer<T2> serializer2;
 
@@ -393,6 +407,7 @@ namespace Network.Action
                 Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
                 return;
             }
+            boundNetworkManager = _networkBehaviour.NetworkManager;
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
             if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
@@ -415,9 +430,9 @@ namespace Network.Action
                 serializer1.Serialize(_writer, _param1);
                 serializer2.Serialize(_writer, _param2);
                 
-                if (NetworkManager.Singleton.IsServer)
+                if (Manager.IsServer)
                 {
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 else
                 {
@@ -426,7 +441,7 @@ namespace Network.Action
                         Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
                         return;
                     }
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
                 }
             }
             finally
@@ -440,7 +455,7 @@ namespace Network.Action
             T1 _param1 = serializer1.Deserialize(_messagePayload);
             T2 _param2 = serializer2.Deserialize(_messagePayload);
             
-            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            if (Manager.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
                 if (!allowInvokeByClients)
                 {
@@ -453,7 +468,7 @@ namespace Network.Action
                 {
                     serializer1.Serialize(_writer, _param1);
                     serializer2.Serialize(_writer, _param2);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 finally
                 {
@@ -523,13 +538,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
                 return;
             }
 
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            Manager.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
         
@@ -541,13 +556,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 isRegistered = false;
                 return;
             }
             
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            Manager.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
         }
         
@@ -558,6 +573,10 @@ namespace Network.Action
     {
         private string messageID;
         private List<System.Action<T1, T2, T3>> listeners = new();
+
+        private NetworkManager boundNetworkManager;
+
+        private NetworkManager Manager => boundNetworkManager != null ? boundNetworkManager : NetworkManager.Singleton;
         private INetworkActionSerializer<T1> serializer1;
         private INetworkActionSerializer<T2> serializer2;
         private INetworkActionSerializer<T3> serializer3;
@@ -590,6 +609,7 @@ namespace Network.Action
                 Debug.LogError("NetworkBehaviour must be spawned before creating a NetworkAction tied to it. (you can create the NetworkAction when OnNetworkSpawn is called)");
                 return;
             }
+            boundNetworkManager = _networkBehaviour.NetworkManager;
             messageID = _messageID + "_" + _networkBehaviour.NetworkObjectId + "_" + _networkBehaviour.NetworkBehaviourId;
             if (messageID.Length > NetworkActionConstants.MAX_MESSAGE_LENGTH)
             {
@@ -614,9 +634,9 @@ namespace Network.Action
                 serializer2.Serialize(_writer, _param2);
                 serializer3.Serialize(_writer, _param3);
                 
-                if (NetworkManager.Singleton.IsServer)
+                if (Manager.IsServer)
                 {
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 else
                 {
@@ -625,7 +645,7 @@ namespace Network.Action
                         Debug.LogWarning("Client attempted to invoke NetworkAction: " + messageID + ", but client invocation is not allowed.");
                         return;
                     }
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessage(messageID, NetworkManager.ServerClientId, _writer);
                 }
             }
             finally
@@ -640,7 +660,7 @@ namespace Network.Action
             T2 _param2 = serializer2.Deserialize(_messagePayload);
             T3 _param3 = serializer3.Deserialize(_messagePayload);
             
-            if (NetworkManager.Singleton.IsServer && _senderClientId != NetworkManager.ServerClientId)
+            if (Manager.IsServer && _senderClientId != NetworkManager.ServerClientId)
             {
                 if (!allowInvokeByClients)
                 {
@@ -654,7 +674,7 @@ namespace Network.Action
                     serializer1.Serialize(_writer, _param1);
                     serializer2.Serialize(_writer, _param2);
                     serializer3.Serialize(_writer, _param3);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
+                    Manager.CustomMessagingManager.SendNamedMessageToAll(messageID, _writer);
                 }
                 finally
                 {
@@ -724,13 +744,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 Debug.LogWarning("Ignore if not in play mode: NetworkManager or CustomMessagingManager is null. Cannot register NetworkAction");
                 return;
             }
 
-            NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
+            Manager.CustomMessagingManager.RegisterNamedMessageHandler(messageID, OnReceiveMessage);
             isRegistered = true;
         }
         
@@ -742,13 +762,13 @@ namespace Network.Action
                 return;
             }
             
-            if (NetworkManager.Singleton == null || NetworkManager.Singleton.CustomMessagingManager == null)
+            if (Manager == null || Manager.CustomMessagingManager == null)
             {
                 isRegistered = false;
                 return;
             }
             
-            NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
+            Manager.CustomMessagingManager.UnregisterNamedMessageHandler(messageID);
             isRegistered = false;
         }
         

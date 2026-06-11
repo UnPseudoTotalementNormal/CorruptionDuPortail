@@ -39,7 +39,7 @@ namespace Characters.Powers.PowerComponents
                 return;
             }
 
-            var _potentialLegacyHolder = CharacterManager.instance.GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID)
+            var _potentialLegacyHolder = CharacterManager.For(NetworkManager).GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID)
                 .Where(_c => !_c.role.powers.Any(_p => _p.IsTheSamePower(power)))
                 .Where(_c => !_c.isChained.Value)
                 .Where(_c => _c != currentParent)

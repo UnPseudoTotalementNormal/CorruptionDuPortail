@@ -37,6 +37,6 @@
 }
 
 .main-content {
-    min-width: 572px;
+    min-width: 660px;
     min-height: 560px;
 }

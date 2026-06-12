@@ -15,7 +15,7 @@ namespace Meaf75.Unity{
 
         private static TimeRecorderInfo info;
 		
-		private static readonly Vector2 windowSize = new Vector2(563,560);
+		private static readonly Vector2 windowSize = new Vector2(660,560);
 
         private VisualElement currentDayEditing;
 
@@ -93,14 +93,14 @@ namespace Meaf75.Unity{
 
             timeRecorderPauseStateBtn.text = TimeRecorderExtras.GetPauseButtonLabelForState(TimeRecorder.isPaused).ToUpperInvariant();
 
-            // Set total label dev time
+            // Set total label dev time (single line in the header, unlike the day cells)
             var totalDevLabel = root.Q<Label>( CalendarContainerTemplateNames.LABEL_TOTAL_DEV_TIME);
-            totalDevLabel.text = GetLabel(info?.totalRecordedTime ?? 0);
+            totalDevLabel.text = GetSingleLineLabel(info?.totalRecordedTime ?? 0);
 
             // Set total Claude worked time (read-only, sourced from the hook ledger)
             var totalClaudeLabel = root.Q<Label>( CalendarContainerTemplateNames.LABEL_TOTAL_CLAUDE_TIME);
             if (totalClaudeLabel != null)
-                totalClaudeLabel.text = GetLabel(ClaudeTimeReader.TotalSeconds);
+                totalClaudeLabel.text = GetSingleLineLabel(ClaudeTimeReader.TotalSeconds);
 
             // Generate days
             var daysContainers = new VisualElement[7];
@@ -207,7 +207,7 @@ namespace Meaf75.Unity{
                 var claudeLabel = dayElement.Q<Label>( DayContainerTemplateNames.LABEL_CLAUDE_HOURS);
                 if (claudeLabel != null) {
                     int claudeSeconds = emptyMode ? 0 : ClaudeTimeReader.GetSecondsForDate(dateSelected.Year, dateSelected.Month, i + 1);
-                    claudeLabel.text = claudeSeconds > 0 ? "🤖 " + GetLabel(claudeSeconds) : "";
+                    claudeLabel.text = claudeSeconds > 0 ? "AI " + GetLabel(claudeSeconds) : "";
                 }
 
                 dayContainer.Add(dayElement);
@@ -394,6 +394,12 @@ namespace Meaf75.Unity{
             }
             
             return label;
+        }
+
+        /// <summary> Same as GetLabel but on a single line, for the header totals (never blank) </summary>
+        string GetSingleLineLabel(long timeInSeconds) {
+            string label = GetLabel(timeInSeconds).Replace("\n", " ");
+            return string.IsNullOrEmpty(label) ? "0 h" : label;
         }
 
         private void ChangeTimeRecorderPauseState() {

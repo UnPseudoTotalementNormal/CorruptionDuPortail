@@ -46,7 +46,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
                 new NetworkSerializableObject[]
                 {
-                    new(characterManager.GetLocalClientId()),
+                    new(CharacterQuery.GetLocalClientId()),
                     new(_playerId),
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
@@ -78,7 +78,7 @@ namespace GameLogic.GameStates
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
             if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
-                characterManager.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
+                CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
             {
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
@@ -93,7 +93,7 @@ namespace GameLogic.GameStates
                 return false; // Player has already voted
             }
 
-            Character _character = characterManager.GetCharacter(_playerId, false);
+            Character _character = CharacterQuery.GetCharacter(_playerId, false);
             if (_character == null || _character.isEliminated.Value || _character.isFake)
             {
                 return false; // Player is eliminated or does not exist or is a fake character
@@ -160,7 +160,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             votesForPlayer.Clear();
-            foreach (var _character in characterManager.GetCharacters().Where(_c => !_c.isFake))
+            foreach (var _character in CharacterQuery.GetCharacters().Where(_c => !_c.isFake))
             {
                 votesForPlayer.Add(_character.ownerClientId.Value, new List<ulong>());
             }
@@ -196,7 +196,7 @@ namespace GameLogic.GameStates
             mostVotedPlayer = _winner;
             if (_winner != SKIP_VOTE_ID)
             {
-                Character _votedCharacter = characterManager.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
+                Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
                 ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
             }
             
@@ -204,7 +204,7 @@ namespace GameLogic.GameStates
                 new NetworkSerializableObject[] { new(mostVotedPlayer) }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
-            characterManager.AskForUpdateAllCharactersRpc();
+            Command.AskForUpdateAllCharactersRpc();
         }
         
         public override void OnStartStateClient()

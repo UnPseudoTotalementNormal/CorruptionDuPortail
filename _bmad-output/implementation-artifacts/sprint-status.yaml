@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (9-1 → review: ICharacterQuery read slice extracted (inert 334e124) + 22 pure-read consumers narrowed to it across 3 lanes + GameState/StateUI bases; CharacterQuery prop name dodges the IGameStateQuery Query collision in dual-manager consumers; MIXED→9.2, ENTANGLED→both-managers batch, static-leaves→Epic 12. EM 162/162 + PM 146/146 baselines held; no registry/guard edits. Epic 8 closed (8-4 review). Next: 9-2 ICharacterCommand REVIEW-REQUIRED)
+last_updated: 2026-06-12 (9-2 → done: gds-code-review PASS (3 adversarial layers: 0 decision / 1 patch applied / 1 defer / 3 dismissed; no Critical/High, no regression). ICharacterCommand (10 cmd) + 4 clean consumers narrowed incl. [Rpc]-through-interface (Option A, byte-identical); powers/GameManager/Character/DevIdentityController/PowerEffectDispatcher kept concrete (AC2). AC3 fixture proves per-NM + RPC-through-interface + clientId>=100 interception. EM 162/162 + PM 147/147. 9-2 UNCOMMITTED (awaiting commit). Next: commit 9-2 (2 commits: inert split + narrowing/fixture), then 9-3 (narrow CharacterManager statics → root-backed))
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -146,7 +146,7 @@ development_status:
   # Epic 9 (D3): split CharacterManager (ICharacterQuery / ICharacterCommand); fixture-gated; NFR5 verbatim
   epic-9: in-progress
   9-1-extract-icharacterquery-and-migrate-read-consumers: review  # ICharacterQuery (6 read members) extracted+inert (334e124); Task 3 narrowed 22 pure-read consumers to the slice (9 lane-A narrowing-prop named CharacterQuery to dodge the IGameStateQuery Query collision; 2 lane-B/C interface-typed field; GameState+StateUI bases get protected CharacterQuery → 7 pure-read GameStates + 2 StateUIs routed). MIXED (Lobby/RoleAttribution/Vote/powers/ChainingManager/GameManager)→9.2; ENTANGLED (RoomFog/AnonymeMessageButton/InfoTableSystem/PowersBar)→both-managers-one-touch; static-leaves→Epic 12. No registry/guard edits (already Epic-7-injected, no new .instance/.For). EM 162/162 + PM 146/146 baselines held.
-  9-2-extract-icharactercommand-and-migrate-command-consumers: ready-for-dev  # REVIEW-REQUIRED: bot flow byte-identical, fixture proves clientId>=100 path
+  9-2-extract-icharactercommand-and-migrate-command-consumers: done  # gds-code-review PASS (3 adversarial layers, 0 decision / 1 patch applied (PowerEffectDispatcher→census) / 1 defer (pre-existing GetCharacters().Add() no-op on defensive copy) / 3 dismissed; no Critical/High, no behaviour regression; GiveRoleRpc-via-interface gating VERIFIED via RoleAssignment golden). ICharacterCommand (10 cmd members) extracted+inert; 4 clean consumers narrowed (Lobby/RoleAttribution/Vote/Chaining) incl. [Rpc]-through-interface (Option A, validated byte-identical by VoteTally/RoleAssignment goldens); powers/GameManager/Character/DevIdentityController/PowerEffectDispatcher kept concrete (AC2 verify-don't-force). AC3 fixture CharacterCommandBotFlowTests proves per-NM resolve + RPC-through-interface + clientId>=100 interception. EM 162/162 + PM 147/147. No registry/guard edits. UNCOMMITTED (awaiting commit).
   9-3-narrow-charactermanager-statics-to-the-root-backed-resolution: ready-for-dev  # façade leftovers recorded; final kill in 12.3
 
   # Epic 10 (D4): remaining singletons → injection (descending fan-in; recorded opt-outs allowed)

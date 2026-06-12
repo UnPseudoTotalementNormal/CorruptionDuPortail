@@ -28,6 +28,10 @@ namespace GameLogic
         // would false-fail those. Production wires both in GameScene (verified); proper wiring
         // coverage lands when this joins the registry in Epic 8.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1/9.2 (Epic 9 / D3): read + command slices of the scene-wired characterManager (D-NFR6
+        // internal-narrowing). GetCharacter goes through Query, AskForUpdateAllCharactersRpc through Command.
+        private ICharacterQuery Query => characterManager;
+        private ICharacterCommand Command => characterManager;
         [SerializeField] private GameInfoRevealer gameInfoRevealer;
 
         private void Awake()
@@ -76,7 +80,7 @@ namespace GameLogic
         public void ChainCharacterRpc(ulong _characterId)
         {
             var _gameManager = GameManager.For(NetworkManager);
-            var _character = characterManager.GetCharacter(_characterId);
+            var _character = Query.GetCharacter(_characterId);
 
             _character.ChainCharacterServer();
             gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
@@ -91,7 +95,7 @@ namespace GameLogic
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             }
             
-            characterManager.AskForUpdateAllCharactersRpc();
+            Command.AskForUpdateAllCharactersRpc();
         }
     }
 }

@@ -20,12 +20,12 @@ namespace GameLogic.GameStates
 
         private void AddNewCharacter(ulong clientId)
         {
-            characterManager.AddNewCharacter(clientId);
+            Command.AddNewCharacter(clientId);
         }
 
         private void OnClientDisconnected(ulong clientId)
         {
-            characterManager.RemoveCharacter(clientId);
+            Command.RemoveCharacter(clientId);
         }
         
         public void OnStartGameButtonPressed()
@@ -33,7 +33,7 @@ namespace GameLogic.GameStates
             SerializedDictionary<RoleDataObject, RoleAttributionSetting> _roleAttributionDictionary = 
                 ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState))
                 .First()).roleAttributionDictionary;
-            int _playerCount = characterManager.GetCharacters().Count;
+            int _playerCount = CharacterQuery.GetCharacters().Count;
 
             int _totalRolesToAttribute = _roleAttributionDictionary.Values.Sum(_setting => _setting.roleToAttribute);
             

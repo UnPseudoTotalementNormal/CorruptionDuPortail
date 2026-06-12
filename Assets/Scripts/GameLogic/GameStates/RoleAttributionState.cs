@@ -44,8 +44,8 @@ namespace GameLogic.GameStates
                 _canBeFake.Add(_setting.canBeFake);
             }
 
-            int _fakeRoleAmountToRemove = (int)Mathf.Abs(characterManager.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
-            List<Character> _realCharacters = characterManager.GetCharacters().Where(_c => !_c.isFake).ToList();
+            int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
+            List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
 
             RoleDistribution _distribution = new RoleDistributor().Distribute(
                 _initialCounts, _canBeFake, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
@@ -53,7 +53,7 @@ namespace GameLogic.GameStates
             //assign fake roles to freshly created fake characters (fakes draw first, in order)
             foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)
             {
-                ApplyRole(_frozenOrder[_fakeRoleIndex], characterManager.CreateNewFakeCharacter());
+                ApplyRole(_frozenOrder[_fakeRoleIndex], Command.CreateNewFakeCharacter());
             }
 
             //assign the remaining draws to the real characters, in processing order
@@ -92,10 +92,10 @@ namespace GameLogic.GameStates
 
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
-                    characterManager.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
+                    Command.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
                 }
 
-                characterManager.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
+                Command.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
             }
         }
 
@@ -106,7 +106,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            characterManager.GetCharacters().Add(_character);
+            CharacterQuery.GetCharacters().Add(_character);
         }
         
         public override void OnEndStateServer()

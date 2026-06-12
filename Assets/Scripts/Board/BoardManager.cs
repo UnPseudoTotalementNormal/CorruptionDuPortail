@@ -36,6 +36,11 @@ public class BoardManager : NetworkBehaviour
     [SerializeField] private GameInfoRevealer gameInfoRevealer;
     // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
     private ICharacterQuery CharacterQuery => characterManager;
+
+    // Story 11.2 (Epic 11 / D5): the card grid-wrap placement arithmetic extracted to a pure,
+    // EditMode-tested Domain POCO. The adapter reads the scene Transforms' local positions + the
+    // spacing constants and wraps the plain-float result back into a Vector3.
+    private readonly CorruptionDuPortail.Domain.CardLayout _cardLayout = new();
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -142,19 +147,10 @@ public class BoardManager : NetworkBehaviour
 
     private Vector3 GetCardPlacedPosition(int _cardIndex)
     {
-        var _position = new Vector3(spawnCardPosition.localPosition.x, spawnCardPosition.localPosition.y, spawnCardPosition.localPosition.z);
-        while (_cardIndex > 0)
-        {
-            _position += new Vector3(CARD_SPACING, 0, 0);
-            if (_position.x >= maxCardPosition.localPosition.x)
-            {
-                _position = new Vector3(spawnCardPosition.localPosition.x, _position.y, _position.z - CARD_LINE_SPACING);
-            }
-            
-            _cardIndex -= 1;
-        }
-
-        return _position;
+        Vector3 _origin = spawnCardPosition.localPosition;
+        var _placement = _cardLayout.GetPlacedPosition(
+            _cardIndex, _origin.x, _origin.y, _origin.z, CARD_SPACING, CARD_LINE_SPACING, maxCardPosition.localPosition.x);
+        return new Vector3(_placement.X, _placement.Y, _placement.Z);
     }
 
     public async UniTask ShowAllPlayerCards(bool _forceRefresh = false, bool _stopOtherAnims = true)

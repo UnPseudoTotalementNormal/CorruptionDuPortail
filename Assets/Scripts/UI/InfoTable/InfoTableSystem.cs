@@ -17,13 +17,16 @@ namespace UI.InfoTable
         [SerializeField] private Transform contentRoot;
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop. Null-tolerant — code keeps its own null-checks; SceneWiringGuard CI is the wiring control (no Assert here).
         [SerializeField] private GameInfoRevealer gameInfoRevealer;
+        // Story 12.2 lane A: GameManager + CharacterManager scene-wired, clearing the §4a-entangled hub reads. SceneWiringGuard is the wiring control.
+        [SerializeField] private GameManager gameManager;
+        [SerializeField] private CharacterManager characterManager;
 
         private List<InfoTablePlayerRoleHandler> playerHandlers = new();
         private Dictionary<Role, int> roleCounts = new();
 
         private void Start()
         {
-            GameManager.instance.onGameStarted += OnGameStarted;
+            gameManager.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()
@@ -82,7 +85,7 @@ namespace UI.InfoTable
             _playerRoleHeader.headerText.SetText("Joueurs / Rôles");
             
             // Create role headers
-            foreach (Character _character in CharacterManager.instance.GetCharacters(false))
+            foreach (Character _character in characterManager.GetCharacters(false))
             {
                 if (_character.role == null)
                 {
@@ -109,7 +112,7 @@ namespace UI.InfoTable
             }
             
             // Create individual Player Rows
-            foreach (Character _character in CharacterManager.instance.GetCharacters(false).Where(_c => _c.isFake == false))
+            foreach (Character _character in characterManager.GetCharacters(false).Where(_c => _c.isFake == false))
             {
                 HorizontalLayoutGroup _playerRow = Instantiate(rowPrefab, contentRoot);
                 _playerRow.gameObject.name = $"Player Row - {_character.GetOwnerPseudo()}";
@@ -253,9 +256,9 @@ namespace UI.InfoTable
 
         private void OnDestroy()
         {
-            if (GameManager.instance != null)
+            if (gameManager != null)
             {
-                GameManager.instance.onGameStarted -= OnGameStarted;
+                gameManager.onGameStarted -= OnGameStarted;
             }
             
             foreach (InfoTablePlayerRoleHandler _handler in playerHandlers)

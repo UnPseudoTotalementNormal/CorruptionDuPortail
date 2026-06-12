@@ -16,6 +16,8 @@ namespace TooltipSystem
     public class TooltipLinkParser : MonoBehaviour
     {
         [SerializeField] private SerializedDictionary<string, TooltipReference> textTooltipReferences = new();
+        // Story 12.2 lane A: scene-wired CharacterManager, replacing the façade route. SceneWiringGuard is the wiring control.
+        [SerializeField] private CharacterManager characterManager;
 
         private void Awake()
         {
@@ -53,8 +55,7 @@ namespace TooltipSystem
             ulong _powerObjectId = ulong.Parse(_ids[1]);
             int _componentIndex = int.Parse(_ids[2]);
 
-            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
-            Power _power = CharacterManager.instance
+            Power _power = characterManager
                 .GetCharacter(_ownerClientId, false)?.role.powers.Find(_p => _p.NetworkObjectId == _powerObjectId);
             if (!_power)
             {
@@ -88,7 +89,7 @@ namespace TooltipSystem
             ulong _ownerClientId = ulong.Parse(_ids[0]);
             ulong _powerObjectId = ulong.Parse(_ids[1]);
 
-            Power _power = CharacterManager.instance
+            Power _power = characterManager
                 .GetCharacter(_ownerClientId, false)?.role.powers.Find(_p => _p.NetworkObjectId == _powerObjectId);
             if (!_power)
             {

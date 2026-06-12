@@ -643,6 +643,7 @@ MonoBehaviour:
   powersBarParent: {fileID: 1876150490}
   powerBarObjectPrefab: {fileID: 8026194569897164769, guid: 44f21c60b80d7d6a781982f44a09d3de, type: 3}
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
   powersBarObjects: []
 --- !u!1 &130148568
 GameObject:
@@ -3006,6 +3007,7 @@ MonoBehaviour:
         title: Corruption
         description: "Chaque joueur peut \xEAtre corrompu, lorsque tout les joueurs
           non-anomalie sont corrompu, les anomalies gagnent"
+  characterManager: {fileID: 1541735909}
 --- !u!1 &524419695
 GameObject:
   m_ObjectHideFlags: 0
@@ -5595,6 +5597,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  gameManager: {fileID: 704980999}
+  characterManager: {fileID: 1541735909}
 --- !u!1 &875423821
 GameObject:
   m_ObjectHideFlags: 0
@@ -8286,6 +8290,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aeb07f69df9f61679997ea3238c7a4b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI.BoardUI.CardPickerManager
+  boardManager: {fileID: 1230486870}
+  characterManager: {fileID: 1541735909}
+  focusManager: {fileID: 2007998398}
   rolePickerCardSpacingAngle: 8
   rolePickerCardSpacing: 5
   rolePickerCardHeightOffset: 0.15
@@ -9215,6 +9222,14 @@ PrefabInstance:
       propertyPath: contentRoot
       value: 
       objectReference: {fileID: 2074186949}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameManager
+      value: 
+      objectReference: {fileID: 704980999}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: characterManager
+      value: 
+      objectReference: {fileID: 1541735909}
     - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
       propertyPath: gameInfoRevealer
       value: 
@@ -15432,6 +15447,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameManager
+      value: 
+      objectReference: {fileID: 704980999}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: characterManager
+      value: 
+      objectReference: {fileID: 1541735909}
     - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
       propertyPath: gameInfoRevealer
       value: 

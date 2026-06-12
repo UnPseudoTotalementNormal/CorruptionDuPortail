@@ -12,7 +12,10 @@ using FocusSystem;
 using FX;
 using GameLogic;
 using MessageSystem;
+using TooltipSystem;
 using UI;
+using UI.BoardUI;
+using UI.InfoTable;
 
 namespace Tests.Editor
 {
@@ -95,6 +98,18 @@ namespace Tests.Editor
             // (already above, 7.4) + GameInfoRevealer (above, lane C OnNetworkSpawn) dropped their
             // BoardManager.instance reads; CardEffectManager newly migrated onto a lane-A scene field.
             typeof(CardEffectManager),
+            // Story 12.2 (Epic 12 / D6) — the scene lane-A UI reroutes. Each drops its last
+            // §4a/§4d/§4f hub+survivor reads onto injected [SerializeField] manager fields, MCP-wired in
+            // GameScene. AnonymeMessageButton/InfoTableSystem/PowersBar: GameManager + CharacterManager;
+            // CardPickerManager: BoardManager + CharacterManager + FocusManager;
+            // TooltipLinkParser: CharacterManager. Both guards cover them (scene-placed, serialized fields).
+            // ShutOffGameButton was triaged REROUTE in 12.1 but is prefab-only (GameEndigStateUI.prefab) →
+            // lane A physically impossible → reclassified OPT-OUT (§4g), stays on the façade, NOT registered.
+            typeof(AnonymeMessageButton),
+            typeof(InfoTableSystem),
+            typeof(PowersBar),
+            typeof(CardPickerManager),
+            typeof(TooltipLinkParser),
         };
 
         /// <summary>
@@ -143,6 +158,7 @@ namespace Tests.Editor
             typeof(CharactersBar), // 7.4 — FocusManager.charactersBar lane-A wiring is guard-checked.
             typeof(PowersBar), // 7.4 — PowerUsageManager.powersBar lane-A wiring is guard-checked.
             typeof(BoardManager), // 10.3 — FocusManager.boardManager + CardEffectManager.boardManager lane-A wiring is guard-checked.
+            typeof(FocusManager), // 12.2 — CardPickerManager.focusManager lane-A wiring is guard-checked.
         };
 
         /// <summary>

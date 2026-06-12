@@ -23,6 +23,9 @@ namespace Board.UI.PowerBar
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+
+        // Story 12.2 lane A: scene-wired GameManager, clearing the last GameManager hub read.
+        [SerializeField] private GameManager gameManager;
         
         public List<PowersBarObject> powersBarObjects = new();
         
@@ -33,8 +36,9 @@ namespace Board.UI.PowerBar
         private void Start()
         {
             Assert.IsNotNull(characterManager, "PowersBar.characterManager is not wired — wire it in GameScene (the composition root).");
-            GameManager.instance.onGameStarted += SubscribeToLocalCharacter;
-            CharacterManager.instance.onLocalIdentityChanged += SubscribeToLocalCharacter;
+            Assert.IsNotNull(gameManager, "PowersBar.gameManager is not wired — wire it in GameScene (the composition root).");
+            gameManager.onGameStarted += SubscribeToLocalCharacter;
+            characterManager.onLocalIdentityChanged += SubscribeToLocalCharacter;
         }
 
         private void SubscribeToLocalCharacter()
@@ -45,7 +49,7 @@ namespace Board.UI.PowerBar
                 _currentSubscribedCharacter.onRoleUpdated -= OnPowersUpdated;
             }
 
-            _currentSubscribedCharacter = CharacterManager.instance.GetLocalCharacter(false);
+            _currentSubscribedCharacter = characterManager.GetLocalCharacter(false);
             
             if (_currentSubscribedCharacter)
             {

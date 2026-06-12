@@ -28,10 +28,9 @@ namespace UI
                 return;
             }
 
-            // Story 12.2: prefab-only leaf (lives on GameEndigStateUI.prefab, not GameScene) → lane A
-            // physically impossible (prefab can't ref a scene object); recorded OPT-OUT, GameManager.instance
-            // façade death deferred to 12.3 alongside the sibling prefab-only leaves (§4g).
-            GameManager.instance.ShutOffGameRpc();
+            // Story 12.3: prefab-only leaf (lives on GameEndigStateUI.prefab) — lane A impossible, so it resolves
+            // through the sanctioned CompositionRoot.For(Singleton) instead of the GameManager God-Object façade.
+            CompositionRoot.For(NetworkManager.Singleton).GameManager.ShutOffGameRpc();
         }
 
     }

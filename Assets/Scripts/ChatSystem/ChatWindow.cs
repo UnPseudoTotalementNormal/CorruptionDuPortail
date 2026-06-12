@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
 
@@ -11,6 +12,9 @@ namespace ChatSystem
 {
     public class ChatWindow
     {
+        // ChatManager is a recorded §4 survivor singleton (not de-singletonised) — the sanctioned access is
+        // the singleton itself. Story 12.3 only reroutes the GameManager/CharacterManager God-Object façade
+        // reads onto CompositionRoot.For(Singleton); the chat singleton view stays on its own instance.
         private ChatManager chatManager => ChatManager.instance;
         
         public int chatId;
@@ -36,7 +40,7 @@ namespace ChatSystem
                 return;
 
             FixedString512Bytes _message = new FixedString512Bytes(_text);
-            chatManager.SendChatMessageServerRpc(new ChatMessage(Characters.CharacterManager.instance.GetLocalClientId(), _message, chatId));
+            chatManager.SendChatMessageServerRpc(new ChatMessage(CompositionRoot.For(NetworkManager.Singleton).CharacterQuery.GetLocalClientId(), _message, chatId));
         }
 
         public void AddChatMessage(ChatMessage _message)

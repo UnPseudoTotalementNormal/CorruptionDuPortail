@@ -4,6 +4,7 @@ using System.Linq;
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -27,7 +28,7 @@ namespace Board.UI.CharacterBar
         {
             role = GetComponentInParent<CharactersBarObject>().playerCharacter.role;
             
-            awakeningState = (AwakeningState)GameManager.instance.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
+            awakeningState = (AwakeningState)CompositionRoot.For(NetworkManager.Singleton).GameManager.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
             Assert.IsNotNull(awakeningState, "AwakeningState is null");
             
             awakeningLayerIndex = awakeningState.GetAwakeningLayerIndex(role);
@@ -38,10 +39,12 @@ namespace Board.UI.CharacterBar
             
             if (awakeningLayerIndex == awakeningState.currentAwakeningIndex)
             {
-                // Story 7.4: prefab-resident UI leaf (CharacterBarObject prefab) — façade route; proper injection: Epic 12.
-                Character _characterOwner = CharacterManager.instance.GetCharacters(false)
+                // Story 12.3: prefab-resident UI leaf (CharacterBarObject prefab) — resolves through the sanctioned
+                // CompositionRoot.For(Singleton) instead of the CharacterManager God-Object façade.
+                ICharacterQuery _characters = CompositionRoot.For(NetworkManager.Singleton).CharacterQuery;
+                Character _characterOwner = _characters.GetCharacters(false)
                     .First(c => c.ownerClientId.Value == role.ownerClientId);
-                bool _isAnySameRoleAwakened = CharacterManager.instance.GetCharacters(false)
+                bool _isAnySameRoleAwakened = _characters.GetCharacters(false)
                     .Any(c => c.role.IsTheSameRole(role) && c.isAwakened.Value);
                 if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.isAwakened.Value) ||
                     (awakeningTimerType == AwakeningTimerType.AnyRole && _isAnySameRoleAwakened))

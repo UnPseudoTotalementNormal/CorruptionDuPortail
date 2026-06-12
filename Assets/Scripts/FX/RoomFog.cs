@@ -3,6 +3,7 @@ using Booleans;
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace FX
@@ -19,9 +20,9 @@ namespace FX
         private CompositeBool<FogReason> shouldShowFog = new();
 
         // Story 11.4 lifecycle hygiene: cache the exact GameManager + character whose events/NetworkVariables
-        // we subscribe to, so OnDestroy can unsubscribe from the same instances. (These still read the
-        // globals — RoomFog is the §4a-entangled component injected fully in Epic 12; this story only fixes
-        // the teardown leak, it does not migrate the locator.)
+        // we subscribe to, so OnDestroy can unsubscribe from the same instances. Story 12.3: the reads now go
+        // through the sanctioned CompositionRoot.For(Singleton) instead of the GameManager/CharacterManager
+        // God-Object façades (verify-don't-force — this prefab-less scene leaf has no clean lane-A/C seam).
         private GameManager _subscribedGameManager;
         private Character _subscribedAwakeningCharacter;
 
@@ -35,13 +36,13 @@ namespace FX
             shouldShowFog.Set(FogReason.GameState, false);
             shouldShowFog.Set(FogReason.PlayerAwakened, true);
             UpdateFogState();
-            _subscribedGameManager = GameManager.instance;
+            _subscribedGameManager = CompositionRoot.For(NetworkManager.Singleton).GameManager;
             _subscribedGameManager.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()
         {
-            _subscribedAwakeningCharacter = CharacterManager.instance.GetLocalCharacter(false);
+            _subscribedAwakeningCharacter = CompositionRoot.For(NetworkManager.Singleton).CharacterManager.GetLocalCharacter(false);
             _subscribedAwakeningCharacter.isAwakened.OnValueChanged += OnAwakeningChanged;
             _subscribedGameManager.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
         }
@@ -62,7 +63,7 @@ namespace FX
 
         private void OnGameStateChanged(int _previousValue, int _newValue)
         {
-            bool isInAwakeningState = GameManager.instance.GetGameState(_newValue) is AwakeningState;
+            bool isInAwakeningState = _subscribedGameManager.GetGameState(_newValue) is AwakeningState;
             shouldShowFog.Set(FogReason.GameState, isInAwakeningState);
             UpdateFogState();
         }

@@ -12,9 +12,12 @@ using FocusSystem;
 using FX;
 using GameLogic;
 using MessageSystem;
+using NoteSystem;
 using TooltipSystem;
 using UI;
 using UI.BoardUI;
+using UI.CardUI;
+using UI.Components;
 using UI.InfoTable;
 
 namespace Tests.Editor
@@ -141,6 +144,19 @@ namespace Tests.Editor
             // last CharacterManager.instance hop (clears the §4a census row). NGO-spawned NetworkBehaviour
             // with no [SerializeField] manager field → guard #1 source-scan only (same shape as SendMessagePanel).
             typeof(Network.LobbyPlayerInfoHolder),
+            // Story 12.2 (Epic 12 / D6) — prefab-only UI consumers rerouted off CharacterManager.instance by
+            // reading an injected ICharacterQuery slice their parent/host already carries (no scene/prefab
+            // [SerializeField] manager field of their own → guard #1 source-scan only):
+            //   MeIconCard + NoteRibbon read parent Card.CharacterQuery (precedent: CardCorruptedText);
+            //   VoteStateUI reads the StateUI base CharacterQuery (9.1);
+            //   NoteChoosePanel takes the slice pushed by its creating NoteRibbon (SetTarget);
+            //   AwakeningRecapCorruption takes the slice pushed by its AwakeningRecapStateUI host.
+            // NoteRibbon/NoteChoosePanel keep NoteManager.instance (recorded §4f survivor — not forbidden).
+            typeof(MeIconCard),
+            typeof(NoteRibbon),
+            typeof(VoteStateUI),
+            typeof(NoteChoosePanel),
+            typeof(AwakeningRecapCorruption),
         };
 
         /// <summary>

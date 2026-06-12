@@ -13,6 +13,10 @@ using UnityEngine.UI;
 
 namespace UI.Components
 {
+    // Story 12.2 OPT-OUT (recorded §4g): a presentation view over the MessageManager singleton's reveal list
+    // (a non-de-singletonised message singleton, served from its one instance per §4 census) plus a read of
+    // GameManager.currentDay. No narrow slice earns a mock here — verify-don't-force: stays on the façades,
+    // their death deferred to 12.3. The base's pushed CharacterQuery is unused by this leaf.
     public class AwakeningRecapMessages : AwakeningRecapEventComponent
     {
         [Header("Timing Configuration")]

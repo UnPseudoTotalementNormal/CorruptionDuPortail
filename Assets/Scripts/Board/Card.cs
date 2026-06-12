@@ -73,6 +73,9 @@ namespace Board
         // Story 7.4: child components on this card prefab (e.g. CardCorruptedText) read the revealer
         // from their parent Card instead of hub-hopping through GameManager.gameInfoRevealer.
         public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+        // Story 12.2: same precedent for the character-query slice — card children (MeIconCard, NoteRibbon)
+        // read it from their parent Card instead of the CharacterManager façade.
+        public ICharacterQuery CharacterQuery => characterManager;
 
         // Assumption: child IPanelOpen set is fixed at Awake (no panels instantiated/added to the card hierarchy at runtime).
         private IPanelOpen[] panelOpenComponents;

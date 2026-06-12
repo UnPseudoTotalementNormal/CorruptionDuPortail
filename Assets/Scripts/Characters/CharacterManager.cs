@@ -24,12 +24,14 @@ namespace Characters
         // injected every gameplay read/command consumer onto ICharacterQuery / ICharacterCommand (resolved via
         // CompositionRoot); no gameplay path reaches `instance` anymore. The remaining callers are all
         // verify-don't-force exceptions WITH a death date — see the recorded leftovers census in
-        // refactor-architecture-despaghetti.md §4: UI leaves + entangled (RoomFog / PowersBar /
-        // AnonymeMessageButton / InfoTableSystem / Note* / CardPickerManager / MeIconCard / Tooltip* /
-        // VoteStateUI / *RecapCorruption / SelectPanelPlayer / CharacterAwakenTimer / TakeDownThePortalTextTitle
-        // / ChatWindow) → Epic 12.3; ChatManager / LobbyPlayerInfoHolder → Epic 10; W* winning-condition POCOs +
-        // TargetUtils + PowerEffectDispatcher = static/POCO façade (no injection context); DevIdentityController
-        // = debug F-keys. The field STAYS public for those callers.
+        // refactor-architecture-despaghetti.md §4. Story 12.2 rerouted the bulk of the UI leaves off this façade:
+        //   lane A (scene, [SerializeField]): PowersBar / AnonymeMessageButton / InfoTableSystem / CardPickerManager / TooltipLinkParser;
+        //   prefab push (slice from parent/host): MeIconCard / NoteRibbon / NoteChoosePanel / VoteStateUI / AwakeningRecapCorruption.
+        // STILL on the façade → Epic 12.3 (the final sweep): RoomFog, CharacterAwakenTimer, TakeDownThePortalTextTitle,
+        // ChatWindow, plus the 12.2 recorded OPT-OUTs SelectPanelPlayer / AwakeningRecapMessages /
+        // AnonymousRevealedMessagesComponent (no injection context). ChatManager / LobbyPlayerInfoHolder → Epic 10;
+        // W* winning-condition POCOs + TargetUtils + PowerEffectDispatcher = static/POCO façade (no injection context);
+        // DevIdentityController = debug F-keys. The field STAYS public for those callers.
         // recorded: dies in 12.3 (once the UI/static leftovers above are rerouted, this static is deleted).
         public static CharacterManager instance;
 

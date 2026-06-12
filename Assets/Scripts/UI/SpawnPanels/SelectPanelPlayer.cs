@@ -24,7 +24,9 @@ namespace UI.SpawnPanels
         
         private void Start()
         {
-            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+            // Story 12.2 OPT-OUT (recorded §4g): this panel is a Resources-loaded prefab (CreatePannel) with no
+            // caller in the codebase to push a slice from and no Card/StateUI base of its own → no injection
+            // context. Verify-don't-force: stays on the CharacterManager façade, death deferred to 12.3.
             foreach (ulong _playerId in CharacterManager.instance.GetCharacters().Where(_c => !_c.isFake).Select(_character => _character.ownerClientId.Value))
             {
                 GameObject _playerButton = Instantiate(playerButtonPrefab, layoutTransform);

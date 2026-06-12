@@ -32,7 +32,9 @@ namespace UI.CardUI
 
         private void Start()
         {
-            CharacterManager.instance.onLocalIdentityChanged += UpdateIdentityVisibility;
+            // Story 12.2: read the character-query slice from the parent Card (pushed by BoardManager.AddNewCard)
+            // instead of the CharacterManager façade — same precedent as CardCorruptedText reading card.GameInfoRevealer.
+            card.CharacterQuery.onLocalIdentityChanged += UpdateIdentityVisibility;
             UpdateIdentityVisibility();
         }
 
@@ -40,7 +42,7 @@ namespace UI.CardUI
         {
             if (card.characterInfo == null) return;
             
-            isMe = card.characterInfo.ownerClientId.Value == CharacterManager.instance.GetLocalClientId();
+            isMe = card.characterInfo.ownerClientId.Value == card.CharacterQuery.GetLocalClientId();
             
             if (!isMe)
             {
@@ -107,9 +109,9 @@ namespace UI.CardUI
 
         private void OnDestroy()
         {
-            if (CharacterManager.instance != null)
+            if (card != null && card.CharacterQuery != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged -= UpdateIdentityVisibility;
+                card.CharacterQuery.onLocalIdentityChanged -= UpdateIdentityVisibility;
             }
             UnsubscribeFromMovement();
             if (card != null)

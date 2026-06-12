@@ -15,7 +15,10 @@ namespace Characters
 {
     // Story 9.1 (Epic 9 / D3): CharacterManager implements the read slice ICharacterQuery. All six
     // members are already public, so this is satisfied implicitly — zero behaviour change.
-    public class CharacterManager : NetworkBehaviour, ICharacterQuery
+    // Story 9.2 (Epic 9 / D3): also implements the command slice ICharacterCommand (spawn/mutation),
+    // again implicit (every command member is already public). GetSafeRpcTarget / IsLocalOrSimulated
+    // stay OFF both interfaces — they are NFR5 network-authority internals (§3(d)).
+    public class CharacterManager : NetworkBehaviour, ICharacterQuery, ICharacterCommand
     {
         public static CharacterManager instance;
 

@@ -58,6 +58,8 @@ namespace GameLogic
         public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
         // Story 9.1 (Epic 9 / D3): the narrow read slice of the resolved CharacterManager.
         public ICharacterQuery CharacterQuery => Characters.CharacterManager.For(_networkManager);
+        // Story 9.2 (Epic 9 / D3): the narrow command (spawn/mutation) slice of the resolved CharacterManager.
+        public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
         public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
         public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
@@ -150,6 +152,8 @@ namespace GameLogic
             public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
             // Story 9.1 (Epic 9 / D3): narrow read slice of the resolved CharacterManager.
             public ICharacterQuery CharacterQuery => Characters.CharacterManager.For(_networkManager);
+            // Story 9.2 (Epic 9 / D3): narrow command (spawn/mutation) slice of the resolved CharacterManager.
+            public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
             public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
             public GameInfoRevealer GameInfoRevealer => ResolveGameInfoRevealer(_networkManager);
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.

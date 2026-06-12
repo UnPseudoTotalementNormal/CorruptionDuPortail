@@ -4,6 +4,7 @@ using Characters;
 using Extensions;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace UI.CardUI
 {
@@ -34,6 +35,9 @@ namespace UI.CardUI
         {
             // Story 12.2: read the character-query slice from the parent Card (pushed by BoardManager.AddNewCard)
             // instead of the CharacterManager façade — same precedent as CardCorruptedText reading card.GameInfoRevealer.
+            // Assert localises a future regression of the AddNewCard→Card.Initialize push: the slice must be set
+            // before this child's Start (the old global static read had no such ordering dependency).
+            Assert.IsNotNull(card.CharacterQuery, "MeIconCard: card.CharacterQuery is null — Card.Initialize (BoardManager.AddNewCard) must run before the card child's Start.");
             card.CharacterQuery.onLocalIdentityChanged += UpdateIdentityVisibility;
             UpdateIdentityVisibility();
         }

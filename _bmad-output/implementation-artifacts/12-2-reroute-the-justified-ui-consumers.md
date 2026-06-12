@@ -1,6 +1,6 @@
 # Story 12.2: Reroute the justified UI consumers
 
-Status: review
+Status: done
 
 ## Story
 
@@ -22,6 +22,13 @@ so that the UI's worthwhile decoupling lands without churning the whole layer.
 - [x] **Task 2:** Migrate per batch (6.1 template / push / root per row). Misjudged rows updated in §4g first, then implemented.
 - [x] **Task 3:** Wiring verification sweep (SceneWiringGuard is the net — both batches end with both guard categories green).
 - [x] **Task 4:** Gates; sprint-status; commits per batch (batch 1 = `4b17bea`).
+
+### Review Findings (gds-code-review, 2026-06-12)
+
+- [x] [Review][Patch] `MeIconCard.Start()` dereferences `card.CharacterQuery` with no null guard — **APPLIED**: added `Assert.IsNotNull(card.CharacterQuery, …)` in `MeIconCard.Start` (mirrors PowersBar's injected-field asserts) to localize a future regression of the `BoardManager.AddNewCard`→`Card.Initialize` push. Guard #1 caught the forbidden literal `CharacterManager.instance` in the first assert comment → reworded to "global static read". Re-gated EM 201/201, PM 148/148, both guards green. [Assets/Scripts/UI/CardUI/MeIconCard.cs:37]
+- [x] [Review][Defer] `PowersBar` has no `OnDestroy` → its `Start` subscriptions (`gameManager.onGameStarted`, `characterManager.onLocalIdentityChanged`) are never unsubscribed [Assets/Scripts/Board/UI/PowerBar/PowersBar.cs] — deferred, pre-existing (scene singleton, lives the whole game; the reroute only changed the subscribe source, did not introduce the missing teardown; candidate for a future lifecycle sweep like 11.4).
+
+_Auditor: AC1–AC5 all satisfied. 6 findings dismissed as noise (identity-stable Card.characterManager; NoteChoosePanel.Init private/SetTarget-gated; VoteStateUI/RecapCorruption push precedes deref per GameState.cs:76; RecapMessages base slice harmlessly unused; CardPickerManager static→instance == semantics equivalent + wired; prefab-push leaves rely on intended transitive BoardManager/host wiring)._
 
 ## Dev Notes
 

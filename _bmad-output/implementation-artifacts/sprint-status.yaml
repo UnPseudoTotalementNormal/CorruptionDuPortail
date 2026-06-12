@@ -167,5 +167,5 @@ development_status:
   # Epic 12 (D6): UI layer + final sweep — last, lowest archi payoff, partial opt-out via verify-don't-force
   epic-12: in-progress
   12-1-ui-inventory-and-triage-verify-dont-force: review  # DOC-ONLY. UI-layer triage → archi §4g. REROUTE (12.2): 6 scene lane-A (AnonymeMessageButton/InfoTableSystem/PowersBar/CardPickerManager/ShutOffGameButton/TooltipLinkParser clear last §4a/§4d/§4f hub+survivor reads) + prefab push (MeIconCard/AwakeningRecapCorruption/VoteStateUI/AwakeningRecapMessages via StateUI base/SelectPanelPlayer). OPT-OUT/record (permanent): singleton-views (ChatPanel/ChatWindow/ChatNotificationComponent/HoverTooltipComponent/TooltipWindow/PlayerButtonObject/ConnectedPlayerPanel), prefab-only (TakeDownThePortalTextTitle/CharacterAwakenTimer/RoleAttributionSettingTab+Object), SelectionFlowService POCO, global-service/third-party (MainMenu/LobbyListUI/LobbySelectionPanel/LoginMenu/SmartphoneController → LobbyManager/InputManager/UnityServices). Census reconciled w/ §4f (AC4). No code. UNCOMMITTED.
-  12-2-reroute-the-justified-ui-consumers: review
+  12-2-reroute-the-justified-ui-consumers: done
   12-3-final-sweep-kill-remaining-statics-and-whole-track-dod-gate: ready-for-dev  # endgame census: 1 surviving static (CompositionRoot) + recorded exceptions; merge-to-Dev prep

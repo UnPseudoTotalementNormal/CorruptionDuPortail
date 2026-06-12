@@ -225,6 +225,14 @@ Story 10.5 migrates the remaining **non-`NetworkBehaviour` Mono statics** by des
 
 Both guards consume **one shared curated migrated-consumers set** — each Epic 7+ story appends a type once and both guards pick it up. Runtime backstop: the init-time `Assert.IsNotNull` (§3e).
 
+### 5b. Subscription symmetry (presentation lifecycle convention — story 11.4)
+
+**Rule:** every event/`NetworkVariable` subscription has an unsubscribe in the component's teardown mirror.
+- Subscribe in `Start`/`Awake`/`Initialize`/`OnGameStarted` ⇒ unsubscribe in `OnDestroy` (plain `MonoBehaviour`s) or `OnNetworkDespawn` (`NetworkBehaviour`s; per project-context). Locally-instantiated UI `NetworkBehaviour`s (e.g. `StateUI` subclasses, which are `Instantiate`d not `Spawn`ed, so `OnNetworkDespawn` is unreliable) unsubscribe in `OnDestroy` — mirroring the `StateUI` base.
+- **Cache the exact target.** When you subscribe to *another* object's member resolved at runtime (e.g. `GetLocalCharacter(false).isAwakened`), store the resolved object in a field and unsubscribe from the same reference — re-resolving at teardown can return a different (or null) instance.
+- **Guard the deref.** `if (cachedTarget != null) cachedTarget.X.OnValueChanged -= Handler;` — the target/manager may already be gone during shutdown.
+- **Why it waited until 11.4:** fixing these earlier would have mixed a lifetime change into behaviour-preserving reroutes (golden-noise risk). Isolated here, the unsubscribes only fire at destroy time, so the suite is green **before and after** — the fix is teardown-only, not behaviour-adjacent in-game. Recorded leaks closed (11.4): `LightManager` (the 6.1 origin), `RoomFog`, `AwakeningLight`, `AnonymeMessageButton`, `AwakeningStateUI`, `BoardCameraManager`. (Power-side `isChained` subscriptions — `PLegacy`, `PCPowerUnlockWhenChain`, `PersonalBeaconObject` — are gameplay, outside this presentation-hygiene pass; recorded for a later sweep.)
+
 ## 6. Principles / invariants (non-negotiable)
 
 - **Behaviour-preserving, every commit.** The golden/differential masters (Waves 1–4), the wire-format guard (5.1), the leaf-POCO guard (5.2), and `MultiClientGameFixture` (5.0) are the net. Baseline **PM 145 / EM 155** (plus the guard suites this track adds). A golden that *moves* means hidden behaviour was disturbed — stop and investigate, never "re-bless".

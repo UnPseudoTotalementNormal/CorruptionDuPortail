@@ -26,6 +26,16 @@ public class LightManager : MonoBehaviour
         Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
     }
 
+    private void OnDestroy()
+    {
+        // Story 11.4 lifecycle hygiene: mirror the Start subscription (subscribe-in-X ⇒ unsubscribe-in-its-teardown).
+        // This was the leak recorded in 6.1; it only bites on scene reload / play-restart (domain reload disabled).
+        if (gameManager != null)
+        {
+            Query.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
+        }
+    }
+
     private void OnGameStateChanged(int _previousValue, int _newValue)
     {
         GameState _gameState = Query.GetGameState(_newValue);

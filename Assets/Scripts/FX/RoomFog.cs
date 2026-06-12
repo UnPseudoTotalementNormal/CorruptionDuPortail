@@ -18,6 +18,13 @@ namespace FX
         private ParticleSystem[] particleSystems;
         private CompositeBool<FogReason> shouldShowFog = new();
 
+        // Story 11.4 lifecycle hygiene: cache the exact GameManager + character whose events/NetworkVariables
+        // we subscribe to, so OnDestroy can unsubscribe from the same instances. (These still read the
+        // globals — RoomFog is the §4a-entangled component injected fully in Epic 12; this story only fixes
+        // the teardown leak, it does not migrate the locator.)
+        private GameManager _subscribedGameManager;
+        private Character _subscribedAwakeningCharacter;
+
         private void Awake()
         {
             particleSystems = GetComponentsInChildren<ParticleSystem>(true);
@@ -28,13 +35,29 @@ namespace FX
             shouldShowFog.Set(FogReason.GameState, false);
             shouldShowFog.Set(FogReason.PlayerAwakened, true);
             UpdateFogState();
-            GameManager.instance.onGameStarted += OnGameStarted;
+            _subscribedGameManager = GameManager.instance;
+            _subscribedGameManager.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()
         {
-            CharacterManager.instance.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
-            GameManager.instance.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+            _subscribedAwakeningCharacter = CharacterManager.instance.GetLocalCharacter(false);
+            _subscribedAwakeningCharacter.isAwakened.OnValueChanged += OnAwakeningChanged;
+            _subscribedGameManager.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+        }
+
+        private void OnDestroy()
+        {
+            // Mirror all three subscriptions (Start → onGameStarted, OnGameStarted → isAwakened + currentGameStateIndex).
+            if (_subscribedGameManager != null)
+            {
+                _subscribedGameManager.onGameStarted -= OnGameStarted;
+                _subscribedGameManager.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
+            }
+            if (_subscribedAwakeningCharacter != null)
+            {
+                _subscribedAwakeningCharacter.isAwakened.OnValueChanged -= OnAwakeningChanged;
+            }
         }
 
         private void OnGameStateChanged(int _previousValue, int _newValue)

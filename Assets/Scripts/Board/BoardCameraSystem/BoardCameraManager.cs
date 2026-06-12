@@ -41,6 +41,11 @@ namespace Board.BoardCameraSystem
             {
                 instance = null;
             }
+            // Story 11.4 lifecycle hygiene: mirror the Start subscription (subscribe-in-X ⇒ unsubscribe-in-its-teardown).
+            if (gameManager != null)
+            {
+                Query.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
+            }
         }
 
         private void Start()

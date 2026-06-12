@@ -10,21 +10,44 @@ namespace UI.BoardUI
         private bool hasMessagesLeft = false;
         private bool hasNotSentMessageThisTurn = true;
 
+        // Story 11.4 lifecycle hygiene: cache the exact GameManager + character whose events/NetworkVariables
+        // we subscribe to, so OnDestroy can unsubscribe from the same instances. (Still reads the globals —
+        // §4a-entangled, fully injected in Epic 12; this story only fixes the teardown leak.)
+        private GameManager _subscribedGameManager;
+        private Character _subscribedLocalCharacter;
+
         private void Start()
         {
-            GameManager.instance.onGameStarted += OnGameStarted;
-            GameManager.instance.currentGameStateIndex.OnValueChanged += OnCurrentGameStateIndexChanged;
+            _subscribedGameManager = GameManager.instance;
+            _subscribedGameManager.onGameStarted += OnGameStarted;
+            _subscribedGameManager.currentGameStateIndex.OnValueChanged += OnCurrentGameStateIndexChanged;
         }
 
         private void OnGameStarted()
         {
-            var _localCharacter = CharacterManager.instance.GetLocalCharacter(false);
-            _localCharacter.hasSentMessageThisTurn.OnValueChanged += OnHasSentMessageThisTurnChanged;
-            _localCharacter.messageLeft.OnValueChanged += OnMessageLeftChanged;
-            
+            _subscribedLocalCharacter = CharacterManager.instance.GetLocalCharacter(false);
+            _subscribedLocalCharacter.hasSentMessageThisTurn.OnValueChanged += OnHasSentMessageThisTurnChanged;
+            _subscribedLocalCharacter.messageLeft.OnValueChanged += OnMessageLeftChanged;
+
             isAwakeningState = GameManager.instance.GetGameState(GameManager.instance.currentGameStateIndex.Value) is AwakeningState;
-            hasMessagesLeft = _localCharacter.messageLeft.Value > 0;
-            hasNotSentMessageThisTurn = !_localCharacter.hasSentMessageThisTurn.Value;
+            hasMessagesLeft = _subscribedLocalCharacter.messageLeft.Value > 0;
+            hasNotSentMessageThisTurn = !_subscribedLocalCharacter.hasSentMessageThisTurn.Value;
+        }
+
+        private void OnDestroy()
+        {
+            // Mirror all four subscriptions (Start → onGameStarted + currentGameStateIndex,
+            // OnGameStarted → hasSentMessageThisTurn + messageLeft).
+            if (_subscribedGameManager != null)
+            {
+                _subscribedGameManager.onGameStarted -= OnGameStarted;
+                _subscribedGameManager.currentGameStateIndex.OnValueChanged -= OnCurrentGameStateIndexChanged;
+            }
+            if (_subscribedLocalCharacter != null)
+            {
+                _subscribedLocalCharacter.hasSentMessageThisTurn.OnValueChanged -= OnHasSentMessageThisTurnChanged;
+                _subscribedLocalCharacter.messageLeft.OnValueChanged -= OnMessageLeftChanged;
+            }
         }
 
         private void OnCurrentGameStateIndexChanged(int _previousValue, int _newValue)

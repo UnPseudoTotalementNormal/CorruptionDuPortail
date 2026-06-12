@@ -40,9 +40,27 @@ namespace FX
             Loop.onGameStarted += OnGameStarted;
         }
 
+        // Story 11.4 lifecycle hygiene: cache the exact character whose NetworkVariable we subscribe to,
+        // so OnDestroy can unsubscribe from the same instance.
+        private Character _subscribedAwakeningCharacter;
+
         private void OnGameStarted()
         {
-            CharacterQuery.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
+            _subscribedAwakeningCharacter = CharacterQuery.GetLocalCharacter(false);
+            _subscribedAwakeningCharacter.isAwakened.OnValueChanged += OnAwakeningChanged;
+        }
+
+        private void OnDestroy()
+        {
+            // Mirror the two subscriptions (Start → onGameStarted, OnGameStarted → isAwakened).
+            if (gameManager != null)
+            {
+                Loop.onGameStarted -= OnGameStarted;
+            }
+            if (_subscribedAwakeningCharacter != null)
+            {
+                _subscribedAwakeningCharacter.isAwakened.OnValueChanged -= OnAwakeningChanged;
+            }
         }
 
         private void OnAwakeningChanged(bool _previousValue, bool _newValue)

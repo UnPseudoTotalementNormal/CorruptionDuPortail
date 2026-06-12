@@ -3,6 +3,7 @@ stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step
 inputDocuments:
   - '_bmad-output/refactor-architecture-poco.md'
   - '_bmad-output/refactor-architecture-desingleton.md'
+  - '_bmad-output/refactor-architecture-despaghetti.md'
   - '_bmad-output/project-context.md'
 ---
 
@@ -726,69 +727,443 @@ So that no strangler façade remains anywhere (NFR7 DoD).
 
 # Despaghettification track — Epics 6–12 (D0–D6)
 
-Source of truth: `_bmad-output/refactor-architecture-despaghetti.md` (validated 2026-06-11). Branch: `refactor-despaghetti` (from `dev-refactor`). Goal: replace the Service-Locator + God-Object architecture with dependency injection + narrow interfaces + tested POCOs, behaviour-preserving, shippable per commit. NFR5 (`GetSafeRpcTarget`/`IsLocalOrSimulated`/`clientId >= 100`) relocated, never edited. Safety net: Wave 1–4 goldens + wire-format guard (5.1) + leaf-POCO guard (5.2) + `MultiClientGameFixture` (5.0). Baseline PM 145 / EM 155.
+Source of truth: `_bmad-output/refactor-architecture-despaghetti.md` (**spec arrêtée 2026-06-11** — three-lane injection / one-surviving-static / two-guards). Branch: `refactor-despaghetti` (from `dev-refactor`). Goal: replace the Service-Locator + God-Object architecture with dependency injection through three creation-mode lanes + narrow interfaces + tested POCOs, behaviour-preserving, shippable per commit. NFR5 (`GetSafeRpcTarget`/`IsLocalOrSimulated`/`clientId >= 100`) relocated verbatim, never edited. Safety net: Wave 1–4 goldens + wire-format guard (5.1) + leaf-POCO guard (5.2) + `MultiClientGameFixture` (5.0). Baseline **PM 145 / EM 155** (plus the guard suites this track adds).
 
 **Naming note:** the architecture doc labels these D0–D6; they map to numeric Epics 6–12 for sprint-status story-key compatibility (D0=6, D1=7, … D6=12).
 
-**Measured target (recon 2026-06-11):** GameManager fan-in 72 / CharacterManager 37; GameManager is mostly a locator hub — `.characterManager` used 78×, `.gameInfoRevealer` 31×. Inject those directly and the God Object collapses to its real game-loop surface.
+**Measured target (recon 2026-06-11):** GameManager fan-in 72 / CharacterManager 37; GameManager is mostly a locator hub — `.characterManager` used 78×, `.gameInfoRevealer` 31×. Second structural fact: a large consumer population (`Character`, ~16 `P*` powers, `LobbyPlayerInfoHolder`…) is **NGO-spawned** — client replicas are instantiated by NGO, not by project code, so they need the dedicated lane C (`OnNetworkSpawn` → `CompositionRoot`).
 
-## Epic 6 (D0): Composition root & injection-seam convention
+## Requirements Inventory (despaghetti track)
 
-**Goal:** establish *the* reusable decoupling pattern other epics copy — how a scene manager is injected (`[SerializeField]`), how a runtime-spawned object is initialised (`Initialize(deps)`), where the graph is wired, and a static-absence guard test — proven on ONE small worked example. Low risk, unblocks everything.
+> Scoped to Epics 6–12. The POCO-track FR1–FR13/NFR1–NFR7 above are unchanged and remain mapped to Epics 1–5.
 
-### Story 6.1: Establish the injection seam + composition root on a worked example
+### Functional Requirements
+
+D-FR1: Three-lane injection convention — lane A `[SerializeField]` (scene/prefab-placed), lane B `Initialize(deps)` (created by our code), lane C `OnNetworkSpawn` → `CompositionRoot` (NGO-spawned) — documented in the architecture doc §3 and each lane proven on a real worked example.
+D-FR2: Two permanent guards over one shared curated migrated-consumers set: `DiSeamNoLocatorGuardTests` (no locator reference in migrated types) and `SceneWiringGuardTests` (every injected `[SerializeField]` dependency non-null in scene/prefab).
+D-FR3: `CompositionRoot` — the single surviving project static; scene-placed, Awake-registered, per-`NetworkManager` aware (`For(nm)` delegating to the 5.0c/5.0d registries), typed accessors, consulted only inside `OnNetworkSpawn` glue.
+D-FR4: GameManager-as-locator dismantled — `CharacterManager` (78 hits), `GameInfoRevealer` (31), `ChainingManager`, `CharactersBar`/`PowersBar` injected directly into their consumers; the pass-through fields removed from GameManager.
+D-FR5: GameManager game-loop surface narrowed — `IGameLoop` + `IGameStateQuery` extracted; consumers depend on the injected interface; GameManager keeps `NetworkVariable` ownership + RPC dispatch as the network adapter.
+D-FR6: CharacterManager split — `ICharacterQuery` (reads) vs `ICharacterCommand` (server-authority mutations/spawn); consumers injected; bot flow byte-identical.
+D-FR7: Remaining singletons → injection: the 8 replicated NetworkBehaviour singletons (ChatManager, BoardManager, RoleTargetSystem, StatesCanvas, MessageManager, GameAudioManager, ChainingManager, LobbyPlayerInfoHolder) + the non-replicated Mono statics by fan-in (SelectionFlowService…); verify-don't-force opt-outs recorded.
+D-FR8: Per-system decision logic (Powers, Board, Chat, Focus, Tooltip) pushed into `Domain`/POCOs with EditMode tests; adapters thinned.
+D-FR9: UI layer (48 files) triaged — justified consumers rerouted onto injected dependencies, the rest recorded as verify-don't-force opt-outs; final sweep leaves no unrecorded project static besides `CompositionRoot`.
+
+### NonFunctional Requirements
+
+D-NFR1: Behaviour-preserving, golden-gated every commit — Wave 1–4 goldens + wire-format guard + leaf-POCO guard + `MultiClientGameFixture`; baseline PM 145 / EM 155; a moved golden halts the story.
+D-NFR2: NFR5 network-authority code (`GetSafeRpcTarget` / `IsLocalOrSimulated` / `clientId >= 100` / `RpcParams`) relocated verbatim, never edited; network-sensitive stories fixture-gated + `# REVIEW-REQUIRED`.
+D-NFR3: Serialized-field safety — append-only (never rename/reorder/retype existing serialized fields), every instance wired via MCP and verified by read-back, `[FormerlySerializedAs]` if a rename is unavoidable.
+D-NFR4: Strangler / shippable per commit — old locator path removed at the end of each epic (destructive deletion, compiler-enumerated reroutes); never both paths as permanent debt.
+D-NFR5: Unwired dependency fails loud and early — init-time `Assert.IsNotNull`, no locator fallback ever; the two guards are the CI backstop.
+D-NFR6: Interface rule — unit-testable logic depends on narrow interfaces (lane B injectable fakes); a pure presentation leaf may hold the concrete serialized type (verify-don't-force, recorded).
+
+### D-FR Coverage Map
+
+- D-FR1, D-FR2, D-FR3 → Epic 6 (D0 — seam, guards, root)
+- D-FR4 → Epic 7 (D1 — dismantle the locator hub)
+- D-FR5 → Epic 8 (D2 — narrow the game-loop surface)
+- D-FR6 → Epic 9 (D3 — split CharacterManager)
+- D-FR7 → Epic 10 (D4 — remaining singletons)
+- D-FR8 → Epic 11 (D5 — per-system POCOs)
+- D-FR9 → Epic 12 (D6 — UI + final sweep)
+
+9/9 D-FRs mapped, no orphan. Execution order strict 6→12 (value-per-risk descending); Epic 6 (6.2 + 6.3) is a hard prerequisite of Epic 7 — attacking the 78 `.characterManager` sites without lane C formalised means improvising the pattern mid-batch.
+
+## Epic 6 (D0): Composition root, the three-lane seam & the two guards
+
+**Goal:** establish *the* reusable decoupling pattern other epics copy — the three lanes (A `[SerializeField]`, B `Initialize`, C `OnNetworkSpawn`→root), the `CompositionRoot` (one surviving static), and the two permanent guards — each proven on a real worked example. Low risk, unblocks everything. **Epic 7 must not start before 6.2 and 6.3 are done.**
+
+### Story 6.1: Establish the injection seam + composition root on a worked example — **DELIVERED (2026-06-11)**
 
 As a developer,
 I want a documented, tested dependency-injection seam proven on one real consumer rerouted off a static lookup,
 so that every later despaghetti story has a copy-paste pattern instead of re-inventing the wiring.
 
+**Delivered:** `LightManager` rerouted to a `[SerializeField] private GameManager gameManager;` (lane A canonical example), wired in GameScene, `Awake` null-guard, `DiSeamNoLocatorGuardTests` (`[Category("DiSeamGuard")]`, source-scan mechanism recorded) green, convention documented in the architecture doc §3. Story file: `implementation-artifacts/6-1-establish-injection-seam-and-composition-root-on-a-worked-example.md`.
+
+### Story 6.2: Add the SceneWiringGuard over injected references
+
+As a developer,
+I want an EditMode guard that loads the composition roots and asserts every injected `[SerializeField]` dependency of every migrated consumer is actually wired,
+so that a forgotten drag-drop fails CI deterministically instead of NRE-ing mid-game — the piece that makes lane A scale to 50+ consumers.
+
 **Acceptance Criteria:**
 
-**Given** consumers today resolve managers via `GameManager.instance` / `CharacterManager.For(nm)` (Service Locator), and the project already injects `gameManager` into `GameState` in `GameManager.SetupGameStates`
-**When** the seam convention is established
-**Then** one small consumer (a single power or board component, low fan-in, chosen in Dev Notes) is rerouted to receive its dependency via `[SerializeField]` (scene/prefab-wired) or `Initialize(deps)` (runtime-spawned), with NO remaining static lookup in that consumer
-**And** the composition root (where the dependency is wired) is explicit and documented — scene-placed managers expose themselves; spawned objects get `Initialize` at their existing spawn site
-**And** a static-absence guard EditMode test (assembly-scan, like `LeafPocoNoFacadeGuardTests`) is scaffolded so a forbidden static lookup in the migrated consumer fails a test
-**And** the full suite passes unchanged (PM 145 / EM 155) and the boot smoke-test is green
-**And** the pattern is written up (a short section the next stories reference) covering the `[SerializeField]`-vs-`Initialize` decision rule and the NFR5 relocation rule
+**Given** lane A moves the failure mode from "locator always resolves" to "reference might be unwired", and a new `[SerializeField]` field is null in every existing instance until explicitly wired
+**When** `SceneWiringGuardTests` (EditMode, own `[Category("SceneWiringGuard")]`) is added
+**Then** it enumerates the curated migrated-consumers set, locates every instance of each type in GameScene (EditMode scene load) and in prefab assets for prefab-placed types, and asserts each injected manager-typed `[SerializeField]` field is non-null
+**And** the curated set is refactored into **one shared registry** consumed by both `DiSeamNoLocatorGuardTests` and this guard — Epic 7+ stories append a migrated type once and both guards pick it up
+**And** the guard is proven to bite: a synthetic/temporarily-unwired case turns it red before the story is declared done
+**And** the guard runs in EditMode only (no PlayMode boot), category-filtered, and `LightManager`'s wiring (6.1) passes as its first real subject
+**And** the full suite passes unchanged at baseline (PM 145 / EM 155 + guard tests)
+
+### Story 6.3: Create the CompositionRoot + prove lane C on one NGO-spawned consumer
+
+As a developer,
+I want the `CompositionRoot` (the one surviving project static) created and lane C proven on one real network-spawned consumer,
+so that Epic 7 can reach the client-side replicas (`Character`, powers) that no project code instantiates — without improvising the pattern mid-batch.
+
+**Acceptance Criteria:**
+
+**Given** client-side replicas of network-spawned prefabs (`Character`, the ~16 `P*` powers, `LobbyPlayerInfoHolder`…) are instantiated by NGO — creator-push injection cannot reach them — and cross-object `OnNetworkSpawn` order is not guaranteed
+**When** the `CompositionRoot` lands
+**Then** a scene-placed `CompositionRoot` exposes **typed accessors** to the scene managers (no `Dictionary<Type, object>` bag); its own manager references are lane A `[SerializeField]` fields wired in GameScene and covered by the SceneWiringGuard (6.2)
+**And** it registers per-`NetworkManager` at `Awake` (never in its own `OnNetworkSpawn`), and `CompositionRoot.For(NetworkManager)` resolves the graph for that NM by delegating to the existing 5.0c/5.0d per-NM registries — the `MultiClientGameFixture` stays green with two in-process NMs
+**And** **one** NGO-spawned consumer (lowest-risk candidate chosen at create-story time among the spawned NetworkBehaviours, recorded in Dev Notes) resolves its dependency once in `OnNetworkSpawn` via the root, stores it in fields, and holds no other static lookup
+**And** `DiSeamNoLocatorGuardTests` is extended with the **lane C whitelist rule**: in migrated consumers, `CompositionRoot` may appear only inside `OnNetworkSpawn` — and the extended guard is proven to bite on a synthetic violation
+**And** the architecture doc §3 lane C section + §4 root spec match what shipped; NFR5 untouched (the relocation rule binds the network-sensitive consumers migrated later)
+**And** the full suite + fixture pass unchanged at baseline and the boot smoke-test is green
 
 ## Epic 7 (D1): Dismantle GameManager-as-a-locator
 
-**Goal:** stop routing through `GameManager.instance`/`For()` to reach OTHER managers. Inject `CharacterManager` (78 hits), `GameInfoRevealer` (31), `ChainingManager`, `CharactersBar`/`PowersBar` directly into consumers. Pure reference-resolution change, low network risk, golden-gated. Biggest single maintainability win — collapses the majority of GameManager's fan-in. Each story migrates a batch the compiler enumerates (destructive deletion of the accessor → CS-errors → reroute), gated at baseline.
+**Goal:** stop routing through `GameManager.instance`/`For()` to reach OTHER managers. Inject `CharacterManager` (78 hits), `GameInfoRevealer` (31), `ChainingManager`, `CharactersBar`/`PowersBar` directly into consumers per the three-lane convention. Pure reference-resolution change, low network risk, golden-gated. Biggest single maintainability win — collapses the majority of GameManager's fan-in. Each story migrates batches the compiler enumerates (destructive deletion of the accessor slice → CS-errors → reroute), gated at baseline; each migrated type appended to the shared guard set.
 
 ### Story 7.1: Inject CharacterManager into the powers
-**Given** the powers reach `CharacterManager` via `GameManager.For(nm).characterManager` / the locator **When** they declare the dependency via `Initialize`/`[SerializeField]` at their spawn site **Then** every power resolves the injected `CharacterManager`, no power holds a `GameManager`-via-locator hop for it, `GetSafeRpcTarget`/bot path is verbatim (NFR5), and the golden + multi-client fixture pass unchanged.
+
+As a developer,
+I want every power to receive `CharacterManager` through its lane (B at the server spawn site, C in `OnNetworkSpawn` for client replicas) instead of the `GameManager` hub-hop,
+so that the largest pass-through family stops routing through the locator.
+
+**Acceptance Criteria:**
+
+**Given** the powers reach `CharacterManager` via `GameManager.instance.characterManager` / `For(nm).characterManager`, and powers are NGO-spawned (client replicas exist)
+**When** the powers are migrated per the three-lane convention — `CharacterManager` (their creator) pushes server-side (lane B), replicas resolve via `CompositionRoot.For(NetworkManager)` in `OnNetworkSpawn` (lane C)
+**Then** no power holds a `GameManager` hub-hop for `CharacterManager`; resolved refs live in fields
+**And** `GetSafeRpcTarget` / `IsLocalOrSimulated` / `clientId >= 100` bodies are byte-identical (NFR5) — only the access path to `CharacterManager` changes
+**And** migration proceeds in compiler-enumerated batches, full suite + fixture + goldens unchanged after each batch
+**And** every migrated power is appended to the shared guard set (both guards green)
 
 ### Story 7.2: Inject CharacterManager into GameStates, Board, and Character
-**Given** the remaining `.characterManager` consumers outside powers **When** they receive `CharacterManager` injected **Then** all non-power `.characterManager` locator hops are gone and the suite is unchanged.
+
+As a developer,
+I want the remaining `.characterManager` consumers (GameStates, board components, `Character`) to receive it through their lanes,
+so that all non-power `.characterManager` locator hops are gone.
+
+**Acceptance Criteria:**
+
+**Given** GameStates already receive an injected `gameManager` (lane B precedent), board components are scene-placed (lane A), and `Character` is NGO-spawned (lane C)
+**When** each family is migrated through its lane — GameStates via the existing `SetupGameStates` push (extended to carry what they need), board components via `[SerializeField]` + MCP wiring (append-only, verified by read-back), `Character` via the root in `OnNetworkSpawn`
+**Then** no non-power consumer reaches `CharacterManager` through the GameManager hub
+**And** serialized-field safety is respected on every lane A wiring (D-NFR3)
+**And** the suite + fixture + goldens pass unchanged per batch; migrated types appended to the shared guard set
 
 ### Story 7.3: Inject GameInfoRevealer into its consumers
-**Given** `.gameInfoRevealer` is reached via the GameManager hub (31×) **When** consumers receive `GameInfoRevealer` injected **Then** no consumer hops through GameManager for the revealer and the reveal goldens are unchanged.
 
-### Story 7.4: Inject the remaining GameManager pass-throughs (ChainingManager, CharactersBar, PowersBar)
-**Given** the smaller pass-through fields **When** their consumers receive them injected **Then** the only thing left reaching for GameManager is its real game-loop/state surface.
+As a developer,
+I want the 31 `.gameInfoRevealer` consumers to receive `GameInfoRevealer` directly through their lanes,
+so that no consumer hops through GameManager for the revealer.
 
-### Story 7.5: Remove GameManager pass-through fields + add the static-absence guard
-**Given** D1's consumers are all injected **When** the pass-through fields (`characterManager`, `gameInfoRevealer`, `chainingManager`, `charactersBar`, `powersBar`) are removed from GameManager **Then** removal is by destructive deletion (compiler enumerates stragglers), a static-absence guard forbids re-introducing the hub hop, and the suite + boot smoke-test pass unchanged.
+**Acceptance Criteria:**
+
+**Given** `.gameInfoRevealer` is reached via the GameManager hub (31 hits) by mixed populations (scene-placed, runtime-created, NGO-spawned)
+**When** consumers receive `GameInfoRevealer` injected per their lane
+**Then** no `.gameInfoRevealer` hub-hop remains; reveal-related goldens pass unchanged
+**And** batches are compiler-enumerated and gated at baseline; migrated types appended to the shared guard set
+
+### Story 7.4: Inject the remaining GameManager pass-throughs (ChainingManager, bars) + the UI hub-hops
+
+As a developer,
+I want the smaller pass-throughs (`ChainingManager`, `CharactersBar`, `PowersBar`) and the UI components' hub-hops injected,
+so that the only thing left reaching for GameManager is its real game-loop/state surface.
+
+**Acceptance Criteria:**
+
+**Given** the smaller pass-through fields (~4+ hits) and the UI components that hop through the hub for these managers (mechanical reroutes — the deeper UI work is Epic 12)
+**When** their consumers receive the dependencies injected (scene UI = lane A)
+**Then** after this story, every remaining `GameManager` use is game-loop/state surface (`NextGameState`, `GetGameState`, `currentGameStateIndex`, `onGameStarted`, `currentDay`…), no manager pass-through
+**And** the suite passes unchanged per batch; migrated types appended to the shared guard set
+
+### Story 7.5: Remove the GameManager pass-through fields + freeze with the guards
+
+As a developer,
+I want the pass-through accessors (`characterManager`, `gameInfoRevealer`, `chainingManager`, `charactersBar`, `powersBar`) removed from GameManager,
+so that the hub cannot quietly come back (D-NFR4 — never both paths as permanent debt).
+
+**Acceptance Criteria:**
+
+**Given** stories 7.1–7.4 rerouted all consumers
+**When** the pass-through fields/accessors are removed by **destructive deletion** (the compiler enumerates any straggler; each is rerouted, not patched back)
+**Then** GameManager's public surface is its game-loop/state machine only
+**And** the shared guard set covers every type migrated in Epic 7 — a re-introduced hub-hop in any of them fails `DiSeamNoLocatorGuardTests`
+**And** the full suite + fixture + boot smoke-test pass unchanged at baseline
 
 ## Epic 8 (D2): Narrow the GameManager game-loop surface
 
-**Goal:** extract `IGameLoop` (`NextGameState`/`PreviousGameState`/`SetGameState`/`currentDay`/`hasGameStarted`/`onGameStarted`/`onNewDayPassed`) and `IGameStateQuery` (`GetGameState`/`GetGameStates`/`GetGameStateIndex`/`GetClosestPreviousState`/`currentGameStateIndex` read); consumers depend on the interface, injected. GameManager keeps owning the `NetworkVariable` + RPC dispatch as the network adapter but is no longer a grab-bag. The parked Story 5.3/5.4 (index ownership) folds in here *only if* it still earns its risk once the surface is narrow — decided then. (Stories detailed via create-story when reached.)
+**Goal:** consumers stop depending on the whole `GameManager` — extract `IGameLoop` (commands + lifecycle events) and `IGameStateQuery` (state reads), injected per lane. GameManager keeps owning the `NetworkVariable` + RPC dispatch as the network adapter, but is no longer a grab-bag. The parked 5.3/5.4 index-ownership decision is closed here, explicitly.
+
+### Story 8.1: Extract IGameLoop + IGameStateQuery; GameManager implements (zero behaviour change)
+
+As a developer,
+I want the two intent interfaces extracted from GameManager's real surface, implemented by GameManager with no call-site change yet,
+so that the narrowing starts with a provably inert commit.
+
+**Acceptance Criteria:**
+
+**Given** the measured surface — `IGameLoop`: `NextGameState`/`PreviousGameState`/`SetGameState`/`currentDay`/`hasGameStarted`/`onGameStarted`/`onNewDayPassed`; `IGameStateQuery`: `GetGameState`/`GetGameStates`/`GetGameStateIndex`/`GetClosestPreviousState`/`currentGameStateIndex` (read)
+**When** the interfaces are introduced and `GameManager` implements them
+**Then** the interfaces live in the `Game` assembly (they expose `GameState`/`NetworkVariable` types — Domain purity is not violated by placing them outside `Domain`)
+**And** no call site changes in this commit; the full suite passes byte-identical
+**And** the `CompositionRoot` exposes both slices as typed accessors
+
+### Story 8.2: Migrate the presentation subscribers onto IGameStateQuery
+
+As a developer,
+I want the ~10 presentation components subscribing to `currentGameStateIndex.OnValueChanged` (RoomFog, BoardCameraManager, AwakeningLight, CharacterAwakenTimer, recap UIs…) to depend on an injected `IGameStateQuery`,
+so that presentation sees only the read slice — the `LightManager` template applied to its whole family.
+
+**Acceptance Criteria:**
+
+**Given** these components currently subscribe via the locator (the exact pattern 6.1 fixed on `LightManager`) and are scene-placed (lane A)
+**When** each receives its dependency injected (concrete field, internally narrowed to `IGameStateQuery`) with the subscription code unchanged (the observer pattern stays — only the *source resolution* changes)
+**Then** the 2.11a sequence golden passes **unchanged** (subscription timing must not shift)
+**And** every instance is MCP-wired + read-back verified (D-NFR3), types appended to the shared guard set, both guards green
+**And** the suite passes unchanged per batch
+
+### Story 8.3: Migrate the game-loop command consumers onto IGameLoop
+
+As a developer,
+I want the consumers that drive the loop (`NextGameState`/`SetGameState` callers, `onGameStarted`/`onNewDayPassed` subscribers, `currentDay`/`hasGameStarted` readers) to depend on an injected `IGameLoop`,
+so that GameManager's remaining fan-in is the narrow command surface, not the concrete type.
+
+**Acceptance Criteria:**
+
+**Given** the command/event consumers across GameLogic, powers and board
+**When** each receives `IGameLoop` per its lane
+**Then** server-authority is unchanged — commands still execute server-side; the RPC dispatch stays GameManager-internal (network adapter role)
+**And** NFR5 code in any touched consumer is relocated verbatim, never edited (D-NFR2)
+**And** the suite + fixture + goldens pass unchanged per batch; guard set appended
+
+### Story 8.4: Close the parked 5.3/5.4 index-ownership decision
+
+As a developer,
+I want the parked `GameLoopMachine` index-ownership move (stories 5.3/5.4) explicitly decided — fold in or close — now that the surface is narrow,
+so that the highest-risk parked work stops being an open question.
+
+**Acceptance Criteria:**
+
+**Given** 5.3/5.4 were PARKED (pure-archi, highest-risk silent-desync, no gameplay gain) pending the D2 surface narrowing
+**When** the decision is made with the narrowed surface in hand
+**Then** the outcome is **recorded** in the architecture doc: either *close as won't-do* (with the reason) or *execute*
+**And** if executed: the original 5.3 ACs apply in full (synchronous mirror, 2.11a golden unchanged-not-adapted, parameterized client-trace suite on the `MultiClientGameFixture`, atomic commit, NFR5 untouched) and the story is `# REVIEW-REQUIRED`
+**And** either way, Epic 8 closes with the full suite green at baseline
 
 ## Epic 9 (D3): Split CharacterManager
 
-**Goal:** `ICharacterQuery` (reads) vs `ICharacterCommand` (server-authority mutations/spawn); inject; keep `GetSafeRpcTarget` / bot flow verbatim in the adapter (NFR5). Gated by `MultiClientGameFixture`. (Stories detailed when reached.)
+**Goal:** split the second God Object's surface into `ICharacterQuery` (reads) vs `ICharacterCommand` (server-authority spawn/mutations), injected per lane; the `GetSafeRpcTarget`/bot flow stays verbatim in the adapter (NFR5). Gated by the `MultiClientGameFixture` throughout — this is the network-sensitive epic.
 
-## Epic 10 (D4): Remaining NetworkBehaviour singletons → injection
+### Story 9.1: Extract ICharacterQuery + migrate the read-side consumers
 
-**Goal:** the 8 replicated singletons the de-singleton pass deferred (ChatManager, BoardManager, RoleTargetSystem, StatesCanvas, MessageManager, GameAudioManager, ChainingManager, LobbyPlayerInfoHolder) → injection, same recipe, on demand by fan-in. (Stories detailed when reached.)
+As a developer,
+I want character lookups behind an injected `ICharacterQuery`,
+so that read-only consumers see only the query slice.
+
+**Acceptance Criteria:**
+
+**Given** the read-side surface (character lookups/queries, the dominant share of the 37-file fan-in)
+**When** `ICharacterQuery` is extracted, `CharacterManager` implements it, and read consumers migrate per their lanes (root accessor for lane C)
+**Then** no read consumer references the concrete `CharacterManager`
+**And** the suite + fixture pass unchanged per batch; guard set appended
+
+### Story 9.2: Extract ICharacterCommand + migrate the command-side consumers `# REVIEW-REQUIRED`
+
+As a developer,
+I want spawn/mutation operations behind an injected `ICharacterCommand`, with the bot flow untouched,
+so that server-authority writes are explicit and narrow without changing the network behaviour by one byte.
+
+**Acceptance Criteria:**
+
+**Given** the command surface carries the network-critical paths (spawn, server mutations, the `GetSafeRpcTarget`/bot flow)
+**When** `ICharacterCommand` is extracted and command consumers migrate
+**Then** `GetSafeRpcTarget` / `IsLocalOrSimulated` / `clientId >= 100` bodies are **byte-identical** — only access paths change (D-NFR2)
+**And** the `MultiClientGameFixture` proves the bot-intercept and real-client paths unchanged; at least one fixture case exercises a `clientId >= 100` target through the new access path
+**And** the suite + goldens pass unchanged per batch; guard set appended; gds-code-review run before merge
+
+### Story 9.3: Narrow the CharacterManager statics to the root-backed resolution
+
+As a developer,
+I want `CharacterManager.instance` reduced to the `CompositionRoot`-backed surface, with only recorded callers left on any façade,
+so that the second God Object stops being globally reachable.
+
+**Acceptance Criteria:**
+
+**Given** 9.1/9.2 migrated the non-UI consumers
+**When** the static surface is narrowed
+**Then** `For(nm)` survives only as the root's per-NM backbone (or is absorbed into it); `instance` reads outside the root are gone from migrated code
+**And** any consumer legitimately left on a façade (UI awaiting Epic 12, verify-don't-force cases) is **recorded with its reason** — final removal happens in 12.3
+**And** the suite + fixture + boot smoke pass unchanged
+
+## Epic 10 (D4): Remaining singletons → injection
+
+**Goal:** the 8 replicated NetworkBehaviour singletons the de-singleton pass deferred, plus the non-replicated Mono statics, migrate to injection by descending fan-in — same recipe (§7 of the architecture doc). Verify-don't-force opt-outs allowed but recorded.
+
+### Story 10.1: Inject ChatManager (fan-in 17)
+
+As a developer,
+I want `ChatManager` consumers to receive it injected (behind `IChatService` where a narrow slice helps),
+so that the highest-fan-in remaining singleton stops being a global.
+
+**Acceptance Criteria:**
+
+**Given** `ChatManager` is a replicated NetworkBehaviour singleton with fan-in 17
+**When** its consumers migrate per their lanes (root accessor for spawned consumers)
+**Then** no migrated consumer reads a `ChatManager` static; chat behaviour (messages, channels, bot routing) is unchanged on the fixture
+**And** suite + goldens unchanged per batch; guard set appended
+
+### Story 10.2: Inject RoleTargetSystem (fan-in 16)
+
+As a developer,
+I want `RoleTargetSystem` consumers to receive it injected,
+so that targeting resolution stops going through a static.
+
+**Acceptance Criteria:**
+
+**Given** `RoleTargetSystem` (fan-in 16, has `OnNetworkSpawn`)
+**When** its consumers migrate per their lanes
+**Then** no migrated consumer reads its static; targeting goldens/flows unchanged on the fixture
+**And** suite unchanged per batch; guard set appended
+
+### Story 10.3: Inject BoardManager (fan-in 13)
+
+As a developer,
+I want `BoardManager` consumers to receive it injected,
+so that board/despawn operations stop going through a static.
+
+**Acceptance Criteria:**
+
+**Given** `BoardManager` (fan-in 13, replicated)
+**When** its consumers migrate per their lanes
+**Then** no migrated consumer reads its static; despawn paths (`Despawn(destroy: true)` server-side) unchanged
+**And** suite + fixture unchanged per batch; guard set appended
+
+### Story 10.4: Inject the remaining replicated singletons (batch) + record opt-outs
+
+As a developer,
+I want StatesCanvas, MessageManager, GameAudioManager, ChainingManager, LobbyPlayerInfoHolder migrated or explicitly opted out,
+so that the replicated-singleton census closes with every survivor recorded.
+
+**Acceptance Criteria:**
+
+**Given** the 5 lower-fan-in replicated singletons
+**When** each is migrated per the recipe — or kept as a **recorded** verify-don't-force exception (candidate: `GameAudioManager` as the global audio façade, FMOD no-op-safe constraint)
+**Then** every decision is recorded in the architecture doc §4 census; no unrecorded replicated static remains
+**And** suite + fixture unchanged per batch; guard set appended for every migrated type
+
+### Story 10.5: Mono statics by fan-in (SelectionFlowService & co) — inject or record
+
+As a developer,
+I want the non-replicated Mono singletons (SelectionFlowService 16, FocusManager, …) migrated by descending fan-in or recorded as opt-outs,
+so that the full 24-singleton census converges toward the one-surviving-static endgame.
+
+**Acceptance Criteria:**
+
+**Given** the non-replicated statics from the 24-singleton recon
+**When** each is migrated per its lane or recorded as verify-don't-force
+**Then** the census in the architecture doc §4 is updated to reflect every survivor and its reason
+**And** suite unchanged per batch; guard set appended for every migrated type
 
 ## Epic 11 (D5): Per-system logic → POCO + unit tests
 
-**Goal:** push remaining decision logic out of MonoBehaviours into `Domain`/POCOs with EditMode tests; thin the adapters. Powers, Board, Chat, Focus, Tooltip. (Stories detailed when reached.)
+**Goal:** push remaining decision logic out of MonoBehaviours into `Domain`/POCOs with EditMode tests; thin the adapters — continuing the Wave 1–4 pattern, now per system. Each story: identify decision logic, extract POCO (lane B interfaces → fakes injectable), characterize-then-extract where behaviour is subtle, EditMode tests shipped.
 
-## Epic 12 (D6): UI layer
+### Story 11.1: Powers — remaining decision logic to POCO
 
-**Goal:** last. 48 files, inherently bound to the local player; reroute off managers to injected view-models where it helps, otherwise leave on façades by the verify-don't-force rule. (Stories detailed when reached.)
+As a developer,
+I want the decision logic still inline in `Power`/concrete powers (beyond the already-extracted `PowerResolver`) moved into tested POCOs,
+so that power rules are EditMode-testable without booting NGO.
 
-**Despaghetti track summary:** 7 epics D0–D6 (numeric 6–12). Execution order strict 6→12; value-per-risk descending. Each story behaviour-preserving, golden-gated, individually shippable, authored via gds-create-story + executed via gds-dev-story. Whole-effort DoD: no God Object remains a grab-bag, consumers depend on narrow injected interfaces not locators, decision logic in tested POCOs, static-absence guards forbid regression, full suite + boot smoke green, merged to `Dev` once at the very end.
+**Acceptance Criteria:**
+
+**Given** `PowerResolver` + `EffectDescriptor` (Epic 4) already carry the resolution arithmetic
+**When** remaining per-power decision logic is identified and extracted
+**Then** new POCOs live in `Domain` (or `Game` POCO if engine types are unavoidable — recorded), with EditMode tests per the project test rules
+**And** adapters keep lifecycle/RPC/FMOD only; NFR5 verbatim; goldens unchanged
+
+### Story 11.2: Board — decision logic to POCO
+
+As a developer,
+I want board/despawn decision logic extracted into tested POCOs,
+so that board rules are EditMode-testable.
+
+**Acceptance Criteria:**
+
+**Given** `BoardManager` + board components mix decisions with Unity glue
+**When** the decision logic is extracted (characterize-then-extract for anything subtle)
+**Then** POCOs ship with EditMode tests; adapters thinned; suite + goldens unchanged
+
+### Story 11.3: Chat — decision logic to POCO
+
+As a developer,
+I want chat rules (message routing/visibility decisions) extracted into tested POCOs,
+so that chat logic is EditMode-testable.
+
+**Acceptance Criteria:**
+
+**Given** `ChatManager` mixes decisions with replication
+**When** the decision logic is extracted
+**Then** POCOs ship with EditMode tests; bot-path routing decisions preserved bit-for-bit (fixture-checked); adapters thinned
+
+### Story 11.4: Focus + Tooltip + presentation lifecycle hygiene
+
+As a developer,
+I want Focus/Tooltip decision logic extracted and the recorded presentation lifecycle leaks fixed deliberately,
+so that the presentation layer is clean and the known debt is closed, not forgotten.
+
+**Acceptance Criteria:**
+
+**Given** the Focus/Tooltip systems and the **recorded** pre-existing leak: presentation components (e.g. `LightManager`, noted in story 6.1) never unsubscribe `OnValueChanged` in `OnDestroy`
+**When** the logic is extracted and the lifecycle hygiene pass runs
+**Then** Focus/Tooltip POCOs ship with EditMode tests
+**And** the unsubscribe fixes are applied as a deliberate, separately-committed change (lifecycle hygiene, not silent behaviour drift) with the suite green
+**And** adapters thinned; suite unchanged otherwise
+
+## Epic 12 (D6): UI layer + final sweep
+
+**Goal:** last by design — 48 files, inherently bound to the local player, lowest architectural payoff, highest churn. Triage first, reroute only the justified, record the rest; then the whole-track final sweep and DoD gate.
+
+### Story 12.1: UI inventory + triage (verify-don't-force, recorded)
+
+As a developer,
+I want the 48 UI files triaged — reroute vs recorded façade opt-out,
+so that Epic 12 spends churn only where it buys maintainability.
+
+**Acceptance Criteria:**
+
+**Given** the UI layer reads game state and emits wrapped `ServerRpc`s, often via remaining façades
+**When** the triage runs
+**Then** a triage table (file → decision → reason) is recorded in the architecture doc
+**And** the criteria are explicit: reroute when a narrow injected dependency simplifies testing or removes a hub-hop; opt out when the file is a pure local-player leaf with no decision logic
+**And** no code change in this story — it is the map for 12.2
+
+### Story 12.2: Reroute the justified UI consumers
+
+As a developer,
+I want the UI consumers the triage justified rerouted onto injected dependencies (lane A mostly),
+so that the UI's worthwhile decoupling lands without churning the whole layer.
+
+**Acceptance Criteria:**
+
+**Given** the 12.1 triage table
+**When** the justified files migrate in batches
+**Then** serialized-field safety on every wiring (D-NFR3); both guards green; migrated types appended to the shared set
+**And** `Smartphone/` stays client-only (reads state, emits wrapped `ServerRpc`s — never mutates)
+**And** suite unchanged per batch
+
+### Story 12.3: Final sweep — kill the remaining statics + whole-track DoD gate
+
+As a developer,
+I want every remaining project static except `CompositionRoot` (and the recorded exceptions) removed, and the whole-track definition of done verified,
+so that the despaghettification closes with the endgame census true, not aspirational.
+
+**Acceptance Criteria:**
+
+**Given** Epics 6–12 migrated or recorded every consumer
+**When** the final sweep runs
+**Then** remaining statics (`GameManager.instance`, `CharacterManager.instance` façades, any leftover) are removed by **destructive deletion** + a static-absence proof (assembly-scan EditMode test, like 5.2's leaf guard)
+**And** the §4 census is verified: 1 surviving project static (`CompositionRoot`) + engine-owned `NetworkManager.Singleton` + recorded exceptions only
+**And** the whole-track DoD holds: no God Object grab-bag; narrow injected interfaces; tested POCOs; both guards green over every migrated type; full EditMode + PlayMode suite green at baseline; boot smoke-test green
+**And** the track is merge-ready: one merge to `Dev`, prepared (changelog of the epics, NFR5 untouched-proof, goldens unchanged)
+
+---
+
+**Despaghetti track summary:** 7 epics (6–12 / D0–D6), 27 stories. Epic 6 = 3 stories (6.1 **delivered** — lane A on `LightManager`; 6.2 SceneWiringGuard; 6.3 CompositionRoot + lane C) and is a hard prerequisite of Epic 7. Epic 7 = 5 stories (dismantle the hub, by consumer family, ending in destructive deletion of the pass-throughs). Epic 8 = 4 (narrow surface + close the parked 5.3/5.4 decision). Epic 9 = 3 (split CharacterManager, fixture-gated, 9.2 REVIEW-REQUIRED). Epic 10 = 5 (singleton census by fan-in, recorded opt-outs). Epic 11 = 4 (per-system POCOs + lifecycle hygiene). Epic 12 = 3 (UI triage → justified reroutes → final sweep + DoD gate). Execution strict 6→12; each story behaviour-preserving, golden-gated, individually shippable, authored via gds-create-story + executed via gds-dev-story. Whole-effort DoD: §10 of `refactor-architecture-despaghetti.md`.

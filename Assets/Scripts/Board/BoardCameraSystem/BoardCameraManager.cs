@@ -5,6 +5,7 @@ using Controllers;
 using Controllers.Inputs;
 using GameLogic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Board.BoardCameraSystem
 {
@@ -17,7 +18,12 @@ namespace Board.BoardCameraSystem
         
         [SerializeField] private BoardCamera startingBoardCamera;
         [SerializeField] private Transform cameraParentTransform;
-        
+        [SerializeField] private GameManager gameManager;
+
+        // Story 8.2 (Epic 8 / D2): depend on the narrow read slice, not the whole GameManager.
+        // Field stays concrete (Unity can't serialize an interface); the property narrows it (lane A).
+        private IGameStateQuery Query => gameManager;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -26,6 +32,7 @@ namespace Board.BoardCameraSystem
                 return;
             }
             instance = this;
+            Assert.IsNotNull(gameManager, "BoardCameraManager.gameManager is not wired — wire it in GameScene (the composition root).");
         }
 
         private void OnDestroy()
@@ -50,13 +57,13 @@ namespace Board.BoardCameraSystem
             InputManager.instance.RegisterAction(InputID.ArrowLeft, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Left));
             InputManager.instance.RegisterAction(InputID.ArrowRight, InputState.Started, () => TrySwitchCameraToNeighbour(NeighbourDirection.Right));
             
-            GameManager.instance.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
-            OnGameStateChanged(GameManager.instance.currentGameStateIndex.Value, GameManager.instance.currentGameStateIndex.Value);
+            Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+            OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
         }
 
         private void OnGameStateChanged(int _previousValue, int _newValue)
         {
-            GameState _gameState = GameManager.instance.GetGameState(_newValue);
+            GameState _gameState = Query.GetGameState(_newValue);
             if (_gameState == null)
             {
                 return;

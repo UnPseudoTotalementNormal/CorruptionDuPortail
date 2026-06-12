@@ -11,6 +11,11 @@ public class LightManager : MonoBehaviour
     [SerializeField] private float colorTransitionDuration = 1f;
     [SerializeField] private GameManager gameManager;
 
+    // Story 8.2 (Epic 8 / D2): the code depends on the narrow read slice, not the whole GameManager.
+    // Unity can't serialize an interface, so the field stays concrete (lane A) and the property narrows
+    // it — D-NFR6's compromise (spec §3 lane A). Reads route through Query.
+    private IGameStateQuery Query => gameManager;
+
     private void Awake()
     {
         Assert.IsNotNull(gameManager, "LightManager.gameManager is not wired — wire it in the composition root (GameScene/prefab).");
@@ -18,12 +23,12 @@ public class LightManager : MonoBehaviour
 
     private void Start()
     {
-        gameManager.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+        Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
     }
 
     private void OnGameStateChanged(int _previousValue, int _newValue)
     {
-        GameState _gameState = gameManager.GetGameState(_newValue);
+        GameState _gameState = Query.GetGameState(_newValue);
         if (!_gameState || !_gameState.useLightColorOverride)
         {
             mainLight.DOColor(baseLightColor, colorTransitionDuration);

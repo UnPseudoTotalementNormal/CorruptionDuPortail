@@ -2653,6 +2653,7 @@ MonoBehaviour:
   characterBarObjectPrefab: {fileID: 7913822557668518461, guid: 94a8191d17858ca4f88d962c699e6729, type: 3}
   factionGroupPrefab: {fileID: 6214312313759094123, guid: fee29f0a7deff00479f09cf026c5d817, type: 3}
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
   factionIcons:
     _serializedList:
     - Key: 0
@@ -4502,7 +4503,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   gameInfoRevealer: {fileID: 1771149311}
   charactersBar: {fileID: 463595595}
-  powersBar: {fileID: 129913599}
   chainingManager: {fileID: 1446097057}
   characterManager: {fileID: 1541735909}
   gameStates:
@@ -5453,6 +5453,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startingBoardCamera: {fileID: 256519912}
   cameraParentTransform: {fileID: 814010949}
+  gameManager: {fileID: 704980999}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

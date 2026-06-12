@@ -25,6 +25,12 @@ namespace Board.UI.CharacterBar
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
 
+        // Story 8.2 lane A: scene-wired GameManager narrowed to the read slice for the AwakeningState
+        // lookup. Stays null-tolerant (GetAwakeningState already guarded the locator) — guard #2 verifies
+        // the scene wiring, runtime tolerates a missing manager in bare harnesses.
+        [SerializeField] private GameManager gameManager;
+        private IGameStateQuery Query => gameManager;
+
         [Header("Faction Visuals")]
         [SerializeField] private SerializedDictionary<FactionType, Sprite> factionIcons = new();
         [SerializeField] private SerializedDictionary<FactionType, Color> factionTextColors = new();
@@ -67,9 +73,9 @@ namespace Board.UI.CharacterBar
 
         private AwakeningState GetAwakeningState()
         {
-            if (_awakeningState == null && GameManager.instance != null)
+            if (_awakeningState == null && gameManager != null)
             {
-                _awakeningState = (AwakeningState)GameManager.instance.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
+                _awakeningState = (AwakeningState)Query.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
             }
             return _awakeningState;
         }

@@ -1,5 +1,6 @@
 using System;
 using Board;
+using Board.BoardCameraSystem;
 using Board.UI;
 using Board.UI.CharacterBar;
 using Board.UI.PowerBar;
@@ -69,6 +70,13 @@ namespace Tests.Editor
             typeof(SkipButton),
             typeof(MessageLeftText),
             typeof(FocusManager),
+            // Story 8.2 — presentation query consumers migrated onto an injected GameManager narrowed to
+            // IGameStateQuery (lane A scene-wired field + `private IGameStateQuery Query => gameManager`).
+            // LightManager (already above) gained the narrowing property; these two newly dropped their
+            // GameManager.instance query hop. Mixed (query+command) and prefab-only consumers were deferred
+            // to 8.3 / a later UI pass (recorded in 8.2's Dev Agent Record + deferred-work.md).
+            typeof(BoardCameraManager),
+            typeof(CharactersBar),
         };
 
         /// <summary>

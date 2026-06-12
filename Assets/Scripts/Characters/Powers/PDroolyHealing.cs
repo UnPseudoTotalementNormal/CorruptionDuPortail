@@ -48,7 +48,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _healingCharacterId);
             PDroolyHealing _power = (PDroolyHealing)characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
             var _choosedCharacter = characterManager.GetCharacter(_healingCharacterId, false);
             bool _healSuccess = false;

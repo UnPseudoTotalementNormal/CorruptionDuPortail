@@ -55,6 +55,12 @@ namespace Tests.Editor
             // legitimately serves it (SceneWiredOnly, never source-scanned), as do the recorded
             // exceptions (PowerEffectDispatcher static POCO + the UI leaves) — none are registered.
             "ChatManager.instance",
+            // Story 10.2 (Epic 10 / D4): RoleTargetSystem injected into the targeting powers via the
+            // Power.roleTargetSystem base field + RobotBoardInfo via a lane-C field. Same shape as chat
+            // (singleton, no .For(nm)) — lock the .instance form. The root serves it (SceneWiredOnly,
+            // never source-scanned); the only recorded survivor is PowerEffectDispatcher (static POCO,
+            // not registered → Epic 11.1).
+            "RoleTargetSystem.instance",
         };
 
         [Test]

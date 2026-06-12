@@ -40,7 +40,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _targetClientId);
             var _targetCharacter = _characterManager.GetCharacter(_targetClientId, false);
             if (_targetCharacter == null)
             {

@@ -71,7 +71,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCharacterClickedRpc(ulong _characterClickedId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);
         }

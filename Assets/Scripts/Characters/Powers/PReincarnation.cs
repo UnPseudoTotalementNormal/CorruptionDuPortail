@@ -46,7 +46,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void ReincarnatePlayerRpc(ulong _characterClickedId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             ChangeIsPassiveRpc(true);
             Character _characterClicked = characterManager.GetCharacter(_characterClickedId);

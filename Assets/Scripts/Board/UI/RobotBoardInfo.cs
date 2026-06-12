@@ -24,6 +24,9 @@ namespace Board.UI
         [SerializeField] private GameManager gameManager;
         private IGameStateQuery Query => gameManager;
         private IGameLoop Loop => gameManager;
+        // Story 10.2 lane C: the targeting system, resolved through the composition root in OnNetworkSpawn
+        // (RoleTargetSystem stays a singleton — not de-singletonised), consumed by AskForNewTextRpc.
+        private RoleTargetSystem roleTargetSystem;
 
         private void Start()
         {
@@ -34,11 +37,12 @@ namespace Board.UI
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
             if (!IsServer)
             {
                 return;
             }
-            
+
             GameState[] _awakeningStates = Query.GetGameStates(typeof(AwakeningState));
             foreach (var _awakeningState in _awakeningStates)
             {
@@ -66,7 +70,7 @@ namespace Board.UI
                 WriteNewTextRpc("0");
                 return;
             }
-            var _targetingDatas = RoleTargetSystem.instance.GetAllTargetersForTarget(_robot.ownerClientId.Value);
+            var _targetingDatas = roleTargetSystem.GetAllTargetersForTarget(_robot.ownerClientId.Value);
             WriteNewTextRpc($"{_targetingDatas.Count}");
         }
 

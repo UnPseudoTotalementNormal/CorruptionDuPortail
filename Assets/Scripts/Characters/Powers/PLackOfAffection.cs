@@ -36,7 +36,7 @@ namespace Characters.Powers
                 return;
             }
 
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnUsed();
             OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, characterManager.GetSafeRpcTarget(_character.ownerClientId.Value));
         }

@@ -43,7 +43,7 @@ namespace Characters.Powers
         private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
             Character _blessingCharacter = characterManager.GetCharacter(_blessingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _blessingCharacterId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _blessingCharacterId);
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {

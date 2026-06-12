@@ -155,6 +155,17 @@ ChatManager (fan-in 17, replicated `NetworkBehaviour` singleton) is **injected a
 
 The `SERVER_CLIENT_ID` **const** (read by `PCardsShuffling` / `PCReparentOnChain`) is a compile-time constant, not a singleton read — left as-is.
 
+### 4c. `RoleTargetSystem` static census — recorded leftovers (story 10.2)
+
+`RoleTargetSystem` (fan-in 16, namespace `RoleTarget`) is the same shape as ChatManager — a **non-de-singletonised** replicated singleton (naive `OnNetworkSpawn` duplicate-guard, no `RoleTargetSystem.For(nm)`), injected **concrete** (D-NFR6: the consumers fire targeting RPCs / one UI read; no slice earns a mock). 13 targeting powers consume it via the `Power.roleTargetSystem` base field (lane C) and `RobotBoardInfo` via a lane-C field resolved in its own `OnNetworkSpawn` (it was already a registered `All` consumer, so it migrated to keep the guard-#1 lock clean). `RoleTargetSystem.instance` → recorded-callers-only façade (`// recorded: dies in 12.3`); guard #1 forbids it in the registered set. Survivors:
+
+| Caller(s) | Member(s) | Why on the façade | Planned death |
+|---|---|---|---|
+| `CompositionRoot` (the root) | serves `instance` via the `RoleTargetSystem` accessor | the ONE sanctioned locator — not de-singletonised, so the root is the indirection point (`SceneWiredOnly`, never source-scanned) | **per-NM-registry story / 12.3** |
+| `PowerEffectDispatcher` (static) | `NewTargeting` (brick) | static dispatcher, **no injection context** (same bucket as its `CharacterManager.instance`/`ChatManager.instance`); the Epic 11.1 dispatcher→POCO pass would take the targeting dependency as a parameter from the already-injected calling power | **Epic 11.1 / 12** |
+
+Premise correction (recorded): the 10.2 story expected `TargetUtils` to be the static-util RoleTargetSystem consumer. It is **not** — `TargetUtils` consumes `CharacterManager.instance` + `CompositionRoot.For(Singleton).GameInfoRevealer`, never `RoleTargetSystem`. Its `CharacterManager.instance` reads stay §4a-recorded (Epic 10.5). No `TargetUtils` edit in 10.2.
+
 ## 5. The two permanent guards
 
 1. **`DiSeamNoLocatorGuardTests`** (exists — story 6.1, `[Category("DiSeamGuard")]`, source scan). A migrated consumer must never reference `GameManager.instance` / `CharacterManager.instance` again. Extended by story 6.3: in migrated consumers, `CompositionRoot` may appear **only inside `OnNetworkSpawn`** (the lane C whitelist).

@@ -79,7 +79,7 @@ namespace Characters.Powers
             Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
             bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
             
             ChatMessage _resultMessage = new ChatMessage
             {
@@ -98,7 +98,7 @@ namespace Characters.Powers
             }
             else
             {
-                List<TargetingData> _targetedClientIds = RoleTargetSystem.instance.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
+                List<TargetingData> _targetedClientIds = roleTargetSystem.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
                 if (_targetedClientIds.Count == 0)
                 {
                     _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} n'a ciblé aucun rôle.";

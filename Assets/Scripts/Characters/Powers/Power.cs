@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
 using ChatSystem;
+using RoleTarget;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
 using CorruptionDuPortail.Domain;
@@ -62,6 +63,9 @@ namespace Characters.Powers
         // (no Assert) — not every power chats, and minimal harnesses spawn bare powers with no chat
         // manager; chatting powers always have one in production and in their own harnesses.
         protected ChatManager chatManager;
+        // Story 10.2 lane C: the targeting system, same seam. Null-tolerant — not every power records a
+        // targeting; targeting powers always have one in production and in their own harnesses.
+        protected RoleTargetSystem roleTargetSystem;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -92,6 +96,7 @@ namespace Characters.Powers
                 "Did a subclass override OnNetworkSpawn without calling base.OnNetworkSpawn()?");
             gameInfoRevealer = CompositionRoot.For(NetworkManager).GameInfoRevealer;
             chatManager = CompositionRoot.For(NetworkManager).ChatManager;
+            roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;

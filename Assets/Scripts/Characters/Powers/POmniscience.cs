@@ -27,7 +27,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }

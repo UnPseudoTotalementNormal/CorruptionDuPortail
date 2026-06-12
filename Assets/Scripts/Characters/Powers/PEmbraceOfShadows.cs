@@ -37,7 +37,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             if (_character.role.IsTheSameRole(_role))
             {
                 _character.CorruptPlayerServerRpc();

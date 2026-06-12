@@ -111,7 +111,7 @@ namespace Characters.Powers
             foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
                 var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
-                RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
+                roleTargetSystem.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
                     if (_message != String.Empty)

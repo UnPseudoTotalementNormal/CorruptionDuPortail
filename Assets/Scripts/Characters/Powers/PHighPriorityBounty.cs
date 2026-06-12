@@ -31,7 +31,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }
@@ -44,7 +44,7 @@ namespace Characters.Powers
         
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, ownerClientId.Value);
             
             var _characterTarget = characterManager.GetCharacter(_targetClientId);
             var _characterOwner = characterManager.GetCharacter(ownerClientId.Value);

@@ -36,7 +36,7 @@ namespace Characters.Powers
         private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
             Character _corruptingCharacter = characterManager.GetCharacter(_corruptingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
                 gameInfoRevealer.SendRevealLevelRpc(

@@ -1,6 +1,6 @@
 # Story 8.2: Migrate the presentation subscribers onto IGameStateQuery
 
-Status: review
+Status: done
 
 ## Story
 
@@ -96,3 +96,13 @@ claude-opus-4-8 (gds-dev-story)
 ### Change Log
 
 - 2026-06-12 — Story 8.2 implemented: migrated the in-scope presentation query consumers (LightManager AC2 narrowing + BoardCameraManager + CharactersBar lane-A) onto `IGameStateQuery` via the 6.1 template (concrete `[SerializeField] GameManager` + `Query => gameManager` narrowing). Mixed (query+command) consumers deferred to 8.3, prefab-only consumers deferred to a later UI pass (Poyo's decisions, recorded). Registry + both guards green, 2.11a golden unchanged, boot smoke green. Status → review.
+- 2026-06-12 — Code review (gds-code-review, 3 layers) PASS: all 5 ACs satisfied, no hard violations (Auditor PASS; Edge verified the Blind Hunter's High/Med as SAFE or pre-existing). 0 patch + 2 defer + 7 dismissed. Status → done.
+
+## Review Findings
+
+Code review (gds-code-review — 3 adversarial layers: Blind Hunter / Edge Case Hunter / Acceptance Auditor), 2026-06-12. **Acceptance Auditor: PASS — all 5 ACs satisfied, no hard violations.** The Edge Case Hunter (with code access) verified the Blind Hunter's two High and three Med concerns are SAFE or pre-existing. Outcome: 0 patch + 2 defer + 7 dismissed.
+
+- [x] [Review][Defer] OnValueChanged subscribe without unsubscribe (BoardCameraManager / LightManager) — PRE-EXISTING leak: the old `GameManager.instance.currentGameStateIndex.OnValueChanged +=` had no matching `-=` either; 8.2 is behaviour-preserving (only source resolution changed). Owned by Epic 11.4 (unsubscribe in `OnDestroy` — the subscriber is a plain MonoBehaviour, so the project's `OnNetworkDespawn` rule does not apply). Recorded in deferred-work.md.
+- [x] [Review][Defer] `GameManager.GetGameState(int)` not bounds-safe (`ElementAt(index)` throws on out-of-range) — PRE-EXISTING in GameManager, untouched by 8.2; both handlers null-check the result but not the index. General hardening, not 8.2 scope. Recorded in deferred-work.md.
+
+Dismissed (7): release-build `Assert` strip → silent NRE if unwired (the established lane-A convention since 6.1; `SceneWiringGuard` is the production gate and is green — field IS wired); `Query`-vs-`.instance` divergence (Edge verified: one scene GameManager, field ≡ instance, the multi-NM fixture never instantiates these); Assert-after-`instance=this` (Edge verified safe: duplicate returns first, survivor asserts in Awake before Start dereferences); CharactersBar null-policy "inconsistency" (by design — runtime tolerance for bare harnesses, guard #2 covers the scene; faithful 1:1 translation of the prior `GameManager.instance != null` guard); registry-vs-null-tolerance (guard #2 checks the scene instance is wired, orthogonal to runtime tolerance); LightManager missing `using UnityEngine.Assertions` (already imported — compiles, EM 162 green); "subscriber" label imprecision for CharactersBar (it is a lazy query consumer, not an OnValueChanged subscriber — AC intent met).

@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (8-2 → review: in-scope presentation query consumers (LightManager/BoardCameraManager/CharactersBar) migrated onto IGameStateQuery via 6.1 lane-A template; mixed→8.3, prefab→later UI pass; EM 162 / PM 146 + 2.11a golden + boot smoke green)
+last_updated: 2026-06-12 (8-2 → done after gds-code-review PASS: 3 layers, 5/5 ACs, no hard violations, 0 patch + 2 deferred (pre-existing OnValueChanged unsubscribe leak → 11.4; GetGameState bounds-safety). Epic 8: 8-1 + 8-2 done; next 8-3 absorbs the 4 deferred mixed files)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -139,7 +139,7 @@ development_status:
   # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery)
   epic-8: in-progress
   8-1-extract-igameloop-and-igamestatequery-gamemanager-implements: review  # inert: IGameLoop/IGameStateQuery extracted (Game asmdef), GameManager implements both (2 explicit-impl NetworkAction wrappers, rest implicit), CompositionRoot exposes both slices. Zero call-site change; EM 162 / PM 146 bit-identical, no golden moves.
-  8-2-migrate-presentation-subscribers-onto-igamestatequery: review  # in-scope pure-query scene consumers migrated onto IGameStateQuery via 6.1 template (LightManager narrowing + BoardCameraManager + CharactersBar lane-A, MCP-wired+read-back). Mixed (query+command) → 8.3, prefab-only → later UI pass (deferred-work.md). All+=BoardCameraManager,CharactersBar; guards green; 2.11a golden unchanged; EM 162 / PM 146 + boot smoke green.
+  8-2-migrate-presentation-subscribers-onto-igamestatequery: done  # in-scope pure-query scene consumers migrated onto IGameStateQuery via 6.1 template (LightManager narrowing + BoardCameraManager + CharactersBar lane-A, MCP-wired+read-back). Mixed → 8.3, prefab-only → later UI pass (deferred-work.md). gds-code-review PASS (3 layers, 5/5 ACs, no hard violations; 0 patch + 2 deferred). All+=BoardCameraManager,CharactersBar; guards green; 2.11a golden unchanged; EM 162 / PM 146 + boot smoke green.
   8-3-migrate-game-loop-command-consumers-onto-igameloop: ready-for-dev  # server authority unchanged; RPC dispatch stays GameManager-internal
   8-4-close-the-parked-5-3-index-ownership-decision: ready-for-dev  # fold in (then REVIEW-REQUIRED, original 5.3 ACs) or close as won't-do, recorded either way
 

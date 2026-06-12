@@ -31,7 +31,11 @@ namespace GameLogic.Snapshot
             // Story 7.4: resolve CharacterManager by the passed manager's NetworkManager instead of the
             // GameManager.characterManager pass-through (removed in 7.5); fixture-correct (per-NM), and
             // behaviour-identical in production (single NM).
-            foreach (var character in CharacterManager.For(gameManager.NetworkManager).GetCharacters(false))
+            // Story 9.3 (Epic 9 / D3): route through the CompositionRoot surface (read slice) instead of the
+            // bare CharacterManager.For backbone, so the only direct CharacterManager.For callers left are the
+            // root itself and the test fixtures (AC1). CompositionRoot.For needs no registered root instance —
+            // the Services resolver delegates to CharacterManager.For(nm) — so this is resolution-identical.
+            foreach (var character in CompositionRoot.For(gameManager.NetworkManager).CharacterQuery.GetCharacters(false))
             {
                 characterSnapshots.Add(MapCharacter(character));
             }

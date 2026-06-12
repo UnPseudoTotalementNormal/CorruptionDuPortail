@@ -20,6 +20,17 @@ namespace Characters
     // stay OFF both interfaces — they are NFR5 network-authority internals (§3(d)).
     public class CharacterManager : NetworkBehaviour, ICharacterQuery, ICharacterCommand
     {
+        // Story 9.3 (Epic 9 / D3): the global façade is NARROWED to a recorded-callers-only surface. 9.1/9.2
+        // injected every gameplay read/command consumer onto ICharacterQuery / ICharacterCommand (resolved via
+        // CompositionRoot); no gameplay path reaches `instance` anymore. The remaining callers are all
+        // verify-don't-force exceptions WITH a death date — see the recorded leftovers census in
+        // refactor-architecture-despaghetti.md §4: UI leaves + entangled (RoomFog / PowersBar /
+        // AnonymeMessageButton / InfoTableSystem / Note* / CardPickerManager / MeIconCard / Tooltip* /
+        // VoteStateUI / *RecapCorruption / SelectPanelPlayer / CharacterAwakenTimer / TakeDownThePortalTextTitle
+        // / ChatWindow) → Epic 12.3; ChatManager / LobbyPlayerInfoHolder → Epic 10; W* winning-condition POCOs +
+        // TargetUtils + PowerEffectDispatcher = static/POCO façade (no injection context); DevIdentityController
+        // = debug F-keys. The field STAYS public for those callers.
+        // recorded: dies in 12.3 (once the UI/static leftovers above are rerouted, this static is deleted).
         public static CharacterManager instance;
 
         // Per-NetworkManager registry: lets a second in-process client's replica
@@ -32,6 +43,12 @@ namespace Characters
         /// Resolves the CharacterManager owned by the given NetworkManager. For the
         /// primary (Singleton) manager this falls back to the Awake-claimed instance
         /// so the pre-spawn window behaves exactly as the historical static access.
+        ///
+        /// Story 9.3 (Epic 9 / D3): this is the per-NetworkManager BACKBONE the CompositionRoot
+        /// delegates to (CompositionRoot.For(nm).Character* -> here). It stays public because the
+        /// production resolution path runs through it, but the only DIRECT callers of bare
+        /// CharacterManager.For are now the root and the test fixtures (AC1) — gameplay code resolves
+        /// via CompositionRoot. Absorbing this into the root is deferred (per the 6.3 design, recorded).
         /// </summary>
         public static CharacterManager For(NetworkManager _networkManager)
         {

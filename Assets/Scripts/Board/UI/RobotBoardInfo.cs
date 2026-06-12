@@ -18,10 +18,15 @@ namespace Board.UI
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slices (IGameStateQuery + IGameLoop).
+        [SerializeField] private GameManager gameManager;
+        private IGameStateQuery Query => gameManager;
+        private IGameLoop Loop => gameManager;
 
         private void Start()
         {
             Assert.IsNotNull(characterManager, "RobotBoardInfo.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(gameManager, "RobotBoardInfo.gameManager is not wired — wire it in GameScene (the composition root).");
         }
 
         public override void OnNetworkSpawn()
@@ -32,12 +37,12 @@ namespace Board.UI
                 return;
             }
             
-            GameState[] _awakeningStates = GameManager.instance.GetGameStates(typeof(AwakeningState));
+            GameState[] _awakeningStates = Query.GetGameStates(typeof(AwakeningState));
             foreach (var _awakeningState in _awakeningStates)
             {
                 _awakeningState.onStateEndServer += OnAwakeningStateEnd;
             }
-            GameManager.instance.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()

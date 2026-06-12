@@ -44,14 +44,14 @@ namespace GameLogic.GameStates
 
             if (_winningTeams.Count == 0)
             {
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
 
             var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
             _gameEndingState.SetWinnersServer(_winningTeams);
             
-            gameManager.SetGameState(typeof(GameEndingState));
+            Loop.SetGameState(typeof(GameEndingState));
         }
 
         public override void OnEndStateServer()

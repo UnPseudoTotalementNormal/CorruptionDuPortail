@@ -92,7 +92,7 @@ namespace GameLogic.GameStates
             if (!endedState && gameManager.IsServer && stateTimer >= timeBeforeGameStart)
             {
                 endedState = true;
-                gameManager.NextGameState();
+                Loop.NextGameState();
             }
         }
     }

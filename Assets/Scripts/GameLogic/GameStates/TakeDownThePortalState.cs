@@ -89,7 +89,7 @@ namespace GameLogic.GameStates
             
             if (!_clickedRole.IsTheSameRole(clickedCharacter.role))
             {
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
             
@@ -139,7 +139,7 @@ namespace GameLogic.GameStates
                 };
                 _gameEndingState.SetWinnersServer(_newWinners);
                 
-                gameManager.SetGameState(_gameEndingState);
+                Loop.SetGameState(_gameEndingState);
                 return;
             }
             
@@ -233,7 +233,7 @@ namespace GameLogic.GameStates
             if (!shouldActivate)
             {
                 Debug.Log("TakeDownThePortalState is not activated");
-                _ = gameManager.WaitAFrameAndNextGameState();
+                _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }
 

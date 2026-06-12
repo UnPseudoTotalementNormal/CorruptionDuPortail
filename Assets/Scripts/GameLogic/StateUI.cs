@@ -11,6 +11,10 @@ using UnityEngine;
 public class StateUI : NetworkBehaviour
 {
     [HideInInspector] public GameManager gameManager;
+    // Story 8.3 (Epic 8 / D2): loop-command slice of the pushed gameManager, narrowed to IGameLoop
+    // (D-NFR6). StateUI subclasses observe loop events through Loop; the concrete field stays for
+    // anything else they read off the manager.
+    protected IGameLoop Loop => gameManager;
     // Story 7.2 lane B: set by GameState.OnStateCreated from the state's injected characterManager.
     [HideInInspector] public CharacterManager characterManager;
     [HideInInspector] public GameState owningGameState;

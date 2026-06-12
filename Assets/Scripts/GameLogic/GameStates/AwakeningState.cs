@@ -139,7 +139,7 @@ namespace GameLogic.GameStates
         { 
             base.OnStateCreated();
             _awakeningLayerCache = null;
-            gameManager.onGameStarted += () =>
+            Loop.onGameStarted += () =>
             {
                 var _localCharacter = characterManager.GetLocalCharacter(false);
                 if (_localCharacter != null)
@@ -271,7 +271,7 @@ namespace GameLogic.GameStates
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
                 SleepCurrentlyAwakenedCharacters();
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
             

@@ -9,7 +9,9 @@ using Characters.Powers;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.PowerObjects;
 using FocusSystem;
+using FX;
 using GameLogic;
+using MessageSystem;
 using UI;
 
 namespace Tests.Editor
@@ -77,6 +79,18 @@ namespace Tests.Editor
             // to 8.3 / a later UI pass (recorded in 8.2's Dev Agent Record + deferred-work.md).
             typeof(BoardCameraManager),
             typeof(CharactersBar),
+            // Story 8.3 — game-loop command/event consumers migrated onto an injected GameManager narrowed
+            // to IGameLoop (+ IGameStateQuery where they also read state). Lane-A scene fields, MCP-wired.
+            // GameInfoRevealer drops its GameManager.For(nm) per-NM hop; the rest drop GameManager.instance.
+            // Files that ALSO still hold CharacterManager.instance (RoomFog, AnonymeMessageButton,
+            // InfoTableSystem, PowersBar) are NOT here — guard #1 would flag the residual locator; they
+            // migrate fully in Epic 9 (both managers in one touch). See deferred-work.md.
+            typeof(AwakeningLight),
+            typeof(GameInfoRevealer),
+            typeof(PowerManager),
+            typeof(MessageManager),
+            typeof(RobotBoardInfo),
+            typeof(CorruptionBoardInfo),
         };
 
         /// <summary>

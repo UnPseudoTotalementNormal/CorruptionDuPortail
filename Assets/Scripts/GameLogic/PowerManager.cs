@@ -16,9 +16,13 @@ namespace GameLogic
         public static PowerManager instance;
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop and the
-        // CharacterManager.instance locator. The GameManager.instance game-loop reads (onGameStarted /
-        // hasGameStarted / GetGameState / currentGameStateIndex) stay until Epic 8 — this stays a mixed file.
+        // CharacterManager static-locator lookup.
         [SerializeField] private CharacterManager characterManager;
+        // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slices — IGameLoop (onGameStarted /
+        // hasGameStarted) + IGameStateQuery (GetGameState / currentGameStateIndex), replacing the static locator.
+        [SerializeField] private GameManager gameManager;
+        private IGameLoop Loop => gameManager;
+        private IGameStateQuery Query => gameManager;
 
         private void Awake()
         {
@@ -33,6 +37,7 @@ namespace GameLogic
         private void Start()
         {
             Assert.IsNotNull(characterManager, "PowerManager.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(gameManager, "PowerManager.gameManager is not wired — wire it in GameScene (the composition root).");
             Power.onPowerSpawned += OnPowerSpawned;
 
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -41,7 +46,7 @@ namespace GameLogic
             }
             //server only
 
-            GameManager.instance.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         private void OnPowerSpawned(Power _newPower)
@@ -51,7 +56,7 @@ namespace GameLogic
                 return;
             }
 
-            if (GameManager.instance.hasGameStarted)
+            if (Loop.hasGameStarted)
             {
                 _newPower.OnGameStartedServer();
             }
@@ -66,8 +71,7 @@ namespace GameLogic
                 return;
             }
 
-            var _gameManager = GameManager.instance;
-            if (_gameManager.GetGameState(_gameManager.currentGameStateIndex.Value) is AwakeningState _awakeningState)
+            if (Query.GetGameState(Query.currentGameStateIndex.Value) is AwakeningState _awakeningState)
             {
                 _awakeningState.OnPowerUsedServer(_newPower);
             }

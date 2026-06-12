@@ -64,7 +64,7 @@ namespace GameLogic.GameStates
             {
                 chainingManager.chainingPlayers.Clear();
                 Debug.Log("ChainingState completed on server, moving to next state.");
-                gameManager.NextGameState();
+                Loop.NextGameState();
             }
         }
 

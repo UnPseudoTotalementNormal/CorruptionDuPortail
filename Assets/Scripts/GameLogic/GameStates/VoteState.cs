@@ -255,9 +255,9 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            gameManager.NextGameState();
+            Loop.NextGameState();
         }
-        
+
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();

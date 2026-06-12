@@ -95,8 +95,10 @@ namespace GameLogic
         // The fields are untouched — concrete callers keep using them directly; only the interface view
         // is added. Zero behaviour change. The rest of IGameLoop/IGameStateQuery is satisfied implicitly
         // by the existing public members.
-        NetworkAction IGameLoop.onGameStarted => onGameStarted;
-        NetworkAction IGameLoop.onNewDayPassed => onNewDayPassed;
+        // get;set; maps to the underlying field both ways (Story 8.3): `+=`/`-=` through the interface
+        // round-trips the same NetworkAction reference, identical to mutating the field directly.
+        NetworkAction IGameLoop.onGameStarted { get => onGameStarted; set => onGameStarted = value; }
+        NetworkAction IGameLoop.onNewDayPassed { get => onNewDayPassed; set => onNewDayPassed = value; }
 
         private void Awake()
         {

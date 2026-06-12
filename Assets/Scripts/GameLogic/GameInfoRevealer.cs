@@ -21,19 +21,25 @@ namespace GameLogic
         
         public Action onCharacterInfoRevealedChanged;
 
-        // Story 7.3 lane A: GameInfoRevealer is itself a CONSUMER of CharacterManager; scene-wired here
-        // (its GameManager.For onGameStarted / GetGameStates game-loop reads stay for Epic 8).
+        // Story 7.3 lane A: GameInfoRevealer is itself a CONSUMER of CharacterManager; scene-wired here.
         [SerializeField] private CharacterManager characterManager;
+        // Story 8.3 lane A: the game-loop reads move off the per-NetworkManager registry hop onto a
+        // scene-wired GameManager, narrowed to IGameLoop (onGameStarted) + IGameStateQuery (GetGameStates).
+        // Behaviour-identical under production's single NetworkManager (the 8.2 lane-A precedent).
+        [SerializeField] private GameManager gameManager;
+        private IGameLoop Loop => gameManager;
+        private IGameStateQuery Query => gameManager;
 
         public void Start()
         {
             Assert.IsNotNull(characterManager, "GameInfoRevealer.characterManager is not wired — wire it in GameScene (the composition root).");
-            GameManager.For(NetworkManager).onGameStarted += OnGameStarted;
+            Assert.IsNotNull(gameManager, "GameInfoRevealer.gameManager is not wired — wire it in GameScene (the composition root).");
+            Loop.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()
         {
-            GameManager.For(NetworkManager).GetGameStates(typeof(RoleAttributionState)).First().onStateEndClient += OnRolesAttributed;
+            Query.GetGameStates(typeof(RoleAttributionState)).First().onStateEndClient += OnRolesAttributed;
         }
 
         private void OnRolesAttributed()

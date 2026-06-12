@@ -2225,6 +2225,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1622243723}
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &392292192
 GameObject:
   m_ObjectHideFlags: 0
@@ -4444,6 +4445,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1089552714}
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &704980997
 GameObject:
   m_ObjectHideFlags: 0
@@ -7152,6 +7154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameManager: {fileID: 704980999}
 --- !u!1 &1089552712
 GameObject:
   m_ObjectHideFlags: 0
@@ -12460,6 +12463,7 @@ MonoBehaviour:
       Data4: -626300355
     Path: event:/Interface/LightOffButton
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &1766155694
 GameObject:
   m_ObjectHideFlags: 0
@@ -12618,6 +12622,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!114 &1771149312
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13024,6 +13029,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1001 &1858349834
 PrefabInstance:
   m_ObjectHideFlags: 0

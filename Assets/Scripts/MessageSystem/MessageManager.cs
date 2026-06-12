@@ -2,6 +2,7 @@ using System;
 using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace MessageSystem
@@ -12,7 +13,11 @@ namespace MessageSystem
         
         public NetworkList<MessageInfo> revealedMessages = new();
         public NetworkList<MessageInfo> messagesToReveal = new();
-        
+
+        // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slice (IGameLoop) for currentDay.
+        [SerializeField] private GameManager gameManager;
+        private IGameLoop Loop => gameManager;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -21,6 +26,7 @@ namespace MessageSystem
                 return;
             }
             instance = this;
+            Assert.IsNotNull(gameManager, "MessageManager.gameManager is not wired — wire it in GameScene (the composition root).");
         }
 
         public override void OnNetworkDespawn()
@@ -36,7 +42,7 @@ namespace MessageSystem
         [Rpc(SendTo.Server)]
         public void SendMessageRpc(ulong _sender, FixedString512Bytes _message)
         {
-            messagesToReveal.Add(new MessageInfo(_sender, _message, GameManager.instance.currentDay));
+            messagesToReveal.Add(new MessageInfo(_sender, _message, Loop.currentDay));
         }
 
         public void RevealAllMessage()

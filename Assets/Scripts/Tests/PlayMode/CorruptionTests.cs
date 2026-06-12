@@ -82,6 +82,9 @@ namespace Tests.PlayMode
             _revealer.GetComponent<NetworkObject>().Spawn();
             ReflectionHelper.SetPrivateField(_gameManager, "gameInfoRevealer", _revealer);
             ReflectionHelper.SetPrivateField(_revealer, "characterManager", _characterManager);
+            // Story 8.3: GameInfoRevealer's game-loop reads now resolve through an injected [SerializeField]
+            // gameManager (lane A), so the harness wires it like the production scene does.
+            ReflectionHelper.SetPrivateField(_revealer, "gameManager", _gameManager);
 
             // Story 7.5: powers spawned in the test body resolve the revealer via
             // CompositionRoot.For(nm).GameInfoRevealer (the GameManager pass-through is gone), so the

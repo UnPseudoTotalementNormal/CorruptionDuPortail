@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (8-2 → done after gds-code-review PASS: 3 layers, 5/5 ACs, no hard violations, 0 patch + 2 deferred (pre-existing OnValueChanged unsubscribe leak → 11.4; GetGameState bounds-safety). Epic 8: 8-1 + 8-2 done; next 8-3 absorbs the 4 deferred mixed files)
+last_updated: 2026-06-12 (8-3 → done after gds-code-review PASS: 3 layers, 5/5 ACs, Edge Case Hunter verified all Blind concerns SAFE, 0 patch + 2 defer (onGameStarted unsubscribe → 11.4; GameInfoRevealer lane-A single-NM assumption) + 6 dismissed. Epic 8: 8-1/8-2/8-3 done; next 8-4 closes parked 5.3/5.4)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -140,7 +140,7 @@ development_status:
   epic-8: in-progress
   8-1-extract-igameloop-and-igamestatequery-gamemanager-implements: review  # inert: IGameLoop/IGameStateQuery extracted (Game asmdef), GameManager implements both (2 explicit-impl NetworkAction wrappers, rest implicit), CompositionRoot exposes both slices. Zero call-site change; EM 162 / PM 146 bit-identical, no golden moves.
   8-2-migrate-presentation-subscribers-onto-igamestatequery: done  # in-scope pure-query scene consumers migrated onto IGameStateQuery via 6.1 template (LightManager narrowing + BoardCameraManager + CharactersBar lane-A, MCP-wired+read-back). Mixed → 8.3, prefab-only → later UI pass (deferred-work.md). gds-code-review PASS (3 layers, 5/5 ACs, no hard violations; 0 patch + 2 deferred). All+=BoardCameraManager,CharactersBar; guards green; 2.11a golden unchanged; EM 162 / PM 146 + boot smoke green.
-  8-3-migrate-game-loop-command-consumers-onto-igameloop: ready-for-dev  # server authority unchanged; RPC dispatch stays GameManager-internal
+  8-3-migrate-game-loop-command-consumers-onto-igameloop: done  # gds-code-review PASS (3 layers, 5/5 ACs, Edge Case Hunter verified all Blind concerns SAFE; 0 patch + 2 defer (onGameStarted unsubscribe→11.4; GameInfoRevealer lane-A single-NM assumption) + 6 dismissed). IGameLoop migration: 10 GameStates + StateUI narrow via Loop property; 6 clean scene consumers lane-A (AwakeningLight/GameInfoRevealer/PowerManager/MessageManager/RobotBoardInfo/CorruptionBoardInfo, MCP-wired+read-back, registered). IGameLoop +WaitAFrameAndNextGameState +event setters. RPC dispatch + 5.1 wire-format + 2.11a golden UNCHANGED. CharacterManager-entangled (RoomFog/AnonymeMessageButton/InfoTableSystem/PowersBar)→Epic 9; prefab-only→UI pass. Both guards green; EM 162 / PM 146
   8-4-close-the-parked-5-3-index-ownership-decision: ready-for-dev  # fold in (then REVIEW-REQUIRED, original 5.3 ACs) or close as won't-do, recorded either way
 
   # Epic 9 (D3): split CharacterManager (ICharacterQuery / ICharacterCommand); fixture-gated; NFR5 verbatim

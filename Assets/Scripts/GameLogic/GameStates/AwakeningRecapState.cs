@@ -82,7 +82,7 @@ namespace GameLogic.GameStates
                 }
                 else
                 {
-                    gameManager.NextGameState();
+                    Loop.NextGameState();
                 }
             }
         }

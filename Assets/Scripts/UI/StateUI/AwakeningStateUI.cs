@@ -12,7 +12,7 @@ namespace UI
         public override void SetupStateUI(GameManager gameManager, GameState gameState)
         {
             base.SetupStateUI(gameManager, gameState);
-            gameManager.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         protected override void OnStateStart()

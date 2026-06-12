@@ -62,7 +62,7 @@ namespace GameLogic.GameStates
                 ApplyRole(_frozenOrder[_distribution.RealRoleIndices[i]], _realCharacters[i]);
             }
 
-            gameManager.NextGameState();
+            Loop.NextGameState();
         }
 
         // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored

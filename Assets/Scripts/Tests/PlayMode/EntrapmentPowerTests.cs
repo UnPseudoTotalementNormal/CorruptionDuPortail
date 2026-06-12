@@ -81,6 +81,9 @@ namespace Tests.PlayMode
             // instead of the GameManager hub-hop; wire it like the production scene does (was implicit before).
             var _powerManager = new GameObject("PowerManager").AddComponent<PowerManager>();
             ReflectionHelper.SetPrivateField(_powerManager, "characterManager", _characterManager);
+            // Story 8.3: PowerManager's game-loop reads now resolve through an injected [SerializeField]
+            // gameManager (lane A); wire it like the production scene does (was the .instance locator before).
+            ReflectionHelper.SetPrivateField(_powerManager, "gameManager", _gameManager);
             _powerManager.gameObject.AddComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager);

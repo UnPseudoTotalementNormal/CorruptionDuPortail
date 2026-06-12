@@ -17,6 +17,11 @@ namespace GameLogic
     public abstract class GameState : ScriptableObject
     {
         public GameManager gameManager { get; set; }
+        // Story 8.3 (Epic 8 / D2): the loop-command surface of the injected gameManager, narrowed to
+        // IGameLoop (D-NFR6 internal-narrowing). State-transition / day-event calls go through Loop so
+        // each state declares only the command slice it drives; the concrete field stays for the
+        // engine internals states still need (IsServer, gameStates, currentGameStateIndex).
+        protected IGameLoop Loop => gameManager;
         // Story 7.2 lane B: CharacterManager pushed directly by SetupGameStates alongside gameManager,
         // so states stop hub-hopping through gameManager.characterManager (deleted in 7.5).
         public CharacterManager characterManager { get; set; }

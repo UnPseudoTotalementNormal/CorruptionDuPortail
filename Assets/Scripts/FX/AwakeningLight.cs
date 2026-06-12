@@ -20,10 +20,14 @@ namespace FX
         [SerializeField] private EventReference turnOffSoundEvent;
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop-command slice (IGameLoop).
+        [SerializeField] private GameManager gameManager;
+        private IGameLoop Loop => gameManager;
 
         private void Start()
         {
             Assert.IsNotNull(characterManager, "AwakeningLight.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(gameManager, "AwakeningLight.gameManager is not wired — wire it in GameScene (the composition root).");
             if (lightComponent == null)
             {
                 lightComponent = GetComponent<Light>();
@@ -31,7 +35,7 @@ namespace FX
             baseIntensity = lightComponent.intensity;
             lightComponent.intensity = 0f;
             lightComponent.enabled = true;
-            GameManager.instance.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         private void OnGameStarted()

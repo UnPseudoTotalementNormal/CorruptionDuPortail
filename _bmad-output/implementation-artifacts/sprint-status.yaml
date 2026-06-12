@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (7-5 → done after gds-code-review PASS: 5 GameManager pass-throughs deleted, hub frozen compiler+guard; 1 review patch applied (RegisterCompositionRoot assert); EM 162 / PM 146 green; Epic 7 functionally complete, epic-7→done pending 7.1-7.4 acceptance)
+last_updated: 2026-06-12 (8-1 → review: extracted IGameLoop/IGameStateQuery (Game asmdef), GameManager implements both, CompositionRoot exposes the slices — provably inert, EM 162 / PM 146 bit-identical. Epic 8 D2 started)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -138,7 +138,7 @@ development_status:
 
   # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery)
   epic-8: in-progress
-  8-1-extract-igameloop-and-igamestatequery-gamemanager-implements: ready-for-dev  # inert commit, interfaces in Game asmdef, root exposes both slices
+  8-1-extract-igameloop-and-igamestatequery-gamemanager-implements: review  # inert: IGameLoop/IGameStateQuery extracted (Game asmdef), GameManager implements both (2 explicit-impl NetworkAction wrappers, rest implicit), CompositionRoot exposes both slices. Zero call-site change; EM 162 / PM 146 bit-identical, no golden moves.
   8-2-migrate-presentation-subscribers-onto-igamestatequery: ready-for-dev  # ~10 OnValueChanged components, LightManager template; 2.11a golden unchanged
   8-3-migrate-game-loop-command-consumers-onto-igameloop: ready-for-dev  # server authority unchanged; RPC dispatch stays GameManager-internal
   8-4-close-the-parked-5-3-index-ownership-decision: ready-for-dev  # fold in (then REVIEW-REQUIRED, original 5.3 ACs) or close as won't-do, recorded either way

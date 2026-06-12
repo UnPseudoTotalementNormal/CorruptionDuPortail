@@ -58,6 +58,10 @@ namespace GameLogic
         public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
         public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
         public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+        // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
+        // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
+        public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
+        public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);
 
         // GameInfoRevealer has no per-NM registry of its own, so it is resolved from the scene root
         // registered for the NM (production: the single Singleton-bound root). Returns null for NMs
@@ -144,6 +148,9 @@ namespace GameLogic
             public CharacterManager CharacterManager => Characters.CharacterManager.For(_networkManager);
             public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
             public GameInfoRevealer GameInfoRevealer => ResolveGameInfoRevealer(_networkManager);
+            // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
+            public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
+            public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);
         }
     }
 }

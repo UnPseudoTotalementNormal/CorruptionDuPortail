@@ -23,7 +23,7 @@ using Object = System.Object;
 
 namespace GameLogic
 {
-    public class GameManager : NetworkBehaviour
+    public class GameManager : NetworkBehaviour, IGameLoop, IGameStateQuery
     {
         public static GameManager instance { get; private set; }
 
@@ -88,6 +88,15 @@ namespace GameLogic
         public bool hasGameStarted => gameHasStartedFirstLoop;
         public NetworkAction onGameStarted = new("onGameStarted", false);
         public NetworkAction onNewDayPassed = new("onNewDayPassed", false);
+
+        // Story 8.1 (Epic 8 / D2): IGameLoop exposes onGameStarted/onNewDayPassed as get-only
+        // properties, but they are public NetworkAction FIELDS here (5.0b). A field cannot implicitly
+        // satisfy a same-named interface property, so wrap them with explicit interface implementations.
+        // The fields are untouched — concrete callers keep using them directly; only the interface view
+        // is added. Zero behaviour change. The rest of IGameLoop/IGameStateQuery is satisfied implicitly
+        // by the existing public members.
+        NetworkAction IGameLoop.onGameStarted => onGameStarted;
+        NetworkAction IGameLoop.onNewDayPassed => onNewDayPassed;
 
         private void Awake()
         {

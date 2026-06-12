@@ -167,6 +167,20 @@ Story-level source of truth: `planning-artifacts/epics.md`. One line each:
 
 Order maximises value-per-risk: seam first (unblocks all), then the locator hub (biggest win), then the second God Object, then the remaining singletons, per-system logic, UI last.
 
+### 8a. Decision — parked 5.3/5.4 `GameLoopMachine` index ownership (story 8.4, 2026-06-12)
+
+**Decision: CLOSE as won't-do.** Stories 5.3 (complete `GameLoopMachine` index ownership) and 5.4 (remove the final index façade) were parked by Poyo (2026-06-11) as "pure-archi, highest-risk silent-desync, no gameplay gain; folds into Epic 8 IF it still earns its risk." Story 8.4 re-evaluated that condition once the D2 narrowing landed; the narrowing **lowered** the payoff, so the fold-in condition is not met.
+
+Decision inputs (assembled at 8.4 dev time):
+- **Ownership / writes:** `currentGameStateIndex` (the `NetworkVariable<int>`) is owned and written by `GameManager` ALONE — server-side, in `SwitchGameState` (+ the index-0 reset). No other writer.
+- **Reads, post-D2:** external read consumers now see the slice — 3 via `IGameStateQuery.currentGameStateIndex` (LightManager, BoardCameraManager, PowerManager), 2 still via the locator (RoomFog, AnonymeMessageButton → Epic 9), 2 via an injected concrete `gameManager` (GameState.`IsStateActive` internal, GameSnapshotBuilder off a passed param). The transition **arithmetic already lives in the POCO** (`GameLoopMachine.Advance/Rewind`, story 2.11b, EditMode-tested).
+- **What 5.3 would still buy:** only architectural purity — the POCO owning the canonical index while the NV mirrors it. Consumers already depend on `IGameStateQuery.currentGameStateIndex`, so they are indifferent to who owns the index; no consumer-facing change, no new testability beyond what the 2.11b POCO + the slice already provide.
+- **Risk (unchanged, rated #1 of the whole refactor):** a synchronous mirror between machine-settle and the NV write. Any suspension point that creeps between them → host advances, remote client frozen, **no exception** (silent multiplayer desync). It also touches the load-bearing `OnEnd → NV write → OnStart` ordering pinned by the 2.11a sequence golden.
+
+Calculus: 5.3 now buys purity only, costs re-opening the highest-risk silent-desync surface + a `REVIEW-REQUIRED` review + a parameterized multi-client trace suite, for zero gameplay gain. **Closed.**
+
+**Consequence — the index façade is PERMANENT by design (recorded exception for the §10 DoD / story 12.3).** With 5.3/5.4 closed, `GameManager` keeps OWNING `currentGameStateIndex` (the `NetworkVariable`) and performing the `OnEnd → NV write → OnStart` sequencing, while `GameLoopMachine` (POCO, Domain) computes only the transition arithmetic. This split is **GameManager's legitimate network-adapter role**, NOT a strangler façade awaiting removal: the NV is NGO replication state that must live on a `NetworkBehaviour`, and the ordering is behaviour pinned by the 2.11a golden. The whole-track DoD ("no strangler façade remains", story 12.3) explicitly EXCLUDES this adapter — it is a designed, permanent boundary, not parked debt. The 5.2 `LeafPocoNoFacadeGuard` is unaffected: it covers the Wave 1–3 leaf cores (VictoryEvaluator/VoteTally/ChainingResolver/RoleDistributor/PowerResolver), and `GameLoopMachine` already satisfies its spirit (a plain instantiable POCO with no static accessor / no static mutable state — the NV lives in `GameManager`, not the POCO).
+
 ## 9. Risks & mitigations
 
 | Risk | Mitigation |
@@ -182,7 +196,7 @@ Order maximises value-per-risk: seam first (unblocks all), then the locator hub 
 
 ## 10. Definition of done (whole effort)
 
-No God Object remains a grab-bag; consumers depend on narrow injected interfaces via the three lanes, not `instance`/`For(nm)` locators; **the only surviving project static is `CompositionRoot`** (plus recorded verify-don't-force exceptions); decision logic lives in tested POCOs; **both guards** green and covering every migrated type; full EditMode + PlayMode suite green at baseline; boot smoke-test green; merged to `Dev` once, at the end.
+No God Object remains a grab-bag; consumers depend on narrow injected interfaces via the three lanes, not `instance`/`For(nm)` locators; **the only surviving project static is `CompositionRoot`** (plus recorded verify-don't-force exceptions); decision logic lives in tested POCOs; **both guards** green and covering every migrated type; full EditMode + PlayMode suite green at baseline; boot smoke-test green; merged to `Dev` once, at the end. **Recorded permanent exception (§8a, story 8.4):** `GameManager` owning the `currentGameStateIndex` `NetworkVariable` + the `OnEnd → NV write → OnStart` sequencing is a designed network-adapter boundary (replication state must live on a `NetworkBehaviour`), NOT a strangler façade — story 12.3's "no façade remains" check excludes it.
 
 ---
 

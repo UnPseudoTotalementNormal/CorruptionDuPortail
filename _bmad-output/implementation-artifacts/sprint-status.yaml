@@ -145,7 +145,7 @@ development_status:
 
   # Epic 9 (D3): split CharacterManager (ICharacterQuery / ICharacterCommand); fixture-gated; NFR5 verbatim
   epic-9: in-progress
-  9-1-extract-icharacterquery-and-migrate-read-consumers: ready-for-dev
+  9-1-extract-icharacterquery-and-migrate-read-consumers: in-progress
   9-2-extract-icharactercommand-and-migrate-command-consumers: ready-for-dev  # REVIEW-REQUIRED: bot flow byte-identical, fixture proves clientId>=100 path
   9-3-narrow-charactermanager-statics-to-the-root-backed-resolution: ready-for-dev  # façade leftovers recorded; final kill in 12.3
 

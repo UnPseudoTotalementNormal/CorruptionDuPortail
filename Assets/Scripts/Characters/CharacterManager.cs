@@ -13,7 +13,9 @@ using Random = UnityEngine.Random;
 
 namespace Characters
 {
-    public class CharacterManager : NetworkBehaviour
+    // Story 9.1 (Epic 9 / D3): CharacterManager implements the read slice ICharacterQuery. All six
+    // members are already public, so this is satisfied implicitly — zero behaviour change.
+    public class CharacterManager : NetworkBehaviour, ICharacterQuery
     {
         public static CharacterManager instance;
 

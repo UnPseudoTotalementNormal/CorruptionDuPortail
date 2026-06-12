@@ -37,12 +37,17 @@ namespace Characters
         // so the field preserves that behaviour. For(nm) is a stable per-NM singleton, so caching the
         // result is equivalent to the previous per-call re-resolution.
         private CharacterManager characterManager;
+        // Story 10.4 lane C: the lobby player-info holder, resolved once here via the composition root.
+        // Null-tolerant — GetOwnerPseudo already guards on a null holder, so the field preserves that
+        // behaviour (returns "Unknown" when unresolved).
+        private LobbyPlayerInfoHolder lobbyPlayerInfoHolder;
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
             characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
 
             if (characterManager != null)
             {
@@ -168,8 +173,8 @@ namespace Characters
 
         public string GetOwnerPseudo()
         {
-            if (LobbyPlayerInfoHolder.instance == null) return "Unknown";
-            return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
+            if (lobbyPlayerInfoHolder == null) return "Unknown";
+            return lobbyPlayerInfoHolder.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
         }
 
         

@@ -121,6 +121,11 @@ namespace Tests.Editor
             // named CorruptedCardText.cs ≠ the class name, which the guard's type→file mapping can't resolve,
             // so it is left off the registry; it holds no locator to regress.)
             typeof(SendMessagePanel),
+            // Story 10.4 — LobbyPlayerInfoHolder resolves its own CharacterManager via the composition
+            // root in OnNetworkSpawn (lane C, null-tolerant; GetSafeRpcTarget is server-only), dropping its
+            // last CharacterManager.instance hop (clears the §4a census row). NGO-spawned NetworkBehaviour
+            // with no [SerializeField] manager field → guard #1 source-scan only (same shape as SendMessagePanel).
+            typeof(Network.LobbyPlayerInfoHolder),
         };
 
         /// <summary>

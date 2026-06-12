@@ -86,8 +86,8 @@ namespace Characters.Powers
                 senderClientId = ChatManager.SERVER_CLIENT_ID,
                 chatId = (int)ChatWindowIDs.Server,
                 message = _isCorrectGuess
-                    ? $"Vous avez correctement deviné que {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
-                    : $"Votre supposition était incorrecte, {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
+                    ? $"Vous avez correctement deviné que {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
+                    : $"Votre supposition était incorrecte, {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
             };
             
             

@@ -51,7 +51,7 @@ namespace Characters.Powers
             if (_characterTarget.role.roleID == RoleID.Robot)
             {
                 _characterTarget.isEliminated.Value = true;
-                string _characterPseudo = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName.ToString();
+                string _characterPseudo = lobbyPlayerInfoHolder.GetPlayerInfo(_targetClientId).playerName.ToString();
                 chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 

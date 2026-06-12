@@ -52,7 +52,7 @@ namespace Characters.Powers
                 chainingManager.AddCharacterToChainingList(_targetClientId);
                 chatManager.SendChatMessageServerRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
+                        $"{lobbyPlayerInfoHolder.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
                         (int)ChatWindowIDs.Server));
             }
         }

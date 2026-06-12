@@ -68,6 +68,9 @@ namespace Characters.Powers
         protected RoleTargetSystem roleTargetSystem;
         // Story 10.4 lane C: the chaining manager, same seam. Null-tolerant — only chaining powers use it.
         protected ChainingManager chainingManager;
+        // Story 10.4 lane C: the lobby player-info holder (player names), same seam. Null-tolerant — only
+        // the player-name powers read it, and in production/their harnesses the global is always present.
+        protected Network.LobbyPlayerInfoHolder lobbyPlayerInfoHolder;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -100,6 +103,7 @@ namespace Characters.Powers
             chatManager = CompositionRoot.For(NetworkManager).ChatManager;
             roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
             chainingManager = CompositionRoot.For(NetworkManager).ChainingManager;
+            lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;

@@ -57,7 +57,7 @@ namespace Characters.Powers
                 
                 chatManager.ReceiveChatMessageRpc(new ChatMessage(
                     GameValues.FAKE_CLIENT_ID,
-                    $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
+                    $"{lobbyPlayerInfoHolder.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),
                     characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }

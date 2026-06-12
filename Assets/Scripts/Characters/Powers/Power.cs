@@ -52,6 +52,12 @@ namespace Characters.Powers
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
 
+        // Story 11.1 (Epic 11 / D5): the base CanUse eligibility rule chain extracted to a pure,
+        // EditMode-tested Domain POCO. This adapter builds a plain-value snapshot from the owner
+        // Character's NetworkVariables + this power's state and delegates the decision; the expensive
+        // target enumeration stays here, passed as a lazy delegate to preserve the exact short-circuit.
+        private readonly CorruptionDuPortail.Domain.PowerUsability _usability = new();
+
         // Story 7.1 lane C: CharacterManager resolved ONCE in OnNetworkSpawn (via the composition
         // root) and consumed by this base AND every concrete power, replacing the GameManager hub-hop.
         protected CharacterManager characterManager;
@@ -147,15 +153,21 @@ namespace Characters.Powers
                 return false;
             }
 
-            if (powerComponents.Any(_pc => !_pc.CanUsePower())) return false;
-            if (isPassive) return false;
-            if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
-            if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
-            if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
-            if (needTargetSelection && GetValidTargets().Count <= 0) return false;
-            if (powerUseLeft.Value <= 0) return false;
+            var _context = new CorruptionDuPortail.Domain.PowerUsabilityContext(
+                allComponentsAllowUse: !powerComponents.Any(_pc => !_pc.CanUsePower()),
+                isPassive: isPassive,
+                isCurrentlyUsed: isCurrentlyUsed,
+                ignoreCurrentlyUsed: _ignoreCurrentlyUsed,
+                isChained: _powerCharacter.isChained.Value,
+                isEliminated: _powerCharacter.isEliminated.Value,
+                hasToBeAwakened: hasToBeAwakened,
+                isAwakened: _powerCharacter.isAwakened.Value,
+                needsTargetSelection: needTargetSelection,
+                powerUsesLeft: powerUseLeft.Value);
 
-            return true;
+            // The target enumeration stays in the adapter (engine-coupled) and is passed lazily so it
+            // runs only when every earlier rule has passed — identical to the original short-circuit.
+            return _usability.CanUse(_context, () => GetValidTargets().Count > 0);
         }
 
         public virtual void StartUse()

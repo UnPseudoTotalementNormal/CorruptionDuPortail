@@ -43,7 +43,7 @@ namespace Characters.Powers
                     _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    ChainingManager.instance.AddCharacterToChainingList(_corruptingCharacterId);
+                    chainingManager.AddCharacterToChainingList(_corruptingCharacterId);
                 }
             }
         }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Characters;
 using ChatSystem;
 using RoleTarget;
+using UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -77,6 +78,12 @@ namespace GameLogic
         // the singleton, so lane-B GameStates (pushed by SetupGameStates) and the GameManager hub stop
         // reading the global. (BoardManager lives in the global namespace.)
         public BoardManager BoardManager => global::BoardManager.instance;
+        // Story 10.4 (Epic 10 / D4): ChainingManager + StatesCanvas — non-de-singletonised replicated
+        // singletons, served from the singleton (same as Chat/RoleTarget/Board). ChainingManager feeds
+        // the powers' chaining surface (Power base field) + VoteState; StatesCanvas feeds the lane-B
+        // GameState UI host.
+        public ChainingManager ChainingManager => GameLogic.ChainingManager.instance;
+        public StatesCanvas StatesCanvas => UI.StatesCanvas.Instance;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
         // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
         public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
@@ -180,6 +187,9 @@ namespace GameLogic
             // Story 10.3 (Epic 10 / D4): the board surface, served from the still-singleton BoardManager
             // (not de-singletonised; no per-NM registry), same as the instance accessor above.
             public BoardManager BoardManager => global::BoardManager.instance;
+            // Story 10.4 (Epic 10 / D4): ChainingManager + StatesCanvas, served from the still-singleton.
+            public ChainingManager ChainingManager => GameLogic.ChainingManager.instance;
+            public StatesCanvas StatesCanvas => UI.StatesCanvas.Instance;
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
             public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
             public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);

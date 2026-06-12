@@ -249,6 +249,8 @@ namespace GameLogic
                 // Story 10.3 lane B: BoardManager resolved from the composition root (the still-singleton
                 // board) and pushed, so states stop reading the BoardManager.instance global.
                 clonedGameState.boardManager = CompositionRoot.For(NetworkManager).BoardManager;
+                // Story 10.4 lane B: StatesCanvas (UI host) pushed the same way.
+                clonedGameState.statesCanvas = CompositionRoot.For(NetworkManager).StatesCanvas;
                 clonedGameState.OnStateCreated();
             }
         }

@@ -61,7 +61,7 @@ namespace Characters.Powers
             }
             else
             {
-                ChainingManager.instance.AddCharacterToChainingList(_characterOwner.ownerClientId.Value);
+                chainingManager.AddCharacterToChainingList(_characterOwner.ownerClientId.Value);
                 chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",

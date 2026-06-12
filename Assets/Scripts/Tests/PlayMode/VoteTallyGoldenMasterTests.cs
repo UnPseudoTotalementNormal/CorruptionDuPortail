@@ -94,6 +94,9 @@ namespace Tests.PlayMode
             _chainingManagerGo.AddComponent<NetworkObject>();
             _chainingManager = _chainingManagerGo.AddComponent<ChainingManager>();
             _chainingManager.GetComponent<NetworkObject>().Spawn();
+            // Story 10.4: VoteState.OnEndStateServer now chains through the injected GameState.chainingManager
+            // (lane-B push) instead of the ChainingManager.instance global; wire it like SetupGameStates does.
+            _voteState.chainingManager = _chainingManager;
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _chainingManager);
 

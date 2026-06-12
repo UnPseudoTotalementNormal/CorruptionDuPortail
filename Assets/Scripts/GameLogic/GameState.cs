@@ -41,6 +41,9 @@ namespace GameLogic
         // Story 10.3 (Epic 10 / D4): BoardManager pushed the same way (from the composition root, which
         // serves the still-singleton board), so states stop reading the BoardManager.instance global.
         public BoardManager boardManager { get; set; }
+        // Story 10.4 (Epic 10 / D4): StatesCanvas (the UI host) pushed the same way, so OnStateCreated
+        // stops reading the StatesCanvas.Instance global. Null-tolerant — only used when stateUIPrefab != null.
+        public StatesCanvas statesCanvas { get; set; }
 
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }
@@ -61,7 +64,7 @@ namespace GameLogic
         {
             if (stateUIPrefab != null)
             {
-                stateUI = Instantiate(stateUIPrefab, StatesCanvas.Instance.transform).GetComponentInChildren<StateUI>();
+                stateUI = Instantiate(stateUIPrefab, statesCanvas.transform).GetComponentInChildren<StateUI>();
                 Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
                 stateUI.characterManager = characterManager;

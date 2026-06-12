@@ -67,6 +67,13 @@ namespace Tests.Editor
             // .instance form. Recorded non-registered survivors: SelectionFlowService (POCO → Epic 11.2)
             // + CardPickerManager (UI leaf → Epic 12.2); neither is registered, so neither is scanned.
             "BoardManager.instance",
+            // Story 10.4 (Epic 10 / D4): ChainingManager injected into the chaining powers (Power base
+            // field) + VoteState (inherited GameState field); StatesCanvas into the lane-B GameState UI
+            // host. Both singletons (no .For(nm)). Lock both forms. NOTE: GameAudioManager is the
+            // explicit OPT-OUT (global FMOD façade, consumed from non-injectable contexts) — it is
+            // deliberately NOT forbidden here (recorded §4); its consumers legitimately keep the global.
+            "ChainingManager.instance",
+            "StatesCanvas.Instance",
         };
 
         [Test]

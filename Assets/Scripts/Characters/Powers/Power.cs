@@ -66,6 +66,8 @@ namespace Characters.Powers
         // Story 10.2 lane C: the targeting system, same seam. Null-tolerant — not every power records a
         // targeting; targeting powers always have one in production and in their own harnesses.
         protected RoleTargetSystem roleTargetSystem;
+        // Story 10.4 lane C: the chaining manager, same seam. Null-tolerant — only chaining powers use it.
+        protected ChainingManager chainingManager;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -97,6 +99,7 @@ namespace Characters.Powers
             gameInfoRevealer = CompositionRoot.For(NetworkManager).GameInfoRevealer;
             chatManager = CompositionRoot.For(NetworkManager).ChatManager;
             roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
+            chainingManager = CompositionRoot.For(NetworkManager).ChainingManager;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;

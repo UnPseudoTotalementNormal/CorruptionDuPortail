@@ -197,7 +197,7 @@ namespace GameLogic.GameStates
             if (_winner != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
-                ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
+                chainingManager.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
             }
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateMostVotedPlayer), 

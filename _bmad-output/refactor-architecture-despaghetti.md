@@ -178,6 +178,20 @@ Premise correction (recorded): the 10.2 story expected `TargetUtils` to be the s
 
 Recorded only because un-wireable (SelectionFlowService = POCO) or a deferred UI leaf (CardPickerManager) — neither is registered, so guard #1 does not scan them. `typeof(BoardManager)` is in `InjectedManagerTypes` (guard #2 verifies the FocusManager + CardEffectManager scene wires). Process note: the first pass recorded FocusManager/GameInfoRevealer/CardEffectManager to dodge scene-wiring; Poyo's **never-defer-wiring** rule corrected it — a deferred wireable consumer is a silent playtest NRE he cannot trace + a skip-decision forgotten by next session. The wiring was completed.
 
+### 4e. Remaining replicated singletons — batch census (story 10.4)
+
+The 5 leftover replicated singletons, each with a decision (AC1/AC5). All the same non-de-singletonised shape; the root serves each from its singleton.
+
+| Singleton | Decision | How / why |
+|---|---|---|
+| `GameAudioManager` | **OPT-OUT** (recorded, stays whitelisted) | Global FMOD façade consumed from ~19 sites incl. **non-injectable contexts** (ChatManager Awake event handlers, static-ish power audio, `?.`-null-safe everywhere). Injecting it changes nothing about the audio architecture (FMOD-only rule holds) and would thread a dep through contexts with no lifecycle. Deliberately NOT in `ForbiddenLocators`; consumers keep the global. |
+| `ChainingManager` | **MIGRATED + locked** | 3 chaining powers (`Power.chainingManager` base field, lane C) + `VoteState` (inherited `GameState.chainingManager`, lane-B push 7.4). Root accessor added. Guard #1 locks `ChainingManager.instance`. ChainingManager itself stays a mixed file (own `GameManager.For` hop) off the registry. |
+| `StatesCanvas` | **MIGRATED + locked** | Sole consumer `GameState.OnStateCreated` → injected `GameState.statesCanvas` (lane-B push). Null-tolerant (only used when `stateUIPrefab != null`; minimal harnesses set none). Guard #1 locks `StatesCanvas.Instance`. |
+| `MessageManager` | **PENDING** (next per-target pass) | SendMessagePanel (lane C, registered) + 2 prefab/UI leaves (AwakeningRecapMessages StateUI, AnonymousRevealedMessageRecap). GetSafeRpcTarget territory in `SendMessageRpc`. |
+| `LobbyPlayerInfoHolder` | **PENDING** (next per-target pass) | Sprawling: 4 powers (Power base field) + `Character` (lane C) + UI (PlayerButtonObject / ConnectedPlayerPanel / ChatPanel) + `UlongExtensions` (static ext — genuinely un-injectable, param when POCO'd) + `CharacterManager.AddDebugPlayer` (debug). Needs per-consumer wire-vs-record verification. |
+
+Per-target commits (10.4 Dev Notes). The 2 PENDING targets are their own passes; the story stays in-progress until they land.
+
 ## 5. The two permanent guards
 
 1. **`DiSeamNoLocatorGuardTests`** (exists — story 6.1, `[Category("DiSeamGuard")]`, source scan). A migrated consumer must never reference `GameManager.instance` / `CharacterManager.instance` again. Extended by story 6.3: in migrated consumers, `CompositionRoot` may appear **only inside `OnNetworkSpawn`** (the lane C whitelist).

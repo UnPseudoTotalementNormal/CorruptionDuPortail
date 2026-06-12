@@ -14,6 +14,11 @@ namespace GameLogic
 {
     public class ChainingManager : NetworkBehaviour
     {
+        // Story 10.4 (Epic 10 / D4): the chaining powers were rerouted off this global onto an injected
+        // chainingManager (Power base field, lane C) and VoteState onto its inherited GameState field
+        // (lane-B push). Guard #1 now locks this global. The static backs only the composition-root
+        // accessor that serves it (the one sanctioned locator, since the manager is not de-singletonised)
+        // + the PlayMode harness assertions (not source-scanned). // recorded: dies in 12.3
         public static ChainingManager instance;
         
         public NetworkList<ulong> chainingPlayers = new();

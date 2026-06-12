@@ -74,6 +74,13 @@ namespace Tests.Editor
             // deliberately NOT forbidden here (recorded §4); its consumers legitimately keep the global.
             "ChainingManager.instance",
             "StatesCanvas.Instance",
+            // Story 10.4 (Epic 10 / D4): MessageManager injected into SendMessagePanel (lane C, resolved
+            // through the composition root). Singleton (no .For(nm)) — lock the .instance form. The root
+            // serves it (SceneWiredOnly, never source-scanned); the recorded non-registered survivors are
+            // the two UI leaves (AwakeningRecapMessages, AnonymousRevealedMessagesComponent → Epic 12.2).
+            // MessageManager.cs itself uses the bare `instance` self-reference, never "MessageManager.instance",
+            // so locking the qualified form does not bite the manager (it is in the All registry from 8.3).
+            "MessageManager.instance",
         };
 
         [Test]

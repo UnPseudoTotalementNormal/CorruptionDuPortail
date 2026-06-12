@@ -84,6 +84,10 @@ namespace GameLogic
         // GameState UI host.
         public ChainingManager ChainingManager => GameLogic.ChainingManager.instance;
         public StatesCanvas StatesCanvas => UI.StatesCanvas.Instance;
+        // Story 10.4 (Epic 10 / D4): MessageManager — non-de-singletonised replicated singleton, served
+        // from the singleton (same as Chat/RoleTarget/Board/Chaining). Feeds SendMessagePanel's send flow
+        // (lane C). The two AwakeningRecap/AnonymousRevealed UI leaves keep the global (recorded §4e → 12.2).
+        public MessageSystem.MessageManager MessageManager => MessageSystem.MessageManager.instance;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
         // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
         public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
@@ -190,6 +194,8 @@ namespace GameLogic
             // Story 10.4 (Epic 10 / D4): ChainingManager + StatesCanvas, served from the still-singleton.
             public ChainingManager ChainingManager => GameLogic.ChainingManager.instance;
             public StatesCanvas StatesCanvas => UI.StatesCanvas.Instance;
+            // Story 10.4 (Epic 10 / D4): the message surface, served from the still-singleton MessageManager.
+            public MessageSystem.MessageManager MessageManager => MessageSystem.MessageManager.instance;
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
             public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
             public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);

@@ -22,12 +22,19 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     // Story 9.1 (Epic 9 / D3): pure-read consumer, resolves the ICharacterQuery slice directly (lane C
     // takes the interface — the composition root hands back the narrowed accessor).
     private ICharacterQuery characterManager;
+    // Story 10.4 (Epic 10 / D4): MessageManager resolved once here (lane C) instead of the global.
+    // Asserted (not null-tolerant): MessageManager is a GameScene NetworkBehaviour whose Awake-set
+    // instance is up before this spawns, and SendMessageRpc dereferences it unconditionally on the
+    // local client when the player sends — so a null here is a wiring bug, not a legitimate state.
+    private MessageManager messageManager;
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
         characterManager = CompositionRoot.For(NetworkManager).CharacterQuery;
         Assert.IsNotNull(characterManager, "SendMessagePanel.characterManager could not be resolved from the composition root.");
+        messageManager = CompositionRoot.For(NetworkManager).MessageManager;
+        Assert.IsNotNull(messageManager, "SendMessagePanel.messageManager could not be resolved from the composition root.");
     }
 
     public void TrySendMessageToServer()
@@ -51,7 +58,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
             return;
         }
         
-        MessageManager.instance.SendMessageRpc(characterManager.GetLocalClientId(), messageInputField.text);
+        messageManager.SendMessageRpc(characterManager.GetLocalClientId(), messageInputField.text);
         OnMessageSentRpc(characterManager.GetLocalClientId(), messageInputField.text);
         ClosePanel();
     }

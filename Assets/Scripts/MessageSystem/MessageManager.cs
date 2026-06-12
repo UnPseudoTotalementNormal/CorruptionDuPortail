@@ -9,7 +9,12 @@ namespace MessageSystem
 {
     public class MessageManager : NetworkBehaviour
     {
-        public static MessageManager instance;
+        // Story 10.4 (Epic 10 / D4): recorded-callers-only façade. The send flow (SendMessagePanel) now
+        // resolves this manager through the composition root (lane C); the only remaining direct readers
+        // are the two unregistered UI leaves (AwakeningRecapMessages, AnonymousRevealedMessagesComponent),
+        // which keep the global until the Epic 12.2 UI pass. Guard #1 forbids the qualified instance
+        // accessor in the migrated set (this manager itself uses the bare `instance` self-ref below).
+        public static MessageManager instance; // recorded: dies in 12.3
         
         public NetworkList<MessageInfo> revealedMessages = new();
         public NetworkList<MessageInfo> messagesToReveal = new();

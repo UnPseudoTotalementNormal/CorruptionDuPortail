@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Characters;
+using ChatSystem;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -62,6 +63,10 @@ namespace GameLogic
         public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
         public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
         public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+        // Story 10.1 (Epic 10 / D4): ChatManager is NOT de-singletonised (no ChatManager.For(nm)) — it
+        // stays a replicated singleton. The root is the ONE sanctioned locator, so it answers the chat
+        // surface from the singleton, collapsing the global read out of every chatting power into here.
+        public ChatManager ChatManager => ChatSystem.ChatManager.instance;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
         // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
         public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
@@ -156,6 +161,9 @@ namespace GameLogic
             public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
             public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
             public GameInfoRevealer GameInfoRevealer => ResolveGameInfoRevealer(_networkManager);
+            // Story 10.1 (Epic 10 / D4): the chat surface, served from the still-singleton ChatManager
+            // (not de-singletonised; no per-NM registry), same as the instance accessor above.
+            public ChatManager ChatManager => ChatSystem.ChatManager.instance;
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
             public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
             public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);

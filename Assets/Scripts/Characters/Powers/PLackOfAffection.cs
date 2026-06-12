@@ -57,7 +57,7 @@ namespace Characters.Powers
             
             if (characterManager.GetLocalClientId() == targetClientId)
             {
-                ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+                chatManager.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
                 switch (_targetCharacter.role.factionType)
                 {
                     case FactionType.chosen:

@@ -131,7 +131,7 @@ After Epic 9 (9.1 `ICharacterQuery` / 9.2 `ICharacterCommand`), every **gameplay
 
 | Caller(s) | Member(s) | Why on the façade | Planned death |
 |---|---|---|---|
-| `ChatManager` | `GetLocalClientId`, `GetSafeRpcTarget` | replicated singleton — injection is its own story | **Epic 10.1** |
+| `ChatManager` | `GetLocalClientId`, `GetSafeRpcTarget` | replicated singleton. **Opposite axis:** 10.1 injected ChatManager INTO its consumers (§4b); it did NOT inject CharacterManager into ChatManager. `GetSafeRpcTarget` stays concrete per NFR5 regardless | **Epic 12.3** (final sweep — ChatManager as a CharacterManager consumer) |
 | `LobbyPlayerInfoHolder` | `GetSafeRpcTarget` | replicated singleton | **Epic 10.4** |
 | `TargetUtils` (static class) | `GetCharacters`, `GetLocalClientId` | static utility, **no injection context** (verify-don't-force) | **Epic 10.5** (mono-statics census) / recorded |
 | `PowerEffectDispatcher` (static) | `GetCharacter`, `AskForUpdateAllCharactersRpc`, `GetSafeRpcTarget` | static dispatcher + NFR5 internal, no injection context | **Epic 10.5 / 12** |
@@ -142,6 +142,18 @@ After Epic 9 (9.1 `ICharacterQuery` / 9.2 `ICharacterCommand`), every **gameplay
 | `CharacterAwakenTimer`, `TakeDownThePortalTextTitle` | reads | **prefab-only** (lane A impossible — prefab can't ref a scene object) | **Epic 12.3** (prefab lane) |
 
 Symmetry note: this mirrors 7.5's GameManager static kill, but D3 has an **explicitly allowed remainder** (UI + static utils + POCO win-rules) — D1's hub-hops were all mechanical so none survived. The `instance`/`For` Awake duplicate-guard semantics (same-NM destroyed, foreign-NM registry-only — 5.0c Design B) are **lifecycle, not locator**, and are untouched.
+
+### 4b. `ChatManager` static census — recorded leftovers (story 10.1)
+
+ChatManager (fan-in 17, replicated `NetworkBehaviour` singleton) is **injected as a concrete dependency** (D-NFR6 — its consumers use only the fire-and-forget send/notify surface, a presentation side-effect of power logic already POCO'd in Epic 4; no slice would earn a unit-test mock). It is **NOT de-singletonised** (no `ChatManager.For(nm)` per-NM registry — out of Epic 10's "inject by fan-in" scope): it stays one global, and the **`CompositionRoot` chat accessor is the one sanctioned indirection point**, serving `ChatManager.instance` (the root already legitimately calls `*.For(`, so a singleton-backed chat resolver belongs there — it is *not* a leftover). Every **power + PowerComponent** now reads an injected `chatManager` base field (lane C, resolved once in `OnNetworkSpawn` via the root), so 13 files stopped touching the global; guard #1 forbids `ChatManager.instance` in the registered set to lock it. `ChatManager.instance` is now a **recorded-callers-only façade** (`// recorded: dies in 12.3`); survivors:
+
+| Caller(s) | Member(s) | Why on the façade | Planned death |
+|---|---|---|---|
+| `CompositionRoot` (the root) | serves `instance` via the `ChatManager` accessor | the ONE sanctioned locator — chat is not de-singletonised, so the root is the indirection point (in `SceneWiredOnly`, never source-scanned). Not a leftover; dies only if chat gets a per-NM registry | **per-NM-registry story / 12.3** |
+| `PowerEffectDispatcher` (static) | `DiscoverChatRpc`, `AddMessageLocal` | static dispatcher, **no injection context** (same bucket as its already-recorded `CharacterManager.instance` row above) | **Epic 11.1 / 12** |
+| `ChatPanel`, `ChatNotificationComponent`, `ChatWindow` | reads (events / `activeChatId` / `discoveredChatIds` / `GetChatWindow`) + `ChangeActiveChat` / `TrySendChatMessage` | UI leaves — presentation, no injection context yet | **Epic 12.2** |
+
+The `SERVER_CLIENT_ID` **const** (read by `PCardsShuffling` / `PCReparentOnChain`) is a compile-time constant, not a singleton read — left as-is.
 
 ## 5. The two permanent guards
 

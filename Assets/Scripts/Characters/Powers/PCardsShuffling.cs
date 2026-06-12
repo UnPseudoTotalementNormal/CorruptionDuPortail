@@ -56,7 +56,7 @@ namespace Characters.Powers
                     senderClientId = ChatManager.SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
+                chatManager.ReceiveChatMessageRpc(_fakeMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
                 return; //character was fake, do nothing else
@@ -114,7 +114,7 @@ namespace Characters.Powers
                 }
             }
             
-            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.ReceiveChatMessageRpc(_resultMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             
             OnUsed();
         }

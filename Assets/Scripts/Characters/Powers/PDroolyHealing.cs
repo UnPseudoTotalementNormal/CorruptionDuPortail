@@ -99,7 +99,7 @@ namespace Characters.Powers
                     senderClientId = GameValues.CHAT_SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_chatMessage, RpcTarget.Everyone);
+                chatManager.ReceiveChatMessageRpc(_chatMessage, RpcTarget.Everyone);
             }
 
             healedCharactersThisNight.Clear();

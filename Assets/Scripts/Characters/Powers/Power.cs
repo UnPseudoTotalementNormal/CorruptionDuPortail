@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using ChatSystem;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
 using CorruptionDuPortail.Domain;
@@ -56,6 +57,11 @@ namespace Characters.Powers
         // uses it, and minimal harnesses spawn bare powers with no revealer; reveal-using powers
         // always have it in production (scene root) and in their own harnesses.
         protected GameInfoRevealer gameInfoRevealer;
+        // Story 10.1 lane C: the chat manager, resolved through the composition root and consumed by
+        // chatting powers' send/notify surface instead of the global. Null-tolerant like the revealer
+        // (no Assert) — not every power chats, and minimal harnesses spawn bare powers with no chat
+        // manager; chatting powers always have one in production and in their own harnesses.
+        protected ChatManager chatManager;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -85,6 +91,7 @@ namespace Characters.Powers
                 "Power.characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager. " +
                 "Did a subclass override OnNetworkSpawn without calling base.OnNetworkSpawn()?");
             gameInfoRevealer = CompositionRoot.For(NetworkManager).GameInfoRevealer;
+            chatManager = CompositionRoot.For(NetworkManager).ChatManager;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;

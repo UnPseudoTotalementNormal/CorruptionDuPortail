@@ -48,7 +48,7 @@ namespace Characters.Powers.PowerComponents
 
             if (_potentialLegacyHolder.Count == 0)
             {
-                ChatManager.instance.ReceiveChatMessageRpc(
+                chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(ChatManager.SERVER_CLIENT_ID,
                         $"Aucun personnage n'est éligible pour hériter du pouvoir {power.powerName}.",
                         (int)ChatWindowIDs.Server),

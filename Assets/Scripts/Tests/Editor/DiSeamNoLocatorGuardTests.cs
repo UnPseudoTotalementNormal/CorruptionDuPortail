@@ -47,6 +47,14 @@ namespace Tests.Editor
             // why it is NOT in DiSeamMigratedConsumers.All (it lives in SceneWiredOnly instead).
             "GameManager.For(",
             "CharacterManager.For(",
+            // Story 10.1 (Epic 10 / D4): ChatManager injected into the powers/components via the
+            // Power/PowerComponent.chatManager base field (lane C, resolved through the composition
+            // root in OnNetworkSpawn). Lock the migrated consumers off the chat global so a future
+            // power can't silently re-grab it. ChatManager stays a singleton (no .For(nm) — not
+            // de-singletonised), so only the .instance form is forbidden here. The root itself
+            // legitimately serves it (SceneWiredOnly, never source-scanned), as do the recorded
+            // exceptions (PowerEffectDispatcher static POCO + the UI leaves) — none are registered.
+            "ChatManager.instance",
         };
 
         [Test]

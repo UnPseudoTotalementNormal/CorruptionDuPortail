@@ -20,7 +20,7 @@ namespace Characters.Powers
             foreach (var _anomalyId in _anomalyIds)
             {
                 var _rpcTarget = characterManager.GetSafeRpcTarget(_anomalyId);
-                ChatManager.instance.DiscoverChatRpc((int)ChatWindowIDs.AnomalyOnly, _rpcParams: _rpcTarget);
+                chatManager.DiscoverChatRpc((int)ChatWindowIDs.AnomalyOnly, _rpcParams: _rpcTarget);
             }
         }
     }

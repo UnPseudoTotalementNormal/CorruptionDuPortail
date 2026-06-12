@@ -150,5 +150,37 @@ namespace Tests.PlayMode
             Assert.IsTrue(eventReceived);
             yield return null;
         }
+
+        // Story 10.1 (Epic 10 / D4) — boot smoke for ChatManager injection (AC2, AC4): the chat
+        // surface the powers now consume resolves through the composition root to the singleton, and a
+        // chat message SENT in a host→bot context (sender clientId >= 100) still travels the full server
+        // path. The bot is host-simulated, so this is host-local — no remote client needed. NFR5: the
+        // server body routes the sent-notification via GetSafeRpcTarget(bot), the >= 100 redirect onto
+        // the host (client 0), exercised verbatim — byte-identical after the powers stopped reading the
+        // global. (The pure GetSafeRpcTarget interception proof lives in CharacterCommandBotFlowTests.)
+        [UnityTest]
+        public IEnumerator ChatManager_ResolvesThroughRoot_AndSendsHostToBot()
+        {
+            // The composition-root accessor the migrated Power/PowerComponent.chatManager base field
+            // resolves to (CompositionRoot.For(nm).ChatManager). ChatManager is not de-singletonised, so
+            // the root serves the single global instance — no registered root needed for this accessor.
+            Assert.AreSame(_chatManager, CompositionRoot.For(_networkManager).ChatManager,
+                "CompositionRoot.For(nm).ChatManager must resolve the spawned ChatManager singleton.");
+
+            const ulong botClientId = 100; // >= 100 => host-simulated bot, intercepted by GetSafeRpcTarget.
+            int generalId = (int)ChatWindowIDs.General;
+            bool received = false;
+            _chatManager.onChatMessageReceived += (_) => received = true;
+
+            Assert.DoesNotThrow(
+                () => _chatManager.SendChatMessageServerRpc(
+                    new ChatMessage(botClientId, new FixedString512Bytes("bot says hi"), generalId)),
+                "SendChatMessageServerRpc in a host→bot context must reach the server RPC body (it routes the " +
+                "sent-notification through GetSafeRpcTarget(botClientId)).");
+
+            yield return null;
+
+            Assert.IsTrue(received, "The host→bot chat message must be delivered to the General window.");
+        }
     }
 }

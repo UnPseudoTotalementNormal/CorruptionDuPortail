@@ -55,7 +55,7 @@ namespace Characters.Powers
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 _blessingCharacter.isBlessed.Value = true;
                 
-                ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(
+                chatManager.ReceiveChatMessageRpc(new ChatMessage(
                     GameValues.FAKE_CLIENT_ID,
                     $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),

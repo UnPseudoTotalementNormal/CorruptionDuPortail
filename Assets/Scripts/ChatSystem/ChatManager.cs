@@ -20,6 +20,12 @@ namespace ChatSystem
 {
     public class ChatManager : NetworkBehaviour
     {
+        // Story 10.1 (Epic 10 / D4): the gameplay consumers (powers + PowerComponents) were rerouted
+        // off this global onto an injected chatManager base field, resolved through CompositionRoot.
+        // The static now backs ONLY recorded-callers exceptions: the CompositionRoot's chat accessor
+        // (the one sanctioned locator, since ChatManager is not de-singletonised), the
+        // PowerEffectDispatcher static POCO (→ Epic 11.1), and the UI leaves ChatPanel /
+        // ChatNotificationComponent / ChatWindow (→ Epic 12). // recorded: dies in 12.3
         public static ChatManager instance;
 
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;

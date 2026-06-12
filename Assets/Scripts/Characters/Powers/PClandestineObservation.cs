@@ -51,7 +51,7 @@ namespace Characters.Powers
                 .Where(_c => _c.role.roleID == targetRoleID).ToList();
             if (_targetedCharacters.Count == 0)
             {
-                ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
+                chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
                     $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.", 
                     (int)ChatWindowIDs.Server),
                     characterManager.GetSafeRpcTarget(ownerClientId.Value));
@@ -62,7 +62,7 @@ namespace Characters.Powers
             {
                 _targetingDataList.AddRange(RoleTargetSystem.instance.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId.Value));
             }
-            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
+            chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                 $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Distinct().Count()}",
                 (int)ChatWindowIDs.Server),
                 characterManager.GetSafeRpcTarget(ownerClientId.Value));

@@ -50,7 +50,7 @@ namespace Characters.Powers
             if (_targetCharacter.role.factionType == FactionType.anomaly)
             {
                 ChainingManager.instance.AddCharacterToChainingList(_targetClientId);
-                ChatManager.instance.SendChatMessageServerRpc(
+                chatManager.SendChatMessageServerRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
                         $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
                         (int)ChatWindowIDs.Server));

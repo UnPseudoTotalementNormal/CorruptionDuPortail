@@ -106,7 +106,7 @@ namespace Characters.Powers
 
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {
-                ChatManager.instance.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",
+                chatManager.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",
                     ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
                 return;
             }
@@ -115,7 +115,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            ChatManager.instance.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", 
+            chatManager.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", 
                 ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
         }
     }

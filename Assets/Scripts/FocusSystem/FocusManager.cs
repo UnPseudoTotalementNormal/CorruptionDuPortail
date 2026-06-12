@@ -21,7 +21,7 @@ namespace FocusSystem
         // composition root; the remaining direct readers are the unregistered UI/service leaves
         // (SelectionFlowService, CardPickerManager → Epic 11/12). Guard #1 forbids the qualified instance
         // accessor in the migrated set; this manager itself uses the bare `instance` self-ref below.
-        public static FocusManager instance; // recorded: dies in 12.3
+        public static FocusManager instance; // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         
         [SerializeField] private CanvasGroup _focusCanvasGroup;
         [SerializeField] private ParticleSystem _focusParticlePrefab;

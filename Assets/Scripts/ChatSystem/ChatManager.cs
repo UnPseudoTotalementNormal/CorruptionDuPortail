@@ -25,7 +25,7 @@ namespace ChatSystem
         // The static now backs ONLY recorded-callers exceptions: the CompositionRoot's chat accessor
         // (the one sanctioned locator, since ChatManager is not de-singletonised), the
         // PowerEffectDispatcher static POCO (→ Epic 11.1), and the UI leaves ChatPanel /
-        // ChatNotificationComponent / ChatWindow (→ Epic 12). // recorded: dies in 12.3
+        // ChatNotificationComponent / ChatWindow (→ Epic 12). // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         public static ChatManager instance;
 
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;

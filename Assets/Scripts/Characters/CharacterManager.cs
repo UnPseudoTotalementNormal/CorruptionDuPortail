@@ -32,7 +32,9 @@ namespace Characters
         // AnonymousRevealedMessagesComponent (no injection context). ChatManager / LobbyPlayerInfoHolder → Epic 10;
         // W* winning-condition POCOs + TargetUtils + PowerEffectDispatcher = static/POCO façade (no injection context);
         // DevIdentityController = debug F-keys. The field STAYS public for those callers.
-        // recorded: dies in 12.3 (once the UI/static leftovers above are rerouted, this static is deleted).
+        // recorded §4 survivor (12.3 strategy B): kept as a verify-don't-force exception, NOT deleted — read
+        // only by context-less static machinery (W*/TargetUtils/PowerEffectDispatcher) + ChatManager's NFR5
+        // GetSafeRpcTarget + the network fixtures. Enforced by StaticSingletonCensusGuardTests.
         public static CharacterManager instance;
 
         // Per-NetworkManager registry: lets a second in-process client's replica

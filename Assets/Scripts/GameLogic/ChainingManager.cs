@@ -18,7 +18,7 @@ namespace GameLogic
         // chainingManager (Power base field, lane C) and VoteState onto its inherited GameState field
         // (lane-B push). Guard #1 now locks this global. The static backs only the composition-root
         // accessor that serves it (the one sanctioned locator, since the manager is not de-singletonised)
-        // + the PlayMode harness assertions (not source-scanned). // recorded: dies in 12.3
+        // + the PlayMode harness assertions (not source-scanned). // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         public static ChainingManager instance;
         
         public NetworkList<ulong> chainingPlayers = new();

@@ -14,7 +14,7 @@ namespace MessageSystem
         // are the two unregistered UI leaves (AwakeningRecapMessages, AnonymousRevealedMessagesComponent),
         // which keep the global until the Epic 12.2 UI pass. Guard #1 forbids the qualified instance
         // accessor in the migrated set (this manager itself uses the bare `instance` self-ref below).
-        public static MessageManager instance; // recorded: dies in 12.3
+        public static MessageManager instance; // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         
         public NetworkList<MessageInfo> revealedMessages = new();
         public NetworkList<MessageInfo> messagesToReveal = new();

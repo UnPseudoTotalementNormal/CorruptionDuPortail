@@ -25,6 +25,10 @@ namespace GameLogic
 {
     public class GameManager : NetworkBehaviour, IGameLoop, IGameStateQuery
     {
+        // Story 12.3 (strategy B): recorded §4 survivor, NOT deleted — read only by context-less static
+        // machinery (W* winning-condition POCOs / TargetUtils / PowerEffectDispatcher) + the network test
+        // fixtures, which have no injection seam. CompositionRoot.For(nm) is the sanctioned indirection the
+        // rest of the codebase uses. Whitelisted in StaticSingletonCensusGuardTests.
         public static GameManager instance { get; private set; }
 
         // Per-NetworkManager registry: lets a second in-process client's replica

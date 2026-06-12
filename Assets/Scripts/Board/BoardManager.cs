@@ -26,7 +26,7 @@ public class BoardManager : NetworkBehaviour
     // backs ONLY recorded non-registered survivors: SelectionFlowService (POCO, no Unity lifecycle →
     // Epic 11.2) + CardPickerManager (UI leaf → Epic 12.2), plus the composition-root accessor that
     // serves it (the one sanctioned locator, since the board is not de-singletonised).
-    // recorded: dies in 12.3
+    // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
     public static BoardManager instance;
     public Card cardPrefab;
 

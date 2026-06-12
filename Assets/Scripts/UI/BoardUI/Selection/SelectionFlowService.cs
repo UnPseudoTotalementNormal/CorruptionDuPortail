@@ -18,7 +18,7 @@ namespace UI.BoardUI.Selection
         // singleton through the composition root, so no registered consumer reads the global. Guard #1
         // forbids the qualified instance accessor in the migrated set. This service still reads the
         // FocusManager global itself (recorded survivor → Epic 11 when its logic is POCO-ised).
-        public static SelectionFlowService instance => _instance; // recorded: dies in 12.3
+        public static SelectionFlowService instance => _instance; // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
 
         private Action onCanceled;
         private bool clearFocusOnFinish = true;

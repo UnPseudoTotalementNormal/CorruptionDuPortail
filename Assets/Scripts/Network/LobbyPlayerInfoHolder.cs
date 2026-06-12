@@ -18,7 +18,7 @@ namespace Network
         // (PlayerButtonObject, ConnectedPlayerPanel, ChatPanel → Epic 12.2), the UlongExtensions static
         // (→ 10.5), and CharacterManager.AddDebugPlayer (debug). Guard #1 forbids the qualified instance
         // accessor in the migrated set; this holder itself uses the bare `instance` self-ref below.
-        public static LobbyPlayerInfoHolder instance { get; private set; } // recorded: dies in 12.3
+        public static LobbyPlayerInfoHolder instance { get; private set; } // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
 
         public NetworkList<PlayerInfo> playerInfos { get; private set; } = new();
 

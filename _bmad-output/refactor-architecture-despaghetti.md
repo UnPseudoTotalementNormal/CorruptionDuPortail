@@ -192,6 +192,32 @@ The 5 leftover replicated singletons, each with a decision (AC1/AC5). All the sa
 
 Per-target commits (10.4 Dev Notes). The 2 PENDING targets are their own passes; the story stays in-progress until they land.
 
+### 4f. Mono-static census close — the full 24→1 ledger (story 10.5)
+
+Story 10.5 migrates the remaining **non-`NetworkBehaviour` Mono statics** by descending fan-in and records every leftover, closing the whole static census. Live grep (`static … instance`/`Instance` under `Assets/Scripts`, 2026-06-12) finds **22 project statics** (the 2026-06-11 "24" minus two killed during Epics 6–9). Each now has a terminal state:
+
+| Static | Final state |
+|---|---|
+| `CompositionRoot` | **THE one surviving static** — the root (scene-placed, SceneWiringGuard-covered). |
+| `GameManager` | **KEPT** — root-backed `instance`/`For`; the God-Object surface was narrowed to the game-loop by Epic 8 (`IGameLoop`/`IGameStateQuery`). `instance` is a recorded façade (dies 12.3). |
+| `CharacterManager` | **KEPT** — root-backed `instance`/`For`; split into `ICharacterQuery`/`ICharacterCommand` by Epic 9. `instance` recorded façade (dies 12.3). |
+| `ChatManager` / `RoleTargetSystem` / `BoardManager` / `ChainingManager` / `StatesCanvas` / `MessageManager` / `LobbyPlayerInfoHolder` | **MIGRATED + locked** (Epic 10.1–10.4). Concrete, root-served; `instance` façades die 12.3. |
+| `GameAudioManager` | **OPT-OUT** (10.4) — global FMOD façade, stays whitelisted (OUT of `ForbiddenLocators`). |
+| **`SelectionFlowService`** | **MIGRATED + locked** (10.5) — POCO singleton (fan-in 16); 15 targeting powers via `Power.selectionFlowService` base field + `TakeDownThePortalState` via `GameState.selectionFlowService` lane-B. No UI leaf reads it → fully locked. `instance` façade dies 12.3. |
+| **`FocusManager`** | **MIGRATED + locked** (10.5) — scene singleton; `Power.focusManager` base field (Power.StopUse + PVisionOfTheImpossible) + `TakeDownThePortalState` lane-B. Unregistered survivors keep the global: `SelectionFlowService` (service-to-service) + `CardPickerManager` (UI) → Epic 11/12. `instance` façade dies 12.3. |
+| `CardPickerManager` | **RECORD → Epic 12.2** — UI leaf (board card picker); reads FocusManager/BoardManager; unregistered, keeps the global. |
+| `TooltipManager` | **RECORD → Epic 12.2** — UI tooltip leaves (`HoverTooltipComponent`, `TooltipWindow`). |
+| `NoteManager` | **RECORD → Epic 12.2** — UI note leaves (`NoteRibbon`, `NoteChoosePanel`). |
+| `ArrowManager` | **RECORD → Epic 11/12** — fan-in 1 (`PCorruptingMark.StopUse`, visual arrows); fold into the Power base field with the POCO pass. |
+| `CardEffectManager` | **RECORD → Epic 11/12** — fan-in 3 (`Character` lane-C-injectable, `PersonalBeaconObject` component, `PowerEffectDispatcher` static); itself a registered lane-A scene consumer; mixed contexts, no single clean lane. |
+| `PowerManager` | **RECORD → Epic 11/12** — fan-in 2 (`CharacterManager` manager-to-manager, `PCReparentOnChain` component); itself a registered lane-A scene consumer. |
+| `LobbyManager` | **OPT-OUT** — menu/lobby async service (`MainMenu`, `LobbyListUI`, `LobbySelectionPanel`); lives in the pre-game menu scene with no `NetworkManager`/`CompositionRoot`/game lifecycle. Global service, same class as GameAudioManager. |
+| `InputManager` | **OPT-OUT** — global input façade (`BoardCameraManager`, `SmartphoneController`); register-action API, no lifecycle. Same class as GameAudioManager. |
+| `GameAssetHolder` | **NON-ISSUE** — **0** `.instance` consumers (static asset registry; not a locator problem). |
+| `BoardCameraManager` | **NON-ISSUE** — **0** `.instance` consumers (self-registering singleton nobody locates; itself a registered lane-A consumer). |
+
+**Endgame reached:** one surviving project static (`CompositionRoot`) + two root-backed God Objects whose `instance` façades die at 12.3 + nine locked Epic-10 façades (die 12.3) + recorded verify-don't-force exceptions (UI leaves → Epic 12.2; ArrowManager/CardEffectManager/PowerManager → Epic 11/12; GameAudioManager/LobbyManager/InputManager global façades = permanent opt-outs; GameAssetHolder/BoardCameraManager = non-issues). Every static has a terminal state — the census is closed (AC4). Epic 10 (D4) is complete.
+
 ## 5. The two permanent guards
 
 1. **`DiSeamNoLocatorGuardTests`** (exists — story 6.1, `[Category("DiSeamGuard")]`, source scan). A migrated consumer must never reference `GameManager.instance` / `CharacterManager.instance` again. Extended by story 6.3: in migrated consumers, `CompositionRoot` may appear **only inside `OnNetworkSpawn`** (the lane C whitelist).

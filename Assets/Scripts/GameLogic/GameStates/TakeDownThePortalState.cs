@@ -110,12 +110,12 @@ namespace GameLogic.GameStates
             
             Validator<(ulong targetId, TargetType targetType)> _validator = new();
             _validator.AddRule(_ctx => _ctx.targetType == TargetType.Role);
-            SelectionFlowService.instance.StartRoleSelection(_validator, OnRoleClickClient);
+            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient);
         }
         
         private void UnsubscribeToCharacterClick() => boardManager.onCardClicked -= OnCharacterClickClient;
         
-        private void UnsubscribeToRoleClick() => SelectionFlowService.instance.CancelSelection();
+        private void UnsubscribeToRoleClick() => selectionFlowService.CancelSelection();
         
 
         private void WaitForCharacterClickServer()
@@ -162,7 +162,7 @@ namespace GameLogic.GameStates
                 {
                     continue;
                 }
-                FocusManager.instance.FocusObject(_card.gameObject);
+                focusManager.FocusObject(_card.gameObject);
             }
         }
         
@@ -178,9 +178,9 @@ namespace GameLogic.GameStates
         
         private void HighlightRolesRpc(ulong _clickedCharacterOwnerId)
         {
-            FocusManager.instance.SetFocusOnType(FocusType.Roles);
+            focusManager.SetFocusOnType(FocusType.Roles);
 
-            FocusManager.instance.FocusObject(boardManager.visibleCards
+            focusManager.FocusObject(boardManager.visibleCards
                 .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
         }
         
@@ -191,7 +191,7 @@ namespace GameLogic.GameStates
         
         private void UnHighlightAll()
         {
-            FocusManager.instance.UnfocusAll();
+            focusManager.UnfocusAll();
         }
         
         private List<ulong> GetIgnoreCharacters()

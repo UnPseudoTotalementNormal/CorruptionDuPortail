@@ -93,6 +93,13 @@ namespace GameLogic
         // and Character (lane C). UI leaves + UlongExtensions (static) + AddDebugPlayer (debug) keep the
         // global (recorded §4e → Epic 12.2 / 10.5).
         public Network.LobbyPlayerInfoHolder LobbyPlayerInfoHolder => Network.LobbyPlayerInfoHolder.instance;
+        // Story 10.5 (Epic 10 / D4): SelectionFlowService (a plain POCO singleton, eager `new()`, fan-in 16)
+        // + FocusManager (scene singleton). Both NOT de-singletonised — the root serves their singleton, so
+        // the powers (Power base fields) and TakeDownThePortalState (GameState lane-B) stop reading the
+        // SelectionFlowService.instance / FocusManager.instance globals. Concrete (Epic 11 may narrow
+        // SelectionFlowService to its existing ISelectionFlowService for POCO unit tests).
+        public UI.BoardUI.Selection.SelectionFlowService SelectionFlowService => UI.BoardUI.Selection.SelectionFlowService.instance;
+        public FocusSystem.FocusManager FocusManager => FocusSystem.FocusManager.instance;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
         // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
         public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
@@ -203,6 +210,9 @@ namespace GameLogic
             public MessageSystem.MessageManager MessageManager => MessageSystem.MessageManager.instance;
             // Story 10.4 (Epic 10 / D4): the player-info surface, served from the still-singleton LobbyPlayerInfoHolder.
             public Network.LobbyPlayerInfoHolder LobbyPlayerInfoHolder => Network.LobbyPlayerInfoHolder.instance;
+            // Story 10.5 (Epic 10 / D4): the selection-flow + focus surfaces, served from their still-singletons.
+            public UI.BoardUI.Selection.SelectionFlowService SelectionFlowService => UI.BoardUI.Selection.SelectionFlowService.instance;
+            public FocusSystem.FocusManager FocusManager => FocusSystem.FocusManager.instance;
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
             public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
             public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);

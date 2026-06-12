@@ -251,6 +251,10 @@ namespace GameLogic
                 clonedGameState.boardManager = CompositionRoot.For(NetworkManager).BoardManager;
                 // Story 10.4 lane B: StatesCanvas (UI host) pushed the same way.
                 clonedGameState.statesCanvas = CompositionRoot.For(NetworkManager).StatesCanvas;
+                // Story 10.5 lane B: SelectionFlowService + FocusManager pushed the same way (sole consumer
+                // TakeDownThePortalState), so it stops reading those globals.
+                clonedGameState.selectionFlowService = CompositionRoot.For(NetworkManager).SelectionFlowService;
+                clonedGameState.focusManager = CompositionRoot.For(NetworkManager).FocusManager;
                 clonedGameState.OnStateCreated();
             }
         }

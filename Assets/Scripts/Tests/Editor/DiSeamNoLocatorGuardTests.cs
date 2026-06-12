@@ -88,6 +88,15 @@ namespace Tests.Editor
             // UlongExtensions (static ext → 10.5), CharacterManager.AddDebugPlayer (debug). The holder itself
             // is now registered (NoLocatorOnly) and uses the bare `instance` self-ref, so the lock does not bite it.
             "LobbyPlayerInfoHolder.instance",
+            // Story 10.5 (Epic 10 / D4): SelectionFlowService (POCO singleton, fan-in 16) injected into the
+            // 15 targeting powers (Power base field) + TakeDownThePortalState (GameState lane-B); FocusManager
+            // (scene singleton) injected into Power + PVisionOfTheImpossible + TakeDownThePortalState. Both
+            // singletons (no .For(nm)) — lock the qualified instance form. The root serves them
+            // (SceneWiredOnly, never source-scanned). Unregistered survivors keep the global: SelectionFlowService
+            // + CardPickerManager read FocusManager (→ Epic 11/12); SelectionFlowService itself is unregistered.
+            // FocusManager.cs (in the All registry) uses the bare `instance` self-ref, so the lock does not bite it.
+            "SelectionFlowService.instance",
+            "FocusManager.instance",
         };
 
         [Test]

@@ -13,7 +13,12 @@ namespace UI.BoardUI.Selection
     public sealed class SelectionFlowService : ISelectionFlowService
     {
         private static readonly SelectionFlowService _instance = new();
-        public static SelectionFlowService instance => _instance;
+        // Story 10.5 (Epic 10 / D4): recorded-callers-only façade. Every gameplay consumer (the 15
+        // targeting powers via Power's base field + TakeDownThePortalState lane-B) now resolves this POCO
+        // singleton through the composition root, so no registered consumer reads the global. Guard #1
+        // forbids the qualified instance accessor in the migrated set. This service still reads the
+        // FocusManager global itself (recorded survivor → Epic 11 when its logic is POCO-ised).
+        public static SelectionFlowService instance => _instance; // recorded: dies in 12.3
 
         private Action onCanceled;
         private bool clearFocusOnFinish = true;

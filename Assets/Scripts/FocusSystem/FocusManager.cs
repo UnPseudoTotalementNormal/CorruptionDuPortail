@@ -16,7 +16,12 @@ namespace FocusSystem
 {
     public class FocusManager : MonoBehaviour
     {
-        public static FocusManager instance;
+        // Story 10.5 (Epic 10 / D4): recorded-callers-only façade. The gameplay consumers (Power base
+        // field + PVisionOfTheImpossible + TakeDownThePortalState lane-B) now resolve focus through the
+        // composition root; the remaining direct readers are the unregistered UI/service leaves
+        // (SelectionFlowService, CardPickerManager → Epic 11/12). Guard #1 forbids the qualified instance
+        // accessor in the migrated set; this manager itself uses the bare `instance` self-ref below.
+        public static FocusManager instance; // recorded: dies in 12.3
         
         [SerializeField] private CanvasGroup _focusCanvasGroup;
         [SerializeField] private ParticleSystem _focusParticlePrefab;

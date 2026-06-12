@@ -14,6 +14,7 @@ using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using GameLogic.Validation;
+using UI.BoardUI.Selection;
 using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
@@ -71,6 +72,13 @@ namespace Characters.Powers
         // Story 10.4 lane C: the lobby player-info holder (player names), same seam. Null-tolerant — only
         // the player-name powers read it, and in production/their harnesses the global is always present.
         protected Network.LobbyPlayerInfoHolder lobbyPlayerInfoHolder;
+        // Story 10.5 lane C: the selection-flow service (a POCO singleton, eager new() → never null) and
+        // the focus manager (scene singleton). Resolved through the composition root like the rest; the
+        // targeting powers drive their click-to-pick choreography through these instead of the globals.
+        // focusManager is null-tolerant (StopUse already null-guards it); selectionFlowService is a POCO
+        // singleton so the field is always set in production and in any context the root can reach.
+        protected SelectionFlowService selectionFlowService;
+        protected FocusManager focusManager;
 
         [Header("Sounds")] 
         public EventReference canalisationSound;
@@ -104,6 +112,8 @@ namespace Characters.Powers
             roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
             chainingManager = CompositionRoot.For(NetworkManager).ChainingManager;
             lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
+            selectionFlowService = CompositionRoot.For(NetworkManager).SelectionFlowService;
+            focusManager = CompositionRoot.For(NetworkManager).FocusManager;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
@@ -222,10 +232,10 @@ namespace Characters.Powers
                     PowerEffectTrace.Record(new PlayOneShotSound(onUsedSound.GetPath()));
                     RuntimeManager.PlayOneShot(onUsedSound);
                 }
-                if (FocusManager.instance != null)
+                if (focusManager != null)
                 {
                     PowerEffectTrace.Record(UnfocusAll.Instance);
-                    FocusManager.instance.UnfocusAll();
+                    focusManager.UnfocusAll();
                 }
             }
             if (GameAudioManager.instance != null)

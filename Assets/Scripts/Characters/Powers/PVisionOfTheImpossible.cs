@@ -67,7 +67,7 @@ namespace Characters.Powers
 
         private void StartCharacterSelection()
         {
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions
                 {
                     focusType        = FocusType.Cards,
@@ -84,7 +84,7 @@ namespace Characters.Powers
             clickedRoles.Add(_roleClicked);
             if (clickedRoles.Count >= rolesToSelect)
             {
-                FocusManager.instance.UnfocusAll();
+                focusManager.UnfocusAll();
                 
                 OnUsed();
                 
@@ -99,7 +99,7 @@ namespace Characters.Powers
 
         private void StartRoleSelection()
         {
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+            selectionFlowService.StartRoleSelection(targetValidator, OnRolePicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
@@ -163,8 +163,8 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
-            FocusManager.instance.UnfocusAll();
+            selectionFlowService.CancelSelection();
+            focusManager.UnfocusAll();
         }
     }
 }

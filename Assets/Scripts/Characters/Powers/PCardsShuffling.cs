@@ -124,7 +124,7 @@ namespace Characters.Powers
         {
             Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
 
-            SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
+            selectionFlowService.StartCharacterSelection(null, OnGuessCharacterPicked,
                 new SelectionFlowOptions
                 {
                     focusType        = FocusType.Cards,
@@ -139,14 +139,14 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+            selectionFlowService.StartRoleSelection(targetValidator, OnRolePicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

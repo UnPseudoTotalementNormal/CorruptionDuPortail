@@ -44,6 +44,12 @@ namespace GameLogic
         // Story 10.4 (Epic 10 / D4): StatesCanvas (the UI host) pushed the same way, so OnStateCreated
         // stops reading the StatesCanvas.Instance global. Null-tolerant — only used when stateUIPrefab != null.
         public StatesCanvas statesCanvas { get; set; }
+        // Story 10.5 (Epic 10 / D4): SelectionFlowService + FocusManager pushed the same way (from the
+        // composition root, serving their still-singletons), so the sole GameState consumer
+        // (TakeDownThePortalState) stops reading the SelectionFlowService.instance / FocusManager.instance
+        // globals. Only that state uses them; the others get them set and never read (like statesCanvas).
+        public UI.BoardUI.Selection.SelectionFlowService selectionFlowService { get; set; }
+        public FocusSystem.FocusManager focusManager { get; set; }
 
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }

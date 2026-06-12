@@ -68,12 +68,12 @@ namespace GameLogic
             {
                 return _root.gameInfoRevealer;
             }
-            // Fallback for an NM with no scene-placed root (PlayMode harnesses): the GameManager's
-            // still-present gameInfoRevealer pass-through field. In production the scene root above
-            // always answers, and both point at the same scene GameInfoRevealer — behaviour-identical.
-            // Revisited in 7.5 when the GameManager pass-through field is removed.
-            var _gameManager = GameManager.For(_networkManager);
-            return _gameManager != null ? _gameManager.gameInfoRevealer : null;
+            // Story 7.5: the GameManager.gameInfoRevealer pass-through fallback was removed together
+            // with the rest of the GameManager hub (D-NFR4). Production always has a scene-placed
+            // CompositionRoot registered above, so the scene root answers. An NM with no registered
+            // root (a PlayMode harness) must register a CompositionRoot of its own to resolve the
+            // revealer — see the power test harnesses.
+            return null;
         }
 
         private void Awake()

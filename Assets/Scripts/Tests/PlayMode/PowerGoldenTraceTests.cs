@@ -42,6 +42,7 @@ namespace Tests.PlayMode
         private CharacterManager _characterManager;
         private GameObject _revealerGo;
         private GameInfoRevealer _revealer;
+        private GameObject _compositionRootGo;
 
         private GameObject _dummyCharPrefab;
 
@@ -89,7 +90,7 @@ namespace Tests.PlayMode
             _characterManagerGo = new GameObject("CharacterManager");
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
-            _gameManager.characterManager = _characterManager;
+            ReflectionHelper.SetPrivateField(_gameManager, "characterManager", _characterManager);
             _characterManager.GetComponent<NetworkObject>().Spawn();
 
             GameObject charactersParent = new GameObject("CharactersParent");
@@ -101,8 +102,13 @@ namespace Tests.PlayMode
             _revealerGo.AddComponent<NetworkObject>();
             _revealer = _revealerGo.AddComponent<GameInfoRevealer>();
             _revealer.GetComponent<NetworkObject>().Spawn();
-            _gameManager.gameInfoRevealer = _revealer;
+            ReflectionHelper.SetPrivateField(_gameManager, "gameInfoRevealer", _revealer);
             ReflectionHelper.SetPrivateField(_revealer, "characterManager", _characterManager);
+
+            // Story 7.5: powers spawned in the test body resolve the revealer via
+            // CompositionRoot.For(nm).GameInfoRevealer (the GameManager pass-through is gone), so the
+            // harness registers a CompositionRoot for this NM.
+            _compositionRootGo = NetworkTestHelper.RegisterCompositionRoot(_gameManager, _characterManager, _revealer);
 
             // Plain singletons. BoardManager BEFORE CardEffectManager (its Start subscribes to it).
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();
@@ -134,6 +140,7 @@ namespace Tests.PlayMode
             Object.Destroy(_gameManagerGo);
             Object.Destroy(_characterManagerGo);
             Object.Destroy(_revealerGo);
+            Object.Destroy(_compositionRootGo);
             Object.Destroy(GameObject.Find("RoleTargetSystem"));
             Object.Destroy(GameObject.Find("BoardManager"));
             Object.Destroy(GameObject.Find("AudioManager"));

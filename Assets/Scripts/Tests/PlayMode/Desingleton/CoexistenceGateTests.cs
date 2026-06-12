@@ -113,7 +113,7 @@ namespace Tests.PlayMode.Desingleton
                 .GetComponent<CharacterManager>();
 
             // Production wiring: GameManager.OnPlayerDisconnectedServer reads characterManager.
-            _hostGm.characterManager = _hostCm;
+            ReflectionHelper.SetPrivateField(_hostGm, "characterManager", _hostCm);
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, _hostGm, _hostCm);
 

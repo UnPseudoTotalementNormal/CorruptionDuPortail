@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using Board.UI.CharacterBar;
-using Board.UI.PowerBar;
 using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
@@ -64,11 +63,17 @@ namespace GameLogic
         }
 #endif
 
-        public GameInfoRevealer gameInfoRevealer;
-        public CharactersBar charactersBar;
-        public PowersBar powersBar;
-        public ChainingManager chainingManager;
-        public CharacterManager characterManager;
+        // Story 7.5 (Epic 7 close, D-NFR4): these were public pass-through accessors that turned
+        // GameManager into a Service Locator hub. The public exposure is DELETED so the hub cannot
+        // quietly come back. What survives is GameManager's OWN dependency on the four it genuinely
+        // uses internally (SetupGameStates push, RPC target resolution, disconnect handling) — kept
+        // as [SerializeField] private, SAME field name so the name-based scene binding is untouched.
+        // powersBar had no internal use and was removed entirely (its scene reference is now orphaned,
+        // by design). Consumers inject these directly (lanes A/B/C); none read them off GameManager.
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
+        [SerializeField] private CharactersBar charactersBar;
+        [SerializeField] private ChainingManager chainingManager;
+        [SerializeField] private CharacterManager characterManager;
     
         public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 

@@ -62,7 +62,7 @@ namespace Tests.PlayMode
             _characterManagerGo = new GameObject("CharacterManager");
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
-            _gameManager.characterManager = _characterManager;
+            ReflectionHelper.SetPrivateField(_gameManager, "characterManager", _characterManager);
             _characterManager.GetComponent<NetworkObject>().Spawn();
             
             GameObject charactersParent = new GameObject("CharactersParent");

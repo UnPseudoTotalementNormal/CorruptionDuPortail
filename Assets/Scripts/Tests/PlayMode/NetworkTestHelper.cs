@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Linq;
+using Characters;
+using GameLogic;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
@@ -57,6 +59,26 @@ namespace Tests.PlayMode
         public static IEnumerator WaitUntilAllSpawnedOrTimeout(params NetworkBehaviour[] netBehaviours)
         {
             yield return WaitUntilAllSpawnedOrTimeout(5f, netBehaviours);
+        }
+
+        /// <summary>
+        /// Story 7.5 — production resolves GameInfoRevealer through
+        /// <c>CompositionRoot.For(nm).GameInfoRevealer</c>, backed by a scene-placed CompositionRoot.
+        /// PlayMode harnesses have no scene root, so they register one here: created inactive, wired
+        /// via reflection, then activated so the Awake non-null asserts pass and it registers in the
+        /// per-NetworkManager registry. Returns the GameObject so the caller can <c>Destroy</c> it in
+        /// teardown (its OnDestroy value-scans itself out of the registry).
+        /// </summary>
+        public static GameObject RegisterCompositionRoot(GameManager gameManager, CharacterManager characterManager, GameInfoRevealer gameInfoRevealer)
+        {
+            var go = new GameObject("CompositionRoot");
+            go.SetActive(false);
+            var root = go.AddComponent<CompositionRoot>();
+            ReflectionHelper.SetPrivateField(root, "gameManager", gameManager);
+            ReflectionHelper.SetPrivateField(root, "characterManager", characterManager);
+            ReflectionHelper.SetPrivateField(root, "gameInfoRevealer", gameInfoRevealer);
+            go.SetActive(true);
+            return go;
         }
 
         /// <summary>

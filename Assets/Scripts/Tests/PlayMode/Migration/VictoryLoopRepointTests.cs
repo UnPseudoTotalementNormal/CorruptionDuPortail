@@ -65,7 +65,7 @@ namespace Tests.PlayMode.Migration
             _characterManagerGo = new GameObject("CharacterManager");
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
-            _gameManager.characterManager = _characterManager;
+            ReflectionHelper.SetPrivateField(_gameManager, "characterManager", _characterManager);
             _characterManager.GetComponent<NetworkObject>().Spawn();
 
             GameObject charactersParent = new GameObject("CharactersParent");
@@ -135,7 +135,7 @@ namespace Tests.PlayMode.Migration
 
             // Reproduce the loop's per-(character, condition) evaluation BOTH ways and assert agreement.
             int compared = 0;
-            foreach (var character in _gameManager.characterManager.GetCharacters(false))
+            foreach (var character in _characterManager.GetCharacters(false))
             {
                 if (character.isFake)
                 {

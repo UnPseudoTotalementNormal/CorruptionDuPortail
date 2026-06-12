@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (7-4 inject remaining GameManager pass-throughs + UI hub-hops → review; AC3 inventory clean, 7.5 unblocked; EM 162 / PM 146 green, both DI guards green)
+last_updated: 2026-06-12 (7-5 → review: 5 GameManager pass-throughs deleted, hub frozen at compiler+guard level; EM 162 / PM 146 + boot smoke green, no golden moves; Epic 7 functionally complete)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -134,7 +134,7 @@ development_status:
   7-2-inject-charactermanager-into-gamestates-board-and-character: review  # GameStates/StateUIs lane B (SetupGameStates push), BoardManager lane A (scene-wired), Card lane B (recorded prefab precedent, Initialize push), Character lane C (null-tolerant); All += Character,BoardManager; Card+mixed gameInfoRevealer → 7.3; 8 PlayMode harnesses fixed; EM 162 / PM 146 green
   7-3-inject-gameinforevealer-into-its-consumers: review  # GameInfoRevealer into powers (base field)/GameStates (push)/Board+Card (lane A/B); CompositionRoot +GameInfoRevealer accessor (scene-root + GameManager.For fallback, non-de-singletonised); GameInfoRevealer itself lane A characterManager; All +=10 clean powers, NoLocatorOnly +=Card; UI consumers (CharactersBarObject/CorruptedCardText/InfoTableSystem) + ChainingManager deferred to 7.4; EM 162 / PM 146 green
   7-4-inject-remaining-gamemanager-passthroughs-and-ui-hub-hops: review  # ~30 production consumers rerouted off all 5 GameManager pass-throughs: GameStates lane-B push; scene singletons lane-A (12 MCP-wired); SendMessagePanel lane-C; prefab UI leaves + static utils + W* POCOs → façade(CharacterManager.instance)/CompositionRoot route (Epic 9/11/12); Card child reads Card.GameInfoRevealer. Registry All+=PowerUsageManager/SkipButton/MessageLeftText/FocusManager, NoLocatorOnly+=SendMessagePanel, InjectedManagerTypes+=CharactersBar/PowersBar. AC3 inventory clean → 7.5 unblocked. EM 162 / PM 146 green; ChainingManager null-tolerant + PowerManager harness reflection-wire
-  7-5-remove-gamemanager-passthrough-fields-and-freeze-with-the-guards: ready-for-dev  # destructive deletion; hub cannot come back
+  7-5-remove-gamemanager-passthrough-fields-and-freeze-with-the-guards: review  # GameManager hub dismantled: 5 pass-throughs deleted (4 → [SerializeField] private, powersBar removed); zero production stragglers; 23 PlayMode harnesses + CompositionRoot fallback rerouted; EM 162 / PM 146 + boot smoke green. epic-7 → done is Poyo's call once 7.1-7.5 accepted.
 
   # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery)
   epic-8: in-progress

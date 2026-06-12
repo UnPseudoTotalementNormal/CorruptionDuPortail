@@ -218,6 +218,35 @@ Story 10.5 migrates the remaining **non-`NetworkBehaviour` Mono statics** by des
 
 **Endgame reached:** one surviving project static (`CompositionRoot`) + two root-backed God Objects whose `instance` façades die at 12.3 + nine locked Epic-10 façades (die 12.3) + recorded verify-don't-force exceptions (UI leaves → Epic 12.2; ArrowManager/CardEffectManager/PowerManager → Epic 11/12; GameAudioManager/LobbyManager/InputManager global façades = permanent opt-outs; GameAssetHolder/BoardCameraManager = non-issues). Every static has a terminal state — the census is closed (AC4). Epic 10 (D4) is complete.
 
+### 4g. UI-layer triage — the map for 12.2 (story 12.1, doc-only)
+
+Post-Epic-11 grep of the UI layer (`UI/`, `ChatSystem/`, `NoteSystem/`, `TooltipSystem/`, `Smartphone/`, `Board/UI/`) for residual statics. **Already-migrated** (not in scope): `RobotBoardInfo`, `CharactersBarObject` resolve via `CompositionRoot.For(nm)` (lane-C/root, done). **Third-party / opt-out globals** (never our locator, no action): Unity Gaming Services `AuthenticationService`/`RelayService`/`UnityServices`/`AuthenticationService.Instance` (LoginMenu, LobbySelectionPanel, MainMenu); `LobbyManager` / `InputManager` / `GameAudioManager` (§4f permanent opt-outs). Criteria (AC2): **REROUTE** when a narrow injected dep removes a `// dies 12.3` façade read from a **scene-placed** consumer (lane A, cheap); **OPT-OUT / record** when prefab-only (lane A physically impossible), a plain UI *view of a non-de-singletonised singleton*, or a POCO with no Unity lifecycle.
+
+| UI file | Residual façade(s) | Decision | Effort | Reason |
+|---|---|---|---|---|
+| `AnonymeMessageButton` | GameManager + CharacterManager (§4a-entangled) | **REROUTE** | lane A ×2 (MCP-wire) | scene button; the 11.4 cached refs become injected fields → kills 2 §4a reads. |
+| `InfoTableSystem` | GameManager + CharacterManager (§4a-entangled) | **REROUTE** | lane A ×2 | scene; same both-managers-one-touch shape. |
+| `PowersBar` | GameManager + CharacterManager | **REROUTE** | lane A ×2 | scene board UI (already an `InjectedManagerType` carrier). |
+| `CardPickerManager` | BoardManager + CharacterManager + FocusManager | **REROUTE** | lane A ×3 | scene board UI; clears the §4d Board + §4f Focus survivors. |
+| `ShutOffGameButton` | GameManager (`ShutOffGameRpc`, not in IGameLoop) | **REROUTE** | lane A ×1 (concrete) | scene admin button; cheap concrete inject. |
+| `TooltipLinkParser` | CharacterManager (reflection parser) | **REROUTE** | lane A / push from TooltipManager | scene-serialized child; concrete CharacterManager field. |
+| `MeIconCard` | CharacterManager | **REROUTE** | lane B push (read `Card.CharacterQuery`) | prefab card child — same precedent as `CorruptedCardText` (7.3). |
+| `AwakeningRecapCorruption` / `VoteStateUI` | CharacterManager | **REROUTE** | via `StateUI`/state base `CharacterQuery` | prefab StateUI leaves; the base is already injected (9.1) — reroute the reads. |
+| `AwakeningRecapMessages` | MessageManager + GameManager.currentDay | **REROUTE** | base `Loop.currentDay` + MessageManager push | StateUI; currentDay via the injected base; MessageManager pushed or recorded. |
+| `AnonymousRevealedMessagesComponent` | MessageManager | **REROUTE / OPT-OUT** | push, else record | prefab message-recap view; borderline (pure local view of a singleton's list). |
+| `NoteRibbon` / `NoteChoosePanel` | CharacterManager + NoteManager | **REROUTE** (CharacterManager) / **OPT-OUT** (NoteManager) | push / record | NoteManager is a §4f recorded survivor — keep it; reroute the CharacterManager read. |
+| `SelectPanelPlayer` | CharacterManager | **REROUTE** | push/lane | spawn-panel; concrete or query slice. |
+| `PlayerButtonObject` / `ConnectedPlayerPanel` | LobbyPlayerInfoHolder | **OPT-OUT** | record | lobby-list views of a non-de-singletonised singleton; pure local read, no decision logic (verify-don't-force). |
+| `ChatPanel` / `ChatWindow` / `ChatNotificationComponent` | ChatManager (+ CharacterManager, LobbyPlayerInfoHolder) | **OPT-OUT** | record | plain UI *views of the chat singleton* (not de-singletonised); the sanctioned access is the singleton itself. The chat **decisions** already moved to `ChatChannelPolicy` (11.3); the views reading the singleton's events/state are presentation, no slice earns a mock. |
+| `HoverTooltipComponent` / `TooltipWindow` | TooltipManager | **OPT-OUT** | record | views of the tooltip singleton (§4f recorded survivor). |
+| `TakeDownThePortalTextTitle` | CharacterManager | **OPT-OUT** | record (or lane-C) | **prefab-only** — lane A physically impossible (prefab can't ref a scene object); §4a death = 12.3. |
+| `CharacterAwakenTimer` | GameManager + CharacterManager | **OPT-OUT** | record (or push) | prefab-only (8.2); same prefab-lane constraint. |
+| `RoleAttributionSettingTab` / `RoleAttributionSettingObject` | GameManager.GetGameStates | **OPT-OUT** | record (or push) | prefab-only setting tabs (8.2 deferred). |
+| `SelectionFlowService` | CardPickerManager + FocusManager + BoardManager | **OPT-OUT** | record (Epic-11 follow-up) | a **POCO** with no Unity lifecycle — un-injectable by lane; its deps become constructor/params when fully POCO-ised. |
+| `MainMenu` / `LobbyListUI` / `LobbySelectionPanel` / `LoginMenu` / `SmartphoneController` | LobbyManager / InputManager / Unity Services | **OPT-OUT** | none | global-service / third-party façades (§4f permanent opt-outs); menu-phase, no game lifecycle. |
+
+**12.2 batch plan:** (1) the 6 **scene lane-A reroutes** (AnonymeMessageButton, InfoTableSystem, PowersBar, CardPickerManager, ShutOffGameButton, TooltipLinkParser) — these clear the last §4a-entangled `GameManager.instance`/`CharacterManager.instance` scene reads + the §4d/§4f Board/Focus survivors, and let 12.3 delete those façade fields; (2) the **prefab push reroutes** (MeIconCard, the StateUI leaves, SelectPanel) where a base already carries the injected slice. **Census reconciliation (AC4):** every façade a UI file still touches is either rerouted in 12.2 (so 12.3 deletes it) or a recorded opt-out — chat/tooltip singleton-views, lobby-list LobbyPlayerInfoHolder views, prefab-only leaves (TakeDownThePortalTextTitle/CharacterAwakenTimer/RoleAttribution tabs), the SelectionFlowService POCO, and the global-service façades. These recorded opt-outs are the **permanent remainder** behind "24 → 1 + recorded exceptions" (§4 endgame): the singleton-backed managers (Chat/Tooltip/Note/Lobby/Input/Audio) keep being served from their one instance, read by their own presentation views.
+
 ## 5. The two permanent guards
 
 1. **`DiSeamNoLocatorGuardTests`** (exists — story 6.1, `[Category("DiSeamGuard")]`, source scan). A migrated consumer must never reference `GameManager.instance` / `CharacterManager.instance` again. Extended by story 6.3: in migrated consumers, `CompositionRoot` may appear **only inside `OnNetworkSpawn`** (the lane C whitelist).

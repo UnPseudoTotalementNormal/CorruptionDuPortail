@@ -1,6 +1,6 @@
 # Story 7.5: Remove the GameManager pass-through fields + freeze with the guards
 
-Status: review
+Status: done
 
 ## Story
 
@@ -96,3 +96,15 @@ claude-opus-4-8 (gds-dev-story)
 ### Change Log
 
 - 2026-06-12 — Story 7.5 implemented: deleted the 5 GameManager pass-through accessors (the strangler's "remove old path", D-NFR4). Four demoted to `[SerializeField] private` (GameManager's own deps), `powersBar` removed. Zero production stragglers (compiler-proven); 23 PlayMode harnesses + the CompositionRoot fallback rerouted. EM 162 / PM 146 + boot smoke green, no golden moves. Status → review.
+- 2026-06-12 — Code review (gds-code-review, 3 layers) PASS: all 5 ACs satisfied, no hard violations. Applied 1 hardening patch (RegisterCompositionRoot Singleton assert); the registry-miss diagnostic was reconsidered and dropped (would cry wolf on null-tolerant powers) → deferred. Re-gate green. Status → done.
+
+## Review Findings
+
+Code review (gds-code-review — 3 adversarial layers: Blind Hunter / Edge Case Hunter / Acceptance Auditor), 2026-06-12. **Acceptance Auditor: all 5 ACs satisfied, zero hard violations.** Outcome: 1 patch (applied) + 3 defer + 5 dismissed.
+
+- [x] [Review][Patch] Enforce RegisterCompositionRoot call-after-StartHost contract [Assets/Scripts/Tests/PlayMode/NetworkTestHelper.cs] — calling before StartHost would silently register a root that resolves for nobody (CompositionRoot.Awake binds to NetworkManager.Singleton). Added `Assert.IsNotNull(NetworkManager.Singleton, …)`. **Applied.**
+- [x] [Review][Defer] Diagnose silent-null on CompositionRoot registry-miss [Assets/Scripts/GameLogic/CompositionRoot.cs] — Blind + Edge flagged the removed fallback's failure mode (registry miss → null revealer → NRE) as the top latent concern. A `LogWarning` was prototyped then **reverted**: `Power.gameInfoRevealer` is null-tolerant by design (7.3), so `Power.OnNetworkSpawn` resolving null in a bare harness is legitimate — the warning would fire (cry wolf) in known-good tests like PowerTests/EntrapmentPowerTests. Latent future-test-authoring concern only (current tree verified safe, production always has a root). Logged in deferred-work.md.
+- [x] [Review][Defer] CompositionRoot double-registration is silent (last-writer-wins) [Assets/Scripts/GameLogic/CompositionRoot.cs:93] — deferred, pre-existing 6.3 registry design; backstops adequate per Edge Case Hunter. Logged in deferred-work.md (Epic 8/10).
+- [x] [Review][Defer] VoteState/GameState pushed deps are public fields [Assets/Scripts/Tests/PlayMode/VoteTallyGoldenMasterTests.cs] — deferred, pre-existing lane-B push target (7.2 design), not a hub. Logged in deferred-work.md.
+
+Dismissed (5): `powersBar` orphan (no live reader — compiler + grep verified); `using System.Reflection` (still used by `CallMethodAfterRpc`); residual private-field readers (clean compile proves none — CS0122 otherwise); pre-spawn wiring ordering (identical to pre-7.5, reflection-set vs field-set is same timing); `ReflectionHelper.SetPrivateField` silent-no-op on a field rename (already caught by `CompositionRoot.Awake` non-null asserts in the Editor test runner — the green PM 146 run proves wiring resolves).

@@ -71,6 +71,10 @@ namespace Tests.PlayMode
         /// </summary>
         public static GameObject RegisterCompositionRoot(GameManager gameManager, CharacterManager characterManager, GameInfoRevealer gameInfoRevealer)
         {
+            // Code-review hardening (7.5): CompositionRoot.Awake binds to NetworkManager.Singleton and
+            // only registers when it is non-null. Calling this before StartHost would silently produce a
+            // root that resolves for nobody — fail loudly on that contract violation instead.
+            Assert.IsNotNull(NetworkManager.Singleton, "RegisterCompositionRoot must be called after StartHost — CompositionRoot binds to NetworkManager.Singleton at Awake.");
             var go = new GameObject("CompositionRoot");
             go.SetActive(false);
             var root = go.AddComponent<CompositionRoot>();

@@ -72,7 +72,9 @@ namespace GameLogic
             // with the rest of the GameManager hub (D-NFR4). Production always has a scene-placed
             // CompositionRoot registered above, so the scene root answers. An NM with no registered
             // root (a PlayMode harness) must register a CompositionRoot of its own to resolve the
-            // revealer — see the power test harnesses.
+            // revealer — see the power test harnesses. (A diagnostic warning here was considered in
+            // code review but rejected: Power.gameInfoRevealer is null-tolerant by design, so a null
+            // is legitimate for many consumers and the warning would cry wolf — see deferred-work.md.)
             return null;
         }
 

@@ -72,6 +72,11 @@ namespace GameLogic
         // it stays a replicated singleton. Same as ChatManager: the root serves the targeting surface from the
         // singleton, collapsing the global read out of every targeting power into here.
         public RoleTargetSystem RoleTargetSystem => RoleTarget.RoleTargetSystem.instance;
+        // Story 10.3 (Epic 10 / D4): BoardManager is NOT de-singletonised (no BoardManager.For(nm)) — it
+        // stays a replicated singleton. Same as Chat/RoleTarget: the root serves the board surface from
+        // the singleton, so lane-B GameStates (pushed by SetupGameStates) and the GameManager hub stop
+        // reading the global. (BoardManager lives in the global namespace.)
+        public BoardManager BoardManager => global::BoardManager.instance;
         // Story 8.1 (Epic 8 / D2): the narrow game-loop / state-query slices of the resolved GameManager,
         // so consumers can depend on the intent (IGameLoop / IGameStateQuery) instead of the whole hub.
         public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
@@ -172,6 +177,9 @@ namespace GameLogic
             // Story 10.2 (Epic 10 / D4): the targeting surface, served from the still-singleton RoleTargetSystem
             // (not de-singletonised; no per-NM registry), same as the instance accessor above.
             public RoleTargetSystem RoleTargetSystem => RoleTarget.RoleTargetSystem.instance;
+            // Story 10.3 (Epic 10 / D4): the board surface, served from the still-singleton BoardManager
+            // (not de-singletonised; no per-NM registry), same as the instance accessor above.
+            public BoardManager BoardManager => global::BoardManager.instance;
             // Story 8.1 (Epic 8 / D2): narrow game-loop / state-query slices of the resolved GameManager.
             public IGameLoop GameLoop => GameLogic.GameManager.For(_networkManager);
             public IGameStateQuery GameStateQuery => GameLogic.GameManager.For(_networkManager);

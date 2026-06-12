@@ -99,7 +99,7 @@ namespace GameLogic.GameStates
             WaitForCharacterClickServer();
         }
 
-        private void SubscribeToCharacterClick() => BoardManager.instance.onCardClicked += OnCharacterClickClient;
+        private void SubscribeToCharacterClick() => boardManager.onCardClicked += OnCharacterClickClient;
         
         private void SubscribeToRoleClick()
         {
@@ -113,7 +113,7 @@ namespace GameLogic.GameStates
             SelectionFlowService.instance.StartRoleSelection(_validator, OnRoleClickClient);
         }
         
-        private void UnsubscribeToCharacterClick() => BoardManager.instance.onCardClicked -= OnCharacterClickClient;
+        private void UnsubscribeToCharacterClick() => boardManager.onCardClicked -= OnCharacterClickClient;
         
         private void UnsubscribeToRoleClick() => SelectionFlowService.instance.CancelSelection();
         
@@ -155,7 +155,7 @@ namespace GameLogic.GameStates
         private void HighlightCharactersRpc()
         {
             
-            foreach (Card _card in BoardManager.instance.visibleCards)
+            foreach (Card _card in boardManager.visibleCards)
             {
                 Debug.Log("card visible from: " + _card.characterInfo.ownerClientId.Value);
                 if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId.Value))
@@ -180,7 +180,7 @@ namespace GameLogic.GameStates
         {
             FocusManager.instance.SetFocusOnType(FocusType.Roles);
 
-            FocusManager.instance.FocusObject(BoardManager.instance.visibleCards
+            FocusManager.instance.FocusObject(boardManager.visibleCards
                 .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
         }
         
@@ -246,7 +246,7 @@ namespace GameLogic.GameStates
         private async UniTaskVoid WaitForCardsToBeVisible()
         {
             await UniTask.WaitForSeconds(3);
-            await UniTask.WaitUntil(() => BoardManager.instance.visibleCards.Count > 0);
+            await UniTask.WaitUntil(() => boardManager.visibleCards.Count > 0);
             WaitForCharacterClickServer();
         }
 
@@ -261,7 +261,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            _ = BoardManager.instance.ShowAllPlayerCards();
+            _ = boardManager.ShowAllPlayerCards();
         }
         
         public override void OnEndStateClient()

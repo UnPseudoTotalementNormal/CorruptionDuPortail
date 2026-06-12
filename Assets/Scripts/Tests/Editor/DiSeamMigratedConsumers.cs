@@ -91,6 +91,10 @@ namespace Tests.Editor
             typeof(MessageManager),
             typeof(RobotBoardInfo),
             typeof(CorruptionBoardInfo),
+            // Story 10.3 — board consumers fully migrated onto an injected BoardManager: FocusManager
+            // (already above, 7.4) + GameInfoRevealer (above, lane C OnNetworkSpawn) dropped their
+            // BoardManager.instance reads; CardEffectManager newly migrated onto a lane-A scene field.
+            typeof(CardEffectManager),
         };
 
         /// <summary>
@@ -133,6 +137,7 @@ namespace Tests.Editor
             typeof(GameInfoRevealer), // 7.3 — CompositionRoot/BoardManager gameInfoRevealer wiring is guard-checked.
             typeof(CharactersBar), // 7.4 — FocusManager.charactersBar lane-A wiring is guard-checked.
             typeof(PowersBar), // 7.4 — PowerUsageManager.powersBar lane-A wiring is guard-checked.
+            typeof(BoardManager), // 10.3 — FocusManager.boardManager + CardEffectManager.boardManager lane-A wiring is guard-checked.
         };
 
         /// <summary>

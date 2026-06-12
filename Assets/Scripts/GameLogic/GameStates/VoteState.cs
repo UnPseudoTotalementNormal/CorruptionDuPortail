@@ -217,9 +217,9 @@ namespace GameLogic.GameStates
         {
             try
             {
-                await BoardManager.instance.ShowAllPlayerCards();
+                await boardManager.ShowAllPlayerCards();
 
-                foreach (var _c in BoardManager.instance.visibleCards)
+                foreach (var _c in boardManager.visibleCards)
                 {
                     VoteCanvas _voteCanvas = _c.voteCanvas;
                     _voteCanvas.SetVoteState(this);
@@ -242,7 +242,7 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
             
-            BoardManager.instance.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
+            boardManager.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
         }
 
         public override void StateUpdateServer()

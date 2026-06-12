@@ -22,6 +22,9 @@ namespace FocusSystem
         [SerializeField] private ParticleSystem _focusParticlePrefab;
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
         [SerializeField] private CharactersBar charactersBar;
+        // Story 10.3 lane A: scene-wired BoardManager (still a singleton), replacing the global
+        // board-singleton read in the Cards focus paths.
+        [SerializeField] private BoardManager boardManager;
 
         public List<FocusObject> currentFocusObjects = new();
         
@@ -41,6 +44,7 @@ namespace FocusSystem
         private void Start()
         {
             Assert.IsNotNull(charactersBar, "FocusManager.charactersBar is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(boardManager, "FocusManager.boardManager is not wired — wire it in GameScene (the composition root).");
         }
 
         private void OnDestroy()
@@ -75,7 +79,7 @@ namespace FocusSystem
                     }
                     break;
                 case FocusType.Cards:
-                    foreach (var _card in BoardManager.instance.visibleCards)
+                    foreach (var _card in boardManager.visibleCards)
                     {
                         if (_checkValidFunc(_card.characterInfo.ownerClientId.Value, TargetUtils.TargetType.Character))
                         {
@@ -107,7 +111,7 @@ namespace FocusSystem
                     }
                     break;
                 case FocusType.Cards:
-                    foreach (var _card in BoardManager.instance.visibleCards)
+                    foreach (var _card in boardManager.visibleCards)
                     {
                         if (_checkValidFunc(_card.characterInfo.ownerClientId.Value))
                         {
@@ -141,7 +145,7 @@ namespace FocusSystem
                     break;
                 case FocusType.Cards:
                     List<ulong> _targetChars = TargetUtils.GetTargetsForCharacters(_includeFlags);
-                    foreach (var _card in BoardManager.instance.visibleCards)
+                    foreach (var _card in boardManager.visibleCards)
                     {
                         if (_targetChars.Contains(_card.characterInfo.ownerClientId.Value))
                         {

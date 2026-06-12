@@ -246,6 +246,9 @@ namespace GameLogic
                 clonedGameState.gameInfoRevealer = gameInfoRevealer;
                 clonedGameState.chainingManager = chainingManager;
                 clonedGameState.charactersBar = charactersBar;
+                // Story 10.3 lane B: BoardManager resolved from the composition root (the still-singleton
+                // board) and pushed, so states stop reading the BoardManager.instance global.
+                clonedGameState.boardManager = CompositionRoot.For(NetworkManager).BoardManager;
                 clonedGameState.OnStateCreated();
             }
         }
@@ -548,7 +551,10 @@ namespace GameLogic
         [Rpc(SendTo.Everyone)]
         private void OnPlayerDisconnectedRpc()
         {
-            BoardManager.instance.DestroyCard(BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.isFake));
+            // Story 10.3: resolve the still-singleton board through the composition root (the GameManager
+            // hub is not a registered DI consumer; it has a NetworkManager so it resolves directly).
+            var _boardManager = CompositionRoot.For(NetworkManager).BoardManager;
+            _boardManager.DestroyCard(_boardManager.visibleCards.Find(_c => _c.characterInfo.isFake));
         }
     }
 

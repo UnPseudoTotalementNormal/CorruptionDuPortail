@@ -31,6 +31,15 @@ namespace GameLogic
         [SerializeField] private GameManager gameManager;
         private IGameLoop Loop => gameManager;
         private IGameStateQuery Query => gameManager;
+        // Story 10.3 lane C: BoardManager (still a singleton) resolved through the composition root in
+        // OnNetworkSpawn, consumed by SetRevealLevel's local card-refresh (null-guarded at the call site).
+        private BoardManager boardManager;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            boardManager = CompositionRoot.For(NetworkManager).BoardManager;
+        }
 
         public void Start()
         {
@@ -159,9 +168,9 @@ namespace GameLogic
 
             if (_showInfo && _observerId == CharacterQuery.GetLocalClientId())
             {
-                if (BoardManager.instance != null && BoardManager.instance.visibleCards != null)
+                if (boardManager != null && boardManager.visibleCards != null)
                 {
-                    _ = BoardManager.instance.visibleCards.Find(_card => _card.characterInfo.ownerClientId.Value == _clientId)
+                    _ = boardManager.visibleCards.Find(_card => _card.characterInfo.ownerClientId.Value == _clientId)
                         ?.ShowPseudoWithRevealedInfo(true);
                 }
             }

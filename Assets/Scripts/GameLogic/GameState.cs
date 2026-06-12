@@ -38,6 +38,9 @@ namespace GameLogic
         // hub-hopping through gameManager.chainingManager / gameManager.charactersBar (deleted in 7.5).
         public ChainingManager chainingManager { get; set; }
         public CharactersBar charactersBar { get; set; }
+        // Story 10.3 (Epic 10 / D4): BoardManager pushed the same way (from the composition root, which
+        // serves the still-singleton board), so states stop reading the BoardManager.instance global.
+        public BoardManager boardManager { get; set; }
 
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }

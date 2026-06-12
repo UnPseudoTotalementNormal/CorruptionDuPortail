@@ -73,9 +73,9 @@ namespace GameLogic.GameStates
             await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
             
             GameAudioManager.instance.PlayOneShot(chainingAnnouncementSound.GetPath());
-            await BoardManager.instance.HideAllCards();
+            await boardManager.HideAllCards();
             
-            Card _cardInfo = BoardManager.instance.AddNewCard();
+            Card _cardInfo = boardManager.AddNewCard();
             _cardInfo.SetCanShowBackInfo(false);
             spawnedCard = _cardInfo.transform;
             

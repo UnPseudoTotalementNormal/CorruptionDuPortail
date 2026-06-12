@@ -19,6 +19,14 @@ using UnityEngine.Assertions;
 
 public class BoardManager : NetworkBehaviour
 {
+    // Story 10.3 (Epic 10 / D4): the gameplay consumers were rerouted off this global onto an injected
+    // boardManager field — the game-loop GameStates (lane B, pushed by SetupGameStates from the
+    // composition root), GameManager itself (root), FocusManager + CardEffectManager (lane-A scene
+    // field), and GameInfoRevealer (lane-C OnNetworkSpawn). Guard #1 now locks this global. The static
+    // backs ONLY recorded non-registered survivors: SelectionFlowService (POCO, no Unity lifecycle →
+    // Epic 11.2) + CardPickerManager (UI leaf → Epic 12.2), plus the composition-root accessor that
+    // serves it (the one sanctioned locator, since the board is not de-singletonised).
+    // recorded: dies in 12.3
     public static BoardManager instance;
     public Card cardPrefab;
 

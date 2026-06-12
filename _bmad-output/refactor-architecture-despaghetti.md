@@ -166,6 +166,18 @@ The `SERVER_CLIENT_ID` **const** (read by `PCardsShuffling` / `PCReparentOnChain
 
 Premise correction (recorded): the 10.2 story expected `TargetUtils` to be the static-util RoleTargetSystem consumer. It is **not** — `TargetUtils` consumes `CharacterManager.instance` + `CompositionRoot.For(Singleton).GameInfoRevealer`, never `RoleTargetSystem`. Its `CharacterManager.instance` reads stay §4a-recorded (Epic 10.5). No `TargetUtils` edit in 10.2.
 
+### 4d. `BoardManager` static census — recorded leftovers (story 10.3)
+
+`BoardManager` (global namespace, 257 LOC, fan-in 13) is the same shape — a non-de-singletonised replicated singleton — injected **concrete** (D-NFR6). Two story premises were stale and corrected: it has **zero hub-hops of its own** (its `characterManager`/`gameInfoRevealer` are already lane-A `[SerializeField]`, 7.2/7.3), and the **despawn-authority NFR is moot here** (its cards are LOCAL `Instantiate`/`Destroy` objects, not `NetworkObject`s — no server-only `Despawn`). Every reachable consumer was migrated: the 7 game-loop **GameStates** via a new `GameState.boardManager` lane-B field pushed by `SetupGameStates` (from `CompositionRoot.For(nm).BoardManager`); **GameManager** through the root; **FocusManager** + **CardEffectManager** via lane-A `[SerializeField]` (MCP scene-wired + read-back verified); **GameInfoRevealer** via a lane-C `OnNetworkSpawn` resolve. `BoardManager.instance` → recorded-callers façade (`// recorded: dies in 12.3`); **guard #1 forbids it** in the registered set. Survivors:
+
+| Caller(s) | Member(s) | Why on the façade | Planned death |
+|---|---|---|---|
+| `CompositionRoot` (the root) | serves `instance` via the `BoardManager` accessor | the ONE sanctioned locator — not de-singletonised (`SceneWiredOnly`, never source-scanned) | **per-NM-registry story / 12.3** |
+| `SelectionFlowService` | `visibleCards` (×2) | POCO `sealed class`, **no Unity lifecycle** — genuinely un-wireable; takes the dep as a parameter from the calling state when POCO-ised | **Epic 11.2** (board logic → POCO) |
+| `CardPickerManager` | `AddNewCard` (×2), `visibleCards` | UI leaf — kept the global (no new field, no unwired-ref risk) | **Epic 12.2** |
+
+Recorded only because un-wireable (SelectionFlowService = POCO) or a deferred UI leaf (CardPickerManager) — neither is registered, so guard #1 does not scan them. `typeof(BoardManager)` is in `InjectedManagerTypes` (guard #2 verifies the FocusManager + CardEffectManager scene wires). Process note: the first pass recorded FocusManager/GameInfoRevealer/CardEffectManager to dodge scene-wiring; Poyo's **never-defer-wiring** rule corrected it — a deferred wireable consumer is a silent playtest NRE he cannot trace + a skip-decision forgotten by next session. The wiring was completed.
+
 ## 5. The two permanent guards
 
 1. **`DiSeamNoLocatorGuardTests`** (exists — story 6.1, `[Category("DiSeamGuard")]`, source scan). A migrated consumer must never reference `GameManager.instance` / `CharacterManager.instance` again. Extended by story 6.3: in migrated consumers, `CompositionRoot` may appear **only inside `OnNetworkSpawn`** (the lane C whitelist).

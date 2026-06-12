@@ -61,7 +61,7 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
             
-            _ = BoardManager.instance.ShowAllPlayerCards();
+            _ = boardManager.ShowAllPlayerCards();
             charactersBar.ResetCharactersBar(CharacterQuery.GetCharacters());
         }
 

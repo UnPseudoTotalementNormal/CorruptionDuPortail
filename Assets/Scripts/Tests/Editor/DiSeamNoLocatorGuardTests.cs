@@ -61,6 +61,12 @@ namespace Tests.Editor
             // never source-scanned); the only recorded survivor is PowerEffectDispatcher (static POCO,
             // not registered → Epic 11.1).
             "RoleTargetSystem.instance",
+            // Story 10.3 (Epic 10 / D4): BoardManager injected into the game-loop GameStates (lane-B
+            // push) + GameManager (root) + FocusManager/CardEffectManager (lane-A scene field) +
+            // GameInfoRevealer (lane-C). Lock the global. Same singleton shape (no .For(nm)) — only the
+            // .instance form. Recorded non-registered survivors: SelectionFlowService (POCO → Epic 11.2)
+            // + CardPickerManager (UI leaf → Epic 12.2); neither is registered, so neither is scanned.
+            "BoardManager.instance",
         };
 
         [Test]

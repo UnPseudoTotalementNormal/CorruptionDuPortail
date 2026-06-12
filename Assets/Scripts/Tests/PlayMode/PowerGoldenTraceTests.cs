@@ -115,9 +115,13 @@ namespace Tests.PlayMode
 
             // Plain singletons. BoardManager BEFORE CardEffectManager (its Start subscribes to it).
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();
-            ReflectionHelper.SetPrivateField(new GameObject("BoardManager").AddComponent<BoardManager>(), "characterManager", _characterManager);
+            var _boardManager = new GameObject("BoardManager").AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(_boardManager, "characterManager", _characterManager);
             new GameObject("AudioManager").AddComponent<GameAudioManager>();
-            new GameObject("CardEffectManager").AddComponent<CardEffectManager>();
+            // Story 10.3: CardEffectManager now reads BoardManager through an injected lane-A field; wire it
+            // like the production scene does (was the .instance locator before).
+            var _cardEffectManager = new GameObject("CardEffectManager").AddComponent<CardEffectManager>();
+            ReflectionHelper.SetPrivateField(_cardEffectManager, "boardManager", _boardManager);
             new GameObject("ChatManager").AddComponent<ChatManager>().gameObject.AddComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _revealer);

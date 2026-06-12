@@ -17,12 +17,12 @@ namespace Board.UI.CharacterBar
         public AwakeningTimerType awakeningTimerType = AwakeningTimerType.SpecificCharacter;
         
         [SerializeField] private Image timerImage;
-        
+
         private Role role;
 
         private AwakeningState awakeningState;
         private int awakeningLayerIndex;
-        
+
         private void Start()
         {
             role = GetComponentInParent<CharactersBarObject>().playerCharacter.role;
@@ -38,9 +38,10 @@ namespace Board.UI.CharacterBar
             
             if (awakeningLayerIndex == awakeningState.currentAwakeningIndex)
             {
-                Character _characterOwner = GameManager.instance.characterManager.GetCharacters(false)
+                // Story 7.4: prefab-resident UI leaf (CharacterBarObject prefab) — façade route; proper injection: Epic 12.
+                Character _characterOwner = CharacterManager.instance.GetCharacters(false)
                     .First(c => c.ownerClientId.Value == role.ownerClientId);
-                bool _isAnySameRoleAwakened = GameManager.instance.characterManager.GetCharacters(false)
+                bool _isAnySameRoleAwakened = CharacterManager.instance.GetCharacters(false)
                     .Any(c => c.role.IsTheSameRole(role) && c.isAwakened.Value);
                 if ((awakeningTimerType == AwakeningTimerType.SpecificCharacter && _characterOwner.isAwakened.Value) ||
                     (awakeningTimerType == AwakeningTimerType.AnyRole && _isAnySameRoleAwakened))

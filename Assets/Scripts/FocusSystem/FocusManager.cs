@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Board.UI.CharacterBar;
 using Characters.Powers.Target;
 using DG.Tweening;
 using GameLogic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #endregion
 
@@ -18,7 +20,9 @@ namespace FocusSystem
         
         [SerializeField] private CanvasGroup _focusCanvasGroup;
         [SerializeField] private ParticleSystem _focusParticlePrefab;
-        
+        // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
+        [SerializeField] private CharactersBar charactersBar;
+
         public List<FocusObject> currentFocusObjects = new();
         
         
@@ -32,6 +36,11 @@ namespace FocusSystem
                 return;
             }
             instance = this;
+        }
+
+        private void Start()
+        {
+            Assert.IsNotNull(charactersBar, "FocusManager.charactersBar is not wired — wire it in GameScene (the composition root).");
         }
 
         private void OnDestroy()
@@ -57,7 +66,7 @@ namespace FocusSystem
             switch (_focusType)
             {
                 case FocusType.Roles:
-                    foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+                    foreach (var _characterBarObject in charactersBar.charactersBarObjects)
                     {
                         if (_checkValidFunc(_characterBarObject.playerCharacter.ownerClientId.Value, TargetUtils.TargetType.Role))
                         {
@@ -89,7 +98,7 @@ namespace FocusSystem
             switch (_focusType)
             {
                 case FocusType.Roles:
-                    foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+                    foreach (var _characterBarObject in charactersBar.charactersBarObjects)
                     {
                         if (_checkValidFunc(_characterBarObject.playerCharacter.ownerClientId.Value))
                         {
@@ -122,7 +131,7 @@ namespace FocusSystem
             {
                 case FocusType.Roles:
                     List<ulong> _targetRoles = TargetUtils.GetTargetsForRoles(_includeFlags);
-                    foreach (var _characterBarObject in GameManager.instance.charactersBar.charactersBarObjects)
+                    foreach (var _characterBarObject in charactersBar.charactersBarObjects)
                     {
                         if (_targetRoles.Contains(_characterBarObject.playerCharacter.ownerClientId.Value))
                         {

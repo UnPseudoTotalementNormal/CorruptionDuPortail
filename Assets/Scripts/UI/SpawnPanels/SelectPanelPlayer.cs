@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using Characters;
 using GameLogic;
 using UI.SelectPanels;
 using UnityEngine;
@@ -23,7 +24,8 @@ namespace UI.SpawnPanels
         
         private void Start()
         {
-            foreach (ulong _playerId in GameManager.instance.characterManager.GetCharacters().Where(_c => !_c.isFake).Select(_character => _character.ownerClientId.Value))
+            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+            foreach (ulong _playerId in CharacterManager.instance.GetCharacters().Where(_c => !_c.isFake).Select(_character => _character.ownerClientId.Value))
             {
                 GameObject _playerButton = Instantiate(playerButtonPrefab, layoutTransform);
                 PlayerButtonObject _playerButtonObject = _playerButton.GetComponent<PlayerButtonObject>();

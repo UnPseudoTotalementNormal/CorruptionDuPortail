@@ -9,6 +9,7 @@ using GameLogic;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #endregion
 
@@ -20,6 +21,9 @@ namespace Board.UI.CharacterBar
         
         [SerializeField] private GameObject characterBarObjectPrefab;
         [SerializeField] private GameObject factionGroupPrefab;
+
+        // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
+        [SerializeField] private CharacterManager characterManager;
 
         [Header("Faction Visuals")]
         [SerializeField] private SerializedDictionary<FactionType, Sprite> factionIcons = new();
@@ -38,7 +42,8 @@ namespace Board.UI.CharacterBar
 
         private void Start()
         {
-            GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+            Assert.IsNotNull(characterManager, "CharactersBar.characterManager is not wired — wire it in GameScene (the composition root).");
+            characterManager.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
         private void OnCharacterListUpdated(List<Character> _characters)

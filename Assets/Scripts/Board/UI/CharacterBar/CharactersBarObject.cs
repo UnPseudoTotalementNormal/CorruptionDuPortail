@@ -8,6 +8,7 @@ using DG.Tweening;
 using GameLogic;
 using TooltipSystem;
 using UI;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -67,7 +68,10 @@ namespace Board.UI.CharacterBar
             };
             customButton.onButtonHovered += OnButtonHovered;
             customButton.onButtonUnhovered += OnButtonUnhovered;
-            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged += DoUpdateCharacter;
+            // Story 7.4: CharactersBarObject is instantiated by TWO creators (CharactersBar + NoteRibbon),
+            // so a single lane-B push is impractical; it resolves the (non-de-singletonised) revealer from
+            // the composition root — behaviour-identical (same scene revealer). Proper injection: Epic 12.
+            CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.onCharacterInfoRevealedChanged += DoUpdateCharacter;
         }
 
         private void OnButtonHovered()
@@ -161,7 +165,7 @@ namespace Board.UI.CharacterBar
         }
         private void OnDestroy()
         {
-            GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
+            CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
             UnsubscribeFromCharacterEvents();
         }
         private void OnCharacterRoleUpdated()
@@ -175,7 +179,7 @@ namespace Board.UI.CharacterBar
 
         private async UniTaskVoid UpdateCharacter()
         {
-            RevealLevel _forceCorruptOnRoleRevealed = GameManager.instance.gameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).forceCorruptOnRoleRevealed;
+            RevealLevel _forceCorruptOnRoleRevealed = CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).forceCorruptOnRoleRevealed;
             bool _isCorrupted = playerCharacter.isCorrupted.Value && _forceCorruptOnRoleRevealed > RevealLevel.False;
             if (corruptedOverlayImage)
             {

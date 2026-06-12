@@ -20,6 +20,9 @@ namespace Board.UI.PowerBar
         public Transform powersBarParent;
         
         [SerializeField] private GameObject powerBarObjectPrefab;
+
+        // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
+        [SerializeField] private CharacterManager characterManager;
         
         public List<PowersBarObject> powersBarObjects = new();
         
@@ -29,6 +32,7 @@ namespace Board.UI.PowerBar
 
         private void Start()
         {
+            Assert.IsNotNull(characterManager, "PowersBar.characterManager is not wired — wire it in GameScene (the composition root).");
             GameManager.instance.onGameStarted += SubscribeToLocalCharacter;
             CharacterManager.instance.onLocalIdentityChanged += SubscribeToLocalCharacter;
         }
@@ -61,7 +65,7 @@ namespace Board.UI.PowerBar
 
         private void Update()
         {
-            var _rolePowers = GameManager.instance.characterManager.GetLocalCharacter(false)?.role?.powers;
+            var _rolePowers = characterManager.GetLocalCharacter(false)?.role?.powers;
             
             if (_rolePowers == null)
             {
@@ -82,7 +86,7 @@ namespace Board.UI.PowerBar
                 var _playerPower = _rolePowers.FirstOrDefault(_p => _p.IsTheSamePower(_currentPowerBarObject.power));
                 if (_playerPower == null)
                 {
-                    CreatePowerBar(_rolePowers, GameManager.instance.characterManager.GetLocalCharacter(false));
+                    CreatePowerBar(_rolePowers, characterManager.GetLocalCharacter(false));
                     return;
                 }
                 _currentPowerBarObject.SetInteractable(_playerPower.CanUse(true));
@@ -91,7 +95,7 @@ namespace Board.UI.PowerBar
 
         public void RefreshCharacterPowerBar(ulong _characterID)
         {
-            Character _character = GameManager.instance.characterManager.GetCharacter(_characterID, false);
+            Character _character = characterManager.GetCharacter(_characterID, false);
             if (!_character || _character.role == null)
             {
                 return;

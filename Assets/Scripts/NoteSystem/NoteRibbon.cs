@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Board;
 using Board.UI.CharacterBar;
+using Characters;
 using DG.Tweening;
 using GameLogic;
 using UI;
@@ -120,7 +121,8 @@ namespace NoteSystem
             for (int _i = 0; _i < _notesToDisplay; _i++)
             {
                 var _noteObject = Instantiate(notePrefab, gridLayoutGroup.transform);
-                _noteObject.SetCharacter(GameManager.instance.characterManager.GetCharacter(_roles[_i].ownerClientId, false));
+                // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+                _noteObject.SetCharacter(CharacterManager.instance.GetCharacter(_roles[_i].ownerClientId, false));
                 var _index = _i;
                 _noteObject.onCharacterBarObjectClicked += (_) =>
                 {

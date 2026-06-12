@@ -30,7 +30,10 @@ namespace Characters.Powers
             if (NetworkManager.IsServer)
             { 
                 onPowerReparented += OnPowerReparented;
-                IEnumerable<Character> _robots = GameManager.For(NetworkManager).characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
+                // Story 7.4: pre-spawn (Awake) read — the base Power.characterManager is not resolved until
+                // OnNetworkSpawn, so resolve from the composition root here. Behaviour-identical (delegates to
+                // CharacterManager.For), removes the GameManager hub-hop (deleted in 7.5). Proper fix: Epic 11.
+                IEnumerable<Character> _robots = CompositionRoot.For(NetworkManager).CharacterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
                     gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),

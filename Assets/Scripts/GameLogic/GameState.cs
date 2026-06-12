@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Board.BoardCameraSystem;
+using Board.UI.CharacterBar;
 using Characters;
 using UI;
 using UnityEngine;
@@ -21,6 +22,10 @@ namespace GameLogic
         public CharacterManager characterManager { get; set; }
         // Story 7.3 lane B: GameInfoRevealer pushed the same way.
         public GameInfoRevealer gameInfoRevealer { get; set; }
+        // Story 7.4 lane B: ChainingManager + CharactersBar pushed the same way, so states stop
+        // hub-hopping through gameManager.chainingManager / gameManager.charactersBar (deleted in 7.5).
+        public ChainingManager chainingManager { get; set; }
+        public CharactersBar charactersBar { get; set; }
 
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }

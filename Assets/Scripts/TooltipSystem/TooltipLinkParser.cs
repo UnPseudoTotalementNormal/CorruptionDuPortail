@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
+using Characters;
 using Characters.Powers;
 using Characters.Powers.PowerComponents;
 using GameLogic;
@@ -52,7 +53,8 @@ namespace TooltipSystem
             ulong _powerObjectId = ulong.Parse(_ids[1]);
             int _componentIndex = int.Parse(_ids[2]);
 
-            Power _power = GameManager.instance.characterManager
+            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+            Power _power = CharacterManager.instance
                 .GetCharacter(_ownerClientId, false)?.role.powers.Find(_p => _p.NetworkObjectId == _powerObjectId);
             if (!_power)
             {
@@ -86,7 +88,7 @@ namespace TooltipSystem
             ulong _ownerClientId = ulong.Parse(_ids[0]);
             ulong _powerObjectId = ulong.Parse(_ids[1]);
 
-            Power _power = GameManager.instance.characterManager
+            Power _power = CharacterManager.instance
                 .GetCharacter(_ownerClientId, false)?.role.powers.Find(_p => _p.NetworkObjectId == _powerObjectId);
             if (!_power)
             {

@@ -8,13 +8,22 @@ using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Board.UI
 {
     public class RobotBoardInfo : NetworkBehaviour
     {
         [SerializeField] private TMP_Text text;
-        
+
+        // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
+        [SerializeField] private CharacterManager characterManager;
+
+        private void Start()
+        {
+            Assert.IsNotNull(characterManager, "RobotBoardInfo.characterManager is not wired — wire it in GameScene (the composition root).");
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -44,7 +53,7 @@ namespace Board.UI
         [Rpc(SendTo.Server)]
         private void AskForNewTextRpc()
         {
-            Character _robot = GameManager.instance.characterManager.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
+            Character _robot = characterManager.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
             if (!_robot)
             {
                 WriteNewTextRpc("0");

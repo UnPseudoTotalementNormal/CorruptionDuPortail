@@ -1,4 +1,5 @@
 using System.Text;
+using Characters;
 using Extensions;
 using GameLogic;
 using MessageSystem;
@@ -7,16 +8,29 @@ using UI.Panel;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 {
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private TMP_InputField messageInputField;
     public bool isPanelOpen { get; private set; }
-    
+
+    // Story 7.4 lane C: NGO-spawned NetworkBehaviour resolves its CharacterManager once from the
+    // composition root in OnNetworkSpawn, replacing the GameManager hub-hop and the CharacterManager
+    // singleton locator. (The MessageManager singleton stays → Epic 10.)
+    private CharacterManager characterManager;
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+        Assert.IsNotNull(characterManager, "SendMessagePanel.characterManager could not be resolved from the composition root.");
+    }
+
     public void TrySendMessageToServer()
     {
-        var _localCharacter = GameManager.instance.characterManager.GetLocalCharacter(false);
+        var _localCharacter = characterManager.GetLocalCharacter(false);
         if (_localCharacter.messageLeft.Value <= 0)
         {
             Debug.Log("You have no messages left to send.");
@@ -35,15 +49,15 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
             return;
         }
         
-        MessageManager.instance.SendMessageRpc(Characters.CharacterManager.instance.GetLocalClientId(), messageInputField.text);
-        OnMessageSentRpc(Characters.CharacterManager.instance.GetLocalClientId(), messageInputField.text);
+        MessageManager.instance.SendMessageRpc(characterManager.GetLocalClientId(), messageInputField.text);
+        OnMessageSentRpc(characterManager.GetLocalClientId(), messageInputField.text);
         ClosePanel();
     }
     
     [Rpc(SendTo.Server)]
     public void OnMessageSentRpc(ulong _senderId, FixedString512Bytes _message)
     {
-        var _character = GameManager.instance.characterManager.GetCharacter(_senderId);
+        var _character = characterManager.GetCharacter(_senderId);
         _character.messageLeft.Value -= 1;
         _character.hasSentMessageThisTurn.Value = true;
     }
@@ -62,7 +76,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 
     public void TryOpenPanel()
     {
-        if (GameManager.instance.characterManager.GetLocalCharacter(false).messageLeft.Value <= 0)
+        if (characterManager.GetLocalCharacter(false).messageLeft.Value <= 0)
         {
             Debug.Log("You have no messages left to send.");
             return;

@@ -28,7 +28,10 @@ namespace GameLogic.Snapshot
             var characterSnapshots = new List<CharacterSnapshot>();
 
             // GetCharacters(false): same source the victory loop uses, with no update side effect.
-            foreach (var character in gameManager.characterManager.GetCharacters(false))
+            // Story 7.4: resolve CharacterManager by the passed manager's NetworkManager instead of the
+            // GameManager.characterManager pass-through (removed in 7.5); fixture-correct (per-NM), and
+            // behaviour-identical in production (single NM).
+            foreach (var character in CharacterManager.For(gameManager.NetworkManager).GetCharacters(false))
             {
                 characterSnapshots.Add(MapCharacter(character));
             }

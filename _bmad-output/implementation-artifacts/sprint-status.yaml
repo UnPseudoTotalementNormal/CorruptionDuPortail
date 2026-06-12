@@ -42,7 +42,7 @@
 #   Prefer cheap local `/code-review` (effort low/medium) over the ultra cloud run.
 
 generated: 2026-06-10
-last_updated: 2026-06-12 (7-3 inject GameInfoRevealer → review; UI+ChainingManager deferred to 7.4; EM 162 / PM 146 green)
+last_updated: 2026-06-12 (7-4 inject remaining GameManager pass-throughs + UI hub-hops → review; AC3 inventory clean, 7.5 unblocked; EM 162 / PM 146 green, both DI guards green)
 project: Corruption Du Portail
 project_key: NOKEY
 tracking_system: file-system
@@ -133,7 +133,7 @@ development_status:
   7-1-inject-charactermanager-into-the-powers: review  # Power.characterManager base field (lane C), resolved once in Power.OnNetworkSpawn; 22 power files rerouted off the locator (characterManager slice); PersonalBeaconObject lane B; clean→All/NoLocatorOnly guards, mixed gameInfoRevealer files deferred to 7.3; PPersonalBeacons.Awake L33 recorded pre-spawn exception; RoleTests harness +CharacterManager; EM 162 / PM 146 green
   7-2-inject-charactermanager-into-gamestates-board-and-character: review  # GameStates/StateUIs lane B (SetupGameStates push), BoardManager lane A (scene-wired), Card lane B (recorded prefab precedent, Initialize push), Character lane C (null-tolerant); All += Character,BoardManager; Card+mixed gameInfoRevealer → 7.3; 8 PlayMode harnesses fixed; EM 162 / PM 146 green
   7-3-inject-gameinforevealer-into-its-consumers: review  # GameInfoRevealer into powers (base field)/GameStates (push)/Board+Card (lane A/B); CompositionRoot +GameInfoRevealer accessor (scene-root + GameManager.For fallback, non-de-singletonised); GameInfoRevealer itself lane A characterManager; All +=10 clean powers, NoLocatorOnly +=Card; UI consumers (CharactersBarObject/CorruptedCardText/InfoTableSystem) + ChainingManager deferred to 7.4; EM 162 / PM 146 green
-  7-4-inject-remaining-gamemanager-passthroughs-and-ui-hub-hops: ready-for-dev  # ChainingManager/CharactersBar/PowersBar + mechanical UI reroutes (lane A)
+  7-4-inject-remaining-gamemanager-passthroughs-and-ui-hub-hops: review  # ~30 production consumers rerouted off all 5 GameManager pass-throughs: GameStates lane-B push; scene singletons lane-A (12 MCP-wired); SendMessagePanel lane-C; prefab UI leaves + static utils + W* POCOs → façade(CharacterManager.instance)/CompositionRoot route (Epic 9/11/12); Card child reads Card.GameInfoRevealer. Registry All+=PowerUsageManager/SkipButton/MessageLeftText/FocusManager, NoLocatorOnly+=SendMessagePanel, InjectedManagerTypes+=CharactersBar/PowersBar. AC3 inventory clean → 7.5 unblocked. EM 162 / PM 146 green; ChainingManager null-tolerant + PowerManager harness reflection-wire
   7-5-remove-gamemanager-passthrough-fields-and-freeze-with-the-guards: ready-for-dev  # destructive deletion; hub cannot come back
 
   # Epic 8 (D2): narrow the GameManager game-loop surface (IGameLoop / IGameStateQuery)

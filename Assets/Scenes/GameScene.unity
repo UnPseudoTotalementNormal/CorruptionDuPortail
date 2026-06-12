@@ -642,6 +642,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   powersBarParent: {fileID: 1876150490}
   powerBarObjectPrefab: {fileID: 8026194569897164769, guid: 44f21c60b80d7d6a781982f44a09d3de, type: 3}
+  characterManager: {fileID: 1541735909}
   powersBarObjects: []
 --- !u!1 &130148568
 GameObject:
@@ -2223,6 +2224,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1622243723}
+  characterManager: {fileID: 1541735909}
 --- !u!1 &392292192
 GameObject:
   m_ObjectHideFlags: 0
@@ -2650,6 +2652,7 @@ MonoBehaviour:
   charactersBarParent: {fileID: 1357572750}
   characterBarObjectPrefab: {fileID: 7913822557668518461, guid: 94a8191d17858ca4f88d962c699e6729, type: 3}
   factionGroupPrefab: {fileID: 6214312313759094123, guid: fee29f0a7deff00479f09cf026c5d817, type: 3}
+  characterManager: {fileID: 1541735909}
   factionIcons:
     _serializedList:
     - Key: 0
@@ -4439,6 +4442,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1089552714}
+  characterManager: {fileID: 1541735909}
 --- !u!1 &704980997
 GameObject:
   m_ObjectHideFlags: 0
@@ -5389,6 +5393,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   messageLeftText: {fileID: 803348553}
+  characterManager: {fileID: 1541735909}
 --- !u!222 &803348555
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8382,6 +8387,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afac7a3f86bb40047a752e3e0d8a69ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterManager: {fileID: 1541735909}
 --- !u!1 &1283049415
 GameObject:
   m_ObjectHideFlags: 0
@@ -9204,6 +9210,10 @@ PrefabInstance:
       propertyPath: contentRoot
       value: 
       objectReference: {fileID: 2074186949}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameInfoRevealer
+      value: 
+      objectReference: {fileID: 1771149311}
     - target: {fileID: 4871797639015596516, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
       propertyPath: m_Name
       value: InfoTable
@@ -9646,6 +9656,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   takeDownThePortalPowerDataObject: {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}
+  characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
 --- !u!114 &1446097058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12446,6 +12458,7 @@ MonoBehaviour:
       Data3: -1032867410
       Data4: -626300355
     Path: event:/Interface/LightOffButton
+  characterManager: {fileID: 1541735909}
 --- !u!1 &1766155694
 GameObject:
   m_ObjectHideFlags: 0
@@ -13009,6 +13022,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dabdc09f49a4268aca7b05d019da756, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterManager: {fileID: 1541735909}
 --- !u!1001 &1858349834
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13598,6 +13612,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentPower: {fileID: 0}
+  characterManager: {fileID: 1541735909}
+  powersBar: {fileID: 129913599}
 --- !u!1 &1946462487
 GameObject:
   m_ObjectHideFlags: 0
@@ -14212,6 +14228,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _focusCanvasGroup: {fileID: 602487800}
   _focusParticlePrefab: {fileID: 5786720194925743900, guid: d93b1a1b7034267d596fb90279bebe70, type: 3}
+  charactersBar: {fileID: 463595595}
 --- !u!1 &2021541852
 GameObject:
   m_ObjectHideFlags: 0

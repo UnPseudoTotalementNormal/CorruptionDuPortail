@@ -19,7 +19,8 @@ namespace UI.Components
         {
             base.ShowEvent();
 
-            var _characters = GameManager.instance.characterManager.GetCharacters(false)
+            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+            var _characters = CharacterManager.instance.GetCharacters(false)
                 .Where(_c => !_c.isFake && _c.role.factionType != FactionType.anomaly);
 
             int _corruptedAmount = _characters.Count(_c => _c.isCorrupted.Value);

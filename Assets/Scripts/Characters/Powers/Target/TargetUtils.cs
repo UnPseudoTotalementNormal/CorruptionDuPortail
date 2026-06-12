@@ -34,7 +34,7 @@ namespace Characters.Powers.Target
         
         public static List<ulong> GetTargetsForCharacters(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
+            List<Character> _targets = CharacterManager.instance.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Self))
             {
@@ -49,7 +49,7 @@ namespace Characters.Powers.Target
                 for (int _i = _targets.Count - 1; _i >= 0; _i--)
                 {
                     CharacterInfoReveal _info =
-                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
+                        CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
                     if (_info.isRoleRevealed > RevealLevel.False)
                     {
                         FactionType _faction = _targets[_i].role.factionType;
@@ -68,7 +68,7 @@ namespace Characters.Powers.Target
                 for (int _i = _targets.Count - 1; _i >= 0; _i--)
                 {
                     CharacterInfoReveal _info =
-                        GameManager.instance.gameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
+                        CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.GetCharacterInfo(_targets[_i].ownerClientId.Value);
                     if (_info.isCorruptRevealed > RevealLevel.False && _targets[_i].isCorrupted.Value)
                     {
                         _targets.RemoveAt(_i);
@@ -96,7 +96,7 @@ namespace Characters.Powers.Target
 
         public static List<ulong> GetTargetsForRoles(TargetIncludeFlags _includeFlags)
         {
-            List<Character> _targets = GameManager.instance.characterManager.GetCharacters(false).ToList();
+            List<Character> _targets = CharacterManager.instance.GetCharacters(false).ToList();
 
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Fake))
             {

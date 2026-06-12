@@ -79,7 +79,8 @@ namespace NoteSystem
                 Destroy(_child.gameObject);
             }
             
-            var _allCharacters = GameManager.instance.characterManager.GetCharacters(false);
+            // Story 7.4: façade route (CharacterManager.instance) — UI leaf, proper injection deferred to Epic 12.
+            var _allCharacters = CharacterManager.instance.GetCharacters(false);
             
             List<Character> _filteredCharacters = _allCharacters.ToList();
 

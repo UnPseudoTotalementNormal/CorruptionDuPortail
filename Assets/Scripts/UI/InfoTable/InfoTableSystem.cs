@@ -15,6 +15,8 @@ namespace UI.InfoTable
         [SerializeField] private Header playerHeaderPrefab;
         [SerializeField] private ChildHeader roleCheckPrefab;
         [SerializeField] private Transform contentRoot;
+        // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop. Null-tolerant — code keeps its own null-checks; SceneWiringGuard CI is the wiring control (no Assert here).
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
 
         private List<InfoTablePlayerRoleHandler> playerHandlers = new();
         private Dictionary<Role, int> roleCounts = new();
@@ -30,9 +32,9 @@ namespace UI.InfoTable
             BuildGameUi();
             
             // S'abonner aux changements de révélation de rôles
-            if (GameManager.instance.gameInfoRevealer != null)
+            if (gameInfoRevealer != null)
             {
-                GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged += OnCharacterInfoRevealedChanged;
+                gameInfoRevealer.onCharacterInfoRevealedChanged += OnCharacterInfoRevealedChanged;
             }
         }
 
@@ -55,7 +57,7 @@ namespace UI.InfoTable
                 if (_handler.GetCharacter() != null)
                 {
                     Character _character = _handler.GetCharacter();
-                    CharacterInfoReveal _info = GameManager.instance.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value);
+                    CharacterInfoReveal _info = gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value);
                     if ((int)_info.isRoleRevealed > 0)
                     {
                         _handler.LockWithRevealedRole();
@@ -161,9 +163,9 @@ namespace UI.InfoTable
             }
             
             // Se désabonner de l'événement de révélation
-            if (GameManager.instance != null && GameManager.instance.gameInfoRevealer != null)
+            if (gameInfoRevealer != null)
             {
-                GameManager.instance.gameInfoRevealer.onCharacterInfoRevealedChanged -= OnCharacterInfoRevealedChanged;
+                gameInfoRevealer.onCharacterInfoRevealedChanged -= OnCharacterInfoRevealedChanged;
             }
             
             playerHandlers.Clear();

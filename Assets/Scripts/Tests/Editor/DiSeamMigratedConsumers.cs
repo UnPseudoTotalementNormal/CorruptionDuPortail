@@ -1,10 +1,15 @@
 using System;
 using Board;
+using Board.UI;
+using Board.UI.CharacterBar;
+using Board.UI.PowerBar;
 using Characters;
 using Characters.Powers;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.PowerObjects;
+using FocusSystem;
 using GameLogic;
+using UI;
 
 namespace Tests.Editor
 {
@@ -57,6 +62,13 @@ namespace Tests.Editor
             typeof(PLackOfAffection),
             typeof(PEmbraceOfShadows),
             typeof(PCorruptionParanoia),
+            // Story 7.4 — clean scene consumers fully migrated onto lane-A injected fields (no GameManager
+            // / CharacterManager locator left): PowerUsageManager (characterManager + powersBar), SkipButton,
+            // MessageLeftText (characterManager), FocusManager (charactersBar). Both guards cover them.
+            typeof(PowerUsageManager),
+            typeof(SkipButton),
+            typeof(MessageLeftText),
+            typeof(FocusManager),
         };
 
         /// <summary>
@@ -77,6 +89,12 @@ namespace Tests.Editor
             // pushed by BoardManager.AddNewCard). Prefab-placed but its injected deps are plain pushed
             // fields (not [SerializeField]), so guard #1 source-scan only.
             typeof(Card),
+            // Story 7.4 — SendMessagePanel resolves its CharacterManager via the composition root in
+            // OnNetworkSpawn (lane C, no [SerializeField] manager field); locator-free, guard #1 source-scan only.
+            // (CardCorruptedText is also migrated — reads the revealer from its parent Card — but its file is
+            // named CorruptedCardText.cs ≠ the class name, which the guard's type→file mapping can't resolve,
+            // so it is left off the registry; it holds no locator to regress.)
+            typeof(SendMessagePanel),
         };
 
         /// <summary>
@@ -91,6 +109,8 @@ namespace Tests.Editor
             typeof(GameManager),
             typeof(CharacterManager), // 6.3 — CompositionRoot.characterManager wiring is guard-checked.
             typeof(GameInfoRevealer), // 7.3 — CompositionRoot/BoardManager gameInfoRevealer wiring is guard-checked.
+            typeof(CharactersBar), // 7.4 — FocusManager.charactersBar lane-A wiring is guard-checked.
+            typeof(PowersBar), // 7.4 — PowerUsageManager.powersBar lane-A wiring is guard-checked.
         };
 
         /// <summary>

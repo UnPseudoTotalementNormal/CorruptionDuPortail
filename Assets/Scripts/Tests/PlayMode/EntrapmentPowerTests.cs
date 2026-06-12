@@ -77,7 +77,11 @@ namespace Tests.PlayMode
             new GameObject("ChatManager").AddComponent<ChatManager>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("LobbyPlayerInfoHolder").AddComponent<LobbyPlayerInfoHolder>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("ChainingManager").AddComponent<ChainingManager>().gameObject.AddComponent<NetworkObject>().Spawn();
-            new GameObject("PowerManager").AddComponent<PowerManager>().gameObject.AddComponent<NetworkObject>().Spawn();
+            // Story 7.4: PowerManager now reads CharacterManager from an injected [SerializeField] (lane A)
+            // instead of the GameManager hub-hop; wire it like the production scene does (was implicit before).
+            var _powerManager = new GameObject("PowerManager").AddComponent<PowerManager>();
+            ReflectionHelper.SetPrivateField(_powerManager, "characterManager", _characterManager);
+            _powerManager.gameObject.AddComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager);
         }

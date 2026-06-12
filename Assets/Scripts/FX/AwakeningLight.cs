@@ -1,9 +1,11 @@
 using System;
+using Characters;
 using DG.Tweening;
 using Extensions;
 using FMODUnity;
 using GameLogic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace FX
 {
@@ -16,9 +18,12 @@ namespace FX
         
         [SerializeField] private EventReference turnOnSoundEvent;
         [SerializeField] private EventReference turnOffSoundEvent;
+        // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
+        [SerializeField] private CharacterManager characterManager;
 
         private void Start()
         {
+            Assert.IsNotNull(characterManager, "AwakeningLight.characterManager is not wired — wire it in GameScene (the composition root).");
             if (lightComponent == null)
             {
                 lightComponent = GetComponent<Light>();
@@ -31,7 +36,7 @@ namespace FX
 
         private void OnGameStarted()
         {
-            GameManager.instance.characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
+            characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
         }
 
         private void OnAwakeningChanged(bool _previousValue, bool _newValue)

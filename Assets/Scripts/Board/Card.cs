@@ -68,6 +68,9 @@ namespace Board
         private CharacterManager characterManager;
         // Story 7.3: GameInfoRevealer pushed by the same lane-B creator.
         private GameInfoRevealer gameInfoRevealer;
+        // Story 7.4: child components on this card prefab (e.g. CardCorruptedText) read the revealer
+        // from their parent Card instead of hub-hopping through GameManager.gameInfoRevealer.
+        public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
 
         // Assumption: child IPanelOpen set is fixed at Awake (no panels instantiated/added to the card hierarchy at runtime).
         private IPanelOpen[] panelOpenComponents;

@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace GameLogic
 {
@@ -16,6 +18,17 @@ namespace GameLogic
         
         public NetworkList<ulong> chainingPlayers = new();
         public Power takeDownThePortalPowerDataObject;
+
+        // Story 7.4 lane A: scene-wired CharacterManager + GameInfoRevealer, replacing the
+        // GameManager.For hub-hops in ChainCharacterRpc. The GameManager.For game-loop reads
+        // (GetGameStates / DoStateMethodRpc) stay until Epic 8 — this stays a mixed file (off the
+        // guard registry). Both fields are NULL-TOLERANT (no init assert): they are used only in
+        // ChainCharacterRpc, and many PlayMode harnesses create a bare ChainingManager via
+        // AddComponent (AddCharacterToChainingList path) that never needs them — an eager assert
+        // would false-fail those. Production wires both in GameScene (verified); proper wiring
+        // coverage lands when this joins the registry in Epic 8.
+        [SerializeField] private CharacterManager characterManager;
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
 
         private void Awake()
         {
@@ -63,10 +76,10 @@ namespace GameLogic
         public void ChainCharacterRpc(ulong _characterId)
         {
             var _gameManager = GameManager.For(NetworkManager);
-            var _character = _gameManager.characterManager.GetCharacter(_characterId);
-            
+            var _character = characterManager.GetCharacter(_characterId);
+
             _character.ChainCharacterServer();
-            _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
+            gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))
             {
@@ -78,7 +91,7 @@ namespace GameLogic
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             }
             
-            _gameManager.characterManager.AskForUpdateAllCharactersRpc();
+            characterManager.AskForUpdateAllCharactersRpc();
         }
     }
 }

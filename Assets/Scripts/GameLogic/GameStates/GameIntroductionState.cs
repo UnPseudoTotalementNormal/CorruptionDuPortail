@@ -62,7 +62,7 @@ namespace GameLogic.GameStates
             base.OnEndStateClient();
             
             _ = BoardManager.instance.ShowAllPlayerCards();
-            gameManager.charactersBar.ResetCharactersBar(characterManager.GetCharacters());
+            charactersBar.ResetCharactersBar(characterManager.GetCharacters());
         }
 
         public override void StateUpdateServer()

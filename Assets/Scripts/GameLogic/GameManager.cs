@@ -228,6 +228,8 @@ namespace GameLogic
                 clonedGameState.gameManager = this;
                 clonedGameState.characterManager = characterManager;
                 clonedGameState.gameInfoRevealer = gameInfoRevealer;
+                clonedGameState.chainingManager = chainingManager;
+                clonedGameState.charactersBar = charactersBar;
                 clonedGameState.OnStateCreated();
             }
         }

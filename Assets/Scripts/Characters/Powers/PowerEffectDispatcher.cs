@@ -5,6 +5,7 @@ using CorruptionDuPortail.Domain;
 using GameLogic;
 using RoleTarget;
 using Unity.Collections;
+using Unity.Netcode;
 
 namespace Characters.Powers
 {
@@ -47,18 +48,18 @@ namespace Characters.Powers
                     // its own ref and the owner via GetCharacter(owner). We fetch with
                     // _triggerUpdate:false; the owner site's incidental triggerUpdate:true is dropped
                     // as redundant — OnUsedServer's AskForUpdateAllCharactersRpc fires in the same turn.
-                    GameManager.instance.characterManager.GetCharacter((ulong)e.Slot, false).CorruptPlayerServerRpc();
+                    CharacterManager.instance.GetCharacter((ulong)e.Slot, false).CorruptPlayerServerRpc();
                     break;
 
                 case RevealInfo e:
                     if (e.Broadcast)
                     {
-                        GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                        CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.SendRevealLevelRpc(
                             (ulong)e.TargetSlot, RevealFieldName(e.Field), ToRevealLevel(e.Level), (ulong)e.ViewerSlot, true);
                     }
                     else
                     {
-                        GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                        CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.SetRevealLevel(
                             (ulong)e.TargetSlot, RevealFieldName(e.Field), ToRevealLevel(e.Level), (ulong)e.ViewerSlot);
                     }
                     break;
@@ -73,7 +74,7 @@ namespace Characters.Powers
                     break;
 
                 case RequestCharacterRefresh:
-                    GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+                    CharacterManager.instance.AskForUpdateAllCharactersRpc();
                     break;
 
                 default:

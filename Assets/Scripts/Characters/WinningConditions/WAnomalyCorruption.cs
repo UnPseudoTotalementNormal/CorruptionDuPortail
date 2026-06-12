@@ -19,7 +19,7 @@ namespace Characters.WinningConditions
 
         public override bool CheckCondition()
         {
-            foreach (var _character in GameManager.instance.characterManager.GetCharacters(false).Where(_c => !_c.isFake))
+            foreach (var _character in CharacterManager.instance.GetCharacters(false).Where(_c => !_c.isFake))
             {
                 if (!_character.isCorrupted.Value)
                 {

@@ -18,6 +18,8 @@ namespace Board.UI
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slices (IGameStateQuery + IGameLoop).
         [SerializeField] private GameManager gameManager;
         private IGameStateQuery Query => gameManager;
@@ -58,7 +60,7 @@ namespace Board.UI
         [Rpc(SendTo.Server)]
         private void AskForNewTextRpc()
         {
-            Character _robot = characterManager.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
+            Character _robot = CharacterQuery.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
             if (!_robot)
             {
                 WriteNewTextRpc("0");

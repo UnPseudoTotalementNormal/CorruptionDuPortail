@@ -25,6 +25,11 @@ namespace GameLogic
         // Story 7.2 lane B: CharacterManager pushed directly by SetupGameStates alongside gameManager,
         // so states stop hub-hopping through gameManager.characterManager (deleted in 7.5).
         public CharacterManager characterManager { get; set; }
+        // Story 9.1 (Epic 9 / D3): read slice of the injected characterManager, narrowed to
+        // ICharacterQuery (D-NFR6 internal-narrowing). Pure-read states observe lookups through
+        // CharacterQuery; the concrete field stays for the MIXED states (Lobby/RoleAttribution/Vote)
+        // that still drive the command surface — they migrate in story 9.2.
+        protected ICharacterQuery CharacterQuery => characterManager;
         // Story 7.3 lane B: GameInfoRevealer pushed the same way.
         public GameInfoRevealer gameInfoRevealer { get; set; }
         // Story 7.4 lane B: ChainingManager + CharactersBar pushed the same way, so states stop

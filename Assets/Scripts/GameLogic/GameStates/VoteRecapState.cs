@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
                 else
                 {
 
-                    Character _chainingCharacter = characterManager.GetCharacter(VoteState.mostVotedPlayer);
+                    Character _chainingCharacter = CharacterQuery.GetCharacter(VoteState.mostVotedPlayer);
                     if (gameManager.IsServer)
                     {
                         Loop.NextGameState();

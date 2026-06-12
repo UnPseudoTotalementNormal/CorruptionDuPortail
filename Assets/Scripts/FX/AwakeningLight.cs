@@ -20,6 +20,8 @@ namespace FX
         [SerializeField] private EventReference turnOffSoundEvent;
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop-command slice (IGameLoop).
         [SerializeField] private GameManager gameManager;
         private IGameLoop Loop => gameManager;
@@ -40,7 +42,7 @@ namespace FX
 
         private void OnGameStarted()
         {
-            characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
+            CharacterQuery.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
         }
 
         private void OnAwakeningChanged(bool _previousValue, bool _newValue)

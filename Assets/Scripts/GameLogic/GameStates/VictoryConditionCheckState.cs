@@ -30,7 +30,7 @@ namespace GameLogic.GameStates
             // live state in (fakes filtered at the source) and applies the returned decision (NFR4 — no transition
             // inside the POCO).
             var _owners = new List<ConditionsForOwner>();
-            foreach (var _currentCharacters in characterManager.GetCharacters(false))
+            foreach (var _currentCharacters in CharacterQuery.GetCharacters(false))
             {
                 if (_currentCharacters.isFake)
                 {

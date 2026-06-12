@@ -55,7 +55,7 @@ namespace GameLogic.GameStates
             var _chainingCharactersId = chainingManager.chainingPlayers;
             foreach (var _chainingCharacterId in _chainingCharactersId)
             {
-                var _chainingCharacter = characterManager.GetCharacter(_chainingCharacterId);
+                var _chainingCharacter = CharacterQuery.GetCharacter(_chainingCharacterId);
                 await DoCardChainingAnimation(_chainingCharacter);
                 await UniTask.Delay(TimeSpan.FromSeconds(1f));
             }

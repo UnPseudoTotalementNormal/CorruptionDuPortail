@@ -26,6 +26,8 @@ public class BoardManager : NetworkBehaviour
     [SerializeField] private CharacterManager characterManager;
     // Story 7.3 lane A: scene-wired GameInfoRevealer, pushed into each Card it creates.
     [SerializeField] private GameInfoRevealer gameInfoRevealer;
+    // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+    private ICharacterQuery CharacterQuery => characterManager;
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -43,7 +45,7 @@ public class BoardManager : NetworkBehaviour
     public const float CARD_SPACING = 7;
     public const float CARD_LINE_SPACING = 9;
     
-    public bool hasAllCardsShown => visibleCards.Count == characterManager.GetCharacters().Count(_c => !_c.isFake);
+    public bool hasAllCardsShown => visibleCards.Count == CharacterQuery.GetCharacters().Count(_c => !_c.isFake);
     
     private void Awake()
     {
@@ -63,7 +65,7 @@ public class BoardManager : NetworkBehaviour
         Assert.IsNotNull(characterManager, "BoardManager.characterManager is not wired — wire it in GameScene (the composition root).");
         // gameInfoRevealer is only forwarded to the Cards this board creates (BoardManager never uses
         // it directly), so it is not asserted at runtime — SceneWiringGuard (CI) is its wiring check.
-        characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+        CharacterQuery.onCharactersListUpdated += OnCharacterListUpdated;
     }
 
     public override void OnNetworkDespawn()
@@ -72,7 +74,7 @@ public class BoardManager : NetworkBehaviour
         // (no For() re-resolution through a possibly-changed registry during teardown).
         if (characterManager != null)
         {
-            characterManager.onCharactersListUpdated -= OnCharacterListUpdated;
+            CharacterQuery.onCharactersListUpdated -= OnCharacterListUpdated;
         }
 
         if (instance == this)
@@ -160,7 +162,7 @@ public class BoardManager : NetworkBehaviour
         await HideAllCards(false);
         _cancelToken.Token.ThrowIfCancellationRequested();
         
-        foreach (var _character in characterManager.GetCharacters().Where(_c => !_c.isFake))
+        foreach (var _character in CharacterQuery.GetCharacters().Where(_c => !_c.isFake))
         {
             Card _card = AddNewCard(_character);
             _card.visualComponents.compositor.GetLayer("Flip").localEulerAngles = new Vector3(0, 0, -180);
@@ -168,7 +170,7 @@ public class BoardManager : NetworkBehaviour
         }
 
         Card ownedCard = visibleCards.SingleOrDefault(c =>
-            c.characterInfo.ownerClientId.Value == characterManager.GetLocalClientId());
+            c.characterInfo.ownerClientId.Value == CharacterQuery.GetLocalClientId());
         if (ownedCard)
         {
             visibleCards.ChangeIndex(visibleCards.IndexOf(ownedCard), 0);
@@ -222,7 +224,7 @@ public class BoardManager : NetworkBehaviour
     public Card AddNewCard(Character _characterInfo = null, bool _assignCardToBoard = true)
     {
         Card _card = Instantiate(cardPrefab, transform);
-        _card.Initialize(characterManager, gameInfoRevealer); // lane B push: the card is prefab-instantiated, cannot serialize a scene ref.
+        _card.Initialize(CharacterQuery, gameInfoRevealer); // lane B push: the card is prefab-instantiated, cannot serialize a scene ref.
         _card.transform.localPosition = new Vector3(0, 0, 0);
 
         if (_assignCardToBoard)

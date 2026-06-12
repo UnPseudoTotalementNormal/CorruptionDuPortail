@@ -19,12 +19,14 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     // Story 7.4 lane C: NGO-spawned NetworkBehaviour resolves its CharacterManager once from the
     // composition root in OnNetworkSpawn, replacing the GameManager hub-hop and the CharacterManager
     // singleton locator. (The MessageManager singleton stays → Epic 10.)
-    private CharacterManager characterManager;
+    // Story 9.1 (Epic 9 / D3): pure-read consumer, resolves the ICharacterQuery slice directly (lane C
+    // takes the interface — the composition root hands back the narrowed accessor).
+    private ICharacterQuery characterManager;
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+        characterManager = CompositionRoot.For(NetworkManager).CharacterQuery;
         Assert.IsNotNull(characterManager, "SendMessagePanel.characterManager could not be resolved from the composition root.");
     }
 

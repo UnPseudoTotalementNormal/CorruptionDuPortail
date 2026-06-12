@@ -65,7 +65,9 @@ namespace Board
         // ([SerializeField] can't ref a scene object from a prefab) nor lane C (not NGO-spawned)
         // applies — the creator injects it, and the local-identity subscription is deferred from
         // Awake to Initialize so the dependency is available when it is used.
-        private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): pure-read consumer, narrowed to the ICharacterQuery slice (lane B
+        // takes the interface directly — the field is never serialized, so no concrete type is needed).
+        private ICharacterQuery characterManager;
         // Story 7.3: GameInfoRevealer pushed by the same lane-B creator.
         private GameInfoRevealer gameInfoRevealer;
         // Story 7.4: child components on this card prefab (e.g. CardCorruptedText) read the revealer
@@ -101,7 +103,7 @@ namespace Board
 
         // Lane B injection point (BoardManager.AddNewCard). Carries the deferred local-identity
         // subscription that used to live in Awake on the manager instance facade.
-        public void Initialize(CharacterManager _characterManager, GameInfoRevealer _gameInfoRevealer)
+        public void Initialize(ICharacterQuery _characterManager, GameInfoRevealer _gameInfoRevealer)
         {
             characterManager = _characterManager;
             gameInfoRevealer = _gameInfoRevealer;

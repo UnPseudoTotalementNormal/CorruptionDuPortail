@@ -14,13 +14,15 @@ namespace UI
         public TMP_Text messageLeftText;
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
         private Character localCharacter;
         private bool isSubscribed = false;
 
         private void Start()
         {
             Assert.IsNotNull(characterManager, "MessageLeftText.characterManager is not wired — wire it in GameScene (the composition root).");
-            localCharacter = characterManager.GetLocalCharacter(false);
+            localCharacter = CharacterQuery.GetLocalCharacter(false);
             if (localCharacter != null)
             {
                 localCharacter.messageLeft.OnValueChanged += OnMessageLeftChanged;

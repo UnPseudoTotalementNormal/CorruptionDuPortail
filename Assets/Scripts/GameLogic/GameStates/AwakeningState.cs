@@ -80,7 +80,7 @@ namespace GameLogic.GameStates
 
             foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
             {
-                List<Character> _charactersInGame = characterManager.GetCharacters().ToList();
+                List<Character> _charactersInGame = CharacterQuery.GetCharacters().ToList();
                 foreach (Character _currentCharacter in _charactersInGame)
                 {
                     if (!_currentCharacter.role.IsTheSameRole(_roleToAwake.role))
@@ -141,7 +141,7 @@ namespace GameLogic.GameStates
             _awakeningLayerCache = null;
             Loop.onGameStarted += () =>
             {
-                var _localCharacter = characterManager.GetLocalCharacter(false);
+                var _localCharacter = CharacterQuery.GetLocalCharacter(false);
                 if (_localCharacter != null)
                 {
                     _localCharacter.onCharacterAwakened += () =>
@@ -166,7 +166,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
-            foreach (var _character in characterManager.GetCharacters(false))
+            foreach (var _character in CharacterQuery.GetCharacters(false))
             {
                 // Créer une fonction anonyme avec le paramètre ownerId et la stocker
                 NetworkVariable<bool>.OnValueChangedDelegate _callback = (_previousValue, _newValue) => 
@@ -192,7 +192,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            var _character = characterManager.GetCharacter(_ownerId, false);
+            var _character = CharacterQuery.GetCharacter(_ownerId, false);
             int _awakeningIndexForCharacter = GetAwakeningLayerIndex(_character.role);
             
             if (_awakeningIndexForCharacter != currentAwakeningIndex)
@@ -243,7 +243,7 @@ namespace GameLogic.GameStates
             
             if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f) //handle fake skip/used power
             {
-                var _fakeAwakenedCharacters = characterManager.GetCharacters(false)
+                var _fakeAwakenedCharacters = CharacterQuery.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
@@ -328,7 +328,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            var _character = characterManager.GetCharacter(_newPower.ownerClientId.Value, false);
+            var _character = CharacterQuery.GetCharacter(_newPower.ownerClientId.Value, false);
             if (!currentlyAwakenedCharacters.Contains(_character))
             {
                 return;

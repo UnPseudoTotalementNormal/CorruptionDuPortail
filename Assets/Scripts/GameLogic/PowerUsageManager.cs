@@ -20,6 +20,8 @@ namespace GameLogic
         // Story 7.4 lane A: scene-wired, replacing the GameManager hub-hop (powersBar) and the
         // CharacterManager singleton locator.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
         [SerializeField] private PowersBar powersBar;
 
         private void Start()
@@ -27,7 +29,7 @@ namespace GameLogic
             Assert.IsNotNull(characterManager, "PowerUsageManager.characterManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(powersBar, "PowerUsageManager.powersBar is not wired — wire it in GameScene (the composition root).");
             powersBar.onPowerClicked += OnPowerClicked;
-            characterManager.onLocalIdentityChanged += OnLocalIdentityChanged;
+            CharacterQuery.onLocalIdentityChanged += OnLocalIdentityChanged;
         }
 
         private void OnLocalIdentityChanged()
@@ -41,7 +43,7 @@ namespace GameLogic
 
         private void TrySelectPower(Power _power)
         {
-            var _playerPower = characterManager.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p.IsTheSamePower(_power));
+            var _playerPower = CharacterQuery.GetLocalCharacter(false).role.powers.FirstOrDefault(_p => _p.IsTheSamePower(_power));
             Assert.IsNotNull(_playerPower, "power was not found in the character's powers");
 
             if (currentPower != null && !currentPower.IsTheSamePower(_power))

@@ -16,6 +16,8 @@ namespace Board.UI
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
 
         private void Start()
         {
@@ -26,7 +28,7 @@ namespace Board.UI
 
         private void OnSkipButtonClicked()
         {
-            characterManager.GetLocalCharacter(false).SleepCharacterServerRpc();
+            CharacterQuery.GetLocalCharacter(false).SleepCharacterServerRpc();
         }
     }
 }

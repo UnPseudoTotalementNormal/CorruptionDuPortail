@@ -24,6 +24,8 @@ namespace Board.UI.CharacterBar
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
 
         // Story 8.2 lane A: scene-wired GameManager narrowed to the read slice for the AwakeningState
         // lookup. Stays null-tolerant (GetAwakeningState already guarded the locator) — guard #2 verifies
@@ -49,7 +51,7 @@ namespace Board.UI.CharacterBar
         private void Start()
         {
             Assert.IsNotNull(characterManager, "CharactersBar.characterManager is not wired — wire it in GameScene (the composition root).");
-            characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+            CharacterQuery.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
         private void OnCharacterListUpdated(List<Character> _characters)

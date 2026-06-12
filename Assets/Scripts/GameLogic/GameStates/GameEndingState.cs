@@ -45,7 +45,7 @@ namespace GameLogic.GameStates
             {
                 foreach (var _playerId in _winningTeam.Value)
                 {
-                    var _character = characterManager.GetCharacter(_playerId, false);
+                    var _character = CharacterQuery.GetCharacter(_playerId, false);
                     
                     var _newCard = BoardManager.instance.AddNewCard();
                     _newCard.SetInfo(_character);
@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             
-            foreach (var _character in characterManager.GetCharacters(false))
+            foreach (var _character in CharacterQuery.GetCharacters(false))
             {
                 gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
                     nameof(CharacterInfoReveal.isRoleRevealed),

@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            clickedCharacter = characterManager.GetCharacter(_ownerId);
+            clickedCharacter = CharacterQuery.GetCharacter(_ownerId);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -82,7 +82,7 @@ namespace GameLogic.GameStates
         
         private void OnRoleClickServer(ulong _ownerId)
         {
-            var _clickedRole = characterManager.GetCharacter(_ownerId).role;
+            var _clickedRole = CharacterQuery.GetCharacter(_ownerId).role;
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -128,12 +128,12 @@ namespace GameLogic.GameStates
             var _ignoreCharactersList = GetIgnoreCharacters();
             ignoreCharacters = _ignoreCharactersList.ToList();
 
-            if (ignoreCharacters.Count == characterManager.GetCharacters(false).Count)
+            if (ignoreCharacters.Count == CharacterQuery.GetCharacters(false).Count)
             {
                 var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
                 var _newWinners = new Dictionary<WinningTeam, HashSet<ulong>>()
                 {
-                    { WinningTeam.anomaly , new HashSet<ulong>(characterManager.GetCharacters(false)
+                    { WinningTeam.anomaly , new HashSet<ulong>(CharacterQuery.GetCharacters(false)
                         .Where(_c => _c.role.factionType == FactionType.anomaly)
                         .Select(_c => _c.ownerClientId.Value)) },
                 };
@@ -197,7 +197,7 @@ namespace GameLogic.GameStates
         private List<ulong> GetIgnoreCharacters()
         {
             List<ulong> _ignoreCharactersList = new();
-            foreach (var _character in characterManager.GetCharacters())
+            foreach (var _character in CharacterQuery.GetCharacters())
             {
                 if (_character.isFake)
                 {

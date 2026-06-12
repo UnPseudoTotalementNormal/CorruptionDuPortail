@@ -16,6 +16,8 @@ namespace Board.UI
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slices (IGameStateQuery + IGameLoop).
         [SerializeField] private GameManager gameManager;
         private IGameStateQuery Query => gameManager;
@@ -46,7 +48,7 @@ namespace Board.UI
         private void OnGameStarted()
         {
             WriteNewTextRpc(
-                $"0/{characterManager.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake)}");
+                $"0/{CharacterQuery.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake)}");
         }
 
         private void OnAwakeningStateEnd()
@@ -57,9 +59,9 @@ namespace Board.UI
         [Rpc(SendTo.Server)]
         private void AskForNewTextRpc()
         {
-            int _chosenCount = characterManager.GetCharacters()
+            int _chosenCount = CharacterQuery.GetCharacters()
                 .Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake);
-            int _corruptedChosenCount = characterManager.GetCharacters()
+            int _corruptedChosenCount = CharacterQuery.GetCharacters()
                 .Count(_c => _c.role.factionType != FactionType.anomaly && _c.isCorrupted.Value && !_c.isFake);
             WriteNewTextRpc($"{_corruptedChosenCount}/{_chosenCount}");
         }

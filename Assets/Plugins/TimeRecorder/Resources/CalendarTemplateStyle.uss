@@ -53,4 +53,12 @@
     flex-direction: row;
 }
 
+.totals-column {
+    flex-direction: column;
+}
+
+.claude-total-label {
+    color: #4ec9b0;
+}
+
 

@@ -109,3 +109,6 @@ fmod_editor.log
 /_bmad/
 *.bmad
 .bmad/
+
+# TimeRecorder — Claude working-time data (machine-local, like PlayerPrefs). Hooks/scripts are tracked.
+/.claude/timerecorder/

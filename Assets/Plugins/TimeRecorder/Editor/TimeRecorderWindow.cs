@@ -64,7 +64,10 @@ namespace Meaf75.Unity{
 
             VisualElement root = rootVisualElement;
             info = TimeRecorder.LoadTimeRecorderInfoFromRegistry();
-            
+
+            // Refresh Claude working-time ledger from disk (written by the .claude/hooks scripts)
+            ClaudeTimeReader.Reload();
+
             var timeRecorderTemplate = Resources.Load<VisualTreeAsset>(TimeRecorderExtras.CALENDAR_TEMPLATE_PATH);
             var timeRecorderTemplateStyle = Resources.Load<StyleSheet>(TimeRecorderExtras.CALENDAR_TEMPLATE_STYLE_PATH);
             root.styleSheets.Add(timeRecorderTemplateStyle);
@@ -93,6 +96,11 @@ namespace Meaf75.Unity{
             // Set total label dev time
             var totalDevLabel = root.Q<Label>( CalendarContainerTemplateNames.LABEL_TOTAL_DEV_TIME);
             totalDevLabel.text = GetLabel(info?.totalRecordedTime ?? 0);
+
+            // Set total Claude worked time (read-only, sourced from the hook ledger)
+            var totalClaudeLabel = root.Q<Label>( CalendarContainerTemplateNames.LABEL_TOTAL_CLAUDE_TIME);
+            if (totalClaudeLabel != null)
+                totalClaudeLabel.text = GetLabel(ClaudeTimeReader.TotalSeconds);
 
             // Generate days
             var daysContainers = new VisualElement[7];
@@ -194,6 +202,13 @@ namespace Meaf75.Unity{
 
                 var hoursLabel = dayElement.Q<Label>( DayContainerTemplateNames.LABEL_HOURS);
                 hoursLabel.text = hoursTxt;
+
+                // Claude worked time for this day (separate metric, read-only from the hook ledger)
+                var claudeLabel = dayElement.Q<Label>( DayContainerTemplateNames.LABEL_CLAUDE_HOURS);
+                if (claudeLabel != null) {
+                    int claudeSeconds = emptyMode ? 0 : ClaudeTimeReader.GetSecondsForDate(dateSelected.Year, dateSelected.Month, i + 1);
+                    claudeLabel.text = claudeSeconds > 0 ? "🤖 " + GetLabel(claudeSeconds) : "";
+                }
 
                 dayContainer.Add(dayElement);
 

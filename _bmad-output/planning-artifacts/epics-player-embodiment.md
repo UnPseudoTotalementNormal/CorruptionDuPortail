@@ -17,6 +17,7 @@ scope_decisions:
   movement_bounds: 'Physical room walls (colliders) authored by Poyo — no NavMesh'
   appearance: 'Single shared 3D model now; per-player customization architected as a data-driven hook, NOT implemented in this epic'
   embodied_look: 'Clamped — yaw ±75°, pitch ±40° (approx)'
+  lobby_camera: 'First-person (Poyo 2026-06-13 — overrides the original third-person follow; FR4/Story 13.2 AC updated)'
   bot_avatars: 'No — simulated clientId >= 100 identities get NO avatar'
   seating: 'Local embodied player sits at the FRONT seat from their own POV; others arranged/rotated around the table relative to the local seat'
 ---
@@ -47,7 +48,7 @@ This document specifies a **new gameplay feature epic** — a persistent, walkab
 FR1: A networked avatar prefab (`NetworkObject` + `NetworkTransform`) is spawned **server-side** for each connected player, **persists for the entire match** (the player keeps the same avatar across all states), and is despawned cleanly on disconnect and at match end.
 FR2: A **seat/spawn registry** maps `clientId ↔ Character (card) ↔ seat transform` and provides lobby spawn points, so the avatar layer aligns with the existing per-client `Character` model added in `LobbyState`.
 FR3: An **owner-authoritative movement controller** (Unity Input System: move + look) drives the local player's avatar; position replicates via `NetworkTransform` (owner authority, interpolated). Movement is bounded by the **room's physical wall colliders** (authored by Poyo — no NavMesh).
-FR4: During the **Lobby**, the owning client views the room through a **third-person follow camera** — a new camera mode that **coexists** with `BoardCameraManager` (does not delete or bypass it).
+FR4: During the **Lobby**, the owning client views the room through a **first-person camera** (⚠️ Poyo's 2026-06-13 design call — originally specified as third-person follow) — a new camera mode that **coexists** with `BoardCameraManager` (does not delete or bypass it).
 FR5: Camera mode is **arbitrated by game state**: **Lobby → free-roam follow**, **in-loop fixed states (Awakening, recaps, chaining, checks, etc.) → existing board cameras (behavior preserved)**, **Vote → embodied**. Avatar movement input is **disabled outside the Lobby**.
 FR6: During **`VoteState`**, each avatar enters **embodied mode**: snapped to its assigned seat around the table, **movement locked**, with **slight clamped look control**, while the **existing per-card vote UI still works**. On leaving `VoteState`, the prior fixed-camera presentation is restored (VoteRecap and onward unchanged).
 FR7: **In-game proximity voice chat**: microphone capture + transport + **distance-attenuated spatial playback**, active during **Lobby (free-roam) and Vote (embodied)**, **off during Awakening/night** and other states. Includes push-to-talk and mute. Preferred transport path: **Steam Voice via Facepunch** (already the project's transport) — confirmed in the Story 13.5 spike.
@@ -144,7 +145,7 @@ So that the Lobby becomes a navigable social space instead of a fixed view.
 **Then** an **owner-only** movement controller reads a **new Input System action map** (move + look) and drives the local avatar; **non-owners receive interpolated `NetworkTransform`** updates (owner authority, NFR3)
 **And** movement is bounded by the **room's physical wall colliders** (authored by Poyo — no NavMesh); the avatar cannot leave the room
 **And** `NetworkTransform` send rate is tuned so movement does **not** fire a per-frame RPC (NFR6) and position is never a custom per-frame `NetworkVariable<Vector3>`
-**And** a **third-person follow camera** is active for the owning client **during the Lobby only**, introduced as a new mode that **coexists** with `BoardCameraManager` (the board cameras are not removed)
+**And** a **first-person Lobby camera** is active for the owning client **during the Lobby only** (⚠️ Poyo 2026-06-13 — overrides the original third-person follow), introduced as a new mode that **coexists** with `BoardCameraManager` (the board cameras are not removed)
 **And** the action map is authored so a mobile touch joystick + touch look can be added later without rework (NFR5), though only desktop bindings ship now
 **And** the **smartphone/tablet UI stays reachable while walking** (DO1 resolved): an **input-driven open/close** of `SmartphoneController` is added that works in free-roam **without** the board-camera trigger (`openOnCamera`), while the existing camera-coupled open path is **unchanged** in the untouched states; the **text chat app** is reachable from it. The lobby **Start button** and **role-attribution settings** are **out of scope** (Poyo's responsibility)
 **And** the **arrow-key input conflict is reconciled** for free-roam: arrows are currently claimed by `BoardCameraManager` (camera neighbour nav) and `SmartphoneController` (app swipe); in free-roam, board-camera nav is inactive (Story 13.3), so input ownership routes to movement/look + tablet without regressing the untouched states

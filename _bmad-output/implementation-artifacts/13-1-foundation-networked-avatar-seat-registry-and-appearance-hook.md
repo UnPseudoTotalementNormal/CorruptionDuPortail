@@ -1,6 +1,6 @@
 # Story 13.1: Foundation — networked avatar, seat registry & appearance hook
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,37 +24,37 @@ so that every later movement/camera/voice story (13.2–13.6) has a replicated, 
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Avatar prefab + NGO registration** (AC: #1, #4, #6)
-  - [ ] Create `Assets/Prefabs/Avatars/PlayerAvatar.prefab` with: root `NetworkObject`, `NetworkTransform`, the 3D model (Poyo's asset) as a child, and a new `PlayerAvatar` component. (Collider/`CharacterController` for movement is **13.2** — not here; a basic collider is fine.)
-  - [ ] Set `NetworkTransform` authority to **server** for now (owner authority is flipped in 13.2). Do **not** add a custom `NetworkVariable<Vector3>` — position rides `NetworkTransform` (NFR3).
-  - [ ] **Register the prefab in the NGO NetworkPrefabs list** (the `NetworkManager`'s `NetworkConfig.Prefabs` / the project's `DefaultNetworkPrefabs` asset). ⚠️ An unregistered prefab makes `InstantiateAndSpawn` fail at runtime with no compile error — same registration the `_characterPrefab` has.
-- [ ] **Task 2 — `PlayerAvatar` component** (AC: #4, #5)
-  - [ ] New file `Assets/Scripts/Avatars/PlayerAvatar.cs` (`NetworkBehaviour`, namespace `Avatars`).
-  - [ ] `NetworkVariable<ulong> ownerClientId` (mirror `Character.ownerClientId`, `Character.cs:18`) so each avatar carries its identity to clients.
-  - [ ] In `OnNetworkSpawn`: resolve any needed manager via `CompositionRoot.For(NetworkManager)` **once** (lane C — same as `Character.cs:49`), register the avatar with `AvatarManager` (seat lookup), and call `ApplyAppearance()`.
-  - [ ] `ApplyAppearance()` reads the **data-driven appearance hook** (single shared model today) — see Dev Notes "Appearance seam".
-  - [ ] Teardown subscriptions in `OnNetworkDespawn`.
-- [ ] **Task 3 — `AvatarManager` (scene-placed, server-authoritative spawner)** (AC: #1, #2, #5, #6)
-  - [ ] New file `Assets/Scripts/Avatars/AvatarManager.cs` (`NetworkBehaviour`, namespace `Avatars`). **Mirror the proven `CharacterManager` lifecycle** (`CharacterManager.cs:38–287`): `Awake` claim-if-free, per-`NetworkManager` registry `s_byNetworkManager` + `For(nm)`, `OnNetworkSpawn` duplicate-destroy + registry claim, `OnNetworkDespawn`/`OnDestroy` unregister, and the `#if UNITY_EDITOR [RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` statics reset (`CharacterManager.cs:75`).
-  - [ ] Server-only spawn driver. **Mirror `LobbyState` subscription** (`LobbyState.cs:57–75`): on the server, subscribe `NetworkManager.OnClientConnectedCallback` (spawn avatar) + `OnClientDisconnectCallback` (despawn avatar), and on start **loop already-connected clients** (`LobbyState.cs:57–62`) so the host + early joiners get avatars.
-  - [ ] `SpawnAvatar(ulong clientId)`: **`if (clientId >= 100) return;`** (AC #6 — bots get no avatar). Then `NetworkManager.SpawnManager.InstantiateAndSpawn(_avatarPrefab, destroyWithScene: true)` (`CharacterManager.cs:407`), reparent under `_avatarsParent` via a `WaitForParentToSpawnAndSet`-style coroutine (`CharacterManager.cs:513`) if the parent NetworkObject isn't spawned yet, set `ownerClientId.Value`, and track it.
-  - [ ] Track avatars in a replicated `NetworkList<NetworkBehaviourReference>` + a server-side `Dictionary<ulong, PlayerAvatar>` for lookup (mirror `CharacterManager.networkedCharacters` + cache, `CharacterManager.cs:171`). Guard against double-spawn for an existing `clientId` (`CharacterManager.cs:402`).
-  - [ ] `DespawnAvatar(ulong clientId)`: remove from the list **before** despawn, then `NetworkObject.Despawn()` (mirror `RemoveCharacter`, `CharacterManager.cs:434`).
-  - [ ] **Persistence (AC #2):** spawn once; never despawn on state transitions. `destroyWithScene: true` cleans up at match-end scene unload.
-- [ ] **Task 4 — Seat / spawn registry** (AC: #3)
-  - [ ] `[SerializeField] private List<Transform> _seats;` and `[SerializeField] private List<Transform> _spawnPoints;` on `AvatarManager` (scene transforms around the table / in the room).
-  - [ ] Stable assignment `clientId → seat index` (e.g., by ascending join order or by the Character's index from `ICharacterQuery.GetCharacters()`), exposed via `Transform GetSeat(ulong clientId)` / `Transform GetSpawnPoint(ulong clientId)`. Keep it deterministic and resolvable on every client (do **not** make seats client-local here — front-seat rotation is 13.4).
-  - [ ] Resolve the `Character` for a `clientId` via `CompositionRoot.For(NetworkManager).CharacterQuery` (`ICharacterQuery.GetCharacter`) to complete the `clientId ↔ Character ↔ seat` mapping.
-- [ ] **Task 5 — Scene + CompositionRoot wiring (Unity MCP)** (AC: #1, #3)
-  - [ ] Scene-place `AvatarManager` in `GameScene` and wire `_avatarPrefab`, `_avatarsParent`, `_seats`, `_spawnPoints`, `_defaultAppearance` via Unity MCP (`manage_gameobject`/`manage_scene`). ⚠️ Per the serialized-field rewiring rule: wire every instance, verify by reading back, null-guard with `Assert.IsNotNull` in `Awake` (mirror `CharacterManager.cs:35` / `CompositionRoot.cs:134`).
-  - [ ] **Optional** (only if a later 13.x consumer needs to resolve `AvatarManager` through the root): add an `AvatarManager` accessor to `CompositionRoot` (lane-A `[SerializeField]` + `For`/`Services`, `CompositionRoot.cs:38–106`) and, if so, add `typeof(AvatarManager)` to `DiSeamMigratedConsumers.InjectedManagerTypes` so guard #2 checks its wiring. **Not required for 13.1** if AvatarManager is reached directly.
-- [ ] **Task 6 — PlayMode multi-client test** (AC: #7)
-  - [ ] New test under `Assets/Scripts/Tests/PlayMode/Avatars/` built on the `MultiClientGameFixture` substrate (UTP loopback, two `NetworkManager`s). Register the avatar prefab + spawn `AvatarManager` on the host the same way the fixture registers/spawns GM/CM (`MultiClientGameFixture.cs:115–166, 352–387`).
-  - [ ] Assert: a real client (`ClientNm`) sees a replicated avatar for each real `clientId`; `DespawnAvatar` removes it on the remote; **`SpawnAvatar(100)` spawns nothing** (AC #6). Use `WaitUntilOrTimeout` polling, never `WaitForSeconds` (`MultiClientGameFixture.cs:176`).
-- [ ] **Task 7 — Verify** (AC: all)
-  - [ ] After each code change: `mcp__UnityMCP__read_console` (compile clean) before assuming anything works.
-  - [ ] `mcp__UnityMCP__run_tests` — EditMode (the `DiSeamGuard` + census guards must stay green) **and** PlayMode (the new avatar test + the existing suite). Baseline before this story: **EM 205 / PM 148**.
-  - [ ] GameScene boot smoke: enter Play, confirm avatars spawn for the host (and a second real client if testing), no NRE, console clean.
+- [x] **Task 1 — Avatar prefab + NGO registration** (AC: #1, #4, #6)
+  - [x] Create `Assets/Prefabs/Avatars/PlayerAvatar.prefab` with: root `NetworkObject`, `NetworkTransform`, the 3D model (placeholder capsule per Poyo's decision — no humanoid asset in repo yet) as a child `Model`, a new `PlayerAvatar` component, and a basic `CapsuleCollider` on the root.
+  - [x] Set `NetworkTransform` authority to **server** for now (`AuthorityMode: 0`). No custom `NetworkVariable<Vector3>` — position rides `NetworkTransform` (NFR3).
+  - [x] Prefab **auto-registered** in `DefaultNetworkPrefabs.asset` by NGO's prefab post-processor on creation (verified: last entry, guid `88efd967…`).
+- [x] **Task 2 — `PlayerAvatar` component** (AC: #4, #5)
+  - [x] New file `Assets/Scripts/Avatars/PlayerAvatar.cs` (`NetworkBehaviour`, namespace `Avatars`).
+  - [x] `NetworkVariable<ulong> ownerClientId` (mirror `Character.ownerClientId`, `Character.cs:18`).
+  - [x] `OnNetworkSpawn` applies appearance. **No manager resolution needed in 13.1** (PlayerAvatar is thin; tracking is done BY `AvatarManager` via its authoritative list — see Completion Notes). Lane-C resolution slot documented for later.
+  - [x] `ApplyAppearance()` reads the **data-driven appearance hook** (single shared SO) and applies the shared body material to child renderers (null-tolerant).
+  - [x] No subscriptions added → no teardown needed (kept thin); `OnNetworkSpawn`/`OnNetworkDespawn` lifecycle used.
+- [x] **Task 3 — `AvatarManager` (scene-placed, server-authoritative spawner)** (AC: #1, #2, #5, #6)
+  - [x] New file `Assets/Scripts/Avatars/AvatarManager.cs` (`NetworkBehaviour`, namespace `Avatars`). Mirrors `CharacterManager` lifecycle: per-`NetworkManager` registry `s_byNetworkManager` + `For(nm)`, `OnNetworkSpawn` duplicate-destroy + registry claim, `OnNetworkDespawn`/`OnDestroy` unregister, `#if UNITY_EDITOR [RuntimeInitializeOnLoadMethod(SubsystemRegistration)]` statics reset. **Born clean — NO `static instance`** (For(nm)-only), so the census guard needs no whitelist entry.
+  - [x] Server-only spawn driver mirroring `LobbyState`: subscribe `OnClientConnectedCallback`/`OnClientDisconnectCallback` + loop already-connected clients in `OnNetworkSpawn` (host + early joiners).
+  - [x] `SpawnAvatar(ulong clientId)`: `if (clientId >= 100) return;` (AC #6), `InstantiateAndSpawn(_avatarPrefab, destroyWithScene: true)`, deferred reparent via `WaitForParentToSpawnAndSet`, set `ownerClientId.Value`, position at spawn point, track.
+  - [x] Authoritative replicated `NetworkList<NetworkBehaviourReference>` + derived cache (mirror `networkedCharacters`). Double-spawn guard. (No separate server dict — the cache scan by `ownerClientId` mirrors `CharacterManager`.)
+  - [x] `DespawnAvatar(ulong clientId)`: remove from the list **before** `NetworkObject.Despawn(true)` (mirror `RemoveCharacter`).
+  - [x] **Persistence (AC #2):** spawn once on connect; never on state transitions; `destroyWithScene: true` cleans up at match end.
+- [x] **Task 4 — Seat / spawn registry** (AC: #3)
+  - [x] `[SerializeField] private List<Transform> _seats;` + `_spawnPoints;` on `AvatarManager` (4 + 4 scene transforms wired in `GameScene`).
+  - [x] Stable assignment `clientId → seat index` = the avatar's position in the replicated list (identical on every client). `GetSeat(ulong)` / `GetSpawnPoint(ulong)` deterministic + resolvable everywhere. (Disconnect-reindex caveat documented; real seating is 13.4.)
+  - [x] `GetCharacterForClient(ulong)` resolves via `CompositionRoot.For(NetworkManager).CharacterQuery` (lane-C, resolved once in `OnNetworkSpawn`).
+- [x] **Task 5 — Scene + CompositionRoot wiring (Unity MCP)** (AC: #1, #3)
+  - [x] Scene-placed `AvatarManager` under `---GameLogic---` in `GameScene`; wired `_avatarPrefab`, `_avatarsParent` (= its own Transform, mirroring `CharacterManager._charactersParent`), `_seats`, `_spawnPoints` via Unity MCP — **all verified by reading back** (no null). `_defaultAppearance` lives on the **prefab** (network-correct seam), not the manager — see Completion Notes.
+  - [x] Optional CompositionRoot accessor **NOT taken** (not required for 13.1 — `AvatarManager` reached directly via `For(nm)`). No `DiSeamMigratedConsumers` edits.
+- [x] **Task 6 — PlayMode multi-client test** (AC: #7)
+  - [x] New `Assets/Scripts/Tests/PlayMode/Avatars/AvatarSpawnTests.cs` — self-contained dual-NM UTP-loopback substrate (trimmed `MultiClientGameFixture` technique), registers the avatar prefab + spawns `AvatarManager` on the host.
+  - [x] Asserts: a real client sees a replicated avatar for each real `clientId`; `DespawnAvatar` removes it on the remote; `SpawnAvatar(100)` spawns nothing. `WaitUntilOrTimeout` polling only. **3/3 green.**
+- [x] **Task 7 — Verify** (AC: all)
+  - [x] `read_console` after each change — compile clean (0 errors).
+  - [x] `run_tests` — **EditMode 215/215** (DiSeamGuard + SceneWiringGuard + StaticAbsenceGuard green) and **PlayMode 157/157** (3 new avatar + existing suite, no regressions).
+  - [x] GameScene boot smoke: entered Play, no NRE, console clean (host start is lobby-driven so no avatars spawn on direct Play — real spawn proven by the multi-client test).
 
 ## Dev Notes
 
@@ -162,12 +162,38 @@ No existing gameplay file is modified destructively. `LobbyState` is **not** req
 
 ### Agent Model Used
 
-(to be filled by dev-story)
+claude-opus-4-8 (Claude Opus 4.8) — gds-dev-story
 
 ### Debug Log References
 
+- `manage_gameobject create` `component_properties` did **not** apply for `CapsuleCollider` / `PlayerAvatar._defaultAppearance` at creation time — corrected via `manage_prefabs modify_contents` (headless), verified in the prefab YAML.
+- Wiring a `List<Transform>` via `set_property` with an array of GameObject instance IDs produced **null** elements (single object refs resolve GameObject→Transform; arrays do not). Worked around with per-element `SerializedProperty` paths (`_seats.Array.data[i]` / `_spawnPoints.Array.data[i]`), then re-verified by reading the component back.
+
 ### Completion Notes List
 
-- Ultimate context engine analysis completed — comprehensive developer guide created.
+- **Born clean (refactor end-state):** `AvatarManager` and `PlayerAvatar` carry **no `static instance`** — `AvatarManager` resolution is `For(nm)`-only (mirrors `CompositionRoot`). Confirmed by `StaticSingletonCensusGuardTests` staying green with **no new whitelist entry**. Neither type uses the locator, so neither is registered in `DiSeamMigratedConsumers` (the DI-seam guards only scan registered migrated consumers).
+- **Appearance seam lives on the PREFAB, not the manager (deviation from Task 5's literal "wire `_defaultAppearance` on AvatarManager"):** a `[SerializeField] AvatarAppearanceData` reference on the avatar prefab is identical on every client replica with zero network traffic — the network-correct data-driven seam. A manager-held SO reference would **not** reach client avatar replicas (NGO replicates no SO refs). `PlayerAvatar.ApplyAppearance()` reads its own prefab-baked SO; the future `appearanceId` selector changes only the appearance SOURCE, not the call site (FR8 / DO6).
+- **`PlayerAvatar` is thin (deviation from Task 2's literal "register the avatar with AvatarManager"):** registration is done **by** the manager via its authoritative replicated `NetworkList` (server adds on spawn; clients rebuild a cache from the pre-populated list) — exactly the `CharacterManager.AddNewCharacter`/`networkedCharacters` precedent, where the spawned `Character` does **not** add itself. This avoids the unguaranteed cross-object `OnNetworkSpawn` order (a client-side avatar→manager callback could fire before the manager replica spawns). `PlayerAvatar.OnNetworkSpawn` therefore only applies appearance; it needs no manager dependency in 13.1.
+- **Serialized-field null-guard placement:** `Assert.IsNotNull(_avatarPrefab)` lives in the server branch of `OnNetworkSpawn` (the boundary where it is first needed), **not in Awake** — a runtime-built test prefab sets `[SerializeField]` fields after `AddComponent` (so an Awake assert would fire on the template), and `CharacterManager` likewise asserts nothing on serialized fields in Awake (Design B).
+- **Placeholder model:** Poyo chose a capsule placeholder (no humanoid asset in repo). `Assets/Prefabs/Avatars/AvatarBodyPlaceholder.mat` (URP/Lit, teal) is wired into the appearance SO so the hook is exercised; swap-in later is a one-asset change behind the SO seam.
+- **Verification:** compile clean (0 errors); **EditMode 215/215** (DiSeamGuard / SceneWiringGuard / StaticAbsenceGuard all green); **PlayMode 157/157** including 3 new `AvatarSpawnTests`; GameScene boot smoke clean (no NRE). All scene `[SerializeField]` wiring read back and confirmed non-null.
+- **⚠️ Visual / playtest gap (golden-blind):** the multi-client test proves spawn/replication/despawn/bot-skip, but the *visual* appearance of the avatar in-game (capsule placement at seats/spawns, material) wants a Poyo playtest via the real lobby→host flow.
+- **Network-spawn touch — review suggestion:** not tagged `# REVIEW-REQUIRED` in sprint-status, so per the quota-aware policy it can merge direct. Given it introduces a new server-authoritative networked spawner (NetworkList replication + connect/disconnect driver), Poyo may still want a cheap `/gds-code-review` before merge.
 
 ### File List
+
+- `Assets/Scripts/Avatars/PlayerAvatar.cs` — NEW. Per-avatar `NetworkBehaviour`: `ownerClientId` identity + data-driven `ApplyAppearance()`.
+- `Assets/Scripts/Avatars/AvatarManager.cs` — NEW. Scene-placed server-authoritative spawner; per-NM `For(nm)` registry; replicated `NetworkList` + cache; connect/disconnect driver; seat/spawn registry; bot-skip; statics reset.
+- `Assets/Scripts/Avatars/AvatarAppearanceData.cs` — NEW. Appearance SO seam (shared body material + reserved model prefab).
+- `Assets/Prefabs/Avatars/PlayerAvatar.prefab` — NEW. NetworkObject + NetworkTransform (server auth) + capsule `Model` child + PlayerAvatar + CapsuleCollider; `_defaultAppearance` wired.
+- `Assets/Prefabs/Avatars/AvatarBodyPlaceholder.mat` — NEW. URP/Lit placeholder body material.
+- `Assets/ScriptableObjects/Avatars/DefaultAvatarAppearance.asset` — NEW. `AvatarAppearanceData` instance (body material wired).
+- `Assets/Scripts/Tests/PlayMode/Avatars/AvatarSpawnTests.cs` — NEW. Multi-client dual-NM PlayMode test (3 cases).
+- `Assets/Scenes/GameScene.unity` — UPDATE. Scene-placed `AvatarManager` (+ 4 `Spawn_*` / 4 `Seat_*` transforms) under `---GameLogic---`, fully wired.
+- `Assets/DefaultNetworkPrefabs.asset` — UPDATE. `PlayerAvatar.prefab` registered (auto-added by NGO).
+
+### Change Log
+
+| Date | Change |
+|---|---|
+| 2026-06-13 | Story 13.1 implemented — networked avatar foundation: `PlayerAvatar` + `AvatarManager` (born-clean, For(nm)-only) + appearance SO seam + scene wiring + multi-client PlayMode test. EM 215/215, PM 157/157. Status → review. |

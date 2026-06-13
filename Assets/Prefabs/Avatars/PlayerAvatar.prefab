@@ -109,9 +109,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
   AutoOwnerAuthorityTickOffset: 1
-  PositionInterpolationType: 0
-  RotationInterpolationType: 0
-  ScaleInterpolationType: 0
+  PositionInterpolationType: 1
+  RotationInterpolationType: 1
+  ScaleInterpolationType: 1
   PositionLerpSmoothing: 1
   PositionMaxInterpolationTime: 0.1
   RotationLerpSmoothing: 1
@@ -196,7 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.AvatarMovementController
   ShowTopMostFoldoutHeaderGroup: 1
   _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  _moveSpeed: 3.5
+  _moveSpeed: 6
   _lookYawSpeed: 0.12
   _lookPitchSpeed: 0.12
   _pitchClamp: 80

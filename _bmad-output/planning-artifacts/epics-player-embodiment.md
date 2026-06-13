@@ -89,7 +89,25 @@ NFR8: **Lifecycle/async hygiene.** `UniTask` only; avatar/voice teardown in `OnN
 
 Give each player a persistent 3D avatar that is **free-roaming in the Lobby**, **invisible to the existing fixed-camera flow during the game loop** (presentation unchanged), and **embodied with proximity voice during the Vote**. Built greenfield on top of the current card-board + `BoardCameraManager` presentation, cooperating with the state-driven camera switch rather than replacing it. Networking is owner-authoritative for the **cosmetic** avatar position only; all game state stays server-authoritative.
 
-**Stories:** 13.1 (foundation) → 13.2 (movement + lobby cam) → 13.3 (camera arbitration) → 13.4 (embodied Vote) → **13.5 `[HELD]`** (voice spike, REVIEW-REQUIRED) → **13.6 `[HELD]`** (voice impl). Stories 13.5–13.6 are **gated on Steam connectivity** (not yet wired); stories 13.1–13.4 are the **shippable near-term slice**.
+**Stories:** **13.0** (player-data backbone refactor — groundwork) → 13.1 (foundation) → 13.2 (movement + lobby cam) → 13.3 (camera arbitration) → 13.4 (embodied Vote) → **13.5 `[HELD]`** (voice spike, REVIEW-REQUIRED) → **13.6 `[HELD]`** (voice impl). Stories 13.5–13.6 are **gated on Steam connectivity** (not yet wired); stories 13.0–13.4 are the **shippable near-term slice**.
+
+---
+
+### Story 13.0: Refactor the PlayerInfo / player-data backbone (groundwork) `# REVIEW-REQUIRED`
+
+As a developer (Poyo),
+I want the year-old hand-made `PlayerInfo` / `LocalPlayerInfoHolder` / `LobbyPlayerInfoHolder` system simplified **without changing any current feature**,
+so that adding the personalization variables (FR8 / DO6) later is a one-line change and player data can be updated at runtime.
+
+**Acceptance Criteria (summary — full context in `_bmad-output/implementation-artifacts/13-0-refactor-playerinfo-data-backbone.md`):**
+
+**Given** the flat hand-rolled `PlayerInfo` struct (hand-written `Equals`/`GetHashCode`, dead `IsWriter` blocks) + a static `LocalPlayerInfoHolder` (dead Steam wiring, redundant `GetClientData`, no reset) + a `LobbyPlayerInfoHolder` with **no runtime update path**
+**When** the refactor lands
+**Then** `PlayerInfo` uses compiler-generated value equality (prefer `record struct`, verify Unity 6000.2.6f2 support) keeping the same public fields — every consumer's field access unchanged
+**And** dead code is removed (empty `IsWriter` blocks, `using Steamworks` + commented SteamId, redundant `GetClientData`); the `LocalPlayerInfoHolder` static gets a `SubsystemRegistration` reset
+**And** a **server-side runtime-update seam** (`UpdatePlayerInfoServerRpc`, replace-by-`playerClientId`, NFR5 `GetSafeRpcTarget`) is added — additive, no production caller yet — so personalization can replicate at runtime
+**And** the change is **behavior-preserving**: lobby ask→save flow, name display, `GetPlayerInfo`, disconnect removal, `AddDebugPlayer` all identical; guards + census whitelist stay green; suite green (EM 205 / PM 148)
+**And** **no personalization variable, no persistence, no Steam wiring** is added here (kept inert) — this is groundwork only; the nested `PlayerCustomization` grouping is documented for the first appearance var (a later 13.x story)
 
 ---
 

@@ -1,11 +1,15 @@
 using UnityEngine;
 using Unity.Netcode;
 using Characters;
+using GameLogic;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Misc
 {
+    // Story 12.3: debug F-key controller — reroutes its CharacterManager God-Object façade reads onto the
+    // sanctioned CompositionRoot.For(Singleton) (verify-don't-force; an Update-driven debug MonoBehaviour has
+    // no lane-A/C seam, so it resolves through the one allowed static).
     public class DevIdentityController : MonoBehaviour
     {
         private void Update()
@@ -19,7 +23,7 @@ namespace Misc
             {
                 if (NetworkManager.Singleton.IsServer)
                 {
-                    CharacterManager.instance.SpawnSimulatedPlayer();
+                    CompositionRoot.For(NetworkManager.Singleton).CharacterManager.SpawnSimulatedPlayer();
                     Debug.Log("Dev: Spawned Simulated Player");
                 }
                 else
@@ -40,17 +44,17 @@ namespace Misc
 
             if (Input.GetKeyDown(KeyCode.F4))
             {
-                CharacterManager.instance.SetPossessedIdentity(null);
+                CompositionRoot.For(NetworkManager.Singleton).CharacterManager.SetPossessedIdentity(null);
                 Debug.Log("Dev: Reset to original Identity");
             }
         }
 
         private void CycleIdentity(int direction)
         {
-            var _characters = CharacterManager.instance.GetCharacters(false).Where(c => !c.isFake).ToList();
+            var _characters = CompositionRoot.For(NetworkManager.Singleton).CharacterManager.GetCharacters(false).Where(c => !c.isFake).ToList();
             if (_characters.Count <= 1) return;
 
-            ulong _currentId = CharacterManager.instance.GetLocalClientId();
+            ulong _currentId = CompositionRoot.For(NetworkManager.Singleton).CharacterManager.GetLocalClientId();
             int _currentIndex = _characters.FindIndex(c => c.ownerClientId.Value == _currentId);
 
             int _nextIndex = (_currentIndex + direction) % _characters.Count;
@@ -61,11 +65,11 @@ namespace Misc
             // If the next ID is the same as host's actual ID, we can treat it as null (reset)
             if (_nextId == NetworkManager.Singleton.LocalClientId)
             {
-                CharacterManager.instance.SetPossessedIdentity(null);
+                CompositionRoot.For(NetworkManager.Singleton).CharacterManager.SetPossessedIdentity(null);
             }
             else
             {
-                CharacterManager.instance.SetPossessedIdentity(_nextId);
+                CompositionRoot.For(NetworkManager.Singleton).CharacterManager.SetPossessedIdentity(_nextId);
             }
 
             Debug.Log($"Dev: Now possessing Character with ID {_nextId} ({_characters[_nextIndex].GetRole()?.roleName ?? "No Role"})");

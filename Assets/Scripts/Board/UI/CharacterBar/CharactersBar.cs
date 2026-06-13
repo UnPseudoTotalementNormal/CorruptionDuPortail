@@ -9,6 +9,7 @@ using GameLogic;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #endregion
 
@@ -20,6 +21,17 @@ namespace Board.UI.CharacterBar
         
         [SerializeField] private GameObject characterBarObjectPrefab;
         [SerializeField] private GameObject factionGroupPrefab;
+
+        // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
+        [SerializeField] private CharacterManager characterManager;
+        // Story 9.1 (Epic 9 / D3): read slice of the scene-wired characterManager (D-NFR6 internal-narrowing).
+        private ICharacterQuery CharacterQuery => characterManager;
+
+        // Story 8.2 lane A: scene-wired GameManager narrowed to the read slice for the AwakeningState
+        // lookup. Stays null-tolerant (GetAwakeningState already guarded the locator) — guard #2 verifies
+        // the scene wiring, runtime tolerates a missing manager in bare harnesses.
+        [SerializeField] private GameManager gameManager;
+        private IGameStateQuery Query => gameManager;
 
         [Header("Faction Visuals")]
         [SerializeField] private SerializedDictionary<FactionType, Sprite> factionIcons = new();
@@ -38,7 +50,8 @@ namespace Board.UI.CharacterBar
 
         private void Start()
         {
-            GameManager.instance.characterManager.onCharactersListUpdated += OnCharacterListUpdated;
+            Assert.IsNotNull(characterManager, "CharactersBar.characterManager is not wired — wire it in GameScene (the composition root).");
+            CharacterQuery.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
         private void OnCharacterListUpdated(List<Character> _characters)
@@ -62,9 +75,9 @@ namespace Board.UI.CharacterBar
 
         private AwakeningState GetAwakeningState()
         {
-            if (_awakeningState == null && GameManager.instance != null)
+            if (_awakeningState == null && gameManager != null)
             {
-                _awakeningState = (AwakeningState)GameManager.instance.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
+                _awakeningState = (AwakeningState)Query.GetGameStates(typeof(AwakeningState)).FirstOrDefault();
             }
             return _awakeningState;
         }

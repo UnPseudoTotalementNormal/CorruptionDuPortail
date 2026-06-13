@@ -30,7 +30,7 @@ namespace Characters.Powers.PowerComponents
 
         private void OnGameStarted()
         {
-            var _legacyRoles = CharacterManager.instance.GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID).ToList();
+            var _legacyRoles = characterManager.GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID).ToList();
             foreach (var _legacyRole in _legacyRoles)
             {
                 _legacyRole.isChained.OnValueChanged += OnLegacyRoleChainChanged;

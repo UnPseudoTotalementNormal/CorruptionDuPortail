@@ -60,6 +60,23 @@ namespace Board
         [HideInInspector] public Character characterInfo;
         [HideInInspector] public Role roleInfo;
 
+        // Story 7.2 lane B: pushed by BoardManager.AddNewCard (the sole creator). A card is
+        // prefab-instantiated and its CharacterManager target is a scene object, so neither lane A
+        // ([SerializeField] can't ref a scene object from a prefab) nor lane C (not NGO-spawned)
+        // applies — the creator injects it, and the local-identity subscription is deferred from
+        // Awake to Initialize so the dependency is available when it is used.
+        // Story 9.1 (Epic 9 / D3): pure-read consumer, narrowed to the ICharacterQuery slice (lane B
+        // takes the interface directly — the field is never serialized, so no concrete type is needed).
+        private ICharacterQuery characterManager;
+        // Story 7.3: GameInfoRevealer pushed by the same lane-B creator.
+        private GameInfoRevealer gameInfoRevealer;
+        // Story 7.4: child components on this card prefab (e.g. CardCorruptedText) read the revealer
+        // from their parent Card instead of hub-hopping through GameManager.gameInfoRevealer.
+        public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+        // Story 12.2: same precedent for the character-query slice — card children (MeIconCard, NoteRibbon)
+        // read it from their parent Card instead of the CharacterManager façade.
+        public ICharacterQuery CharacterQuery => characterManager;
+
         // Assumption: child IPanelOpen set is fixed at Awake (no panels instantiated/added to the card hierarchy at runtime).
         private IPanelOpen[] panelOpenComponents;
 
@@ -85,10 +102,17 @@ namespace Board
             }
 
             panelOpenComponents = GetComponentsInChildren<IPanelOpen>(true);
+        }
 
-            if (CharacterManager.instance != null)
+        // Lane B injection point (BoardManager.AddNewCard). Carries the deferred local-identity
+        // subscription that used to live in Awake on the manager instance facade.
+        public void Initialize(ICharacterQuery _characterManager, GameInfoRevealer _gameInfoRevealer)
+        {
+            characterManager = _characterManager;
+            gameInfoRevealer = _gameInfoRevealer;
+            if (characterManager != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged += OnLocalIdentityChanged;
+                characterManager.onLocalIdentityChanged += OnLocalIdentityChanged;
             }
         }
 
@@ -121,9 +145,9 @@ namespace Board
         private void OnDestroy()
         {
             UnsubscribeFromCharacterEvents();
-            if (CharacterManager.instance != null)
+            if (characterManager != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged -= OnLocalIdentityChanged;
+                characterManager.onLocalIdentityChanged -= OnLocalIdentityChanged;
             }
             showPseudoTaskHandler.Dispose();
         }
@@ -229,7 +253,7 @@ namespace Board
             
             try
             {
-                bool _isRevealed = (int)GameManager.instance.gameInfoRevealer
+                bool _isRevealed = (int)gameInfoRevealer
                     .GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0;
 
                 if (_isRevealed)
@@ -253,7 +277,7 @@ namespace Board
         {
             visualUpdater.SetPseudo("");
             
-            bool _isRevealed = (int)GameManager.instance.gameInfoRevealer
+            bool _isRevealed = (int)gameInfoRevealer
                 .GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0;
             
             if (_isRevealed)

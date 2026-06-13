@@ -39,15 +39,15 @@ namespace GameLogic.GameStates
 
         public async UniTaskVoid GameEndingAnimation()
         {
-            await BoardManager.instance.HideAllCards();
+            await boardManager.HideAllCards();
             
             foreach (var _winningTeam in winningTeams)
             {
                 foreach (var _playerId in _winningTeam.Value)
                 {
-                    var _character = GameManager.instance.characterManager.GetCharacter(_playerId, false);
+                    var _character = CharacterQuery.GetCharacter(_playerId, false);
                     
-                    var _newCard = BoardManager.instance.AddNewCard();
+                    var _newCard = boardManager.AddNewCard();
                     _newCard.SetInfo(_character);
                     _ = _newCard.ShowPseudoWithRevealedInfo();
                     _ = _newCard.ShowBackSide(true);
@@ -56,8 +56,8 @@ namespace GameLogic.GameStates
             
             await UniTask.Delay(TimeSpan.FromSeconds(1));
 
-            BoardManager.instance.PlaceAllCardsToPosition();
-            foreach (var _card in BoardManager.instance.visibleCards)
+            boardManager.PlaceAllCardsToPosition();
+            foreach (var _card in boardManager.visibleCards)
             {
                 _ = _card.ShowFrontSide();
             }
@@ -72,9 +72,9 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             
-            foreach (var _character in CharacterManager.instance.GetCharacters(false))
+            foreach (var _character in CharacterQuery.GetCharacters(false))
             {
-                gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
+                gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, 
                     nameof(CharacterInfoReveal.isRoleRevealed),
                     RevealLevel.Public, false);
             }

@@ -3,6 +3,7 @@
 using Network.Player;
 using Unity.Netcode;
 using Characters;
+using GameLogic;
 using UnityEngine;
 
 #endregion
@@ -11,9 +12,24 @@ namespace Network
 {
     public class LobbyPlayerInfoHolder : NetworkBehaviour
     {
-        public static LobbyPlayerInfoHolder instance { get; private set; }
-        
+        // Story 10.4 (Epic 10 / D4): recorded-callers-only façade. The migrated consumers (4 player-name
+        // powers via Power's base field, Character via lane C) now resolve this holder through the
+        // composition root; the remaining direct readers are the unregistered UI leaves
+        // (PlayerButtonObject, ConnectedPlayerPanel, ChatPanel → Epic 12.2), the UlongExtensions static
+        // (→ 10.5), and CharacterManager.AddDebugPlayer (debug). Guard #1 forbids the qualified instance
+        // accessor in the migrated set; this holder itself uses the bare `instance` self-ref below.
+        public static LobbyPlayerInfoHolder instance { get; private set; } // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
+
         public NetworkList<PlayerInfo> playerInfos { get; private set; } = new();
+
+        // Story 10.4 (Epic 10 / D4): CharacterManager resolved once here (lane C) so this holder stops
+        // reaching the locator for GetSafeRpcTarget (clears the §4a CharacterManager-census row). Resolved
+        // null-tolerant (no Assert): GetSafeRpcTarget is reached ONLY on the server path (OnClientConnected
+        // is registered server-only, and is also fired in-line below during this OnNetworkSpawn), where the
+        // CharacterManager registry is populated exactly as the old .instance read required. On clients the
+        // field may stay null and is never dereferenced — identical to the prior behaviour. NFR5: the
+        // GetSafeRpcTarget call stays verbatim on the concrete CharacterManager.
+        private CharacterManager characterManager;
 
         private void Awake()
         {
@@ -28,7 +44,9 @@ namespace Network
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
+
+            characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+
             if (IsServer)
             {
                 NetworkManager.OnClientConnectedCallback += OnClientConnected;
@@ -76,7 +94,7 @@ namespace Network
 
         public void AskForPlayerInfo(ulong clientId)
         {
-            AskForPlayerInfoRpc(CharacterManager.instance.GetSafeRpcTarget(clientId));
+            AskForPlayerInfoRpc(characterManager.GetSafeRpcTarget(clientId));
         }
         
         [Rpc(SendTo.SpecifiedInParams)]

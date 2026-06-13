@@ -41,7 +41,7 @@ namespace Characters.Powers
                 // Pour les rôles: ne pas inclure ceux déjà cliqués
                 else
                 {
-                    var character = GameManager.instance.characterManager.GetCharacter(ctx.targetId, false);
+                    var character = characterManager.GetCharacter(ctx.targetId, false);
                     return character == null || !clickedRoles.Any(_r => _r.IsTheSameRole(character.role));
                 }
             });
@@ -67,7 +67,7 @@ namespace Characters.Powers
 
         private void StartCharacterSelection()
         {
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions
                 {
                     focusType        = FocusType.Cards,
@@ -84,7 +84,7 @@ namespace Characters.Powers
             clickedRoles.Add(_roleClicked);
             if (clickedRoles.Count >= rolesToSelect)
             {
-                FocusManager.instance.UnfocusAll();
+                focusManager.UnfocusAll();
                 
                 OnUsed();
                 
@@ -99,19 +99,19 @@ namespace Characters.Powers
 
         private void StartRoleSelection()
         {
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+            selectionFlowService.StartRoleSelection(targetValidator, OnRolePicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
         [Rpc(SendTo.Server)]
         private void OnVisionGuessServerRpc(ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnVisionGuessServerRpc should only be called on server");
+            Assert.IsTrue(NetworkManager.IsServer, "OnVisionGuessServerRpc should only be called on server");
             string _message = string.Empty;
             foreach (var _guessedCharacterId in _guessedCharacterIds)
             {
-                var _guessedCharacter = GameManager.instance.characterManager.GetCharacter(_guessedCharacterId, false);
-                RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
+                var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
+                roleTargetSystem.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
                 if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
                 {
                     if (_message != String.Empty)
@@ -126,8 +126,8 @@ namespace Characters.Powers
             {
                 _message = "Aucun personnage n'a été trouvé.";
             }
-            ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
+                _rpcParams:characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }   
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
@@ -163,8 +163,8 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
-            FocusManager.instance.UnfocusAll();
+            selectionFlowService.CancelSelection();
+            focusManager.UnfocusAll();
         }
     }
 }

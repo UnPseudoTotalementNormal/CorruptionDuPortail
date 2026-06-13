@@ -5,12 +5,14 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Game",
+        "CorruptionDuPortail.Domain",
         "DOTween",
         "DOTween.Runtime",
         "DOTween.Modules",
         "TNRD.NSubstitute",
         "Unity.Collections",
-        "Unity.Netcode.Runtime"
+        "Unity.Netcode.Runtime",
+        "AYellowpaper.SerializedCollections"
     ],
     "includePlatforms": [
         "Editor"

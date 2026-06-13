@@ -48,9 +48,9 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
-            var _choosedCharacter = GameManager.instance.characterManager.GetCharacter(_healingCharacterId, false);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _healingCharacterId);
+            PDroolyHealing _power = (PDroolyHealing)characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            var _choosedCharacter = characterManager.GetCharacter(_healingCharacterId, false);
             bool _healSuccess = false;
             if (_compareRole.IsTheSameRole(_choosedCharacter.role))
             {
@@ -58,26 +58,26 @@ namespace Characters.Powers
                 {
                     _healSuccess = true;
                     _choosedCharacter.HealPlayerServerRpc();
-                    GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+                    characterManager.AskForUpdateAllCharactersRpc();
                 }
                 healedCharactersThisNight.Add(_healingCharacterId);
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
-                CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
         {
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(
+            gameInfoRevealer.SetRevealLevel(
                 _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
         }
 
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            var _gameManager = GameManager.instance;
+            var _gameManager = GameManager.For(NetworkManager);
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
                 _awakeningState.onStateEndServer += OnNightEndedServer;
@@ -88,7 +88,7 @@ namespace Characters.Powers
         {
             foreach (ulong _healedCharacterId in healedCharactersThisNight)
             {
-                Character _healedCharacter = GameManager.instance.characterManager.GetCharacter(_healedCharacterId, false);
+                Character _healedCharacter = characterManager.GetCharacter(_healedCharacterId, false);
                 if (!_healedCharacter)
                 {
                     continue;
@@ -99,7 +99,7 @@ namespace Characters.Powers
                     senderClientId = GameValues.CHAT_SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_chatMessage, RpcTarget.Everyone);
+                chatManager.ReceiveChatMessageRpc(_chatMessage, RpcTarget.Everyone);
             }
 
             healedCharactersThisNight.Clear();
@@ -121,7 +121,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
+            selectionFlowService.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
                 new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
 
@@ -137,7 +137,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

@@ -28,7 +28,9 @@ namespace UI
                 return;
             }
 
-            GameManager.instance.ShutOffGameRpc();
+            // Story 12.3: prefab-only leaf (lives on GameEndigStateUI.prefab) — lane A impossible, so it resolves
+            // through the sanctioned CompositionRoot.For(Singleton) instead of the GameManager God-Object façade.
+            CompositionRoot.For(NetworkManager.Singleton).GameManager.ShutOffGameRpc();
         }
 
     }

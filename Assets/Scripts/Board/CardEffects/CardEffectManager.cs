@@ -4,13 +4,18 @@ using AYellowpaper.SerializedCollections;
 using Characters;
 using GameLogic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Board
 {
     public class CardEffectManager : MonoBehaviour
     {
         public static CardEffectManager instance;
-        
+
+        // Story 10.3 lane A: scene-wired BoardManager (still a singleton), replacing the global
+        // board-singleton read in the card-spawn subscription + effect creation.
+        [SerializeField] private BoardManager boardManager;
+
         [SerializeField] private SerializedDictionary<CardEffectID, CardEffectSettings> cardEffects = new();
         
         private Dictionary<ulong, List<CardEffectID>> cardEffectsByCardId = new();
@@ -38,7 +43,8 @@ namespace Board
 
         public void Start()
         {
-            BoardManager.instance.onCardSpawned += OnCardSpawned;
+            Assert.IsNotNull(boardManager, "CardEffectManager.boardManager is not wired — wire it in GameScene (the composition root).");
+            boardManager.onCardSpawned += OnCardSpawned;
         }
 
         private void OnCardSpawned(Card _cardSpawned)
@@ -127,7 +133,7 @@ namespace Board
 
         private void CreateCardEffect(CardEffectID _cardEffectID, ulong _targetId)
         {
-            Card _card = BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _targetId);
+            Card _card = boardManager.visibleCards.Find(_c => _c.characterInfo.ownerClientId.Value == _targetId);
             if (_card == null)
             {
                 return;

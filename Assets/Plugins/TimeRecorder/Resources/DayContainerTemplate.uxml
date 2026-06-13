@@ -8,7 +8,8 @@
         
         <VisualElement class="hours-label-container">
             <Label name="label-hours" text="1h"/>
-            
+            <Label name="label-claude-hours" class="claude-hours-label" text=""/>
+
             <VisualElement name="edit-day-container" class="no-display-element">
                 <Label text="Minutes:"/>
                 <TextField name="input-edit-minutes"/>

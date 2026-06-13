@@ -642,6 +642,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   powersBarParent: {fileID: 1876150490}
   powerBarObjectPrefab: {fileID: 8026194569897164769, guid: 44f21c60b80d7d6a781982f44a09d3de, type: 3}
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
   powersBarObjects: []
 --- !u!1 &130148568
 GameObject:
@@ -2223,6 +2225,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1622243723}
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &392292192
 GameObject:
   m_ObjectHideFlags: 0
@@ -2650,6 +2654,8 @@ MonoBehaviour:
   charactersBarParent: {fileID: 1357572750}
   characterBarObjectPrefab: {fileID: 7913822557668518461, guid: 94a8191d17858ca4f88d962c699e6729, type: 3}
   factionGroupPrefab: {fileID: 6214312313759094123, guid: fee29f0a7deff00479f09cf026c5d817, type: 3}
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
   factionIcons:
     _serializedList:
     - Key: 0
@@ -3001,6 +3007,7 @@ MonoBehaviour:
         title: Corruption
         description: "Chaque joueur peut \xEAtre corrompu, lorsque tout les joueurs
           non-anomalie sont corrompu, les anomalies gagnent"
+  characterManager: {fileID: 1541735909}
 --- !u!1 &524419695
 GameObject:
   m_ObjectHideFlags: 0
@@ -3179,6 +3186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99d78c566c194d2198065bfbc177a32c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  boardManager: {fileID: 1230486870}
   cardEffects:
     _serializedList:
     - Key: 0
@@ -4439,6 +4447,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   text: {fileID: 1089552714}
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &704980997
 GameObject:
   m_ObjectHideFlags: 0
@@ -4498,7 +4508,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   gameInfoRevealer: {fileID: 1771149311}
   charactersBar: {fileID: 463595595}
-  powersBar: {fileID: 129913599}
   chainingManager: {fileID: 1446097057}
   characterManager: {fileID: 1541735909}
   gameStates:
@@ -5389,6 +5398,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   messageLeftText: {fileID: 803348553}
+  characterManager: {fileID: 1541735909}
 --- !u!222 &803348555
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5448,6 +5458,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   startingBoardCamera: {fileID: 256519912}
   cameraParentTransform: {fileID: 814010949}
+  gameManager: {fileID: 704980999}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -5586,6 +5597,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+  gameManager: {fileID: 704980999}
+  characterManager: {fileID: 1541735909}
 --- !u!1 &875423821
 GameObject:
   m_ObjectHideFlags: 0
@@ -6809,6 +6822,53 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &1024404295
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1024404297}
+  - component: {fileID: 1024404296}
+  m_Layer: 0
+  m_Name: CompositionRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1024404296
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1024404295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10386839977d4424896914e1735a739e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::GameLogic.CompositionRoot
+  gameManager: {fileID: 704980999}
+  characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
+--- !u!4 &1024404297
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1024404295}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1050513845
 GameObject:
   m_ObjectHideFlags: 0
@@ -6952,6 +7012,7 @@ MonoBehaviour:
   mainLight: {fileID: 1050513848}
   baseLightColor: {r: 1, g: 0.7664091, b: 0.5518868, a: 1}
   colorTransitionDuration: 1
+  gameManager: {fileID: 704980999}
 --- !u!1 &1057320483
 GameObject:
   m_ObjectHideFlags: 0
@@ -7098,6 +7159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameManager: {fileID: 704980999}
 --- !u!1 &1089552712
 GameObject:
   m_ObjectHideFlags: 0
@@ -8186,6 +8248,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   cardPrefab: {fileID: 3564681152801350707, guid: 5e4f617b8f2397e49a1f94c5a9d5a499, type: 3}
+  characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
   spawnCardPosition: {fileID: 1636735881}
   maxCardPosition: {fileID: 886355730}
   visibleCards: []
@@ -8226,6 +8290,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aeb07f69df9f61679997ea3238c7a4b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI.BoardUI.CardPickerManager
+  boardManager: {fileID: 1230486870}
+  characterManager: {fileID: 1541735909}
+  focusManager: {fileID: 2007998398}
   rolePickerCardSpacingAngle: 8
   rolePickerCardSpacing: 5
   rolePickerCardHeightOffset: 0.15
@@ -8332,6 +8399,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afac7a3f86bb40047a752e3e0d8a69ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterManager: {fileID: 1541735909}
 --- !u!1 &1283049415
 GameObject:
   m_ObjectHideFlags: 0
@@ -9154,6 +9222,18 @@ PrefabInstance:
       propertyPath: contentRoot
       value: 
       objectReference: {fileID: 2074186949}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameManager
+      value: 
+      objectReference: {fileID: 704980999}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: characterManager
+      value: 
+      objectReference: {fileID: 1541735909}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameInfoRevealer
+      value: 
+      objectReference: {fileID: 1771149311}
     - target: {fileID: 4871797639015596516, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
       propertyPath: m_Name
       value: InfoTable
@@ -9596,6 +9676,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   takeDownThePortalPowerDataObject: {fileID: 1465661928964347457, guid: 5c6d6bdafb456a16782a1faf84ffc35c, type: 3}
+  characterManager: {fileID: 1541735909}
+  gameInfoRevealer: {fileID: 1771149311}
 --- !u!114 &1446097058
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12396,6 +12478,8 @@ MonoBehaviour:
       Data3: -1032867410
       Data4: -626300355
     Path: event:/Interface/LightOffButton
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &1766155694
 GameObject:
   m_ObjectHideFlags: 0
@@ -12553,6 +12637,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!114 &1771149312
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12958,6 +13044,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dabdc09f49a4268aca7b05d019da756, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1001 &1858349834
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13547,6 +13635,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentPower: {fileID: 0}
+  characterManager: {fileID: 1541735909}
+  powersBar: {fileID: 129913599}
 --- !u!1 &1946462487
 GameObject:
   m_ObjectHideFlags: 0
@@ -14161,6 +14251,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _focusCanvasGroup: {fileID: 602487800}
   _focusParticlePrefab: {fileID: 5786720194925743900, guid: d93b1a1b7034267d596fb90279bebe70, type: 3}
+  charactersBar: {fileID: 463595595}
+  boardManager: {fileID: 1230486870}
 --- !u!1 &2021541852
 GameObject:
   m_ObjectHideFlags: 0
@@ -14246,23 +14338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d8227fecd5e3361c9cdcb9fd12fda4e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  powerDataObjects:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  powerDataObjects: []
   roleDataObjects:
   - {fileID: 11400000, guid: 795505cbed82e72468f5ed5ccfc4668d, type: 2}
   - {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
@@ -15371,6 +15447,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameManager
+      value: 
+      objectReference: {fileID: 704980999}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: characterManager
+      value: 
+      objectReference: {fileID: 1541735909}
+    - target: {fileID: 4372390752992460777, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
+      propertyPath: gameInfoRevealer
+      value: 
+      objectReference: {fileID: 1771149311}
     - target: {fileID: 4871797639015596516, guid: ea1266c87345a8b0ba155dfae9b3f3f2, type: 3}
       propertyPath: m_Name
       value: InfoTable
@@ -16937,3 +17025,4 @@ SceneRoots:
   - {fileID: 260780960}
   - {fileID: 800569326}
   - {fileID: 363038682}
+  - {fileID: 1024404297}

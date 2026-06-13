@@ -91,6 +91,22 @@ namespace Meaf75.Unity{
     }
 
     [Serializable]
+    public class ClaudeDayEntry {
+        public int year;
+        public int month;
+        public int day;
+        /// <summary> Claude worked time for this day, in seconds </summary>
+        public int seconds;
+    }
+
+    [Serializable]
+    public class ClaudeTimeData {
+        public List<ClaudeDayEntry> days = new List<ClaudeDayEntry>();
+        /// <summary> Total Claude worked time in seconds </summary>
+        public long totalSeconds;
+    }
+
+    [Serializable]
     public class TimeTrackerWindowData{
         /// <summary> This variable cannot be serialized by the JsonUtility </summary>
         public DateTime selectedDate;
@@ -148,6 +164,7 @@ namespace Meaf75.Unity{
         public const string LABEL_DAY = "label-day";
         public const string EDIT_BTN = "edit-btn";
         public const string LABEL_HOURS = "label-hours";
+        public const string LABEL_CLAUDE_HOURS = "label-claude-hours";
         public const string EDIT_DAY_CONTAINER = "edit-day-container";
         public const string INPUT_EDIT_MINUTES = "input-edit-minutes";
     }
@@ -158,6 +175,7 @@ namespace Meaf75.Unity{
         public const string LABEL_DATE = "label-date";
         public const string TIME_RECORDER_STATE_BTN = "time-recorder-state-btn";
         public const string LABEL_TOTAL_DEV_TIME = "label-total-dev-time";
+        public const string LABEL_TOTAL_CLAUDE_TIME = "label-total-claude-time";
     }
 }
 

@@ -32,23 +32,36 @@ namespace Characters
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
 
+        // Story 7.2 lane C: CharacterManager resolved once in OnNetworkSpawn via the composition root.
+        // Kept null-tolerant (no Assert) — this consumer already guards on a null CharacterManager,
+        // so the field preserves that behaviour. For(nm) is a stable per-NM singleton, so caching the
+        // result is equivalent to the previous per-call re-resolution.
+        private CharacterManager characterManager;
+        // Story 10.4 lane C: the lobby player-info holder, resolved once here via the composition root.
+        // Null-tolerant — GetOwnerPseudo already guards on a null holder, so the field preserves that
+        // behaviour (returns "Unknown" when unresolved).
+        private LobbyPlayerInfoHolder lobbyPlayerInfoHolder;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            
-            if (CharacterManager.instance != null)
+
+            characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
+
+            if (characterManager != null)
             {
                 // Verify if identity is already set, otherwise listen for it
                 if (!ownerClientId.Value.IsFakeClientId())
                 {
-                    CharacterManager.instance.RegisterSpawnedCharacter(this);
+                    characterManager.RegisterSpawnedCharacter(this);
                 }
                 else
                 {
                     ownerClientId.OnValueChanged += OnIdentityChanged;
                 }
             }
-            
+
             isBlessed.OnValueChanged += OnBlessed;
         }
 
@@ -57,18 +70,18 @@ namespace Characters
             if (!newValue.IsFakeClientId())
             {
                 ownerClientId.OnValueChanged -= OnIdentityChanged;
-                CharacterManager.instance.RegisterSpawnedCharacter(this);
+                characterManager.RegisterSpawnedCharacter(this);
             }
         }
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
-            if (!_newValue || CharacterManager.instance == null || GameManager.instance == null)
+            if (!_newValue || characterManager == null)
             {
                 return;
             }
-            
-            Character _localCharacter = GameManager.instance.characterManager.GetLocalCharacter();
+
+            Character _localCharacter = characterManager.GetLocalCharacter();
             if (_localCharacter == null || _localCharacter.role == null)
             {
                 return;
@@ -160,8 +173,8 @@ namespace Characters
 
         public string GetOwnerPseudo()
         {
-            if (LobbyPlayerInfoHolder.instance == null) return "Unknown";
-            return LobbyPlayerInfoHolder.instance.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
+            if (lobbyPlayerInfoHolder == null) return "Unknown";
+            return lobbyPlayerInfoHolder.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
         }
 
         

@@ -24,6 +24,13 @@ namespace UI.BoardUI
         public event Action<Role> onRoleSelected;
         public event Action onPickerCanceled;
 
+        // Story 12.2 lane A: BoardManager + CharacterManager + FocusManager scene-wired, clearing the §4d Board
+        // and §4f Focus survivors. SceneWiringGuard is the wiring control.
+        [Header("Injected dependencies (Story 12.2 lane A)")]
+        [SerializeField] private BoardManager boardManager;
+        [SerializeField] private CharacterManager characterManager;
+        [SerializeField] private FocusManager focusManager;
+
         [Header("Role picker settings")]
         [SerializeField] private float rolePickerCardSpacingAngle = 5f;
         [SerializeField] private float rolePickerCardSpacing = 1f;
@@ -140,7 +147,7 @@ namespace UI.BoardUI
             for (int _i = 0; _i < _validRoles.Count; _i++)
             {
                 Character _validRole = _validRoles[_i];
-                Card _card = BoardManager.instance.AddNewCard(_validRole, false);
+                Card _card = boardManager.AddNewCard(_validRole, false);
                 if (!_card)
                 {
                     continue;
@@ -190,7 +197,7 @@ namespace UI.BoardUI
         {
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
 
-            List<Card> _validCards = BoardManager.instance.visibleCards.Where(_card =>
+            List<Card> _validCards = boardManager.visibleCards.Where(_card =>
                 _card &&
                 _card.characterInfo &&
                 IsTargetValidForPicker(_validator, _card.characterInfo.ownerClientId.Value, TargetType.Character)).ToList();
@@ -248,8 +255,8 @@ namespace UI.BoardUI
 
             if (_options.pinnedRole != null)
             {
-                Character _roleCharacter = CharacterManager.instance.GetCharacter(_options.pinnedRole.ownerClientId);
-                currentPinnedCardInstance = BoardManager.instance.AddNewCard(_roleCharacter, false);
+                Character _roleCharacter = characterManager.GetCharacter(_options.pinnedRole.ownerClientId);
+                currentPinnedCardInstance = boardManager.AddNewCard(_roleCharacter, false);
                 if (currentPinnedCardInstance)
                 {
                     currentPinnedCardInstance.SetAnimationHandler(new CardRoleAnimation());
@@ -259,7 +266,7 @@ namespace UI.BoardUI
             }
             else if (_options.pinnedCharacter != null)
             {
-                currentPinnedCardInstance = BoardManager.instance.AddNewCard(_options.pinnedCharacter, false);
+                currentPinnedCardInstance = boardManager.AddNewCard(_options.pinnedCharacter, false);
                 if (currentPinnedCardInstance)
                 {
                     TransformCompositorComponent _comp = currentPinnedCardInstance.GetTransformCompositor();
@@ -478,10 +485,10 @@ namespace UI.BoardUI
             return _validator == null || _validator.Evaluate((_targetId, _targetType));
         }
 
-        private static void MoveFocusParticlesToLayer(GameObject _target, int _layer)
+        private void MoveFocusParticlesToLayer(GameObject _target, int _layer)
         {
-            if (FocusManager.instance == null) return;
-            foreach (FocusObject _fo in FocusManager.instance.currentFocusObjects)
+            if (focusManager == null) return;
+            foreach (FocusObject _fo in focusManager.currentFocusObjects)
             {
                 if (_fo.gameObject == _target && _fo.focusParticles != null)
                     _fo.focusParticles.gameObject.SetLayerRecursively(_layer);
@@ -520,7 +527,7 @@ namespace UI.BoardUI
 
         private List<Character> GetValidRoleCandidates(Validator<(ulong targetId, TargetType targetType)> _validator)
         {
-            List<Character> _characters = CharacterManager.instance.GetCharacters()
+            List<Character> _characters = characterManager.GetCharacters()
                 .Where(_c => _c && _c.role != null)
                 .OrderBy(_c => _c.role.roleID)
                 .ThenBy(_c => _c.ownerClientId.Value)

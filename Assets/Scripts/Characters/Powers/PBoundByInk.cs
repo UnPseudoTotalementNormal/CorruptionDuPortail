@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using GameLogic.GameStates;
 using RoleTarget;
@@ -35,7 +37,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -57,6 +59,8 @@ namespace Characters.Powers
             OnUsed();
         }
 
+        private readonly PowerResolver _resolver = new();
+
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _characterId)
         {
@@ -64,27 +68,41 @@ namespace Characters.Powers
             {
                 return;
             }
-            
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterId);
-            ChatManager.instance.DiscoverChatRpc(powerChatId.Value, new FixedString64Bytes("Lié par l'encre"), 
-                CharacterManager.instance.GetSafeRpcTarget(_characterId));
-            
-            currentTargets.Add(_characterId);
-            alreadyTargetedClients.Add(_characterId);
+
+            // Story 4.2: decision-only resolution in Domain; the adapter dispatches the bricks.
+            // RegisterInkTarget is power-LOCAL (NetworkList writes) → handled via ApplyLocalEffect.
+            var _effects = _resolver.ResolveBoundByInkClick((int)ownerClientId.Value, (int)_characterId, powerChatId.Value);
+            foreach (var _effect in _effects)
+            {
+                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
+            }
+        }
+
+        private void ApplyLocalEffect(EffectDescriptor _effect)
+        {
+            switch (_effect)
+            {
+                case RegisterInkTarget _reg:
+                    currentTargets.Add((ulong)_reg.TargetSlot);
+                    alreadyTargetedClients.Add((ulong)_reg.TargetSlot);
+                    break;
+                default:
+                    throw new NotSupportedException($"PBoundByInk: unexpected local brick {_effect}");
+            }
         }
 
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
             AttributeBoundByInkChat();
-            var _gameManager = GameManager.instance;
+            var _gameManager = GameManager.For(NetworkManager);
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
                 _awakeningState.onStateStartServer += () =>
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        ChatManager.instance.UndiscoverChatRpc(powerChatId.Value, CharacterManager.instance.GetSafeRpcTarget(_targetClientId));
+                        chatManager.UndiscoverChatRpc(powerChatId.Value, characterManager.GetSafeRpcTarget(_targetClientId));
                     }
                     
                     currentTargets.Clear();
@@ -114,13 +132,13 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            ChatManager.instance.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
 
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

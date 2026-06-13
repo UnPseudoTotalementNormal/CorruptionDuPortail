@@ -3,6 +3,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Characters.WinningConditions;
+using CorruptionDuPortail.Domain;
+using GameLogic.Snapshot;
 using UnityEngine;
 
 #endregion
@@ -21,39 +23,35 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
 
-            Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new();
-                
-            foreach (var _currentCharacters in gameManager.characterManager.GetCharacters(false))
+            // Story 2.7 — evaluate off an immutable snapshot built once, synchronously, before any await.
+            GameSnapshot _snapshot = GameSnapshotBuilder.FromLiveState(gameManager);
+
+            // Story 2.8 — the win-team aggregation is a pure Domain POCO (VictoryEvaluator). The adapter only maps
+            // live state in (fakes filtered at the source) and applies the returned decision (NFR4 — no transition
+            // inside the POCO).
+            var _owners = new List<ConditionsForOwner>();
+            foreach (var _currentCharacters in CharacterQuery.GetCharacters(false))
             {
                 if (_currentCharacters.isFake)
                 {
                     continue;
                 }
-                
-                foreach (var _currentWinningCondition in _currentCharacters.role.winningConditions)
-                {
-                    if (_currentWinningCondition.CheckCondition())
-                    {
-                        if (!_winningTeams.ContainsKey(_currentWinningCondition.GetWinningTeam()))
-                        {
-                            _winningTeams[_currentWinningCondition.GetWinningTeam()] = new HashSet<ulong>();
-                        }
-                        
-                        _winningTeams[_currentWinningCondition.GetWinningTeam()].Add(_currentCharacters.ownerClientId.Value);
-                    }
-                }
+
+                _owners.Add(new ConditionsForOwner(_currentCharacters.ownerClientId.Value, _currentCharacters.role.winningConditions));
             }
+
+            Dictionary<WinningTeam, HashSet<ulong>> _winningTeams = new VictoryEvaluator().Evaluate(_snapshot, _owners);
 
             if (_winningTeams.Count == 0)
             {
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
 
             var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
             _gameEndingState.SetWinnersServer(_winningTeams);
             
-            gameManager.SetGameState(typeof(GameEndingState));
+            Loop.SetGameState(typeof(GameEndingState));
         }
 
         public override void OnEndStateServer()

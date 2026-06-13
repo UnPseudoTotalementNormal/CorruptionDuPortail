@@ -20,9 +20,21 @@ namespace ChatSystem
 {
     public class ChatManager : NetworkBehaviour
     {
+        // Story 10.1 (Epic 10 / D4): the gameplay consumers (powers + PowerComponents) were rerouted
+        // off this global onto an injected chatManager base field, resolved through CompositionRoot.
+        // The static now backs ONLY recorded-callers exceptions: the CompositionRoot's chat accessor
+        // (the one sanctioned locator, since ChatManager is not de-singletonised), the
+        // PowerEffectDispatcher static POCO (→ Epic 11.1), and the UI leaves ChatPanel /
+        // ChatNotificationComponent / ChatWindow (→ Epic 12). // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         public static ChatManager instance;
 
         public const ulong SERVER_CLIENT_ID = GameValues.FAKE_CLIENT_ID;
+
+        // Story 11.3 (Epic 11 / D5): the chat routing / visibility rules (who may see/send what, the
+        // active-channel fallback, the window-name policy) extracted to a pure EditMode-tested Domain
+        // POCO. This adapter still owns the discovered-id set, the active-channel state, every RPC, and
+        // the clientId>=100 bot interception — it only delegates the *decisions*.
+        private readonly CorruptionDuPortail.Domain.ChatChannelPolicy _policy = new();
 
         private List<ChatWindow> chatWindows = new();
         public HashSet<int> discoveredChatIds = new();
@@ -80,7 +92,7 @@ namespace ChatSystem
 
         public void ChangeActiveChat(int _chatId)
         {
-            if (discoveredChatIds.Contains(_chatId))
+            if (_policy.CanActivateChannel(_chatId, discoveredChatIds))
             {
                 activeChatId = _chatId;
                 onActiveChatChanged?.Invoke(activeChatId);
@@ -93,7 +105,7 @@ namespace ChatSystem
 
         public void TrySendChatMessage(string _text)
         {
-            if (string.IsNullOrEmpty(_text) || activeChatId == (int)ChatWindowIDs.Server)
+            if (!_policy.CanSendMessage(_text, activeChatId, (int)ChatWindowIDs.Server))
             {
                 return;
             }
@@ -123,7 +135,7 @@ namespace ChatSystem
             if (discoveredChatIds.Remove(_chatId))
             {
                 Debug.Log("Undiscovering chat with ID: " + _chatId);
-                if (activeChatId == _chatId)
+                if (_policy.ShouldFallBackToGeneralAfterUndiscover(_chatId, activeChatId))
                 {
                     ChangeActiveChat((int)ChatWindowIDs.General);
                 }
@@ -156,15 +168,11 @@ namespace ChatSystem
         
         public string GetChatWindowName(int _chatId)
         {
-            if (chatWindowNameOverride.TryGetValue(_chatId, out string _overrideName))
-            {
-                return _overrideName;
-            }
-            if (Enum.IsDefined(typeof(ChatWindowIDs), _chatId))
-            {
-                return ((ChatWindowIDs)_chatId).ToString();
-            }
-            return $"Chat {_chatId}";
+            // The adapter resolves the engine-side lookups (the override dictionary, the Game-enum
+            // reflection); the POCO owns the three-way precedence policy.
+            bool _hasOverride = chatWindowNameOverride.TryGetValue(_chatId, out string _overrideName);
+            string _enumName = Enum.IsDefined(typeof(ChatWindowIDs), _chatId) ? ((ChatWindowIDs)_chatId).ToString() : null;
+            return _policy.ResolveWindowName(_chatId, _hasOverride, _overrideName, _enumName);
         }
         
         [Rpc(SendTo.Server)]
@@ -183,7 +191,7 @@ namespace ChatSystem
         [Rpc(SendTo.ClientsAndHost, AllowTargetOverride = true)]
         public void ReceiveChatMessageRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
         {
-            if (!discoveredChatIds.Contains(_chatMessage.chatId))
+            if (!_policy.IsMessageVisible(_chatMessage.chatId, discoveredChatIds))
             {
                 return;
             }

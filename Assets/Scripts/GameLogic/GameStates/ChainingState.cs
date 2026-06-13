@@ -27,9 +27,9 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
-            foreach (var _chainingPlayerId in gameManager.chainingManager.chainingPlayers)
+            foreach (var _chainingPlayerId in chainingManager.chainingPlayers)
             {
-                gameManager.chainingManager.ChainCharacterRpc(_chainingPlayerId);
+                chainingManager.ChainCharacterRpc(_chainingPlayerId);
             }
         }
 
@@ -52,19 +52,19 @@ namespace GameLogic.GameStates
 
         private async Task HandleChainingStateClientAsync()
         {
-            var _chainingCharactersId = gameManager.chainingManager.chainingPlayers;
+            var _chainingCharactersId = chainingManager.chainingPlayers;
             foreach (var _chainingCharacterId in _chainingCharactersId)
             {
-                var _chainingCharacter = gameManager.characterManager.GetCharacter(_chainingCharacterId);
+                var _chainingCharacter = CharacterQuery.GetCharacter(_chainingCharacterId);
                 await DoCardChainingAnimation(_chainingCharacter);
                 await UniTask.Delay(TimeSpan.FromSeconds(1f));
             }
 
             if (gameManager.IsServer)
             {
-                gameManager.chainingManager.chainingPlayers.Clear();
+                chainingManager.chainingPlayers.Clear();
                 Debug.Log("ChainingState completed on server, moving to next state.");
-                gameManager.NextGameState();
+                Loop.NextGameState();
             }
         }
 
@@ -73,9 +73,9 @@ namespace GameLogic.GameStates
             await UniTask.Delay(TimeSpan.FromSeconds(0.25f));
             
             GameAudioManager.instance.PlayOneShot(chainingAnnouncementSound.GetPath());
-            await BoardManager.instance.HideAllCards();
+            await boardManager.HideAllCards();
             
-            Card _cardInfo = BoardManager.instance.AddNewCard();
+            Card _cardInfo = boardManager.AddNewCard();
             _cardInfo.SetCanShowBackInfo(false);
             spawnedCard = _cardInfo.transform;
             

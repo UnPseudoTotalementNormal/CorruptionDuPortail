@@ -8,6 +8,7 @@ using Board;
 using Board.UI.VoteCanvas;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Network;
 using UI.SelectPanels;
@@ -45,7 +46,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
                 new NetworkSerializableObject[]
                 {
-                    new(CharacterManager.instance.GetLocalClientId()),
+                    new(CharacterQuery.GetLocalClientId()),
                     new(_playerId),
                 }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
@@ -77,7 +78,7 @@ namespace GameLogic.GameStates
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
             if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
-                gameManager.characterManager.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
+                CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
             {
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
@@ -92,7 +93,7 @@ namespace GameLogic.GameStates
                 return false; // Player has already voted
             }
 
-            Character _character = gameManager.characterManager.GetCharacter(_playerId, false);
+            Character _character = CharacterQuery.GetCharacter(_playerId, false);
             if (_character == null || _character.isEliminated.Value || _character.isFake)
             {
                 return false; // Player is eliminated or does not exist or is a fake character
@@ -159,7 +160,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             votesForPlayer.Clear();
-            foreach (var _character in gameManager.characterManager.GetCharacters().Where(_c => !_c.isFake))
+            foreach (var _character in CharacterQuery.GetCharacters().Where(_c => !_c.isFake))
             {
                 votesForPlayer.Add(_character.ownerClientId.Value, new List<ulong>());
             }
@@ -183,25 +184,27 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
             gameManager.StopCoroutine(updateVoteTimerCoroutine);
             
-            // Get the character who has the most votes
-            var _charactersWithMostVotes = votesForPlayer.OrderByDescending(v => v.Value.Count).ToList();
-            int _numberOfCharacterWithTheMostVotes = _charactersWithMostVotes.Count(v => v.Value.Count == _charactersWithMostVotes.First().Value.Count);
-            if (_numberOfCharacterWithTheMostVotes == 1 && _charactersWithMostVotes.First().Key != SKIP_VOTE_ID)
+            // Story 2.9 — vote-count → outcome is a pure Domain POCO (VoteTally). The adapter maps the vote buckets
+            // (in insertion order — the stable-sort tie-break contract) and applies the returned decision (NFR4).
+            var _votes = new List<VoteCount>();
+            foreach (var _kvp in votesForPlayer)
             {
-                Character _votedCharacter = gameManager.characterManager.GetCharacters().Find(_character => _character.ownerClientId.Value == _charactersWithMostVotes.First().Key);
-                mostVotedPlayer = _votedCharacter.ownerClientId.Value;
-                ChainingManager.instance.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
+                _votes.Add(new VoteCount(_kvp.Key, _kvp.Value.Count));
             }
-            else
+
+            ulong _winner = new VoteTally().Resolve(_votes, SKIP_VOTE_ID);
+            mostVotedPlayer = _winner;
+            if (_winner != SKIP_VOTE_ID)
             {
-                mostVotedPlayer = SKIP_VOTE_ID;
+                Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
+                chainingManager.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
             }
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateMostVotedPlayer), 
                 new NetworkSerializableObject[] { new(mostVotedPlayer) }, 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
             
-            gameManager.characterManager.AskForUpdateAllCharactersRpc();
+            Command.AskForUpdateAllCharactersRpc();
         }
         
         public override void OnStartStateClient()
@@ -214,9 +217,9 @@ namespace GameLogic.GameStates
         {
             try
             {
-                await BoardManager.instance.ShowAllPlayerCards();
+                await boardManager.ShowAllPlayerCards();
 
-                foreach (var _c in BoardManager.instance.visibleCards)
+                foreach (var _c in boardManager.visibleCards)
                 {
                     VoteCanvas _voteCanvas = _c.voteCanvas;
                     _voteCanvas.SetVoteState(this);
@@ -239,7 +242,7 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
             
-            BoardManager.instance.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
+            boardManager.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
         }
 
         public override void StateUpdateServer()
@@ -252,9 +255,9 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            gameManager.NextGameState();
+            Loop.NextGameState();
         }
-        
+
         public override void StateUpdateClient()
         {
             base.StateUpdateClient();

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Assertions;
 using Characters.Powers.Target;
 using ChatSystem;
 using GameLogic;
@@ -11,9 +12,17 @@ namespace Characters.Powers
 {
     public class PTruthChains : Power
     {
+        // Lane C (NGO-spawned): resolve the dependency ONCE in OnNetworkSpawn from the one
+        // allowed static, store it in a field, and never look it up again
+        // (refactor-architecture-despaghetti.md §3 lane C).
+        private CharacterManager _characterManager;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            _characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            Assert.IsNotNull(_characterManager,
+                "PTruthChains._characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager.");
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
 
@@ -31,8 +40,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _targetClientId);
-            var _targetCharacter = GameManager.instance.characterManager.GetCharacter(_targetClientId, false);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _targetClientId);
+            var _targetCharacter = _characterManager.GetCharacter(_targetClientId, false);
             if (_targetCharacter == null)
             {
                 return;
@@ -40,10 +49,10 @@ namespace Characters.Powers
 
             if (_targetCharacter.role.factionType == FactionType.anomaly)
             {
-                ChainingManager.instance.AddCharacterToChainingList(_targetClientId);
-                ChatManager.instance.SendChatMessageServerRpc(
+                chainingManager.AddCharacterToChainingList(_targetClientId);
+                chatManager.SendChatMessageServerRpc(
                     new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
+                        $"{lobbyPlayerInfoHolder.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
                         (int)ChatWindowIDs.Server));
             }
         }
@@ -64,7 +73,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -80,7 +89,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

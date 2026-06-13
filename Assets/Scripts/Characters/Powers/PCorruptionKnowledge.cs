@@ -43,9 +43,9 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            foreach (var _character in GameManager.instance.characterManager.GetCharacters(false))
+            foreach (var _character in characterManager.GetCharacters(false))
             {
-                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                gameInfoRevealer.SendRevealLevelRpc(
                     _character.ownerClientId.Value,
                     nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
             }

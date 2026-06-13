@@ -4,17 +4,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using ChatSystem;
+using RoleTarget;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.Target;
+using CorruptionDuPortail.Domain;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
 using GameLogic;
 using GameLogic.Validation;
+using UI.BoardUI.Selection;
 using Network.Action;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 using static Characters.Powers.Target.TargetUtils;
 
 #endregion
@@ -47,6 +52,40 @@ namespace Characters.Powers
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
 
+        // Story 11.1 (Epic 11 / D5): the base CanUse eligibility rule chain extracted to a pure,
+        // EditMode-tested Domain POCO. This adapter builds a plain-value snapshot from the owner
+        // Character's NetworkVariables + this power's state and delegates the decision; the expensive
+        // target enumeration stays here, passed as a lazy delegate to preserve the exact short-circuit.
+        private readonly CorruptionDuPortail.Domain.PowerUsability _usability = new();
+
+        // Story 7.1 lane C: CharacterManager resolved ONCE in OnNetworkSpawn (via the composition
+        // root) and consumed by this base AND every concrete power, replacing the GameManager hub-hop.
+        protected CharacterManager characterManager;
+        // Story 7.3 lane C: GameInfoRevealer, same seam. Null-tolerant (no Assert) — not every power
+        // uses it, and minimal harnesses spawn bare powers with no revealer; reveal-using powers
+        // always have it in production (scene root) and in their own harnesses.
+        protected GameInfoRevealer gameInfoRevealer;
+        // Story 10.1 lane C: the chat manager, resolved through the composition root and consumed by
+        // chatting powers' send/notify surface instead of the global. Null-tolerant like the revealer
+        // (no Assert) — not every power chats, and minimal harnesses spawn bare powers with no chat
+        // manager; chatting powers always have one in production and in their own harnesses.
+        protected ChatManager chatManager;
+        // Story 10.2 lane C: the targeting system, same seam. Null-tolerant — not every power records a
+        // targeting; targeting powers always have one in production and in their own harnesses.
+        protected RoleTargetSystem roleTargetSystem;
+        // Story 10.4 lane C: the chaining manager, same seam. Null-tolerant — only chaining powers use it.
+        protected ChainingManager chainingManager;
+        // Story 10.4 lane C: the lobby player-info holder (player names), same seam. Null-tolerant — only
+        // the player-name powers read it, and in production/their harnesses the global is always present.
+        protected Network.LobbyPlayerInfoHolder lobbyPlayerInfoHolder;
+        // Story 10.5 lane C: the selection-flow service (a POCO singleton, eager new() → never null) and
+        // the focus manager (scene singleton). Resolved through the composition root like the rest; the
+        // targeting powers drive their click-to-pick choreography through these instead of the globals.
+        // focusManager is null-tolerant (StopUse already null-guards it); selectionFlowService is a POCO
+        // singleton so the field is always set in production and in any context the root can reach.
+        protected SelectionFlowService selectionFlowService;
+        protected FocusManager focusManager;
+
         [Header("Sounds")] 
         public EventReference canalisationSound;
         public EventReference onUsedSound;
@@ -64,12 +103,23 @@ namespace Characters.Powers
 
         public List<PowerComponent> powerComponents = new();
 
-        public Character ownerCharacter => GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false);
+        public Character ownerCharacter => characterManager.GetCharacter(ownerClientId.Value, false);
         
         [HideInInspector] public ulong idHolderServer;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            Assert.IsNotNull(characterManager,
+                "Power.characterManager unresolved — CompositionRoot.For(NetworkManager) returned no CharacterManager. " +
+                "Did a subclass override OnNetworkSpawn without calling base.OnNetworkSpawn()?");
+            gameInfoRevealer = CompositionRoot.For(NetworkManager).GameInfoRevealer;
+            chatManager = CompositionRoot.For(NetworkManager).ChatManager;
+            roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
+            chainingManager = CompositionRoot.For(NetworkManager).ChainingManager;
+            lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
+            selectionFlowService = CompositionRoot.For(NetworkManager).SelectionFlowService;
+            focusManager = CompositionRoot.For(NetworkManager).FocusManager;
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
@@ -85,7 +135,7 @@ namespace Characters.Powers
         
         public List<ulong> GetValidTargets(TargetType _targetType = TargetType.Character)
         {
-            List<ulong> _validTargets = CharacterManager.instance.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
+            List<ulong> _validTargets = characterManager.GetCharacters(false).Select(_c => _c.ownerClientId.Value).ToList();
             _validTargets = _validTargets.Where(_targetClientId => CheckIsTargetValid(_targetClientId, _targetType)).ToList();
             return _validTargets;
         }
@@ -103,20 +153,27 @@ namespace Characters.Powers
                 return false;
             }
 
-            if (powerComponents.Any(_pc => !_pc.CanUsePower())) return false;
-            if (isPassive) return false;
-            if (isCurrentlyUsed && !_ignoreCurrentlyUsed) return false;
-            if (_powerCharacter.isChained.Value || _powerCharacter.isEliminated.Value) return false;
-            if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return false;
-            if (needTargetSelection && GetValidTargets().Count <= 0) return false;
-            if (powerUseLeft.Value <= 0) return false;
+            var _context = new CorruptionDuPortail.Domain.PowerUsabilityContext(
+                allComponentsAllowUse: !powerComponents.Any(_pc => !_pc.CanUsePower()),
+                isPassive: isPassive,
+                isCurrentlyUsed: isCurrentlyUsed,
+                ignoreCurrentlyUsed: _ignoreCurrentlyUsed,
+                isChained: _powerCharacter.isChained.Value,
+                isEliminated: _powerCharacter.isEliminated.Value,
+                hasToBeAwakened: hasToBeAwakened,
+                isAwakened: _powerCharacter.isAwakened.Value,
+                needsTargetSelection: needTargetSelection,
+                powerUsesLeft: powerUseLeft.Value);
 
-            return true;
+            // The target enumeration stays in the adapter (engine-coupled) and is passed lazily so it
+            // runs only when every earlier rule has passed — identical to the original short-circuit.
+            return _usability.CanUse(_context, () => GetValidTargets().Count > 0);
         }
 
         public virtual void StartUse()
         {
             isCurrentlyUsed = true;
+            PowerEffectTrace.Record(new PlayLoopingSound(canalisationSound.GetPath(), CANALISATION_SOUND_KEY));
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
             onStartUse?.Invoke();
         }
@@ -155,15 +212,18 @@ namespace Characters.Powers
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
-                OnUsedClientRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                PowerEffectTrace.Record(new NotifyOwnerUsed((int)ownerClientId.Value));
+                OnUsedClientRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
         
         protected virtual void OnUsedServer()
         {
+            PowerEffectTrace.Record(DecrementUses.Instance);
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
-            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+            PowerEffectTrace.Record(RequestCharacterRefresh.Instance);
+            characterManager.AskForUpdateAllCharactersRpc();
         }
 
         public virtual void Cancel()
@@ -181,15 +241,18 @@ namespace Characters.Powers
             {
                 if (!string.IsNullOrEmpty(onUsedSound.GetPath()))
                 {
+                    PowerEffectTrace.Record(new PlayOneShotSound(onUsedSound.GetPath()));
                     RuntimeManager.PlayOneShot(onUsedSound);
                 }
-                if (FocusManager.instance != null)
+                if (focusManager != null)
                 {
-                    FocusManager.instance.UnfocusAll();
+                    PowerEffectTrace.Record(UnfocusAll.Instance);
+                    focusManager.UnfocusAll();
                 }
             }
             if (GameAudioManager.instance != null)
             {
+                PowerEffectTrace.Record(new StopLoopingSound(CANALISATION_SOUND_KEY));
                 GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
             }
             isCurrentlyUsed = false;
@@ -223,8 +286,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
-            var _oldParentCharacter = GameManager.instance.characterManager.GetCharacter(_oldParentId, false);
-            var _newParentCharacter = GameManager.instance.characterManager.GetCharacter(_newParentId, false);
+            var _oldParentCharacter = characterManager.GetCharacter(_oldParentId, false);
+            var _newParentCharacter = characterManager.GetCharacter(_newParentId, false);
             if (_oldParentCharacter)
             {
                 _oldParentCharacter.role.powers.Remove(this);

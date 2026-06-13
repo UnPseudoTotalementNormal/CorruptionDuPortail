@@ -39,7 +39,7 @@ namespace Characters.Powers.PowerComponents
                 return;
             }
 
-            var _potentialLegacyHolder = CharacterManager.instance.GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID)
+            var _potentialLegacyHolder = characterManager.GetCharacters(false).Where(_c => _c.role.roleID == legacyRoleID)
                 .Where(_c => !_c.role.powers.Any(_p => _p.IsTheSamePower(power)))
                 .Where(_c => !_c.isChained.Value)
                 .Where(_c => _c != currentParent)
@@ -48,7 +48,7 @@ namespace Characters.Powers.PowerComponents
 
             if (_potentialLegacyHolder.Count == 0)
             {
-                ChatManager.instance.ReceiveChatMessageRpc(
+                chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(ChatManager.SERVER_CLIENT_ID,
                         $"Aucun personnage n'est éligible pour hériter du pouvoir {power.powerName}.",
                         (int)ChatWindowIDs.Server),

@@ -3,6 +3,7 @@ using UnityEngine;
 using Board;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -19,28 +20,29 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
 
+        private readonly PowerResolver _resolver = new();
+
         private void OnCharacterPicked(Character _character)
         {
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
-            _character.CorruptPlayerServerRpc();
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(
-                _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
-            if (_character.role.factionType == FactionType.chosen)
+
+            // Story 4.1: decision-only resolution in Domain; the adapter dispatches the bricks.
+            var _effects = _resolver.ResolveCursedVision(
+                (int)ownerClientId.Value,
+                (int)_character.ownerClientId.Value,
+                _character.role.factionType == FactionType.chosen,
+                _character.GetOwnerPseudo(),
+                (int)CardEffectID.CursedVision,
+                (int)ChatWindowIDs.Server);
+
+            foreach (var _effect in _effects)
             {
-                CardEffectManager.instance.AddCardEffect(CardEffectID.CursedVision, _character.ownerClientId.Value, false);
-                ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} est un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+                PowerEffectDispatcher.Dispatch(_effect);
             }
-            else
-            {
-                CardEffectManager.instance.AddCardEffect(CardEffectID.CursedVision, _character.ownerClientId.Value, true);
-                ChatManager.instance.AddMessageLocal($"{_character.GetOwnerPseudo()} n'est pas un élu.", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
-            }
-            GameManager.instance.characterManager.GetCharacter(ownerClientId.Value).CorruptPlayerServerRpc();   
-            GameManager.instance.gameInfoRevealer.SetRevealLevel(ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
+
             OnUsed();
         }
         
@@ -59,7 +61,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -75,7 +77,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

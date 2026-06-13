@@ -47,7 +47,7 @@ namespace Characters.Powers
                 return;
             }*/
 
-            Character _character = CharacterManager.instance.GetCharacter(_clientIdClicked);
+            Character _character = characterManager.GetCharacter(_clientIdClicked);
             if (_character.isFake)
             {
                 ChatMessage _fakeMessage = new ChatMessage
@@ -56,14 +56,14 @@ namespace Characters.Powers
                     senderClientId = ChatManager.SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
-                ChatManager.instance.ReceiveChatMessageRpc(_fakeMessage, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                chatManager.ReceiveChatMessageRpc(_fakeMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
                 return; //character was fake, do nothing else
             }
             
             currentRoleGuessClientId = _character.ownerClientId.Value;
-            AskForGuessRoleRpc(CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+            AskForGuessRoleRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
         
         private void OnGuessCharacterPicked(Character _character)
@@ -75,30 +75,30 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void GuessRoleRpc(ulong _clickedId)
         {
-            Character _clickedCharacter = CharacterManager.instance.GetCharacter(_clickedId);
-            Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
+            Character _clickedCharacter = characterManager.GetCharacter(_clickedId);
+            Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
             bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
             
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
             
             ChatMessage _resultMessage = new ChatMessage
             {
                 senderClientId = ChatManager.SERVER_CLIENT_ID,
                 chatId = (int)ChatWindowIDs.Server,
                 message = _isCorrectGuess
-                    ? $"Vous avez correctement deviné que {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
-                    : $"Votre supposition était incorrecte, {LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
+                    ? $"Vous avez correctement deviné que {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
+                    : $"Votre supposition était incorrecte, {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
             };
             
             
             if (_isCorrectGuess)
             {
                 discoveredClientIds.Add(_clickedId);
-                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
+                gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
             }
             else
             {
-                List<TargetingData> _targetedClientIds = RoleTargetSystem.instance.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
+                List<TargetingData> _targetedClientIds = roleTargetSystem.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
                 if (_targetedClientIds.Count == 0)
                 {
                     _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} n'a ciblé aucun rôle.";
@@ -108,13 +108,13 @@ namespace Characters.Powers
                     _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} a ciblé ces rôles:";
                     foreach (var _targetData in _targetedClientIds)
                     {
-                        Character _targetedCharacter = CharacterManager.instance.GetCharacter(_targetData.targetId);
+                        Character _targetedCharacter = characterManager.GetCharacter(_targetData.targetId);
                         _resultMessage.message += $"\n- {_targetedCharacter.role.roleName}";
                     }
                 }
             }
             
-            ChatManager.instance.ReceiveChatMessageRpc(_resultMessage, CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.ReceiveChatMessageRpc(_resultMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             
             OnUsed();
         }
@@ -122,9 +122,9 @@ namespace Characters.Powers
         [Rpc(SendTo.SpecifiedInParams)]
         public void AskForGuessRoleRpc(RpcParams _rpcParams)
         {
-            Character _guessCharacter = CharacterManager.instance.GetCharacter(currentRoleGuessClientId);
+            Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
 
-            SelectionFlowService.instance.StartCharacterSelection(null, OnGuessCharacterPicked,
+            selectionFlowService.StartCharacterSelection(null, OnGuessCharacterPicked,
                 new SelectionFlowOptions
                 {
                     focusType        = FocusType.Cards,
@@ -139,14 +139,14 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+            selectionFlowService.StartRoleSelection(targetValidator, OnRolePicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { rolePickerDescription } });
         }
 
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

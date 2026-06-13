@@ -22,6 +22,10 @@ namespace TooltipSystem
         
         private List<TooltipInstanceInfo> tooltipInstances = new();
 
+        // Story 11.4 (Epic 11 / D5): the link-colouring policy extracted to a pure EditMode-tested Domain POCO.
+        private const string LINK_COLOR_HEX = "6fb5d1";
+        private readonly CorruptionDuPortail.Domain.TooltipLinkFormatter _linkFormatter = new();
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -77,7 +81,7 @@ namespace TooltipSystem
             
             _newTooltip.TitleText.text = _tooltipTitle;
             _newTooltip.DescriptionText.text = _tooltipDescription;
-            _newTooltip.DescriptionText.text = _tooltipDescription.Replace("<link=", "<color=#6fb5d1><link=").Replace("</link>", "</link></color>");
+            _newTooltip.DescriptionText.text = _linkFormatter.WrapLinksWithColor(_tooltipDescription, LINK_COLOR_HEX);
             _newTooltip.tooltipOffsetDirection = _tooltipTrigger.tooltipOffsetDirection;
             
             LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());

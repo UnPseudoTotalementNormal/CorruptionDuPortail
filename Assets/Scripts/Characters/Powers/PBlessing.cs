@@ -42,8 +42,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
-            Character _blessingCharacter = GameManager.instance.characterManager.GetCharacter(_blessingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _blessingCharacterId);
+            Character _blessingCharacter = characterManager.GetCharacter(_blessingCharacterId, false);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _blessingCharacterId);
             
             if (_blessingCharacter.role.IsTheSameRole(_compareRole))
             {
@@ -51,15 +51,15 @@ namespace Characters.Powers
                 {
                     _blessingCharacter.HealPlayerServerRpc();
                 }
-                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                gameInfoRevealer.SendRevealLevelRpc(
                     _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 _blessingCharacter.isBlessed.Value = true;
                 
-                ChatManager.instance.ReceiveChatMessageRpc(new ChatMessage(
+                chatManager.ReceiveChatMessageRpc(new ChatMessage(
                     GameValues.FAKE_CLIENT_ID,
-                    $"{LobbyPlayerInfoHolder.instance.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
+                    $"{lobbyPlayerInfoHolder.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
                     (int)ChatWindowIDs.Server),
-                    CharacterManager.instance.GetSafeRpcTarget(ownerClientId.Value));
+                    characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
 
@@ -78,7 +78,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
+            selectionFlowService.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
                 new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
 
@@ -94,7 +94,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

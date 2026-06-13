@@ -62,7 +62,7 @@ namespace Tests.PlayMode
             _characterManagerGo = new GameObject("CharacterManager");
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
-            _gameManager.characterManager = _characterManager;
+            ReflectionHelper.SetPrivateField(_gameManager, "characterManager", _characterManager);
             _characterManager.GetComponent<NetworkObject>().Spawn();
             
             GameObject charactersParent = new GameObject("CharactersParent");
@@ -72,12 +72,19 @@ namespace Tests.PlayMode
 
             // Singletons
             new GameObject("RoleTargetSystem").AddComponent<RoleTargetSystem>().gameObject.AddComponent<NetworkObject>().Spawn();
-            new GameObject("BoardManager").AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(new GameObject("BoardManager").AddComponent<BoardManager>(), "characterManager", _characterManager);
             new GameObject("AudioManager").AddComponent<GameAudioManager>();
             new GameObject("ChatManager").AddComponent<ChatManager>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("LobbyPlayerInfoHolder").AddComponent<LobbyPlayerInfoHolder>().gameObject.AddComponent<NetworkObject>().Spawn();
             new GameObject("ChainingManager").AddComponent<ChainingManager>().gameObject.AddComponent<NetworkObject>().Spawn();
-            new GameObject("PowerManager").AddComponent<PowerManager>().gameObject.AddComponent<NetworkObject>().Spawn();
+            // Story 7.4: PowerManager now reads CharacterManager from an injected [SerializeField] (lane A)
+            // instead of the GameManager hub-hop; wire it like the production scene does (was implicit before).
+            var _powerManager = new GameObject("PowerManager").AddComponent<PowerManager>();
+            ReflectionHelper.SetPrivateField(_powerManager, "characterManager", _characterManager);
+            // Story 8.3: PowerManager's game-loop reads now resolve through an injected [SerializeField]
+            // gameManager (lane A); wire it like the production scene does (was the .instance locator before).
+            ReflectionHelper.SetPrivateField(_powerManager, "gameManager", _gameManager);
+            _powerManager.gameObject.AddComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager);
         }

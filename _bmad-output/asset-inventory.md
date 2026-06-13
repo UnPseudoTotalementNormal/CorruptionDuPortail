@@ -6,14 +6,14 @@
 
 | Ext | Count | Category | Notes |
 |---|---:|---|---|
-| `.cs` | 597 | Code | Total — includes editor, runtime, tests, samples (runtime alone: ~245 in `Scripts/`) |
+| `.cs` | 670 | Code | Total — includes editor, runtime, tests, samples. `Scripts/`: ~344 (~272 runtime incl. the 19-type `Domain/` POCO core, ~72 tests) |
 | `.shadersubgraph` | 145 | Shaders | Sub-graphs for ShaderGraph |
 | `.png` | 132 | 2D art | UI / cards / portraits |
 | `.prefab` | 121 | Prefabs | Reusable scene objects |
 | `.asset` | 101 | ScriptableObjects + Unity assets | Includes role data |
 | `.mat` | 92 | Materials | |
 | `.shadergraph` | 80 | Shaders | ShaderGraph |
-| `.asmdef` | 30 | Assemblies | Includes auto-imported package asmdefs |
+| `.asmdef` | 31 | Assemblies | Incl. auto-imported package asmdefs + the new `CorruptionDuPortail.Domain` |
 | `.dll` | 26 | Native / managed plugins | FMOD, etc. |
 | `.so` / `.a` | 25 / 22 | Native libs | Cross-platform binaries |
 | `.fbx` / `.FBX` | 24 + 18 | 3D models | |

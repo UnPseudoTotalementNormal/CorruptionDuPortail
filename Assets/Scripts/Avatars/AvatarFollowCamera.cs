@@ -43,6 +43,7 @@ namespace Avatars
         private bool _active;
         private bool _subscribed;
         private PlayerAvatar _boundAvatar;
+        private Transform _boundEye;
         private Renderer[] _boundRenderers;
 
         private void Awake()
@@ -98,6 +99,7 @@ namespace Avatars
             // Leaving first person: show the local body again so the board cameras see it normally.
             ShowBoundModel();
             _boundAvatar = null;
+            _boundEye = null;
             _boundRenderers = null;
         }
 
@@ -118,11 +120,19 @@ namespace Avatars
                 }
             }
 
-            // First person: place the camera at the avatar's eye, looking where the body faces.
-            Transform _avatarTransform = _boundAvatar.transform;
-            _camera.transform.SetPositionAndRotation(
-                _avatarTransform.position + _avatarTransform.rotation * _eyeOffset,
-                _avatarTransform.rotation);
+            // First person: copy the eye pivot's world pose (body yaw + local look pitch driven by the
+            // owner's AvatarMovementController). Fallback to the avatar root + eye offset if no pivot is wired.
+            if (_boundEye != null)
+            {
+                _camera.transform.SetPositionAndRotation(_boundEye.position, _boundEye.rotation);
+            }
+            else
+            {
+                Transform _avatarTransform = _boundAvatar.transform;
+                _camera.transform.SetPositionAndRotation(
+                    _avatarTransform.position + _avatarTransform.rotation * _eyeOffset,
+                    _avatarTransform.rotation);
+            }
         }
 
         private void TryBindLocalAvatar()
@@ -139,6 +149,7 @@ namespace Avatars
                 if (_avatar != null && _avatar.IsOwner)
                 {
                     _boundAvatar = _avatar;
+                    _boundEye = _avatar.EyePivot;
                     _boundRenderers = _avatar.GetComponentsInChildren<Renderer>();
                     HideBoundModel();
                     return;

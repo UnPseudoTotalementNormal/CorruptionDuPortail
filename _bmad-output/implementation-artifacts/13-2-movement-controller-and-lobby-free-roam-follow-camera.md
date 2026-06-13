@@ -173,3 +173,4 @@ claude-opus-4-8 (Claude Opus 4.8) — gds-dev-story
 | Date | Change |
 |---|---|
 | 2026-06-13 | Story 13.2 implemented — owner-auth movement controller, **first-person** Lobby camera (Poyo's design call, overrides epic third-person), Move/Look/ToggleTablet input, tablet open decoupled from openOnCamera. EM 215/215, PM 158/158. Status → review. |
+| 2026-06-13 | Playtest follow-up (Poyo: "can't look up, only sides"): added first-person look **pitch** (up/down). `Look.y` pitches a local `Eye` pivot child on the avatar (clamped, default ±80°, tunable); `AvatarFollowCamera` now copies the eye-pivot world pose (body yaw + local pitch). Body yaw stays networked; pitch is local view only. EM 215/215, PM 158/158 (avatar 4/4). |

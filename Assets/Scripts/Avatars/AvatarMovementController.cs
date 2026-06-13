@@ -35,6 +35,10 @@ namespace Avatars
         [SerializeField] private float _moveSpeed = 3.5f;
         [Tooltip("Body yaw speed applied from the Look X delta (degrees per unit of mouse delta).")]
         [SerializeField] private float _lookYawSpeed = 0.12f;
+        [Tooltip("First-person look pitch (up/down) speed from the vertical mouse delta.")]
+        [SerializeField] private float _lookPitchSpeed = 0.12f;
+        [Tooltip("Pitch clamp (degrees) for the first-person look up/down.")]
+        [SerializeField] private float _pitchClamp = 80f;
         [Tooltip("Gravity (m/s^2), keeps the CharacterController grounded against the floor collider.")]
         [SerializeField] private float _gravity = -15f;
 
@@ -43,6 +47,11 @@ namespace Avatars
         private InputAction _moveAction;
         private InputAction _lookAction;
         private float _verticalVelocity;
+
+        // First-person look pitch lives on the avatar's eye pivot (local view only — NOT networked, so other
+        // clients do not see the head tilt in 13.2). Body yaw stays on the avatar root (networked).
+        private Transform _eyePivot;
+        private float _pitch;
 
         // Story 13.3 will drive this from the camera-mode arbiter (movement only in the Lobby). 13.2 leaves
         // it on for the owner; the Lobby is the only walkable phase today.
@@ -78,6 +87,10 @@ namespace Avatars
             _moveAction = _playerMap.FindAction("Move", throwIfNotFound: true);
             _lookAction = _playerMap.FindAction("Look", throwIfNotFound: true);
             _playerMap.Enable();
+
+            // The eye pivot (head-height child) carries the local first-person pitch. Null-tolerant —
+            // if unwired, only pitch is lost (yaw still works).
+            _eyePivot = GetComponent<PlayerAvatar>()?.EyePivot;
         }
 
         public override void OnNetworkDespawn()
@@ -101,11 +114,18 @@ namespace Avatars
                 return;
             }
 
-            // Look (yaw the body from the horizontal mouse delta). Pitch / clamped embodied look is 13.4.
+            // Look: X yaws the BODY (networked via NetworkTransform — others see you turn); Y pitches the
+            // local eye pivot up/down (first-person, local view only). Embodied clamped look is 13.4.
             Vector2 _look = _lookAction.ReadValue<Vector2>();
             if (Mathf.Abs(_look.x) > Mathf.Epsilon)
             {
                 transform.Rotate(Vector3.up, _look.x * _lookYawSpeed, Space.World);
+            }
+            if (_eyePivot != null)
+            {
+                // Mouse up (positive Y) looks up → negative local-X euler.
+                _pitch = Mathf.Clamp(_pitch - _look.y * _lookPitchSpeed, -_pitchClamp, _pitchClamp);
+                _eyePivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
             }
 
             // Planar move relative to the avatar's facing.

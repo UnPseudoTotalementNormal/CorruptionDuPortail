@@ -28,6 +28,12 @@ namespace Avatars
         // Data-driven appearance seam (FR8 / DO6). Wired on the prefab; read-only at runtime.
         [SerializeField] private AvatarAppearanceData _defaultAppearance;
 
+        // Story 13.2: the eye/look pivot (a child at head height). Body yaw lives on the avatar root
+        // (networked via NetworkTransform); local view pitch is applied to this pivot by the owner's
+        // AvatarMovementController, and the first-person camera copies this pivot's world pose.
+        [SerializeField] private Transform _eyePivot;
+        public Transform EyePivot => _eyePivot;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

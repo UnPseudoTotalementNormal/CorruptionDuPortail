@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using Unity.Collections;
 using Unity.Netcode;
@@ -166,7 +167,10 @@ namespace GameLogic
             
             _field.SetValue(_info, _revealLevel);
 
-            if (_showInfo && _observerId == CharacterQuery.GetLocalClientId())
+            // Whether the local player owns this reveal — single source for both UI side-effects.
+            bool _isLocalViewer = RevealVisibilityRules.ShouldRefreshLocalUi(_observerId, CharacterQuery.GetLocalClientId());
+
+            if (_showInfo && _isLocalViewer)
             {
                 if (boardManager != null && boardManager.visibleCards != null)
                 {
@@ -174,8 +178,8 @@ namespace GameLogic
                         ?.ShowPseudoWithRevealedInfo(true);
                 }
             }
-            
-            if (_observerId == CharacterQuery.GetLocalClientId())
+
+            if (_isLocalViewer)
             {
                 onCharacterInfoRevealedChanged?.Invoke();
             }
@@ -200,9 +204,14 @@ namespace GameLogic
         [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
         public void SetRevealLevelRpc(ulong _clientId, FixedString64Bytes _revealVariableName, RevealLevel _revealLevel, bool _showInfo = true, RpcParams _rpcParams = default)
         {
+            // This RPC runs only on the intended viewer, so the local client IS the observer here.
+            // Pass the real local id (not the 0 storage sentinel): GetCharacterInfo ignores observerId
+            // for real ids < 100, so storage is unchanged, but the UI-refresh guard now fires on every
+            // client — not just the host, whose id happens to be 0.
+            ulong _localViewerId = CharacterQuery.GetLocalClientId();
             if (_revealLevel == RevealLevel.Public)
             {
-                SetRevealLevel(_clientId, _revealVariableName, _revealLevel, 0, _showInfo);
+                SetRevealLevel(_clientId, _revealVariableName, _revealLevel, _localViewerId, _showInfo);
                 foreach (var _simulId in simulationsKnowledge.Keys.ToList())
                 {
                     SetRevealLevel(_clientId, _revealVariableName, _revealLevel, _simulId, _showInfo);
@@ -210,7 +219,7 @@ namespace GameLogic
             }
             else
             {
-                SetRevealLevel(_clientId, _revealVariableName, _revealLevel, 0, _showInfo);
+                SetRevealLevel(_clientId, _revealVariableName, _revealLevel, _localViewerId, _showInfo);
             }
         }
 

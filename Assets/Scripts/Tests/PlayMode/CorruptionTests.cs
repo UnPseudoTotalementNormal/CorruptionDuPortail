@@ -215,5 +215,37 @@ public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
     // 3. Target IS blessed -> Should be UN-targetable
     Assert.IsFalse(corruptPower.CheckIsTargetValid(target.ownerClientId.Value, TargetUtils.TargetType.Character), "Blessed target should NOT be valid for corruption targeting");
 }
+
+        [UnityTest]
+        public IEnumerator SetRevealLevelRpc_PersonalReveal_FiresUiRefresh_ForNonHostViewer()
+        {
+            // Regression: the reveal RPC used to pass the 0 storage sentinel as the observer id, so on a
+            // non-host client (GetLocalClientId() != 0) the UI-refresh guard was silently skipped — the
+            // role data was set but the card never re-rendered. Simulate a non-host viewer via the debug
+            // possession seam and assert the UI-refresh event fires.
+            _characterManager.SetPossessedIdentity(1);
+            try
+            {
+                Character target = _characterManager.AddNewCharacter(777);
+                yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(target);
+
+                bool _uiRefreshFired = false;
+                _revealer.onCharacterInfoRevealedChanged += () => _uiRefreshFired = true;
+
+                _revealer.SetRevealLevelRpc(target.ownerClientId.Value,
+                    nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, true);
+                yield return null;
+
+                Assert.AreEqual(RevealLevel.Personal,
+                    _revealer.GetCharacterInfo(target.ownerClientId.Value).isRoleRevealed,
+                    "Reveal data must be written.");
+                Assert.IsTrue(_uiRefreshFired,
+                    "onCharacterInfoRevealedChanged must fire so the non-host viewer's card re-renders.");
+            }
+            finally
+            {
+                _characterManager.SetPossessedIdentity(null);
+            }
+        }
     }
 }

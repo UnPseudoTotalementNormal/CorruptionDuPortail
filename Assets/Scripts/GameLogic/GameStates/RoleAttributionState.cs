@@ -7,10 +7,10 @@ using System.Linq;
 using AYellowpaper.SerializedCollections;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 #endregion
 
@@ -29,85 +29,73 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
-            Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute = roleAttributionDictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            
-            //remove roles that have no roleToAttribute
-            foreach (KeyValuePair<RoleDataObject, RoleAttributionSetting> _roleToAttribute in _rolesToAttribute.ToList())
-            {
-                if (_roleToAttribute.Value.roleToAttribute <= 0)
-                {
-                    _rolesToAttribute.Remove(_roleToAttribute.Key);
-                }
-            }
-            
-            float _fakeRoleAmountToRemove = Mathf.Abs(gameManager.characterManager.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
 
-            Dictionary<RoleDataObject, RoleAttributionSetting> _fakeRoles = _rolesToAttribute
-                .Where(_roleToAttribute => _roleToAttribute.Value.canBeFake)
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            // Story 3.3: the selection arithmetic (two-loop draw + shared-count depletion) lives in the
+            // pure RoleDistributor POCO; the adapter maps the decided indices back to RoleDataObjects and
+            // applies the side effects, preserving the fake-then-real order + the Clone/power/RPC flow.
+            IReadOnlyList<RoleDataObject> _frozenOrder = GetFrozenRolePoolOrder();
 
-            //remove fake roles from dictionary
-            for (int i = 0; i < _fakeRoleAmountToRemove; i++)
+            var _initialCounts = new List<int>(_frozenOrder.Count);
+            var _canBeFake = new List<bool>(_frozenOrder.Count);
+            foreach (RoleDataObject _role in _frozenOrder)
             {
-                if (_fakeRoles.Count == 0)
-                {
-                    break;
-                }
-    
-                GiveRandomRole(_fakeRoles, gameManager.characterManager.CreateNewFakeCharacter(), out RoleDataObject _removedRole);
-                if (_removedRole)
-                {
-                    _rolesToAttribute.Remove(_removedRole);
-                }
+                RoleAttributionSetting _setting = roleAttributionDictionary[_role];
+                _initialCounts.Add(_setting.roleToAttribute);
+                _canBeFake.Add(_setting.canBeFake);
             }
 
-            //give random roles to character
-            foreach (Character _character in gameManager.characterManager.GetCharacters().Where(_c => !_c.isFake).ToList())
+            int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
+            List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
+
+            RoleDistribution _distribution = new RoleDistributor().Distribute(
+                _initialCounts, _canBeFake, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
+
+            //assign fake roles to freshly created fake characters (fakes draw first, in order)
+            foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)
             {
-                GiveRandomRole(_rolesToAttribute, _character, out RoleDataObject _removedRole);
+                ApplyRole(_frozenOrder[_fakeRoleIndex], Command.CreateNewFakeCharacter());
             }
-            
-            gameManager.NextGameState();
-            return;
-            gameManager.StartCoroutine(WaitAndNextState());
-            
-            IEnumerator WaitAndNextState()
+
+            //assign the remaining draws to the real characters, in processing order
+            for (int i = 0; i < _distribution.RealRoleIndices.Count; i++)
             {
-                yield return new WaitForSeconds(3f); //TODO: TEMP FIX MAYBE DIDNT EVEN WORK
-                gameManager.NextGameState();
+                ApplyRole(_frozenOrder[_distribution.RealRoleIndices[i]], _realCharacters[i]);
             }
+
+            Loop.NextGameState();
         }
 
-        private void GiveRandomRole(Dictionary<RoleDataObject, RoleAttributionSetting> _rolesToAttribute, Character _character, out RoleDataObject _removedRole)
+        // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored
+        // SerializedDictionary order. A plain Dictionary's key enumeration order is
+        // implementation-defined and can shift after asset reload / removals, so the
+        // random *selection* must index into this frozen sequence (filtered to the
+        // still-available roles), not into Dictionary.Keys. The selection itself is
+        // untouched — only the list it indexes into is now order-stable.
+        // Behavior-preserving: SerializedDictionary enumerates in serialized (authored)
+        // order, which is exactly the de-facto order the old Dictionary.Keys produced
+        // for this add-only-then-remove flow. Frozen now to remove the latent drift.
+        internal IReadOnlyList<RoleDataObject> GetFrozenRolePoolOrder()
         {
-            _removedRole = null;
-            int _randomRoleIndex = Random.Range(0, _rolesToAttribute.Count);
-            RoleDataObject _randomRole = _rolesToAttribute.Keys.ToList()[_randomRoleIndex];
-            RoleAttributionSetting _randomRoleSettings = _rolesToAttribute[_randomRole];
+            return new List<RoleDataObject>(roleAttributionDictionary.Keys);
+        }
 
-            
+        // Applies a decided role (RoleDistributor output) to a character: clone, set, give powers, replicate.
+        // Side effects only — the selection + count depletion are owned by the POCO (Story 3.3). The order
+        // (Clone → role set → ownerClientId → GivePowerToCharacter loop → GiveRoleToCharacterRpc) is preserved.
+        private void ApplyRole(RoleDataObject _randomRole, Character _character)
+        {
             if (_character)
             {
                 Role _newRole = (Role)_randomRole.role.Clone();
                 _character.role = _newRole;
                 _character.role.ownerClientId = _character.ownerClientId.Value;
-                
+
                 foreach (var _powerDataObject in _randomRole.powers)
                 {
-                    gameManager.characterManager.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
+                    Command.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
                 }
-                
-                gameManager.characterManager.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
-                
-                /*gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateCharacterRpc), //TODO: pourquoi c'était là ??????
-                    new NetworkSerializableObject[] { new(_character) },
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));*/
-            }
-            _randomRoleSettings.roleToAttribute -= 1;
-            if (_randomRoleSettings.roleToAttribute <= 0)
-            {
-                _rolesToAttribute.Remove(_randomRole);
-                _removedRole = _randomRole;
+
+                Command.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
             }
         }
 
@@ -118,7 +106,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            gameManager.characterManager.GetCharacters().Add(_character);
+            CharacterQuery.GetCharacters().Add(_character);
         }
         
         public override void OnEndStateServer()

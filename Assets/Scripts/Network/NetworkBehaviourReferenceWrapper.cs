@@ -25,15 +25,16 @@ namespace Network
             networkBehaviourId = _behaviour.NetworkBehaviourId;
         }
 
-        public bool TryGet<T>(out T _behaviour) where T : NetworkBehaviour
+        public bool TryGet<T>(out T _behaviour, NetworkManager _networkManager = null) where T : NetworkBehaviour
         {
             _behaviour = null;
             if (networkBehaviourId == NULL_NETWORK_BEHAVIOUR_ID || networkObjectId == NULL_NETWORK_OBJECT_ID)
             {
                 return false;
             }
-            
-            if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject _networkObject))
+
+            var _manager = _networkManager != null ? _networkManager : NetworkManager.Singleton;
+            if (_manager.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject _networkObject))
             {
                 _behaviour = _networkObject.GetNetworkBehaviourAtOrderIndex(networkBehaviourId) as T;
                 return _behaviour != null;

@@ -78,7 +78,9 @@ namespace UI.GameSettings
     
         private RoleAttributionState GetRoleAttributionState()
         {
-            return (RoleAttributionState)GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
+            // Story 12.3: prefab-resident settings tab — resolves through the sanctioned CompositionRoot.For(Singleton)
+            // instead of the GameManager God-Object façade (no lane-A/C seam on a prefab).
+            return (RoleAttributionState)CompositionRoot.For(NetworkManager.Singleton).GameManager.GetGameStates(typeof(RoleAttributionState)).First();
         }
         
         [Serializable]

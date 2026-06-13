@@ -4,6 +4,7 @@ using Characters;
 using Extensions;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace UI.CardUI
 {
@@ -32,7 +33,12 @@ namespace UI.CardUI
 
         private void Start()
         {
-            CharacterManager.instance.onLocalIdentityChanged += UpdateIdentityVisibility;
+            // Story 12.2: read the character-query slice from the parent Card (pushed by BoardManager.AddNewCard)
+            // instead of the CharacterManager façade — same precedent as CardCorruptedText reading card.GameInfoRevealer.
+            // Assert localises a future regression of the AddNewCard→Card.Initialize push: the slice must be set
+            // before this child's Start (the old global static read had no such ordering dependency).
+            Assert.IsNotNull(card.CharacterQuery, "MeIconCard: card.CharacterQuery is null — Card.Initialize (BoardManager.AddNewCard) must run before the card child's Start.");
+            card.CharacterQuery.onLocalIdentityChanged += UpdateIdentityVisibility;
             UpdateIdentityVisibility();
         }
 
@@ -40,7 +46,7 @@ namespace UI.CardUI
         {
             if (card.characterInfo == null) return;
             
-            isMe = card.characterInfo.ownerClientId.Value == CharacterManager.instance.GetLocalClientId();
+            isMe = card.characterInfo.ownerClientId.Value == card.CharacterQuery.GetLocalClientId();
             
             if (!isMe)
             {
@@ -107,9 +113,9 @@ namespace UI.CardUI
 
         private void OnDestroy()
         {
-            if (CharacterManager.instance != null)
+            if (card != null && card.CharacterQuery != null)
             {
-                CharacterManager.instance.onLocalIdentityChanged -= UpdateIdentityVisibility;
+                card.CharacterQuery.onLocalIdentityChanged -= UpdateIdentityVisibility;
             }
             UnsubscribeFromMovement();
             if (card != null)

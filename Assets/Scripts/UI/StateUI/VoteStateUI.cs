@@ -58,7 +58,9 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            onVoteSkipButtonPressedByClient?.Invoke(Characters.CharacterManager.instance.GetLocalClientId());
+            // Story 12.2: read the local client id off the StateUI base's injected ICharacterQuery slice (9.1)
+            // instead of the CharacterManager façade.
+            onVoteSkipButtonPressedByClient?.Invoke(CharacterQuery.GetLocalClientId());
         }
     }
 }

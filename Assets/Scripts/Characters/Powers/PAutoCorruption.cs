@@ -13,7 +13,7 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            GameManager.instance.characterManager.GetCharacter(ownerClientId.Value, false).CorruptPlayerServerRpc();
+            characterManager.GetCharacter(ownerClientId.Value, false).CorruptPlayerServerRpc();
         }
     }
 }

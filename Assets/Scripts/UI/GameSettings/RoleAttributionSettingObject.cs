@@ -6,6 +6,7 @@ using Characters;
 using GameLogic;
 using GameLogic.GameStates;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -51,7 +52,8 @@ namespace UI.GameSettings
 
         private RoleAttributionSetting GetRoleAttributionSetting()
         {
-            var _roleAttributionState = (RoleAttributionState)GameManager.instance.GetGameStates(typeof(RoleAttributionState)).First();
+            // Story 12.3: prefab-resident settings object — sanctioned CompositionRoot.For(Singleton) route.
+            var _roleAttributionState = (RoleAttributionState)CompositionRoot.For(NetworkManager.Singleton).GameManager.GetGameStates(typeof(RoleAttributionState)).First();
             return _roleAttributionState.roleAttributionDictionary[roleDataObject];
         }
     }

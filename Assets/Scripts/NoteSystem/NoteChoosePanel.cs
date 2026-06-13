@@ -24,6 +24,9 @@ namespace NoteSystem
         
         private ulong currentPlayerId;
         private NoteType currentNoteType;
+        // Story 12.2: pushed by the creating NoteRibbon (which reads it off its parent Card) — this panel has no
+        // Card of its own, so the character-query slice is handed in at SetTarget. NoteManager stays a singleton.
+        private ICharacterQuery characterQuery;
 
         
         public bool isPanelOpen { get; protected set; }
@@ -43,10 +46,11 @@ namespace NoteSystem
         }
 
 
-        public void SetTarget(ulong _playerId, NoteType _noteType)
+        public void SetTarget(ulong _playerId, NoteType _noteType, ICharacterQuery _characterQuery)
         {
             currentPlayerId = _playerId;
             currentNoteType = _noteType;
+            characterQuery = _characterQuery;
             Init();
         }
 
@@ -79,7 +83,7 @@ namespace NoteSystem
                 Destroy(_child.gameObject);
             }
             
-            var _allCharacters = GameManager.instance.characterManager.GetCharacters(false);
+            var _allCharacters = characterQuery.GetCharacters(false);
             
             List<Character> _filteredCharacters = _allCharacters.ToList();
 

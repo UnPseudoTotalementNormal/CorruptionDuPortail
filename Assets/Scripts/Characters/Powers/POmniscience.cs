@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -26,10 +27,12 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnCardClickedServerRpc(_character.ownerClientId.Value);
             OnUsed();
         }
+        private readonly PowerResolver _resolver = new();
+
         [Rpc(SendTo.Server)]
         private void OnCardClickedServerRpc(ulong _targetClientId)
         {
@@ -37,11 +40,26 @@ namespace Characters.Powers
         }
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            RoleTargetSystem.instance?.NewTargeting(ownerClientId.Value, _targetClientId);
-            hackedCharacterClientId = _targetClientId;
-            GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_targetClientId,
-                nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
-            GameManager.instance.characterManager.AskForUpdateAllCharactersRpc();
+            // Story 4.4 (the hack): decision-only resolution in Domain; the adapter dispatches.
+            // StoreHackTarget (the public hackedCharacterClientId field) is power-LOCAL. The
+            // RevealInfo(Broadcast:true) brick is the notify-to-target intention.
+            var _effects = _resolver.ResolveOmniscienceClick((int)ownerClientId.Value, (int)_targetClientId);
+            foreach (var _effect in _effects)
+            {
+                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
+            }
+        }
+
+        private void ApplyLocalEffect(EffectDescriptor _effect)
+        {
+            switch (_effect)
+            {
+                case StoreHackTarget _store:
+                    hackedCharacterClientId = (ulong)_store.TargetSlot;
+                    break;
+                default:
+                    throw new NotSupportedException($"POmniscience: unexpected local brick {_effect}");
+            }
         }
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
@@ -58,7 +76,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -74,7 +92,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

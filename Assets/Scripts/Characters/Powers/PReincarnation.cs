@@ -19,7 +19,7 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => 
             {
                 // Ne pas pouvoir se réincarner en son propre rôle
-                var targetCharacter = GameManager.instance.characterManager.GetCharacter(ctx.targetId, false);
+                var targetCharacter = characterManager.GetCharacter(ctx.targetId, false);
                 return targetCharacter == null || !ownerCharacter.role.IsTheSameRole(targetCharacter.role);
             });
         }
@@ -29,7 +29,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartRoleSelection(targetValidator, OnRolePicked,
+            selectionFlowService.StartRoleSelection(targetValidator, OnRolePicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -46,13 +46,13 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void ReincarnatePlayerRpc(ulong _characterClickedId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             ChangeIsPassiveRpc(true);
-            Character _characterClicked = GameManager.instance.characterManager.GetCharacter(_characterClickedId);
+            Character _characterClicked = characterManager.GetCharacter(_characterClickedId);
             foreach (var _rolePower in _characterClicked.role.powers)
             {
-                GameManager.instance.characterManager.GivePowerToCharacter(ownerClientId.Value, _rolePower);
+                characterManager.GivePowerToCharacter(ownerClientId.Value, _rolePower);
             }
         }
 
@@ -65,7 +65,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

@@ -17,7 +17,9 @@
 }
 
 .dev-time-label {
-    -unity-text-align: upper-center;
+    -unity-text-align: upper-left;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .header-container{
@@ -46,11 +48,24 @@
 }
 
 .label-total-dev-time {
-    -unity-text-align: upper-right;
+    -unity-text-align: upper-left;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 6px;
 }
 
 .total-time-labels-container {
     flex-direction: row;
+}
+
+.totals-column {
+    flex-direction: column;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.claude-total-label {
+    color: #4ec9b0;
 }
 
 

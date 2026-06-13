@@ -30,7 +30,13 @@
     justify-content: center;
 }
 
+.claude-hours-label {
+    -unity-text-align: middle-center;
+    font-size: 10px;
+    color: #4ec9b0;
+}
+
 .main-content {
-    min-width: 572px;
+    min-width: 660px;
     min-height: 560px;
 }

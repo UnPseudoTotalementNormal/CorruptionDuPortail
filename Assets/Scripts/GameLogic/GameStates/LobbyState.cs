@@ -20,12 +20,12 @@ namespace GameLogic.GameStates
 
         private void AddNewCharacter(ulong clientId)
         {
-            gameManager.characterManager.AddNewCharacter(clientId);
+            Command.AddNewCharacter(clientId);
         }
 
         private void OnClientDisconnected(ulong clientId)
         {
-            gameManager.characterManager.RemoveCharacter(clientId);
+            Command.RemoveCharacter(clientId);
         }
         
         public void OnStartGameButtonPressed()
@@ -33,7 +33,7 @@ namespace GameLogic.GameStates
             SerializedDictionary<RoleDataObject, RoleAttributionSetting> _roleAttributionDictionary = 
                 ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState))
                 .First()).roleAttributionDictionary;
-            int _playerCount = gameManager.characterManager.GetCharacters().Count;
+            int _playerCount = CharacterQuery.GetCharacters().Count;
 
             int _totalRolesToAttribute = _roleAttributionDictionary.Values.Sum(_setting => _setting.roleToAttribute);
             
@@ -43,23 +43,23 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            gameManager.NextGameState();
+            Loop.NextGameState();
         }
-        
+
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
             
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 return;
             }
-            
-            foreach (var connectedClient in NetworkManager.Singleton.ConnectedClients)
+
+            foreach (var connectedClient in gameManager.NetworkManager.ConnectedClients)
             {
                 AddNewCharacter(connectedClient.Key);
             }
-            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            gameManager.NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
         public override void OnStartStateServer()
@@ -76,7 +76,7 @@ namespace GameLogic.GameStates
         
         public override void OnStartStateClient()
         {
-            gameManager.charactersBar.DestroyCharactersBar();
+            charactersBar.DestroyCharactersBar();
             base.OnStartStateClient();
         }
         

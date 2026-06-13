@@ -1,4 +1,5 @@
 using System;
+using Characters;
 using DG.Tweening;
 using GameLogic.GameStates;
 using UnityEngine;
@@ -10,6 +11,11 @@ namespace UI.Components
     {
         public CanvasGroup eventCanvasGroup;
         public float baseDuration = 5f;
+
+        // Story 12.2: the character-query slice, pushed by the AwakeningRecapStateUI host (a StateUI that
+        // carries the injected ICharacterQuery) when it spawns this event component. Recap event components are
+        // deep prefab leaves with no injected base of their own, so the host hands the slice down.
+        public ICharacterQuery CharacterQuery { get; set; }
 
         private void Awake()
         {

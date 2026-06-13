@@ -63,7 +63,7 @@ namespace Tests.PlayMode
             _characterManagerGo = new GameObject("CharacterManager");
             _characterManagerGo.AddComponent<NetworkObject>();
             _characterManager = _characterManagerGo.AddComponent<CharacterManager>();
-            _gameManager.characterManager = _characterManager;
+            ReflectionHelper.SetPrivateField(_gameManager, "characterManager", _characterManager);
             _characterManager.GetComponent<NetworkObject>().Spawn();
             
             GameObject charactersParent = new GameObject("CharactersParent");
@@ -74,6 +74,7 @@ namespace Tests.PlayMode
             _boardManagerGo = new GameObject("BoardManager");
             _boardManagerGo.AddComponent<NetworkObject>();
             _boardManager = _boardManagerGo.AddComponent<BoardManager>();
+            ReflectionHelper.SetPrivateField(_boardManager, "characterManager", _characterManager);
             _boardManager.GetComponent<NetworkObject>().Spawn();
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _boardManager);

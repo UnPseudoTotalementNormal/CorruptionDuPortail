@@ -9,7 +9,7 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+            gameInfoRevealer.SendRevealLevelRpc(
                 ownerClientId.Value, 
                 nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value, true);
         }

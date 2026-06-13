@@ -56,7 +56,7 @@ namespace GameLogic.GameStates
         {
             try
             {
-                await BoardManager.instance.ShowAllPlayerCards();
+                await boardManager.ShowAllPlayerCards();
 
                 await UniTask.Delay(TimeSpan.FromSeconds(1));
 
@@ -66,16 +66,16 @@ namespace GameLogic.GameStates
                 {
                     if (gameManager.IsServer)
                     {
-                        gameManager.NextGameState();
+                        Loop.NextGameState();
                     }
                 }
                 else
                 {
 
-                    Character _chainingCharacter = gameManager.characterManager.GetCharacter(VoteState.mostVotedPlayer);
+                    Character _chainingCharacter = CharacterQuery.GetCharacter(VoteState.mostVotedPlayer);
                     if (gameManager.IsServer)
                     {
-                        gameManager.NextGameState();
+                        Loop.NextGameState();
                     }
                 }
             }
@@ -91,7 +91,7 @@ namespace GameLogic.GameStates
 
         private void SetVoteCanvasVisibility(bool visible)
         {
-            foreach (var _card in BoardManager.instance.visibleCards)
+            foreach (var _card in boardManager.visibleCards)
             {
                 var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
                 if (_voteCanvas)
@@ -110,7 +110,7 @@ namespace GameLogic.GameStates
 
         private async UniTask ShowVoteResult()
         {
-            foreach (var _card in BoardManager.instance.visibleCards)
+            foreach (var _card in boardManager.visibleCards)
             {
                 var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
                 if (_voteCanvas)
@@ -136,7 +136,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            _ = BoardManager.instance.ShowAllPlayerCards();
+            _ = boardManager.ShowAllPlayerCards();
         }
 
         public override void StateUpdateServer()

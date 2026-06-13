@@ -14,7 +14,7 @@ namespace Characters.Powers
         {
             if (NetworkManager.IsServer)
             {
-                CharacterManager.instance.GetCharacter(ownerClientId.Value).messageLeft.Value = Int32.MaxValue;
+                characterManager.GetCharacter(ownerClientId.Value).messageLeft.Value = Int32.MaxValue;
             }
         }
     }

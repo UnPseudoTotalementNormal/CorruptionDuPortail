@@ -72,7 +72,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            clickedCharacter = GameManager.instance.characterManager.GetCharacter(_ownerId);
+            clickedCharacter = CharacterQuery.GetCharacter(_ownerId);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -82,24 +82,24 @@ namespace GameLogic.GameStates
         
         private void OnRoleClickServer(ulong _ownerId)
         {
-            var _clickedRole = GameManager.instance.characterManager.GetCharacter(_ownerId).role;
+            var _clickedRole = CharacterQuery.GetCharacter(_ownerId).role;
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
             
             if (!_clickedRole.IsTheSameRole(clickedCharacter.role))
             {
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
             
-            GameManager.instance.gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
+            gameInfoRevealer.SetRevealLevelRpc(clickedCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true,
                 gameManager.RpcTarget.Everyone);
             
             WaitForCharacterClickServer();
         }
 
-        private void SubscribeToCharacterClick() => BoardManager.instance.onCardClicked += OnCharacterClickClient;
+        private void SubscribeToCharacterClick() => boardManager.onCardClicked += OnCharacterClickClient;
         
         private void SubscribeToRoleClick()
         {
@@ -110,17 +110,17 @@ namespace GameLogic.GameStates
             
             Validator<(ulong targetId, TargetType targetType)> _validator = new();
             _validator.AddRule(_ctx => _ctx.targetType == TargetType.Role);
-            SelectionFlowService.instance.StartRoleSelection(_validator, OnRoleClickClient);
+            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient);
         }
         
-        private void UnsubscribeToCharacterClick() => BoardManager.instance.onCardClicked -= OnCharacterClickClient;
+        private void UnsubscribeToCharacterClick() => boardManager.onCardClicked -= OnCharacterClickClient;
         
-        private void UnsubscribeToRoleClick() => SelectionFlowService.instance.CancelSelection();
+        private void UnsubscribeToRoleClick() => selectionFlowService.CancelSelection();
         
 
         private void WaitForCharacterClickServer()
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer);
+            Assert.IsTrue(gameManager.NetworkManager.IsServer);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnHighlightAll), 
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
@@ -128,18 +128,18 @@ namespace GameLogic.GameStates
             var _ignoreCharactersList = GetIgnoreCharacters();
             ignoreCharacters = _ignoreCharactersList.ToList();
 
-            if (ignoreCharacters.Count == gameManager.characterManager.GetCharacters(false).Count)
+            if (ignoreCharacters.Count == CharacterQuery.GetCharacters(false).Count)
             {
                 var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
                 var _newWinners = new Dictionary<WinningTeam, HashSet<ulong>>()
                 {
-                    { WinningTeam.anomaly , new HashSet<ulong>(gameManager.characterManager.GetCharacters(false)
+                    { WinningTeam.anomaly , new HashSet<ulong>(CharacterQuery.GetCharacters(false)
                         .Where(_c => _c.role.factionType == FactionType.anomaly)
                         .Select(_c => _c.ownerClientId.Value)) },
                 };
                 _gameEndingState.SetWinnersServer(_newWinners);
                 
-                gameManager.SetGameState(_gameEndingState);
+                Loop.SetGameState(_gameEndingState);
                 return;
             }
             
@@ -155,20 +155,20 @@ namespace GameLogic.GameStates
         private void HighlightCharactersRpc()
         {
             
-            foreach (Card _card in BoardManager.instance.visibleCards)
+            foreach (Card _card in boardManager.visibleCards)
             {
                 Debug.Log("card visible from: " + _card.characterInfo.ownerClientId.Value);
                 if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId.Value))
                 {
                     continue;
                 }
-                FocusManager.instance.FocusObject(_card.gameObject);
+                focusManager.FocusObject(_card.gameObject);
             }
         }
         
         private void WaitForRoleClickServer()
         {
-            Assert.IsTrue(NetworkManager.Singleton.IsServer);
+            Assert.IsTrue(gameManager.NetworkManager.IsServer);
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
                 new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId.Value)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
@@ -178,9 +178,9 @@ namespace GameLogic.GameStates
         
         private void HighlightRolesRpc(ulong _clickedCharacterOwnerId)
         {
-            FocusManager.instance.SetFocusOnType(FocusType.Roles);
+            focusManager.SetFocusOnType(FocusType.Roles);
 
-            FocusManager.instance.FocusObject(BoardManager.instance.visibleCards
+            focusManager.FocusObject(boardManager.visibleCards
                 .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
         }
         
@@ -191,13 +191,13 @@ namespace GameLogic.GameStates
         
         private void UnHighlightAll()
         {
-            FocusManager.instance.UnfocusAll();
+            focusManager.UnfocusAll();
         }
         
         private List<ulong> GetIgnoreCharacters()
         {
             List<ulong> _ignoreCharactersList = new();
-            foreach (var _character in gameManager.characterManager.GetCharacters())
+            foreach (var _character in CharacterQuery.GetCharacters())
             {
                 if (_character.isFake)
                 {
@@ -211,7 +211,7 @@ namespace GameLogic.GameStates
                     continue;
                 }
                 
-                if (gameManager.gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isRoleRevealed >= RevealLevel.Public)
+                if (gameInfoRevealer.GetCharacterInfo(_character.ownerClientId.Value).isRoleRevealed >= RevealLevel.Public)
                 {
                     _ignoreCharactersList.Add(_character.ownerClientId.Value);
                     continue;
@@ -233,12 +233,12 @@ namespace GameLogic.GameStates
             if (!shouldActivate)
             {
                 Debug.Log("TakeDownThePortalState is not activated");
-                _ = gameManager.WaitAFrameAndNextGameState();
+                _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }
 
             GameAudioManager.instance.PlayMusicRpc(takeDownThePortalMusic.GetPath(), 
-                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
+                gameManager.NetworkManager.RpcTarget.ClientsAndHost);
 
             _ = WaitForCardsToBeVisible();
         }
@@ -246,7 +246,7 @@ namespace GameLogic.GameStates
         private async UniTaskVoid WaitForCardsToBeVisible()
         {
             await UniTask.WaitForSeconds(3);
-            await UniTask.WaitUntil(() => BoardManager.instance.visibleCards.Count > 0);
+            await UniTask.WaitUntil(() => boardManager.visibleCards.Count > 0);
             WaitForCharacterClickServer();
         }
 
@@ -255,13 +255,13 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
             
             GameAudioManager.instance.StopMusicRpc(takeDownThePortalMusic.GetPath(), 
-                NetworkManager.Singleton.RpcTarget.ClientsAndHost);
+                gameManager.NetworkManager.RpcTarget.ClientsAndHost);
         }
         
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            _ = BoardManager.instance.ShowAllPlayerCards();
+            _ = boardManager.ShowAllPlayerCards();
         }
         
         public override void OnEndStateClient()

@@ -14,6 +14,7 @@ namespace Tests.PlayMode
     {
         private GameObject _networkManagerGo;
         private NetworkManager _networkManager;
+        private GameObject _characterManagerGo;
         private Role _testRole;
         private Power _testPower1;
         private Power _testPower2;
@@ -30,6 +31,14 @@ namespace Tests.PlayMode
             };
             
             Assert.IsTrue(_networkManager.StartHost(), "NGO StartHost() failed — server did not start.");
+
+            // Story 7.1: powers now resolve CharacterManager once in Power.OnNetworkSpawn (lane C via
+            // the composition root, which delegates to CharacterManager.For(nm)). Provide a
+            // CharacterManager so its Awake claims the static instance the resolve falls back to —
+            // mirrors the other power test harnesses (PowerTests etc.). Does not change what these
+            // role-regen assertions verify.
+            _characterManagerGo = new GameObject("CharacterManager");
+            _characterManagerGo.AddComponent<CharacterManager>();
 
             _testRole = new Role();
             
@@ -59,6 +68,7 @@ namespace Tests.PlayMode
                 _networkManager.Shutdown();
             }
             yield return NetworkTestHelper.WaitUntilOrTimeout(() => _networkManager == null || !_networkManager.IsListening, 5f, "NGO did not stop listening within 5s after Shutdown().");
+            if (_characterManagerGo != null) Object.Destroy(_characterManagerGo);
             Object.Destroy(_networkManagerGo);
             yield return null;
         }

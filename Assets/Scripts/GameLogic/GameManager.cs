@@ -7,9 +7,9 @@ using System.Linq;
 using System.Reflection;
 using AYellowpaper.SerializedCollections;
 using Board.UI.CharacterBar;
-using Board.UI.PowerBar;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Network;
 using Network.Action;
@@ -23,21 +23,68 @@ using Object = System.Object;
 
 namespace GameLogic
 {
-    public class GameManager : NetworkBehaviour
+    public class GameManager : NetworkBehaviour, IGameLoop, IGameStateQuery
     {
+        // Story 12.3 (strategy B): recorded §4 survivor, NOT deleted — read only by context-less static
+        // machinery (W* winning-condition POCOs / TargetUtils / PowerEffectDispatcher) + the network test
+        // fixtures, which have no injection seam. CompositionRoot.For(nm) is the sanctioned indirection the
+        // rest of the codebase uses. Whitelisted in StaticSingletonCensusGuardTests.
         public static GameManager instance { get; private set; }
 
-        public GameInfoRevealer gameInfoRevealer;
-        public CharactersBar charactersBar;
-        public PowersBar powersBar;
-        public ChainingManager chainingManager;
-        public CharacterManager characterManager;
+        // Per-NetworkManager registry: lets a second in-process client's replica
+        // coexist (resolved via For(NetworkManager)) instead of clobbering or
+        // destroying the primary's static instance. The primary manager keeps the
+        // historical `instance` façade so the Awake->spawn window is unchanged.
+        private static readonly Dictionary<NetworkManager, GameManager> s_byNetworkManager = new();
+
+        /// <summary>
+        /// Resolves the GameManager owned by the given NetworkManager. For the
+        /// primary (Singleton) manager this falls back to the Awake-claimed instance
+        /// so the pre-spawn window behaves exactly as the historical static access.
+        /// </summary>
+        public static GameManager For(NetworkManager _networkManager)
+        {
+            if (_networkManager != null && s_byNetworkManager.TryGetValue(_networkManager, out var _manager) && _manager != null)
+            {
+                return _manager;
+            }
+            return _networkManager == NetworkManager.Singleton ? instance : null;
+        }
+
+#if UNITY_EDITOR
+        // Play-restart backstop ONLY. Domain reload is disabled in this project, so
+        // statics survive across Play Mode sessions; this fires once at Play entry
+        // (SubsystemRegistration) to drop any manager/registry left over from a prior
+        // session. It does NOT run on scene loads and is NOT a subscription cleanup:
+        // the OnClientDisconnectCallback unsubscribe and the registry/instance
+        // teardown for normal scene exit live in OnNetworkDespawn and OnDestroy, which
+        // fire because GameManager is scene-placed in GameScene.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticsForDomainReloadDisabled()
+        {
+            s_byNetworkManager.Clear();
+            instance = null;
+        }
+#endif
+
+        // Story 7.5 (Epic 7 close, D-NFR4): these were public pass-through accessors that turned
+        // GameManager into a Service Locator hub. The public exposure is DELETED so the hub cannot
+        // quietly come back. What survives is GameManager's OWN dependency on the four it genuinely
+        // uses internally (SetupGameStates push, RPC target resolution, disconnect handling) — kept
+        // as [SerializeField] private, SAME field name so the name-based scene binding is untouched.
+        // powersBar had no internal use and was removed entirely (its scene reference is now orphaned,
+        // by design). Consumers inject these directly (lanes A/B/C); none read them off GameManager.
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
+        [SerializeField] private CharactersBar charactersBar;
+        [SerializeField] private ChainingManager chainingManager;
+        [SerializeField] private CharacterManager characterManager;
     
         public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
         public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
         [HideInInspector] public bool ignoreGameLoop = false;
+        private readonly GameLoopMachine _gameLoopMachine = new();
         private bool gameHasStartedFirstLoop = false;
         public int gameLoopCount { get; private set; } = 0;
         public int currentDay => gameLoopCount + 1;
@@ -46,20 +93,69 @@ namespace GameLogic
         public NetworkAction onGameStarted = new("onGameStarted", false);
         public NetworkAction onNewDayPassed = new("onNewDayPassed", false);
 
+        // Story 8.1 (Epic 8 / D2): IGameLoop exposes onGameStarted/onNewDayPassed as get-only
+        // properties, but they are public NetworkAction FIELDS here (5.0b). A field cannot implicitly
+        // satisfy a same-named interface property, so wrap them with explicit interface implementations.
+        // The fields are untouched — concrete callers keep using them directly; only the interface view
+        // is added. Zero behaviour change. The rest of IGameLoop/IGameStateQuery is satisfied implicitly
+        // by the existing public members.
+        // get;set; maps to the underlying field both ways (Story 8.3): `+=`/`-=` through the interface
+        // round-trips the same NetworkAction reference, identical to mutating the field directly.
+        NetworkAction IGameLoop.onGameStarted { get => onGameStarted; set => onGameStarted = value; }
+        NetworkAction IGameLoop.onNewDayPassed { get => onNewDayPassed; set => onNewDayPassed = value; }
+
         private void Awake()
         {
-            if (instance != null && instance != this)
+            // Design B (NGO probe in 5.0c: NetworkManagerOwner is assigned AFTER
+            // Object.Instantiate returns, so it is not visible here). Awake cannot
+            // tell a foreign-NM replica from a true duplicate, so it only claims the
+            // façade if free; same-NM duplicate destruction and foreign-replica
+            // reconciliation happen in OnNetworkSpawn where NetworkManager is
+            // authoritative. Production has exactly one scene-placed GameManager, so
+            // this is behaviour-identical there.
+            if (instance == null)
             {
-                Destroy(gameObject);
-                return;
+                instance = this;
             }
-            instance = this;
+            // Per-instance wiring: this mutates per-instance state (gameLoopCount),
+            // not a static, so it must run on EVERY replica - keep it outside the
+            // claim guard.
             onNewDayPassed += () => gameLoopCount++;
         }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            var _networkManager = NetworkManager;
+
+            // Same-NM duplicate (today's semantics, one frame later than the
+            // historical Awake destroy): a live manager is already registered for
+            // this NetworkManager -> this is an extra instance, destroy it.
+            if (s_byNetworkManager.TryGetValue(_networkManager, out var _existing) && _existing != null && _existing != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            // Façade reconciliation: the primary (Singleton) manager owns `instance`,
+            // a foreign-NM replica must not. Because Awake claims-if-free, whichever
+            // GameManager awoke first holds the claim - release/transfer it here now
+            // that NetworkManager is authoritative.
+            if (_networkManager != NetworkManager.Singleton)
+            {
+                if (instance == this)
+                {
+                    instance = null;
+                }
+            }
+            else if (instance == null)
+            {
+                instance = this;
+            }
+
+            // Registry claim (the inherited NetworkManager property is valid here).
+            s_byNetworkManager[_networkManager] = this;
 
             SetupGameStates();
         
@@ -80,12 +176,49 @@ namespace GameLogic
                 NetworkManager.OnClientDisconnectCallback -= OnPlayerDisconnectedServer;
             }
 
+            UnregisterFromRegistry();
+
             if (instance == this)
             {
                 instance = null;
             }
 
             base.OnNetworkDespawn();
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            // Safety net: a same-NM duplicate is destroyed in OnNetworkSpawn and may
+            // never despawn cleanly; also covers teardown ordering where
+            // OnNetworkDespawn was not invoked.
+            UnregisterFromRegistry();
+
+            if (instance == this)
+            {
+                instance = null;
+            }
+        }
+
+        // Removes this manager from the per-NetworkManager registry by value, so
+        // teardown ordering (NGO: NetworkManager.Singleton may be null in OnDestroy
+        // during shutdown) can never strand a stale entry or throw on a stale key.
+        // The registry holds at most a handful of entries, so the scan is trivial.
+        private void UnregisterFromRegistry()
+        {
+            NetworkManager _key = null;
+            foreach (var _pair in s_byNetworkManager)
+            {
+                if (_pair.Value == this)
+                {
+                    _key = _pair.Key;
+                    break;
+                }
+            }
+            if (_key != null)
+            {
+                s_byNetworkManager.Remove(_key);
+            }
         }
 
         private void Update()
@@ -113,6 +246,19 @@ namespace GameLogic
                 gameStates.Add(clonedGameState, gameState.Value);
             
                 clonedGameState.gameManager = this;
+                clonedGameState.characterManager = characterManager;
+                clonedGameState.gameInfoRevealer = gameInfoRevealer;
+                clonedGameState.chainingManager = chainingManager;
+                clonedGameState.charactersBar = charactersBar;
+                // Story 10.3 lane B: BoardManager resolved from the composition root (the still-singleton
+                // board) and pushed, so states stop reading the BoardManager.instance global.
+                clonedGameState.boardManager = CompositionRoot.For(NetworkManager).BoardManager;
+                // Story 10.4 lane B: StatesCanvas (UI host) pushed the same way.
+                clonedGameState.statesCanvas = CompositionRoot.For(NetworkManager).StatesCanvas;
+                // Story 10.5 lane B: SelectionFlowService + FocusManager pushed the same way (sole consumer
+                // TakeDownThePortalState), so it stops reading those globals.
+                clonedGameState.selectionFlowService = CompositionRoot.For(NetworkManager).SelectionFlowService;
+                clonedGameState.focusManager = CompositionRoot.For(NetworkManager).FocusManager;
                 clonedGameState.OnStateCreated();
             }
         }
@@ -152,45 +298,53 @@ namespace GameLogic
         public void NextGameState(bool _ignoreGameLoop = false)
         {
             Assert.IsTrue(IsServer, "NextGameState can only be called on the server");
-        
-            bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
-            int _newGameStateIndex = currentGameStateIndex.Value + 1;
-            if (_newGameStateIndex >= gameStates.Count)
-            {
-                _newGameStateIndex = 0;
-            }
 
-            if (!_ignoreGameLoop && _wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
+            // Decision-only POCO (Story 2.11b): the arithmetic lives in Domain; the adapter keeps
+            // the NetworkVariable ownership + event raising + SwitchGameState ordering (HELD to Epic 5).
+            GameLoopTransition _transition = _gameLoopMachine.Advance(
+                currentGameStateIndex.Value,
+                BuildIsInGameLoopList(),
+                gameHasStartedFirstLoop,
+                ignoreGameLoop,
+                _ignoreGameLoop);
+
+            if (_transition.FireNewDayPassed)
             {
-                _newGameStateIndex = gameStates.ToList().FindIndex(pair => pair.Value.isInGameLoop);
                 onNewDayPassed?.Invoke();
             }
 
-            if (gameStates[GetGameState(_newGameStateIndex)].isInGameLoop && !gameHasStartedFirstLoop)
+            gameHasStartedFirstLoop = _transition.GameHasStartedFirstLoop;
+            if (_transition.FireGameStarted)
             {
-                gameHasStartedFirstLoop = true;
                 onGameStarted?.Invoke();
             }
-            
-            SwitchGameState(_newGameStateIndex);
+
+            SwitchGameState(_transition.NewIndex);
         }
 
         public void PreviousGameState()
         {
             Assert.IsTrue(IsServer, "PreviousGameState can only be called on the server");
-    
-            bool _wasInGameLoop = gameStates[GetGameState(currentGameStateIndex.Value)].isInGameLoop;
-            int _newGameStateIndex = currentGameStateIndex.Value - 1;
-            if (_newGameStateIndex < 0)
-            {
-                _newGameStateIndex = gameStates.Count - 1;
-            }
-    
-            if (_wasInGameLoop && !ignoreGameLoop && !gameStates[GetGameState(_newGameStateIndex)].isInGameLoop)
-            {
-                _newGameStateIndex = gameStates.ToList().FindLastIndex(pair => pair.Value.isInGameLoop);
-            }
+
+            int _newGameStateIndex = _gameLoopMachine.Rewind(
+                currentGameStateIndex.Value,
+                BuildIsInGameLoopList(),
+                ignoreGameLoop);
+
             SwitchGameState(_newGameStateIndex);
+        }
+
+        // The per-state isInGameLoop flags in dictionary order — the same order as
+        // GetGameState(index) (gameStates.Keys.ElementAt(index)) — so the POCO's positional
+        // indices line up with the live state indices.
+        private List<bool> BuildIsInGameLoopList()
+        {
+            var _flags = new List<bool>(gameStates.Count);
+            foreach (var _pair in gameStates)
+            {
+                _flags.Add(_pair.Value.isInGameLoop);
+            }
+            return _flags;
         }
     
         private void SwitchGameState(int newGameStateIndex)
@@ -387,7 +541,7 @@ namespace GameLogic
         private async UniTaskVoid ShutOffGame()
         {
             await UniTask.WaitForSeconds(1);
-            NetworkManager.Singleton.Shutdown();
+            NetworkManager.Shutdown();
             UnityEngine.SceneManagement.SceneManager.LoadScene(1); // Loading menu
         }
 
@@ -407,7 +561,10 @@ namespace GameLogic
         [Rpc(SendTo.Everyone)]
         private void OnPlayerDisconnectedRpc()
         {
-            BoardManager.instance.DestroyCard(BoardManager.instance.visibleCards.Find(_c => _c.characterInfo.isFake));
+            // Story 10.3: resolve the still-singleton board through the composition root (the GameManager
+            // hub is not a registered DI consumer; it has a NetworkManager so it resolves directly).
+            var _boardManager = CompositionRoot.For(NetworkManager).BoardManager;
+            _boardManager.DestroyCard(_boardManager.visibleCards.Find(_c => _c.characterInfo.isFake));
         }
     }
 

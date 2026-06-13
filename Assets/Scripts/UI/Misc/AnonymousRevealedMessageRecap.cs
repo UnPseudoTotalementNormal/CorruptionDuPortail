@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace UI
 {
+    // Story 12.2 OPT-OUT (recorded §4g): a pure local view of the MessageManager singleton's revealedMessages
+    // NetworkList (a non-de-singletonised message singleton). No decision logic, no slice earns a mock —
+    // verify-don't-force: stays on the façade, death deferred to 12.3.
     public class AnonymousRevealedMessagesComponent : MonoBehaviour
     {
         public Transform messagesLayoutTransform;

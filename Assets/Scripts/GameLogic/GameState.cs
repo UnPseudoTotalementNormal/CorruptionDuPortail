@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Board.BoardCameraSystem;
+using Board.UI.CharacterBar;
+using Characters;
 using UI;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -15,7 +17,40 @@ namespace GameLogic
     public abstract class GameState : ScriptableObject
     {
         public GameManager gameManager { get; set; }
-        
+        // Story 8.3 (Epic 8 / D2): the loop-command surface of the injected gameManager, narrowed to
+        // IGameLoop (D-NFR6 internal-narrowing). State-transition / day-event calls go through Loop so
+        // each state declares only the command slice it drives; the concrete field stays for the
+        // engine internals states still need (IsServer, gameStates, currentGameStateIndex).
+        protected IGameLoop Loop => gameManager;
+        // Story 7.2 lane B: CharacterManager pushed directly by SetupGameStates alongside gameManager,
+        // so states stop hub-hopping through gameManager.characterManager (deleted in 7.5).
+        public CharacterManager characterManager { get; set; }
+        // Story 9.1 (Epic 9 / D3): read slice of the injected characterManager, narrowed to
+        // ICharacterQuery (D-NFR6 internal-narrowing). States observe lookups through CharacterQuery.
+        protected ICharacterQuery CharacterQuery => characterManager;
+        // Story 9.2 (Epic 9 / D3): command slice of the injected characterManager (D-NFR6). The clean
+        // command states (Lobby/RoleAttribution/Vote) drive spawn/mutation through Command; the concrete
+        // field stays only because Unity-serialized via SetupGameStates push — no NFR5 internal is read here.
+        protected ICharacterCommand Command => characterManager;
+        // Story 7.3 lane B: GameInfoRevealer pushed the same way.
+        public GameInfoRevealer gameInfoRevealer { get; set; }
+        // Story 7.4 lane B: ChainingManager + CharactersBar pushed the same way, so states stop
+        // hub-hopping through gameManager.chainingManager / gameManager.charactersBar (deleted in 7.5).
+        public ChainingManager chainingManager { get; set; }
+        public CharactersBar charactersBar { get; set; }
+        // Story 10.3 (Epic 10 / D4): BoardManager pushed the same way (from the composition root, which
+        // serves the still-singleton board), so states stop reading the BoardManager.instance global.
+        public BoardManager boardManager { get; set; }
+        // Story 10.4 (Epic 10 / D4): StatesCanvas (the UI host) pushed the same way, so OnStateCreated
+        // stops reading the StatesCanvas.Instance global. Null-tolerant — only used when stateUIPrefab != null.
+        public StatesCanvas statesCanvas { get; set; }
+        // Story 10.5 (Epic 10 / D4): SelectionFlowService + FocusManager pushed the same way (from the
+        // composition root, serving their still-singletons), so the sole GameState consumer
+        // (TakeDownThePortalState) stops reading the SelectionFlowService.instance / FocusManager.instance
+        // globals. Only that state uses them; the others get them set and never read (like statesCanvas).
+        public UI.BoardUI.Selection.SelectionFlowService selectionFlowService { get; set; }
+        public FocusSystem.FocusManager focusManager { get; set; }
+
         public GameObject stateUIPrefab;
         public StateUI stateUI { get; protected set; }
         
@@ -35,9 +70,10 @@ namespace GameLogic
         {
             if (stateUIPrefab != null)
             {
-                stateUI = Instantiate(stateUIPrefab, StatesCanvas.Instance.transform).GetComponentInChildren<StateUI>();
+                stateUI = Instantiate(stateUIPrefab, statesCanvas.transform).GetComponentInChildren<StateUI>();
                 Assert.IsNotNull(stateUI, "There is no StateUI component in the prefab");
                 stateUI.SetupStateUI(gameManager, this);
+                stateUI.characterManager = characterManager;
                 stateUI.HideStateUI(true);
             }
         }

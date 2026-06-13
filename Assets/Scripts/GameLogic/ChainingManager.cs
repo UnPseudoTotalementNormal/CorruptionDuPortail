@@ -1,19 +1,43 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace GameLogic
 {
     public class ChainingManager : NetworkBehaviour
     {
+        // Story 10.4 (Epic 10 / D4): the chaining powers were rerouted off this global onto an injected
+        // chainingManager (Power base field, lane C) and VoteState onto its inherited GameState field
+        // (lane-B push). Guard #1 now locks this global. The static backs only the composition-root
+        // accessor that serves it (the one sanctioned locator, since the manager is not de-singletonised)
+        // + the PlayMode harness assertions (not source-scanned). // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         public static ChainingManager instance;
         
         public NetworkList<ulong> chainingPlayers = new();
         public Power takeDownThePortalPowerDataObject;
+
+        // Story 7.4 lane A: scene-wired CharacterManager + GameInfoRevealer, replacing the
+        // GameManager.For hub-hops in ChainCharacterRpc. The GameManager.For game-loop reads
+        // (GetGameStates / DoStateMethodRpc) stay until Epic 8 — this stays a mixed file (off the
+        // guard registry). Both fields are NULL-TOLERANT (no init assert): they are used only in
+        // ChainCharacterRpc, and many PlayMode harnesses create a bare ChainingManager via
+        // AddComponent (AddCharacterToChainingList path) that never needs them — an eager assert
+        // would false-fail those. Production wires both in GameScene (verified); proper wiring
+        // coverage lands when this joins the registry in Epic 8.
+        [SerializeField] private CharacterManager characterManager;
+        // Story 9.1/9.2 (Epic 9 / D3): read + command slices of the scene-wired characterManager (D-NFR6
+        // internal-narrowing). GetCharacter goes through Query, AskForUpdateAllCharactersRpc through Command.
+        private ICharacterQuery Query => characterManager;
+        private ICharacterCommand Command => characterManager;
+        [SerializeField] private GameInfoRevealer gameInfoRevealer;
 
         private void Awake()
         {
@@ -43,7 +67,15 @@ namespace GameLogic
                 return;
             }
             
-            if (!chainingPlayers.Contains(_characterId))
+            // Story 2.10 — the dedup/membership rule is a pure Domain POCO (ChainingResolver). The adapter snapshots
+            // the replicated list and applies the decision; behavior identical to the previous Contains-guard.
+            var _current = new List<ulong>();
+            foreach (var _id in chainingPlayers)
+            {
+                _current.Add(_id);
+            }
+
+            if (new ChainingResolver().IsNewMember(_current, _characterId))
             {
                 chainingPlayers.Add(_characterId);
             }
@@ -52,11 +84,11 @@ namespace GameLogic
         [Rpc(SendTo.Server)]
         public void ChainCharacterRpc(ulong _characterId)
         {
-            var _gameManager = GameManager.instance;
-            var _character = _gameManager.characterManager.GetCharacter(_characterId);
-            
+            var _gameManager = GameManager.For(NetworkManager);
+            var _character = Query.GetCharacter(_characterId);
+
             _character.ChainCharacterServer();
-            _gameManager.gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
+            gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))
             {
@@ -68,7 +100,7 @@ namespace GameLogic
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
             }
             
-            _gameManager.characterManager.AskForUpdateAllCharactersRpc();
+            Command.AskForUpdateAllCharactersRpc();
         }
     }
 }

@@ -13,9 +13,16 @@
 
                 <Button name="time-recorder-state-btn" text="PAUSE"/>
 
-                <VisualElement class="total-time-labels-container">
-                    <Label class="dev-time-label" text="Total dev time: "/>
-                    <Label name="label-total-dev-time"  class="label-total-dev-time" text="0 h"/>
+                <VisualElement class="totals-column">
+                    <VisualElement class="total-time-labels-container">
+                        <Label class="dev-time-label" text="Total dev time: "/>
+                        <Label name="label-total-dev-time"  class="label-total-dev-time" text="0 h"/>
+                    </VisualElement>
+
+                    <VisualElement class="total-time-labels-container">
+                        <Label class="dev-time-label" text="Total Claude time: "/>
+                        <Label name="label-total-claude-time"  class="label-total-dev-time claude-total-label" text="0 h"/>
+                    </VisualElement>
                 </VisualElement>
             </VisualElement>            
         </VisualElement>

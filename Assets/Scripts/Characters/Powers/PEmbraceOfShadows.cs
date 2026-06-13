@@ -37,14 +37,14 @@ namespace Characters.Powers
             {
                 return;
             }
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             if (_character.role.IsTheSameRole(_role))
             {
                 _character.CorruptPlayerServerRpc();
                 InvokeOnCharacterCorruptedRpc(_character.ownerClientId.Value);
-                GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     _character.ownerClientId.Value, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
-                GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     _character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
                 onCorruptionSuccessfulSound.TryPlayOneShot();
             }
@@ -88,7 +88,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
+            selectionFlowService.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
                 new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
 
@@ -104,7 +104,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

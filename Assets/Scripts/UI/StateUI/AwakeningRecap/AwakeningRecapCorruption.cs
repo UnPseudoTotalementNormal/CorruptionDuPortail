@@ -19,7 +19,8 @@ namespace UI.Components
         {
             base.ShowEvent();
 
-            var _characters = GameManager.instance.characterManager.GetCharacters(false)
+            // Story 12.2: read characters off the slice pushed by the AwakeningRecapStateUI host instead of the façade.
+            var _characters = CharacterQuery.GetCharacters(false)
                 .Where(_c => !_c.isFake && _c.role.factionType != FactionType.anomaly);
 
             int _corruptedAmount = _characters.Count(_c => _c.isCorrupted.Value);

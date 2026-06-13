@@ -30,10 +30,13 @@ namespace Characters.Powers
             if (NetworkManager.IsServer)
             { 
                 onPowerReparented += OnPowerReparented;
-                IEnumerable<Character> _robots = GameManager.instance.characterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
+                // Story 7.4: pre-spawn (Awake) read — the base Power.characterManager is not resolved until
+                // OnNetworkSpawn, so resolve from the composition root here. Behaviour-identical (delegates to
+                // CharacterManager.For), removes the GameManager hub-hop (deleted in 7.5). Proper fix: Epic 11.
+                IEnumerable<Character> _robots = CompositionRoot.For(NetworkManager).CharacterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
                 foreach (Character _character in _robots)
                 {
-                    GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+                    gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
                         RevealLevel.Personal, ownerClientId.Value);
                 }
             }
@@ -49,7 +52,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -68,7 +71,7 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCharacterClickedRpc(ulong _characterClickedId)
         {
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _characterClickedId);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);
         }
@@ -76,17 +79,17 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
 
         [Rpc(SendTo.Everyone)]
         private void CreateBeaconRpc(ulong _targetClientId, bool _isVisibleOnCard)
         {
-            PersonalBeaconObject _newBeacon = new(this, _targetClientId);
+            PersonalBeaconObject _newBeacon = new(this, _targetClientId, characterManager);
             personalBeacons.Add(_newBeacon);
             
             // Only the owner processes beacon state changes. Simulated players on host must subscribe too.
-            if (!CharacterManager.instance.IsLocalOrSimulated(ownerClientId.Value)) 
+            if (!characterManager.IsLocalOrSimulated(ownerClientId.Value)) 
             {
                 return;
             }
@@ -96,14 +99,14 @@ namespace Characters.Powers
 
         private void OnCorruptedBeaconChanged(PersonalBeaconObject _newBeacon, bool _newState)
         {
-            Character _beaconedCharacter = GameManager.instance.characterManager.GetCharacter(_newBeacon.targetClientId);
+            Character _beaconedCharacter = characterManager.GetCharacter(_newBeacon.targetClientId);
             
             // Do not show local visual/chat cues if the Host is not currently possessing the owner
-            if (CharacterManager.instance.GetLocalClientId() != ownerClientId.Value) return;
+            if (characterManager.GetLocalClientId() != ownerClientId.Value) return;
 
             if (_beaconedCharacter.role.roleID == RoleID.Robot)
             {
-                ChatManager.instance.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",
+                chatManager.AddMessageLocal($"Le robot a un nouvel état de corruption: {_newState}",
                     ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
                 return;
             }
@@ -112,7 +115,7 @@ namespace Characters.Powers
             {
                 return;
             }
-            ChatManager.instance.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", 
+            chatManager.AddMessageLocal($"{_newBeacon.targetClientId.GetPlayerName()} a un nouvel état de corruption: {_newState}", 
                 ChatManager.SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
         }
     }

@@ -14,7 +14,16 @@ namespace GameLogic
     public class PowerManager : MonoBehaviour
     {
         public static PowerManager instance;
-        
+
+        // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop and the
+        // CharacterManager static-locator lookup.
+        [SerializeField] private CharacterManager characterManager;
+        // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slices — IGameLoop (onGameStarted /
+        // hasGameStarted) + IGameStateQuery (GetGameState / currentGameStateIndex), replacing the static locator.
+        [SerializeField] private GameManager gameManager;
+        private IGameLoop Loop => gameManager;
+        private IGameStateQuery Query => gameManager;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -27,6 +36,8 @@ namespace GameLogic
 
         private void Start()
         {
+            Assert.IsNotNull(characterManager, "PowerManager.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(gameManager, "PowerManager.gameManager is not wired — wire it in GameScene (the composition root).");
             Power.onPowerSpawned += OnPowerSpawned;
 
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -35,7 +46,7 @@ namespace GameLogic
             }
             //server only
 
-            GameManager.instance.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         private void OnPowerSpawned(Power _newPower)
@@ -45,7 +56,7 @@ namespace GameLogic
                 return;
             }
 
-            if (GameManager.instance.hasGameStarted)
+            if (Loop.hasGameStarted)
             {
                 _newPower.OnGameStartedServer();
             }
@@ -60,8 +71,7 @@ namespace GameLogic
                 return;
             }
 
-            var _gameManager = GameManager.instance;
-            if (_gameManager.GetGameState(_gameManager.currentGameStateIndex.Value) is AwakeningState _awakeningState)
+            if (Query.GetGameState(Query.currentGameStateIndex.Value) is AwakeningState _awakeningState)
             {
                 _awakeningState.OnPowerUsedServer(_newPower);
             }
@@ -71,16 +81,16 @@ namespace GameLogic
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnGameStarted should only be called on the server");
             
-            foreach (var _rolePower in GameManager.instance.characterManager.GetCharacters().SelectMany(_character => _character.role.powers))
+            foreach (var _rolePower in characterManager.GetCharacters().SelectMany(_character => _character.role.powers))
             {
-                if (GameManager.instance.characterManager.GetCharacter(_rolePower.ownerClientId.Value, false).isFake)
+                if (characterManager.GetCharacter(_rolePower.ownerClientId.Value, false).isFake)
                 {
                     continue;
                 }
                 _rolePower.OnGameStartedServer();
             }
 
-            foreach (var _character in GameManager.instance.characterManager.GetCharacters())
+            foreach (var _character in characterManager.GetCharacters())
             {
                 _character.onCharacterAwakened += () => OnCharacterAwakenedServer(_character);
                 foreach (Power _characterPower in _character.role.powers)
@@ -130,7 +140,7 @@ namespace GameLogic
         [Rpc(SendTo.Everyone)]
         public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, NetworkBehaviourReference _powerNetworkRef)
         {
-            Character _character = CharacterManager.instance.GetCharacter(_characterId);
+            Character _character = characterManager.GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
             _powerNetworkRef.TryGet(out Power _power);
             Assert.IsNotNull(_power, $"Power with id {_powerNetworkRef} not found on character {_characterId}");

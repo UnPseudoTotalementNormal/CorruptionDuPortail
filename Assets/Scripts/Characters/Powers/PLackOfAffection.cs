@@ -36,28 +36,28 @@ namespace Characters.Powers
                 return;
             }
 
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnUsed();
-            OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, CharacterManager.instance.GetSafeRpcTarget(_character.ownerClientId.Value));
+            OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, characterManager.GetSafeRpcTarget(_character.ownerClientId.Value));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnPlayerContactedRpc(ulong targetClientId, ulong senderClientId, RpcParams rpcParams = default)
         {
-            if (!CharacterManager.instance.IsLocalOrSimulated(targetClientId)) return;
+            if (!characterManager.IsLocalOrSimulated(targetClientId)) return;
             
-            Character _targetCharacter = GameManager.instance.characterManager.GetCharacter(targetClientId, false);
-            Character _senderCharacter = GameManager.instance.characterManager.GetCharacter(senderClientId, false);
+            Character _targetCharacter = characterManager.GetCharacter(targetClientId, false);
+            Character _senderCharacter = characterManager.GetCharacter(senderClientId, false);
             
             if (_targetCharacter.role.factionType == FactionType.chosen)
             {
-                GameManager.instance.gameInfoRevealer.SetRevealLevel(
+                gameInfoRevealer.SetRevealLevel(
                     senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, targetClientId);
             }
             
-            if (CharacterManager.instance.GetLocalClientId() == targetClientId)
+            if (characterManager.GetLocalClientId() == targetClientId)
             {
-                ChatManager.instance.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+                chatManager.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
                 switch (_targetCharacter.role.factionType)
                 {
                     case FactionType.chosen:
@@ -88,7 +88,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterSelection(targetValidator, OnCharacterPicked,
+            selectionFlowService.StartCharacterSelection(targetValidator, OnCharacterPicked,
                 new SelectionFlowOptions { stepDescriptions = new[] { pickerDescription } });
         }
 
@@ -104,7 +104,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
     }
 }

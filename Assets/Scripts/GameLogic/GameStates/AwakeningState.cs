@@ -80,7 +80,7 @@ namespace GameLogic.GameStates
 
             foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
             {
-                List<Character> _charactersInGame = gameManager.characterManager.GetCharacters().ToList();
+                List<Character> _charactersInGame = CharacterQuery.GetCharacters().ToList();
                 foreach (Character _currentCharacter in _charactersInGame)
                 {
                     if (!_currentCharacter.role.IsTheSameRole(_roleToAwake.role))
@@ -139,9 +139,9 @@ namespace GameLogic.GameStates
         { 
             base.OnStateCreated();
             _awakeningLayerCache = null;
-            gameManager.onGameStarted += () =>
+            Loop.onGameStarted += () =>
             {
-                var _localCharacter = gameManager.characterManager.GetLocalCharacter(false);
+                var _localCharacter = CharacterQuery.GetLocalCharacter(false);
                 if (_localCharacter != null)
                 {
                     _localCharacter.onCharacterAwakened += () =>
@@ -166,7 +166,7 @@ namespace GameLogic.GameStates
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             
-            foreach (var _character in CharacterManager.instance.GetCharacters(false))
+            foreach (var _character in CharacterQuery.GetCharacters(false))
             {
                 // Créer une fonction anonyme avec le paramètre ownerId et la stocker
                 NetworkVariable<bool>.OnValueChangedDelegate _callback = (_previousValue, _newValue) => 
@@ -181,7 +181,7 @@ namespace GameLogic.GameStates
 
         private void OnCharacterAwakeningChanged(bool _previousValue, bool _newValue, ulong _ownerId)
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 Debug.LogError("OnCharacterAwakeningChanged can only be called on the server");
                 return;
@@ -192,7 +192,7 @@ namespace GameLogic.GameStates
                 return;
             }
             
-            var _character = gameManager.characterManager.GetCharacter(_ownerId, false);
+            var _character = CharacterQuery.GetCharacter(_ownerId, false);
             int _awakeningIndexForCharacter = GetAwakeningLayerIndex(_character.role);
             
             if (_awakeningIndexForCharacter != currentAwakeningIndex)
@@ -221,7 +221,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
-            _ = BoardManager.instance.ShowAllPlayerCards();
+            _ = boardManager.ShowAllPlayerCards();
         }
         
         public override void OnEndStateClient()
@@ -243,10 +243,11 @@ namespace GameLogic.GameStates
             
             if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f) //handle fake skip/used power
             {
-                var _fakeAwakenedCharacters = gameManager.characterManager.GetCharacters(false)
+                var _fakeAwakenedCharacters = CharacterQuery.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
+                    // [DETERMINISM-QUARANTINE §3b B] Frame-timed RNG: call count depends on framerate. Out of scope for Phase 0 / Wave 1 — needs IGameClock + seed isolation (Wave). MUST NOT feed any golden. Proven isolated by AwakeningStateIsolationTests (no WinningCondition reads awakening state).
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < 0.00045f)
                     {
@@ -270,7 +271,7 @@ namespace GameLogic.GameStates
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
                 SleepCurrentlyAwakenedCharacters();
-                gameManager.NextGameState();
+                Loop.NextGameState();
                 return;
             }
             
@@ -321,13 +322,13 @@ namespace GameLogic.GameStates
 
         public void OnPowerUsedServer(Power _newPower)
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (!gameManager.NetworkManager.IsServer)
             {
                 Debug.LogError("OnPowerUsedServer can only be called on the server");
                 return;
             }
             
-            var _character = gameManager.characterManager.GetCharacter(_newPower.ownerClientId.Value, false);
+            var _character = CharacterQuery.GetCharacter(_newPower.ownerClientId.Value, false);
             if (!currentlyAwakenedCharacters.Contains(_character))
             {
                 return;

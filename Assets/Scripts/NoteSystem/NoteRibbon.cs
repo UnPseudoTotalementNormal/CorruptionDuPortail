@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Board;
 using Board.UI.CharacterBar;
+using Characters;
 using DG.Tweening;
 using GameLogic;
 using UI;
@@ -120,7 +121,9 @@ namespace NoteSystem
             for (int _i = 0; _i < _notesToDisplay; _i++)
             {
                 var _noteObject = Instantiate(notePrefab, gridLayoutGroup.transform);
-                _noteObject.SetCharacter(GameManager.instance.characterManager.GetCharacter(_roles[_i].ownerClientId, false));
+                // Story 12.2: read the character off the parent Card's injected ICharacterQuery slice (NoteManager
+                // stays a singleton — recorded §4f survivor — only the CharacterManager read is decoupled here).
+                _noteObject.SetCharacter(card.CharacterQuery.GetCharacter(_roles[_i].ownerClientId, false));
                 var _index = _i;
                 _noteObject.onCharacterBarObjectClicked += (_) =>
                 {
@@ -148,7 +151,7 @@ namespace NoteSystem
             
             currentNoteChoosePanel = Instantiate(noteChoosePanelPrefab, noteChoosePanelCanvas.transform);
             currentNoteChoosePanel.transform.SetSiblingIndex(0);
-            currentNoteChoosePanel.SetTarget(card.characterInfo.ownerClientId.Value, noteType);
+            currentNoteChoosePanel.SetTarget(card.characterInfo.ownerClientId.Value, noteType, card.CharacterQuery);
             currentNoteChoosePanel.onPanelClose += () =>
             {
                 currentNoteChoosePanel = null;

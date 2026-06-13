@@ -1,3 +1,4 @@
+using Characters;
 using DG.Tweening;
 using GameLogic;
 using TMPro;
@@ -12,7 +13,7 @@ namespace UI
         public override void SetupStateUI(GameManager gameManager, GameState gameState)
         {
             base.SetupStateUI(gameManager, gameState);
-            gameManager.onGameStarted += OnGameStarted;
+            Loop.onGameStarted += OnGameStarted;
         }
 
         protected override void OnStateStart()
@@ -21,9 +22,29 @@ namespace UI
             awakeningHelpText.alpha = 0;
         }
 
+        // Story 11.4 lifecycle hygiene: cache the exact character whose NetworkVariable we subscribe to.
+        private Character _subscribedAwakeningCharacter;
+
         private void OnGameStarted()
         {
-            gameManager.characterManager.GetLocalCharacter(false).isAwakened.OnValueChanged += OnAwakeningChanged;
+            _subscribedAwakeningCharacter = CharacterQuery.GetLocalCharacter(false);
+            _subscribedAwakeningCharacter.isAwakened.OnValueChanged += OnAwakeningChanged;
+        }
+
+        public override void OnDestroy()
+        {
+            // StateUI teardown is OnDestroy (these UIs are locally instantiated, not network-spawned, so
+            // OnNetworkDespawn is unreliable) — the base unsubscribes its owningGameState events; mirror
+            // the two subscriptions added here (SetupStateUI → onGameStarted, OnGameStarted → isAwakened).
+            base.OnDestroy();
+            if (gameManager != null)
+            {
+                Loop.onGameStarted -= OnGameStarted;
+            }
+            if (_subscribedAwakeningCharacter != null)
+            {
+                _subscribedAwakeningCharacter.isAwakened.OnValueChanged -= OnAwakeningChanged;
+            }
         }
 
         private void OnAwakeningChanged(bool _previousValue, bool _newValue)

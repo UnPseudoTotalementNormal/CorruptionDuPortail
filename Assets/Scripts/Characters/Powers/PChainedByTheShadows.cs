@@ -35,15 +35,15 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
-            Character _corruptingCharacter = GameManager.instance.characterManager.GetCharacter(_corruptingCharacterId, false);
-            RoleTargetSystem.instance.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
+            Character _corruptingCharacter = characterManager.GetCharacter(_corruptingCharacterId, false);
+            roleTargetSystem.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
             if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
             {
-                GameManager.instance.gameInfoRevealer.SendRevealLevelRpc(
+                gameInfoRevealer.SendRevealLevelRpc(
                     _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
                 if (_corruptingCharacter.role.factionType == FactionType.chosen)
                 {
-                    ChainingManager.instance.AddCharacterToChainingList(_corruptingCharacterId);
+                    chainingManager.AddCharacterToChainingList(_corruptingCharacterId);
                 }
             }
         }
@@ -63,7 +63,7 @@ namespace Characters.Powers
         public override void StartUse()
         {
             base.StartUse();
-            SelectionFlowService.instance.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
+            selectionFlowService.StartCharacterThenRoleSelection(targetValidator, OnCharacterAndRolePicked,
                 new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
 
@@ -79,7 +79,7 @@ namespace Characters.Powers
         protected override void StopUse()
         {
             base.StopUse();
-            SelectionFlowService.instance.CancelSelection();
+            selectionFlowService.CancelSelection();
         }
 
         public override void OnGameStartedServer()

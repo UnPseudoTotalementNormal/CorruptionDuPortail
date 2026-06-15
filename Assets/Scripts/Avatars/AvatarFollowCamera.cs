@@ -1,5 +1,3 @@
-using GameLogic;
-using GameLogic.GameStates;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
@@ -15,11 +13,12 @@ namespace Avatars
     /// them via priority while active and stands down everywhere else so the untouched phases present
     /// exactly as today (NFR1).
     ///
-    /// Lobby gating mirrors BoardCameraManager's subscription (BoardCameraManager.cs:65-86): it reacts to
-    /// <c>currentGameStateIndex.OnValueChanged</c> and activates ONLY while the current state is the
-    /// <see cref="LobbyState"/>. The general state→camera-mode arbiter (free-roam / fixed / embodied) is
-    /// Story 13.3 — this is the minimal Lobby-only hook so 13.2 ships a working camera without regressing
-    /// the loop.
+    /// ARBITER-DRIVEN (Story 13.3): this camera NO LONGER reads game state itself. The single
+    /// <see cref="AvatarCameraArbiter"/> owns the state→camera-mode decision and drives
+    /// <see cref="SetActive"/> (on iff the resolved mode is <c>FreeRoam</c> = the Lobby). 13.2's own
+    /// <c>currentGameStateIndex</c> subscription + <c>is LobbyState</c> gate were removed here — the
+    /// pose-copy / local-avatar bind / model hide-show below are unchanged; only the who-decides-active
+    /// moved out.
     ///
     /// FIRST-PERSON model: the bare CinemachineCamera's transform IS the camera pose the brain reads, so we
     /// copy the bound local avatar's eye-height pose onto it each LateUpdate (yaw follows the body; pitch is
@@ -30,8 +29,6 @@ namespace Avatars
     public class AvatarFollowCamera : MonoBehaviour
     {
         [SerializeField] private CinemachineCamera _camera;
-        // Lane A (mirrors BoardCameraManager.gameManager): read the narrow state-query slice.
-        [SerializeField] private GameManager gameManager;
 
         [Header("Feel — placeholder defaults, Poyo-tuned")]
         [Tooltip("Local-space offset of the eye from the avatar root (≈ head height).")]
@@ -39,40 +36,28 @@ namespace Avatars
         [SerializeField] private int _activePriority = 100;
         [SerializeField] private int _inactivePriority = -100;
 
-        private IGameStateQuery Query => gameManager;
         private bool _active;
-        private bool _subscribed;
         private PlayerAvatar _boundAvatar;
         private Transform _boundEye;
         private Renderer[] _boundRenderers;
 
+        /// <summary>Whether the first-person camera is currently outranking the board cameras.</summary>
+        public bool IsActive => _active;
+
         private void Awake()
         {
             Assert.IsNotNull(_camera, "AvatarFollowCamera._camera is not wired — wire the first-person CinemachineCamera.");
-            Assert.IsNotNull(gameManager, "AvatarFollowCamera.gameManager is not wired — wire it in GameScene (like BoardCameraManager).");
             Deactivate();
         }
 
-        private void Start()
+        /// <summary>
+        /// Story 13.3 entry point: the <see cref="AvatarCameraArbiter"/> drives this (on iff the resolved
+        /// camera mode is <c>FreeRoam</c>). Replaces 13.2's own state subscription — this camera no longer
+        /// decides when it is active.
+        /// </summary>
+        public void SetActive(bool _isActive)
         {
-            Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
-            _subscribed = true;
-            OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
-        }
-
-        private void OnDestroy()
-        {
-            // Mirror the Start subscription (subscribe-in-X ⇒ unsubscribe-in-its-teardown).
-            if (_subscribed && gameManager != null)
-            {
-                Query.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
-            }
-        }
-
-        private void OnGameStateChanged(int _previousValue, int _newValue)
-        {
-            GameState _gameState = Query.GetGameState(_newValue);
-            if (_gameState is LobbyState)
+            if (_isActive)
             {
                 Activate();
             }

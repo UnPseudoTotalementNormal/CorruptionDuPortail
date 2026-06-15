@@ -491,6 +491,7 @@ GameObject:
   - component: {fileID: 54114940}
   - component: {fileID: 54114939}
   - component: {fileID: 54114938}
+  - component: {fileID: 54114941}
   m_Layer: 0
   m_Name: AvatarFollowCamera
   m_TagString: Untagged
@@ -511,7 +512,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Avatars.AvatarFollowCamera
   _camera: {fileID: 54114939}
-  gameManager: {fileID: 704980999}
   _eyeOffset: {x: 0, y: 1.7, z: 0}
   _activePriority: 100
   _inactivePriority: -100
@@ -573,6 +573,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &54114941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 54114937}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f2ce75cc9b930b4183ef1320364f1c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarCameraArbiter
+  gameManager: {fileID: 704980999}
+  _followCamera: {fileID: 54114938}
 --- !u!1 &117485320
 GameObject:
   m_ObjectHideFlags: 0

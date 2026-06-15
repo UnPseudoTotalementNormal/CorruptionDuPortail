@@ -10,11 +10,10 @@ namespace Avatars
     /// • <see cref="Board"/>     — every in-loop fixed state: the existing
     ///   <see cref="Board.BoardCameraSystem.BoardCameraManager"/> presentation is in
     ///   charge (forceBoardCamera + arrow neighbour-nav), exactly as before this epic.
-    /// • <see cref="Embodied"/>  — the Vote. In 13.3 this is a ROUTING SLOT only:
-    ///   movement is locked and board arrow-nav is cut, but the concrete seated camera
-    ///   / seat-snap / clamped look is Story 13.4. Until 13.4 lands, Embodied falls back
-    ///   to the unchanged board-camera presentation of <c>VoteState</c> (its current
-    ///   forceBoardCamera) — see <see cref="AvatarCameraArbiter"/>.
+    /// • <see cref="Embodied"/>  — the Vote (Story 13.4): the seated
+    ///   <see cref="AvatarEmbodiedCamera"/> is active (placed at the local seat, clamped
+    ///   look), the local body is snapped to its seat, movement is locked, and board
+    ///   arrow-nav is cut — see <see cref="AvatarCameraArbiter"/>.
     /// </summary>
     public enum CameraMode
     {

@@ -104,8 +104,50 @@ namespace Avatars
             base.OnNetworkDespawn();
         }
 
-        /// <summary>Story 13.3 hook: enable/disable free-roam movement with the camera-mode arbiter.</summary>
-        public void SetMovementEnabled(bool _enabled) => _movementEnabled = _enabled;
+        /// <summary>
+        /// Story 13.3 hook: enable/disable free-roam movement with the camera-mode arbiter.
+        ///
+        /// Story 13.4 code-review fix: also toggles the <see cref="CharacterController"/> itself off outside
+        /// the Lobby. A seated/locked body keeps an ENABLED controller otherwise, and a CharacterController
+        /// resolves overlap penetration on its next move step — re-seating the body onto a seat that overlaps
+        /// the table/another capsule (then ever moving) would EJECT it (the "avatar flying up" class fixed in
+        /// commit 7bfcb42). With the controller disabled while embodied/locked, no depenetration can fire; it
+        /// is re-enabled only when free-roam movement returns (the Lobby). Owner-gated effect (only the local
+        /// owner's controller is driven by the arbiter); cosmetic, replicates via the owner-auth NetworkTransform.
+        /// </summary>
+        public void SetMovementEnabled(bool _enabled)
+        {
+            _movementEnabled = _enabled;
+            if (_characterController != null)
+            {
+                _characterController.enabled = _enabled;
+            }
+        }
+
+        /// <summary>
+        /// Story 13.4 hook: snap the avatar body to its seat for the embodied Vote (DO3 route A — each
+        /// owner seats its OWN body at its OWN global seat, so every client agrees on all seat positions,
+        /// network-clean). OWNER-ONLY: a non-owner cannot move the owner-authoritative NetworkTransform —
+        /// the move replicates to every client through it (NFR3: cosmetic position only, no game state,
+        /// no RPC). The arbiter calls this on the local owned avatar when the Vote (Embodied) is entered.
+        ///
+        /// A <see cref="CharacterController"/> SILENTLY overrides a direct transform write — so it is disabled
+        /// around the teleport, then restored to its PRIOR state. During the Vote that prior state is already
+        /// "off" (the arbiter calls <see cref="SetMovementEnabled"/>(false) before seating), so the body stays
+        /// seated with the controller disabled — no depenetration ejection (see <see cref="SetMovementEnabled"/>).
+        /// </summary>
+        public void SeatAtSeat(Vector3 _position, Quaternion _rotation)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+
+            bool _wasEnabled = _characterController.enabled;
+            _characterController.enabled = false;
+            transform.SetPositionAndRotation(_position, _rotation);
+            _characterController.enabled = _wasEnabled;
+        }
 
         private void Update()
         {

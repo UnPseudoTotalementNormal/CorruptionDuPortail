@@ -76,6 +76,7 @@ namespace Tests.PlayMode.Avatars
         private GameObject _boardCameraManagerGo;
         private GameObject _followCameraGo;
         private AvatarFollowCamera _followCamera;
+        private GameObject _embodiedCameraGo;
         private GameObject _arbiterGo;
 
         private BoardStubState _boardState;
@@ -129,6 +130,16 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_followCamera, "_camera", _cmCamera);
             _followCameraGo.SetActive(true);
 
+            // Embodied camera (Story 13.4): the arbiter now requires it wired (Awake assert). Built with a
+            // real CinemachineCamera; this test does not exercise the embodied path (covered by
+            // AvatarEmbodiedModeTests) but must satisfy the assert.
+            _embodiedCameraGo = new GameObject("AvatarEmbodiedCamera");
+            _embodiedCameraGo.SetActive(false);
+            CinemachineCamera _embodiedCm = _embodiedCameraGo.AddComponent<CinemachineCamera>();
+            AvatarEmbodiedCamera _embodiedCamera = _embodiedCameraGo.AddComponent<AvatarEmbodiedCamera>();
+            ReflectionHelper.SetPrivateField(_embodiedCamera, "_camera", _embodiedCm);
+            _embodiedCameraGo.SetActive(true);
+
             // The arbiter: wired inactive, then activated so Awake's asserts see populated fields and Start
             // subscribes + primes with the current index (0 = Board).
             _arbiterGo = new GameObject("AvatarCameraArbiter");
@@ -136,6 +147,7 @@ namespace Tests.PlayMode.Avatars
             AvatarCameraArbiter _arbiter = _arbiterGo.AddComponent<AvatarCameraArbiter>();
             ReflectionHelper.SetPrivateField(_arbiter, "gameManager", _gameManager);
             ReflectionHelper.SetPrivateField(_arbiter, "_followCamera", _followCamera);
+            ReflectionHelper.SetPrivateField(_arbiter, "_embodiedCamera", _embodiedCamera);
             _arbiterGo.SetActive(true);
             yield return null;
         }
@@ -145,6 +157,7 @@ namespace Tests.PlayMode.Avatars
         {
             if (_arbiterGo != null) Object.Destroy(_arbiterGo);
             if (_followCameraGo != null) Object.Destroy(_followCameraGo);
+            if (_embodiedCameraGo != null) Object.Destroy(_embodiedCameraGo);
             if (_boardCameraManagerGo != null) Object.Destroy(_boardCameraManagerGo);
             BoardCameraManager.instance = null;
 

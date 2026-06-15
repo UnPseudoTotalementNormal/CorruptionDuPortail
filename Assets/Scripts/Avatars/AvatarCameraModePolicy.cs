@@ -20,9 +20,9 @@ namespace Avatars
     /// an engine <c>ScriptableObject</c> type forbidden by Domain's <c>noEngineReferences</c>
     /// purity guard (same reason <see cref="IGameStateQuery"/> lives in Game, not Domain).
     ///
-    /// The <see cref="CameraMode.Embodied"/> result only ROUTES the Vote to the embodied
-    /// slot + locks movement; the concrete seat/camera realization is Story 13.4 (13.3
-    /// leaves the arbiter untouched when 13.4 fills it in).
+    /// The <see cref="CameraMode.Embodied"/> result routes the Vote to the embodied
+    /// presentation; the concrete seated camera / seat-snap / clamped look is realised by
+    /// <see cref="AvatarEmbodiedCamera"/> + <see cref="AvatarCameraArbiter"/> (Story 13.4).
     /// </summary>
     public static class AvatarCameraModePolicy
     {

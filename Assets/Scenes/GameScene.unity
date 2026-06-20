@@ -2130,7 +2130,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 739575387}
   - {fileID: 621464947}
   - {fileID: 24091911}
   m_Father: {fileID: 1910531426}
@@ -5181,7 +5180,7 @@ MonoBehaviour:
   appParent: {fileID: 1500577287}
   phoneCanvasGroup: {fileID: 1009893443}
   phoneOpenLocalPosition: {x: 0, y: 0, z: 4}
-  phoneCloseLocalPosition: {x: 0, y: -10, z: 4}
+  phoneCloseLocalPosition: {x: 0, y: -10, z: 2}
 --- !u!114 &724818886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5459,13 +5458,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 739575386}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0.08715578, y: 0, z: 0, w: 0.9961947}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 330585546}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 1910531426}
+  m_LocalEulerAnglesHint: {x: 10, y: 0, z: 0}
 --- !u!114 &739575388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5568,7 +5567,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 739575386}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e0d017ee91f44eae86cf2d7b59aa918e, type: 3}
   m_Name: 
@@ -9128,7 +9127,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   positionOffset: {x: 0, y: 0, z: 0}
   rotationOffset: {x: 0, y: 0, z: 0}
-  camera: {fileID: 0}
+  camera: {fileID: 739575389}
 --- !u!1 &1286712806
 GameObject:
   m_ObjectHideFlags: 0
@@ -14301,6 +14300,7 @@ Transform:
   - {fileID: 1658044767}
   - {fileID: 1318279308}
   - {fileID: 832575519}
+  - {fileID: 739575387}
   - {fileID: 330585546}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

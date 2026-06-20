@@ -2,7 +2,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Characters;
+using Cysharp.Threading.Tasks;
 using GameLogic;
 using GameLogic.GameSettings;
 using GameLogic.GameStates;
@@ -28,6 +30,30 @@ namespace UI.GameSettings
 
         protected override void Init()
         {
+            BuildWhenReadyAsync(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        // The lobby UI is now host-agnostic and can live on the tablet (a SCENE object whose Start runs before
+        // GameManager.OnNetworkSpawn registers the per-NM instance). Wait until the composition root resolves
+        // the graph before building — keeps the modular "resolve own deps" contract (no serialized scene ref
+        // that would break on a reparent) without racing spawn. In the HUD overlay (instantiated post-spawn)
+        // the predicate is already true, so this completes on the first check.
+        private async UniTaskVoid BuildWhenReadyAsync(CancellationToken _cancellationToken)
+        {
+            await UniTask.WaitUntil(
+                () => NetworkManager.Singleton != null
+                      && CompositionRoot.For(NetworkManager.Singleton).GameSettingsManager != null
+                      && CompositionRoot.For(NetworkManager.Singleton).GameManager != null,
+                cancellationToken: _cancellationToken);
+
+            // Defensive: if the tab was destroyed in the same frame the wait resolved, bail before mutating
+            // shared state / subscribing, so OnDestroy's unsubscribe (which already ran) is not undone by a
+            // late continuation (no leaked OnSettingsChanged handler firing on a destroyed tab).
+            if (_cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             gameSettingsManager = CompositionRoot.For(NetworkManager.Singleton).GameSettingsManager;
 
             foreach (RoleDataObject _roleDataObject in GetRoleAttributionState().roleAttributionDictionary.Keys.ToList())
@@ -37,10 +63,7 @@ namespace UI.GameSettings
                 roleAttributionSettingObjects.Add(_settingObject);
             }
 
-            if (gameSettingsManager != null)
-            {
-                gameSettingsManager.OnSettingsChanged += RefreshAll;
-            }
+            gameSettingsManager.OnSettingsChanged += RefreshAll;
         }
 
         private void OnDestroy()

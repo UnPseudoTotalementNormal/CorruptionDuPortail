@@ -14,11 +14,45 @@ namespace Meaf75.Unity {
 
         private static ClaudeTimeData cached;
 
-        /// <summary> Absolute path to the ledger maintained by the hook scripts </summary>
-        public static string DataPath {
+        /// <summary> Absolute path to the directory the hook scripts read/write </summary>
+        private static string LedgerDir {
             get {
                 // Application.dataPath is the project's Assets folder
-                return Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".claude", "timerecorder", "claude_time.json"));
+                return Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".claude", "timerecorder"));
+            }
+        }
+
+        /// <summary> Absolute path to the ledger maintained by the hook scripts </summary>
+        public static string DataPath {
+            get { return Path.Combine(LedgerDir, "claude_time.json"); }
+        }
+
+        /// <summary>
+        /// Absolute path to the pause flag. When this file exists the hooks accrue no AI
+        /// time. Unity only toggles the flag; the hooks own all ledger writes.
+        /// </summary>
+        public static string PausePath {
+            get { return Path.Combine(LedgerDir, "ai_paused.flag"); }
+        }
+
+        /// <summary> Is AI time tracking currently paused? (presence of the flag file) </summary>
+        public static bool IsPaused {
+            get { return File.Exists(PausePath); }
+        }
+
+        /// <summary> Create or remove the pause flag the hooks check on every turn </summary>
+        public static void SetPaused(bool paused) {
+            try {
+                Directory.CreateDirectory(LedgerDir);
+                if (paused) {
+                    if (!File.Exists(PausePath)) {
+                        File.WriteAllText(PausePath, "AI time tracking paused from the Unity Time Calendar.");
+                    }
+                } else if (File.Exists(PausePath)) {
+                    File.Delete(PausePath);
+                }
+            } catch (Exception e) {
+                Debug.LogWarning($"[TimeRecorder] Could not toggle Claude pause flag: {e.Message}");
             }
         }
 

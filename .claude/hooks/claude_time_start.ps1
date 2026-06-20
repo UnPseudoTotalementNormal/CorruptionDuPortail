@@ -22,6 +22,11 @@ try {
     $dir = Join-Path $projectDir '.claude/timerecorder'
     [System.IO.Directory]::CreateDirectory($dir) | Out-Null
 
+    # AI tracking paused from the Unity calendar window -> record no start marker.
+    # With no marker the matching stop hook accrues nothing for this turn.
+    $pauseFlag = Join-Path $dir 'ai_paused.flag'
+    if (Test-Path $pauseFlag) { exit 0 }
+
     $startMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     $marker  = Join-Path $dir ("start_{0}.txt" -f $sessionId)
 

@@ -175,6 +175,7 @@ namespace Tests.Editor
             typeof(PowersBar), // 7.4 — PowerUsageManager.powersBar lane-A wiring is guard-checked.
             typeof(BoardManager), // 10.3 — FocusManager.boardManager + CardEffectManager.boardManager lane-A wiring is guard-checked.
             typeof(FocusManager), // 12.2 — CardPickerManager.focusManager lane-A wiring is guard-checked.
+            typeof(GameLogic.GameSettings.GameSettingsManager), // quick-dev gamesettings-refonte — CompositionRoot.gameSettings lane-A wiring is guard-checked (replaces the dropped Awake assert).
         };
 
         /// <summary>

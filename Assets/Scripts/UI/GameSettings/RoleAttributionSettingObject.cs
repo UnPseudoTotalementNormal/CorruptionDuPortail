@@ -1,10 +1,7 @@
 #region
 
-using System;
-using System.Linq;
 using Characters;
-using GameLogic;
-using GameLogic.GameStates;
+using GameLogic.GameSettings;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,31 +11,42 @@ using UnityEngine.UI;
 
 namespace UI.GameSettings
 {
+    // Quick-dev gamesettings-refonte (2026-06-20): pure view. It used to mutate the RoleAttributionState SO
+    // clone directly and resolve the state per call; it now reads/writes the role count through the
+    // replicated, server-authoritative GameSettingsManager (passed in by the tab) and mirrors replicated
+    // changes via Refresh(). Host-authoritative: the slider is interactable only on the host — non-host
+    // views are read-only mirrors (preserves the pre-refactor de-facto behaviour).
     public class RoleAttributionSettingObject : MonoBehaviour
     {
         private RoleDataObject roleDataObject;
-    
+        private GameSettingsManager gameSettingsManager;
+
         [SerializeField] private TMP_Text roleNameText;
         [SerializeField] private TMP_Text roleNumberToAttributeValueText;
         [SerializeField] private Slider roleNumberToAttributeSlider;
-
-        public event Action onValueChanged;
 
         private void Start()
         {
             roleNumberToAttributeSlider.onValueChanged.AddListener(OnRoleToAttributeValueChanged);
         }
 
-        public void SetRoleDataObject(RoleDataObject _roleDataObject)
+        public void Setup(RoleDataObject _roleDataObject, GameSettingsManager _gameSettingsManager)
         {
             roleDataObject = _roleDataObject;
+            gameSettingsManager = _gameSettingsManager;
+            // Host-authoritative editing (spec default): non-host sliders are read-only mirrors. Flip
+            // GameSettingsManager._allowClientEditing (+ this gate) to open editing to all clients.
+            roleNumberToAttributeSlider.interactable = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
             Refresh();
         }
 
         public void Refresh()
         {
-            roleNumberToAttributeSlider.value = GetRoleAttributionSetting().roleToAttribute;
-            roleNumberToAttributeValueText.text = GetRoleAttributionSetting().roleToAttribute.ToString();
+            int _count = gameSettingsManager != null ? gameSettingsManager.GetRoleCount(roleDataObject.role.roleID) : 0;
+            // SetValueWithoutNotify: Refresh mirrors the replicated value; firing onValueChanged here would
+            // bounce a redundant write back into the manager (and loop on the replication callback).
+            roleNumberToAttributeSlider.SetValueWithoutNotify(_count);
+            roleNumberToAttributeValueText.text = _count.ToString();
             roleNameText.text = roleDataObject.role.roleName.ToString();
         }
 
@@ -46,15 +54,7 @@ namespace UI.GameSettings
         {
             int _rolesToAttribute = (int)_number;
             roleNumberToAttributeValueText.text = _rolesToAttribute.ToString();
-            GetRoleAttributionSetting().roleToAttribute = _rolesToAttribute;
-            onValueChanged?.Invoke();
-        }
-
-        private RoleAttributionSetting GetRoleAttributionSetting()
-        {
-            // Story 12.3: prefab-resident settings object — sanctioned CompositionRoot.For(Singleton) route.
-            var _roleAttributionState = (RoleAttributionState)CompositionRoot.For(NetworkManager.Singleton).GameManager.GetGameStates(typeof(RoleAttributionState)).First();
-            return _roleAttributionState.roleAttributionDictionary[roleDataObject];
+            gameSettingsManager?.RequestSetRoleCount(roleDataObject.role.roleID, _rolesToAttribute);
         }
     }
 }

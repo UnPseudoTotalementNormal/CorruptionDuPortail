@@ -1,9 +1,10 @@
 #region
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using Characters;
 using GameLogic;
+using GameLogic.GameSettings;
 using GameLogic.GameStates;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,107 +13,55 @@ using UnityEngine;
 
 namespace UI.GameSettings
 {
+    // Quick-dev gamesettings-refonte (2026-06-20): pure view. It used to be a NetworkBehaviour with a
+    // hand-rolled [Rpc] settings sync (AskForRefreshSettingsRpc / OnRefreshSettingsRpc / RoleSettingsUpdater)
+    // embedded in a runtime-Instantiated prefab — fragile NGO identity. The role-attribution settings now
+    // live on the replicated, server-authoritative GameSettingsManager; this tab just builds one widget per
+    // authored role and refreshes them when the manager's replicated state changes.
     public class RoleAttributionSettingTab : GameSettingTab
     {
         [SerializeField] private RoleAttributionSettingObject roleAttributionSettingObjectPrefab;
         [SerializeField] private Transform layoutTransform;
-        
-        private List<RoleAttributionSettingObject> roleAttributionSettingObjects = new();
-    
+
+        private readonly List<RoleAttributionSettingObject> roleAttributionSettingObjects = new();
+        private GameSettingsManager gameSettingsManager;
+
         protected override void Init()
         {
-            foreach (var _roleDataObject in GetRoleAttributionState().roleAttributionDictionary.Keys.ToList())
+            gameSettingsManager = CompositionRoot.For(NetworkManager.Singleton).GameSettingsManager;
+
+            foreach (RoleDataObject _roleDataObject in GetRoleAttributionState().roleAttributionDictionary.Keys.ToList())
             {
-                RoleAttributionSettingObject _roleAttributionSettingObject = Instantiate(roleAttributionSettingObjectPrefab, layoutTransform);
-                _roleAttributionSettingObject.SetRoleDataObject(_roleDataObject);
-                _roleAttributionSettingObject.onValueChanged += OnRoleAttributionSettingObjectValueChanged;
-                roleAttributionSettingObjects.Add(_roleAttributionSettingObject);
+                RoleAttributionSettingObject _settingObject = Instantiate(roleAttributionSettingObjectPrefab, layoutTransform);
+                _settingObject.Setup(_roleDataObject, gameSettingsManager);
+                roleAttributionSettingObjects.Add(_settingObject);
             }
-                
-            AskForRefreshSettingsRpc();
+
+            if (gameSettingsManager != null)
+            {
+                gameSettingsManager.OnSettingsChanged += RefreshAll;
+            }
         }
 
-        private void OnRoleAttributionSettingObjectValueChanged()
+        private void OnDestroy()
         {
-            AskForRefreshSettingsRpc();
+            // Subscription symmetry (archi §5b): unsubscribe from the cached manager in the teardown mirror.
+            if (gameSettingsManager != null)
+            {
+                gameSettingsManager.OnSettingsChanged -= RefreshAll;
+            }
         }
 
-        [Rpc(SendTo.Server)]
-        public override void AskForRefreshSettingsRpc()
+        private void RefreshAll()
         {
-            List<RoleSettingsUpdater> _sendingRoleSettings = new();
-            foreach (var _roleAttributionSetting in GetRoleAttributionState().roleAttributionDictionary)
-            {
-                if (_roleAttributionSetting.Key == null || _roleAttributionSetting.Key.role == null)
-                {
-                    Debug.LogError("RoleAttributionSettingTab: _roleAttributionSetting.Key ou .role est null lors de la création de RoleSettingsUpdater");
-                    continue;
-                }
-                RoleSettingsUpdater _roleSettingsUpdater = new()
-                {
-                    forRole = _roleAttributionSetting.Key.role,
-                    roleAttributionSetting = _roleAttributionSetting.Value
-                };
-                if (_roleSettingsUpdater.forRole == null)
-                {
-                    Debug.LogError("RoleAttributionSettingTab: forRole est null juste après l'assignation !");
-                }
-                _sendingRoleSettings.Add(_roleSettingsUpdater);
-            }
-            OnRefreshSettingsRpc(_sendingRoleSettings.ToArray());
+            roleAttributionSettingObjects.ForEach(_settingObject => _settingObject.Refresh());
         }
-        
-        [Rpc(SendTo.NotServer)]
-        private void OnRefreshSettingsRpc(RoleSettingsUpdater[] _newRoleSettings)
-        {
-            foreach (var _newRoleSetting in _newRoleSettings)
-            {
-                var _rolePair = GetRoleAttributionState().roleAttributionDictionary
-                    .First(_rs => _rs.Key.role.IsTheSameRole(_newRoleSetting.forRole));
-                GetRoleAttributionState().roleAttributionDictionary[_rolePair.Key] = _newRoleSetting.roleAttributionSetting;
-                _rolePair.Key.role = _newRoleSetting.forRole;
-            }
-            
-            roleAttributionSettingObjects.ForEach(_r => _r.Refresh());
-        }
-    
+
         private RoleAttributionState GetRoleAttributionState()
         {
-            // Story 12.3: prefab-resident settings tab — resolves through the sanctioned CompositionRoot.For(Singleton)
-            // instead of the GameManager God-Object façade (no lane-A/C seam on a prefab).
+            // Prefab-resident view — the sanctioned Story-12.3 CompositionRoot.For(Singleton) route. The role
+            // POOL + names live on the authored RoleAttributionState; the editable COUNTS live on the manager.
             return (RoleAttributionState)CompositionRoot.For(NetworkManager.Singleton).GameManager.GetGameStates(typeof(RoleAttributionState)).First();
-        }
-        
-        [Serializable]
-        private class RoleSettingsUpdater : INetworkSerializable
-        {
-            public Role forRole;
-            public RoleAttributionSetting roleAttributionSetting;
-            
-            public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
-            {
-                if (_serializer.IsReader && forRole == null)
-                {
-                    forRole = new Role();
-                }
-                if (_serializer.IsReader && roleAttributionSetting == null)
-                {
-                    roleAttributionSetting = new RoleAttributionSetting();
-                }
-
-                if (forRole == null)
-                {
-                    throw new Exception("forRole null lors de la sérialisation réseau." + ((roleAttributionSetting == null ? " role attribution settings aussi" : "") + " " + _serializer.IsReader));
-                }
-                if (roleAttributionSetting == null)
-                {
-                    throw new Exception("roleAttributionSetting null lors de la sérialisation réseau." + ((forRole == null ? " forRole aussi" : "") + " " + _serializer.IsReader));
-                }
-
-                _serializer.SerializeValue(ref forRole);
-                _serializer.SerializeValue(ref roleAttributionSetting);
-            }
         }
     }
 }
-

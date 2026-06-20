@@ -255,6 +255,10 @@ namespace GameLogic
                 clonedGameState.boardManager = CompositionRoot.For(NetworkManager).BoardManager;
                 // Story 10.4 lane B: StatesCanvas (UI host) pushed the same way.
                 clonedGameState.statesCanvas = CompositionRoot.For(NetworkManager).StatesCanvas;
+                // Quick-dev gamesettings-refonte (2026-06-20): the role-settings backbone pushed the same
+                // lane-B way, so LobbyState/RoleAttributionState read the replicated counts instead of the
+                // old per-client SO dictionary.
+                clonedGameState.gameSettingsManager = CompositionRoot.For(NetworkManager).GameSettingsManager;
                 // Story 10.5 lane B: SelectionFlowService + FocusManager pushed the same way (sole consumer
                 // TakeDownThePortalState), so it stops reading those globals.
                 clonedGameState.selectionFlowService = CompositionRoot.For(NetworkManager).SelectionFlowService;

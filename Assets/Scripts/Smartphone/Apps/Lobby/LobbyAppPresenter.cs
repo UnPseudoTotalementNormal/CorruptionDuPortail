@@ -1,5 +1,6 @@
 #region
 
+using Extensions;
 using GameLogic;
 using GameLogic.GameStates;
 using UnityEngine;
@@ -37,6 +38,13 @@ namespace Smartphone.Apps.Lobby
             Assert.IsNotNull(smartphone, "LobbyAppPresenter.smartphone is not wired — wire the Tablet's SmartphoneController.");
             Assert.IsNotNull(lobbyApp, "LobbyAppPresenter.lobbyApp is not wired — wire the Lobby SmartphoneApp.");
             Assert.IsNotNull(fallbackApp, "LobbyAppPresenter.fallbackApp is not wired — wire the default app (InfoTable) to re-home the tablet on Lobby exit.");
+
+            // Render on top of the 3D: the lobby app is extracted from the Screen-Space overlay so its subtree
+            // inherited the UI layer; put it (the tablet host's concern) on the Phone layer, which PhoneCamera
+            // draws depth-cleared over the world (the main camera culls Phone). The runtime-built role-slider
+            // widgets are layered to their container by RoleAttributionSettingTab (it can't be done here — they
+            // don't exist yet). Static-content layer; the GameObjects need it per-element for camera culling.
+            gameObject.SetLayerRecursively("Phone");
         }
 
         private void Start()
@@ -68,12 +76,20 @@ namespace Smartphone.Apps.Lobby
                 // Raise the tablet onto the lobby app. Not forced to stay: the player can lower/swipe it.
                 smartphone.TryOpenPanel();
                 smartphone.GoToApp(lobbyApp);
+                return;
             }
-            else if (smartphone.currentApp == lobbyApp)
+
+            // Act ONLY on the Lobby → game transition (the game launches), not on every later phase change —
+            // the board phases own their tablet open/close via openOnCamera. Re-home a tablet still showing the
+            // now-inactive lobby app to the default app, then close it.
+            bool _wasLobby = Query.GetGameState(_previousValue) is LobbyState;
+            if (_wasLobby)
             {
-                // Leaving the Lobby while the tablet is showing the (now-inactive) lobby app: re-home it to the
-                // default app so it is not stuck on a dead view the carousel would only skip past.
-                smartphone.GoToApp(fallbackApp);
+                if (smartphone.currentApp == lobbyApp)
+                {
+                    smartphone.GoToApp(fallbackApp);
+                }
+                smartphone.TryClosePanel();
             }
         }
     }

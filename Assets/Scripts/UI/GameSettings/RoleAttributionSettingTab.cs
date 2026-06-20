@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Characters;
 using Cysharp.Threading.Tasks;
+using Extensions;
 using GameLogic;
 using GameLogic.GameSettings;
 using GameLogic.GameStates;
@@ -60,6 +61,10 @@ namespace UI.GameSettings
             {
                 RoleAttributionSettingObject _settingObject = Instantiate(roleAttributionSettingObjectPrefab, layoutTransform);
                 _settingObject.Setup(_roleDataObject, gameSettingsManager);
+                // Instantiate keeps the prefab's layer (UI); match the container so each widget renders on the
+                // same camera as its host (the Phone layer on the tablet). Host-agnostic — follows the layout's
+                // layer, so it stays correct if the panel is moved to a HUD overlay instead.
+                _settingObject.gameObject.SetLayerRecursively(layoutTransform.gameObject.layer);
                 roleAttributionSettingObjects.Add(_settingObject);
             }
 

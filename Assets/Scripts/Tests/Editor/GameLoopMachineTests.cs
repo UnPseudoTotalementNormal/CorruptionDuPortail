@@ -138,5 +138,45 @@ namespace Tests.Editor
             // Same boundary as above but global ignoreGameLoop = true → no reverse day-pass: lands on 0.
             Assert.AreEqual(0, _machine.Rewind(1, Layout, ignoreGameLoop: true));
         }
+
+        // ───────────────── Degenerate-layout / combined-fire edges (added coverage) ─────────────────
+
+        [Test]
+        public void Advance_DayPass_SingleInLoopLayout_JumpsBackToFirstInLoopWhichIsSelf()
+        {
+            // Only index 0 is in-loop. current = 0 → +1 = 1 (out of loop) while wasInGameLoop → day-pass:
+            // FirstInGameLoopIndex returns 0 (the sole in-loop state), i.e. it jumps back to itself. Pins the
+            // reachable outcome at the boundary where the helper's -1 sentinel could only occur past (never here).
+            var layout = new List<bool> { true, false };
+            var t = _machine.Advance(0, layout, gameHasStartedFirstLoop: true, ignoreGameLoop: false, ignoreGameLoopThisCall: false);
+
+            Assert.AreEqual(0, t.NewIndex);
+            Assert.IsTrue(t.FireNewDayPassed);
+            Assert.IsFalse(t.FireGameStarted);
+        }
+
+        [Test]
+        public void Advance_FirstEntryViaDayPass_FiresNewDayPassedAndGameStartedTogether()
+        {
+            // [in, out, in], current = 0 (in loop), first loop not yet started. +1 = 1 (out) while wasInGameLoop
+            // → day-pass back to FirstInGameLoopIndex = 0; landing in-loop while !started ALSO fires GameStarted.
+            // Pins both flags firing in the SAME advance (the existing suite fires them only in isolation).
+            var layout = new List<bool> { true, false, true };
+            var t = _machine.Advance(0, layout, gameHasStartedFirstLoop: false, ignoreGameLoop: false, ignoreGameLoopThisCall: false);
+
+            Assert.AreEqual(0, t.NewIndex);
+            Assert.IsTrue(t.FireNewDayPassed);
+            Assert.IsTrue(t.FireGameStarted);
+            Assert.IsTrue(t.GameHasStartedFirstLoop);
+        }
+
+        [Test]
+        public void Rewind_ReverseDayPass_SingleInLoopLayout_JumpsToLastInLoopWhichIsSelf()
+        {
+            // Only index 1 is in-loop. current = 1 → -1 = 0 (out of loop) while wasInGameLoop → reverse day-pass:
+            // LastInGameLoopIndex scans backward and returns 1 (the sole in-loop state) — jumps back to itself.
+            var layout = new List<bool> { false, true, false };
+            Assert.AreEqual(1, _machine.Rewind(1, layout, ignoreGameLoop: false));
+        }
     }
 }

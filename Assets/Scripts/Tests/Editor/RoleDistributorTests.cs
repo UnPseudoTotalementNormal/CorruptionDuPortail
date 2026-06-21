@@ -107,5 +107,31 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(a.FakeRoleIndices, b.FakeRoleIndices);
             CollectionAssert.AreEqual(a.RealRoleIndices, b.RealRoleIndices);
         }
+
+        // ───────────────── Pool-exhaustion / zero-count edges (added coverage) ─────────────────
+
+        [Test]
+        public void RealLoop_PoolExhausted_ThrowsArgumentOutOfRangeException()
+        {
+            // counts [1,1,1] → only 3 reals can be drawn; the 4th draw hits an empty available list and indexes
+            // available[rng.Next(0)] = available[0] on an empty List<int>. The real loop has NO empty-guard
+            // (RoleDistributor.cs lines 69-72, "behaviour preserved as-is"), so it throws — pinned here.
+            Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+                Distributor.Distribute(
+                    new[] { 1, 1, 1 }, new[] { false, false, false }, fakeCount: 0, realCount: 4,
+                    new StubRandomProvider(0, 0, 0, 0)));
+        }
+
+        [Test]
+        public void ZeroRealCount_ProducesEmptyRealIndices_FakesUnaffected()
+        {
+            // realCount = 0 → the real loop runs zero times; the fake loop still draws its single fake.
+            var result = Distributor.Distribute(
+                new[] { 2, 2 }, new[] { true, true }, fakeCount: 1, realCount: 0,
+                new StubRandomProvider(0));
+
+            CollectionAssert.AreEqual(new[] { 0 }, result.FakeRoleIndices);
+            CollectionAssert.IsEmpty(result.RealRoleIndices);
+        }
     }
 }

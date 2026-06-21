@@ -153,5 +153,14 @@ namespace Tests.Editor
             Assert.That(snapshot.Characters.Count, Is.EqualTo(1));
             Assert.That(snapshot.Characters[0], Is.EqualTo(c));
         }
+
+        // --- Test F: null-argument guard (added coverage) ---
+
+        [Test]
+        public void GameSnapshot_NullCharacters_ThrowsArgumentNullException()
+        {
+            // GameSnapshot.cs line 22 throws ArgumentNullException(nameof(characters)) — pins the constructor guard.
+            Assert.Throws<ArgumentNullException>(() => new GameSnapshot(null, day: 0, currentStateIndex: 0));
+        }
     }
 }

@@ -143,5 +143,15 @@ namespace Tests.Editor
             Assert.IsFalse(_usability.CanUse(
                 Passing(isPassive: true, needsTargetSelection: true), TargetCheckMustNotRun));
         }
+
+        [Test]
+        public void TargetCheck_RunsBeforeUseCountRule_EvenWhenUsesAreExhausted()
+        {
+            // Ordering proof: the target rule (CanUse line 32) is evaluated BEFORE the use-count rule (line 33).
+            // With uses = 0, if the order were reversed CanUse would return false first and never touch the
+            // delegate. A throwing delegate proves the target check runs ahead of the later use-count rule.
+            Assert.Throws<InvalidOperationException>(() =>
+                _usability.CanUse(Passing(needsTargetSelection: true, powerUsesLeft: 0), TargetCheckMustNotRun));
+        }
     }
 }

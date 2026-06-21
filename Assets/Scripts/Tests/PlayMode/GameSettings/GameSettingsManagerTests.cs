@@ -153,5 +153,26 @@ namespace Tests.PlayMode
 
             _manager.OnSettingsChanged -= Handler;
         }
+
+        [UnityTest]
+        public IEnumerator HostEdit_RoleIdNotInSettings_NoOps()
+        {
+            // RoleID.Gardien is NOT among the seeded roles (Robot/Abyss/Oracle). ApplyRoleCountServer scans the
+            // list, finds no match, and returns without mutating any entry or raising the change event — pins the
+            // role-not-found no-op (existing tests cover the clamp and the same-VALUE no-op, not the missing ROLE).
+            int _changedCount = 0;
+            void Handler() => _changedCount++;
+            _manager.OnSettingsChanged += Handler;
+
+            _manager.RequestSetRoleCount(RoleID.Gardien, 5);
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(0, _changedCount, "A set for an unknown RoleID must not replicate / raise OnSettingsChanged.");
+            Assert.AreEqual(0, _manager.GetRoleCount(RoleID.Gardien), "The unknown role stays absent (count 0).");
+            Assert.AreEqual(6, _manager.GetTotalRolesToAttribute(), "Total is unchanged (2 + 1 + 3).");
+
+            _manager.OnSettingsChanged -= Handler;
+        }
     }
 }

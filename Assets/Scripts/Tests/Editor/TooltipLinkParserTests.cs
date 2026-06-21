@@ -89,9 +89,18 @@ namespace Tests.Editor
             string text = "Test {unknown:someParam} here.";
             
             UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, "Unknown balise command: unknown");
-            
+
             string parsed = _parser.ParseText(_dummyObject, text);
             Assert.AreEqual("Test  here.", parsed);
+        }
+
+        [Test]
+        public void ParseText_BaliseWithoutColon_ThrowsIndexOutOfRangeException()
+        {
+            // A brace group with no colon (e.g. "{var}") makes _balise.Split(':')[1] index past a 1-element
+            // array (TooltipLinkParser.cs line 142). There is no format validation, so it throws — pinned as
+            // current behavior (reported as a suspect crash in the audit, not fixed here).
+            Assert.Throws<System.IndexOutOfRangeException>(() => _parser.ParseText(_dummyObject, "Test {var} here"));
         }
     }
 }

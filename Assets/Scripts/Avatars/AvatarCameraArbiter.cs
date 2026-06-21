@@ -1,5 +1,6 @@
 using Board.BoardCameraSystem;
 using GameLogic;
+using Smartphone;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -45,10 +46,17 @@ namespace Avatars
         [SerializeField] private AvatarFollowCamera _followCamera;
         [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
         [SerializeField] private AvatarSeatingPresenter _seatingPresenter;
+        // The scene smartphone/tablet. Drives the cursor + look gate: while it is open the OS cursor is freed
+        // (to drive the tablet UI) and the first-person look is frozen. Null-tolerant — if unwired, the cursor
+        // simply follows the camera mode and the look is never frozen.
+        [SerializeField] private SmartphoneController _smartphone;
 
         private IGameStateQuery Query => gameManager;
 
         private bool _subscribed;
+        // Mirrors the tablet open state via its onPanelOpened/onPanelClosed events. Combined with the camera
+        // mode to decide the cursor lock + look freeze.
+        private bool _tabletOpen;
         // Last resolved mode, cached so a late-spawning local avatar (below) starts in the right movement
         // state when its controller finally binds.
         private CameraMode _currentMode = CameraMode.Board;
@@ -68,6 +76,15 @@ namespace Avatars
             // / AvatarFollowCamera 13.2). Never writes the index.
             Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
             _subscribed = true;
+
+            // Tablet open/close drives the cursor + look gate. Prime from the current state, then react.
+            if (_smartphone != null)
+            {
+                _tabletOpen = _smartphone.IsOpen;
+                _smartphone.onPanelOpened += OnTabletOpened;
+                _smartphone.onPanelClosed += OnTabletClosed;
+            }
+
             OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
         }
 
@@ -78,6 +95,17 @@ namespace Avatars
             {
                 Query.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
             }
+
+            if (_smartphone != null)
+            {
+                _smartphone.onPanelOpened -= OnTabletOpened;
+                _smartphone.onPanelClosed -= OnTabletClosed;
+            }
+
+            // Never leave a teardown with a locked/hidden cursor (e.g. scene unload mid-Vote) — restore the
+            // free OS cursor so menus/other scenes are usable.
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
 
             // Cleanup symmetry (archi §5b): this arbiter is the SOLE owner of the board-camera 'Avatar'
             // source. If we tore down while a non-Board mode had set it false, a surviving
@@ -115,6 +143,42 @@ namespace Avatars
             // suppresses NetworkTransform, applies networked gaze yaw) for the whole Embodied window. It
             // self-handles late-spawning avatars + player-count changes, so no one-shot re-arm is needed here.
             _seatingPresenter.SetActive(_currentMode == CameraMode.Embodied);
+
+            // Cursor lock + look freeze derive from BOTH the mode and the tablet state — re-apply on each.
+            ApplyCursorAndLook();
+        }
+
+        private void OnTabletOpened()
+        {
+            _tabletOpen = true;
+            ApplyCursorAndLook();
+        }
+
+        private void OnTabletClosed()
+        {
+            _tabletOpen = false;
+            ApplyCursorAndLook();
+        }
+
+        // Single source of truth for the OS cursor + the first-person look gate. First-person modes
+        // (FreeRoam/Embodied) lock + hide the cursor so the mouse drives the look — UNLESS the tablet is open,
+        // which frees the cursor (to click the tablet UI) and freezes the look so the camera no longer turns
+        // with the mouse. Board mode always shows the cursor (board/UI is click-driven).
+        private void ApplyCursorAndLook()
+        {
+            bool _firstPerson = _currentMode == CameraMode.FreeRoam || _currentMode == CameraMode.Embodied;
+            bool _lockCursor = _firstPerson && !_tabletOpen;
+
+            Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !_lockCursor;
+
+            // Freeze the look whenever the tablet is open (both look-readers ignore it; default-on otherwise).
+            bool _lookEnabled = !_tabletOpen;
+            if (TryBindLocalMovement())
+            {
+                _localMovement.SetLookEnabled(_lookEnabled);
+            }
+            _embodiedCamera.SetLookEnabled(_lookEnabled);
         }
 
         private void ApplyMovementEnabled()
@@ -135,6 +199,12 @@ namespace Avatars
             if (_localMovement == null)
             {
                 ApplyMovementEnabled();
+                // The late-bound controller also needs the current look-gate state primed (it may have
+                // spawned while the tablet was open).
+                if (_localMovement != null)
+                {
+                    _localMovement.SetLookEnabled(!_tabletOpen);
+                }
             }
 
         }

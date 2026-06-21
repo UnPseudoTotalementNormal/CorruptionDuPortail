@@ -150,6 +150,7 @@ namespace Smartphone
             phoneCanvasGroup.DoHideGroup();
             IsOpen = false;
             transform.DOLocalMove(phoneCloseLocalPosition, 0.5f).SetEase(Ease.OutQuint);
+            onPanelClosed?.Invoke();
         }
 
         public void TryOpenPanel()
@@ -159,8 +160,9 @@ namespace Smartphone
                 return;
             }
             phoneCanvasGroup.DoShowGroup();
-            IsOpen = true; 
+            IsOpen = true;
             transform.DOLocalMove(phoneOpenLocalPosition, 0.5f).SetEase(Ease.OutQuint);
+            onPanelOpened?.Invoke();
         }
     }
 }

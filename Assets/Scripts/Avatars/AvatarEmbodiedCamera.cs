@@ -50,6 +50,9 @@ namespace Avatars
         [SerializeField] private int _inactivePriority = -100;
 
         private bool _active;
+        // Look freeze (arbiter-driven): zeroed while the tablet is open so the freed cursor drives the tablet
+        // UI without the seated gaze following the mouse. Defaults on — unchanged feel until the tablet opens.
+        private bool _lookEnabled = true;
         // Bound once the local avatar + its manager resolve (and the local body is hidden). The seat POSE is
         // recomputed every frame (GetSeatPose is pure + cheap) so a changing player count re-spreads the ring.
         private bool _bound;
@@ -123,6 +126,12 @@ namespace Avatars
             }
         }
 
+        /// <summary>
+        /// Arbiter hook: freeze/unfreeze the seated mouse-look. Frozen while the tablet is open so the freed
+        /// cursor can drive the tablet UI without the gaze following the mouse.
+        /// </summary>
+        public void SetLookEnabled(bool _isEnabled) => _lookEnabled = _isEnabled;
+
         private void Activate()
         {
             _active = true;
@@ -182,7 +191,7 @@ namespace Avatars
             }
 
             // Accumulate the clamped look from the mouse delta (pure math, EditMode-tested).
-            Vector2 _look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
+            Vector2 _look = (_lookEnabled && _lookAction != null) ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             EmbodiedLookAngles _angles = EmbodiedLookClamp.Apply(
                 _yaw, _pitch, _look, _yawSpeed, _pitchSpeed, _yawClamp, _pitchClamp);
             _yaw = _angles.Yaw;

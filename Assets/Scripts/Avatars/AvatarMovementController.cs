@@ -57,6 +57,11 @@ namespace Avatars
         // it on for the owner; the Lobby is the only walkable phase today.
         private bool _movementEnabled = true;
 
+        // Look freeze: the arbiter zeroes the mouse-look while the tablet is open (the cursor is freed to
+        // drive the tablet UI, so the body/eye must not turn with the mouse). Defaults on — unchanged feel
+        // until the tablet opens.
+        private bool _lookEnabled = true;
+
         private void Awake()
         {
             // Non-networked init (the CharacterController is a local component, not an NGO replica).
@@ -124,6 +129,13 @@ namespace Avatars
             }
         }
 
+        /// <summary>
+        /// Arbiter hook: freeze/unfreeze the mouse-look. Frozen while the tablet is open so the freed cursor
+        /// can drive the tablet UI without the body yaw / eye pitch following the mouse. Movement (WASD) is
+        /// untouched — only the look is gated.
+        /// </summary>
+        public void SetLookEnabled(bool _enabled) => _lookEnabled = _enabled;
+
         private void Update()
         {
             if (!IsOwner || !_movementEnabled || _moveAction == null)
@@ -133,7 +145,7 @@ namespace Avatars
 
             // Look: X yaws the BODY (networked via NetworkTransform — others see you turn); Y pitches the
             // local eye pivot up/down (first-person, local view only). Embodied clamped look is 13.4.
-            Vector2 _look = _lookAction.ReadValue<Vector2>();
+            Vector2 _look = _lookEnabled ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             if (Mathf.Abs(_look.x) > Mathf.Epsilon)
             {
                 transform.Rotate(Vector3.up, _look.x * _lookYawSpeed, Space.World);

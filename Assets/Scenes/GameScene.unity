@@ -590,6 +590,7 @@ MonoBehaviour:
   _followCamera: {fileID: 54114938}
   _embodiedCamera: {fileID: 1861743663}
   _seatingPresenter: {fileID: 54114942}
+  _smartphone: {fileID: 724818885}
 --- !u!114 &54114942
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,49 +2,49 @@ using UnityEngine;
 
 namespace Presentation
 {
-    /// <summary>The hover-focus pose: a world rotation that faces the camera + the LOCAL lift (in the host
-    /// transform's local space) that floats the object just above its surface without clipping.</summary>
+    /// <summary>The hover-focus pose: a world rotation that faces the camera + the WORLD-space lift that
+    /// floats the object just above its surface without clipping. The caller converts the world lift into
+    /// whatever local space it animates.</summary>
     public readonly struct HoverFocusPose
     {
         public readonly Quaternion Rotation;
-        public readonly float LocalLiftY;
+        public readonly float WorldLift;
 
-        public HoverFocusPose(Quaternion _rotation, float _localLiftY)
+        public HoverFocusPose(Quaternion _rotation, float _worldLift)
         {
             Rotation = _rotation;
-            LocalLiftY = _localLiftY;
+            WorldLift = _worldLift;
         }
     }
 
     /// <summary>
     /// PURE geometry for "look at the camera + lift to float above a flat surface" (EditMode-testable, no
-    /// scene). Reusable by any flat element (cards, …). The element's FACE axes are PARAMETERS — the v1 hover
-    /// guessed the axis and clipped/faced wrong; here the caller passes the real local face normal + up.
+    /// scene). All extents + the returned lift are WORLD units; the caller handles its own local-space scale.
     ///
     /// Look-at: rotate so the local face-normal points at the camera and the local face-up stays world-upright.
-    /// Lift: a flat rect of half-extents (halfHeight along face-up, halfWidth along face-right) rotated by R
-    /// drops its lowest corner by <c>halfHeight·|R·up|.y + halfWidth·|R·right|.y</c>; lift so that lowest point
-    /// sits at <c>surfaceY + offset</c>. The lift is returned in the host's LOCAL space (÷ root world scale),
-    /// clamped ≥ 0 (never push the object DOWN into the table).
+    /// Lift: the object's vertical extents are measured (DYNAMICALLY by the caller, including the deployed vote
+    /// canvas) RELATIVE TO THE ROTATION PIVOT as <paramref name="_extentTopWorld"/> (up, +) and
+    /// <paramref name="_extentBottomWorld"/> (down, usually −). The 4 rotated corners give the lowest point;
+    /// lift so it sits at <paramref name="_surfaceY"/> + <paramref name="_offset"/> (never pushes DOWN).
     /// </summary>
     public static class HoverFocusMath
     {
         private const float Epsilon = 1e-5f;
 
         public static HoverFocusPose Compute(
-            Vector3 _cardWorldPos,
+            Vector3 _pivotWorldPos,
             Vector3 _cameraWorldPos,
             Vector3 _localFaceNormal,
             Vector3 _localFaceUp,
-            float _halfHeight,
-            float _halfWidth,
+            float _extentTopWorld,
+            float _extentBottomWorld,
+            float _halfWidthWorld,
             float _surfaceY,
-            float _offset,
-            float _rootWorldScaleY)
+            float _offset)
         {
             // World target basis: face the camera; keep upright by flattening world-up perpendicular to the
             // look direction (degenerate fallbacks so LookRotation never gets collinear inputs).
-            Vector3 _n = _cameraWorldPos - _cardWorldPos;
+            Vector3 _n = _cameraWorldPos - _pivotWorldPos;
             Vector3 _N = _n.sqrMagnitude > Epsilon ? _n.normalized : Vector3.up;
             Vector3 _U = Vector3.up - Vector3.Dot(Vector3.up, _N) * _N;
             _U = _U.sqrMagnitude > Epsilon ? _U.normalized : Vector3.forward;
@@ -58,17 +58,20 @@ namespace Presentation
             Quaternion _rotation =
                 Quaternion.LookRotation(_N, _U) * Quaternion.Inverse(Quaternion.LookRotation(_ln, _lu));
 
-            // Drop of the rotated rect's lowest corner below its centre, then lift so it sits at surface+offset.
-            Vector3 _right = Vector3.Cross(_lu, _ln);
-            float _drop = _halfHeight * Mathf.Abs((_rotation * _lu).y) + _halfWidth * Mathf.Abs((_rotation * _right).y);
-            float _worldLift = (_surfaceY + _offset + _drop) - _cardWorldPos.y;
+            // Lowest of the 4 rotated corners (the asymmetric extents from the pivot): the min over the two
+            // vertical extents minus the (symmetric) width contribution. Alloc-free. Then lift so the lowest
+            // world point sits at surface + offset.
+            float _upY = (_rotation * _lu).y;
+            float _rightY = (_rotation * Vector3.Cross(_lu, _ln)).y;
+            float _lowest = Mathf.Min(_extentTopWorld * _upY, _extentBottomWorld * _upY)
+                            - Mathf.Abs(_halfWidthWorld * _rightY);
+
+            float _worldLift = (_surfaceY + _offset - _lowest) - _pivotWorldPos.y;
             if (_worldLift < 0f)
             {
                 _worldLift = 0f;
             }
-
-            float _localLift = Mathf.Abs(_rootWorldScaleY) > Epsilon ? _worldLift / _rootWorldScaleY : _worldLift;
-            return new HoverFocusPose(_rotation, _localLift);
+            return new HoverFocusPose(_rotation, _worldLift);
         }
     }
 }

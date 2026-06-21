@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TransformComposition;
 using UnityEngine;
+using UnityEngine.UI;
 
 #endregion
 
@@ -26,6 +27,9 @@ namespace Board.CardComponents
         private const string FLIP_LAYER = "Flip";
         private const string PUNCH_LAYER = "Punch";
 
+        // Reused buffer for RectTransform.GetWorldCorners (no per-hover alloc beyond the Graphic[] scan).
+        private static readonly Vector3[] _worldCorners = new Vector3[4];
+
         protected override void Hover(Canvas _cardCanvas)
         {
             var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
@@ -42,19 +46,83 @@ namespace Board.CardComponents
 
             if (_firstPerson)
             {
-                Presentation.HoverFocusPose _pose = Presentation.HoverFocusMath.Compute(
-                    visualComponents.transform.position, _cam.transform.position,
-                    visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
-                    visualComponents.hoverHalfHeight, visualComponents.hoverHalfWidth,
-                    visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset, visualComponents.hoverRootScaleY);
+                // DYNAMIC size: measure the card's real world extents (card face + the deployed vote canvas)
+                // so the computed lift floats the WHOLE thing above the table — the vote panel that extends
+                // below the card no longer clips into the floor.
+                Transform _root = visualComponents.transform;
+                if (!MeasureWorldExtents(_root, out float _top, out float _bottom, out float _halfWidth))
+                {
+                    // No measurable geometry (no active Graphic) → don't pin the pivot to the table; fall back
+                    // to the plain lift so a card mid-transition can never be flung to a degenerate pose.
+                    hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                    return;
+                }
 
-                hoverLayer.DOLocalMoveY(_pose.LocalLiftY, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                Presentation.HoverFocusPose _pose = Presentation.HoverFocusMath.Compute(
+                    _root.position, _cam.transform.position,
+                    visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
+                    _top, _bottom, _halfWidth,
+                    visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset);
+
+                // The lift is WORLD; convert to the Hover layer's local space (the root's parent scale).
+                float _parentScaleY = _root.parent != null ? _root.parent.lossyScale.y : 1f;
+                float _localLift = Mathf.Abs(_parentScaleY) > 1e-5f ? _pose.WorldLift / _parentScaleY : _pose.WorldLift;
+
+                hoverLayer.DOLocalMoveY(_localLift, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
                 SlerpLayerRotation(hoverLayer, _pose.Rotation);
             }
             else
             {
                 hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
             }
+        }
+
+        // Measure the card's CURRENT world extents along the face axes (up / right), relative to the root
+        // pivot, over every active uGUI Graphic under the card — so the card FACE and the deployed VOTE CANVAS
+        // (which extends below) are both included. Projecting the world corner offsets onto the root's current
+        // face axes is rotation-invariant, so it gives the rest extents even if the card is mid-hover.
+        private bool MeasureWorldExtents(Transform _root, out float _top, out float _bottom, out float _halfWidth)
+        {
+            Vector3 _faceUp = visualComponents.hoverFaceLocalUp.normalized;
+            Vector3 _faceNormal = visualComponents.hoverFaceLocalNormal.normalized;
+            Vector3 _wUp = (_root.rotation * _faceUp).normalized;
+            Vector3 _wRight = (_root.rotation * Vector3.Cross(_faceUp, _faceNormal)).normalized;
+            Vector3 _pivot = _root.position;
+
+            _top = 0f;
+            _bottom = 0f;
+            _halfWidth = 0f;
+            bool _any = false;
+
+            foreach (Graphic _g in visualComponents.GetComponentsInChildren<Graphic>())
+            {
+                if (_g == null || !_g.isActiveAndEnabled)
+                {
+                    continue;
+                }
+                _g.rectTransform.GetWorldCorners(_worldCorners);
+                for (int _i = 0; _i < 4; _i++)
+                {
+                    Vector3 _off = _worldCorners[_i] - _pivot;
+                    float _u = Vector3.Dot(_off, _wUp);
+                    float _w = Mathf.Abs(Vector3.Dot(_off, _wRight));
+                    if (!_any)
+                    {
+                        _top = _u;
+                        _bottom = _u;
+                        _halfWidth = _w;
+                        _any = true;
+                    }
+                    else
+                    {
+                        _top = Mathf.Max(_top, _u);
+                        _bottom = Mathf.Min(_bottom, _u);
+                        _halfWidth = Mathf.Max(_halfWidth, _w);
+                    }
+                }
+            }
+
+            return _any;
         }
 
         protected override void UnHover(Canvas _cardCanvas)

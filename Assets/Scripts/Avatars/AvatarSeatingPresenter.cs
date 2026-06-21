@@ -28,6 +28,9 @@ namespace Avatars
     /// "avatar flying up" class, commit 7bfcb42 — on the tight ring radius, on the owner OR a remote replica
     /// (the arbiter only disables the LOCAL owner's controller, so remote replicas would otherwise keep theirs).
     /// </summary>
+    // Explicit order < AvatarHeadLook's 200: this presenter snaps the body root to the seat facing each
+    // LateUpdate, and AvatarHeadLook aims the rigged head against that root frame — so it MUST run first.
+    [DefaultExecutionOrder(100)]
     public class AvatarSeatingPresenter : MonoBehaviour
     {
         [Tooltip("How fast a remote avatar's head eases toward its networked look angle (higher = snappier). " +

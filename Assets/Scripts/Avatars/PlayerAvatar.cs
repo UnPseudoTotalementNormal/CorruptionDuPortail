@@ -42,6 +42,10 @@ namespace Avatars
         // fills the gap where the seated body was static during the Vote (movement locked, only the local
         // camera turned). Owner-write is a deliberate, human-ratified exception to the "no owner-write" rule
         // (cosmetic head direction only — no authority, faking it only mis-points your own head).
+        // GENERALIZED (spec rigged-head-look): this channel now ALSO carries the FREE-ROAM head-look (head
+        // yaw offset relative to body + pitch), published by AvatarMovementController. Modes are
+        // arbiter-exclusive (only EmbodiedCamera OR MovementController publishes at a time) so there is never
+        // a second writer. AvatarHeadLook reads these on every client to aim the rigged HeadBone.
         public NetworkVariable<float> SeatedYaw = new(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<float> SeatedPitch = new(

@@ -978,6 +978,7 @@ GameObject:
   - component: {fileID: 3503009208956233112}
   - component: {fileID: 3870855746124023605}
   - component: {fileID: 5797864316083878644}
+  - component: {fileID: 6398186905834028654}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1047,6 +1048,20 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   TransitionStateInfoList: []
   m_Animator: {fileID: 3870855746124023605}
+--- !u!114 &6398186905834028654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd13221168ba67140abb40c5160e3872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarHeadLook
+  _headBone: {fileID: 4477502950927753904}
+  _aimEaseSpeed: 12
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

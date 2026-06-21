@@ -980,6 +980,7 @@ GameObject:
   - component: {fileID: 5797864316083878644}
   - component: {fileID: 6398186905834028654}
   - component: {fileID: 6249074975222161930}
+  - component: {fileID: 1471702584911091322}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1084,6 +1085,25 @@ MonoBehaviour:
   _bowDamping: 14
   _bowGain: 0.5
   _bowMaxDeg: 12
+--- !u!114 &1471702584911091322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 175c2ebcab5836c44bd49fe5a6f54c15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarHopMotion
+  _hopHeight: 0.1
+  _strideLength: 3
+  _stretch: 0.08
+  _squash: 0.08
+  _upBeatPitchDeg: 6
+  _moveSpeedThreshold: 0.3
+  _amplitudeEaseSpeed: 8
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

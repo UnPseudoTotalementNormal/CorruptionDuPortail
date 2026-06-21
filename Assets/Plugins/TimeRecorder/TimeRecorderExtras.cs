@@ -134,6 +134,10 @@ namespace Meaf75.Unity{
         public static string GetPauseButtonLabelForState(bool paused) {
             return  paused ? "Resume ▶" : "Pause ▯▯";
         }
+
+        public static string GetClaudePauseButtonLabelForState(bool paused) {
+            return  paused ? "Resume AI ▶" : "Pause AI ▯▯";
+        }
         
         public static readonly string CALENDAR_TEMPLATE_PATH = "CalendarTemplate";
         public static readonly string CALENDAR_TEMPLATE_STYLE_PATH = "CalendarTemplateStyle";
@@ -176,6 +180,7 @@ namespace Meaf75.Unity{
         public const string TIME_RECORDER_STATE_BTN = "time-recorder-state-btn";
         public const string LABEL_TOTAL_DEV_TIME = "label-total-dev-time";
         public const string LABEL_TOTAL_CLAUDE_TIME = "label-total-claude-time";
+        public const string CLAUDE_PAUSE_STATE_BTN = "claude-pause-state-btn";
     }
 }
 

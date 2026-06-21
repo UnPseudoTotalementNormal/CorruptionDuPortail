@@ -134,5 +134,11 @@ namespace Board.BoardCameraSystem
         GameState = 0,
         Cutscene = 1,
         Pause = 2,
+        // Story 13.3 (Epic 13 — Player Embodiment): the source the AvatarCameraArbiter toggles.
+        // APPEND-ONLY — never renumber 0/1/2 (other call-sites + the inspector depend on the values).
+        // It ANDs with the existing GameState source via ControllerBase.IsActive() (Controller.cs:43-53),
+        // so SetActiveSource(Avatar, false) cuts board-camera arrow neighbour-nav in FreeRoam/Embodied
+        // WITHOUT touching the GameState source or removing/disabling any board camera (NFR1).
+        Avatar = 3,
     }
 }

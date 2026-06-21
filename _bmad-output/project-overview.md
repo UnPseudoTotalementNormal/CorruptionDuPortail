@@ -8,7 +8,7 @@
 - **Repository type:** Monolith, single-part Unity project
 - **Primary language:** C# (.NET via Unity scripting backend)
 - **Main branch:** `Dev` (PR target)
-- **Current branch at scan:** `BMAD-Setup`
+- **Current branch at scan:** `Dev` — the behaviour-preserving refactor (Epics 1–12: POCO + de-singleton + despaghettification) is **merged** (PR #53, commit `9daace2`)
 
 ## Tech stack summary
 
@@ -30,21 +30,24 @@
 
 ## Architecture type classification
 
-- **Pattern:** Server-authoritative client-server (NGO).
-- **Signature mechanic:** Gateway RPC system — the Host can simulate additional bot/player identities locally (`clientId >= 100`) for full-lobby solo debugging.
-- **Flow:** `GameManager → GameState Router → NetworkGatewaySystem → CharacterManager → PowerManager`
+- **Pattern:** Server-authoritative client-server (NGO), **layered** into a pure Domain POCO core → thin NGO/Mono adapters → a `CompositionRoot` DI seam.
+- **Signature mechanics:**
+  - Gateway RPC system — the Host can simulate additional bot/player identities locally (`clientId >= 100`) for full-lobby solo debugging.
+  - Composition root + three-lane injection (SerializeField / Initialize / OnNetworkSpawn) — 24 singletons collapsed to **one** sanctioned static (`CompositionRoot`); consumers depend on narrow injected interfaces (`IGameLoop`, `IGameStateQuery`, `ICharacterQuery`, `ICharacterCommand`), enforced by three CI guards.
 - **Game loop:** `Lobby → Introduction → Awakening → Chaining → Vote → Recap → GameEnding`
+- **Refactor docs:** [refactor-architecture-despaghetti.md](./refactor-architecture-despaghetti.md), [refactor-architecture-poco.md](./refactor-architecture-poco.md), [refactor-architecture-desingleton.md](./refactor-architecture-desingleton.md).
 
 ## Repository structure
 
 Monolith Unity project. Source organized **feature-first** under `Assets/Scripts/`. Each system is self-contained in its own folder (Characters/, Board/, GameLogic/, Smartphone/, Network/, etc.).
 
 Assembly definitions:
-- `Game.asmdef` — main runtime
+- `CorruptionDuPortail.Domain.asmdef` — **pure POCO decision core, no UnityEngine** (purity-guarded)
+- `Game.asmdef` — main runtime (references Domain)
 - `Game.Editor.asmdef` — editor tooling
 - `Game.Rendering.asmdef` — render-pipeline-bound code
-- `Tests.Editor.asmdef` — pure C# tests (NSubstitute)
-- `Tests.PlayMode.asmdef` — networked tests (NetworkTestHelper)
+- `Tests.Editor.asmdef` — pure C# tests (NSubstitute) — incl. Domain golden masters + DI guards
+- `Tests.PlayMode.asmdef` — networked tests (NetworkTestHelper, MultiClientGameFixture)
 - `com.community.netcode.transport.facepunch.asmdef` — Steam transport bundle
 
 ## Pre-existing documentation discovered

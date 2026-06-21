@@ -51,7 +51,18 @@ Scene routing is handled by `Assets/Scripts/SceneSwitcher.cs`.
 ## Scripts annotated tree
 
 ```
-Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
+Assets/Scripts/                         ★ All gameplay C# (~344 .cs; ~272 runtime, ~72 tests)
+├── Domain/                             ★ Pure POCO decision core (own asmdef, no UnityEngine)
+│   ├── GameLoopMachine.cs              State-loop advance/rewind arithmetic
+│   ├── GameSnapshot.cs / CharacterSnapshot.cs   Immutable state value-objects
+│   ├── VoteTally.cs                    Vote counting/resolution
+│   ├── ChainingResolver.cs            Chaining ordering/resolution
+│   ├── VictoryEvaluator.cs + IWinningCondition(Evaluator).cs   Win-condition eval
+│   ├── RoleDistributor.cs             Deterministic role assignment
+│   ├── PowerResolver.cs / PowerUsability.cs / EffectDescriptor.cs
+│   ├── ChatChannelPolicy.cs / CardLayout.cs / TooltipLinkFormatter.cs
+│   ├── IRandomProvider.cs / SeededRandomProvider.cs   Randomness port (seedable)
+│   └── FactionType.cs / WinningTeam.cs   Shared domain enums
 ├── ArrowSystem/                        On-board pointer arrows
 ├── AudioSystem/                        FMOD wrapper — GameAudioManager
 ├── Board/                              3D card rendering + animations
@@ -65,11 +76,14 @@ Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
 ├── Characters/                         Identity, factions, powers
 │   ├── Character.cs                    Per-player networked actor
 │   ├── CharacterManager.cs             Roster + role distribution
+│   ├── CharacterManager.cs             Roster + role distribution (thin adapter)
+│   ├── ICharacterQuery.cs / ICharacterCommand.cs   ★ Narrow injected slices (Epic 9)
 │   ├── Role.cs / RoleID.cs / RoleDataObject.cs   Role definitions (SO-backed)
 │   ├── FactionType.cs / CharacterType.cs
 │   ├── Powers/                         ★ One P*.cs per power (PBlessing, PAutoCorruption, ...)
-│   │   └── Interfaces/                 Power contracts
-│   └── WinningConditions/              Victory predicates per faction
+│   │   ├── Interfaces/                 Power contracts
+│   │   └── PowerEffectDispatcher.cs / PowerEffectTrace.cs   Effect application
+│   └── WinningConditions/              Victory predicates per faction (W*.cs, eval via Domain)
 ├── ChatSystem/                         In-game chat
 ├── CustomAttributes/                   C# attribute helpers
 ├── Editor/                             Custom inspectors + tooling (Game.Editor.asmdef)
@@ -79,7 +93,11 @@ Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
 ├── FixedStrings/                       Constant string tables
 ├── FocusSystem/                        UI focus management
 ├── GameLogic/                          ★ Core game loop
-│   ├── GameManager.cs                  Top-level controller
+│   ├── GameManager.cs                  Game-loop adapter (impl IGameLoop/IGameStateQuery)
+│   ├── CompositionRoot.cs              ★ THE one surviving static — DI seam (For(nm))
+│   ├── IGameLoop.cs / IGameStateQuery.cs   ★ Narrow injected slices (Epic 8)
+│   ├── UnityRandomProvider.cs          Production IRandomProvider impl
+│   ├── Snapshot/GameSnapshotBuilder.cs Builds Domain GameSnapshot from live state
 │   ├── GameState.cs / GameStateSettings.cs
 │   ├── GameStates/                     One class per game phase
 │   ├── ChainingManager.cs              Chaining phase logic
@@ -107,21 +125,23 @@ Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
 ├── RoleTargetSystem/                   Role targeting UI/logic
 ├── Smartphone/                         In-game 2D smartphone OS hub
 ├── Test/                               (placeholder / staging)
-├── Tests/                              ★ Unit + PlayMode tests
-│   ├── Editor/                         Pure C# tests, NSubstitute (16 files)
-│   │   ├── ActionStackTests, *ExtensionsTests, ValidatorTests,
-│   │   │   NoteManagerTests, LocalPlayerInfoTests,
-│   │   │   NetworkSerializableObjectTests, ReflectionHelperTests,
-│   │   │   TooltipLinkParserTests, ...
+├── Tests/                              ★ Unit + PlayMode tests (~205 EM / ~148 PM cases)
+│   ├── Editor/                         Pure C# tests, NSubstitute (~37 files)
+│   │   ├── Domain POCO tests (golden masters): VictoryEvaluator, VoteTally,
+│   │   │   ChainingResolver, RoleDistributor, GameLoopMachine, PowerResolver, ...
+│   │   ├── DI guards: DiSeamNoLocatorGuardTests, SceneWiringGuardTests,
+│   │   │   StaticSingletonCensusGuardTests, LeafPocoNoFacadeGuardTests
+│   │   ├── *ExtensionsTests, ValidatorTests, TooltipLinkParserTests, ...
 │   │   └── Tests.Editor.asmdef
-│   └── PlayMode/                       Networked tests via NetworkTestHelper
-│       ├── BoardTests, ChainingManagerTests, ChatManagerTests,
-│       │   CorruptionTests, EntrapmentPowerTests, GameManagerTests,
-│       │   LobbyManagerTests, PowerTests, ...
+│   └── PlayMode/                       Networked tests via NetworkTestHelper (~35 files)
+│       ├── BoardTests, ChainingManagerTests, ChatManagerTests, GameManagerTests,
+│       │   PowerTests, snapshot differential / oracle tests, ...
+│       ├── MultiClientGameFixture      ★ host + real client + simulated bot, in-process
 │       ├── NetworkTestHelper.cs        ★ Multi-client simulation harness
 │       └── Tests.PlayMode.asmdef
 ├── TooltipSystem/                      Hover tooltips
 ├── UI/                                 Shared UI widgets
+├── Domain/CorruptionDuPortail.Domain.asmdef   ★ Pure POCO assembly (no UnityEngine)
 ├── Game.asmdef                         ★ Main runtime assembly
 ├── GameAssetHolder.cs                  Global asset references
 ├── GameSceneOnlineChecker.cs           Online state guard
@@ -136,6 +156,8 @@ Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
 
 | Folder | Why it matters | Owner system |
 |---|---|---|
+| `Domain/` | Pure decision logic (no UnityEngine — purity-guarded). New testable logic goes here, adapter stays thin | Domain core |
+| `GameLogic/CompositionRoot.cs` | The one sanctioned static — DI seam; lane-C consumers resolve via `For(nm)` in `OnNetworkSpawn` | Composition |
 | `GameLogic/GameStates/` | Adding a phase = new state class here + register in GameManager routing | Core loop |
 | `Characters/Powers/` | Adding a power = new `P*.cs` + interface impl + role binding | Roles/powers |
 | `Network/` | All RPC/gateway code — must respect `GetSafeRpcTarget` / `IsLocalOrSimulated` | Networking |
@@ -148,5 +170,6 @@ Assets/Scripts/                         ★ All gameplay C# (245 .cs files)
 
 - **Bootstrap:** `Assets/Scenes/BootScene.unity` → loads `MainMenu.unity` → `GameScene.unity`.
 - **Code entry:** `Assets/Scripts/GameLogic/GameManager.cs` (server-side game lifecycle).
+- **DI seam:** `Assets/Scripts/GameLogic/CompositionRoot.cs` (scene-placed in GameScene; resolves the service graph per `NetworkManager`).
 - **Network entry:** `Assets/Scripts/Network/Services/UnityServicesInit.cs` (Unity Services boot) + `NetworkTransportDetector.cs` (transport selection).
 - **Tests:** Unity Test Runner (EditMode + PlayMode) via `mcp__UnityMCP__run_tests`.

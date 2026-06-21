@@ -53,6 +53,11 @@ namespace Avatars
         private bool _active;
         // Avatars whose NetworkTransform we suppressed this Vote, with the pose to restore on exit.
         private readonly Dictionary<PlayerAvatar, Suppressed> _suppressed = new();
+        // Reused snapshot of the manager's live avatar list. We iterate a COPY because placing a seat below
+        // (GetSeatPose -> SeatIndexForClient -> ResolvedAvatars) can re-enter the manager and rebuild — i.e.
+        // Clear() — its SHARED avatar cache mid-iteration while a spawn is still in flight, which would throw
+        // "Collection was modified" on the live list. Reused (cleared, not re-allocated) to stay alloc-free.
+        private readonly List<PlayerAvatar> _avatarsSnapshot = new();
 
         /// <summary>Arbiter contract (mirror AvatarEmbodiedCamera.SetActive): on iff the mode is Embodied.</summary>
         public void SetActive(bool _isActive)
@@ -103,9 +108,28 @@ namespace Avatars
                 return;
             }
 
-            foreach (PlayerAvatar _avatar in _manager.GetAvatars())
+            // Snapshot the live list FIRST: GetSeatPose below re-enters the manager and may rebuild (Clear)
+            // its shared avatar cache while a spawn is in flight — iterating the live list directly would
+            // throw "Collection was modified". The copy goes into a reused buffer (alloc-free in steady state).
+            _avatarsSnapshot.Clear();
+            IReadOnlyList<PlayerAvatar> _live = _manager.GetAvatars();
+            for (int _i = 0; _i < _live.Count; _i++)
             {
+                _avatarsSnapshot.Add(_live[_i]);
+            }
+
+            for (int _i = 0; _i < _avatarsSnapshot.Count; _i++)
+            {
+                PlayerAvatar _avatar = _avatarsSnapshot[_i];
                 if (_avatar == null)
+                {
+                    continue;
+                }
+
+                // An avatar whose identity has not replicated yet (still the FAKE_CLIENT_ID default) has no
+                // resolved seat — placing it would collide it onto the sentinel seat with every other
+                // unresolved avatar. Skip until its ownerClientId replicates (self-heals within a frame or two).
+                if (_avatar.ownerClientId.Value == GameValues.FAKE_CLIENT_ID)
                 {
                     continue;
                 }
@@ -123,12 +147,20 @@ namespace Avatars
                 Transform _eye = _avatar.EyePivot;
                 if (_eye != null)
                 {
-                    Quaternion _targetLook = Quaternion.Euler(_avatar.SeatedPitch.Value, _avatar.SeatedYaw.Value, 0f);
+                    // Owner-write SeatedYaw/Pitch is UNTRUSTED input — a NaN/Inf publish is sticky through the
+                    // slerp and would permanently corrupt the head (mirror AvatarHeadLook.Sanitize).
+                    float _pitch = Sanitize(_avatar.SeatedPitch.Value);
+                    float _yaw = Sanitize(_avatar.SeatedYaw.Value);
+                    Quaternion _targetLook = Quaternion.Euler(_pitch, _yaw, 0f);
                     float _t = 1f - Mathf.Exp(-_headLerpSpeed * Time.deltaTime); // framerate-independent ease
                     _eye.localRotation = Quaternion.Slerp(_eye.localRotation, _targetLook, _t);
                 }
             }
         }
+
+        // Owner-write replicated look is untrusted: a NaN/Inf publish is sticky through the slerp (mirror
+        // AvatarHeadLook.Sanitize). Clamp non-finite to 0 so a bad publish cannot permanently corrupt the head.
+        private static float Sanitize(float _value) => float.IsFinite(_value) ? _value : 0f;
 
         // Disable the avatar's NetworkTransform once (caching its live pose for a clean restore). Idempotent.
         private void Suppress(PlayerAvatar _avatar)

@@ -101,11 +101,18 @@ namespace Tests.PlayMode.Avatars
 
             Assert.IsTrue(_clientNm.StartClient(), "NGO StartClient() failed — client did not start.");
 
-            // Wait until the manager replica registers for the client NM (replication completed).
+            // Wait until the client is FULLY ready before any test body runs: connected, its AvatarManager
+            // replica registered, AND both real-client avatars resolved on the client replica. The weaker
+            // "manager replica != null" alone can return while the connection is still settling (notably after
+            // the prior test's despawn churn), so a body could start before replication stabilised and NRE on a
+            // still-null replica — the root of this class' in-group order-dependent flake.
             yield return NetworkTestHelper.WaitUntilOrTimeout(
-                () => AvatarManager.For(_clientNm) != null,
+                () => _clientNm.IsConnectedClient
+                      && AvatarManager.For(_clientNm) != null
+                      && AvatarManager.For(_clientNm).GetAvatar(0) != null
+                      && AvatarManager.For(_clientNm).GetAvatar(_clientNm.LocalClientId) != null,
                 10f,
-                "Client replica of AvatarManager never registered (replication did not complete).");
+                "Client never fully connected + replicated both avatars before the test body.");
         }
 
         [UnityTearDown]
@@ -137,6 +144,15 @@ namespace Tests.PlayMode.Avatars
             if (_hostNmGo != null) Object.Destroy(_hostNmGo);
             if (_managerPrefabGo != null) Object.Destroy(_managerPrefabGo);
             if (_avatarPrefabGo != null) Object.Destroy(_avatarPrefabGo);
+
+            // Wait for NGO to null the static Singleton on the destroyed host NM (its OnDestroy clears it). A
+            // single yield is NOT enough: a LIVE stale Singleton would make the NEXT test's host NM self-destruct
+            // on OnEnable (it can't claim an already-set Singleton), leaving its client replica unregistered so
+            // AvatarManager.For(_clientNm) returns null in the body -> NRE. This is the root cause of this class'
+            // in-group order-dependent flake; mirror AvatarEmbodiedModeTests / MultiClientGameFixture teardown.
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => NetworkManager.Singleton == null, 5f,
+                "NetworkManager.Singleton was not cleared after teardown.");
 
             // Statics must be clean for the next test (domain reload is disabled).
             ResetAvatarManagerStatics();
@@ -242,6 +258,97 @@ namespace Tests.PlayMode.Avatars
                 () => Vector3.Distance(_hostManager.GetAvatar(_clientId).transform.position, _target) < 0.5f,
                 10f,
                 "Owner (client)-driven avatar position did not replicate to the host via NetworkTransform.");
+        }
+
+        // Story 13.4 — the seated embodied window's NetworkTransform suppression/restore (the riskiest new
+        // lifecycle path: the class doc warns that if RestoreAll never runs every avatar's NetworkTransform
+        // stays disabled forever). Exercised on the multi-NM substrate where an AvatarManager + real avatars
+        // exist (the camera-fixture tests deliberately no-op the presenter with no manager).
+        [UnityTest]
+        public IEnumerator SeatingPresenter_SuppressesNetworkTransformOnEnter_AndRestoresOnExitAndOnDisable()
+        {
+            // The host's own avatar (clientId 0) is the LOCAL avatar for the host NM — the presenter only
+            // places the ring once the local avatar resolves.
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _hostManager.GetAvatar(0) != null,
+                10f,
+                "Host avatar never settled for the seating-presenter test.");
+
+            PlayerAvatar _avatar = _hostManager.GetAvatar(0);
+            NetworkTransform _networkTransform = _avatar.GetComponent<NetworkTransform>();
+            Assert.IsNotNull(_networkTransform, "Fixture avatar must carry a NetworkTransform.");
+            Assert.IsTrue(_networkTransform.enabled, "NetworkTransform must start enabled (before the embodied window).");
+
+            var _presenterGo = new GameObject("FixtureSeatingPresenter");
+            var _presenter = _presenterGo.AddComponent<AvatarSeatingPresenter>();
+
+            // Enter the embodied Vote window → the presenter suppresses (disables) each avatar's NetworkTransform
+            // in its LateUpdate so it can drive the per-client ring pose locally.
+            _presenter.SetActive(true);
+            yield return null; // LateUpdate runs Suppress
+            yield return null;
+            Assert.IsFalse(_networkTransform.enabled,
+                "Entering the embodied window must suppress (disable) the avatar's NetworkTransform.");
+
+            // Leave the window → RestoreAll restores the pose and re-enables the NetworkTransform synchronously.
+            _presenter.SetActive(false);
+            Assert.IsTrue(_networkTransform.enabled,
+                "Leaving the embodied window must restore (re-enable) the avatar's NetworkTransform.");
+
+            // OnDisable safety net: destroying the presenter while still active must also restore — suppression
+            // can never outlive the presenter (otherwise the NetworkTransform would stay disabled forever).
+            _presenter.SetActive(true);
+            yield return null;
+            Assert.IsFalse(_networkTransform.enabled, "Re-entering must suppress the NetworkTransform again.");
+            Object.Destroy(_presenterGo); // OnDisable fires while active → RestoreAll
+            yield return null;
+            Assert.IsTrue(_networkTransform.enabled,
+                "OnDisable must restore the NetworkTransform when the presenter is torn down mid-window.");
+        }
+
+        // Story 13.4 — the ratified owner-write seated gaze (SeatedYaw/SeatedPitch) IsOwner gate + replication.
+        // Driven from the HOST side: IsOwner is reliable there (the host IS NetworkManager.Singleton, so a
+        // NetworkBehaviour's IsOwner resolves correctly; a client replica's IsOwner is NOT reliable on this
+        // 2-NetworkManager-in-one-process substrate because IsOwner keys off the Singleton's LocalClientId).
+        // The host owns its own avatar → publish writes + replicates to the client; the host's view of the
+        // client's avatar is non-owned → publish is a no-op (so a non-owner can never poke another's gaze).
+        [UnityTest]
+        public IEnumerator Avatar_PublishSeatedLook_WritesAndReplicatesWhenOwner_AndIsNoOpWhenNotOwner()
+        {
+            ulong _clientId = _clientNm.LocalClientId;
+            AvatarManager _clientManager = AvatarManager.For(_clientNm);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _hostManager.GetAvatar(0) != null
+                      && _hostManager.GetAvatar(_clientId) != null
+                      && _clientManager.GetAvatar(0) != null,
+                10f,
+                "Avatars never settled on host + client for the seated-look test.");
+
+            // Owner path: the host owns its own avatar (clientId 0) — the IsOwner gate lets the publish through
+            // and writes the ratified owner-write SeatedYaw/SeatedPitch.
+            PlayerAvatar _hostOwn = _hostManager.GetAvatar(0);
+            Assert.IsTrue(_hostOwn.IsOwner, "The host must own its own avatar.");
+            _hostOwn.PublishSeatedLook(30f, -10f);
+            Assert.AreEqual(30f, _hostOwn.SeatedYaw.Value, 0.01f, "Owner PublishSeatedLook must write SeatedYaw.");
+            Assert.AreEqual(-10f, _hostOwn.SeatedPitch.Value, 0.01f, "Owner PublishSeatedLook must write SeatedPitch.");
+
+            // The owner-written values replicate to the client replica (NetworkVariableReadPermission.Everyone).
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => Mathf.Abs(_clientManager.GetAvatar(0).SeatedYaw.Value - 30f) < 0.01f
+                      && Mathf.Abs(_clientManager.GetAvatar(0).SeatedPitch.Value - (-10f)) < 0.01f,
+                10f,
+                "Owner-published SeatedYaw/Pitch never replicated to the client replica.");
+
+            // Non-owner path: the host's replica of the CLIENT's avatar is not owned by the host —
+            // PublishSeatedLook is gated by IsOwner and must be a no-op (the value stays at its 0 default).
+            PlayerAvatar _hostViewOfClient = _hostManager.GetAvatar(_clientId);
+            Assert.IsFalse(_hostViewOfClient.IsOwner, "The host must NOT own the client's avatar.");
+            _hostViewOfClient.PublishSeatedLook(99f, 99f);
+            yield return null;
+            yield return null;
+            Assert.AreEqual(0f, _hostViewOfClient.SeatedYaw.Value, 0.01f,
+                "PublishSeatedLook on a non-owned avatar must be a no-op (IsOwner-gated).");
         }
 
         // --- substrate helpers (lifted from MultiClientGameFixture) ---

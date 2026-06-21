@@ -11,7 +11,7 @@ namespace Avatars
     /// It fills the <see cref="CameraMode.Embodied"/> slot the Story 13.3 <see cref="AvatarCameraArbiter"/>
     /// already routes <c>VoteState</c> to: a first-person camera placed at the LOCAL client's own seat
     /// (DO3 route A — fixed global seats + camera-at-local-seat, see <see cref="AvatarCameraArbiter"/> /
-    /// <see cref="AvatarManager.GetSeat"/>), with CLAMPED look (yaw ±75° / pitch ±40°, DO4) around the
+    /// <see cref="AvatarManager.GetSeatPose"/>), with CLAMPED look (yaw ±75° / pitch ±40°, DO4) around the
     /// seat facing. Movement is locked by the arbiter for the whole Vote.
     ///
     /// SIBLING of <see cref="AvatarFollowCamera"/> and built on the SAME coexistence model: the bare
@@ -26,11 +26,16 @@ namespace Avatars
     /// deviation). The Player map is enabled only while embodied. Binding defaults to FREE-MOUSE look;
     /// a hold-to-look gate would be a one-action addition (Poyo's call) — flagged, not assumed.
     ///
-    /// SCOPE: seated camera + clamped look only. The body seat-SNAP (so others see you seated) is
-    /// owner-side on <see cref="AvatarMovementController.SeatAtSeat"/>, driven by the arbiter. FEEL
+    /// SCOPE: seated camera + clamped look only. The body seat-SNAP (so others see you seated) is done
+    /// locally each frame by <see cref="AvatarSeatingPresenter"/> (superseding the Story 13.4 networked
+    /// SeatAtSeat teleport), driven by the arbiter. FEEL
     /// values are placeholder <c>[SerializeField]</c> defaults — Poyo tunes them. NOT a NetworkBehaviour
     /// (presentation-only, local cameras/input).
     /// </summary>
+    // After AvatarSeatingPresenter's 100 (which snaps the avatar root — and thus the EyePivot we anchor to —
+    // each LateUpdate) and before AvatarHeadLook's 200, so the camera reads the already-snapped eye pose and
+    // does not lag one frame behind the seat on entry / ring re-spread.
+    [DefaultExecutionOrder(120)]
     public class AvatarEmbodiedCamera : MonoBehaviour
     {
         [SerializeField] private CinemachineCamera _camera;

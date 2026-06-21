@@ -6,8 +6,9 @@ using UnityEngine.InputSystem;
 namespace Reticle
 {
     /// <summary>
-    /// First-person Vote targeting (PR1). The seated embodied camera has no OS cursor, so this casts a ray
-    /// from the camera CENTER each frame and delivers <c>OnPointerEnter/Exit/Click</c> to whatever world
+    /// First-person Vote targeting (PR1). The seated embodied camera has no OS cursor, so this drives a
+    /// SCREEN-CENTRE uGUI raycast (<see cref="EventSystem"/>.RaycastAll) each frame and delivers
+    /// <c>OnPointerEnter/Exit/Click</c> to whatever world
     /// object the player is looking at — reusing the EXISTING <c>IPointer*</c> handlers on the cards and the
     /// world vote/skip <c>CustomButton</c>s via <see cref="ExecuteEvents"/> (no changes to those types).
     ///
@@ -18,8 +19,6 @@ namespace Reticle
     /// </summary>
     public class ReticleInteractor : MonoBehaviour
     {
-        [Tooltip("The rendering (Cinemachine brain) camera the player looks through. Falls back to Camera.main.")]
-        [SerializeField] private Camera _camera;
         [SerializeField] private ReticleHUD _hud;
 
         [Header("Hysteresis (Poyo-tuned)")]
@@ -48,11 +47,19 @@ namespace Reticle
         {
             _bodyHover = new ReticleHover(_exitDwell, _switchDebounce);
             _uiHover = new ReticleHover(_exitDwell, _switchDebounce);
-            if (_camera == null)
-            {
-                _camera = Camera.main;
-            }
             _hud?.SetVisible(false);
+        }
+
+        // Teardown safety: if this is disabled or its scene is unloaded while still active (e.g. scene unload
+        // mid-Vote — AvatarCameraArbiter anticipates the same for the cursor), no camera-mode transition fires,
+        // so the confirm action would stay Enable()d on the shared InputActionAsset and the hovered target would
+        // keep its OnPointerEnter with no matching exit. Funnel through SetActive(false) to release both cleanly.
+        private void OnDisable()
+        {
+            if (_active)
+            {
+                SetActive(false);
+            }
         }
 
         /// <summary>Arbiter contract (mirror AvatarSeatingPresenter/AvatarVisibilityController).</summary>

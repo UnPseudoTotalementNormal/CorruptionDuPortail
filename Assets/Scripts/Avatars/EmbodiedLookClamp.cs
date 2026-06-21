@@ -12,8 +12,9 @@ namespace Avatars
     /// <see cref="AvatarMovementController.Update"/> (AvatarMovementController.cs:119-129): mouse
     /// X accumulates yaw, mouse Y accumulates pitch (mouse up = look up = NEGATIVE euler-X, hence
     /// the subtraction), each clamped to its bound. The seated camera (<see cref="AvatarEmbodiedCamera"/>)
-    /// feeds <c>Time.deltaTime</c>-scaled deltas in and applies the returned angles to the camera
-    /// transform RELATIVE to the seat facing (<c>seat.rotation * Quaternion.Euler(pitch, yaw, 0)</c>).
+    /// feeds a per-frame MOUSE delta in (already frame-accumulated — NOT <c>Time.deltaTime</c>-scaled; an
+    /// analog-stick binding would need its own deltaTime scaling before calling this) and applies the returned
+    /// angles to the camera transform RELATIVE to the seat facing (<c>seat.rotation * Quaternion.Euler(pitch, yaw, 0)</c>).
     ///
     /// Lives in the <b>Game</b> asmdef (next to the other avatar code), NOT Domain — it uses
     /// <see cref="Mathf"/>/<see cref="Vector2"/> (UnityEngine), forbidden by Domain's purity guard.

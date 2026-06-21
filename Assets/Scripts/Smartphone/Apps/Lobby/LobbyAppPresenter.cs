@@ -1,5 +1,6 @@
 #region
 
+using System.Collections;
 using Extensions;
 using GameLogic;
 using GameLogic.GameStates;
@@ -53,6 +54,20 @@ namespace Smartphone.Apps.Lobby
             // current value. Never writes the index.
             Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
             _subscribed = true;
+            // Defer the initial prime: SmartphoneController.Start force-closes the tablet on its FIRST frame
+            // (its WaitAFrameAndClosePhone), which would clobber a Lobby raise issued synchronously here and
+            // leave the player on a CLOSED tablet on initial Lobby entry (the common fresh-boot case — the
+            // 0->0 index write raises no OnValueChanged, so nothing re-opens it). Prime after that boot
+            // self-close so the raise sticks; real later transitions are still handled live via OnValueChanged.
+            StartCoroutine(PrimeAfterSmartphoneBoot());
+        }
+
+        private IEnumerator PrimeAfterSmartphoneBoot()
+        {
+            // The smartphone self-closes on frame 1; wait two frames so the prime lands after it regardless of
+            // the (unordered) coroutine resume order within a frame.
+            yield return null;
+            yield return null;
             OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
         }
 

@@ -24,6 +24,10 @@ namespace Avatars
         private CameraMode _mode = CameraMode.Board;
         // Cached renderer arrays per avatar (GetComponentsInChildren allocates — do it once, not per frame).
         private readonly Dictionary<PlayerAvatar, Renderer[]> _renderers = new();
+        // Reused scratch for evicting despawned avatars from _renderers: a despawned PlayerAvatar key is never
+        // revisited by the live-roster loop, so without eviction its cached Renderer[] would leak for the
+        // controller's life (one stale entry per disconnect across reconnect churn).
+        private readonly List<PlayerAvatar> _deadKeys = new();
 
         /// <summary>Arbiter contract: the resolved camera mode (mirror AvatarSeatingPresenter.SetActive).</summary>
         public void SetMode(CameraMode _newMode) => _mode = _newMode;
@@ -56,6 +60,21 @@ namespace Avatars
                     continue;
                 }
                 Apply(_avatar, ResolveVisible(_mode, _avatar.IsOwner));
+            }
+
+            // Evict entries whose avatar was despawned (Unity-null key) — the live-roster loop above never
+            // revisits them, so their cached Renderer[] would otherwise accumulate for the controller's life.
+            _deadKeys.Clear();
+            foreach (PlayerAvatar _key in _renderers.Keys)
+            {
+                if (_key == null)
+                {
+                    _deadKeys.Add(_key);
+                }
+            }
+            for (int _i = 0; _i < _deadKeys.Count; _i++)
+            {
+                _renderers.Remove(_deadKeys[_i]);
             }
         }
 

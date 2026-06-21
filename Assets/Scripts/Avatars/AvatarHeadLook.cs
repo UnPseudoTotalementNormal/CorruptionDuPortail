@@ -51,6 +51,11 @@ namespace Avatars
             _root = _avatar != null ? _avatar.transform : transform;
         }
 
+        // Re-arm the first-frame snap so a disable/enable (model pooling, visibility toggling the model
+        // GameObject) re-seeds the displayed aim to the live networked look on its next LateUpdate instead of
+        // easing in from the stale pre-disable value (mirror AvatarHopMotion.OnEnable).
+        private void OnEnable() => _seeded = false;
+
         private void LateUpdate()
         {
             if (_avatar == null || _headBone == null)

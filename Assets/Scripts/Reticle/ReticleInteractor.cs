@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -21,10 +22,6 @@ namespace Reticle
         [SerializeField] private Camera _camera;
         [SerializeField] private ReticleHUD _hud;
 
-        [Header("Raycast")]
-        [SerializeField] private LayerMask _targetMask = ~0;
-        [SerializeField] private float _maxDistance = 50f;
-
         [Header("Hysteresis (Poyo-tuned)")]
         [Tooltip("Seconds the ray must stay OFF the current target before it un-hovers (anti-flicker).")]
         [SerializeField] private float _exitDwell = 0.12f;
@@ -35,13 +32,22 @@ namespace Reticle
         [SerializeField] private InputActionReference _confirmAction;
 
         private bool _active;
-        private ReticleHover _hover;
-        private GameObject _currentHandler;
+        // TWO independent hover tracks: the BODY (the card, hit by physics — the static collider, anti-jitter)
+        // and the world UI (buttons, hit by the GraphicRaycaster). They are separate so aiming a card's own
+        // vote button (a child UI) does NOT exit the card body underneath it — the card stays raised while the
+        // button highlights. The physics ray passes through the thin UI to the card collider behind, so the
+        // body stays hovered the whole time the reticle is anywhere on the card.
+        private ReticleHover _bodyHover;
+        private ReticleHover _uiHover;
+        private GameObject _bodyHandler;
+        private GameObject _uiHandler;
         private PointerEventData _pointerData;
+        private readonly List<RaycastResult> _uiResults = new();
 
         private void Awake()
         {
-            _hover = new ReticleHover(_exitDwell, _switchDebounce);
+            _bodyHover = new ReticleHover(_exitDwell, _switchDebounce);
+            _uiHover = new ReticleHover(_exitDwell, _switchDebounce);
             if (_camera == null)
             {
                 _camera = Camera.main;
@@ -68,13 +74,9 @@ namespace Reticle
             }
             else
             {
-                // Leaving Vote: release any hovered target cleanly so it doesn't stay stuck-hovered.
-                int _exited = _hover.Reset();
-                if (_exited == _currentHandler?.GetInstanceID())
-                {
-                    DispatchExit(_currentHandler);
-                }
-                _currentHandler = null;
+                // Leaving Vote: release both tracks cleanly so nothing stays stuck-hovered.
+                ResetTrack(_bodyHover, ref _bodyHandler);
+                ResetTrack(_uiHover, ref _uiHandler);
                 _hud?.SetOver(false);
                 if (_confirmAction != null && _confirmAction.action != null)
                 {
@@ -85,50 +87,123 @@ namespace Reticle
 
         private void Update()
         {
-            if (!_active || _camera == null)
+            if (!_active)
             {
                 return;
             }
 
-            GameObject _hit = ResolveHandlerUnderReticle();
-            int _hitId = _hit != null ? _hit.GetInstanceID() : ReticleHover.None;
+            // Resolve both targets from the SAME stable uGUI raycast (works at any card tilt; the physics
+            // collider was unreliable because it rides the compositor and tilts away under the reticle).
+            ResolveTargets(out GameObject _body, out GameObject _ui);
+            UpdateTrack(_bodyHover, ref _bodyHandler, _body);
+            UpdateTrack(_uiHover, ref _uiHandler, _ui);
 
-            ReticleHoverResult _r = _hover.Tick(_hitId, Time.deltaTime);
+            _hud?.SetOver(_bodyHandler != null || _uiHandler != null);
+
+            // Confirm → click the world UI target (the vote/skip button) if present, else the body (card).
+            if (ConfirmPressed())
+            {
+                GameObject _clickTarget = _uiHandler != null ? _uiHandler : _bodyHandler;
+                if (_clickTarget != null)
+                {
+                    DispatchClick(_clickTarget);
+                }
+            }
+        }
+
+        // Advance one hover track: dispatch enter/exit as the per-track target changes (hysteresis in ReticleHover).
+        private void UpdateTrack(ReticleHover _track, ref GameObject _current, GameObject _hit)
+        {
+            int _id = _hit != null ? _hit.GetInstanceID() : ReticleHover.None;
+            ReticleHoverResult _r = _track.Tick(_id, Time.deltaTime);
             if (_r.Exited != ReticleHover.None)
             {
-                DispatchExit(_currentHandler);
-                _currentHandler = null;
-                _hud?.SetOver(false);
+                DispatchExit(_current);
+                _current = null;
             }
             if (_r.Entered != ReticleHover.None)
             {
-                _currentHandler = _hit;
-                DispatchEnter(_currentHandler);
-                _hud?.SetOver(true);
-            }
-
-            // Confirm → click the current target (the on-card vote button, a card, or the world skip button).
-            if (_currentHandler != null && ConfirmPressed())
-            {
-                DispatchClick(_currentHandler);
+                _current = _hit;
+                DispatchEnter(_current);
             }
         }
 
-        // Center-screen ray → the GameObject that actually HANDLES pointer events (walks up to the Card root
-        // or the CustomButton), or null. ExecuteEvents.GetEventHandler does the parent walk.
-        private GameObject ResolveHandlerUnderReticle()
+        private void ResetTrack(ReticleHover _track, ref GameObject _current)
         {
-            Transform _t = _camera.transform;
-            if (!Physics.Raycast(_t.position, _t.forward, out RaycastHit _rayHit, _maxDistance, _targetMask,
-                    QueryTriggerInteraction.Collide))
+            _track.Reset();
+            if (_current != null)
             {
-                return null;
+                DispatchExit(_current);
+                _current = null;
             }
-            return ExecuteEvents.GetEventHandler<IPointerEnterHandler>(_rayHit.collider.gameObject);
         }
 
-        private bool ConfirmPressed() =>
-            _confirmAction != null && _confirmAction.action != null && _confirmAction.action.WasPressedThisFrame();
+        // One screen-center uGUI raycast resolves BOTH tracks from the stack of hits under the reticle:
+        //  • _ui  = the TOPMOST control (the vote/skip button) — gets highlight + click;
+        //  • _body = the handler BEHIND it (the card, whose face graphic is hit even behind its own button) —
+        //            gets the hover/raise, and STAYS hovered while the reticle is on the card OR its button.
+        // When only one handler is under the reticle (the card body, no front control), it IS the body and
+        // there is no separate UI target. This is stable at any card tilt (GraphicRaycaster projects screen→
+        // canvas), unlike the physics collider which rides the compositor and tilts out from under the ray.
+        private void ResolveTargets(out GameObject _body, out GameObject _ui)
+        {
+            _body = null;
+            _ui = null;
+
+            EventSystem _es = EventSystem.current;
+            if (_es == null)
+            {
+                return;
+            }
+
+            _uiResults.Clear();
+            _es.RaycastAll(PointerData(), _uiResults);
+
+            GameObject _top = null;
+            GameObject _behind = null;
+            for (int _i = 0; _i < _uiResults.Count; _i++)
+            {
+                GameObject _handler = ExecuteEvents.GetEventHandler<IPointerEnterHandler>(_uiResults[_i].gameObject);
+                if (_handler == null)
+                {
+                    continue;
+                }
+                if (_top == null)
+                {
+                    _top = _handler;
+                }
+                else if (_handler != _top)
+                {
+                    _behind = _handler;
+                    break;
+                }
+            }
+
+            if (_behind != null)
+            {
+                _body = _behind; // the card behind the front control
+                _ui = _top;      // the control (button) on top
+            }
+            else
+            {
+                _body = _top;    // a single handler — the card body itself (or a standalone button)
+            }
+        }
+
+        // Confirm = the wired action if any, else a sensible default so clicking works out of the box: left
+        // mouse button or gamepad south (the cursor is locked but the buttons still register).
+        private bool ConfirmPressed()
+        {
+            if (_confirmAction != null && _confirmAction.action != null)
+            {
+                return _confirmAction.action.WasPressedThisFrame();
+            }
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                return true;
+            }
+            return Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame;
+        }
 
         private PointerEventData PointerData()
         {

@@ -14,14 +14,9 @@ namespace Board.CardComponents
     public class CardPlayerAnimation : BaseCardAnimation
     {
         private const float ZOOM_ANIMATION_DURATION = 0.35f;
-        // Hover lift + tilt-to-read: the card is flat on the table; on hover we pitch the "Hover" layer about
-        // its OWN local X so the face tips toward the seated first-person player, lifting FIRST so tilting
-        // about the layer centre never sinks the lower edge through the table. Detection stays on the static
-        // card root (the reticle raycasts that, NOT this moving layer) → no hover jitter. Sign/values are
-        // tunable: flip HOVER_PITCH_X if the card tips the wrong way; raise HOVER_DISPLACEMENT_Y for a taller
-        // card so the bottom edge clears the table.
-        private const float HOVER_DISPLACEMENT_Y = 0.4f;
-        private const float HOVER_PITCH_X = -40f;
+        // Flat hover lift (non-FPS phases: board/picker mouse hover). The dramatic first-person look-at hover
+        // is gated to the seated Vote (CameraModeChannel == Embodied) and computes its own lift — see Hover.
+        private const float HOVER_DISPLACEMENT_Y = 0.35f;
         private const float FLIP_DISPLACEMENT_Y = 4f;
         private const float FLIP_ROTATION_ANGLE = 180f;
         private const float PUNCH_SCALE_INTENSITY = 0.15f;
@@ -34,12 +29,32 @@ namespace Board.CardComponents
         protected override void Hover(Canvas _cardCanvas)
         {
             var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
-            
+
             hoverLayer.DOKill();
             hoverLayer.DOScale(visualComponents.hoverZoom, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
-            hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
-            // Tip the face up toward the seated player (lift + rotate on the same eased tween → no mid-anim clip).
-            hoverLayer.DOLocalRotate(new Vector3(HOVER_PITCH_X, 0f, 0f), ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+
+            // First-person seated Vote ONLY: rotate the card to look at the camera + lift by a COMPUTED amount
+            // so it floats above the table without clipping (pure HoverFocusMath). Gated by the shared channel
+            // so the tilt never leaks into the top-down board/picker mouse hover.
+            var _channel = visualComponents.cameraModeChannel;
+            Camera _cam = Camera.main;
+            bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied && _cam != null;
+
+            if (_firstPerson)
+            {
+                Presentation.HoverFocusPose _pose = Presentation.HoverFocusMath.Compute(
+                    visualComponents.transform.position, _cam.transform.position,
+                    visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
+                    visualComponents.hoverHalfHeight, visualComponents.hoverHalfWidth,
+                    visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset, visualComponents.hoverRootScaleY);
+
+                hoverLayer.DOLocalMoveY(_pose.LocalLiftY, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                SlerpLayerRotation(hoverLayer, _pose.Rotation);
+            }
+            else
+            {
+                hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            }
         }
 
         protected override void UnHover(Canvas _cardCanvas)
@@ -49,7 +64,17 @@ namespace Board.CardComponents
             hoverLayer.DOKill();
             hoverLayer.DOScale(1f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
             hoverLayer.DOLocalMoveY(0, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
-            hoverLayer.DOLocalRotate(Vector3.zero, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+            SlerpLayerRotation(hoverLayer, Quaternion.identity);
+        }
+
+        // Slerp the layer's local rotation to a target quaternion (the layer's DOTween helper only takes euler,
+        // which can spin badly toward an arbitrary look-at orientation — slerp is clean and shortest-path).
+        private void SlerpLayerRotation(TransformComposition.TransformLayer _layer, Quaternion _target)
+        {
+            Quaternion _from = _layer.localRotation;
+            DOTween.To(() => 0f, _t => _layer.localRotation = Quaternion.Slerp(_from, _target, _t), 1f, ZOOM_ANIMATION_DURATION)
+                .SetEase(Ease.OutQuint)
+                .SetTarget(_layer);
         }
 
         public override void OnClick()

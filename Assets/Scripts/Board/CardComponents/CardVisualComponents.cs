@@ -28,6 +28,24 @@ namespace Board.CardComponents
         [field: SerializeField] public TransformCompositorComponent compositor { get; private set; }
         [field: SerializeField] public float hoverZoom { get; private set; } = 1.15f;
         [field: SerializeField] public float rotateTime { get; private set; } = 1f;
+
+        [Header("First-person hover (look-at camera + computed no-clip lift)")]
+        [Tooltip("Gate: the look-at hover only plays while this channel reports Embodied (the seated Vote). " +
+                 "Other phases keep the flat hover. Wire the shared CameraModeChannel asset.")]
+        [field: SerializeField] public Avatars.CameraModeChannel cameraModeChannel { get; private set; }
+        [Tooltip("The readable FACE normal + up, in the card ROOT's local frame at rest (tune so the card " +
+                 "ends up facing the player; flip an axis if it faces away).")]
+        [field: SerializeField] public Vector3 hoverFaceLocalNormal { get; private set; } = Vector3.up;
+        [field: SerializeField] public Vector3 hoverFaceLocalUp { get; private set; } = Vector3.forward;
+        [Tooltip("Half the card's world height/width (along face-up / face-right) — used to compute a lift " +
+                 "that floats the rotated card above the table with no clip.")]
+        [field: SerializeField] public float hoverHalfHeight { get; private set; } = 2.2f;
+        [field: SerializeField] public float hoverHalfWidth { get; private set; } = 1.575f;
+        [Tooltip("Table top world Y, the float offset above it, and the card root's world Y scale (lift is " +
+                 "applied in the root's local space, so it is divided by this).")]
+        [field: SerializeField] public float hoverSurfaceY { get; private set; } = -15.025f;
+        [field: SerializeField] public float hoverFloatOffset { get; private set; } = 0.2f;
+        [field: SerializeField] public float hoverRootScaleY { get; private set; } = 0.5f;
         
         [Header("Both Side References")] 
         [field: SerializeField] public MeIconCard meIconCard { get; private set; }

@@ -49,6 +49,9 @@ namespace Avatars
         [SerializeField] private AvatarSeatingPresenter _seatingPresenter;
         [SerializeField] private AvatarVisibilityController _visibility;
         [SerializeField] private ReticleInteractor _reticle;
+        [Tooltip("Reusable broadcast of the resolved camera mode (e.g. the card hover reads it to gate the " +
+                 "first-person look-at). Null-tolerant — unwired just means consumers see Board.")]
+        [SerializeField] private CameraModeChannel _cameraModeChannel;
         // The scene smartphone/tablet. Drives the cursor + look gate: while it is open the OS cursor is freed
         // (to drive the tablet UI) and the first-person look is frozen. Null-tolerant — if unwired, the cursor
         // simply follows the camera mode and the look is never frozen.
@@ -156,6 +159,9 @@ namespace Avatars
             // First-person Vote targeting: the center-screen reticle is live ONLY while seated (Embodied),
             // so cards/buttons can be hovered + clicked without an OS cursor.
             _reticle.SetActive(_currentMode == CameraMode.Embodied);
+
+            // Broadcast the mode on the reusable channel (cards gate their first-person look-at hover on it).
+            _cameraModeChannel?.Set(_currentMode);
 
             // Cursor lock + look freeze derive from BOTH the mode and the tablet state — re-apply on each.
             ApplyCursorAndLook();

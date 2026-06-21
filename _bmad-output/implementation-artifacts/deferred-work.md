@@ -146,3 +146,18 @@ Locomotion juice for the free-roam Lobby, composes with shipped head-look + idle
 
 ### UPDATE 2026-06-21 — locomotion: HOP shipped (commit aba2957, spec-cat-hop-locomotion); revised for NO-LEGS model
 The 3D model has NO LEGS (robe/cone base) — so Sally's leg-stride (T1-1) is replaced by a HOP cycle. SHIPPED: `AvatarHopMotion` (local, deterministic, no netcode) — vertical hop arc + squash&stretch + up-beat forward pitch, distance-paced, on the CatVisual visual-root transform (single-writer; idle/head-look compose on top). STILL REMAINING from Sally's hop backlog (agent a8b9aa507c20e2e6e): **hop-landing FMOD** (content-gated — GameAudioManager only has a 2D one-shot + needs an authored FMOD event; down-beat detection is the hook point), **accel lean**, **turn bank**, **bow/bell landing jolt** (feed impulse into AvatarIdleMotion's existing bow spring), **resting idle-hop while standing** (Poyo feel call). The leg-based items (stride, arm counter-swing tied to legs, pivot-step, gait tiers) are N/A without legs/clip.
+
+## FP Vote reticle — PR2: hover lift+turn + jitter-proof envelope (deferred 2026-06-21)
+
+Deferred from spec-fp-vote-reticle (split). PR1 = reticle targeting only.
+
+PR2 scope (Sally design):
+- Replace the flat card hover (DOScale + DOLocalMoveY) with a FAR-EDGE HINGE: rise (clearance) then DOLocalRotate to a fixed ~60% readable tilt facing the seated camera, on the "Hover" compositor layer. Pivot at the card far table-edge so nothing clips through the table.
+- Anti-jitter: STATIC two-phase detection on the card ROOT (never the animated Hover layer) — small resting footprint to ENTER, expanded latch box spanning rest->lifted to STAY; EXIT only when the ray leaves the latch (via existing CanUnZoomCard gate + exit dwell). Proof: raycast geometry never moves; latch already encloses the lifted pose -> no oscillation.
+- Suppress hover-lift while the "Flip" layer is animating.
+- Re-place the vote button on the lifted/tilted front face (lower-center, enlarged hit) so it is a comfortable reticle target once lifted.
+
+PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is raised):
+- Add a BoxCollider to the on-card vote button (VoteCanvas CustomButton) sized to its rect so the center reticle can click it; place it lower-center of the lifted/tilted front face.
+- Make the Skip control a WORLD-space, reticle-targetable button (collider + reuse its handler), off the card cluster (non-overlapping latch volumes).
+- Confirm input binding (_confirmAction InputActionReference) is Poyo's editor wiring regardless of PR.

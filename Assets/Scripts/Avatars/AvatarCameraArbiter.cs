@@ -1,5 +1,6 @@
 using Board.BoardCameraSystem;
 using GameLogic;
+using Reticle;
 using Smartphone;
 using Unity.Netcode;
 using UnityEngine;
@@ -47,6 +48,7 @@ namespace Avatars
         [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
         [SerializeField] private AvatarSeatingPresenter _seatingPresenter;
         [SerializeField] private AvatarVisibilityController _visibility;
+        [SerializeField] private ReticleInteractor _reticle;
         // The scene smartphone/tablet. Drives the cursor + look gate: while it is open the OS cursor is freed
         // (to drive the tablet UI) and the first-person look is frozen. Null-tolerant — if unwired, the cursor
         // simply follows the camera mode and the look is never frozen.
@@ -70,6 +72,7 @@ namespace Avatars
             Assert.IsNotNull(_embodiedCamera, "AvatarCameraArbiter._embodiedCamera is not wired — wire the AvatarEmbodiedCamera instance.");
             Assert.IsNotNull(_seatingPresenter, "AvatarCameraArbiter._seatingPresenter is not wired — wire the AvatarSeatingPresenter instance.");
             Assert.IsNotNull(_visibility, "AvatarCameraArbiter._visibility is not wired — wire the AvatarVisibilityController instance.");
+            Assert.IsNotNull(_reticle, "AvatarCameraArbiter._reticle is not wired — wire the ReticleInteractor instance.");
         }
 
         private void Start()
@@ -149,6 +152,10 @@ namespace Avatars
             // Avatar body visibility (single owner): Board hides everyone ("you only see each other during
             // the day"); FreeRoam/Embodied show everyone except the local first-person body.
             _visibility.SetMode(_currentMode);
+
+            // First-person Vote targeting: the center-screen reticle is live ONLY while seated (Embodied),
+            // so cards/buttons can be hovered + clicked without an OS cursor.
+            _reticle.SetActive(_currentMode == CameraMode.Embodied);
 
             // Cursor lock + look freeze derive from BOTH the mode and the tablet state — re-apply on each.
             ApplyCursorAndLook();

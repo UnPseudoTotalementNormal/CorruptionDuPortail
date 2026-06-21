@@ -95,7 +95,7 @@ Human renegotiation (Poyo, post-approval): networked look is **yaw + pitch** (ri
 
 **KEEP:** pure `SeatRingGeometry` + EditMode invariance tests; restore-pose-then-re-enable-NT ordering; relative-look-only (never absolute world rotation).
 
-**Human sign-off (LOW):** `SeatedYaw`/`SeatedPitch` are owner-write `NetworkVariable`s — first in the project, a documented exception to project-context's "no owner-write" rule. Sanctioned as cosmetic gaze (no authority); ratify in the PR.
+**Human sign-off (LOW): RATIFIED by Poyo 2026-06-21.** `SeatedYaw`/`SeatedPitch` are owner-write `NetworkVariable`s — first in the project, a sanctioned exception to project-context's "no owner-write" rule (cosmetic gaze, no authority). Remaining gate before merge: live 3-client playtest.
 
 ## Design Notes
 

@@ -513,7 +513,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Avatars.AvatarFollowCamera
   _camera: {fileID: 54114939}
-  _eyeOffset: {x: 0, y: 2.25, z: 0}
+  _eyeOffset: {x: 0, y: 2.65, z: 0}
   _activePriority: 100
   _inactivePriority: -100
 --- !u!114 &54114939
@@ -4551,7 +4551,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &677807464
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14064,7 +14064,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.AvatarEmbodiedCamera
   _camera: {fileID: 1861743664}
   _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  _eyeOffset: {x: 0, y: 2.15, z: 0}
+  _eyeOffset: {x: 0, y: 2.6, z: 0}
   _yawSpeed: 0.12
   _pitchSpeed: 0.12
   _yawClamp: 75
@@ -14178,7 +14178,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1864492909
 RectTransform:
   m_ObjectHideFlags: 0

@@ -56,9 +56,10 @@ namespace Tests.Editor.Avatars
         }
 
         [Test]
-        public void VoteRecapState_MapsTo_Board()
+        public void VoteRecapState_MapsTo_Embodied()
         {
-            Assert.AreEqual(CameraMode.Board, Resolve<VoteRecapState>());
+            // Recap is a DAY phase — seated with the other players visible (Embodied), like the vote.
+            Assert.AreEqual(CameraMode.Embodied, Resolve<VoteRecapState>());
         }
 
         [Test]

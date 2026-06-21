@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 1309300777674755838, guid: 19c36c39a176ad2459a7860cf2c8c7b7, type: 3}
   gameStateDependencies: []
+  forceBoardCamera: 0
+  startingBoardCamera: 6
+  useLightColorOverride: 0
+  lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
   voteDuration: 300
-  takeDownThePortalPowerDataObject: {fileID: 11400000, guid: 4dca6b257df02de46a1ab5a0b95f9735, type: 2}
   voteTimer: 0

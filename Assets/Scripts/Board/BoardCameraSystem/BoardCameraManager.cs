@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Controllers;
@@ -15,7 +16,16 @@ namespace Board.BoardCameraSystem
         
         private List<BoardCamera> boardCameras = new();
         private BoardCamera currentBoardCamera;
-        
+
+        /// <summary>Fires after the current board camera changes (incl. the initial set), carrying the new id.
+        /// The AvatarCameraArbiter listens so the embodied Vote camera / reticle / cursor follow whether the
+        /// seated first-person node is the live camera as the player arrows between it and the board cams.</summary>
+        public event Action<BoardCameraIdEnum> onCurrentCameraChanged;
+
+        /// <summary>Id of the live board camera (None if none active yet).</summary>
+        public BoardCameraIdEnum CurrentBoardCameraId =>
+            currentBoardCamera != null ? currentBoardCamera.boardCameraId : BoardCameraIdEnum.None;
+
         [SerializeField] private BoardCamera startingBoardCamera;
         [SerializeField] private Transform cameraParentTransform;
         [SerializeField] private GameManager gameManager;
@@ -81,6 +91,12 @@ namespace Board.BoardCameraSystem
             }
             else
             {
+                // A starting camera (unlike a forced one) only sets the ENTRY view; arrow nav stays live so the
+                // player can move on from it. The Vote opens on the seated first-person node this way.
+                if (_gameState.startingBoardCamera != BoardCameraIdEnum.None)
+                {
+                    SetCurrentBoardCamera(_gameState.startingBoardCamera);
+                }
                 SetActiveSource(BoardCameraInputActiveSource.GameState, true);
             }
         }
@@ -110,6 +126,7 @@ namespace Board.BoardCameraSystem
             currentBoardCamera?.DeactivateCamera();
             currentBoardCamera = _boardCamera;
             currentBoardCamera?.ActivateCamera();
+            onCurrentCameraChanged?.Invoke(CurrentBoardCameraId);
         }
         
         public void SetCurrentBoardCamera(BoardCameraIdEnum _boardCameraId)
@@ -126,6 +143,17 @@ namespace Board.BoardCameraSystem
         public void SetActiveSource(BoardCameraInputActiveSource _activeSource, bool _isActive)
         {
             SetActiveSource(_activeSource.ToString(), _isActive);
+        }
+
+        /// <summary>Restore the inspector-assigned default board camera. The arbiter calls this when leaving the
+        /// Vote so the board is never stranded on the seated first-person node (a Vote-only camera whose driver
+        /// stops outside the Vote). No-op if no default is wired.</summary>
+        public void ResetToStartingCamera()
+        {
+            if (startingBoardCamera != null)
+            {
+                SetCurrentBoardCamera(startingBoardCamera);
+            }
         }
     }
     

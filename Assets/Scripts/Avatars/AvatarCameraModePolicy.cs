@@ -35,9 +35,15 @@ namespace Avatars
         {
             return _state switch
             {
+                // The lobby is the ONLY non-seated phase: the player walks around (first-person follow camera).
                 LobbyState => CameraMode.FreeRoam,
+                // DAY phases (the vote + its recap): seated WITH the other players visible.
                 VoteState => CameraMode.Embodied,
-                // null and every other in-loop state keep the existing board presentation.
+                VoteRecapState => CameraMode.Embodied,
+                // NIGHT / neutral in-loop states + null: seated but the others are HIDDEN ("you only see each
+                // other during the day"). Board now ALSO seats the player — the seated first-person is reachable
+                // everywhere except the lobby; Board differs from Embodied only by hiding the others and
+                // defaulting to a board overview camera instead of first-person.
                 _ => CameraMode.Board,
             };
         }

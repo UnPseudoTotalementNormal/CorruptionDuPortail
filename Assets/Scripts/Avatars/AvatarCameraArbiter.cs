@@ -15,24 +15,27 @@ namespace Avatars
     /// and, per resolved <see cref="CameraMode"/>, drives three local presentation toggles:
     ///
     ///  • <see cref="AvatarFollowCamera"/> active iff <c>FreeRoam</c> (the Lobby first-person camera);
-    ///  • <see cref="AvatarEmbodiedCamera"/> active iff <c>Embodied</c> (the seated Vote camera, Story 13.4);
-    ///  • the <see cref="BoardCameraManager"/> <c>Avatar</c> input source = (<c>mode == Board</c>) — cuts
-    ///    board-camera arrow neighbour-nav in FreeRoam/Embodied via the existing AND-gate, WITHOUT touching
-    ///    the GameState source or removing any board camera (NFR1);
+    ///  • <see cref="AvatarEmbodiedCamera"/> active iff the seated first-person board-camera NODE is the live
+    ///    camera — the seated first-person is wired into the board-camera neighbour graph as a node, so in ANY
+    ///    seated phase (Board night or Embodied day) the player can arrow between it and the board overviews
+    ///    (it follows the board manager's current-camera event, not the raw mode);
+    ///  • the <see cref="BoardCameraManager"/> <c>Avatar</c> input source = (<c>mode == Board || Embodied</c>)
+    ///    — arrow neighbour-nav is live in every seated phase, cut only in FreeRoam, via the existing AND-gate,
+    ///    WITHOUT touching the GameState source or removing any board camera (NFR1);
     ///  • the local owned avatar's movement input enabled iff <c>FreeRoam</c>
     ///    (<see cref="AvatarMovementController.SetMovementEnabled"/>);
-    ///  • the <see cref="AvatarSeatingPresenter"/> is active iff <c>Embodied</c> — it drives the per-client
-    ///    rotated seating ring (every avatar placed locally, NetworkTransform suppressed, networked gaze yaw
-    ///    applied), superseding the Story 13.4 networked <c>SeatAtSeat</c> teleport.
+    ///  • the <see cref="AvatarSeatingPresenter"/> is active in EVERY seated phase (<c>Board</c> or
+    ///    <c>Embodied</c>) — i.e. the whole match except the lobby — driving the per-client rotated seating ring
+    ///    (every avatar placed locally, NetworkTransform suppressed, networked gaze yaw applied).
     ///
     /// NFR2 — it is a PURE REACTION: subscribe-and-prime in <see cref="Start"/>, unsubscribe in
     /// <see cref="OnDestroy"/> (subscription symmetry, archi §5b); it NEVER writes the index and never
     /// touches the OnEnd → write → OnStart transition ordering. The 2.11a sequence golden stays green.
     ///
-    /// EMBODIED (Story 13.4): <c>VoteState → Embodied</c> now realises a concrete seated presentation —
-    /// the <see cref="AvatarEmbodiedCamera"/> activates at the local seat (clamped look) and the local body
-    /// is snapped to its seat. Movement stays locked + board arrow-nav stays cut (as 13.3). The seated
-    /// camera/seat/look live in their own components; the arbiter only routes the mode + drives the seat-snap.
+    /// SEATED WHOLE MATCH (except lobby): every in-game state is seated — Board (night) hides the others +
+    /// defaults to a board overview; Embodied (day = vote + recap) shows the others + defaults to first-person.
+    /// In both, the seated first-person is a navigable board-camera node and movement stays locked. Night vs day
+    /// differs ONLY by visibility + the default camera; only the lobby (FreeRoam) walks around, not seated.
     ///
     /// Presentation-only <c>MonoBehaviour</c> (NOT a NetworkBehaviour): it reads the replicated
     /// <c>currentGameStateIndex</c> and toggles LOCAL cameras/input — it mutates no game state. Lane A:
@@ -60,12 +63,20 @@ namespace Avatars
         private IGameStateQuery Query => gameManager;
 
         private bool _subscribed;
+        // Whether we managed to subscribe to the board manager's current-camera event (it is a scene singleton
+        // available by our Start; guarded + mirrored for a clean unsubscribe).
+        private bool _boardCameraSubscribed;
         // Mirrors the tablet open state via its onPanelOpened/onPanelClosed events. Combined with the camera
         // mode to decide the cursor lock + look freeze.
         private bool _tabletOpen;
         // Last resolved mode, cached so a late-spawning local avatar (below) starts in the right movement
         // state when its controller finally binds.
         private CameraMode _currentMode = CameraMode.Board;
+        // During the Vote (Embodied) the first-person seated camera is wired into the board-camera neighbour
+        // graph as a node: this tracks whether THAT node is the live camera (vs a board overview the player
+        // arrowed to). The embodied camera / reticle / cursor-lock follow it. Defaults true on Vote entry (the
+        // seated node is the Vote's starting camera) and is updated live by the board manager's camera event.
+        private bool _firstPersonActive;
         private AvatarMovementController _localMovement;
 
         private void Awake()
@@ -93,6 +104,15 @@ namespace Avatars
                 _smartphone.onPanelClosed += OnTabletClosed;
             }
 
+            // The seated first-person is a board-camera node during the Vote; follow which board camera is live
+            // so the embodied camera / reticle / cursor track the player arrowing between it and the overviews.
+            // .instance is a scene singleton set in Awake (before any Start) — available here; guarded anyway.
+            if (BoardCameraManager.instance != null)
+            {
+                BoardCameraManager.instance.onCurrentCameraChanged += OnCurrentBoardCameraChanged;
+                _boardCameraSubscribed = true;
+            }
+
             OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
         }
 
@@ -110,6 +130,12 @@ namespace Avatars
                 _smartphone.onPanelClosed -= OnTabletClosed;
             }
 
+            // Mirror the Start subscription to the board manager's current-camera event.
+            if (_boardCameraSubscribed && BoardCameraManager.instance != null)
+            {
+                BoardCameraManager.instance.onCurrentCameraChanged -= OnCurrentBoardCameraChanged;
+            }
+
             // Never leave a teardown with a locked/hidden cursor (e.g. scene unload mid-Vote) — restore the
             // free OS cursor so menus/other scenes are usable.
             Cursor.lockState = CursorLockMode.None;
@@ -125,46 +151,96 @@ namespace Avatars
 
         private void OnGameStateChanged(int _previousValue, int _newValue)
         {
-            _currentMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            _currentMode = _newMode;
+
+            // The seated first-person is the default camera ONLY in Embodied (day) — there the embodied camera
+            // outranks the board cams, so a stale FP current is harmless. Entering any OTHER mode (a night/Board
+            // phase that defaults to a board overview, or the lobby) while FP is still the live board camera
+            // would strand a frozen first-person view (in Board the embodied driver is off at entry). Hand the
+            // board back to its default first. Guarded: only when FP is actually the current camera.
+            if (_newMode != CameraMode.Embodied
+                && BoardCameraManager.instance != null
+                && BoardCameraManager.instance.CurrentBoardCameraId == BoardCameraIdEnum.SeatedFirstPerson)
+            {
+                BoardCameraManager.instance.ResetToStartingCamera();
+            }
+
             ApplyMode();
         }
 
         private void ApplyMode()
         {
-            // FreeRoam: the first-person Lobby camera outranks the board cams. Embodied: the seated Vote
-            // camera outranks them (Story 13.4). Board: both stand down so the board cameras present.
+            // FreeRoam: the first-person Lobby camera outranks the board cams. Board/Embodied: it stands down.
+            // The Vote's first-person is NO LONGER force-activated here — it is a board-camera node (driven by
+            // ApplyFirstPersonPresentation), so the player can arrow between it and the board overviews.
             _followCamera.SetActive(_currentMode == CameraMode.FreeRoam);
-            _embodiedCamera.SetActive(_currentMode == CameraMode.Embodied);
 
-            // Board-camera arrow neighbour-nav: ON only in Board. The Avatar source ANDs with the untouched
-            // GameState source (Controller.cs:43-53), so FreeRoam/Embodied cut arrow nav cleanly without
-            // removing/disabling any board camera and without touching the GameState source (NFR1). Order vs
-            // BoardCameraManager's own subscriber is irrelevant — the AND is order-independent (NFR2-safe).
-            // .instance is a recorded census survivor / opt-out (sanctioned, NOT a locator to remove);
-            // null-tolerant for headless / early-boot.
-            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar, _currentMode == CameraMode.Board);
+            // Board-camera arrow neighbour-nav: ON in Board AND Embodied (the Vote now navigates the same
+            // board-camera set, with the seated first-person wired in as a node). Only FreeRoam (Lobby) cuts it.
+            // The Avatar source ANDs with the untouched GameState source (Controller.cs:43-53), so this never
+            // touches the GameState source or removes/disables any board camera (NFR1); order vs the board
+            // manager's own subscriber is irrelevant (AND is order-independent). .instance is a recorded census
+            // survivor / opt-out (sanctioned, NOT a locator to remove); null-tolerant for headless / early-boot.
+            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar,
+                _currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied);
 
             // Avatar movement input: enabled ONLY in FreeRoam (the Lobby), locked in every other state.
             ApplyMovementEnabled();
 
-            // Seated ring: the presenter drives the per-client rotated seating (places every avatar locally,
-            // suppresses NetworkTransform, applies networked gaze yaw) for the whole Embodied window. It
-            // self-handles late-spawning avatars + player-count changes, so no one-shot re-arm is needed here.
-            _seatingPresenter.SetActive(_currentMode == CameraMode.Embodied);
+            // Seated ring: the player is seated for the WHOLE match except the lobby — both Board (night) and
+            // Embodied (day) place every avatar on the ring, independent of which camera is live. Only FreeRoam
+            // (lobby) stands it down. The presenter self-handles late-spawning avatars + player-count changes.
+            _seatingPresenter.SetActive(_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied);
 
-            // Avatar body visibility (single owner): Board hides everyone ("you only see each other during
-            // the day"); FreeRoam/Embodied show everyone except the local first-person body.
+            // Avatar body visibility (single owner): Board (night) hides everyone ("you only see each other
+            // during the day"); FreeRoam (lobby) / Embodied (day = vote + recap) show everyone except the local
+            // first-person body. This is the ONLY thing that now distinguishes night (Board) from day (Embodied).
             _visibility.SetMode(_currentMode);
-
-            // First-person Vote targeting: the center-screen reticle is live ONLY while seated (Embodied),
-            // so cards/buttons can be hovered + clicked without an OS cursor.
-            _reticle.SetActive(_currentMode == CameraMode.Embodied);
 
             // Broadcast the mode on the reusable channel (cards gate their first-person look-at hover on it).
             _cameraModeChannel?.Set(_currentMode);
 
-            // Cursor lock + look freeze derive from BOTH the mode and the tablet state — re-apply on each.
+            // Entering the Vote the seated first-person node is the starting camera, so assume it active until
+            // the board manager's camera event says otherwise. Outside Embodied this flag is unused.
+            _firstPersonActive = _currentMode == CameraMode.Embodied;
+            ApplyFirstPersonPresentation();
+        }
+
+        // The first-person-specific toggles. During the Vote they follow which board camera is live — the
+        // seated first-person node (embodied camera + reticle + locked cursor) vs a board overview (board cam,
+        // no reticle, free cursor). Outside Embodied the embodied camera + reticle are simply off (the Lobby
+        // first-person is the separate follow camera).
+        private void ApplyFirstPersonPresentation()
+        {
+            // The seated first-person is reachable in BOTH night (Board) and day (Embodied) — it is on whenever
+            // its board-camera node is the live one (tracked by _firstPersonActive). FreeRoam (lobby) uses the
+            // separate follow camera, so the embodied camera + reticle are off there.
+            bool _embodied = (_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive;
+            // First-person targeting: the center-screen reticle is live only on the seated first-person node so
+            // cards/buttons can be hovered + clicked without an OS cursor.
+            _embodiedCamera.SetActive(_embodied);
+            _reticle.SetActive(_embodied);
+            // Cursor lock + look freeze derive from the first-person state AND the tablet state — re-apply both.
             ApplyCursorAndLook();
+        }
+
+        // The board manager reports the live camera. Whenever the player is seated (Board night or Embodied
+        // day), track whether the seated first-person node is the live one so the embodied presentation follows
+        // the player's arrow navigation between it and the board overviews. Ignored only in FreeRoam (lobby).
+        private void OnCurrentBoardCameraChanged(BoardCameraIdEnum _id)
+        {
+            if (_currentMode != CameraMode.Board && _currentMode != CameraMode.Embodied)
+            {
+                return;
+            }
+            bool _fp = _id == BoardCameraIdEnum.SeatedFirstPerson;
+            if (_fp == _firstPersonActive)
+            {
+                return;
+            }
+            _firstPersonActive = _fp;
+            ApplyFirstPersonPresentation();
         }
 
         private void OnTabletOpened()
@@ -185,7 +261,8 @@ namespace Avatars
         // with the mouse. Board mode always shows the cursor (board/UI is click-driven).
         private void ApplyCursorAndLook()
         {
-            bool _firstPerson = _currentMode == CameraMode.FreeRoam || _currentMode == CameraMode.Embodied;
+            bool _firstPerson = _currentMode == CameraMode.FreeRoam
+                || ((_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive);
             bool _lockCursor = _firstPerson && !_tabletOpen;
 
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;

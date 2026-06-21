@@ -61,7 +61,13 @@ namespace GameLogic
         public List<GameState> gameStateDependencies = new();
         
         public BoardCameraIdEnum forceBoardCamera = BoardCameraIdEnum.None;
-        
+
+        // Like forceBoardCamera, but it only sets the STARTING board camera on state entry WITHOUT locking
+        // arrow navigation. forceBoardCamera disables the GameState input source (one fixed view); this keeps
+        // it ON. The Vote uses it to open on the seated first-person node while still letting the player arrow
+        // over to the board overviews. Ignored when forceBoardCamera is set (a forced view wins).
+        public BoardCameraIdEnum startingBoardCamera = BoardCameraIdEnum.None;
+
         public bool useLightColorOverride = false;
         public Color lightColorOverride = Color.white;
         

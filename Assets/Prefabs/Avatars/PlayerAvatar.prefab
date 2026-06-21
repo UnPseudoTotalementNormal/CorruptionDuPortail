@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4081065072
+  GlobalObjectIdHash: 307359857
   InScenePlacedSourceGlobalObjectIdHash: 4081065072
   DeferredDespawnTick: 0
   Ownership: 1
@@ -180,7 +180,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 2
-  m_Radius: 0.79
+  m_Radius: 0.5
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -204,8 +204,6 @@ MonoBehaviour:
   _lookYawSpeed: 0.12
   _lookPitchSpeed: 0.12
   _pitchClamp: 80
-  _headYawCone: 60
-  _bodyCatchUpSpeed: 6
   _gravity: -15
 --- !u!1001 &961825668200779015
 PrefabInstance:

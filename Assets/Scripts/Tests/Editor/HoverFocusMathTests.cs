@@ -75,12 +75,14 @@ namespace Tests.Editor.Presentation
         }
 
         [Test]
-        public void AlreadyAboveSurface_DoesNotPushDown()
+        public void AlreadyAboveSurface_ReportsNegativeLift()
         {
+            // Pivot far above the table → the signed lift is negative (the caller clamps so it never goes
+            // below rest, but a continuous tracker may ease back down toward the target).
             Vector3 _highPivot = new Vector3(0f, SurfaceY + 100f, 0f);
             HoverFocusPose _pose = HoverFocusMath.Compute(_highPivot, new Vector3(0f, SurfaceY + 105f, 5f),
                 FaceNormal, FaceUp, ExtTop, ExtBottom, HalfW, SurfaceY, Offset);
-            Assert.That(_pose.WorldLift, Is.EqualTo(0f).Within(1e-4f), "must never lift the card DOWN toward the table");
+            Assert.That(_pose.WorldLift, Is.LessThan(0f), "should report a negative (ease-down) lift when already well above");
         }
 
         [Test]

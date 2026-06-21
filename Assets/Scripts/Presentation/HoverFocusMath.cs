@@ -66,11 +66,10 @@ namespace Presentation
             float _lowest = Mathf.Min(_extentTopWorld * _upY, _extentBottomWorld * _upY)
                             - Mathf.Abs(_halfWidthWorld * _rightY);
 
+            // SIGNED lift: negative means the lowest point is already above surface+offset. The caller decides
+            // the floor (e.g. clamp the result so the object never goes below its rest), so a continuous
+            // tracker can ease the object back DOWN toward the target, not only up.
             float _worldLift = (_surfaceY + _offset - _lowest) - _pivotWorldPos.y;
-            if (_worldLift < 0f)
-            {
-                _worldLift = 0f;
-            }
             return new HoverFocusPose(_rotation, _worldLift);
         }
     }

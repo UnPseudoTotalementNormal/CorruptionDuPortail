@@ -683,11 +683,8 @@ MonoBehaviour:
   <cameraModeChannel>k__BackingField: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   <hoverFaceLocalNormal>k__BackingField: {x: 0, y: 1, z: 0}
   <hoverFaceLocalUp>k__BackingField: {x: 0, y: 0, z: 1}
-  <hoverHalfHeight>k__BackingField: 2.2
-  <hoverHalfWidth>k__BackingField: 1.575
   <hoverSurfaceY>k__BackingField: -15.025
-  <hoverFloatOffset>k__BackingField: 0.8
-  <hoverRootScaleY>k__BackingField: 0.5
+  <hoverFloatOffset>k__BackingField: 0.1
   <meIconCard>k__BackingField: {fileID: 845519996604528795}
   <cardPlayerPseudo>k__BackingField: {fileID: 7225565607081040501}
   <cardPlayerPseudoHolder>k__BackingField: {fileID: 4161368764948520219}

@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TransformComposition;
@@ -30,6 +31,18 @@ namespace Board.CardComponents
         // Reused buffer for RectTransform.GetWorldCorners (no per-hover alloc beyond the Graphic[] scan).
         private static readonly Vector3[] _worldCorners = new Vector3[4];
 
+        // First-person hover: while active, the lift is re-measured EVERY frame (in Update) so it tracks the
+        // vote canvas as it slides into place — the panel can't sink into the floor while it deploys. Rotation
+        // is a one-shot slerp on enter; only the lift needs the continuous tracking.
+        private const float HOVER_LIFT_LERP = 12f;
+        private bool _fpsHoverActive;
+        private Camera _hoverCamera;
+        // Cached at arm-time so Update avoids the per-frame string GetLayer + lossyScale chain walk.
+        private TransformLayer _hoverLayerRef;
+        private float _hoverParentScaleY = 1f;
+        // Reused so the per-frame measurement allocates nothing (GetComponentsInChildren list overload).
+        private readonly List<Graphic> _graphicsBuffer = new();
+
         protected override void Hover(Canvas _cardCanvas)
         {
             var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
@@ -44,37 +57,94 @@ namespace Board.CardComponents
             Camera _cam = Camera.main;
             bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied && _cam != null;
 
-            if (_firstPerson)
+            if (_firstPerson && TryComputeFpsHoverPose(visualComponents.transform, _cam, out Presentation.HoverFocusPose _pose))
             {
-                // DYNAMIC size: measure the card's real world extents (card face + the deployed vote canvas)
-                // so the computed lift floats the WHOLE thing above the table — the vote panel that extends
-                // below the card no longer clips into the floor.
-                Transform _root = visualComponents.transform;
-                if (!MeasureWorldExtents(_root, out float _top, out float _bottom, out float _halfWidth))
-                {
-                    // No measurable geometry (no active Graphic) → don't pin the pivot to the table; fall back
-                    // to the plain lift so a card mid-transition can never be flung to a degenerate pose.
-                    hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
-                    return;
-                }
-
-                Presentation.HoverFocusPose _pose = Presentation.HoverFocusMath.Compute(
-                    _root.position, _cam.transform.position,
-                    visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
-                    _top, _bottom, _halfWidth,
-                    visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset);
-
-                // The lift is WORLD; convert to the Hover layer's local space (the root's parent scale).
-                float _parentScaleY = _root.parent != null ? _root.parent.lossyScale.y : 1f;
-                float _localLift = Mathf.Abs(_parentScaleY) > 1e-5f ? _pose.WorldLift / _parentScaleY : _pose.WorldLift;
-
-                hoverLayer.DOLocalMoveY(_localLift, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                // Start the one-shot look-at rotation + ARM continuous lift tracking: the lift is re-measured
+                // every Update so it follows the vote canvas as it slides in (no floor clip during deploy).
+                _hoverCamera = _cam;
+                _hoverLayerRef = hoverLayer;
+                Transform _parent = visualComponents.transform.parent;
+                _hoverParentScaleY = _parent != null ? _parent.lossyScale.y : 1f;
+                _fpsHoverActive = true;
                 SlerpLayerRotation(hoverLayer, _pose.Rotation);
             }
             else
             {
+                // Non-FPS phases, or no measurable geometry → the plain flat lift (never a degenerate pose).
+                _fpsHoverActive = false;
                 hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
             }
+        }
+
+        // Per-frame while first-person hovering: re-measure the (deploying) card+vote-canvas bounds and ease the
+        // Hover layer's lift toward the height that floats the lowest point at surface+offset. The lift is
+        // SIGNED (eases up OR down toward the target, clamped to never go below rest), so the card tracks the
+        // vote panel both as it slides DOWN (rise to clear) and back if a transient over-measure peaked it.
+        public override void Update()
+        {
+            base.Update();
+            if (!_fpsHoverActive)
+            {
+                return;
+            }
+
+            // Disarm if we left the seated Vote mid-hover (else we'd keep tilting/lifting in a top-down view),
+            // or if the card/compositor is being torn down.
+            var _channel = visualComponents != null ? visualComponents.cameraModeChannel : null;
+            Transform _root = visualComponents != null ? visualComponents.transform : null;
+            if (_channel == null || _channel.Current != Avatars.CameraMode.Embodied
+                || _root == null || visualComponents.compositor == null || _hoverLayerRef == null)
+            {
+                DisarmFpsHover();
+                return;
+            }
+
+            if (!TryComputeFpsHoverPose(_root, _hoverCamera, out Presentation.HoverFocusPose _pose))
+            {
+                return;
+            }
+
+            float _addLocal = Mathf.Abs(_hoverParentScaleY) > 1e-5f ? _pose.WorldLift / _hoverParentScaleY : _pose.WorldLift;
+
+            Vector3 _lp = _hoverLayerRef.localPosition;
+            float _eased = Mathf.Lerp(_lp.y, _lp.y + _addLocal, 1f - Mathf.Exp(-HOVER_LIFT_LERP * Time.deltaTime));
+            _lp.y = Mathf.Max(0f, _eased); // never ease BELOW rest, but may ease down toward the target
+            _hoverLayerRef.localPosition = _lp;
+        }
+
+        // Stop tracking and return the Hover layer to rest (used when the seated Vote ends mid-hover / teardown).
+        private void DisarmFpsHover()
+        {
+            _fpsHoverActive = false;
+            _hoverCamera = null;
+            if (_hoverLayerRef != null)
+            {
+                _hoverLayerRef.DOKill();
+                _hoverLayerRef.DOLocalMoveY(0f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                SlerpLayerRotation(_hoverLayerRef, Quaternion.identity);
+            }
+            _hoverLayerRef = null;
+        }
+
+        // Measure the dynamic card+vote-canvas bounds and compute the look-at + world lift. False (no FPS pose)
+        // when there is no measurable geometry or no camera.
+        private bool TryComputeFpsHoverPose(Transform _root, Camera _cam, out Presentation.HoverFocusPose _pose)
+        {
+            _pose = default;
+            if (_cam == null || _root == null)
+            {
+                return false;
+            }
+            if (!MeasureWorldExtents(_root, out float _top, out float _bottom, out float _halfWidth))
+            {
+                return false;
+            }
+            _pose = Presentation.HoverFocusMath.Compute(
+                _root.position, _cam.transform.position,
+                visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
+                _top, _bottom, _halfWidth,
+                visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset);
+            return true;
         }
 
         // Measure the card's CURRENT world extents along the face axes (up / right), relative to the root
@@ -94,7 +164,8 @@ namespace Board.CardComponents
             _halfWidth = 0f;
             bool _any = false;
 
-            foreach (Graphic _g in visualComponents.GetComponentsInChildren<Graphic>())
+            visualComponents.GetComponentsInChildren(false, _graphicsBuffer);
+            foreach (Graphic _g in _graphicsBuffer)
             {
                 if (_g == null || !_g.isActiveAndEnabled)
                 {
@@ -127,6 +198,11 @@ namespace Board.CardComponents
 
         protected override void UnHover(Canvas _cardCanvas)
         {
+            // Stop the per-frame lift tracking BEFORE tweening back, so Update no longer fights the return.
+            _fpsHoverActive = false;
+            _hoverCamera = null;
+            _hoverLayerRef = null;
+
             var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
 
             hoverLayer.DOKill();

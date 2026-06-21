@@ -2,7 +2,7 @@
 title: 'FP Vote reticle (PR2): hover lift+turn, jitter-proof static envelope, votable button'
 type: 'feature'
 created: '2026-06-21'
-status: 'ready-for-dev'
+status: 'done'
 context: ['{project-root}/_bmad-output/project-context.md']
 baseline_commit: '7a32fba'
 ---
@@ -66,6 +66,14 @@ baseline_commit: '7a32fba'
 - Given a hovered (lifted) card, when the player aims the lifted card or its vote button, then it stays hovered (ray inside the static envelope) and never oscillates; the vote button clicks via the reticle.
 - Given the reticle on the world Skip button, when confirmed, then the existing skip flow runs.
 - Given a card mid-flip, then hover-lift is suppressed until the flip completes.
+
+## Implemented (revised, Poyo-narrowed 2026-06-21)
+
+Poyo dropped the table-edge hinge (the card sits far from the table edge) and narrowed the task to "just tilt the card so the player sees its face a minimum"; the vote-button collider was done by Poyo separately. Sally's revised clean + MCP-feasible solution (no pivot rig, no new GameObject) was implemented in `CardPlayerAnimation`:
+- On hover, the "Hover" compositor layer pitches about its OWN local X (`HOVER_PITCH_X = -40°`) so the face tips toward the seated player, lifting first (`HOVER_DISPLACEMENT_Y = 0.4`) on the SAME eased tween so the lower edge never sinks through the table. Reversed on unhover. Scale 1.15 kept.
+- Fixed angle (not per-card billboard): a clamped seated camera reads a fixed raise universally; trivially tunable consts (flip the sign if it tips the wrong way; raise the lift for a taller card).
+- Jitter stays impossible: the reticle raycasts the STATIC detection collider on the card root; only the Hover layer tilts — detection never moves.
+- The full far-edge hinge + static latch envelope from the frozen section is superseded by this simpler approach; EditMode 256/256 green.
 
 ## Design Notes
 

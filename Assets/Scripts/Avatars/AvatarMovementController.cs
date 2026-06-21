@@ -124,31 +124,6 @@ namespace Avatars
             }
         }
 
-        /// <summary>
-        /// Story 13.4 hook: snap the avatar body to its seat for the embodied Vote (DO3 route A — each
-        /// owner seats its OWN body at its OWN global seat, so every client agrees on all seat positions,
-        /// network-clean). OWNER-ONLY: a non-owner cannot move the owner-authoritative NetworkTransform —
-        /// the move replicates to every client through it (NFR3: cosmetic position only, no game state,
-        /// no RPC). The arbiter calls this on the local owned avatar when the Vote (Embodied) is entered.
-        ///
-        /// A <see cref="CharacterController"/> SILENTLY overrides a direct transform write — so it is disabled
-        /// around the teleport, then restored to its PRIOR state. During the Vote that prior state is already
-        /// "off" (the arbiter calls <see cref="SetMovementEnabled"/>(false) before seating), so the body stays
-        /// seated with the controller disabled — no depenetration ejection (see <see cref="SetMovementEnabled"/>).
-        /// </summary>
-        public void SeatAtSeat(Vector3 _position, Quaternion _rotation)
-        {
-            if (!IsOwner)
-            {
-                return;
-            }
-
-            bool _wasEnabled = _characterController.enabled;
-            _characterController.enabled = false;
-            transform.SetPositionAndRotation(_position, _rotation);
-            _characterController.enabled = _wasEnabled;
-        }
-
         private void Update()
         {
             if (!IsOwner || !_movementEnabled || _moveAction == null)

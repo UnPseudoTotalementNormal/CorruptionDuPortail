@@ -19,8 +19,9 @@ namespace Avatars
     ///    the GameState source or removing any board camera (NFR1);
     ///  • the local owned avatar's movement input enabled iff <c>FreeRoam</c>
     ///    (<see cref="AvatarMovementController.SetMovementEnabled"/>);
-    ///  • on entering <c>Embodied</c>, the local owned avatar is seat-snapped once to its global seat
-    ///    (<see cref="AvatarMovementController.SeatAtSeat"/>, DO3 route A — Story 13.4).
+    ///  • the <see cref="AvatarSeatingPresenter"/> is active iff <c>Embodied</c> — it drives the per-client
+    ///    rotated seating ring (every avatar placed locally, NetworkTransform suppressed, networked gaze yaw
+    ///    applied), superseding the Story 13.4 networked <c>SeatAtSeat</c> teleport.
     ///
     /// NFR2 — it is a PURE REACTION: subscribe-and-prime in <see cref="Start"/>, unsubscribe in
     /// <see cref="OnDestroy"/> (subscription symmetry, archi §5b); it NEVER writes the index and never
@@ -43,6 +44,7 @@ namespace Avatars
         [SerializeField] private GameManager gameManager;
         [SerializeField] private AvatarFollowCamera _followCamera;
         [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
+        [SerializeField] private AvatarSeatingPresenter _seatingPresenter;
 
         private IGameStateQuery Query => gameManager;
 
@@ -51,15 +53,13 @@ namespace Avatars
         // state when its controller finally binds.
         private CameraMode _currentMode = CameraMode.Board;
         private AvatarMovementController _localMovement;
-        // Story 13.4: the embodied seat-snap is one-shot per Vote entry — re-armed when the mode leaves
-        // Embodied, so a future return-to-Vote re-seats (no return-to-lobby/Vote mid-match exists today).
-        private bool _seatedThisEntry;
 
         private void Awake()
         {
             Assert.IsNotNull(gameManager, "AvatarCameraArbiter.gameManager is not wired — wire it in GameScene (like BoardCameraManager).");
             Assert.IsNotNull(_followCamera, "AvatarCameraArbiter._followCamera is not wired — wire the AvatarFollowCamera instance.");
             Assert.IsNotNull(_embodiedCamera, "AvatarCameraArbiter._embodiedCamera is not wired — wire the AvatarEmbodiedCamera instance.");
+            Assert.IsNotNull(_seatingPresenter, "AvatarCameraArbiter._seatingPresenter is not wired — wire the AvatarSeatingPresenter instance.");
         }
 
         private void Start()
@@ -111,15 +111,10 @@ namespace Avatars
             // Avatar movement input: enabled ONLY in FreeRoam (the Lobby), locked in every other state.
             ApplyMovementEnabled();
 
-            // Story 13.4: seat the local body once on Embodied entry; re-arm when leaving Embodied.
-            if (_currentMode == CameraMode.Embodied)
-            {
-                TrySeatLocalAvatar();
-            }
-            else
-            {
-                _seatedThisEntry = false;
-            }
+            // Seated ring: the presenter drives the per-client rotated seating (places every avatar locally,
+            // suppresses NetworkTransform, applies networked gaze yaw) for the whole Embodied window. It
+            // self-handles late-spawning avatars + player-count changes, so no one-shot re-arm is needed here.
+            _seatingPresenter.SetActive(_currentMode == CameraMode.Embodied);
         }
 
         private void ApplyMovementEnabled()
@@ -142,34 +137,6 @@ namespace Avatars
                 ApplyMovementEnabled();
             }
 
-            // Story 13.4: if the Vote (Embodied) activated before the local avatar bound, seat it as soon
-            // as it appears. Once seated this entry, a no-op until the mode leaves Embodied (re-armed there).
-            if (_currentMode == CameraMode.Embodied && !_seatedThisEntry)
-            {
-                TrySeatLocalAvatar();
-            }
-        }
-
-        // Story 13.4: snap the local owned avatar's body to its global seat (DO3 route A) exactly once per
-        // Vote entry. Reuses the late-bind (TryBindLocalMovement) so an avatar that spawns after the Vote
-        // activates still gets seated. The seat is the LOCAL client's own global seat (GetSeat) — the same
-        // stable registry AvatarEmbodiedCamera places the camera at, so the body and camera agree.
-        private void TrySeatLocalAvatar()
-        {
-            if (_seatedThisEntry || !TryBindLocalMovement())
-            {
-                return;
-            }
-
-            NetworkManager _networkManager = NetworkManager.Singleton;
-            Transform _seat = AvatarManager.For(_networkManager)?.GetSeat(_networkManager.LocalClientId);
-            if (_seat == null)
-            {
-                return;
-            }
-
-            _localMovement.SeatAtSeat(_seat.position, _seat.rotation);
-            _seatedThisEntry = true;
         }
 
         // Mirrors AvatarFollowCamera.TryBindLocalAvatar (AvatarFollowCamera.cs:138-158): resolve the local

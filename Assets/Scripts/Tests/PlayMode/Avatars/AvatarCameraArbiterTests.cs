@@ -77,6 +77,7 @@ namespace Tests.PlayMode.Avatars
         private GameObject _followCameraGo;
         private AvatarFollowCamera _followCamera;
         private GameObject _embodiedCameraGo;
+        private GameObject _seatingPresenterGo;
         private GameObject _arbiterGo;
 
         private BoardStubState _boardState;
@@ -140,6 +141,12 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_embodiedCamera, "_camera", _embodiedCm);
             _embodiedCameraGo.SetActive(true);
 
+            // Seating presenter (Story seated-ring): the arbiter now requires it wired (Awake assert). This
+            // test does not exercise seating (covered by EditMode SeatRingGeometryTests); it only satisfies
+            // the assert and is toggled harmlessly (no AvatarManager → its LateUpdate no-ops).
+            _seatingPresenterGo = new GameObject("AvatarSeatingPresenter");
+            AvatarSeatingPresenter _seatingPresenter = _seatingPresenterGo.AddComponent<AvatarSeatingPresenter>();
+
             // The arbiter: wired inactive, then activated so Awake's asserts see populated fields and Start
             // subscribes + primes with the current index (0 = Board).
             _arbiterGo = new GameObject("AvatarCameraArbiter");
@@ -148,6 +155,7 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_arbiter, "gameManager", _gameManager);
             ReflectionHelper.SetPrivateField(_arbiter, "_followCamera", _followCamera);
             ReflectionHelper.SetPrivateField(_arbiter, "_embodiedCamera", _embodiedCamera);
+            ReflectionHelper.SetPrivateField(_arbiter, "_seatingPresenter", _seatingPresenter);
             _arbiterGo.SetActive(true);
             yield return null;
         }
@@ -156,6 +164,7 @@ namespace Tests.PlayMode.Avatars
         public IEnumerator TearDown()
         {
             if (_arbiterGo != null) Object.Destroy(_arbiterGo);
+            if (_seatingPresenterGo != null) Object.Destroy(_seatingPresenterGo);
             if (_followCameraGo != null) Object.Destroy(_followCameraGo);
             if (_embodiedCameraGo != null) Object.Destroy(_embodiedCameraGo);
             if (_boardCameraManagerGo != null) Object.Destroy(_boardCameraManagerGo);

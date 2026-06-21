@@ -59,12 +59,19 @@ namespace Avatars
         [SerializeField] private NetworkObject _avatarPrefab;
         [SerializeField] private Transform _avatarsParent;
 
-        [Header("Seat / spawn registry (AC #3)")]
-        [Tooltip("Seats around the table, in a STABLE order. A later story (13.4) rotates the local " +
-                 "client to the front seat; here only the stable mapping is required.")]
-        [SerializeField] private List<Transform> _seats = new();
+        [Header("Seat ring (procedural — replaces the fixed seat list)")]
+        [Tooltip("The single table-ring CENTER. Seats are computed as an evenly-spaced circle around it; " +
+                 "its forward (+Z) is the FRONT direction the local player is rotated onto. Wire in GameScene.")]
+        [SerializeField] private Transform _ringCenter;
+        [Tooltip("Ring radius (metres) from the center to each seat.")]
+        [SerializeField] private float _ringRadius = 3f;
+        [Tooltip("Angle (deg) of the FRONT spot from the center forward — where the LOCAL player always sits.")]
+        [SerializeField] private float _frontAngleDeg = 0f;
         [Tooltip("Lobby spawn points where avatars appear, in a STABLE order.")]
         [SerializeField] private List<Transform> _spawnPoints = new();
+
+        // One-shot warn guard so a missing ring center logs once, not every frame the presenter polls.
+        private bool _warnedNoRingCenter;
 
         // Authoritative, replicated set of spawned avatars (mirror CharacterManager.networkedCharacters):
         // late joiners receive it pre-populated WITHOUT OnListChanged, so OnNetworkSpawn force-rebuilds.
@@ -288,14 +295,35 @@ namespace Avatars
             return _cache.Count;
         }
 
-        /// <summary>The seat transform for a client (null if no seats are wired). AC #3.</summary>
-        public Transform GetSeat(ulong _clientId)
+        /// <summary>
+        /// The seat pose for <paramref name="_clientId"/>, computed in the LOCAL client's rotated frame:
+        /// the local player's own avatar lands at the fixed FRONT spot (relative offset 0), everyone else
+        /// is spread equidistant around the ring by their relative position in the replicated avatar list.
+        /// Positions are therefore client-local (NOT networked) but the relative arrangement is identical
+        /// everywhere (gaze-preserving). Null-tolerant: returns the front pose / identity if no ring center
+        /// is wired (warns once) — never crashes.
+        /// </summary>
+        public SeatPose GetSeatPose(ulong _clientId)
         {
-            if (_seats == null || _seats.Count == 0)
+            if (_ringCenter == null)
             {
-                return null;
+                if (!_warnedNoRingCenter)
+                {
+                    Debug.LogWarning("AvatarManager._ringCenter is not wired — seats collapse to the origin. Wire it in GameScene.");
+                    _warnedNoRingCenter = true;
+                }
+                return new SeatPose(Vector3.zero, Quaternion.identity);
             }
-            return _seats[SeatIndexForClient(_clientId) % _seats.Count];
+
+            ulong _localId = NetworkManager != null ? NetworkManager.LocalClientId : _clientId;
+            return SeatRingGeometry.Compute(
+                AvatarCount,
+                SeatIndexForClient(_localId),
+                SeatIndexForClient(_clientId),
+                _ringCenter.position,
+                _ringCenter.forward,
+                _ringRadius,
+                _frontAngleDeg);
         }
 
         /// <summary>The lobby spawn point for a client (null if none wired). AC #3.</summary>

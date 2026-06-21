@@ -50,9 +50,20 @@ namespace Avatars
         [SerializeField] private int _inactivePriority = -100;
 
         private bool _active;
-        private Transform _seat;
+        // Bound once the local avatar + its manager resolve (and the local body is hidden). The seat POSE is
+        // recomputed every frame (GetSeatPose is pure + cheap) so a changing player count re-spreads the ring.
+        private bool _bound;
+        private AvatarManager _manager;
+        private ulong _localId;
         private float _yaw;
         private float _pitch;
+        // Last look published to the networked SeatedYaw/SeatedPitch — so we only write the NetworkVariables
+        // when the gaze actually moves (project-context: mutate a NetworkVariable by event, NEVER per frame —
+        // it would saturate the tick during a continuous look). NaN sentinel forces the first publish (which
+        // clears any stale gaze carried over from the previous Vote).
+        private float _lastPublishedYaw = float.NaN;
+        private float _lastPublishedPitch = float.NaN;
+        private const float LookPublishEpsilon = 0.25f;
 
         private InputActionAsset _runtimeActions;
         private InputAction _lookAction;
@@ -119,8 +130,12 @@ namespace Avatars
             // Re-centre the look on the seat facing each time we enter the Vote.
             _yaw = 0f;
             _pitch = 0f;
-            // Seat + local-model binding happen in LateUpdate (the avatar/seats may not be ready yet).
-            _seat = null;
+            // Force a fresh publish of the (re-centred) yaw on the first frame so remote viewers don't briefly
+            // see the previous Vote's stale gaze before we write again.
+            _lastPublishedYaw = float.NaN;
+            // Seat pose + local-model binding happen in LateUpdate (the avatar/manager may not be ready yet).
+            _bound = false;
+            _manager = null;
             _lookAction?.Enable();
         }
 
@@ -135,7 +150,8 @@ namespace Avatars
             ShowBoundModel();
             _boundAvatar = null;
             _boundRenderers = null;
-            _seat = null;
+            _bound = false;
+            _manager = null;
             _lookAction?.Disable();
         }
 
@@ -146,15 +162,23 @@ namespace Avatars
                 return;
             }
 
-            // Late binding: the local avatar / its seat may resolve a frame or two after the Vote activates
+            // Late binding: the local avatar / its manager may resolve a frame or two after the Vote activates
             // (mirror AvatarFollowCamera.TryBindLocalAvatar). Keep trying; null-tolerant — no crash.
-            if (_seat == null)
+            if (!_bound)
             {
                 TryBind();
-                if (_seat == null)
+                if (!_bound)
                 {
                     return;
                 }
+            }
+
+            // The manager/avatar can be torn down (scene unload, host shutdown) while the Vote is still
+            // active — re-bind next frame rather than dereferencing a destroyed Unity object.
+            if (_manager == null || _boundAvatar == null)
+            {
+                _bound = false;
+                return;
             }
 
             // Accumulate the clamped look from the mouse delta (pure math, EditMode-tested).
@@ -164,40 +188,52 @@ namespace Avatars
             _yaw = _angles.Yaw;
             _pitch = _angles.Pitch;
 
+            // Publish the seated head look (yaw + pitch, relative to seat facing) so remote viewers see where
+            // we look — but ONLY when it actually moved (or on the first frame), never every frame (bandwidth
+            // rule). Owner-gated inside PublishSeatedLook; the presenter renders it on every other client.
+            if (float.IsNaN(_lastPublishedYaw)
+                || Mathf.Abs(_yaw - _lastPublishedYaw) > LookPublishEpsilon
+                || Mathf.Abs(_pitch - _lastPublishedPitch) > LookPublishEpsilon)
+            {
+                _boundAvatar?.PublishSeatedLook(_yaw, _pitch);
+                _lastPublishedYaw = _yaw;
+                _lastPublishedPitch = _pitch;
+            }
+
+            // The local seat pose = relative offset 0 = the fixed FRONT spot (recomputed each frame: a
+            // changing player count re-spreads the ring, but the local seat stays the front anchor).
+            SeatPose _seat = _manager.GetSeatPose(_localId);
+
             // First-person seated: place the camera at the seat's eye height and look around RELATIVE to
             // the seat facing (the seat faces the table → yaw 0 / pitch 0 looks straight at it).
             _camera.transform.SetPositionAndRotation(
-                _seat.position + _seat.rotation * _eyeOffset,
-                _seat.rotation * Quaternion.Euler(_pitch, _yaw, 0f));
+                _seat.Position + _seat.Rotation * _eyeOffset,
+                _seat.Rotation * Quaternion.Euler(_pitch, _yaw, 0f));
         }
 
-        // Resolve the local seat (route A: the LOCAL client's own global seat) + the local avatar's
-        // renderers to hide. AvatarManager.For + NetworkManager.Singleton are the avatar layer's own
+        // Resolve the local manager + the local owned avatar (route A: the LOCAL client's own seat = front
+        // spot) and hide its body. AvatarManager.For + NetworkManager.Singleton are the avatar layer's own
         // resolution — same as 13.2/13.3 — which is why the avatar types are NOT in DiSeamMigratedConsumers.
         private void TryBind()
         {
             NetworkManager _networkManager = NetworkManager.Singleton;
-            AvatarManager _manager = AvatarManager.For(_networkManager);
-            if (_manager == null)
+            AvatarManager _resolved = AvatarManager.For(_networkManager);
+            if (_resolved == null)
             {
                 return;
             }
 
-            Transform _localSeat = _manager.GetSeat(_networkManager.LocalClientId);
-            if (_localSeat == null)
-            {
-                return;
-            }
-            _seat = _localSeat;
-
-            // Hide the local owned avatar's body (first-person). Null-tolerant — purely cosmetic.
-            foreach (PlayerAvatar _avatar in _manager.GetAvatars())
+            // Hide the local owned avatar's body (first-person). Bind only once the local avatar exists.
+            foreach (PlayerAvatar _avatar in _resolved.GetAvatars())
             {
                 if (_avatar != null && _avatar.IsOwner)
                 {
                     _boundAvatar = _avatar;
                     _boundRenderers = _avatar.GetComponentsInChildren<Renderer>();
                     HideBoundModel();
+                    _manager = _resolved;
+                    _localId = _networkManager.LocalClientId;
+                    _bound = true;
                     break;
                 }
             }

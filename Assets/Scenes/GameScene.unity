@@ -492,6 +492,7 @@ GameObject:
   - component: {fileID: 54114939}
   - component: {fileID: 54114938}
   - component: {fileID: 54114941}
+  - component: {fileID: 54114942}
   m_Layer: 0
   m_Name: AvatarFollowCamera
   m_TagString: Untagged
@@ -512,7 +513,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Avatars.AvatarFollowCamera
   _camera: {fileID: 54114939}
-  _eyeOffset: {x: 0, y: 1.7, z: 0}
+  _eyeOffset: {x: 0, y: 2.25, z: 0}
   _activePriority: 100
   _inactivePriority: -100
 --- !u!114 &54114939
@@ -588,6 +589,20 @@ MonoBehaviour:
   gameManager: {fileID: 704980999}
   _followCamera: {fileID: 54114938}
   _embodiedCamera: {fileID: 1861743663}
+  _seatingPresenter: {fileID: 54114942}
+--- !u!114 &54114942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 54114937}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e21b21c4210e1bb47be1db082d0f46cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarSeatingPresenter
+  _headLerpSpeed: 12
 --- !u!1 &117485320
 GameObject:
   m_ObjectHideFlags: 0
@@ -5059,6 +5074,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bd30c1eb4134e74291af0afadda4221, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Misc.DevIdentityController
+--- !u!1 &715485107
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 715485108}
+  m_Layer: 0
+  m_Name: AvatarRingCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &715485108
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 715485107}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -21.897, z: -0.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 867493015}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &716108401
 GameObject:
   m_ObjectHideFlags: 0
@@ -6133,6 +6179,7 @@ Transform:
   - {fileID: 1259611661}
   - {fileID: 276378386}
   - {fileID: 215703460}
+  - {fileID: 715485108}
   m_Father: {fileID: 1626639601}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &867493016
@@ -6175,11 +6222,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _avatarPrefab: {fileID: 381043516818008384, guid: 88efd9672adbb9545aa644c5c01cee53, type: 3}
   _avatarsParent: {fileID: 867493015}
-  _seats:
-  - {fileID: 1502332876}
-  - {fileID: 1259611661}
-  - {fileID: 276378386}
-  - {fileID: 215703460}
+  _ringCenter: {fileID: 715485108}
+  _ringRadius: 14
+  _frontAngleDeg: 0
   _spawnPoints:
   - {fileID: 1002414861}
   - {fileID: 1015910090}
@@ -7511,12 +7556,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1024404295}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1626639601}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1050513845
 GameObject:
@@ -11636,6 +11681,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1024404297}
   - {fileID: 704981000}
   - {fileID: 1541735908}
   - {fileID: 697853042}
@@ -14017,7 +14063,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.AvatarEmbodiedCamera
   _camera: {fileID: 1861743664}
   _inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  _eyeOffset: {x: 0, y: 1.2, z: 0}
+  _eyeOffset: {x: 0, y: 2.15, z: 0}
   _yawSpeed: 0.12
   _pitchSpeed: 0.12
   _yawClamp: 75
@@ -17941,6 +17987,5 @@ SceneRoots:
   - {fileID: 260780960}
   - {fileID: 800569326}
   - {fileID: 363038682}
-  - {fileID: 1024404297}
   - {fileID: 54114940}
   - {fileID: 1861743665}

@@ -34,6 +34,29 @@ namespace Avatars
         [SerializeField] private Transform _eyePivot;
         public Transform EyePivot => _eyePivot;
 
+        // Seated-ring gaze: the owner's seated head look, RELATIVE to seat facing (deg) — yaw (left/right) +
+        // pitch (up/down). Owner-writable so each player publishes WHERE they look during the embodied Vote;
+        // every client renders it on the avatar's HEAD (EyePivot) on top of the LOCALLY-computed seat facing.
+        // Because the per-client ring rotation is a rigid isometry and the look is relative (rotates with the
+        // frame), "A looks at B" stays consistent on every client. Presentation only (NFR3) — no game state;
+        // fills the gap where the seated body was static during the Vote (movement locked, only the local
+        // camera turned). Owner-write is a deliberate, human-ratified exception to the "no owner-write" rule
+        // (cosmetic head direction only — no authority, faking it only mis-points your own head).
+        public NetworkVariable<float> SeatedYaw = new(
+            0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<float> SeatedPitch = new(
+            0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        /// <summary>Owner-only publish of the seated head look (yaw + pitch, relative to seat facing). No-op on non-owners.</summary>
+        public void PublishSeatedLook(float _yawDeg, float _pitchDeg)
+        {
+            if (IsOwner)
+            {
+                SeatedYaw.Value = _yawDeg;
+                SeatedPitch.Value = _pitchDeg;
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

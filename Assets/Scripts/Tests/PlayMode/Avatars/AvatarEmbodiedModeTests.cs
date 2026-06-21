@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Text.RegularExpressions;
 using Avatars;
 using Board.BoardCameraSystem;
 using GameLogic;
@@ -13,17 +12,17 @@ using UnityEngine.TestTools;
 namespace Tests.PlayMode.Avatars
 {
     /// <summary>
-    /// Story 13.4 — proves the embodied seated Vote mode. Two parts:
+    /// Story 13.4 — proves the embodied seated Vote mode:
+    /// <see cref="Arbiter_DrivesEmbodiedCamera_AcrossModes"/> — the <see cref="AvatarCameraArbiter"/>
+    /// drives <see cref="AvatarEmbodiedCamera.IsActive"/> ON iff the resolved mode is <c>Embodied</c>
+    /// (VoteState) and the <see cref="AvatarFollowCamera"/> ON iff <c>FreeRoam</c> — never both. Same
+    /// StartHost + stub-state substrate as <c>AvatarCameraArbiterTests</c> (index driven directly, no
+    /// state lifecycle, transition ordering untouched — NFR2).
     ///
-    /// 1. <see cref="Arbiter_DrivesEmbodiedCamera_AcrossModes"/> — the <see cref="AvatarCameraArbiter"/>
-    ///    drives <see cref="AvatarEmbodiedCamera.IsActive"/> ON iff the resolved mode is <c>Embodied</c>
-    ///    (VoteState) and the <see cref="AvatarFollowCamera"/> ON iff <c>FreeRoam</c> — never both. Same
-    ///    StartHost + stub-state substrate as <c>AvatarCameraArbiterTests</c> (index driven directly, no
-    ///    state lifecycle, transition ordering untouched — NFR2).
-    /// 2. <see cref="SeatAtSeat_OwnerBody_TeleportsAndReplicatesViaTransform"/> — a direct round-trip of
-    ///    the owner-side body seat-snap (<see cref="AvatarMovementController.SeatAtSeat"/>): wiring a full
-    ///    owned avatar into the reaction test is disproportionate (the same scope call 13.3 made for the
-    ///    movement effect), so the seat-snap is covered here on a host-owned spawned avatar.
+    /// The seated-ring geometry itself (per-client rotation, equidistant spread, relative-offset gaze
+    /// invariance) is pure and lives in EditMode <c>SeatRingGeometryTests</c>; seated placement is now
+    /// client-local (NetworkTransform suppressed by <see cref="AvatarSeatingPresenter"/>), so the former
+    /// "SeatAtSeat replicates via transform" PlayMode round-trip no longer reflects how seating works.
     /// </summary>
     public class AvatarEmbodiedModeTests
     {
@@ -65,6 +64,8 @@ namespace Tests.PlayMode.Avatars
         private AvatarFollowCamera _followCamera;
         private GameObject _embodiedCameraGo;
         private AvatarEmbodiedCamera _embodiedCamera;
+        private GameObject _seatingPresenterGo;
+        private AvatarSeatingPresenter _seatingPresenter;
         private GameObject _arbiterGo;
 
         private BoardStubState _boardState;
@@ -123,6 +124,12 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_embodiedCamera, "_camera", _embodiedCm);
             _embodiedCameraGo.SetActive(true);
 
+            // Seating presenter (Embodied): a plain MonoBehaviour the arbiter toggles. No AvatarManager is
+            // wired in this reaction fixture, so its LateUpdate resolves For(Singleton) == null and no-ops —
+            // exactly what we want here (we assert camera modes, not seating geometry, which is EditMode-tested).
+            _seatingPresenterGo = new GameObject("AvatarSeatingPresenter");
+            _seatingPresenter = _seatingPresenterGo.AddComponent<AvatarSeatingPresenter>();
+
             // Arbiter: wired inactive, then activated so Awake's asserts see populated fields and Start
             // subscribes + primes with the current index (0 = Board).
             _arbiterGo = new GameObject("AvatarCameraArbiter");
@@ -131,6 +138,7 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_arbiter, "gameManager", _gameManager);
             ReflectionHelper.SetPrivateField(_arbiter, "_followCamera", _followCamera);
             ReflectionHelper.SetPrivateField(_arbiter, "_embodiedCamera", _embodiedCamera);
+            ReflectionHelper.SetPrivateField(_arbiter, "_seatingPresenter", _seatingPresenter);
             _arbiterGo.SetActive(true);
             yield return null;
         }
@@ -139,6 +147,7 @@ namespace Tests.PlayMode.Avatars
         public IEnumerator TearDown()
         {
             if (_arbiterGo != null) Object.Destroy(_arbiterGo);
+            if (_seatingPresenterGo != null) Object.Destroy(_seatingPresenterGo);
             if (_followCameraGo != null) Object.Destroy(_followCameraGo);
             if (_embodiedCameraGo != null) Object.Destroy(_embodiedCameraGo);
             if (_boardCameraManagerGo != null) Object.Destroy(_boardCameraManagerGo);
@@ -200,37 +209,5 @@ namespace Tests.PlayMode.Avatars
             yield return AssertCameras("Board", _expectFollow: false, _expectEmbodied: false);
         }
 
-        [UnityTest]
-        public IEnumerator SeatAtSeat_OwnerBody_TeleportsAndReplicatesViaTransform()
-        {
-            // A host-OWNED spawned avatar (IsOwner true) — _inputActions unwired, so OnNetworkSpawn logs one
-            // expected error and disables Update; SeatAtSeat is still callable (CharacterController cached in
-            // Awake, IsOwner gate passes).
-            LogAssert.Expect(LogType.Error, new Regex("AvatarMovementController\\._inputActions is not wired.*"));
-
-            GameObject _go = new GameObject("OwnedAvatar");
-            _go.SetActive(false);
-            _go.AddComponent<NetworkObject>();
-            _go.AddComponent<CharacterController>();
-            AvatarMovementController _controller = _go.AddComponent<AvatarMovementController>();
-            _go.SetActive(true);
-            _go.GetComponent<NetworkObject>().Spawn();
-            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(_controller);
-
-            Vector3 _seatPos = new Vector3(4f, 0f, -2f);
-            Quaternion _seatRot = Quaternion.Euler(0f, 90f, 0f);
-            _controller.SeatAtSeat(_seatPos, _seatRot);
-
-            // Settled this frame: the CharacterController is re-enabled after the write, so the transform
-            // holds the seat pose (cosmetic, replicates via the owner-auth NetworkTransform — not asserted
-            // cross-client here, that path is the 13.2 owner-auth test).
-            Assert.That(Vector3.Distance(_go.transform.position, _seatPos), Is.LessThan(0.01f),
-                "SeatAtSeat did not move the owner body to the seat position.");
-            Assert.That(Quaternion.Angle(_go.transform.rotation, _seatRot), Is.LessThan(0.5f),
-                "SeatAtSeat did not orient the owner body to the seat rotation.");
-
-            _go.GetComponent<NetworkObject>().Despawn(true);
-            yield return null;
-        }
     }
 }

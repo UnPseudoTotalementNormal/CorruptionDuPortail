@@ -78,6 +78,7 @@ namespace Tests.PlayMode.Avatars
         private AvatarFollowCamera _followCamera;
         private GameObject _embodiedCameraGo;
         private GameObject _seatingPresenterGo;
+        private GameObject _visibilityGo;
         private GameObject _arbiterGo;
 
         private BoardStubState _boardState;
@@ -147,6 +148,10 @@ namespace Tests.PlayMode.Avatars
             _seatingPresenterGo = new GameObject("AvatarSeatingPresenter");
             AvatarSeatingPresenter _seatingPresenter = _seatingPresenterGo.AddComponent<AvatarSeatingPresenter>();
 
+            // Visibility controller (arbiter now asserts it). No AvatarManager wired → its LateUpdate no-ops.
+            _visibilityGo = new GameObject("AvatarVisibilityController");
+            AvatarVisibilityController _visibility = _visibilityGo.AddComponent<AvatarVisibilityController>();
+
             // The arbiter: wired inactive, then activated so Awake's asserts see populated fields and Start
             // subscribes + primes with the current index (0 = Board).
             _arbiterGo = new GameObject("AvatarCameraArbiter");
@@ -156,6 +161,7 @@ namespace Tests.PlayMode.Avatars
             ReflectionHelper.SetPrivateField(_arbiter, "_followCamera", _followCamera);
             ReflectionHelper.SetPrivateField(_arbiter, "_embodiedCamera", _embodiedCamera);
             ReflectionHelper.SetPrivateField(_arbiter, "_seatingPresenter", _seatingPresenter);
+            ReflectionHelper.SetPrivateField(_arbiter, "_visibility", _visibility);
             _arbiterGo.SetActive(true);
             yield return null;
         }
@@ -165,6 +171,7 @@ namespace Tests.PlayMode.Avatars
         {
             if (_arbiterGo != null) Object.Destroy(_arbiterGo);
             if (_seatingPresenterGo != null) Object.Destroy(_seatingPresenterGo);
+            if (_visibilityGo != null) Object.Destroy(_visibilityGo);
             if (_followCameraGo != null) Object.Destroy(_followCameraGo);
             if (_embodiedCameraGo != null) Object.Destroy(_embodiedCameraGo);
             if (_boardCameraManagerGo != null) Object.Destroy(_boardCameraManagerGo);

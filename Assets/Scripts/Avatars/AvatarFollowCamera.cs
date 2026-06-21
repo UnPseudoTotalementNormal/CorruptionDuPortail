@@ -17,8 +17,9 @@ namespace Avatars
     /// <see cref="AvatarCameraArbiter"/> owns the state→camera-mode decision and drives
     /// <see cref="SetActive"/> (on iff the resolved mode is <c>FreeRoam</c> = the Lobby). 13.2's own
     /// <c>currentGameStateIndex</c> subscription + <c>is LobbyState</c> gate were removed here — the
-    /// pose-copy / local-avatar bind / model hide-show below are unchanged; only the who-decides-active
-    /// moved out.
+    /// pose-copy / local-avatar bind below are unchanged; only the who-decides-active moved out. Hiding the
+    /// local body in first-person is now owned by <see cref="AvatarVisibilityController"/> (the single
+    /// renderer-visibility authority), not this camera.
     ///
     /// FIRST-PERSON model: the bare CinemachineCamera's transform IS the camera pose the brain reads, so we
     /// copy the bound local avatar's eye-height pose onto it each LateUpdate (yaw follows the body; pitch is
@@ -39,7 +40,6 @@ namespace Avatars
         private bool _active;
         private PlayerAvatar _boundAvatar;
         private Transform _boundEye;
-        private Renderer[] _boundRenderers;
 
         /// <summary>Whether the first-person camera is currently outranking the board cameras.</summary>
         public bool IsActive => _active;
@@ -81,11 +81,10 @@ namespace Avatars
             {
                 _camera.Priority = _inactivePriority;
             }
-            // Leaving first person: show the local body again so the board cameras see it normally.
-            ShowBoundModel();
+            // Local body visibility is owned by AvatarVisibilityController (driven by the arbiter mode) —
+            // this camera no longer toggles renderers.
             _boundAvatar = null;
             _boundEye = null;
-            _boundRenderers = null;
         }
 
         private void LateUpdate()
@@ -135,39 +134,7 @@ namespace Avatars
                 {
                     _boundAvatar = _avatar;
                     _boundEye = _avatar.EyePivot;
-                    _boundRenderers = _avatar.GetComponentsInChildren<Renderer>();
-                    HideBoundModel();
                     return;
-                }
-            }
-        }
-
-        private void HideBoundModel()
-        {
-            if (_boundRenderers == null)
-            {
-                return;
-            }
-            foreach (Renderer _renderer in _boundRenderers)
-            {
-                if (_renderer != null)
-                {
-                    _renderer.enabled = false;
-                }
-            }
-        }
-
-        private void ShowBoundModel()
-        {
-            if (_boundRenderers == null)
-            {
-                return;
-            }
-            foreach (Renderer _renderer in _boundRenderers)
-            {
-                if (_renderer != null)
-                {
-                    _renderer.enabled = true;
                 }
             }
         }

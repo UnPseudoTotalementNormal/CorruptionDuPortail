@@ -71,10 +71,9 @@ namespace Avatars
         private InputActionAsset _runtimeActions;
         private InputAction _lookAction;
 
-        // The local owned avatar's renderers — hidden while embodied (first-person), shown again on exit.
-        // Remote clients still see this avatar seated normally (only the LOCAL view hides its own body).
+        // The local owned avatar — bound for the seat-pose eye anchor + publishing the seated look. Hiding
+        // the local body in first-person is owned by AvatarVisibilityController (the single renderer authority).
         private PlayerAvatar _boundAvatar;
-        private Renderer[] _boundRenderers;
 
         /// <summary>Whether the embodied seated camera is currently outranking the board cameras.</summary>
         public bool IsActive => _active;
@@ -97,11 +96,6 @@ namespace Avatars
 
         private void OnDestroy()
         {
-            // Story 13.4 code-review fix: if torn down while active (mid-Vote), the bound LOCAL avatar's
-            // renderers were hidden by HideBoundModel — and that avatar OUTLIVES this camera. Restore them so
-            // the local body does not stay invisible on its own avatar for the rest of the match.
-            ShowBoundModel();
-
             if (_runtimeActions != null)
             {
                 _runtimeActions.Disable();
@@ -155,10 +149,8 @@ namespace Avatars
             {
                 _camera.Priority = _inactivePriority;
             }
-            // Leaving embodied: show the local body again so the board cameras see it normally.
-            ShowBoundModel();
+            // Local body visibility is owned by AvatarVisibilityController — nothing to restore here.
             _boundAvatar = null;
-            _boundRenderers = null;
             _bound = false;
             _manager = null;
             _lookAction?.Disable();
@@ -213,16 +205,21 @@ namespace Avatars
             // changing player count re-spreads the ring, but the local seat stays the front anchor).
             SeatPose _seat = _manager.GetSeatPose(_localId);
 
-            // First-person seated: place the camera at the seat's eye height and look around RELATIVE to
-            // the seat facing (the seat faces the table → yaw 0 / pitch 0 looks straight at it).
+            // First-person seated: the camera POSITION is the avatar's eye anchor (the EyePivot — a bare,
+            // NON-animated child placed by the seating presenter), so the eye is at the real (scale-correct)
+            // head height instead of a hardcoded floor-level offset. Never anchor to the rigged model — its
+            // animations would shake the camera. Fallback to seat + offset only if no EyePivot is wired.
+            // Look stays RELATIVE to the seat facing (yaw 0 / pitch 0 looks straight at the table).
+            Transform _eye = _boundAvatar.EyePivot;
+            Vector3 _eyePosition = _eye != null ? _eye.position : _seat.Position + _seat.Rotation * _eyeOffset;
             _camera.transform.SetPositionAndRotation(
-                _seat.Position + _seat.Rotation * _eyeOffset,
+                _eyePosition,
                 _seat.Rotation * Quaternion.Euler(_pitch, _yaw, 0f));
         }
 
         // Resolve the local manager + the local owned avatar (route A: the LOCAL client's own seat = front
-        // spot) and hide its body. AvatarManager.For + NetworkManager.Singleton are the avatar layer's own
-        // resolution — same as 13.2/13.3 — which is why the avatar types are NOT in DiSeamMigratedConsumers.
+        // spot). AvatarManager.For + NetworkManager.Singleton are the avatar layer's own resolution — same as
+        // 13.2/13.3 — which is why the avatar types are NOT in DiSeamMigratedConsumers.
         private void TryBind()
         {
             NetworkManager _networkManager = NetworkManager.Singleton;
@@ -232,36 +229,16 @@ namespace Avatars
                 return;
             }
 
-            // Hide the local owned avatar's body (first-person). Bind only once the local avatar exists.
+            // Bind once the local owned avatar exists (its EyePivot is the camera's eye anchor).
             foreach (PlayerAvatar _avatar in _resolved.GetAvatars())
             {
                 if (_avatar != null && _avatar.IsOwner)
                 {
                     _boundAvatar = _avatar;
-                    _boundRenderers = _avatar.GetComponentsInChildren<Renderer>();
-                    HideBoundModel();
                     _manager = _resolved;
                     _localId = _networkManager.LocalClientId;
                     _bound = true;
                     break;
-                }
-            }
-        }
-
-        private void HideBoundModel() => SetBoundModelVisible(false);
-        private void ShowBoundModel() => SetBoundModelVisible(true);
-
-        private void SetBoundModelVisible(bool _visible)
-        {
-            if (_boundRenderers == null)
-            {
-                return;
-            }
-            foreach (Renderer _renderer in _boundRenderers)
-            {
-                if (_renderer != null)
-                {
-                    _renderer.enabled = _visible;
                 }
             }
         }

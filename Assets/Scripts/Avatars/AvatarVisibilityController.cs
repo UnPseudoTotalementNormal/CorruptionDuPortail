@@ -9,9 +9,9 @@ namespace Avatars
     /// Driven by the <see cref="AvatarCameraArbiter"/> with the resolved <see cref="CameraMode"/>.
     ///
     /// POLICY ("you only see each other during the day"):
-    ///  • <c>Board</c> (everything that is not the lobby nor the seated Vote) → EVERY avatar hidden.
-    ///  • <c>FreeRoam</c> (lobby) / <c>Embodied</c> (seated Vote) → every avatar visible EXCEPT the LOCAL
-    ///    one (it is in first-person, so its own body would clip the camera).
+    ///  • <c>Board</c> (the seated NIGHT phases) → EVERY avatar hidden.
+    ///  • <c>FreeRoam</c> (lobby) / <c>Embodied</c> (the seated DAY phases: vote + recap) → every avatar
+    ///    visible EXCEPT the LOCAL one (it is in first-person, so its own body would clip the camera).
     ///
     /// This centralizes ALL renderer toggling that previously lived split across
     /// <see cref="AvatarFollowCamera"/> and <see cref="AvatarEmbodiedCamera"/> (each hid the local body on

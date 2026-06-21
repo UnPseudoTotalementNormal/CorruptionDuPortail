@@ -16,7 +16,8 @@ namespace Tests.PlayMode.Avatars
     /// Story 13.3 — proves the <see cref="AvatarCameraArbiter"/> REACTS to
     /// <c>currentGameStateIndex</c> changes and drives the three local presentation toggles per
     /// resolved <see cref="CameraMode"/>: the <see cref="AvatarFollowCamera"/> active flag (on iff
-    /// FreeRoam) and the <see cref="BoardCameraManager"/> <c>Avatar</c> input source (true iff Board).
+    /// FreeRoam) and the <see cref="BoardCameraManager"/> <c>Avatar</c> input source (true in Board AND
+    /// Embodied/Vote — the Vote navigates the board cameras with the seated first-person wired in as a node).
     ///
     /// Harness: a single StartHost (host == server, RTT 0) — the same faithful substrate as
     /// GameLoopTransitionOrderingTests — with a GameManager seeded with three STUB states whose TYPES
@@ -226,9 +227,10 @@ namespace Tests.PlayMode.Avatars
             _gameManager.currentGameStateIndex.Value = LobbyIndex;
             yield return AssertModeEffects("FreeRoam", _expectFollowActive: true, _expectAvatarSource: false);
 
-            // → Vote (Embodied): follow cam stands down (board-cam fall-back until 13.4), arrow-nav still OFF.
+            // → Vote (Embodied): follow cam stands down; arrow-nav is now ON — the Vote navigates the board
+            // cameras with the seated first-person wired in as a node (its default starting camera).
             _gameManager.currentGameStateIndex.Value = VoteIndex;
-            yield return AssertModeEffects("Embodied", _expectFollowActive: false, _expectAvatarSource: false);
+            yield return AssertModeEffects("Embodied", _expectFollowActive: false, _expectAvatarSource: true);
 
             // → back to a board state: follow cam down, board arrow-nav source back ON (untouched-phase parity).
             _gameManager.currentGameStateIndex.Value = BoardIndex;

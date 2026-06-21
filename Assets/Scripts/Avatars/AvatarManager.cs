@@ -63,8 +63,15 @@ namespace Avatars
         [Tooltip("The single table-ring CENTER. Seats are computed as an evenly-spaced circle around it; " +
                  "its forward (+Z) is the FRONT direction the local player is rotated onto. Wire in GameScene.")]
         [SerializeField] private Transform _ringCenter;
-        [Tooltip("Ring radius (metres) from the center to each seat.")]
+        [Tooltip("Ring radius (metres) from the center to each seat. Used for the LOCAL player (the POV) so " +
+                 "the camera stays close for vision.")]
         [SerializeField] private float _ringRadius = 3f;
+        [Tooltip("Ring radius (metres) for the OTHER players' avatars only — lets remote bodies sit further " +
+                 "out so they don't clip through the table while the local POV stays at _ringRadius. The head " +
+                 "look stays relative to seat facing, so 'who looks at whom' is preserved in direction (the " +
+                 "remote head origin just shifts outward — a small parallax on close neighbours). <= 0 means " +
+                 "'same as _ringRadius' (uniform ring — original behaviour, the safe default).")]
+        [SerializeField] private float _remoteRingRadius = 0f;
         [Tooltip("Angle (deg) of the FRONT spot from the center forward — where the LOCAL player always sits.")]
         [SerializeField] private float _frontAngleDeg = 0f;
         [Tooltip("Lobby spawn points where avatars appear, in a STABLE order.")]
@@ -316,13 +323,19 @@ namespace Avatars
             }
 
             ulong _localId = NetworkManager != null ? NetworkManager.LocalClientId : _clientId;
+            // The LOCAL avatar (the POV) always uses _ringRadius so the embodied camera stays close; OTHER
+            // avatars use _remoteRingRadius when it is set (> 0) so their bodies sit further out and don't clip
+            // the table. The gaze yaw is applied as a head-local rotation relative to seat facing (unchanged by
+            // radius), so the look DIRECTION is preserved — only a pushed-out remote head's origin shifts.
+            bool _isLocal = _clientId == _localId;
+            float _radius = _isLocal || _remoteRingRadius <= 0f ? _ringRadius : _remoteRingRadius;
             return SeatRingGeometry.Compute(
                 AvatarCount,
                 SeatIndexForClient(_localId),
                 SeatIndexForClient(_clientId),
                 _ringCenter.position,
                 _ringCenter.forward,
-                _ringRadius,
+                _radius,
                 _frontAngleDeg);
         }
 

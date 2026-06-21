@@ -72,5 +72,28 @@ namespace Tests.Editor
         {
             Assert.IsTrue(new ChainingResolver().IsNewMember(new List<ulong>(), 1));
         }
+
+        // ───────────────── Null inputs / zero-as-candidate edges (added coverage) ─────────────────
+
+        [Test]
+        public void Resolve_NullAdditions_ReturnsEmptyList()
+        {
+            // The null guard (ChainingResolver.cs line 22) returns an empty list, never null.
+            Assert.That(new ChainingResolver().Resolve(null), Is.Empty);
+        }
+
+        [Test]
+        public void IsNewMember_NullMembership_ReturnsTrue()
+        {
+            // The null guard (ChainingResolver.cs line 38) treats a null membership as "candidate is new".
+            Assert.IsTrue(new ChainingResolver().IsNewMember(null, 5));
+        }
+
+        [Test]
+        public void Resolve_ZeroIsANormalCandidate_NotASentinel()
+        {
+            // 0 is a valid ulong client id, deduped like any other: [0,1,0,2] → [0,1,2].
+            Assert.AreEqual(new List<ulong> { 0, 1, 2 }, Resolve(0, 1, 0, 2));
+        }
     }
 }

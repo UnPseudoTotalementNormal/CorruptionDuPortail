@@ -744,12 +744,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c1ed182e0be9ae4687aa1f1d5c3c97c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::Reticle.ReticleInteractor
-  _camera: {fileID: 330585545}
   _hud: {fileID: 1231692039}
-  _targetMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  _maxDistance: 50
   _exitDwell: 0.12
   _switchDebounce: 0.06
   _confirmAction: {fileID: 0}
@@ -1187,130 +1182,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!1 &179859813
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 179859814}
-  - component: {fileID: 179859816}
-  - component: {fileID: 179859817}
-  - component: {fileID: 179859815}
-  m_Layer: 0
-  m_Name: WatchBoardCamera
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &179859814
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 179859813}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.26387298, y: 0, z: 0, w: 0.96455747}
-  m_LocalPosition: {x: 0, y: -10.31, z: -8.64}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 814010949}
-  m_LocalEulerAnglesHint: {x: 30.6, y: 0, z: 0}
---- !u!114 &179859815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 179859813}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5339346c389c46249746a015e6a6f1d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  boardCameraId: 1
-  neighbours:
-    _serializedList:
-    - Key: 0
-      Value: {fileID: 0}
-    - Key: 1
-      Value: {fileID: 256519912}
-    - Key: 2
-      Value: {fileID: 0}
-    - Key: 3
-      Value: {fileID: 0}
---- !u!114 &179859816
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 179859813}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Priority:
-    Enabled: 0
-    m_Value: 7
-  OutputChannel: 1
-  StandbyUpdate: 2
-  m_StreamingVersion: 20241001
-  m_LegacyPriority: 0
-  Target:
-    TrackingTarget: {fileID: 0}
-    LookAtTarget: {fileID: 0}
-    CustomLookAtTarget: 0
-  Lens:
-    FieldOfView: 78.6
-    OrthographicSize: 10
-    NearClipPlane: 0.1
-    FarClipPlane: 5000
-    Dutch: 0
-    ModeOverride: 0
-    PhysicalProperties:
-      GateFit: 2
-      SensorSize: {x: 21.946, y: 16.002}
-      LensShift: {x: 0, y: 0}
-      FocusDistance: 10
-      Iso: 200
-      ShutterSpeed: 0.005
-      Aperture: 16
-      BladeCount: 5
-      Curvature: {x: 2, y: 11}
-      BarrelClipping: 0.25
-      Anamorphism: 0
-  BlendHint: 0
---- !u!114 &179859817
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 179859813}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00b2d199b96b516448144ab30fb26aed, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ApplyAfter: 2
-  ChannelMask: 1
-  Gain: 1
-  Use2DDistance: 0
-  UseCameraSpace: 1
-  SignalCombinationMode: 0
-  ReactionSettings:
-    m_SecondaryNoise: {fileID: 0}
-    AmplitudeGain: 1
-    FrequencyGain: 1
-    Duration: 1
-    m_NoiseOffsets: {x: -886.7457, y: -790.66943, z: -627.1162}
 --- !u!1 &183555582
 GameObject:
   m_ObjectHideFlags: 0
@@ -1669,7 +1540,7 @@ MonoBehaviour:
   neighbours:
     _serializedList:
     - Key: 0
-      Value: {fileID: 179859815}
+      Value: {fileID: 1861743666}
     - Key: 1
       Value: {fileID: 1305324455}
     - Key: 2
@@ -5471,7 +5342,7 @@ Transform:
   m_GameObject: {fileID: 715485107}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -21.897, z: -0.8}
+  m_LocalPosition: {x: 0, y: -20, z: -0.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6350,11 +6221,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 179859814}
   - {fileID: 256519910}
   - {fileID: 738321165}
   - {fileID: 1480106854}
   - {fileID: 1305324454}
+  - {fileID: 1861743665}
   m_Father: {fileID: 2041558408}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &814010950
@@ -6671,6 +6542,7 @@ MonoBehaviour:
   _avatarsParent: {fileID: 867493015}
   _ringCenter: {fileID: 715485108}
   _ringRadius: 14
+  _remoteRingRadius: 16
   _frontAngleDeg: 180
   _spawnPoints:
   - {fileID: 1002414861}
@@ -14720,6 +14592,7 @@ GameObject:
   - component: {fileID: 1861743665}
   - component: {fileID: 1861743664}
   - component: {fileID: 1861743663}
+  - component: {fileID: 1861743666}
   m_Layer: 0
   m_Name: AvatarEmbodiedCamera
   m_TagString: Untagged
@@ -14799,13 +14672,30 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1861743662}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 814010949}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1861743666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1861743662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5339346c389c46249746a015e6a6f1d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Board.BoardCameraSystem.BoardCamera
+  boardCameraId: 6
+  neighbours:
+    _serializedList:
+    - Key: 1
+      Value: {fileID: 256519912}
 --- !u!1 &1864116602
 GameObject:
   m_ObjectHideFlags: 0
@@ -18670,5 +18560,4 @@ SceneRoots:
   - {fileID: 580102655}
   - {fileID: 363038682}
   - {fileID: 54114940}
-  - {fileID: 1861743665}
   - {fileID: 1231692043}

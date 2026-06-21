@@ -118,5 +118,25 @@ namespace Tests.Editor
             Assert.That(result[WinningTeam.marginal], Is.EquivalentTo(new ulong[] { 5 }));
             Assert.That(result[WinningTeam.anomaly], Is.EquivalentTo(new ulong[] { 5 }));
         }
+
+        // ───────────────── Null / empty-conditions edges (added coverage) ─────────────────
+
+        [Test]
+        public void Evaluate_NullOwners_ThrowsNullReferenceException()
+        {
+            // No null-guard at the loop head (VictoryEvaluator.cs line 34 iterates a null sequence) — pins the
+            // CURRENT throw, not a desired graceful-empty behavior (reported as a suspect in the audit, not fixed).
+            Assert.Throws<System.NullReferenceException>(() => new VictoryEvaluator().Evaluate(AnySnapshot, null));
+        }
+
+        [Test]
+        public void Evaluate_OwnerWithZeroConditions_ContributesNothing()
+        {
+            var owners = new[] { Owner(7) }; // an owner carrying no winning conditions
+
+            var result = new VictoryEvaluator().Evaluate(AnySnapshot, owners);
+
+            Assert.That(result, Is.Empty, "An owner with no conditions must not create any team key.");
+        }
     }
 }

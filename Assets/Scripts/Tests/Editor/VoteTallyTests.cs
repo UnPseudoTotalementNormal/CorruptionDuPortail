@@ -70,5 +70,29 @@ namespace Tests.Editor
             // p3=5 strict max over p1=2, p2=2 → p3
             Assert.AreEqual(3UL, Resolve(new VoteCount(1, 2), new VoteCount(2, 2), new VoteCount(3, 5), new VoteCount(Skip, 0)));
         }
+
+        // ───────────────── Null list / skip-in-tie / single-element edges (added coverage) ─────────────────
+
+        [Test]
+        public void Resolve_NullList_ReturnsSkip_Defensive()
+        {
+            // The null guard (VoteTally.cs line 33) returns skip — distinct from the empty-list case already covered.
+            Assert.AreEqual(Skip, new VoteTally().Resolve(null, Skip));
+        }
+
+        [Test]
+        public void SkipTiedAtTopWithAPlayer_ReturnsSkip()
+        {
+            // skip=2 tied at the top WITH a player (p1=2) → numTopTied=2 → skip. Distinct from the existing
+            // AbstentionStrictMax case, where skip is the unique strict max routed to skip by the != guard.
+            Assert.AreEqual(Skip, Resolve(new VoteCount(Skip, 2), new VoteCount(1, 2)));
+        }
+
+        [Test]
+        public void SingleElementList_UniqueRealCandidate_ReturnsThatCandidate()
+        {
+            // A one-entry list whose sole candidate is a real player is a unique top → that candidate.
+            Assert.AreEqual(5UL, Resolve(new VoteCount(5, 1)));
+        }
     }
 }

@@ -98,6 +98,16 @@ namespace Characters.Powers.Target
         {
             List<Character> _targets = CharacterManager.instance.GetCharacters(false).ToList();
 
+            // Mirror GetTargetsForCharacters: when the power can't target Self, drop the caster so a
+            // role only the caster holds is never offered. The role picker groups by roleID and keeps
+            // the first non-excluded representative, so a role shared with another player still shows
+            // (via that other player) while a role unique to the caster disappears.
+            if (!_includeFlags.HasFlag(TargetIncludeFlags.Self))
+            {
+                ulong _localClientId = CharacterManager.instance.GetLocalClientId();
+                _targets.RemoveAll(_t => _t.ownerClientId.Value == _localClientId);
+            }
+
             if (!_includeFlags.HasFlag(TargetIncludeFlags.Fake))
             {
                 //TODO: only if player knows about fake characters

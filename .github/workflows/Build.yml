@@ -137,11 +137,13 @@ jobs:
             echo "text=Améliorations internes." >> $GITHUB_OUTPUT
             exit 0
           fi
+          jq -n --arg commits "$COMMITS" \
+            '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}' \
+            > "$RUNNER_TEMP/changelog_payload.json"
           RESPONSE=$(curl -s -X POST \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$GEMINI_API_KEY" \
             -H "Content-Type: application/json" \
-            -d "$(jq -n --arg commits "$COMMITS" \
-              '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}')")
+            -d @"$RUNNER_TEMP/changelog_payload.json")
           TEXT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // "Changelog indisponible."')
           echo "text<<EOF" >> $GITHUB_OUTPUT
           echo "$TEXT" >> $GITHUB_OUTPUT

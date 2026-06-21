@@ -979,6 +979,7 @@ GameObject:
   - component: {fileID: 3870855746124023605}
   - component: {fileID: 5797864316083878644}
   - component: {fileID: 6398186905834028654}
+  - component: {fileID: 6249074975222161930}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1062,6 +1063,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.AvatarHeadLook
   _headBone: {fileID: 4477502950927753904}
   _aimEaseSpeed: 12
+--- !u!114 &6249074975222161930
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b46d12f0657f59e449af51453d99229f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarIdleMotion
+  _breathAmplitudeDeg: 2
+  _breathSpeed: 0.5
+  _earAmplitudeDeg: 4
+  _earSpeed: 0.5
+  _whiskerAmplitudeDeg: 1.5
+  _bowStiffness: 120
+  _bowDamping: 14
+  _bowGain: 0.5
+  _bowMaxDeg: 12
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

@@ -445,6 +445,7 @@ GameObject:
   - component: {fileID: 422508917166547416}
   - component: {fileID: 5845128801636504836}
   - component: {fileID: 7941456063628525433}
+  - component: {fileID: 4350352425433062159}
   m_Layer: 0
   m_Name: Card
   m_TagString: Untagged
@@ -679,6 +680,11 @@ MonoBehaviour:
   <compositor>k__BackingField: {fileID: 8048510344224736120}
   <hoverZoom>k__BackingField: 1.15
   <rotateTime>k__BackingField: 1
+  <cameraModeChannel>k__BackingField: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
+  <hoverFaceLocalNormal>k__BackingField: {x: 0, y: 1, z: 0}
+  <hoverFaceLocalUp>k__BackingField: {x: 0, y: 0, z: 1}
+  <hoverSurfaceY>k__BackingField: -15.025
+  <hoverFloatOffset>k__BackingField: 0.1
   <meIconCard>k__BackingField: {fileID: 845519996604528795}
   <cardPlayerPseudo>k__BackingField: {fileID: 7225565607081040501}
   <cardPlayerPseudoHolder>k__BackingField: {fileID: 4161368764948520219}
@@ -759,7 +765,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &7941456063628525433
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -777,6 +783,19 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &4350352425433062159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417900098678493395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f8739cfaf43b934b9aa5413f3e58625, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Presentation.WorldCanvasEventCamera
+  _camera: {fileID: 0}
 --- !u!1 &465299268467082133
 GameObject:
   m_ObjectHideFlags: 0

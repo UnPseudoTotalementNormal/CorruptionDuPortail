@@ -1,0 +1,259 @@
+using Board.BoardCameraSystem;
+using GameLogic;
+using Reticle;
+using Smartphone;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.Assertions;
+
+namespace Avatars
+{
+    /// <summary>
+    /// Story 13.3 (Epic 13 — Player Embodiment). The SINGLE state → camera-mode authority. It generalizes
+    /// Story 13.2's hard-coded <c>is LobbyState</c> follow-camera gate into a proper arbiter driven by the
+    /// pure <see cref="AvatarCameraModePolicy"/>: it reacts to <c>currentGameStateIndex.OnValueChanged</c>
+    /// and, per resolved <see cref="CameraMode"/>, drives three local presentation toggles:
+    ///
+    ///  • <see cref="AvatarFollowCamera"/> active iff <c>FreeRoam</c> (the Lobby first-person camera);
+    ///  • <see cref="AvatarEmbodiedCamera"/> active iff <c>Embodied</c> (the seated Vote camera, Story 13.4);
+    ///  • the <see cref="BoardCameraManager"/> <c>Avatar</c> input source = (<c>mode == Board</c>) — cuts
+    ///    board-camera arrow neighbour-nav in FreeRoam/Embodied via the existing AND-gate, WITHOUT touching
+    ///    the GameState source or removing any board camera (NFR1);
+    ///  • the local owned avatar's movement input enabled iff <c>FreeRoam</c>
+    ///    (<see cref="AvatarMovementController.SetMovementEnabled"/>);
+    ///  • the <see cref="AvatarSeatingPresenter"/> is active iff <c>Embodied</c> — it drives the per-client
+    ///    rotated seating ring (every avatar placed locally, NetworkTransform suppressed, networked gaze yaw
+    ///    applied), superseding the Story 13.4 networked <c>SeatAtSeat</c> teleport.
+    ///
+    /// NFR2 — it is a PURE REACTION: subscribe-and-prime in <see cref="Start"/>, unsubscribe in
+    /// <see cref="OnDestroy"/> (subscription symmetry, archi §5b); it NEVER writes the index and never
+    /// touches the OnEnd → write → OnStart transition ordering. The 2.11a sequence golden stays green.
+    ///
+    /// EMBODIED (Story 13.4): <c>VoteState → Embodied</c> now realises a concrete seated presentation —
+    /// the <see cref="AvatarEmbodiedCamera"/> activates at the local seat (clamped look) and the local body
+    /// is snapped to its seat. Movement stays locked + board arrow-nav stays cut (as 13.3). The seated
+    /// camera/seat/look live in their own components; the arbiter only routes the mode + drives the seat-snap.
+    ///
+    /// Presentation-only <c>MonoBehaviour</c> (NOT a NetworkBehaviour): it reads the replicated
+    /// <c>currentGameStateIndex</c> and toggles LOCAL cameras/input — it mutates no game state. Lane A:
+    /// <see cref="gameManager"/> serialized concrete, narrowed by <see cref="Query"/> (Unity can't serialize
+    /// an interface) — identical to <see cref="BoardCameraManager"/> / <see cref="AvatarFollowCamera"/>.
+    /// </summary>
+    public class AvatarCameraArbiter : MonoBehaviour
+    {
+        // Lane A (mirrors BoardCameraManager.gameManager / AvatarFollowCamera): read the narrow state-query
+        // slice off the concrete serialized GameManager.
+        [SerializeField] private GameManager gameManager;
+        [SerializeField] private AvatarFollowCamera _followCamera;
+        [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
+        [SerializeField] private AvatarSeatingPresenter _seatingPresenter;
+        [SerializeField] private AvatarVisibilityController _visibility;
+        [SerializeField] private ReticleInteractor _reticle;
+        [Tooltip("Reusable broadcast of the resolved camera mode (e.g. the card hover reads it to gate the " +
+                 "first-person look-at). Null-tolerant — unwired just means consumers see Board.")]
+        [SerializeField] private CameraModeChannel _cameraModeChannel;
+        // The scene smartphone/tablet. Drives the cursor + look gate: while it is open the OS cursor is freed
+        // (to drive the tablet UI) and the first-person look is frozen. Null-tolerant — if unwired, the cursor
+        // simply follows the camera mode and the look is never frozen.
+        [SerializeField] private SmartphoneController _smartphone;
+
+        private IGameStateQuery Query => gameManager;
+
+        private bool _subscribed;
+        // Mirrors the tablet open state via its onPanelOpened/onPanelClosed events. Combined with the camera
+        // mode to decide the cursor lock + look freeze.
+        private bool _tabletOpen;
+        // Last resolved mode, cached so a late-spawning local avatar (below) starts in the right movement
+        // state when its controller finally binds.
+        private CameraMode _currentMode = CameraMode.Board;
+        private AvatarMovementController _localMovement;
+
+        private void Awake()
+        {
+            Assert.IsNotNull(gameManager, "AvatarCameraArbiter.gameManager is not wired — wire it in GameScene (like BoardCameraManager).");
+            Assert.IsNotNull(_followCamera, "AvatarCameraArbiter._followCamera is not wired — wire the AvatarFollowCamera instance.");
+            Assert.IsNotNull(_embodiedCamera, "AvatarCameraArbiter._embodiedCamera is not wired — wire the AvatarEmbodiedCamera instance.");
+            Assert.IsNotNull(_seatingPresenter, "AvatarCameraArbiter._seatingPresenter is not wired — wire the AvatarSeatingPresenter instance.");
+            Assert.IsNotNull(_visibility, "AvatarCameraArbiter._visibility is not wired — wire the AvatarVisibilityController instance.");
+            Assert.IsNotNull(_reticle, "AvatarCameraArbiter._reticle is not wired — wire the ReticleInteractor instance.");
+        }
+
+        private void Start()
+        {
+            // Pure reaction (NFR2): subscribe + prime with the current value (exactly BoardCameraManager.cs:65-67
+            // / AvatarFollowCamera 13.2). Never writes the index.
+            Query.currentGameStateIndex.OnValueChanged += OnGameStateChanged;
+            _subscribed = true;
+
+            // Tablet open/close drives the cursor + look gate. Prime from the current state, then react.
+            if (_smartphone != null)
+            {
+                _tabletOpen = _smartphone.IsOpen;
+                _smartphone.onPanelOpened += OnTabletOpened;
+                _smartphone.onPanelClosed += OnTabletClosed;
+            }
+
+            OnGameStateChanged(Query.currentGameStateIndex.Value, Query.currentGameStateIndex.Value);
+        }
+
+        private void OnDestroy()
+        {
+            // Mirror the Start subscription (subscribe-in-X ⇒ unsubscribe-in-its-teardown).
+            if (_subscribed && gameManager != null)
+            {
+                Query.currentGameStateIndex.OnValueChanged -= OnGameStateChanged;
+            }
+
+            if (_smartphone != null)
+            {
+                _smartphone.onPanelOpened -= OnTabletOpened;
+                _smartphone.onPanelClosed -= OnTabletClosed;
+            }
+
+            // Never leave a teardown with a locked/hidden cursor (e.g. scene unload mid-Vote) — restore the
+            // free OS cursor so menus/other scenes are usable.
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            // Cleanup symmetry (archi §5b): this arbiter is the SOLE owner of the board-camera 'Avatar'
+            // source. If we tore down while a non-Board mode had set it false, a surviving
+            // BoardCameraManager.instance (a sanctioned static survivor) would keep arrow neighbour-nav cut
+            // forever. Restore the neutral AND element (true) so the board returns to its pre-arbiter
+            // behaviour. Idempotent + null-tolerant (no-op if the board manager already went away first).
+            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar, true);
+        }
+
+        private void OnGameStateChanged(int _previousValue, int _newValue)
+        {
+            _currentMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            ApplyMode();
+        }
+
+        private void ApplyMode()
+        {
+            // FreeRoam: the first-person Lobby camera outranks the board cams. Embodied: the seated Vote
+            // camera outranks them (Story 13.4). Board: both stand down so the board cameras present.
+            _followCamera.SetActive(_currentMode == CameraMode.FreeRoam);
+            _embodiedCamera.SetActive(_currentMode == CameraMode.Embodied);
+
+            // Board-camera arrow neighbour-nav: ON only in Board. The Avatar source ANDs with the untouched
+            // GameState source (Controller.cs:43-53), so FreeRoam/Embodied cut arrow nav cleanly without
+            // removing/disabling any board camera and without touching the GameState source (NFR1). Order vs
+            // BoardCameraManager's own subscriber is irrelevant — the AND is order-independent (NFR2-safe).
+            // .instance is a recorded census survivor / opt-out (sanctioned, NOT a locator to remove);
+            // null-tolerant for headless / early-boot.
+            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar, _currentMode == CameraMode.Board);
+
+            // Avatar movement input: enabled ONLY in FreeRoam (the Lobby), locked in every other state.
+            ApplyMovementEnabled();
+
+            // Seated ring: the presenter drives the per-client rotated seating (places every avatar locally,
+            // suppresses NetworkTransform, applies networked gaze yaw) for the whole Embodied window. It
+            // self-handles late-spawning avatars + player-count changes, so no one-shot re-arm is needed here.
+            _seatingPresenter.SetActive(_currentMode == CameraMode.Embodied);
+
+            // Avatar body visibility (single owner): Board hides everyone ("you only see each other during
+            // the day"); FreeRoam/Embodied show everyone except the local first-person body.
+            _visibility.SetMode(_currentMode);
+
+            // First-person Vote targeting: the center-screen reticle is live ONLY while seated (Embodied),
+            // so cards/buttons can be hovered + clicked without an OS cursor.
+            _reticle.SetActive(_currentMode == CameraMode.Embodied);
+
+            // Broadcast the mode on the reusable channel (cards gate their first-person look-at hover on it).
+            _cameraModeChannel?.Set(_currentMode);
+
+            // Cursor lock + look freeze derive from BOTH the mode and the tablet state — re-apply on each.
+            ApplyCursorAndLook();
+        }
+
+        private void OnTabletOpened()
+        {
+            _tabletOpen = true;
+            ApplyCursorAndLook();
+        }
+
+        private void OnTabletClosed()
+        {
+            _tabletOpen = false;
+            ApplyCursorAndLook();
+        }
+
+        // Single source of truth for the OS cursor + the first-person look gate. First-person modes
+        // (FreeRoam/Embodied) lock + hide the cursor so the mouse drives the look — UNLESS the tablet is open,
+        // which frees the cursor (to click the tablet UI) and freezes the look so the camera no longer turns
+        // with the mouse. Board mode always shows the cursor (board/UI is click-driven).
+        private void ApplyCursorAndLook()
+        {
+            bool _firstPerson = _currentMode == CameraMode.FreeRoam || _currentMode == CameraMode.Embodied;
+            bool _lockCursor = _firstPerson && !_tabletOpen;
+
+            Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !_lockCursor;
+
+            // Freeze the look whenever the tablet is open (both look-readers ignore it; default-on otherwise).
+            bool _lookEnabled = !_tabletOpen;
+            if (TryBindLocalMovement())
+            {
+                _localMovement.SetLookEnabled(_lookEnabled);
+            }
+            _embodiedCamera.SetLookEnabled(_lookEnabled);
+        }
+
+        private void ApplyMovementEnabled()
+        {
+            if (!TryBindLocalMovement())
+            {
+                // Avatar not spawned yet — re-applied when it binds (Update).
+                return;
+            }
+            _localMovement.SetMovementEnabled(_currentMode == CameraMode.FreeRoam);
+        }
+
+        private void Update()
+        {
+            // Late-spawn binding: the local avatar may spawn a frame or two AFTER the Lobby state activated.
+            // Keep trying to bind its movement controller and re-apply the cached mode's enable-state, so an
+            // avatar that appears after the FreeRoam gate still starts walkable. Once bound this is a no-op.
+            if (_localMovement == null)
+            {
+                ApplyMovementEnabled();
+                // The late-bound controller also needs the current look-gate state primed (it may have
+                // spawned while the tablet was open).
+                if (_localMovement != null)
+                {
+                    _localMovement.SetLookEnabled(!_tabletOpen);
+                }
+            }
+
+        }
+
+        // Mirrors AvatarFollowCamera.TryBindLocalAvatar (AvatarFollowCamera.cs:138-158): resolve the local
+        // owned avatar via AvatarManager.For(NetworkManager.Singleton) + IsOwner, cache its movement
+        // controller. (AvatarManager.For + NetworkManager.Singleton are the avatar layer's own resolution —
+        // same as 13.2 — which is why the avatar types are NOT in DiSeamMigratedConsumers.)
+        private bool TryBindLocalMovement()
+        {
+            if (_localMovement != null)
+            {
+                return true;
+            }
+
+            AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
+            if (_manager == null)
+            {
+                return false;
+            }
+
+            foreach (PlayerAvatar _avatar in _manager.GetAvatars())
+            {
+                if (_avatar != null && _avatar.IsOwner)
+                {
+                    _localMovement = _avatar.GetComponent<AvatarMovementController>();
+                    return _localMovement != null;
+                }
+            }
+            return false;
+        }
+    }
+}

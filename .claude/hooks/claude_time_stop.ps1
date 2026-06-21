@@ -26,6 +26,14 @@ try {
     $dir    = Join-Path $projectDir '.claude/timerecorder'
     $marker = Join-Path $dir ("start_{0}.txt" -f $sessionId)
 
+    # AI tracking paused from the Unity calendar window -> drop any in-flight marker
+    # (turn that began before the pause) and accrue nothing.
+    $pauseFlag = Join-Path $dir 'ai_paused.flag'
+    if (Test-Path $pauseFlag) {
+        Remove-Item -Path $marker -Force -ErrorAction SilentlyContinue
+        exit 0
+    }
+
     # No start recorded (e.g. hooks were added mid-turn) -> nothing to do
     if (-not (Test-Path $marker)) { exit 0 }
 

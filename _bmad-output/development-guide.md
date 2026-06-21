@@ -47,10 +47,28 @@
 
 | Assembly | Path | Purpose | Stack |
 |---|---|---|---|
-| `Tests.Editor` | `Assets/Scripts/Tests/Editor/` | Pure C# logic (extensions, validators, parsers) | NSubstitute |
-| `Tests.PlayMode` | `Assets/Scripts/Tests/PlayMode/` | Networked flows, multi-client | `NetworkTestHelper` |
+| `Tests.Editor` | `Assets/Scripts/Tests/Editor/` | Domain POCO golden masters, DI guards, extensions, validators, parsers | NSubstitute |
+| `Tests.PlayMode` | `Assets/Scripts/Tests/PlayMode/` | Networked flows, multi-client | `NetworkTestHelper`, `MultiClientGameFixture` |
 
 Both carry `defineConstraints: ["UNITY_INCLUDE_TESTS"]` → they only compile inside the Editor test runner. Expected behavior.
+
+**Baseline (post-refactor, story 12.3):** EditMode **205/205**, PlayMode **148/148** green. A golden/differential master that *moves* during a behaviour-preserving change means hidden behaviour was disturbed — stop and investigate, never re-bless.
+
+### Architecture guards (must stay green)
+
+The despaghettification track ships three permanent CI guards under `Tests/Editor/`. Adding or moving managed code can trip them — keep them green:
+
+| Guard | Category | Enforces |
+|---|---|---|
+| `DiSeamNoLocatorGuardTests` | `DiSeamGuard` | Migrated consumers never call `GameManager.instance` / `CharacterManager.instance` / `*.For(` (except `CompositionRoot.For` inside `OnNetworkSpawn`) |
+| `SceneWiringGuardTests` | (EditMode) | Every injected `[SerializeField]` of every migrated consumer is non-null in GameScene / prefab roots |
+| `StaticSingletonCensusGuardTests` | `StaticAbsenceGuard` | No new static `instance`/`Instance` beyond the recorded whitelist — a new singleton fails until injected or recorded |
+
+Plus `LeafPocoNoFacadeGuardTests` freezes the Domain leaf POCOs (no static accessor / mutable static state). When you add a singleton or a `[SerializeField]` injected dep, append the type to the shared `DiSeamMigratedConsumers` registry so both guards pick it up.
+
+### Domain purity rule
+
+`CorruptionDuPortail.Domain` (`Assets/Scripts/Domain/`) must **not** reference `UnityEngine` — a purity guard enforces it. New decision logic (win conditions, vote/chaining/power resolution, layout math) goes here as a plain POCO with EditMode tests; the `MonoBehaviour`/`NetworkBehaviour` adapter stays thin (lifecycle + RPC plumbing only). Relocating a type into Domain: add an explicit `CorruptionDuPortail.Domain` reference to the consuming test asmdefs (autoReferenced does not reach them — CS0012 otherwise).
 
 ## CI status
 

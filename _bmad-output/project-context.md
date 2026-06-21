@@ -1,11 +1,12 @@
 ---
 project_name: 'Corruption Du Portail'
 user_name: 'Poyo'
-date: '2026-05-27'
+date: '2026-06-13'
 sections_completed:
-  ['technology_stack', 'engine_rules', 'performance_rules', 'organization_rules', 'testing_rules', 'platform_rules', 'anti_patterns']
+  ['technology_stack', 'engine_rules', 'architecture_di', 'performance_rules', 'organization_rules', 'testing_rules', 'platform_rules', 'anti_patterns']
 status: 'complete'
-rule_count: 270
+rule_count: 300
+refactor_baseline: 'post Epics 1–12 / PR #53 (Dev) — EditMode 205/205 · PlayMode 148/148'
 optimized_for_llm: true
 ---
 
@@ -106,17 +107,96 @@ Main branch: `Dev` (PR target). Current scan branch: `BMAD-Setup`.
 
 | asmdef | Role | May depend on |
 |---|---|---|
-| `Game` | Runtime gameplay | Facepunch, third-party UPM |
+| `CorruptionDuPortail.Domain` | Pure POCO core (`noEngineReferences: true`, `references: []`) | **nothing** — compiler forbids UnityEngine/Netcode/FMOD/DOTween |
+| `Game` | Runtime gameplay | `Domain`, Facepunch, third-party UPM |
 | `Game.Editor` | Editor tooling | `Game`, UnityEditor.* |
 | `Game.Rendering` | URP-bound code | `Game`, RP packages |
 | `Tests.Editor` | EditMode tests (NSubstitute) | `Game`, `Game.Editor` |
 | `Tests.PlayMode` | Multi-client tests | `Game`, `NetworkTestHelper` |
 
+- **`Game` references `Domain`, never the reverse.** Never add a reference to the `Domain` asmdef to make an import compile — that inverts the layer. Relocating a type into `Domain`? The **test** asmdefs need an *explicit* `Domain` reference (`autoReferenced` does not reach them — CS0012 otherwise).
 - **`Game` never references `Game.Editor` nor `Game.Rendering`** — silent build-player break, caught only in CI.
 - Tests asmdefs depend on `Game`, never inverse. Helpers shared across tests → dedicated `Tests.Shared` asmdef, not `Game`.
 - Render-pipeline code (URP `Volume`, `RendererFeature`, `ScriptableRenderPass`) → `Game.Rendering`, never `Game`.
 - `.asmdef` JSON or Inspector — never edit auto-generated `.csproj`.
 - `Tests.*` carry `defineConstraints: ["UNITY_INCLUDE_TESTS"]` — only compile under Editor test runner.
+
+### Architecture & Dependency Injection (post-refactor — Epics 1–12, the load-bearing shape)
+
+> The whole game was de-spaghettified into a layered, injected architecture (PR #53, merged `Dev` 2026-06-13). **Read `_bmad-output/refactor-architecture-despaghetti.md` before touching any manager, DI, or adding a singleton** — the three CI guards fail a re-introduced locator. Baseline: EditMode 205/205, PlayMode 148/148.
+
+#### Layering — Domain POCO core + thin adapters
+
+- **Domain core:** `Assets/Scripts/Domain/`, asmdef `CorruptionDuPortail.Domain` (`noEngineReferences: true`, `references: []`). 19 pure POCO types — decision logic only (`VictoryEvaluator`, `VoteTally`, `ChainingResolver`, `GameLoopMachine`, `RoleDistributor`, `PowerResolver`, snapshots, narrow interfaces). The compiler *structurally* forbids `UnityEngine`/`Unity.Netcode`/FMOD/DOTween — **not even `Vector3`/`Mathf`/`Color`/`[SerializeField]`**. Need one? Pass the primitive in, or use a POCO equivalent. **Never add a reference to the `Domain` asmdef to fix a compile error** (`Game → Domain` only, never the reverse).
+- **Thin adapters:** `MonoBehaviour`/`NetworkBehaviour` shrink to lifecycle + RPC plumbing + Unity glue. New decision logic → a Domain POCO with EditMode tests; keep the adapter thin (Humble Object).
+- **A POCO returns a DECISION; it never applies it.** State transitions, `NetworkVariable` writes, `OnStart`/`OnEnd` sequencing are the adapter's job. A POCO that mutates network/engine state directly **freezes every client — no exception thrown**. If a Domain method feels like it should "do" something, return *what should be done*.
+
+#### Dependency injection — three lanes (lane = HOW the object is created, decided once per type)
+
+**Decision procedure for a new class — answer in order, stop at first YES:**
+
+1. **NetworkBehaviour spawned as an NGO replica** (`Character`, `P*` powers, `LobbyPlayerInfoHolder`)? → **Lane C.**
+2. **MonoBehaviour placed in a scene or on a prefab** (exists before runtime)? → **Lane A.**
+3. **POCO / plain class our code `new`s or owns**? → **Lane B.**
+4. **None of the above** (e.g. a `MonoBehaviour` `AddComponent`'d at runtime that is *not* an NGO replica)? → **STOP — do not guess, flag for a human.**
+
+> Lane = **creation mode, not folder**. Two `P*` powers can be different lanes — a `P*` is Lane C **only if `OnNetworkSpawn` is actually called on it**. **Never mix `[SerializeField]` deps and `Initialize(deps)` on the same type — one lane per type.**
+
+| Lane | Field type | Mechanism / where injected | Unwired failure |
+|---|---|---|---|
+| **A** scene/prefab-placed | **concrete** (interfaces aren't serializable) | `[SerializeField]`, wired in the scene/prefab asset via MCP | init `Assert` + **SceneWiringGuard** |
+| **B** created by our code | **interface** (the testable lane) | `Initialize(deps)` / property-push by the creator (e.g. `SetupGameStates` clones + pushes into each `GameState`) | `Assert` in `Initialize` |
+| **C** NGO-spawned replica | **interface slice** | resolve once in `OnNetworkSpawn` from `CompositionRoot.For(NetworkManager)`, store in fields | `Assert` in `OnNetworkSpawn` |
+
+- **Depend on the narrow slice, never the manager or a locator.** `IGameLoop` / `IGameStateQuery` / `ICharacterQuery` / `ICharacterCommand` / `IRevealService` — only the slice you use; a class may implement several. Lane C resolves the **slice** off `Services`, never `Services.GameManager` (that resurrects the locator).
+- Concrete consumed fields you'll see in code: powers read base fields `Power.chainingManager` / `roleTargetSystem` / `selectionFlowService` / `focusManager` / `lobbyPlayerInfoHolder` / `chatManager` (lane C). GameStates get `GameState.boardManager` / `statesCanvas` / `chainingManager` / `selectionFlowService` pushed by `SetupGameStates` (lane B). Card children read `Card.CharacterQuery` / `Card.GameInfoRevealer`; `StateUI` subclasses read base `StateUI.CharacterQuery`.
+
+#### CompositionRoot — the ONE sanctioned project static
+
+- `CompositionRoot.For(NetworkManager)` returns a `Services` (`readonly struct`) with **typed accessors** (no `Dictionary<Type,object>` bag), per-`NetworkManager`. It carries **no `instance` member** — `For(nm)` is the only entry.
+- **Resolve once, in `OnNetworkSpawn`, store in a field.** Never call `For(nm)` from `Awake`/`Start`/a field initializer/a constructor (the root may not be registered for this replica's NM yet), nor from `Update`/a hot path/per-RPC (`For()` is a registry lookup, not free).
+- **Resolve against `base.NetworkManager` / `NetworkObject.NetworkManager`, NEVER `NetworkManager.Singleton`.** The second in-process NM (`MultiClientGameFixture`) has no scene root; `.Singleton` resolves the wrong graph or null. `NetworkManager.Singleton` is the NGO idiom every LLM writes by reflex — it silently breaks multi-NM.
+- **Do not read another spawned object's resolved fields inside your own `OnNetworkSpawn`** — cross-object spawn order is not guaranteed; defer cross-replica reads past spawn.
+
+#### Fail loud — no locator fallback
+
+- `Assert.IsNotNull(dep, "<dep> not wired")` immediately after each `For(nm)` resolution and each `[SerializeField]` read (in `Awake`/`Start`/`Initialize`/`OnNetworkSpawn`). A missed wiring must crash at the boundary, not three frames later in a stack-less NRE.
+- **A `?? GameManager.instance` / `?? CharacterManager.instance` fallback is forbidden** — it silently re-introduces the locator the guards exist to kill.
+
+#### Serialized-field safety (lane A — silent-breakage rule)
+
+Unity serializes by **field name**. **Append** a new injected `[SerializeField]`; never rename / reorder / retype an existing one (orphans already-wired refs silently — no compile error). A new field is **null in every existing instance until explicitly wired**. After adding one — **before committing** — enumerate every instance (`find_gameobjects`), wire each via MCP (scene `manage_components`, prefab `manage_prefabs`), and **verify by reading the reference back**. Compile-green + tests-green do **not** cover this; `SceneWiringGuard` does — run it. **Never defer a wireable consumer** (a deferred wire is an untraceable playtest NRE). Rename unavoidable → `[FormerlySerializedAs("old")]`.
+
+#### NFR5 — network-authority code is relocated, never edited
+
+`GetSafeRpcTarget` / `IsLocalOrSimulated` / `clientId >= 100` move **verbatim** into the network adapter. Never edit, refactor, "simplify", or re-derive from memory — the bot-debug flow + `MultiClientGameFixture` gate them. A new RPC without `GetSafeRpcTarget` reddens no compile guard — it reddens `MultiClientGameFixture` in PlayMode. **Every new RPC ships with a fixture case.**
+
+#### Permanent boundaries — NOT strangler façades (do not "finish removing" them)
+
+- `GameManager` **owns** `currentGameStateIndex` (`NetworkVariable`) + the `OnEnd → write NV → OnStart` sequencing — replication state must live on a `NetworkBehaviour`; this is its designed adapter role. `GameLoopMachine` (POCO) computes only the arithmetic. Never write the index elsewhere.
+- Opt-out global façades (keep `instance`, intentionally OUT of `ForbiddenLocators`): `GameAudioManager`, `LobbyManager`, `InputManager`.
+- `GameManager.instance` / `CharacterManager.instance` survive as **recorded verify-don't-force façades**, read only by context-less static machinery (`W*` win-rules, `TargetUtils`, `PowerEffectDispatcher`) + test fixtures. **Grandfathered, not an invitation** — a NEW `.instance` call from injectable code is forbidden; don't route the existing callers through the root for "purity" either.
+
+#### The three CI guards (a violation = red, not a silent runtime bug)
+
+| Guard | `[Category]` | Fails when |
+|---|---|---|
+| `DiSeamNoLocatorGuardTests` | `DiSeamGuard` | a migrated type references `GameManager.instance` / `CharacterManager.instance` / `*.For(` (lane C `CompositionRoot` allowed **only** inside `OnNetworkSpawn`) |
+| `SceneWiringGuardTests` | `SceneWiringGuard` | any injected `[SerializeField]` of a migrated consumer is null in GameScene/prefab |
+| `StaticSingletonCensusGuardTests` | `StaticAbsenceGuard` | a non-whitelisted `static instance`/`Instance` exists |
+
+- **A type is "migrated" only when all three are true, in order:** (a) zero locator outside `OnNetworkSpawn`; (b) every injected `[SerializeField]` wired on every instance; (c) added **once, last** to the shared `DiSeamMigratedConsumers` registry (both seam guards read it). Add to the set **last** — adding before (a)+(b) reddens SceneWiringGuard; omitting the set leaves `DiSeamGuard` **green-but-wrong** (false negative — worse than a failure). The registry is **lane C consumers only**; lanes A/B never appear (no phantom entries).
+- **Never add a new `static instance`/`Instance`.** Need a shared service → inject it (lane B) or resolve via `CompositionRoot.For(nm)` (lane C). **Never whitelist your own new type to pass the census** — the whitelist is a frozen-debt ledger, not an escape hatch.
+- **Run guards by category before pushing** (`run_tests` filtered to `DiSeamGuard` / `SceneWiringGuard` / `StaticAbsenceGuard`) — don't wait for the full suite to discover a red seam.
+
+#### Subscription symmetry (lane variant — full rule in refactor-architecture-despaghetti §5b)
+
+Every event / `NetworkVariable` subscription has an unsubscribe in the teardown mirror. **Lane decides where:** a NetworkBehaviour **Spawned** (lane C) unsubscribes in `OnNetworkDespawn`; one **Instantiated** (`StateUI` subclasses — `Instantiate`d, never `Spawn`ed, so `OnNetworkDespawn` never fires) unsubscribes in `OnDestroy`. Both: **cache the resolved target**, unsubscribe from the *same* reference, guard the deref (`if (cached != null) ...`).
+
+#### Behaviour-preserving — golden masters
+
+- `GameSnapshotBuilder.FromLiveState` must run **synchronously before any `await`** — a `NetworkVariable` can tear across a frame and move a golden with no real behaviour change. Read `hackedCharacterClientId` off the **live `POmniscience`** instance, never a serialized `Role`.
+- A `[Category("GoldenMaster")]` master that **moves** = hidden behaviour disturbed. **STOP, find the cause, never "re-bless"** — and it is not a unilateral call, escalate.
 
 ### Async / cancellation
 
@@ -455,13 +535,14 @@ Rule of thumb: **start in EditMode**. Push to PlayMode only when forced by NGO, 
 
 #### The silent killers (read first)
 
-Five rules where breaking compiles cleanly, tests pass locally, and the bug surfaces only in multiplayer or in player builds:
+Six rules where breaking compiles cleanly, tests pass locally, and the bug surfaces only in multiplayer or in player builds:
 
 1. **`GetSafeRpcTarget(clientId)` on every RPC target.** `clientId >= 100` is a simulated bot — host intercepts locally. Raw `ServerRpc/ClientRpc` calls silently break bot-debug flow.
 2. **`IsLocalOrSimulated(clientId)` instead of `IsLocalClient`.** Host may act on behalf of simulated identity; plain `IsLocalClient` returns false → wrong branch silently.
 3. **Server-authoritative state.** Mutate game state on server only. Clients propose via `ServerRpc`. Client-side mutation = cheat surface + desync.
 4. **`UniTask` / `UniTaskVoid` only.** Never `System.Threading.Tasks.Task`. Every `.Forget()` in MonoBehaviour chains `this.GetCancellationTokenOnDestroy()`.
 5. **FMOD via `AudioSystem/GameAudioManager` only.** Never `AudioSource` for gameplay audio. Banks live in `Assets/FMODBanks/`.
+6. **Depend on injected slices, never `instance`/`For`.** Take an injected `IGameLoop`/`ICharacterQuery`/… field; `CompositionRoot.For(nm)` only inside `OnNetworkSpawn` (lane C), resolved against `base.NetworkManager` not `NetworkManager.Singleton`. A re-introduced locator compiles clean but fails `DiSeamGuard`. See **Architecture & Dependency Injection** above.
 
 #### Commit conventions (load-bearing — surfaced to Discord)
 
@@ -507,6 +588,12 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 | Hard-coding magic string for FMOD event / NGO message | Typo = silent runtime miss | `FixedStrings/` |
 | Editing `.csproj` / `.sln` | Auto-regenerated from `.asmdef` | Edit the `.asmdef` |
 | Bumping single package in `manifest.json` (e.g. NGO without Multiplayer Tools) | Version mismatch silent | Paired bump |
+| `GameManager.instance`/`CharacterManager.instance`/`*.For(` in a migrated type | Re-introduces locator → `DiSeamGuard` red | Inject the slice; root only inside `OnNetworkSpawn` |
+| New `static instance`/`Instance` | `StaticAbsenceGuard` red | Inject (lane B) or `CompositionRoot.For(nm)` (lane C); never whitelist your own type |
+| `NetworkManager.Singleton` to resolve a service in a replica | Wrong graph under multi-NM fixture, silent | `base.NetworkManager` + `CompositionRoot.For(NetworkManager)` |
+| POCO writes `currentGameStateIndex` / triggers a transition | Clients freeze, no exception | Return a decision; the adapter applies it |
+| Adding a reference to the `Domain` asmdef to fix a compile error | Inverts the layer (`Domain → Game`) | Pass the primitive / use a POCO equivalent |
+| New `[SerializeField]` committed unwired | Null in every instance → untraceable playtest NRE | Wire every instance via MCP + read-back before commit (`SceneWiringGuard`) |
 | `Co-Authored-By: Claude ...` in commit | Project policy violation | Remove |
 
 #### Gotchas (engine-specific surprises)
@@ -522,6 +609,7 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 #### When in doubt
 
 - Read `CLAUDE.md` first (load-bearing patterns + commit rules).
+- Before touching managers, DI, or adding a singleton: read `_bmad-output/refactor-architecture-despaghetti.md` (+ `-poco.md`, `-desingleton.md`) — the post-2026-06 injected shape; the three guards fail a re-introduced locator.
 - Read relevant `_bmad-output/<system>.md` doc before non-trivial changes.
 - Read 2–3 neighbor files in the same folder before adding new code (conventions imitable).
 - `mcp__UnityMCP__read_console` after every code change.
@@ -547,4 +635,4 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 - Review quarterly for outdated rules — remove anything that has become obvious from the code itself.
 - Refresh via `/gds-generate-project-context` after structural changes (new system, asmdef split, render pipeline change).
 
-Last Updated: 2026-05-27
+Last Updated: 2026-06-13 (refreshed post-refactor — added Architecture & Dependency Injection section: Domain POCO layer, three-lane injection, CompositionRoot, the three CI guards; patched asmdef table, anti-patterns, silent killers)

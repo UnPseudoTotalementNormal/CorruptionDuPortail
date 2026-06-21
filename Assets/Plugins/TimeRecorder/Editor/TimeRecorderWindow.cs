@@ -102,6 +102,14 @@ namespace Meaf75.Unity{
             if (totalClaudeLabel != null)
                 totalClaudeLabel.text = GetSingleLineLabel(ClaudeTimeReader.TotalSeconds);
 
+            // AI tracking pause toggle. Writes a flag file the .claude/hooks scripts check;
+            // while paused no AI time accrues. Independent from the dev-time pause above.
+            var claudePauseBtn = root.Q<Button>( CalendarContainerTemplateNames.CLAUDE_PAUSE_STATE_BTN);
+            if (claudePauseBtn != null) {
+                claudePauseBtn.text = TimeRecorderExtras.GetClaudePauseButtonLabelForState(ClaudeTimeReader.IsPaused).ToUpperInvariant();
+                claudePauseBtn.clicked += ChangeClaudePauseState;
+            }
+
             // Generate days
             var daysContainers = new VisualElement[7];
 
@@ -404,6 +412,14 @@ namespace Meaf75.Unity{
 
         private void ChangeTimeRecorderPauseState() {
             TimeRecorderTools.ChangeTimeRecorderPauseState(!TimeRecorder.isPaused);
+        }
+
+        private void ChangeClaudePauseState() {
+            ClaudeTimeReader.SetPaused(!ClaudeTimeReader.IsPaused);
+
+            var claudePauseBtn = rootVisualElement.Q<Button>( CalendarContainerTemplateNames.CLAUDE_PAUSE_STATE_BTN);
+            if (claudePauseBtn != null)
+                claudePauseBtn.text = TimeRecorderExtras.GetClaudePauseButtonLabelForState(ClaudeTimeReader.IsPaused).ToUpperInvariant();
         }
 
         /// <summary> Update visual elements from this window </summary>

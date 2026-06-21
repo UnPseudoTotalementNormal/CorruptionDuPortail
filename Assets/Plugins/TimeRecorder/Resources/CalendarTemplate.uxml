@@ -22,6 +22,7 @@
                     <VisualElement class="total-time-labels-container">
                         <Label class="dev-time-label" text="Total Claude time: "/>
                         <Label name="label-total-claude-time"  class="label-total-dev-time claude-total-label" text="0 h"/>
+                        <Button name="claude-pause-state-btn" text="PAUSE AI"/>
                     </VisualElement>
                 </VisualElement>
             </VisualElement>            

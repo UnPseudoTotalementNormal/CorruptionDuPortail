@@ -35,16 +35,25 @@ namespace GameLogic.GameStates
             // applies the side effects, preserving the fake-then-real order + the Clone/power/RPC flow.
             IReadOnlyList<RoleDataObject> _frozenOrder = GetFrozenRolePoolOrder();
 
+            // Quick-dev gamesettings-refonte (2026-06-20): the per-role counts + canBeFake now live on the
+            // replicated, server-authoritative gameSettingsManager (pushed lane-B by SetupGameStates), so
+            // distribution honours the host's lobby edits. The authored roleAttributionDictionary remains the
+            // role POOL + order (GetFrozenRolePoolOrder) + the manager's seed source + a fallback for the
+            // standalone test harnesses that build this state without the DI graph (the RoleAssignment golden
+            // master) — there the manager is null and the authored counts are used, byte-identical to before.
             var _initialCounts = new List<int>(_frozenOrder.Count);
             var _canBeFake = new List<bool>(_frozenOrder.Count);
             foreach (RoleDataObject _role in _frozenOrder)
             {
-                RoleAttributionSetting _setting = roleAttributionDictionary[_role];
-                _initialCounts.Add(_setting.roleToAttribute);
-                _canBeFake.Add(_setting.canBeFake);
+                RoleAttributionSetting _authored = roleAttributionDictionary[_role];
+                _initialCounts.Add(gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.roleToAttribute);
+                _canBeFake.Add(gameSettingsManager != null ? gameSettingsManager.GetCanBeFake(_role.role.roleID) : _authored.canBeFake);
             }
 
-            int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute));
+            int _totalRolesToAttribute = gameSettingsManager != null
+                ? gameSettingsManager.GetTotalRolesToAttribute()
+                : roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute);
+            int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - _totalRolesToAttribute);
             List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
 
             RoleDistribution _distribution = new RoleDistributor().Distribute(

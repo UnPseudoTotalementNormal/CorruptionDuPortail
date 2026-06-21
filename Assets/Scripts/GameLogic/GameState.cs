@@ -44,6 +44,10 @@ namespace GameLogic
         // Story 10.4 (Epic 10 / D4): StatesCanvas (the UI host) pushed the same way, so OnStateCreated
         // stops reading the StatesCanvas.Instance global. Null-tolerant — only used when stateUIPrefab != null.
         public StatesCanvas statesCanvas { get; set; }
+        // Quick-dev gamesettings-refonte (2026-06-20): the role-attribution settings backbone, pushed lane-B
+        // by SetupGameStates from the composition root (mirrors boardManager / statesCanvas). LobbyState
+        // (Start-Game validation) and RoleAttributionState (distribution) read the replicated counts from it.
+        public GameSettings.GameSettingsManager gameSettingsManager { get; set; }
         // Story 10.5 (Epic 10 / D4): SelectionFlowService + FocusManager pushed the same way (from the
         // composition root, serving their still-singletons), so the sole GameState consumer
         // (TakeDownThePortalState) stops reading the SelectionFlowService.instance / FocusManager.instance

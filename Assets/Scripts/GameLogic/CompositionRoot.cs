@@ -40,6 +40,10 @@ namespace GameLogic
         // Story 7.3: GameInfoRevealer is NOT de-singletonised (no GameInfoRevealer.For(nm)), so the
         // root carries it as a lane-A scene ref and resolves it from the registered scene root.
         [SerializeField] private GameInfoRevealer gameInfoRevealer;
+        // Quick-dev gamesettings-refonte (2026-06-20): the lobby role-attribution settings backbone — a
+        // scene-placed spawned NetworkBehaviour, NOT de-singletonised (no static), so the root carries it as
+        // a lane-A scene ref and resolves it from the registered scene root (mirrors gameInfoRevealer).
+        [SerializeField] private GameSettings.GameSettingsManager gameSettings;
 
         private NetworkManager _networkManager;
 
@@ -65,6 +69,9 @@ namespace GameLogic
         public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
         public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
         public GameInfoRevealer GameInfoRevealer => gameInfoRevealer;
+        // Quick-dev gamesettings-refonte: the role-settings backbone, resolved from the registered scene
+        // root (mirror gameInfoRevealer). NOT de-singletonised — no GameSettingsManager.For(nm).
+        public GameSettings.GameSettingsManager GameSettingsManager => gameSettings;
         // Story 10.1 (Epic 10 / D4): ChatManager is NOT de-singletonised (no ChatManager.For(nm)) — it
         // stays a replicated singleton. The root is the ONE sanctioned locator, so it answers the chat
         // surface from the singleton, collapsing the global read out of every chatting power into here.
@@ -124,6 +131,18 @@ namespace GameLogic
             return null;
         }
 
+        // Quick-dev gamesettings-refonte: same scene-root resolution as GameInfoRevealer (the settings
+        // backbone has no per-NM registry of its own). Returns null for an NM with no registered root
+        // (e.g. a PlayMode harness that spawns no settings consumer).
+        private static GameSettings.GameSettingsManager ResolveGameSettings(NetworkManager _networkManager)
+        {
+            if (_networkManager != null && s_byNetworkManager.TryGetValue(_networkManager, out var _root) && _root != null && _root.gameSettings != null)
+            {
+                return _root.gameSettings;
+            }
+            return null;
+        }
+
         private void Awake()
         {
             // Non-networked init: bind to the production NM (Singleton) and register the scene root.
@@ -137,6 +156,13 @@ namespace GameLogic
                 "CompositionRoot.characterManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(gameInfoRevealer,
                 "CompositionRoot.gameInfoRevealer is not wired — wire it in GameScene (the composition root).");
+            // Quick-dev gamesettings-refonte (2026-06-20): gameSettings is intentionally NOT Awake-asserted
+            // (unlike the three above). Its consumers are null-tolerant by design — the GameState distribution
+            // path falls back to the authored RoleAttributionState counts, and the UI views guard `!= null` —
+            // so the PlayMode power/corruption harnesses register a CompositionRoot through
+            // NetworkTestHelper.RegisterCompositionRoot WITHOUT a settings manager and must not fail. Production
+            // wiring is still enforced: SceneWiringGuard verifies every CompositionRoot [SerializeField] ref
+            // (incl. gameSettings) is non-null in GameScene.
 
             if (_networkManager != null)
             {
@@ -194,6 +220,8 @@ namespace GameLogic
             public ICharacterCommand CharacterCommand => Characters.CharacterManager.For(_networkManager);
             public GameManager GameManager => GameLogic.GameManager.For(_networkManager);
             public GameInfoRevealer GameInfoRevealer => ResolveGameInfoRevealer(_networkManager);
+            // Quick-dev gamesettings-refonte: the role-settings backbone, served from the registered scene root.
+            public GameSettings.GameSettingsManager GameSettingsManager => ResolveGameSettings(_networkManager);
             // Story 10.1 (Epic 10 / D4): the chat surface, served from the still-singleton ChatManager
             // (not de-singletonised; no per-NM registry), same as the instance accessor above.
             public ChatManager ChatManager => ChatSystem.ChatManager.instance;

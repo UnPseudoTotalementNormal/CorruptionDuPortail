@@ -1,28 +1,22 @@
 {
   "workflow_version": "1.2.0",
   "timestamps": {
-    "started": "2026-05-27T22:17:11+02:00",
-    "last_updated": "2026-05-29T00:00:00+02:00",
-    "completed": "2026-05-29T00:00:00+02:00"
+    "started": "2026-06-13T00:00:00+02:00",
+    "last_updated": "2026-06-13T00:00:00+02:00",
+    "completed": "2026-06-13T00:00:00+02:00"
   },
   "mode": "full_rescan",
   "scan_level": "deep",
   "project_root": "C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail",
   "output_folder": "C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail/_bmad-output",
   "completed_steps": [
-    {"step": "step_1", "status": "completed", "timestamp": "2026-05-27T22:18:00+02:00", "summary": "Classified as monolith, single-part, project_type_id=game (Unity 6000.2.6f2)"},
-    {"step": "step_2", "status": "completed", "timestamp": "2026-05-27T22:19:00+02:00", "summary": "Existing docs inventory: CLAUDE.md (load-bearing AI contract) + AI_WIKI_GUIDE.md (pointer to absent .ai-context/ wiki)"},
-    {"step": "step_3", "status": "completed", "timestamp": "2026-05-27T22:20:00+02:00", "summary": "Tech stack: Unity NGO 2.6 + Facepunch Steam transport + FMOD + UniTask + DOTween + URP 17.2"},
-    {"step": "step_4", "status": "completed", "timestamp": "2026-05-27T22:22:00+02:00", "summary": "Conditional analysis complete: state management (covered in dedicated doc), asset inventory (47 SO, 121 prefabs, 132 png, 5 scenes, 1 FMOD bank). Skipped: api_scan, data_models, ui_components, hardware_docs (not required for game project type)."},
-    {"step": "step_5", "status": "completed", "timestamp": "2026-05-27T22:24:00+02:00", "summary": "Source tree documented with 27 top-level subsystems under Assets/Scripts/"},
-    {"step": "step_6", "status": "completed", "timestamp": "2026-05-27T22:25:00+02:00", "summary": "Dev guide written; commit conventions extracted from CLAUDE.md; CI surface mapped (Build.yml active, unity-tests.yml disabled)"},
-    {"step": "step_7", "status": "skipped", "timestamp": "2026-05-27T22:25:00+02:00", "summary": "Single-part project; integration architecture not applicable"},
-    {"step": "step_8", "status": "completed", "timestamp": "2026-05-27T22:26:00+02:00", "summary": "architecture.md written (single part)"},
-    {"step": "step_9", "status": "completed", "timestamp": "2026-05-27T22:28:00+02:00", "summary": "Supporting docs written: project-overview, source-tree-analysis, development-guide, state-management, asset-inventory"},
-    {"step": "step_10", "status": "completed", "timestamp": "2026-05-27T22:29:00+02:00", "summary": "Master index generated"},
-    {"step": "step_11", "status": "completed", "timestamp": "2026-05-27T22:30:00+02:00", "summary": "No (To be generated) markers present; doc set complete for game project profile"},
-    {"step": "step_12", "status": "completed", "timestamp": "2026-05-27T22:30:00+02:00", "summary": "Workflow finalized"},
-    {"step": "rescan_2026-05-29", "status": "completed", "timestamp": "2026-05-29T00:00:00+02:00", "summary": "Incremental full_rescan: git diff 63b00f4..df2c15d over Assets/, Packages/manifest.json, ProjectSettings/ returned empty. No code/asset/stack changes since 2026-05-27 generation. Only BMad/GDS tooling, CI agent defs, .ai-context wiki removal (AI_WIKI_GUIDE.md now gone), CLAUDE.md update. Docs validated current; not regenerated. Added GDD pointer + re-validation note to index.md."}
+    {"step": "step_0", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Archived prior completed state (2026-05-29, >24h) to .archive/project-scan-report-20260613.json. Triggered by full_rescan after the despaghettification refactor landed."},
+    {"step": "step_1", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Re-confirmed: monolith, single-part, project_type_id=game (Unity 6000.2.6f2). Unchanged classification."},
+    {"step": "step_3", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Tech stack unchanged (NGO 2.6 + Facepunch + FMOD + UniTask + DOTween + URP 17.2). Delta is architectural, not stack."},
+    {"step": "step_4-5-6-8-9", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Regenerated core doc set against the post-refactor code: added Domain POCO layer (19 types, CorruptionDuPortail.Domain.asmdef), CompositionRoot DI seam (24->1 statics), three-lane injection, interface seams (IGameLoop/IGameStateQuery/ICharacterQuery/ICharacterCommand), three CI guards. Updated counts (670 .cs / ~272 runtime / 19 Domain / 31 asmdef)."},
+    {"step": "step_10", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Master index refreshed: layered-architecture summary, links to the 3 refactor-architecture docs + deferred-work, 2026-06-13 verification recap."},
+    {"step": "step_11", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "No (To be generated) markers introduced; doc set complete for the game project profile."},
+    {"step": "step_12", "status": "completed", "timestamp": "2026-06-13T00:00:00+02:00", "summary": "Workflow finalized."}
   ],
   "current_step": "completed",
   "findings": {
@@ -45,7 +39,17 @@
       "input": "Unity Input System 1.14.2",
       "services": "Unity Services (Core, Multiplayer, Authentication)"
     },
-    "assets_summary": "597 .cs, 145 .shadersubgraph, 132 .png, 121 .prefab, 101 .asset, 92 .mat, 80 .shadergraph, 42 .fbx/FBX, 18 .shader, 5 active scenes, 1 FMOD bank set"
+    "architecture_delta_since_2026-05-29": {
+      "track": "Despaghettification + POCO/testability + de-singletoning (Epics 1-12, PR #53)",
+      "domain_layer": "19 pure POCO types in CorruptionDuPortail.Domain.asmdef (no UnityEngine, purity-guarded)",
+      "di_seam": "CompositionRoot — one surviving project static; per-NetworkManager For(nm) resolver; three injection lanes (SerializeField/Initialize/OnNetworkSpawn)",
+      "interfaces": ["IGameLoop", "IGameStateQuery", "ICharacterQuery", "ICharacterCommand"],
+      "guards": ["DiSeamNoLocatorGuardTests", "SceneWiringGuardTests", "StaticSingletonCensusGuardTests", "LeafPocoNoFacadeGuardTests"],
+      "test_baseline": "EditMode 205/205, PlayMode 148/148 (incl. MultiClientGameFixture)",
+      "static_census": "24 singletons -> 1 sanctioned (CompositionRoot) + 23 recorded verify-don't-force exceptions",
+      "permanent_adapter_boundary": "GameManager owns currentGameStateIndex NetworkVariable + OnEnd->NV write->OnStart sequencing (not a strangler facade)"
+    },
+    "assets_summary": "670 .cs (Scripts ~344; ~272 runtime incl. 19 Domain, ~72 tests), 145 .shadersubgraph, 132 .png, 121 .prefab, 101 .asset, 92 .mat, 80 .shadergraph, 31 .asmdef, 42 .fbx/FBX, 5 active scenes, 1 FMOD bank set"
   },
   "outputs_generated": [
     "project-scan-report.json",
@@ -57,5 +61,5 @@
     "asset-inventory.md",
     "index.md"
   ],
-  "resume_instructions": "Workflow complete; last re-validated 2026-05-29 (no code changes since 2026-05-27). Re-run /gds-document-project to refresh or deep-dive. Last code commit at scan: 63b00f4."
+  "resume_instructions": "Workflow complete; full_rescan 2026-06-13 captured the despaghettification refactor (Epics 1-12). Scan baseline commit: 9daace2. project-context.md (270 AI rules) still predates the refactor — refresh with /gds-generate-project-context next."
 }

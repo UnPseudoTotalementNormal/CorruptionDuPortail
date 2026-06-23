@@ -1,0 +1,298 @@
+/* Spike B — Main Menu + Lobby pilot theme (issue #63). Hand-authored example of an AI-written UITK theme:
+   dark "corruption / portal" vibe, violet accent, flex layout, USS transitions. Cosmetic; tweak freely. */
+
+/* Custom properties live on .root (not :root) so they reliably reach every descendant by inheritance. */
+.root {
+    --bg-0: rgb(11, 12, 18);
+    --bg-1: rgba(24, 26, 38, 0.95);
+    --bg-2: rgba(34, 37, 54, 0.95);
+    --line: rgba(124, 110, 230, 0.28);
+    --violet: rgb(139, 92, 246);
+    --violet-soft: rgba(139, 92, 246, 0.18);
+    --teal: rgb(45, 212, 191);
+    --text: rgb(232, 234, 246);
+    --text-dim: rgba(190, 194, 220, 0.72);
+
+    flex-grow: 1;
+    background-color: var(--bg-0);
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- Screens ---- */
+.screen {
+    flex-grow: 1;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.screen--centered {
+    /* main menu */
+}
+
+.game-title {
+    font-size: 56px;
+    -unity-font-style: bold;
+    color: var(--text);
+    letter-spacing: 6px;
+    -unity-text-align: middle-center;
+}
+
+.game-tagline {
+    font-size: 18px;
+    color: var(--teal);
+    letter-spacing: 2px;
+    margin-top: 4px;
+    margin-bottom: 44px;
+}
+
+.menu-buttons {
+    width: 360px;
+    align-items: stretch;
+}
+
+.watermark {
+    position: absolute;
+    bottom: 18px;
+    font-size: 12px;
+    color: rgba(190, 194, 220, 0.4);
+}
+
+/* ---- Buttons ---- */
+.btn {
+    height: 56px;
+    margin: 7px 0;
+    padding: 0 22px;
+    font-size: 19px;
+    color: var(--text);
+    background-color: var(--bg-2);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 12px;
+    transition-property: background-color, scale, border-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
+}
+
+.btn:hover {
+    background-color: rgba(60, 64, 92, 0.95);
+    border-color: var(--violet);
+    scale: 1.02 1.02;
+}
+
+.btn:active {
+    scale: 0.98 0.98;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+}
+
+.btn--primary {
+    background-color: var(--violet);
+    border-color: var(--violet);
+    color: rgb(20, 16, 40);
+    -unity-font-style: bold;
+}
+
+.btn--primary:hover {
+    background-color: rgb(160, 120, 250);
+    border-color: rgb(160, 120, 250);
+}
+
+.btn--ghost {
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
+    color: var(--text-dim);
+}
+
+.btn--ghost:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--line);
+}
+
+.btn--block {
+    margin-top: 18px;
+}
+
+.btn--small {
+    height: 40px;
+    font-size: 15px;
+}
+
+.btn-back {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    color: var(--text);
+    background-color: rgba(255, 255, 255, 0.04);
+    border-width: 0;
+    border-radius: 10px;
+    margin-right: 14px;
+}
+
+.btn-back:hover {
+    background-color: var(--violet-soft);
+}
+
+/* ---- Cards ---- */
+.card {
+    width: 460px;
+    padding: 28px;
+    background-color: var(--bg-1);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 18px;
+}
+
+.card--wide { width: 720px; }
+.card--narrow { width: 380px; }
+
+.card-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.card-title {
+    font-size: 26px;
+    -unity-font-style: bold;
+    color: var(--text);
+    flex-grow: 1;
+}
+
+.card-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 18px;
+}
+
+/* ---- Fields ---- */
+.field {
+    margin-bottom: 6px;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.field .unity-base-field__label {
+    color: var(--text-dim);
+    min-width: 150px;
+}
+
+.field .unity-base-text-field__input {
+    background-color: rgba(0, 0, 0, 0.35);
+    border-color: var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+}
+
+.field .unity-base-text-field__input:focus {
+    border-color: var(--violet);
+}
+
+.field-hint {
+    font-size: 13px;
+    color: rgb(244, 160, 120);
+    margin-bottom: 14px;
+}
+
+/* ---- Lobby table ---- */
+.lobby-header {
+    flex-direction: row;
+    padding: 6px 12px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--line);
+    margin-bottom: 4px;
+}
+
+.lobby-header .col {
+    color: var(--text-dim);
+    -unity-font-style: bold;
+    font-size: 13px;
+}
+
+.lobby-list {
+    height: 340px;
+    background-color: rgba(0, 0, 0, 0.18);
+    border-radius: 10px;
+}
+
+.lobby-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 12px;
+    height: 100%;
+}
+
+.col {
+    -unity-text-align: middle-left;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.col-name { flex-grow: 1; -unity-font-style: bold; }
+.col-priv { width: 90px; }
+.col-lang { width: 150px; }
+.col-players { width: 90px; -unity-text-align: middle-center; color: var(--teal); }
+
+/* ListView selection / hover (Unity's internal item wrapper classes). */
+.unity-collection-view__item:hover {
+    background-color: rgba(139, 92, 246, 0.10);
+}
+
+.unity-collection-view__item--selected,
+.unity-collection-view__item--selected:hover {
+    background-color: var(--violet-soft);
+}
+
+/* ---- Overlays / modal ---- */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(6, 7, 12, 0.72);
+}
+
+.overlay--dim {
+    background-color: rgba(6, 7, 12, 0.85);
+}
+
+.modal-actions {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.modal-actions .btn {
+    flex-grow: 1;
+    margin: 0 6px;
+}
+
+/* ---- Loader ---- */
+.loader {
+    align-items: center;
+}
+
+.spinner {
+    width: 54px;
+    height: 54px;
+    border-width: 5px;
+    border-color: var(--violet);
+    border-top-color: rgba(139, 92, 246, 0.15);
+    border-radius: 27px;
+    rotate: 0deg;
+    transition-property: rotate;
+    transition-duration: 0.8s;
+}
+
+.loader-label {
+    margin-top: 18px;
+    font-size: 17px;
+    color: var(--text);
+}

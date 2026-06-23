@@ -1,0 +1,78 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="MenuPilot.uss" />
+
+    <ui:VisualElement name="root" class="root">
+
+        <!-- ============ MAIN MENU ============ -->
+        <ui:VisualElement name="screen-main" class="screen screen--centered">
+            <ui:Label text="CORRUPTION DU PORTAIL" class="game-title" />
+            <ui:Label text="Déduction sociale asymétrique" class="game-tagline" />
+            <ui:VisualElement class="menu-buttons">
+                <ui:Button name="btn-show-host" text="Héberger une partie" class="btn btn--primary" />
+                <ui:Button name="btn-show-browser" text="Rejoindre une partie" class="btn" />
+                <ui:Button name="btn-settings" text="Paramètres" class="btn btn--ghost" />
+                <ui:Button name="btn-quit" text="Quitter" class="btn btn--ghost" />
+            </ui:VisualElement>
+            <ui:Label text="Spike UI Toolkit — données fictives" class="watermark" />
+        </ui:VisualElement>
+
+        <!-- ============ HOST ============ -->
+        <ui:VisualElement name="screen-host" class="screen">
+            <ui:VisualElement class="card">
+                <ui:VisualElement class="card-header">
+                    <ui:Button name="btn-host-back" text="←" class="btn-back" />
+                    <ui:Label text="Héberger une partie" class="card-title" />
+                </ui:VisualElement>
+                <ui:TextField name="field-lobby-name" label="Nom du salon" class="field" />
+                <ui:Label name="host-hint" text="Le nom doit contenir au moins 3 caractères." class="field-hint" />
+                <ui:TextField name="field-password" label="Mot de passe (optionnel)" password="true" class="field" />
+                <ui:Button name="btn-host" text="Lancer le salon" class="btn btn--primary btn--block" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ============ BROWSER ============ -->
+        <ui:VisualElement name="screen-browser" class="screen">
+            <ui:VisualElement class="card card--wide">
+                <ui:VisualElement class="card-header">
+                    <ui:Button name="btn-browser-back" text="←" class="btn-back" />
+                    <ui:Label text="Parties en cours" class="card-title" />
+                    <ui:Button name="btn-refresh" text="⟳ Rafraîchir" class="btn btn--ghost btn--small" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="lobby-header">
+                    <ui:Label text="Nom" class="col col-name" />
+                    <ui:Label text="Privé" class="col col-priv" />
+                    <ui:Label text="Langue" class="col col-lang" />
+                    <ui:Label text="Joueurs" class="col col-players" />
+                </ui:VisualElement>
+
+                <ui:ListView name="lobby-list" class="lobby-list" />
+
+                <ui:VisualElement class="card-footer">
+                    <ui:Button name="btn-connect" text="Connecter" class="btn btn--primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ============ PASSWORD MODAL ============ -->
+        <ui:VisualElement name="modal-password" class="overlay">
+            <ui:VisualElement class="card card--narrow">
+                <ui:Label text="Mot de passe requis" class="card-title" />
+                <ui:TextField name="field-join-password" label="Mot de passe" password="true" class="field" />
+                <ui:VisualElement class="modal-actions">
+                    <ui:Button name="btn-cancel-password" text="Annuler" class="btn btn--ghost" />
+                    <ui:Button name="btn-submit-password" text="Valider" class="btn btn--primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ============ LOADING OVERLAY ============ -->
+        <ui:VisualElement name="overlay-loading" class="overlay overlay--dim">
+            <ui:VisualElement class="loader">
+                <ui:VisualElement class="spinner" />
+                <ui:Label name="loading-label" text="Connexion…" class="loader-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

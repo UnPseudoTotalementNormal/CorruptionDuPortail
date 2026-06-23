@@ -1,0 +1,61 @@
+/* Cosmetic only — a small "what UITK looks like" demo panel. The reticle hover highlight is painted
+   inline by ReticleUITKProbe and does NOT depend on this sheet loading. */
+
+.panel-root {
+    width: 640px;
+    padding: 32px;
+    background-color: rgba(18, 20, 28, 0.92);
+    border-radius: 18px;
+    border-width: 2px;
+    border-color: rgba(120, 140, 255, 0.5);
+    align-items: stretch;
+}
+
+.title {
+    font-size: 40px;
+    -unity-font-style: bold;
+    color: rgb(235, 238, 255);
+    -unity-text-align: middle-center;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 18px;
+    color: rgba(200, 208, 235, 0.8);
+    white-space: normal;
+    -unity-text-align: middle-center;
+    margin-bottom: 28px;
+}
+
+.row {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.big-button {
+    flex-grow: 1;
+    height: 84px;
+    margin: 6px;
+    font-size: 28px;
+    color: rgb(245, 247, 255);
+    background-color: rgba(70, 90, 180, 0.95);
+    border-radius: 12px;
+    border-width: 0;
+    transition-property: scale, background-color;
+    transition-duration: 0.12s;
+}
+
+/* Real pointer hover (not the reticle) — shows UITK's native transitions for comparison. */
+.big-button:hover {
+    background-color: rgba(95, 120, 230, 1);
+    scale: 1.04 1.04;
+}
+
+.big-button:active {
+    scale: 0.97 0.97;
+}
+
+.wide {
+    height: 72px;
+}

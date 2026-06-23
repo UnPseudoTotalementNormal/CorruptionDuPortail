@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UITKWorldSpaceSpike.uss" />
+    <ui:VisualElement name="panel-root" class="panel-root">
+        <ui:Label text="UITK World-Space Spike" class="title" />
+        <ui:Label text="Aim the reticle at a button: it should highlight exactly under the crosshair. Confirm (LMB / Space / gamepad A) logs the targeted Button." class="subtitle" />
+        <ui:VisualElement class="row">
+            <ui:Button name="vote-button" text="Vote" class="big-button" />
+            <ui:Button name="skip-button" text="Skip" class="big-button" />
+        </ui:VisualElement>
+        <ui:Button name="confirm-button" text="Confirm" class="big-button wide" />
+    </ui:VisualElement>
+</ui:UXML>

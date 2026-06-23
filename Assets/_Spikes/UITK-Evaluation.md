@@ -6,9 +6,14 @@
 ## Recommendation (BLUF)
 **Don't convert wholesale. Go hybrid and phased.**
 
-- **Phase 1 — now, low risk, real gain:** migrate the *screen-space, document-style* UI to UITK —
-  Main Menu, Lobby, GameSettings, and especially **InfoTable / TableSystem**. AI-authored UXML/USS is a
-  genuine multiplier here and there is no world interaction to fight.
+- **Phase 1 — now, low risk, real gain:** migrate the *pre-game, screen-space* flow to UITK —
+  **Login, Main Menu, Lobby browser**. AI-authored UXML/USS is a genuine multiplier here and there is no
+  world interaction to fight.
+  - ⚠️ **Scope correction (verified 2026-06):** GameSettings and InfoTable are **diegetic** — they live on
+    the in-game 3D phone/tablet (`Smartphone/Apps/Lobby/…`; `RoleAttributionSettingTab` "Phone layer"), so
+    they are **world-space**, not flat. Their presentation under `Assets/UI Toolkit/Screens/` is reusable,
+    but their wiring is the world-space path → **gated on Spike A**, not part of this low-risk phase.
+    Almost all other in-game UI (Vote, Chat, Notes, recaps) is diegetic/world-space too.
 - **Phase 2 — later, conditional:** the *world-space / diegetic* gameplay UI (cards, PowerBar, VoteCanvas,
   Smartphone, tooltips) stays on uGUI **until Spike A passes on the Unity version you actually ship**.
   Treat it as a separate decision, not part of Phase 1.

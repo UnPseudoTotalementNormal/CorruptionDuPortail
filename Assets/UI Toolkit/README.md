@@ -8,6 +8,13 @@ the running game yet. Wiring + compile + play-test happen in a **Unity MCP sessi
 Cards and other world-space gameplay UI are **out of scope** (cards excluded per request; world-space
 gated on Spike A).
 
+> **Scope correction (verified 2026-06).** Only **Login / MainMenu / LobbyBrowser** are truly flat
+> (pre-game, main-menu scene). **GameSettings** and **InfoTable** turned out to be **diegetic** — they
+> render on the in-game 3D phone/tablet (`Smartphone/Apps/Lobby/…`; `RoleAttributionSettingTab` "Phone
+> layer"), i.e. world-space. Their `.uxml`/`.uss` here are still reusable, but they must be wired as
+> **world-space** panels (PanelSettings render mode = World Space + reticle interaction) and are therefore
+> **gated on Spike A**, not the screen-space path described below.
+
 ## Layout
 ```
 Theme/CorruptionTheme.uss     Shared design system (tokens + base classes, prefix cdp-). Reused by all screens.

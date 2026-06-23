@@ -204,3 +204,29 @@ LobbyBrowser doc. `btn-back` on the browser → back to MainMenu.
 ## 5. After each screen verifies
 `read_console` (zero errors) → play-test the full flow incl. the networked paths (host, join-by-code,
 browse+join, password) → only THEN delete the old uGUI Canvas/prefab for that screen.
+
+---
+
+## 6. Audio settings (bonus, flat)  (`UI.Settings.AudioPanelSettings` → `Screens/AudioSettings.uxml`)
+
+Elements: `slider-master`/`slider-music`/`slider-sfx` (Slider, float 0–1), value labels
+`val-master`/`val-music`/`val-sfx`, `btn-back`.
+
+```csharp
+_master = _root.Q<Slider>("slider-master");
+_music  = _root.Q<Slider>("slider-music");
+_sfx    = _root.Q<Slider>("slider-sfx");
+
+void Bind(Slider s, Label v, string key, System.Action<float> save) {
+    s.SetValueWithoutNotify(PlayerPrefs.GetFloat(key, 0.5f));      // mirror, no write-back loop
+    v.text = Mathf.RoundToInt(s.value * 100f) + "%";
+    save(s.value);                                                 // keep the Start() initial-apply
+    s.RegisterValueChangedCallback(e => { save(e.newValue); v.text = Mathf.RoundToInt(e.newValue * 100f) + "%"; });
+}
+Bind(_master, _root.Q<Label>("val-master"), "MasterVolume", SaveMasterVolume);
+Bind(_music,  _root.Q<Label>("val-music"),  "MusicVolume",  SaveMusicVolume);
+Bind(_sfx,    _root.Q<Label>("val-sfx"),    "SfxVolume",    SaveSfxVolume);
+```
+
+Keep `SaveMasterVolume`/`SaveMusicVolume`/`SaveSfxVolume` (PlayerPrefs + `RuntimeManager.GetBus(...).setVolume`)
+exactly as-is — only the slider source changes from uGUI `Slider` to UITK `Slider`.

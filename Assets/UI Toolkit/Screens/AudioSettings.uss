@@ -1,0 +1,11 @@
+/* Audio settings — mirrors UI.Settings.AudioPanelSettings (master/music/sfx volume -> PlayerPrefs + FMOD buses).
+   Flat (screen-space) options panel. */
+
+.audio-row {
+    flex-direction: row;
+    align-items: center;
+    height: 56px;
+}
+.audio-label { width: 180px; font-size: 17px; color: var(--text); }
+.audio-slider { flex-grow: 1; }
+.audio-value { width: 56px; }

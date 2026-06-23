@@ -1,0 +1,29 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="AudioSettings.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+        <ui:VisualElement class="cdp-card">
+            <ui:VisualElement class="cdp-card-header">
+                <ui:Button name="btn-back" text="←" class="cdp-btn-icon" />
+                <ui:Label text="Audio" class="cdp-title" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="audio-row">
+                <ui:Label text="Volume général" class="audio-label" />
+                <ui:Slider name="slider-master" low-value="0" high-value="1" value="0.5" class="cdp-slider audio-slider" />
+                <ui:Label name="val-master" text="50%" class="cdp-pill audio-value" />
+            </ui:VisualElement>
+            <ui:VisualElement class="audio-row">
+                <ui:Label text="Musique" class="audio-label" />
+                <ui:Slider name="slider-music" low-value="0" high-value="1" value="0.7" class="cdp-slider audio-slider" />
+                <ui:Label name="val-music" text="70%" class="cdp-pill audio-value" />
+            </ui:VisualElement>
+            <ui:VisualElement class="audio-row">
+                <ui:Label text="Effets (SFX)" class="audio-label" />
+                <ui:Slider name="slider-sfx" low-value="0" high-value="1" value="0.8" class="cdp-slider audio-slider" />
+                <ui:Label name="val-sfx" text="80%" class="cdp-pill audio-value" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

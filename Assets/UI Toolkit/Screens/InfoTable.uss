@@ -1,0 +1,47 @@
+/* Info table — mirrors InfoTableSystem / InfoRoleChecker (players x roles deduction matrix, tri-state cells).
+   Cell states the controller toggles: cell--sure / cell--maybe / cell--not / cell--conflict / cell--locked. */
+
+.info-card { max-height: 86%; }
+.info-scroll { padding: 8px; max-height: 460px; }
+
+.info-row { flex-direction: row; align-items: center; }
+
+.info-corner {
+    width: 160px; min-width: 160px; height: 48px;
+    -unity-text-align: middle-left; -unity-font-style: bold;
+    color: var(--text-dim); padding: 0 8px;
+}
+.info-col-header {
+    width: 96px; min-width: 96px; height: 48px; margin: 2px;
+    -unity-text-align: middle-center; -unity-font-style: bold;
+    font-size: 13px; color: var(--text-dim);
+}
+.info-name-cell {
+    width: 160px; min-width: 160px; height: 48px;
+    -unity-text-align: middle-left; -unity-font-style: bold;
+    color: var(--text); padding: 0 8px;
+}
+
+.info-cell {
+    width: 96px; min-width: 96px; height: 48px; margin: 2px;
+    align-items: center; justify-content: center;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-width: 1px; border-color: var(--line);
+}
+.cell-mark { font-size: 18px; -unity-font-style: bold; color: var(--text); }
+
+.cell--sure { background-color: rgba(74, 201, 126, 0.30); border-color: var(--green); }
+.cell--maybe { background-color: rgba(232, 197, 71, 0.28); border-color: var(--yellow); }
+.cell--not { background-color: rgba(120, 124, 140, 0.22); border-color: var(--grey); }
+.cell--conflict { background-color: rgba(232, 86, 96, 0.35); border-color: var(--red); }
+.cell--locked { opacity: 0.55; }
+
+.info-legend { flex-direction: row; margin-top: 14px; }
+.legend-item { flex-direction: row; align-items: center; margin-right: 18px; }
+.legend-swatch { width: 16px; height: 16px; border-radius: 4px; margin-right: 6px; }
+.sw-sure { background-color: var(--green); }
+.sw-maybe { background-color: var(--yellow); }
+.sw-not { background-color: var(--grey); }
+.sw-conflict { background-color: var(--red); }
+.legend-label { font-size: 13px; color: var(--text-dim); }

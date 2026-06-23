@@ -1,0 +1,54 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="MainMenu.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+
+        <!-- Main -->
+        <ui:VisualElement name="screen-main" class="menu-main">
+            <ui:Label text="CORRUPTION DU PORTAIL" class="cdp-display" />
+            <ui:Label text="Déduction sociale asymétrique" class="cdp-tagline menu-tagline" />
+            <ui:VisualElement class="menu-buttons">
+                <ui:Button name="btn-show-host" text="Héberger une partie" class="cdp-btn cdp-btn--primary" />
+                <ui:Button name="btn-browse" text="Parcourir les parties" class="cdp-btn" />
+                <ui:Button name="btn-show-join" text="Rejoindre par code" class="cdp-btn" />
+                <ui:Button name="btn-quit" text="Quitter" class="cdp-btn cdp-btn--ghost" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Host sub-screen -->
+        <ui:VisualElement name="screen-host" class="cdp-screen menu-sub" style="display: none;">
+            <ui:VisualElement class="cdp-card">
+                <ui:VisualElement class="cdp-card-header">
+                    <ui:Button name="btn-host-back" text="←" class="cdp-btn-icon" />
+                    <ui:Label text="Héberger une partie" class="cdp-title" />
+                </ui:VisualElement>
+                <ui:TextField name="field-lobby-name" label="Nom du salon" class="cdp-field" />
+                <ui:Label name="host-hint" text="Le nom doit contenir au moins 3 caractères." class="cdp-field-hint" />
+                <ui:TextField name="field-password" label="Mot de passe (optionnel)" password="true" class="cdp-field" />
+                <ui:Button name="btn-host" text="Lancer le salon" class="cdp-btn cdp-btn--primary cdp-btn--block" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Join-by-code sub-screen -->
+        <ui:VisualElement name="screen-join" class="cdp-screen menu-sub" style="display: none;">
+            <ui:VisualElement class="cdp-card">
+                <ui:VisualElement class="cdp-card-header">
+                    <ui:Button name="btn-join-back" text="←" class="cdp-btn-icon" />
+                    <ui:Label text="Rejoindre par code" class="cdp-title" />
+                </ui:VisualElement>
+                <ui:TextField name="field-join-code" label="Code de partie" class="cdp-field" />
+                <ui:Button name="btn-join" text="Rejoindre" class="cdp-btn cdp-btn--primary cdp-btn--block" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Loading -->
+        <ui:VisualElement name="overlay-loading" class="cdp-overlay cdp-overlay--dim" style="display: none;">
+            <ui:VisualElement class="cdp-loader">
+                <ui:VisualElement class="cdp-spinner" />
+                <ui:Label name="loading-label" text="Chargement…" class="cdp-loader-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

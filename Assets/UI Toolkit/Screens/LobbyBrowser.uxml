@@ -1,0 +1,73 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="LobbyBrowser.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+        <ui:VisualElement class="cdp-card cdp-card--wide">
+            <ui:VisualElement class="cdp-card-header">
+                <ui:Button name="btn-back" text="←" class="cdp-btn-icon" />
+                <ui:Label text="Parties en cours" class="cdp-title" />
+                <ui:Button name="btn-refresh" text="⟳ Rafraîchir" class="cdp-btn cdp-btn--ghost cdp-btn--small" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="lobby-header">
+                <ui:Label text="Nom" class="lcol lcol-name" />
+                <ui:Label text="Privé" class="lcol lcol-priv" />
+                <ui:Label text="Langue" class="lcol lcol-lang" />
+                <ui:Label text="Joueurs" class="lcol lcol-players" />
+            </ui:VisualElement>
+
+            <!-- Controller rebuilds these rows from LobbyManager.GetLobbies() (ListView or cloned template). Static = design preview. -->
+            <ui:ScrollView name="lobby-list" class="cdp-scroll lobby-list">
+                <ui:VisualElement class="lobby-row is-selected">
+                    <ui:Label text="Le Portail Maudit" class="lcol lcol-name" />
+                    <ui:Label text="Non" class="lcol lcol-priv" />
+                    <ui:Label text="Français" class="lcol lcol-lang" />
+                    <ui:Label text="7/15" class="lcol lcol-players" />
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-row">
+                    <ui:Label text="Taverne des Ombres" class="lcol lcol-name" />
+                    <ui:Label text="Oui" class="lcol lcol-priv" />
+                    <ui:Label text="Français" class="lcol lcol-lang" />
+                    <ui:Label text="12/15" class="lcol lcol-players" />
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-row">
+                    <ui:Label text="Cercle des Corrompus" class="lcol lcol-name" />
+                    <ui:Label text="Non" class="lcol lcol-priv" />
+                    <ui:Label text="Français" class="lcol lcol-lang" />
+                    <ui:Label text="4/10" class="lcol lcol-players" />
+                </ui:VisualElement>
+                <ui:VisualElement class="lobby-row">
+                    <ui:Label text="Les Veilleurs du Néant" class="lcol lcol-name" />
+                    <ui:Label text="Non" class="lcol lcol-priv" />
+                    <ui:Label text="Français" class="lcol lcol-lang" />
+                    <ui:Label text="9/15" class="lcol lcol-players" />
+                </ui:VisualElement>
+            </ui:ScrollView>
+
+            <ui:VisualElement class="cdp-card-footer">
+                <ui:Button name="btn-connect" text="Connecter" class="cdp-btn cdp-btn--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Password modal (LobbySelectionPanel enterPasswordCanvasGroup) -->
+        <ui:VisualElement name="modal-password" class="cdp-overlay" style="display: none;">
+            <ui:VisualElement class="cdp-card cdp-card--narrow">
+                <ui:Label text="Mot de passe requis" class="cdp-title" />
+                <ui:TextField name="field-join-password" label="Mot de passe" password="true" class="cdp-field" />
+                <ui:VisualElement class="cdp-modal-actions">
+                    <ui:Button name="btn-cancel-password" text="Annuler" class="cdp-btn cdp-btn--ghost" />
+                    <ui:Button name="btn-submit-password" text="Valider" class="cdp-btn cdp-btn--primary" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Loading -->
+        <ui:VisualElement name="overlay-loading" class="cdp-overlay cdp-overlay--dim" style="display: none;">
+            <ui:VisualElement class="cdp-loader">
+                <ui:VisualElement class="cdp-spinner" />
+                <ui:Label name="loading-label" text="Connexion…" class="cdp-loader-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

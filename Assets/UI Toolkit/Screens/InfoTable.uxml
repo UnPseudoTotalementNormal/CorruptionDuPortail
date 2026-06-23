@@ -1,0 +1,66 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="InfoTable.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+        <ui:VisualElement class="cdp-card cdp-card--wide info-card">
+            <ui:VisualElement class="cdp-card-header">
+                <ui:Label text="Table d'informations" class="cdp-title" />
+            </ui:VisualElement>
+
+            <!-- Controller builds the matrix on GameManager.onGameStarted. Cells get cell--sure/--maybe/--not/--conflict/--locked. Static = design preview. -->
+            <ui:ScrollView name="info-matrix" mode="VerticalAndHorizontal" class="cdp-scroll info-scroll">
+                <ui:VisualElement class="info-grid">
+
+                    <ui:VisualElement class="info-row info-row--header">
+                        <ui:Label text="Joueurs / Rôles" class="info-corner" />
+                        <ui:Label text="Oracle" class="info-col-header" />
+                        <ui:Label text="Gardien *2" class="info-col-header" />
+                        <ui:Label text="Traqueuse" class="info-col-header" />
+                        <ui:Label text="Repenti" class="info-col-header" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="info-row">
+                        <ui:Label text="Alice" class="info-name-cell" />
+                        <ui:VisualElement class="info-cell cell--sure"><ui:Label text="✓" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--not"><ui:Label text="✗" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--maybe"><ui:Label text="?" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell"><ui:Label text="" class="cell-mark" /></ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="info-row">
+                        <ui:Label text="Bob" class="info-name-cell" />
+                        <ui:VisualElement class="info-cell cell--maybe"><ui:Label text="?" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--sure"><ui:Label text="✓" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--not"><ui:Label text="✗" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--sure"><ui:Label text="✓" class="cell-mark" /></ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="info-row">
+                        <ui:Label text="Chloé (révélée)" class="info-name-cell" />
+                        <ui:VisualElement class="info-cell cell--not cell--locked"><ui:Label text="✗" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--not cell--locked"><ui:Label text="✗" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--sure cell--locked"><ui:Label text="✓" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--not cell--locked"><ui:Label text="✗" class="cell-mark" /></ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="info-row">
+                        <ui:Label text="David" class="info-name-cell" />
+                        <ui:VisualElement class="info-cell cell--sure cell--conflict"><ui:Label text="✓" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--maybe"><ui:Label text="?" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell"><ui:Label text="" class="cell-mark" /></ui:VisualElement>
+                        <ui:VisualElement class="info-cell cell--maybe"><ui:Label text="?" class="cell-mark" /></ui:VisualElement>
+                    </ui:VisualElement>
+
+                </ui:VisualElement>
+            </ui:ScrollView>
+
+            <ui:VisualElement class="info-legend">
+                <ui:VisualElement class="legend-item"><ui:VisualElement class="legend-swatch sw-sure" /><ui:Label text="Sûr" class="legend-label" /></ui:VisualElement>
+                <ui:VisualElement class="legend-item"><ui:VisualElement class="legend-swatch sw-maybe" /><ui:Label text="Peut-être" class="legend-label" /></ui:VisualElement>
+                <ui:VisualElement class="legend-item"><ui:VisualElement class="legend-swatch sw-not" /><ui:Label text="Sûrement pas" class="legend-label" /></ui:VisualElement>
+                <ui:VisualElement class="legend-item"><ui:VisualElement class="legend-swatch sw-conflict" /><ui:Label text="Conflit" class="legend-label" /></ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

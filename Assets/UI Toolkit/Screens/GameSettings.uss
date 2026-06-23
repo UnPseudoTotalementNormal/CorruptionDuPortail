@@ -1,0 +1,14 @@
+/* Game settings — mirrors RoleAttributionSettingTab / RoleAttributionSettingObject (one slider row per role). */
+
+.settings-hint { margin-bottom: 14px; }
+
+.roles-list { height: 420px; padding: 8px 14px; }
+
+.role-row {
+    flex-direction: row;
+    align-items: center;
+    height: 52px;
+}
+.role-name { width: 200px; font-size: 17px; color: var(--text); }
+.role-slider { flex-grow: 1; }
+.role-value { width: 44px; }

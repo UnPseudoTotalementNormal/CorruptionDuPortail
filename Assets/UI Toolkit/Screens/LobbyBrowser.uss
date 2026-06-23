@@ -1,0 +1,28 @@
+/* Lobby browser — mirrors UI.Lobby.LobbySelectionPanel (table, refresh, select, connect, password modal). */
+
+.lobby-header {
+    flex-direction: row;
+    padding: 6px 12px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--line);
+    margin-bottom: 4px;
+}
+.lobby-header .lcol { color: var(--text-dim); -unity-font-style: bold; font-size: 13px; }
+
+.lobby-list { height: 360px; padding: 4px; }
+
+.lobby-row {
+    flex-direction: row;
+    align-items: center;
+    height: 52px;
+    padding: 0 12px;
+    border-radius: 8px;
+}
+.lobby-row:hover { background-color: rgba(139, 92, 246, 0.10); }
+.lobby-row.is-selected { background-color: var(--violet-soft); }
+
+.lcol { -unity-text-align: middle-left; font-size: 16px; color: var(--text); }
+.lcol-name { flex-grow: 1; -unity-font-style: bold; }
+.lcol-priv { width: 90px; }
+.lcol-lang { width: 150px; }
+.lcol-players { width: 90px; -unity-text-align: middle-center; color: var(--teal); }

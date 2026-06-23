@@ -1,0 +1,63 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="GameSettings.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+        <ui:VisualElement class="cdp-card cdp-card--wide">
+            <ui:VisualElement class="cdp-card-header">
+                <ui:Label text="Paramètres de partie" class="cdp-title" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="cdp-tabbar">
+                <ui:Button name="tab-roles" text="Rôles" class="cdp-tab is-active" />
+                <ui:Button name="tab-general" text="Général" class="cdp-tab" />
+            </ui:VisualElement>
+
+            <ui:Label text="Modifiable par l'hôte uniquement — les autres voient une copie en lecture seule." class="cdp-subtitle settings-hint" />
+
+            <!-- Controller builds one row per RoleDataObject; SliderInt writes via GameSettingsManager.RequestSetRoleCount. Static = design preview. -->
+            <ui:ScrollView name="roles-list" class="cdp-scroll roles-list">
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Oracle" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Gardien" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Traqueuse" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Mage Occulte" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="2" class="cdp-slider role-slider" />
+                    <ui:Label text="2" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Repenti" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Croupière" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Orpheline" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="1" class="cdp-slider role-slider" />
+                    <ui:Label text="1" class="cdp-pill role-value" />
+                </ui:VisualElement>
+                <ui:VisualElement class="role-row">
+                    <ui:Label text="Omniscient" class="role-name" />
+                    <ui:SliderInt low-value="0" high-value="8" value="0" class="cdp-slider role-slider" />
+                    <ui:Label text="0" class="cdp-pill role-value" />
+                </ui:VisualElement>
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

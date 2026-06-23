@@ -1,0 +1,8 @@
+/* Main menu — mirrors UI.MainMenu (host form, join-by-code, quit; browser is a separate screen). */
+
+.menu-main { flex-grow: 1; width: 100%; align-items: center; justify-content: center; }
+.menu-tagline { margin-top: 4px; margin-bottom: 44px; }
+.menu-buttons { width: 360px; align-items: stretch; }
+
+/* Sub-screens overlay the main one, centered by .cdp-screen. */
+.menu-sub { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }

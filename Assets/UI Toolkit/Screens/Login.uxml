@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="../Theme/CorruptionTheme.uss" />
+    <Style src="Login.uss" />
+
+    <ui:VisualElement name="root" class="cdp-root cdp-screen">
+
+        <ui:VisualElement name="login-panel" class="cdp-card cdp-card--narrow login-panel">
+            <ui:Label text="CORRUPTION DU PORTAIL" class="cdp-display login-title" />
+            <ui:Label text="Entre ton pseudo pour rejoindre" class="cdp-subtitle login-sub" />
+            <ui:TextField name="field-pseudo" label="Pseudo" class="cdp-field login-field" />
+            <ui:Button name="btn-login" text="Se connecter" class="cdp-btn cdp-btn--primary cdp-btn--block" />
+            <ui:Label name="error-text" text="" class="cdp-error login-error" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="overlay-loading" class="cdp-overlay cdp-overlay--dim">
+            <ui:VisualElement class="cdp-loader">
+                <ui:VisualElement class="cdp-spinner" />
+                <ui:Label name="loading-label" text="Connexion…" class="cdp-loader-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,7 @@
+/* Login screen — mirrors LoginMenu.cs (pseudo entry, login button, error, loading overlay). */
+
+.login-panel { align-items: stretch; }
+.login-title { font-size: 34px; letter-spacing: 3px; margin-bottom: 6px; }
+.login-sub { -unity-text-align: middle-center; margin-bottom: 24px; }
+.login-field { margin-bottom: 8px; }
+.login-error { margin-top: 14px; min-height: 18px; }

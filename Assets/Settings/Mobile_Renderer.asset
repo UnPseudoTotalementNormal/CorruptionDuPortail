@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &-6729618235408494279
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -20,7 +20,7 @@ MonoBehaviour:
     clear: {fileID: 4800000, guid: b854aa374420b4b47992044f7c9a0719, type: 3}
 --- !u!114 &-645741251972500588
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -73,7 +73,6 @@ MonoBehaviour:
   - {fileID: -6729618235408494279}
   - {fileID: 1849153008880546261}
   m_RendererFeatureMap: 94f35cabc0dd09f739517cb4de979ba2d571ab45dd82a919
-  m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -101,6 +100,7 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+  m_TileOnlyMode: 0
 --- !u!114 &1002035807535710140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117,7 +117,7 @@ MonoBehaviour:
   _baseProfile: {fileID: 11400000, guid: f2d4d916a6612574cad220d125febbf2, type: 2}
 --- !u!114 &1849153008880546261
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -128,4 +128,7 @@ MonoBehaviour:
   m_Name: BackgroundCaptureFeature
   m_EditorClassIdentifier: Game.Rendering::BackgroundCaptureFeature
   m_Active: 1
+  downsample: 4
+  iterations: 2
+  spread: 1.5
   blurShader: {fileID: 4800000, guid: c4981f9cfb1bb284a9ce3ecea387f682, type: 3}

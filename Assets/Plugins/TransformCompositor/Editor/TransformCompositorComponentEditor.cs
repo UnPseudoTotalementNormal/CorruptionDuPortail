@@ -428,7 +428,7 @@ public class TransformCompositorComponentEditor : Editor
         TransformCompositor.ComposedTransform composed = component.GetComposedTransform();
         TransformLayer baseLayer = component.Compositor.GetLayer(TransformCompositorComponent.BASE_TRANSFORM_LAYER_NAME);
         
-        string cacheKey = $"{component.GetInstanceID()}_ComposedTransform";
+        string cacheKey = $"{component.GetEntityId()}_ComposedTransform";
         
         if (!rotationCache.ContainsKey(cacheKey))
         {
@@ -602,7 +602,7 @@ public class TransformCompositorComponentEditor : Editor
         bool isBaseLayer = layerName == TransformCompositorComponent.BASE_TRANSFORM_LAYER_NAME;
         
         // Initialize rotation cache
-        string cacheKey = $"{component.GetInstanceID()}_{layerName}";
+        string cacheKey = $"{component.GetEntityId()}_{layerName}";
         if (!rotationCache.ContainsKey(cacheKey))
         {
             rotationCache[cacheKey] = new RotationCache

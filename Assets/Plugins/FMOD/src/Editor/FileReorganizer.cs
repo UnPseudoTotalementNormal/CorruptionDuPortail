@@ -24,7 +24,7 @@ namespace FMODUnity
         private TaskView taskView;
 
         [SerializeField]
-        private TreeViewState taskViewState = new TreeViewState();
+        private TreeViewState<int> taskViewState = new TreeViewState<int>();
 
         [SerializeField]
         private MultiColumnHeaderState taskHeaderState;
@@ -275,7 +275,7 @@ namespace FMODUnity
             taskCount = tasks.Count(t => t.status == Task.Status.Pending);
         }
 
-        private class TaskView : TreeView
+        private class TaskView : TreeView<int>
         {
             private List<Task> tasks;
 
@@ -283,7 +283,7 @@ namespace FMODUnity
 
             public event TaskSelectedHandler taskSelected;
 
-            public TaskView(TreeViewState state, MultiColumnHeader header, List<Task> tasks)
+            public TaskView(TreeViewState<int> state, MultiColumnHeader header, List<Task> tasks)
                 : base(state, header)
             {
                 this.tasks = tasks;
@@ -335,14 +335,14 @@ namespace FMODUnity
                 Description,
             }
 
-            private class TaskItem : TreeViewItem
+            private class TaskItem : TreeViewItem<int>
             {
                 public Task task;
             }
 
-            protected override TreeViewItem BuildRoot()
+            protected override TreeViewItem<int> BuildRoot()
             {
-                TreeViewItem root = new TreeViewItem(-1, -1);
+                TreeViewItem<int> root = new TreeViewItem<int>(-1, -1);
 
                 if (tasks.Count > 0)
                 {
@@ -350,7 +350,7 @@ namespace FMODUnity
 
                     foreach (Task task in tasks)
                     {
-                        TreeViewItem taskItem = new TaskItem() {
+                        TreeViewItem<int> taskItem = new TaskItem() {
                             id = index++,
                             task = task,
                         };
@@ -360,7 +360,7 @@ namespace FMODUnity
                 }
                 else
                 {
-                    TreeViewItem item = new TreeViewItem(0);
+                    TreeViewItem<int> item = new TreeViewItem<int>(0);
                     item.displayName = L10n.Tr("Nothing to do here.");
 
                     root.AddChild(item);
@@ -371,7 +371,7 @@ namespace FMODUnity
                 return root;
             }
 
-            protected override bool CanMultiSelect(TreeViewItem item)
+            protected override bool CanMultiSelect(TreeViewItem<int> item)
             {
                 return false;
             }
@@ -404,14 +404,14 @@ namespace FMODUnity
 
             private void SortRows(MultiColumnHeader header)
             {
-                IList<TreeViewItem> rows = GetRows();
+                IList<TreeViewItem<int>> rows = GetRows();
                 int[] sortedColumns = header.state.sortedColumns;
 
                 if (sortedColumns.Length > 0 && rows.Count > 1)
                 {
                     int firstColumn = sortedColumns[0];
 
-                    IOrderedEnumerable<TreeViewItem> query =
+                    IOrderedEnumerable<TreeViewItem<int>> query =
                         InitialQuery(rows, (Column)firstColumn, header.IsSortedAscending(firstColumn));
 
                     for (int i = 1; i < sortedColumns.Length; ++i)
@@ -420,11 +420,11 @@ namespace FMODUnity
                     }
 
                     // We need to execute the query before clearing rows, otherwise it returns nothing
-                    List<TreeViewItem> newRows = query.ToList();
+                    List<TreeViewItem<int>> newRows = query.ToList();
 
                     rows.Clear();
 
-                    foreach (TreeViewItem item in newRows)
+                    foreach (TreeViewItem<int> item in newRows)
                     {
                         rows.Add(item);
                     }
@@ -433,7 +433,7 @@ namespace FMODUnity
                 RefreshCustomRowHeights();
             }
 
-            private IOrderedEnumerable<TreeViewItem> InitialQuery(IList<TreeViewItem> rows, Column column, bool ascending)
+            private IOrderedEnumerable<TreeViewItem<int>> InitialQuery(IList<TreeViewItem<int>> rows, Column column, bool ascending)
             {
                 switch (column)
                 {
@@ -450,8 +450,8 @@ namespace FMODUnity
                 }
             }
 
-            private static IOrderedEnumerable<TreeViewItem> SubQuery(
-                IOrderedEnumerable<TreeViewItem> query, int column, bool ascending)
+            private static IOrderedEnumerable<TreeViewItem<int>> SubQuery(
+                IOrderedEnumerable<TreeViewItem<int>> query, int column, bool ascending)
             {
                 switch ((Column)column)
                 {
@@ -468,7 +468,7 @@ namespace FMODUnity
                 }
             }
 
-            protected override float GetCustomRowHeight(int row, TreeViewItem item)
+            protected override float GetCustomRowHeight(int row, TreeViewItem<int> item)
             {
                 if (item is TaskItem)
                 {

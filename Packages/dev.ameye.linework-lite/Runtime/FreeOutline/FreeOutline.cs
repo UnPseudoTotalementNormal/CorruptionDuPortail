@@ -311,7 +311,8 @@ namespace LineworkLite.FreeOutline
             }
 #endif
             private RTHandle cameraDepthRTHandle;
-            
+
+#if !UNITY_6000_0_OR_NEWER
             #pragma warning disable 618, 672
             public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
             {
@@ -441,7 +442,8 @@ namespace LineworkLite.FreeOutline
                 CommandBufferPool.Release(clearStencilCmd);
             }
             #pragma warning restore 618, 672
-            
+#endif
+
             public void SetTarget(RTHandle depth)
             {
                 cameraDepthRTHandle = depth;
@@ -513,6 +515,7 @@ namespace LineworkLite.FreeOutline
             if (render) renderer.EnqueuePass(freeOutlinePass);
         }
         
+#if !UNITY_6000_0_OR_NEWER
         #pragma warning disable 618, 672
         public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
         {
@@ -522,6 +525,7 @@ namespace LineworkLite.FreeOutline
             freeOutlinePass.SetTarget(renderer.cameraDepthTargetHandle);
         }
         #pragma warning restore 618, 672
+#endif
         
         /// <summary>
         /// Clean up resources allocated to the Scriptable Renderer Feature such as materials.

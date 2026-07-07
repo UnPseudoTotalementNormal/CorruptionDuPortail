@@ -70,7 +70,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: StandaloneWindows64
-          unityVersion: 6000.2.6f2
+          unityVersion: 6000.5.0f1
           buildName: CorruptionDuPortail_b${{ github.run_number }}
 
       - name: Espace disque après build

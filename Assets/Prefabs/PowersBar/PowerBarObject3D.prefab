@@ -80,7 +80,25 @@ MonoBehaviour:
   power: {fileID: 0}
   fromCharacter: {fileID: 0}
   modelParentTransform: {fileID: 2436092952460952581}
-  defaultPower3DModel: {fileID: 7692534133936610383, guid: 71f7dc9208d250e89aa33b8b2aaf002a, type: 3}
+  defaultPower3DModel: {fileID: 8346909822748617366, guid: 27bd63ae22bf63c498750664f2f5e3f6, type: 3}
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverScale: 1.12
+  hoverTweenDuration: 0.15
+  clickPunchIntensity: 0.18
+  clickPunchDuration: 0.25
 --- !u!114 &8704216733893804600
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -96,3 +114,5 @@ MonoBehaviour:
   tooltipTitle: test :)
   tooltipDescription: en vrai cool
   <tooltipOffsetDirection>k__BackingField: {x: 0, y: 1}
+  <tooltipPixelOffset>k__BackingField: {x: 0, y: -10}
+  tooltipBoundsOverride: {fileID: 0}

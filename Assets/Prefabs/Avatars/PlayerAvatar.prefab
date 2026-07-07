@@ -62,7 +62,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalScale: {x: 4.5, y: 4.5, z: 4.5}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1776618053946061157}
@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 307359857
+  GlobalObjectIdHash: 4081065072
   InScenePlacedSourceGlobalObjectIdHash: 4081065072
   DeferredDespawnTick: 0
   Ownership: 1
@@ -154,12 +154,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.PlayerAvatar
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 18446744073709551615
   _defaultAppearance: {fileID: 0}
   _eyePivot: {fileID: 1776618053946061157}
   SeatedYaw:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   SeatedPitch:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
 --- !u!143 &6859099236886642734
 CharacterController:
@@ -204,6 +213,8 @@ MonoBehaviour:
   _lookYawSpeed: 0.12
   _lookPitchSpeed: 0.12
   _pitchClamp: 80
+  _headYawCone: 60
+  _bodyCatchUpSpeed: 6
   _gravity: -15
 --- !u!1001 &961825668200779015
 PrefabInstance:

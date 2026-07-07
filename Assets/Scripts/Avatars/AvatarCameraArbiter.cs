@@ -221,6 +221,10 @@ namespace Avatars
             // cards/buttons can be hovered + clicked without an OS cursor.
             _embodiedCamera.SetActive(_embodied);
             _reticle.SetActive(_embodied);
+            // Broadcast whether the seated first-person node is the live camera so consumers (the card look-at
+            // hover) don't aim a card at an OVERHEAD board-overview camera — which would lay it flat. Tracks
+            // both mode transitions and arrow-nav (this method runs on both). Null-tolerant.
+            _cameraModeChannel?.SetSeatedFirstPersonLive(_embodied);
             // Cursor lock + look freeze derive from the first-person state AND the tablet state — re-apply both.
             ApplyCursorAndLook();
         }

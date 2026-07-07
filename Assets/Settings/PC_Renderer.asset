@@ -2,7 +2,7 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &-5590407290120132845
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: BackgroundCaptureFeature
   m_EditorClassIdentifier: Game.Rendering::BackgroundCaptureFeature
   m_Active: 1
+  downsample: 4
+  iterations: 2
+  spread: 1.5
   blurShader: {fileID: 4800000, guid: c4981f9cfb1bb284a9ce3ecea387f682, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
@@ -43,7 +46,6 @@ MonoBehaviour:
   - {fileID: 7792939905285087366}
   - {fileID: -5590407290120132845}
   m_RendererFeatureMap: ad6b866f10d7b46c86e07b1a8e15266c13a7a25a30e26ab2
-  m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -71,9 +73,10 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+  m_TileOnlyMode: 0
 --- !u!114 &7792939905285087366
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -91,7 +94,7 @@ MonoBehaviour:
     clear: {fileID: 4800000, guid: b854aa374420b4b47992044f7c9a0719, type: 3}
 --- !u!114 &7833122117494664109
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}

@@ -37,6 +37,8 @@ namespace Characters.Powers
         public float maxWaitTime;
 
         public bool isPassive;
+        [Tooltip("Hide this power from the role-presentation card (e.g. a faction win-objective that isn't personal kit). Gameplay-neutral: presentation only.")]
+        public bool hideFromRoleCard;
         public bool hasToBeAwakened = true;
         
         public TargetIncludeFlags targetIncludeFlags;

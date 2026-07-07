@@ -691,6 +691,7 @@ MonoBehaviour:
   <cardRoleText>k__BackingField: {fileID: 7497138110590187071}
   <cardRoleTextHolder>k__BackingField: {fileID: 8359697888759508424}
   <cardImage>k__BackingField: {fileID: 2429788706011615213}
+  <portraitTable>k__BackingField: {fileID: 11400000, guid: 60ad95a6ca4f42344af418149260738c, type: 2}
   <factionLogoImage>k__BackingField: {fileID: 8618780977505519655}
   <factionLogoBackgroundImage>k__BackingField: {fileID: 4574760127277184339}
   <unknownFogOverlay>k__BackingField: {fileID: 2834525348253230907}

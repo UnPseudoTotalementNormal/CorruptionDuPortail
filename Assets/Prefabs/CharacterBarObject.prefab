@@ -209,6 +209,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCharacter: {fileID: 0}
   characterImage: {fileID: 1637366238393953664}
+  portraitTable: {fileID: 11400000, guid: 60ad95a6ca4f42344af418149260738c, type: 2}
   canvasObject: {fileID: 7457916283588836762}
   corruptedOverlayImage: {fileID: 5021932142332569484}
   hoverTooltipComponent: {fileID: 8991915726581910073}

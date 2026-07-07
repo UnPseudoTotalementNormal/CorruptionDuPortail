@@ -1,0 +1,73 @@
+/* Corruption du Portail — UI Toolkit design tokens.
+ *
+ * ALL VALUES ARE PLACEHOLDER. The game's visuals are unfinished and design-owned; the green
+ * accent is provisional. Values here are SAMPLED VERBATIM from the existing Canvas UI — never
+ * invented. This is the ONE file to edit for a reskin.
+ * Guardrails: _bmad-output/implementation-artifacts/ui-toolkit-style-guardrails.md
+ *
+ * USS reality: px/% only (no em/rem), flexbox only, no gradient, no box-shadow, -unity-* props.
+ * var() cannot nest inside another function.
+ */
+:root {
+    /* ---- Color (sampled) ---- */
+    --cdp-color-text: rgb(255, 255, 255);            /* TMP_Text color — white */
+    --cdp-color-button-hover: rgb(204, 204, 204);    /* CustomButton.cs:19  (0.8,0.8,0.8) */
+    --cdp-color-button-disabled: rgb(128, 128, 128); /* CustomButton.cs:20  (0.5,0.5,0.5) */
+
+    /* ---- Color (sampled at MainMenu/Login pilot 2026-06-23; values still placeholder/provisional) ---- */
+    --cdp-color-accent: rgb(255, 255, 255);          /* no accent in login (white button); PLACEHOLDER */
+    --cdp-color-bg: rgb(63, 63, 63);                 /* LoginCanvas bg #3F3F3F (sampled) */
+    --cdp-color-surface: rgb(255, 255, 255);         /* field/button bg — white default sprite (sampled) */
+    --cdp-color-on-surface: rgb(50, 50, 50);         /* text on white surfaces — button label #323232 (sampled) */
+    --cdp-color-text-muted: rgb(180, 180, 180);      /* PLACEHOLDER — sample */
+    --cdp-color-panel: rgb(46, 46, 46);              /* modal panel surface #2D2D2D — sampled Menu Host/Join panels; PLACEHOLDER */
+    --cdp-color-danger: rgb(168, 48, 48);            /* close-button red — sampled Menu close (0.66,0.19,0.19); PLACEHOLDER */
+
+    /* ---- Font sizes (sampled, px) ---- */
+    /* Font face itself = LiberationSans (TMP default, placeholder); set as PanelSettings Text Settings
+       default font, not here (USS var can't cleanly hold a Font asset). */
+    --cdp-font-size-sm: 24px;       /* PLACEHOLDER — sample */
+    --cdp-font-size-base: 36px;     /* TMP_Text fontSizeBase */
+    --cdp-font-size-body: 40px;     /* TMP_Text body */
+    --cdp-font-size-title: 72px;    /* TMP_Text title */
+    --cdp-font-size-display: 150px; /* login title (sampled) */
+
+    /* ---- Spacing scale (TODO: sample real layout paddings/spacing at pilot) ---- */
+    --cdp-space-xs: 4px;            /* PLACEHOLDER */
+    --cdp-space-sm: 8px;            /* PLACEHOLDER */
+    --cdp-space-md: 16px;           /* PLACEHOLDER */
+    --cdp-space-lg: 24px;           /* PLACEHOLDER */
+    --cdp-space-xl: 32px;           /* PLACEHOLDER */
+
+    /* ---- Radius (TODO: sample; if panels are sharp, keep 0) ---- */
+    --cdp-radius-sm: 0px;          /* PLACEHOLDER */
+    --cdp-radius-md: 0px;          /* PLACEHOLDER */
+
+    /* ---- Border / outline / focus / scrim ---- */
+    --cdp-border-width: 0px;       /* PLACEHOLDER — sample */
+    --cdp-color-border: rgb(255, 255, 255); /* PLACEHOLDER — sample */
+    --cdp-focus-width: 2px;        /* functional (accessibility focus ring), not art direction */
+    --cdp-color-scrim: rgba(0, 0, 0, 0.6); /* PLACEHOLDER — modal dim; sample if the game dims differently */
+
+    /* ---- Durations (sampled) ---- */
+    --cdp-dur-fast: 0.2s;          /* CustomButton DOColor + DOPunchScale(0.15) */
+    --cdp-dur-panel: 0.5s;         /* PLACEHOLDER — confirm StateUI fade duration */
+
+    /* ---- Role card ---- Values SAMPLED from the role-card mockup (the gold look), PROVISIONAL and
+       design-owned: this block is the ONE place to swap when the real palette lands. USS has no gradient,
+       so the mockup's golden gradient is approximated by a dark warm panel + a gold border. */
+    --cdp-color-role-title: rgb(240, 208, 138);      /* role name + section/power titles — gold */
+    --cdp-color-role-faction: rgb(214, 182, 120);    /* faction header — muted gold */
+    --cdp-color-role-panel: rgb(38, 31, 20);         /* panel surface — dark warm (gradient flattened) */
+    --cdp-color-role-panel-deep: rgb(28, 23, 15);    /* portrait fallback / deeper warm */
+    --cdp-color-role-border: rgb(191, 154, 82);      /* panel + portrait outline — gold */
+    --cdp-color-role-border-soft: rgba(191, 154, 82, 0.30); /* divider / inner bevel — faint gold */
+    --cdp-color-role-passive: rgb(198, 190, 172);    /* passive text — muted warm (recedes vs active, UX agency grammar) */
+    --cdp-color-role-surface: rgba(0, 0, 0, 0.25);   /* passive block inset — subtle darkening */
+    --cdp-color-role-scrim: rgba(8, 6, 3, 0.55);     /* softened veil (blur does the calm, scrim does the focus) */
+    --cdp-radius-role: 18px;                          /* rounded card corners (mockup) */
+    --cdp-radius-role-tight: 12px;                    /* portrait / pill corners (harder object) */
+    --cdp-space-smd: 12px;                            /* the missing 12px step (name -> pips) */
+    --cdp-font-size-role-name: 44px;                 /* role name (fits ~2 lines at panel width) */
+    --cdp-font-size-role-name-long: 30px;            /* stepped down for long names (no ellipsis) */
+}

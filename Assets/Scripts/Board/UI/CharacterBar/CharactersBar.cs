@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AYellowpaper.SerializedCollections;
+using Cysharp.Threading.Tasks;
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
@@ -237,8 +238,33 @@ namespace Board.UI.CharacterBar
                     charactersBarObjects.Add(_characterBarObject);
                 }
             }
+
+            // The bar is populated once at game intro (GameIntroductionState) into nested
+            // HorizontalLayoutGroups on a world-space canvas, where each leaf carries its own
+            // nested Canvas (a layout-rebuild boundary). On some frames Unity's automatic layout
+            // pass is missed/mis-registered and every RectTransform stays at its origin, so the
+            // whole bar renders as one overlapping pile at the centre. Force the rebuild explicitly.
+            // A deferred second pass covers the case where the subtree is (re)activated the same frame.
+            RebuildLayout();
+            RebuildLayoutDeferred().Forget();
         }
-        
+
+        private void RebuildLayout()
+        {
+            if (charactersBarParent is RectTransform _parentRect)
+            {
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(_parentRect);
+            }
+        }
+
+        private async UniTaskVoid RebuildLayoutDeferred()
+        {
+            await UniTask.NextFrame();
+            // The bar may have been destroyed/rebuilt in the meantime (rematch, lobby return).
+            if (this == null || charactersBarParent == null) return;
+            RebuildLayout();
+        }
+
         public void DestroyCharactersBar()
         {
             for (int i = 0; i < charactersBarParent.childCount; i++)

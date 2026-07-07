@@ -12,6 +12,7 @@ namespace TooltipSystem
         public event Action onMouseExitTrigger;
         public event Action onTooltipForceClose;
         [field:SerializeField] public Vector2 tooltipOffsetDirection { get; set; } = Vector2.right;
+        public Vector2 tooltipPixelOffset => Vector2.zero;
         public RectTransform TooltipBoundsOverride => null;
 
         private void Reset()

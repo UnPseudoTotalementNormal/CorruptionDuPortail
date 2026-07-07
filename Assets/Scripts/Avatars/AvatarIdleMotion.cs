@@ -69,7 +69,7 @@ namespace Avatars
         {
             PlayerAvatar _pa = GetComponentInParent<PlayerAvatar>();
             _root = _pa != null ? _pa.transform : transform;
-            _seed = AvatarIdleMath.PhaseSeed(GetInstanceID());
+            _seed = AvatarIdleMath.PhaseSeed(GetEntityId().GetHashCode());
 
             // Auto-find the BASE bone of each chain by name convention — no fragile per-bone Inspector wiring.
             // Capture each bone's REST localRotation so the idle is applied rest-relative (accumulation-free).

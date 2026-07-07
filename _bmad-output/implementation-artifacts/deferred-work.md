@@ -2,6 +2,10 @@
 
 Tracks real-but-not-now items surfaced during reviews. Each entry: source + date, one bullet per item.
 
+## Deferred from: quick-dev fix-tooltip-3d-bounds (2026-07-07)
+
+- `TooltipManager.PlaceTooltip` (`Assets/Scripts/TooltipSystem/TooltipManager.cs`) assumes `Camera.main` is non-null and in front of the target across ALL branches (2D and 3D). The new 3D fallback (`TryGetScreenBounds` returns false) re-projects `_worldBounds.center` via `WorldToScreenPoint(Camera.main, ...)`, which yields mirrored/garbage coords if the center is itself behind the camera, and would pass `null` if no MainCamera is tagged. Pre-existing pattern, not introduced by this change; practically unreachable on the 3D-hover path (an off-screen object receives no `OnPointerEnter`). Harden with a single cached `Camera.main` null-check + behind-camera hide if the tooltip system is ever revisited.
+
 ## Deferred from: code review of story-5.0 (2026-06-11)
 
 - `InstantiateAndSpawn(...).GetComponent<GameManager/CharacterManager>()` in `MultiClientGameFixture.SetUp` is not null-checked — a null spawn (hash mismatch / prefab not registered) would NRE with an opaque message instead of a clean assert. Diagnostic-quality only; tests are green so the reflection-set `GlobalObjectIdHash` + prefab registration path works.
@@ -161,3 +165,13 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 - Add a BoxCollider to the on-card vote button (VoteCanvas CustomButton) sized to its rect so the center reticle can click it; place it lower-center of the lifted/tilted front face.
 - Make the Skip control a WORLD-space, reticle-targetable button (collider + reuse its handler), off the card cluster (non-overlapping latch volumes).
 - Confirm input binding (_confirmAction InputActionReference) is Poyo's editor wiring regardless of PR.
+
+## 2026-07-07 — from spec-dedup-characters-cache review
+
+- **NetworkList replica divergence is masked, not repaired.** The dedup guard in `CharacterManager.RebuildCharactersCache` heals the projection only; the client's `networkedCharacters` replica keeps the extra entry for the session (clients cannot write a server-write NetworkList). NGO deltas are index-based, so a later server `RemoveAt` on a diverged replica can remove the wrong entry client-side. Fix direction: server-driven full-list resync when a client reports `[CHARLIST]`, and/or NGO upstream issue (2.6.0→2.12.0 bump suspected — see technomancer-duplicate-card investigation).
+- **Permanently unresolved list entry keeps `_cacheDirty` true forever** (pre-existing): every `_characters` read reruns the O(n²) rebuild for the rest of the session. Consider a bounded retry / despawn-aware cleanup.
+
+## Deferred from: code review of fix-card-flat-hover-board-overview (2026-07-07)
+
+- **[code review / edge — MEDIUM] Reverse transition overview→seated-FP leaves a mouse-hovered card stuck in its hover pose.** During an Embodied *board-overview* the OS cursor is unlocked, so the player can mouse-hover a card → it plays the plain flat-lift hover (zoom + `DOLocalMoveY`, upright — NOT the flat/horizontal look-at, which is now correctly gated off). If the player then arrow-navigates to the seated first-person node, `AvatarCameraArbiter.ApplyCursorAndLook` locks the cursor (`CursorLockMode.Locked`), and a cursor lock does NOT dispatch a uGUI `OnPointerExit`, so `Card.isPointerOver` stays true and `CardPlayerAnimation.Hover` is never re-invoked — the card lingers zoomed/lifted (upright) in first-person until the reticle center enters+leaves it. NOT introduced by this change and NOT a regression: the same lingering existed before (worse — it lingered *flat* via the old look-at bug); this fix strictly improves it (upright instead of flat). It is a pre-existing interaction between cursor-lock and uGUI pointer-exit, orthogonal to the `SeatedFirstPersonLive` gate. Fix direction (its own small story): on the FP-becoming-live edge (`OnSeatedFirstPersonLiveChanged(true)` / reticle activation), force an exit+re-enter (or re-arm the pose) for any currently pointer-over card so it re-tilts, rather than only reacting on the FP→overview edge.
+- **[reject — recorded] LOW findings dropped as pre-existing/speculative:** (a) arbiter `OnDestroy` doesn't reset the channel — the existing code already never resets `Current` on destroy and relies on the next arbiter's `Start` re-priming; adding a partial FP-only reset would be inconsistent. (b) `CameraModeChannel.OnEnable` overstates its domain-reload-disabled guarantee — identical pre-existing framing for `Current`; the real safety net is arbiter `Start` priming. (c) `Set(mode)` fires `OnChanged` before `SeatedFirstPersonLive` updates — only affects hypothetical future `OnChanged` subscribers; the sole current consumer polls both. (d) Board-night first-person gets no card hover — the `Current == Embodied` clause predates this change and is intended (look-at is a day/Vote feature).

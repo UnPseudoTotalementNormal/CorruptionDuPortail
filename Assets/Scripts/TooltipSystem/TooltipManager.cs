@@ -177,22 +177,21 @@ namespace TooltipSystem
             }
             else
             {
-                // 3D Object - use GetWorldBounds extension
+                // 3D Object - project all 8 world-AABB corners so the screen box matches the on-screen
+                // silhouette. Projecting only min/max is wrong under perspective (diagonal corners differ
+                // in depth and don't bound the projection).
                 Bounds _worldBounds = _linkedGameObject.transform.GetWorldBounds();
-                _componentScreenPos = RectTransformUtility.WorldToScreenPoint(Camera.main, _worldBounds.center);
-                
-                // Calculate screen-space size from world bounds
-                Vector3 _boundsMin = _worldBounds.min;
-                Vector3 _boundsMax = _worldBounds.max;
-                Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(Camera.main, _boundsMin);
-                Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(Camera.main, _boundsMax);
-                _componentBoundingBoxSize = new Vector2(
-                    Mathf.Abs(_screenMax.x - _screenMin.x), 
-                    Mathf.Abs(_screenMax.y - _screenMin.y)
-                );
+                if (!_worldBounds.TryGetScreenBounds(Camera.main, out _componentBoundingBoxSize, out _componentScreenPos))
+                {
+                    // Fully behind the camera (or no camera) - fall back to the bounds-center projection.
+                    _componentScreenPos = RectTransformUtility.WorldToScreenPoint(Camera.main, _worldBounds.center);
+                    _componentBoundingBoxSize = Vector2.zero;
+                }
             }
             
-            _tooltipRect.position = _componentScreenPos + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f);
+            _tooltipRect.position = _componentScreenPos
+                + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f)
+                + _tooltipTrigger.tooltipPixelOffset;
         }
 
         private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)

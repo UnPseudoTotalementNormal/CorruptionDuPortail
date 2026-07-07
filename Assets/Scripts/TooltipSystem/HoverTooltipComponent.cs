@@ -16,6 +16,10 @@ namespace TooltipSystem
         [SerializeField] private string tooltipDescription;
         [field:SerializeField] public Vector2 tooltipOffsetDirection { get; set; } = Vector2.up;
 
+        [Tooltip("Extra pixel offset added to the final tooltip position. Leave at (0,0) unless the " +
+                 "tooltip needs a manual nudge.")]
+        [field:SerializeField] public Vector2 tooltipPixelOffset { get; private set; } = Vector2.zero;
+
         [Tooltip("Optional. If set, the tooltip anchors to this static rect instead of the object's animated " +
                  "child bounds — keeps it pinned to the resting slot when the visual moves/zooms on hover.")]
         [SerializeField] private RectTransform tooltipBoundsOverride;

@@ -7,15 +7,12 @@ using Characters;
 using Characters.Assets;
 using Characters.Powers;
 using Characters.WinningConditions;
-using Cysharp.Threading.Tasks;
 using Extensions;
 using FMODUnity;
 using GameLogic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 #endregion
 
@@ -80,13 +77,6 @@ public class Role : INetworkSerializable, ICloneable
         winningConditions = new List<WinningCondition>(_newCharacterRole.winningConditions);
         onChainingSound = _newCharacterRole.onChainingSound;
         onGameStartRoleRevealSound = _newCharacterRole.onGameStartRoleRevealSound;
-    }
-    
-    public async UniTask<Sprite> GetRolePortrait()
-    {
-        AsyncOperationHandle<Sprite> _operation = Addressables.LoadAssetAsync<Sprite>(CharacterPortraitsValues.values[rolePortrait]);
-        await _operation.Task;
-        return _operation.Result;
     }
     
     public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter

@@ -13,7 +13,7 @@ using UnityEngine.UIElements;
 
 namespace NoteSystem
 {
-    public class NoteChoosePanel : MonoBehaviour, IPanelComponent, IPanelCloseEvent, IPointerClickHandler
+    public class NoteChoosePanel : MonoBehaviour, UI.Panel.IPanelComponent, IPanelCloseEvent, IPointerClickHandler
     {
         [SerializeField] private CharactersBarObject characterNoteObjectPrefab;
         [SerializeField] private RectTransform layoutTransform;

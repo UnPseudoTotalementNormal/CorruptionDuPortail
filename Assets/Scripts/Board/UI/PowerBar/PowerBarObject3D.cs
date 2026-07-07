@@ -2,7 +2,9 @@
 
 using System;
 using System.Linq;
+using DG.Tweening;
 using Extensions;
+using FMODUnity;
 using GameLogic;
 using TooltipSystem;
 using UnityEngine;
@@ -23,9 +25,17 @@ namespace Board.UI.PowerBar
         
         [SerializeField] private GameObject defaultPower3DModel;
 
+        [Header("Feedback")]
+        [SerializeField] private EventReference hoverSound;
+        [SerializeField] private EventReference clickSound;
+        [SerializeField] private float hoverScale = 1.12f;
+        [SerializeField] private float hoverTweenDuration = 0.15f;
+        [SerializeField] private float clickPunchIntensity = 0.18f;
+        [SerializeField] private float clickPunchDuration = 0.25f;
+
         private Transform powerViusalTransform;
         private Transform powerColliderTransform;
-        
+
         private bool hovering;
 
         protected override void InitializeComponents()
@@ -70,8 +80,11 @@ namespace Board.UI.PowerBar
             GameObject _power3DModelCollider = Instantiate(_spawnPrefab, modelParentTransform);
             powerViusalTransform = _power3DModel.transform;
             powerColliderTransform = _power3DModelCollider.transform;
-            powerViusalTransform.ResetLocalValues();
-            powerColliderTransform.transform.ResetLocalValues();
+            // Snap the spawned copies to the parent origin but keep the model prefab's
+            // authored localRotation — FBX imports bake an axis-correction rotation on the
+            // root, and forcing identity here lays the model on its side.
+            ResetLocalPositionAndScale(powerViusalTransform);
+            ResetLocalPositionAndScale(powerColliderTransform);
             
             foreach (var _renderer in powerColliderTransform.GetComponentsInChildren<Renderer>(true).ToList())
             {
@@ -83,6 +96,12 @@ namespace Board.UI.PowerBar
             }
         }
         
+        private static void ResetLocalPositionAndScale(Transform _transform)
+        {
+            _transform.localPosition = Vector3.zero;
+            _transform.localScale = Vector3.one;
+        }
+
         private void OnDestroy()
         {
             if (power != null)
@@ -135,19 +154,61 @@ namespace Board.UI.PowerBar
             }
         }
 
+        private void Activate()
+        {
+            clickSound.TryPlayOneShot();
+            PunchClick();
+            OnButtonClicked();
+        }
+
+        // Legacy screen picking. Embodied (locked cursor) is driven by the reticle via OnPointerClick, so
+        // OnMouseDown handles ONLY the free-cursor mode — the two are mutually exclusive on the cursor lock
+        // state, which stops the same collider firing twice while seated.
         private void OnMouseDown()
         {
-            OnButtonClicked();
+            // Locked → the reticle drives this power via OnPointerClick. Over uGUI → don't let the click reach
+            // the collider through an open panel (powers have no free-cursor hover, so only the click needs it).
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                return;
+            }
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+            Activate();
+        }
+
+        private void ScaleHover(bool _entered)
+        {
+            if (powerViusalTransform == null)
+            {
+                return;
+            }
+            powerViusalTransform.DOKill();
+            float _target = _entered ? hoverScale : 1f;
+            powerViusalTransform.DOScale(_target, hoverTweenDuration).SetEase(Ease.OutQuint);
+        }
+
+        private void PunchClick()
+        {
+            if (powerViusalTransform == null)
+            {
+                return;
+            }
+            powerViusalTransform.DOPunchScale(Vector3.one * clickPunchIntensity, clickPunchDuration, 1, 0.2f);
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            OnMouseDown();
+            Activate();
         }
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
             hovering = true;
+            hoverSound.TryPlayOneShot();
+            ScaleHover(true);
             if (power.isCurrentlyUsed)
             {
                 return;
@@ -162,6 +223,7 @@ namespace Board.UI.PowerBar
         public void OnPointerExit(PointerEventData _eventData)
         {
             hovering = false;
+            ScaleHover(false);
             if (power.isCurrentlyUsed)
             {
                 return;

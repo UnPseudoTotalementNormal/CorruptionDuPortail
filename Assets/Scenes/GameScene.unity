@@ -6557,7 +6557,7 @@ MonoBehaviour:
   _avatarsParent: {fileID: 867493015}
   _ringCenter: {fileID: 715485108}
   _ringRadius: 14
-  _remoteRingRadius: 16
+  _remoteRingRadius: 19
   _frontAngleDeg: 180
   _spawnPoints:
   - {fileID: 1002414861}
@@ -16601,7 +16601,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 52.33
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5211354579174667535, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -16629,7 +16629,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 138.14
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7419351346871123198, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -16717,7 +16717,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 136.05
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8869779743514301640, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -16939,7 +16939,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1037215541135580917}
   m_HandleRect: {fileID: 8785770960052712952}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -17341,7 +17341,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7997011965349419858}
   m_HandleRect: {fileID: 1911813159290140671}
   m_Direction: 0
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:

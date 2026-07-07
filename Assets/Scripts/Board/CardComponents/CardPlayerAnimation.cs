@@ -52,10 +52,14 @@ namespace Board.CardComponents
 
             // First-person seated Vote ONLY: rotate the card to look at the camera + lift by a COMPUTED amount
             // so it floats above the table without clipping (pure HoverFocusMath). Gated by the shared channel
-            // so the tilt never leaks into the top-down board/picker mouse hover.
+            // so the tilt never leaks into the top-down board/picker mouse hover. SeatedFirstPersonLive is
+            // required in ADDITION to the Embodied mode: the whole Vote is Embodied, but the player can arrow to
+            // an overhead board-overview camera — there Camera.main is that overhead camera, and aiming the card
+            // at it would lay it flat. Only run the look-at when the seated first-person node actually drives it.
             var _channel = visualComponents.cameraModeChannel;
             Camera _cam = Camera.main;
-            bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied && _cam != null;
+            bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied
+                                && _channel.SeatedFirstPersonLive && _cam != null;
 
             if (_firstPerson && TryComputeFpsHoverPose(visualComponents.transform, _cam, out Presentation.HoverFocusPose _pose))
             {
@@ -89,10 +93,11 @@ namespace Board.CardComponents
             }
 
             // Disarm if we left the seated Vote mid-hover (else we'd keep tilting/lifting in a top-down view),
-            // or if the card/compositor is being torn down.
+            // if the player arrowed to a board overview (seated FP no longer the live camera), or if the
+            // card/compositor is being torn down.
             var _channel = visualComponents != null ? visualComponents.cameraModeChannel : null;
             Transform _root = visualComponents != null ? visualComponents.transform : null;
-            if (_channel == null || _channel.Current != Avatars.CameraMode.Embodied
+            if (_channel == null || _channel.Current != Avatars.CameraMode.Embodied || !_channel.SeatedFirstPersonLive
                 || _root == null || visualComponents.compositor == null || _hoverLayerRef == null)
             {
                 DisarmFpsHover();

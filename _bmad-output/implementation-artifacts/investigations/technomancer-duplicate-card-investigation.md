@@ -179,6 +179,37 @@ Two independent layers (defense in depth):
 
 Setup: 3 standalone build instances on one PC (same as tester). Host on instance A. Trigger: join B then C back-to-back (< 1 s apart) so C's connection synchronization overlaps B's `AddNewCharacter` (or vice versa). Expected on bugged run: the later joiner's replica shows N+1 entries with one clientId doubled (visible immediately in the `[CHARLIST]` log — no need to reach the Awakening). Verification of fix 1: dedup log fires instead of a doubled card/bar.
 
+## Follow-up: 2026-07-07
+
+### New Evidence — NGO source-level confirmation of H2's mechanism
+
+Poyo asked for a deeper adversarial pass ("as if the problem weren't that simple"). Result: the opposite — the mechanism is now **Confirmed at source level** in the vendored NGO 2.12.0 package (`Library/PackageCache/com.unity.netcode.gameobjects@aaabf07f880c`):
+
+1. **The protection exists but NetworkList doesn't implement it.** `NetworkVariableBase.WriteFieldSynchronization` (`Runtime/NetworkVariable/NetworkVariableBase.cs:482-498`) documents verbatim: *"There are scenarios, specifically with collections, where a client could be synchronizing and some NetworkVariables have pending updates. **To avoid duplicating entries**, this is invoked only when sending the full synchronization information. [...] Derived classes should send the **previous value**."* The base fallback just calls `WriteField` (current value).
+2. `NetworkVariable<T>` **overrides it correctly** (`Runtime/NetworkVariable/NetworkVariable.cs:396-408`): if dirty, writes `m_PreviousValue` so the pending delta applies cleanly after sync.
+3. **`NetworkList<T>` has NO `WriteFieldSynchronization` override** (`Runtime/NetworkVariable/Collections/NetworkList.cs` — full override list: ResetDirty, IsDirty, WriteDelta, WriteField, ReadField, ReadDelta, PostDeltaRead, Dispose). A synchronizing client therefore receives the CURRENT list (pending adds included) **plus** the pending `Add` deltas from `m_DirtyEvents` right after → `ReadDelta`'s Add case appends without any existence check → **duplicate entry on the joining client only**. Exactly the observed state.
+4. **Trigger window matches the incident**: `AddNewCharacter` runs exactly on `OnClientConnectedCallback` (`LobbyState.cs:15-17`), so another client whose synchronization payload is composed in the same network tick (~33ms at 30Hz) as a join-triggered list add gets the poisoned sync. Multi-instance solo playtests join in bursts → precisely this window; real distributed play rarely does → "ça arrive que parfois".
+
+### Upstream status
+
+- [NGO issue #3280](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/issues/3280) — "NetworkList Sometimes Goes Out of Sync", duplicated entries on the 3rd client, *"mostly when running multiple built instances simultaneously"*, intermittent. **Open**, high priority, assigned (NoelStephensUnity), reported on 2.2.0/DA topology — our source analysis shows the hole is topology-independent.
+- **Still unfixed in NGO `develop` as of 2026-07-07** (fetched `NetworkList.cs` from GitHub: no `WriteFieldSynchronization` override, no previous-list snapshot). ⇒ **Bumping NGO does not fix this**; the in-project reference-dedup guard (commit `3a01567`) is the correct and necessary defense. Worth filing/upvoting upstream with the source-level analysis.
+- Related historical context: the same bug class was fixed for `NetworkVariable<T>` in 1.12.0; [PR #458](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/pull/458) fixed a cousin (dirty events never flushed with zero clients) back in MLAPI days; [issue #2454](https://github.com/Unity-Technologies/com.unity.netcode.gameobjects/issues/2454) is the visibility-change variant.
+
+### Updated Hypotheses
+
+- **H2 → Confirmed (mechanism, desk-level).** Missing `WriteFieldSynchronization` override in `NetworkList<T>` + join-time list adds. Live confirmation (a `[CHARLIST]` log from a bugged instance) remains desirable but is no longer needed to establish the cause.
+- H0 (user "general instability") → resolved into H2: a one-tick replication window, hit disproportionately by burst-join multi-instance playtests.
+- Host/joiner question for the tester is now **secondary** (the mechanism requires the bugged instance to be a joiner; if Wouh answers "host", re-open and re-verify the "others saw 3" premise).
+
+### Additional mitigation option (design-level, optional)
+
+The trigger requires a `networkedCharacters.Add` in the same tick as another client's sync composition. Deferring `AddNewCharacter` by one network tick after `OnClientConnectedCallback` (or batching adds at end of frame) would shrink the window to near-zero — complementary to the dedup guard, NOT a replacement (the NGO hole remains for any NetworkList mutated near join time).
+
+### Updated Conclusion
+
+**Confidence: High.** Root cause chain fully established: NGO 2.12.0 `NetworkList<T>` lacks the `WriteFieldSynchronization` previous-value override (present on `NetworkVariable<T>`), so a client synchronizing in the same tick as a pending list add receives the entry twice; `CharacterManager.networkedCharacters` is mutated exactly at client-connection time, and every UI/targeting surface projects that list. Defensive fix landed (`3a01567`: reference-dedup + `[CHARLIST]` tripwire + PlayMode regression net). Remaining: in-editor test verification, upstream report, optional join-add deferral, replica-repair design (deferred-work.md).
+
 ## Side Findings
 
 - `LobbyState.cs:64` subscribes `OnClientDisconnectCallback` in `OnStateCreated` and never unsubscribes it (unlike `OnClientConnectedCallback`, removed at `OnEndStateServer`, `LobbyState.cs:76`) — mid-game disconnects therefore call `Command.RemoveCharacter` while `GameManager.OnPlayerDisconnectedServer` (`GameManager.cs:554`) also reacts. Possibly intended, worth a design check. Confirmed (code).

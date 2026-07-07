@@ -16,9 +16,24 @@ namespace Avatars
         public CameraMode Current { get; private set; } = CameraMode.Board;
         public event Action<CameraMode> OnChanged;
 
+        /// <summary>
+        /// Whether the seated first-person board-camera node is the LIVE camera (vs a board overview the player
+        /// arrowed to). <see cref="Current"/> alone is too coarse: the whole Vote is <c>Embodied</c>, but the
+        /// player can navigate to an overhead overview while still in that mode — where the first-person look-at
+        /// (which aims a card at <c>Camera.main</c>) would lay the card flat. Consumers gate the look-at on
+        /// <c>Current == Embodied &amp;&amp; SeatedFirstPersonLive</c>. Defaults false (no first-person live).
+        /// </summary>
+        public bool SeatedFirstPersonLive { get; private set; }
+        public event Action<bool> OnSeatedFirstPersonLiveChanged;
+
         // Domain reload is disabled in this project, so a SO's runtime state survives Play sessions — reset to
-        // the neutral Board mode on (re)load so a stale value can't leak into the next run.
-        private void OnEnable() => Current = CameraMode.Board;
+        // the neutral Board mode (and no live first-person) on (re)load so a stale value can't leak into the
+        // next run.
+        private void OnEnable()
+        {
+            Current = CameraMode.Board;
+            SeatedFirstPersonLive = false;
+        }
 
         /// <summary>Arbiter-only: publish the resolved mode. No-op + no event if unchanged.</summary>
         public void Set(CameraMode _mode)
@@ -29,6 +44,18 @@ namespace Avatars
             }
             Current = _mode;
             OnChanged?.Invoke(_mode);
+        }
+
+        /// <summary>Arbiter-only: publish whether the seated first-person node is the live camera. No-op + no
+        /// event if unchanged.</summary>
+        public void SetSeatedFirstPersonLive(bool _live)
+        {
+            if (_live == SeatedFirstPersonLive)
+            {
+                return;
+            }
+            SeatedFirstPersonLive = _live;
+            OnSeatedFirstPersonLiveChanged?.Invoke(_live);
         }
     }
 }

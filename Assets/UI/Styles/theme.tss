@@ -1,0 +1,7 @@
+/* Corruption du Portail — runtime ThemeStyleSheet.
+ * Assigned to PS_ScreenOverlay.themeStyleSheet. Imports Unity's built-in control baseline (needed so
+ * composite controls like ScrollView render) + the project design tokens. Screens style themselves
+ * from var(--cdp-*) tokens; there is no shared component sheet yet (add one if UITK grows here).
+ */
+@import url("unity-theme://default");
+@import url("variables.uss");

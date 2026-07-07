@@ -1,0 +1,54 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Role presentation card — an ON-DEMAND consultable panel (NOT the role-reveal state screen).
+         Opened by clicking a character in the power bar; shows that role's faction header, name,
+         difficulty, one fused Passive block, and the active powers (mockup-faithful).
+
+         Tokens + shared components come from the PanelSettings theme (theme.tss); this panel's own
+         layout is in RoleCard.uss. The sample text below is a HARDCODED Mage Occulte placeholder for
+         Split 1 (static skeleton) — RoleCardController will overwrite every field at runtime from a Role.
+
+         Structure mirrors the mockup: a tall portrait card on the LEFT, the gold info panel on the RIGHT.
+         Curation (design-owned, wired later): the two personal passives render FUSED into one Passive
+         block; the faction win-objective power (hideFromRoleCard) is not shown; usage counts are static. -->
+    <ui:Style src="RoleCard.uss" />
+    <ui:VisualElement name="role-card" class="role-card cdp-is-hidden cdp-is-collapsed">
+        <ui:VisualElement name="role-card-row" class="role-card__row">
+
+            <!-- Portrait card (left). background-image set at runtime from Role.rolePortrait. -->
+            <ui:VisualElement name="portrait" class="role-card__portrait" />
+
+            <!-- Gold info panel (right) -->
+            <ui:VisualElement name="panel" class="role-card__panel">
+
+                <ui:Label name="faction" text="Anomalie : The Evil Guys" class="role-card__faction" />
+                <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
+                <ui:VisualElement name="difficulty" class="role-card__difficulty" />
+
+                <!-- Scrollable kit area: bounds the panel height, only the kit scrolls if a long
+                     description overflows (portrait + faction stay anchored). -->
+                <ui:ScrollView name="kit" class="role-card__kit">
+
+                    <!-- Fused passive block (both personal passives, one paragraph — owner: mockup-faithful) -->
+                    <ui:VisualElement name="passive-block" class="role-card__passive">
+                        <ui:Label text="Passif" class="role-card__section-label" />
+                        <ui:Label name="passive-text" class="role-card__passive-text"
+                                  text="Il commence corrompu et connaît l'état de la corruption." />
+                    </ui:VisualElement>
+
+                    <!-- Active powers (numbered). Cloned per active power by the controller. -->
+                    <ui:VisualElement name="powers" class="role-card__powers">
+                        <ui:VisualElement class="role-card__power">
+                            <ui:Label class="role-card__power-title" text="Pouvoir 1 : Corruption Ciblée" />
+                            <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="role-card__power">
+                            <ui:Label class="role-card__power-title" text="Pouvoir 2 : Les Deux Corrupteurs" />
+                            <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

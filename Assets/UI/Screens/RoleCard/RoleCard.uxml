@@ -28,11 +28,21 @@
                      description overflows (portrait + faction stay anchored). -->
                 <ui:ScrollView name="kit" class="role-card__kit">
 
-                    <!-- Fused passive block (both personal passives, one paragraph — owner: mockup-faithful) -->
+                    <!-- Passive block: the controller fills passive-list with one bulleted row per passive
+                         power (isPassive && !hideFromRoleCard) so distinct passives read as a scannable list
+                         instead of a run-on paragraph. -->
                     <ui:VisualElement name="passive-block" class="role-card__passive">
                         <ui:Label text="Passif" class="role-card__section-label" />
-                        <ui:Label name="passive-text" class="role-card__passive-text"
-                                  text="Il commence corrompu et connaît l'état de la corruption." />
+                        <ui:VisualElement name="passive-list" class="role-card__passive-list">
+                            <ui:VisualElement class="role-card__passive-row">
+                                <ui:Label text="•" class="role-card__passive-bullet" />
+                                <ui:Label class="role-card__passive-text" text="Il commence corrompu dès le début de la partie." />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="role-card__passive-row">
+                                <ui:Label text="•" class="role-card__passive-bullet" />
+                                <ui:Label class="role-card__passive-text" text="Il connaît l'état de corruption des joueurs." />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
                     </ui:VisualElement>
 
                     <!-- Active powers (numbered). Cloned per active power by the controller. -->

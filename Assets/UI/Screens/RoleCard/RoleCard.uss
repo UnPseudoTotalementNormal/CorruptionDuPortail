@@ -1,15 +1,14 @@
-/* Role presentation card — on-demand consultable panel (mockup-faithful). SELF-CONTAINED:
- * depends only on the design tokens (variables.uss, via the PanelSettings theme) — no shared sheet.
+/* Role presentation card — on-demand consultable panel. SELF-CONTAINED: depends only on the design
+ * tokens (variables.uss, via the PanelSettings theme).
  *
- * VISUALS ARE PLACEHOLDER. The mockup's gold is design-owned — consume only var(--cdp-*) tokens
- * (the role-card ones in variables.uss are marked PLACEHOLDER). Never hardcode a colour/size here.
- * USS reality: px/% only, flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
+ * The gold look approximates the design mockup; all colours come from swappable --cdp-color-role-*
+ * tokens (PROVISIONAL, design-owned). USS reality: px/% only, flexbox only, no gradient/box-shadow,
+ * -unity-* props, var() can't nest in a function.
+ *
+ * Show/hide = two-class pair the controller toggles: cdp-is-hidden fades opacity, cdp-is-collapsed
+ * removes layout+input. Root picking is driven in C# (Ignore while collapsed; Position while open).
  */
 
-/* ---- Base overlay + show/hide (local; promote to a shared sheet if more UITK screens appear) ----
- * Show/hide = two-class pair the controller toggles: cdp-is-hidden fades out (opacity), cdp-is-collapsed
- * removes layout+input. Open(): remove collapsed, then (next frame) hidden. Close(): add hidden, then
- * (on TransitionEnd) collapsed. Root picking is driven in C# (root Ignore; scrim dismisses). */
 .role-card {
     position: absolute;
     left: 0;
@@ -33,34 +32,37 @@
     display: none;
 }
 
-/* Portrait (left) + panel (right), side by side, centred by the scrim. */
+/* Portrait (left) + panel (right), centred by the scrim. */
 .role-card__row {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    max-width: 90%;
-    max-height: 90%;
+    max-width: 92%;
+    max-height: 92%;
 }
 
 /* Tall portrait card. background-image assigned at runtime from Role.rolePortrait. */
 .role-card__portrait {
-    width: 240px;
-    height: 380px;
-    margin-right: var(--cdp-space-lg);
-    background-color: var(--cdp-color-panel);   /* PLACEHOLDER fallback until a portrait sprite is bound */
-    border-radius: var(--cdp-radius-md);
-    border-width: var(--cdp-border-width);
-    border-color: var(--cdp-color-border);
+    width: 260px;
+    height: 400px;
+    margin-right: calc(var(--cdp-space-lg) * -1);   /* tuck the panel slightly over the portrait */
+    background-color: var(--cdp-color-role-panel);
+    border-radius: var(--cdp-radius-role);
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border);
+    -unity-background-scale-mode: scale-and-crop;
     flex-shrink: 0;
 }
 
 /* Gold info panel (right). */
 .role-card__panel {
-    width: 460px;
-    max-height: 90%;
-    padding: var(--cdp-space-md);
-    border-radius: var(--cdp-radius-md);
+    width: 560px;
+    max-height: 92%;
+    padding: var(--cdp-space-lg);
     background-color: var(--cdp-color-role-panel);
+    border-radius: var(--cdp-radius-role);
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border);
 }
 
 .role-card__faction {
@@ -68,6 +70,7 @@
     font-size: var(--cdp-font-size-sm);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    letter-spacing: 1px;
     white-space: normal;
     margin-bottom: var(--cdp-space-xs);
 }
@@ -81,18 +84,17 @@
     margin-bottom: var(--cdp-space-sm);
 }
 
-/* Difficulty pips (1-3) — filled by the controller. Discrete, near the name (UX: meta, not fiction). */
+/* Difficulty pips (1-3) — filled by the controller. Discrete, under the name. */
 .role-card__difficulty {
     flex-direction: row;
     justify-content: center;
     margin-bottom: var(--cdp-space-md);
 }
 
-/* One difficulty pip (controller adds roleDifficulty of them). */
 .role-card__pip {
-    width: 12px;
-    height: 12px;
-    border-radius: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
     margin-left: 3px;
     margin-right: 3px;
     background-color: var(--cdp-color-role-title);
@@ -103,9 +105,16 @@
     flex-grow: 1;
 }
 
-/* Passive block — muted vs the active powers (UX: "this just happens" vs "I trigger this"). */
+/* Passive block — visually inset + muted so it reads as "a fact about you", distinct from the active
+ * powers you trigger (UX: agency grammar). */
 .role-card__passive {
-    margin-bottom: var(--cdp-space-md);
+    background-color: var(--cdp-color-role-surface);
+    border-left-width: 3px;
+    border-left-color: var(--cdp-color-role-border);
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    padding: var(--cdp-space-sm) var(--cdp-space-md);
+    margin-bottom: var(--cdp-space-lg);
 }
 
 .role-card__section-label {
@@ -115,15 +124,32 @@
     margin-bottom: var(--cdp-space-xs);
 }
 
+/* One row per passive: a fixed-width gold bullet + wrapping text (Sally: one line = one passive). */
+.role-card__passive-row {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: var(--cdp-space-sm);
+}
+
+.role-card__passive-bullet {
+    color: var(--cdp-color-role-border);
+    font-size: var(--cdp-font-size-sm);
+    width: 16px;
+    flex-shrink: 0;
+    -unity-text-align: upper-left;
+}
+
 .role-card__passive-text {
     color: var(--cdp-color-role-passive);
     font-size: var(--cdp-font-size-sm);
     white-space: normal;
+    flex-grow: 1;
+    flex-shrink: 1;
 }
 
 /* Active powers list. */
 .role-card__power {
-    margin-bottom: var(--cdp-space-md);
+    margin-bottom: var(--cdp-space-lg);
 }
 
 .role-card__power-title {
@@ -138,4 +164,27 @@
     color: var(--cdp-color-text);
     font-size: var(--cdp-font-size-sm);
     white-space: normal;
+}
+
+/* ---- Slim, on-theme scrollbar (replace the default chunky grey one) ---- */
+.role-card__kit .unity-scroller--vertical {
+    width: 6px;
+    background-color: transparent;
+}
+
+.role-card__kit .unity-scroller--vertical .unity-base-slider__tracker {
+    background-color: transparent;
+    border-width: 0;
+}
+
+.role-card__kit .unity-scroller--vertical #unity-dragger {
+    background-color: var(--cdp-color-role-border);
+    border-radius: 3px;
+    border-width: 0;
+    width: 6px;
+}
+
+.role-card__kit .unity-scroller__low-button,
+.role-card__kit .unity-scroller__high-button {
+    display: none;
 }

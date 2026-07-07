@@ -1,7 +1,7 @@
 #region
 
 using System.Linq;
-using System.Text;
+using Board.UI.CharacterBar;
 using Characters;
 using Characters.Powers;
 using Cysharp.Threading.Tasks;
@@ -31,8 +31,15 @@ namespace UI.RoleCard
         private const string PowerClass = "role-card__power";
         private const string PowerTitleClass = "role-card__power-title";
         private const string PowerDescClass = "role-card__power-desc";
+        private const string PassiveRowClass = "role-card__passive-row";
+        private const string PassiveBulletClass = "role-card__passive-bullet";
+        private const string PassiveTextClass = "role-card__passive-text";
+        private const string Bullet = "•";
 
         [SerializeField] private UIDocument document;
+
+        [Tooltip("The character bar whose clicks open this card. Wire it in the GameScene.")]
+        [SerializeField] private CharactersBar charactersBar;
 
         private VisualElement _root;
         private VisualElement _portrait;
@@ -40,15 +47,28 @@ namespace UI.RoleCard
         private Label _roleName;
         private VisualElement _difficulty;
         private VisualElement _passiveBlock;
-        private Label _passiveText;
+        private VisualElement _passiveList;
         private VisualElement _powers;
+        private bool _initialized;
 
         private void OnEnable()
         {
+            if (charactersBar != null) charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
+            TryInitialize();
+        }
+
+        // Start is a fallback: UIDocument builds its rootVisualElement in its OWN OnEnable, and the order
+        // between this component's OnEnable and the UIDocument's is not guaranteed, so the tree can be null
+        // on the first pass. By Start (and by the first click) it is always ready.
+        private void Start() => TryInitialize();
+
+        private void TryInitialize()
+        {
+            if (_initialized) return;
             if (document == null) document = GetComponent<UIDocument>();
 
-            var tree = document.rootVisualElement;
-            _root = tree.Q<VisualElement>("role-card");
+            var tree = document != null ? document.rootVisualElement : null;
+            _root = tree?.Q<VisualElement>("role-card");
             if (_root == null) return;
 
             _portrait = _root.Q<VisualElement>("portrait");
@@ -56,7 +76,7 @@ namespace UI.RoleCard
             _roleName = _root.Q<Label>("role-name");
             _difficulty = _root.Q<VisualElement>("difficulty");
             _passiveBlock = _root.Q<VisualElement>("passive-block");
-            _passiveText = _root.Q<Label>("passive-text");
+            _passiveList = _root.Q<VisualElement>("passive-list");
             _powers = _root.Q<VisualElement>("powers");
 
             // Starts hidden + collapsed (see UXML). While collapsed the root must NOT block the world,
@@ -64,11 +84,25 @@ namespace UI.RoleCard
             _root.pickingMode = PickingMode.Ignore;
             _root.RegisterCallback<PointerDownEvent>(OnRootPointerDown);
             _root.RegisterCallback<TransitionEndEvent>(OnRootTransitionEnd);
+
+            _initialized = true;
+        }
+
+        private void OnDisable()
+        {
+            if (charactersBar != null) charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+        }
+
+        // A character in the bar was clicked -> show its role card.
+        private void OnCharacterBarClicked(Character character)
+        {
+            if (character != null && character.role != null) Open(character.role);
         }
 
         /// <summary>Bind a role and reveal the card.</summary>
         public void Open(Role role)
         {
+            TryInitialize();
             if (_root == null || role == null) return;
 
             Bind(role);
@@ -118,21 +152,31 @@ namespace UI.RoleCard
             }
         }
 
-        // Personal passives (isPassive, not hidden) fused into one paragraph — mockup-faithful.
+        // One bulleted row per passive (isPassive && !hideFromRoleCard) so distinct passives read as a
+        // scannable list instead of a run-on paragraph. The win-objective power is excluded via hideFromRoleCard.
         private void BuildPassive(Role role)
         {
-            var sb = new StringBuilder();
+            _passiveList.Clear();
             foreach (var power in role.powers.Where(p => p.isPassive && !p.hideFromRoleCard))
             {
                 var desc = power.powerDescription.ToString();
                 if (string.IsNullOrEmpty(desc)) continue;
-                if (sb.Length > 0) sb.Append(' ');
-                sb.Append(desc);
+
+                var row = new VisualElement();
+                row.AddToClassList(PassiveRowClass);
+
+                var bullet = new Label(Bullet);
+                bullet.AddToClassList(PassiveBulletClass);
+
+                var text = new Label(desc);
+                text.AddToClassList(PassiveTextClass);
+
+                row.Add(bullet);
+                row.Add(text);
+                _passiveList.Add(row);
             }
 
-            var hasPassive = sb.Length > 0;
-            _passiveText.text = sb.ToString();
-            _passiveBlock.EnableInClassList(CollapsedClass, !hasPassive);
+            _passiveBlock.EnableInClassList(CollapsedClass, _passiveList.childCount == 0);
         }
 
         private void BuildActivePowers(Role role)

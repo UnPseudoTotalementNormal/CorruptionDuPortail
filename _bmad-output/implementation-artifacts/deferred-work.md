@@ -2,6 +2,10 @@
 
 Tracks real-but-not-now items surfaced during reviews. Each entry: source + date, one bullet per item.
 
+## Deferred from: quick-dev fix-tooltip-3d-bounds (2026-07-07)
+
+- `TooltipManager.PlaceTooltip` (`Assets/Scripts/TooltipSystem/TooltipManager.cs`) assumes `Camera.main` is non-null and in front of the target across ALL branches (2D and 3D). The new 3D fallback (`TryGetScreenBounds` returns false) re-projects `_worldBounds.center` via `WorldToScreenPoint(Camera.main, ...)`, which yields mirrored/garbage coords if the center is itself behind the camera, and would pass `null` if no MainCamera is tagged. Pre-existing pattern, not introduced by this change; practically unreachable on the 3D-hover path (an off-screen object receives no `OnPointerEnter`). Harden with a single cached `Camera.main` null-check + behind-camera hide if the tooltip system is ever revisited.
+
 ## Deferred from: code review of story-5.0 (2026-06-11)
 
 - `InstantiateAndSpawn(...).GetComponent<GameManager/CharacterManager>()` in `MultiClientGameFixture.SetUp` is not null-checked — a null spawn (hash mismatch / prefab not registered) would NRE with an opaque message instead of a clean assert. Diagnostic-quality only; tests are green so the reflection-set `GlobalObjectIdHash` + prefab registration path works.

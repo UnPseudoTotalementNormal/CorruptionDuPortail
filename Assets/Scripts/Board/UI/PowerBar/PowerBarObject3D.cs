@@ -154,11 +154,29 @@ namespace Board.UI.PowerBar
             }
         }
 
-        private void OnMouseDown()
+        private void Activate()
         {
             clickSound.TryPlayOneShot();
             PunchClick();
             OnButtonClicked();
+        }
+
+        // Legacy screen picking. Embodied (locked cursor) is driven by the reticle via OnPointerClick, so
+        // OnMouseDown handles ONLY the free-cursor mode — the two are mutually exclusive on the cursor lock
+        // state, which stops the same collider firing twice while seated.
+        private void OnMouseDown()
+        {
+            // Locked → the reticle drives this power via OnPointerClick. Over uGUI → don't let the click reach
+            // the collider through an open panel (powers have no free-cursor hover, so only the click needs it).
+            if (Cursor.lockState == CursorLockMode.Locked)
+            {
+                return;
+            }
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+            Activate();
         }
 
         private void ScaleHover(bool _entered)
@@ -183,7 +201,7 @@ namespace Board.UI.PowerBar
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            OnMouseDown();
+            Activate();
         }
 
         public void OnPointerEnter(PointerEventData _eventData)

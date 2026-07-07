@@ -4,7 +4,6 @@ using System.Linq;
 using Board.UI.CharacterBar;
 using Characters;
 using Characters.Powers;
-using Cysharp.Threading.Tasks;
 using Extensions;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -61,6 +60,9 @@ namespace UI.RoleCard
 
         [Tooltip("Faction presentation data (display name / tagline / icon), keyed by FactionType. Wire the FactionDatabase asset.")]
         [SerializeField] private FactionDatabase factionDatabase;
+
+        [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
+        [SerializeField] private PortraitTable portraitTable;
 
         private VisualElement _root;
         private VisualElement _portrait;
@@ -170,7 +172,7 @@ namespace UI.RoleCard
             BuildDifficulty(role.roleDifficulty);
             BuildPassive(role);
             BuildActivePowers(role);
-            BindPortraitAsync(role).Forget();
+            BindPortrait(role);
         }
 
         // Always DifficultyPips dots; the ones past the role's difficulty are dimmed (empty) — same size,
@@ -246,11 +248,11 @@ namespace UI.RoleCard
             }
         }
 
-        private async UniTaskVoid BindPortraitAsync(Role role)
+        private void BindPortrait(Role role)
         {
-            var sprite = await role.GetRolePortrait();
-            if (sprite != null && _portrait != null)
-                _portrait.style.backgroundImage = new StyleBackground(sprite);
+            var sprite = portraitTable != null ? portraitTable.Get(role.rolePortrait) : null;
+            if (_portrait != null)
+                _portrait.style.backgroundImage = sprite != null ? new StyleBackground(sprite) : new StyleBackground();
         }
 
         // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon.

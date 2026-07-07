@@ -51,6 +51,8 @@ namespace Board.CardComponents
         [field: SerializeField] public TMP_Text cardRoleText { get; private set; }
         [field: SerializeField] public Image cardRoleTextHolder { get; private set; }
         [field: SerializeField] public Image cardImage { get; private set; }
+        [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
+        [field: SerializeField] public PortraitTable portraitTable { get; private set; }
         [field: SerializeField] public Image factionLogoImage { get; private set; }
         [field: SerializeField] public Image factionLogoBackgroundImage { get; private set; }
         [field: SerializeField] public Image unknownFogOverlay { get; private set; }

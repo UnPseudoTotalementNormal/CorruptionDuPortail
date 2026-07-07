@@ -48,6 +48,12 @@ namespace UI.RoleCard
         // (display:none) only after this so the exit animation isn't cut short.
         private const long ExitCollapseDelayMs = 420;
 
+        // Per-faction tint (Sally): the card keeps a dark/gold frame but injects the faction accent colour
+        // (FactionData.color) into borders, titles, pills and pips. Shades are computed from that one source.
+        private static readonly Color TintDark = new Color(0.149f, 0.122f, 0.078f);      // panel base rgb(38,31,20)
+        private static readonly Color TintNearBlack = new Color(0.102f, 0.078f, 0.047f); // pill digit on light accents
+        private static readonly Color GoldAccent = new Color(0.749f, 0.604f, 0.322f);    // fallback when no faction colour
+
         [SerializeField] private UIDocument document;
 
         [Tooltip("The character bar whose clicks open this card. Wire it in the GameScene.")]
@@ -70,10 +76,19 @@ namespace UI.RoleCard
         private VisualElement _factionIcon;
         private Label _roleName;
         private VisualElement _difficulty;
+        private VisualElement _panel;
+        private VisualElement _divider;
         private VisualElement _passiveBlock;
+        private Label _passiveLabel;
         private VisualElement _passiveList;
         private VisualElement _powers;
         private bool _initialized;
+
+        // Faction accent + derived shades, computed once per Open() and consumed by the dynamic builders.
+        private Color _cAccent = Color.white;
+        private Color _cInset = Color.black;
+        private Color _cTitle = Color.white;
+        private Color _cPillDigit = Color.white;
 
         private void OnEnable()
         {
@@ -95,12 +110,15 @@ namespace UI.RoleCard
             _root = tree?.Q<VisualElement>("role-card");
             if (_root == null) return;
 
+            _panel = _root.Q<VisualElement>("panel");
             _portrait = _root.Q<VisualElement>("portrait");
             _faction = _root.Q<Label>("faction");
             _factionIcon = _root.Q<VisualElement>("faction-icon");
             _roleName = _root.Q<Label>("role-name");
             _difficulty = _root.Q<VisualElement>("difficulty");
+            _divider = _root.Q<VisualElement>("divider");
             _passiveBlock = _root.Q<VisualElement>("passive-block");
+            _passiveLabel = _root.Q<Label>("passive-label");
             _passiveList = _root.Q<VisualElement>("passive-list");
             _powers = _root.Q<VisualElement>("powers");
 
@@ -184,7 +202,8 @@ namespace UI.RoleCard
             {
                 var pip = new VisualElement();
                 pip.AddToClassList(PipClass);
-                if (i > difficulty) pip.AddToClassList(PipEmptyClass);
+                if (i > difficulty) pip.AddToClassList(PipEmptyClass);   // empty pips keep the shared gold-dimmed look
+                else pip.style.backgroundColor = _cAccent;                // filled pips take the faction accent
                 _difficulty.Add(pip);
             }
         }
@@ -204,6 +223,7 @@ namespace UI.RoleCard
 
                 var bullet = new Label(Bullet);
                 bullet.AddToClassList(PassiveBulletClass);
+                bullet.style.color = _cAccent;
 
                 var text = new Label(desc);
                 text.AddToClassList(PassiveTextClass);
@@ -229,12 +249,15 @@ namespace UI.RoleCard
 
                 var num = new Label(index.ToString());
                 num.AddToClassList(PowerNumClass);
+                num.style.backgroundColor = _cAccent;
+                num.style.color = _cPillDigit;
 
                 var body = new VisualElement();
                 body.AddToClassList(PowerBodyClass);
 
                 var title = new Label(power.powerName.ToString());
                 title.AddToClassList(PowerTitleClass);
+                title.style.color = _cTitle;
 
                 var desc = new Label(power.powerDescription.ToString());
                 desc.AddToClassList(PowerDescClass);
@@ -255,21 +278,17 @@ namespace UI.RoleCard
                 _portrait.style.backgroundImage = sprite != null ? new StyleBackground(sprite) : new StyleBackground();
         }
 
-        // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon.
-        // Falls back to a name-only label if the database is unwired or missing the entry.
+        // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon,
+        // and the per-faction accent tint. Falls back to a name-only label + gold accent when unwired.
         private void BindFaction(FactionType faction)
         {
-            string text;
-            Sprite icon = null;
-            if (factionDatabase != null && factionDatabase.TryGet(faction, out var data) && data != null)
-            {
-                text = string.IsNullOrEmpty(data.tagline) ? data.displayName : $"{data.displayName} : {data.tagline}";
-                icon = data.icon;
-            }
-            else
-            {
-                text = FactionHeader(faction);
-            }
+            FactionData data = null;
+            if (factionDatabase != null && factionDatabase.TryGet(faction, out var d)) data = d;
+
+            var text = data != null
+                ? (string.IsNullOrEmpty(data.tagline) ? data.displayName : $"{data.displayName} : {data.tagline}")
+                : FactionHeader(faction);
+            var icon = data != null ? data.icon : null;
 
             _faction.text = text;
             if (_factionIcon != null)
@@ -277,6 +296,63 @@ namespace UI.RoleCard
                 _factionIcon.style.backgroundImage = icon != null ? new StyleBackground(icon) : new StyleBackground();
                 _factionIcon.style.display = icon != null ? DisplayStyle.Flex : DisplayStyle.None;
             }
+
+            ApplyFactionTint(data != null ? data.color : GoldAccent);
+        }
+
+        // Injects the faction accent colour into the card's frame + accents, keeping the body dark/neutral
+        // (Sally's ~75/25 rule). Shades are derived from the single source colour f; stores the accent/inset/
+        // title/pill-digit for the dynamic builders (pips, passive rows, power pills).
+        private void ApplyFactionTint(Color f)
+        {
+            var fBg = Color.Lerp(f, TintDark, 0.88f);
+            var fInset = Color.Lerp(f, TintDark, 0.80f);
+            var fTitle = WithLumaAtLeast(Color.Lerp(f, Color.white, 0.35f), 0.55f);
+            var fMuted = Color.Lerp(f, Color.white, 0.55f);
+            var fDivider = new Color(f.r, f.g, f.b, 0.28f);
+
+            _cAccent = f;
+            _cInset = fInset;
+            _cTitle = fTitle;
+            _cPillDigit = Luma(f) < 0.5f ? Color.white : TintNearBlack;
+
+            if (_panel != null)
+            {
+                SetBorderColor(_panel, f);
+                _panel.style.backgroundColor = fBg;
+            }
+            if (_portrait != null) SetBorderColor(_portrait, f); // portrait fill stays warm-gold (USS); only the frame tints
+            if (_faction != null) _faction.style.color = fMuted;
+            if (_roleName != null) _roleName.style.color = fTitle;
+            if (_divider != null) _divider.style.backgroundColor = fDivider;
+            if (_passiveBlock != null)
+            {
+                _passiveBlock.style.backgroundColor = fInset;
+                _passiveBlock.style.borderLeftColor = f;
+            }
+            if (_passiveLabel != null) _passiveLabel.style.color = fMuted;
+
+            // Scrollbar thumb — faction-tinted too (owner's call; overrides the gold USS default).
+            var dragger = _root?.Q(null, "unity-scroller--vertical")?.Q("unity-dragger");
+            if (dragger != null) dragger.style.backgroundColor = f;
+        }
+
+        private static float Luma(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+
+        // Lift a colour toward white until it reads legibly (keeps a dark/desaturated faction title readable).
+        private static Color WithLumaAtLeast(Color c, float min)
+        {
+            var col = c;
+            for (var i = 0; i < 8 && Luma(col) < min; i++) col = Color.Lerp(col, Color.white, 0.15f);
+            return col;
+        }
+
+        private static void SetBorderColor(VisualElement e, Color c)
+        {
+            e.style.borderTopColor = c;
+            e.style.borderRightColor = c;
+            e.style.borderBottomColor = c;
+            e.style.borderLeftColor = c;
         }
 
         // Name-only fallback when no FactionDatabase entry is available.

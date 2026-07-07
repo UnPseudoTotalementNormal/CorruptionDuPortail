@@ -33,14 +33,14 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement class="role-card__divider" />
+                <ui:VisualElement name="divider" class="role-card__divider" />
 
                 <!-- Scrollable kit: bounds the panel height; only this scrolls on overflow. -->
                 <ui:ScrollView name="kit" class="role-card__kit">
 
                     <!-- Passive traits: one bullet row per passive (controller fills passive-list). -->
                     <ui:VisualElement name="passive-block" class="role-card__passive">
-                        <ui:Label text="Passif" class="role-card__section-label" />
+                        <ui:Label name="passive-label" text="Passif" class="role-card__section-label" />
                         <ui:VisualElement name="passive-list" class="role-card__passive-list">
                             <ui:VisualElement class="role-card__passive-row">
                                 <ui:Label text="•" class="role-card__passive-bullet" />

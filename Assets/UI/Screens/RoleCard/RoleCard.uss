@@ -219,28 +219,29 @@
 
 /* ---- Active powers: raised, numbered pill — "what you TRIGGER" ---- */
 .role-card__power {
-    flex-direction: row;
-    align-items: flex-start;
+    flex-direction: column;
     margin-bottom: var(--cdp-space-md);
 }
 
-/* The numbered pill = the mental "I click this" marker. */
+/* Pill + title on one centred row so the number lines up with the title (not the whole block). */
+.role-card__power-head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: var(--cdp-space-xs);
+}
+
+/* The numbered pill = the mental "I click this" marker. Round (border-radius = half of the box). */
 .role-card__power-num {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
     margin-right: var(--cdp-space-md);
     background-color: var(--cdp-color-role-title);
     color: var(--cdp-color-role-panel);
-    border-radius: var(--cdp-radius-role-tight);
-    font-size: var(--cdp-font-size-base);
+    border-radius: 15px;
+    font-size: 18px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-}
-
-.role-card__power-body {
-    flex-grow: 1;
-    flex-shrink: 1;
 }
 
 .role-card__power-title {
@@ -248,13 +249,14 @@
     font-size: var(--cdp-font-size-base);
     -unity-font-style: bold;
     white-space: normal;
-    margin-bottom: var(--cdp-space-xs);
+    flex-shrink: 1;
 }
 
 .role-card__power-desc {
     color: var(--cdp-color-text);
     font-size: var(--cdp-font-size-sm);
     white-space: normal;
+    margin-left: 46px;                 /* indent under the title (pill 30 + margin 16) */
 }
 
 /* ---- Slim, on-theme scrollbar ---- */

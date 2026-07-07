@@ -56,18 +56,18 @@
                     <!-- Active powers: numbered pill + name + description (controller clones per power). -->
                     <ui:VisualElement name="powers" class="role-card__powers">
                         <ui:VisualElement class="role-card__power">
-                            <ui:Label text="1" class="role-card__power-num" />
-                            <ui:VisualElement class="role-card__power-body">
+                            <ui:VisualElement class="role-card__power-head">
+                                <ui:Label text="1" class="role-card__power-num" />
                                 <ui:Label class="role-card__power-title" text="Corruption Ciblée" />
-                                <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
                             </ui:VisualElement>
+                            <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
                         </ui:VisualElement>
                         <ui:VisualElement class="role-card__power">
-                            <ui:Label text="2" class="role-card__power-num" />
-                            <ui:VisualElement class="role-card__power-body">
+                            <ui:VisualElement class="role-card__power-head">
+                                <ui:Label text="2" class="role-card__power-num" />
                                 <ui:Label class="role-card__power-title" text="Les Deux Corrupteurs" />
-                                <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
                             </ui:VisualElement>
+                            <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
                         </ui:VisualElement>
                     </ui:VisualElement>
 

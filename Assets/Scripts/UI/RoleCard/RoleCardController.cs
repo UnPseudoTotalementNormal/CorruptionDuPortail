@@ -34,7 +34,7 @@ namespace UI.RoleCard
         private const string PipEmptyClass = "role-card__pip--empty";
         private const string PowerClass = "role-card__power";
         private const string PowerNumClass = "role-card__power-num";
-        private const string PowerBodyClass = "role-card__power-body";
+        private const string PowerHeadClass = "role-card__power-head";
         private const string PowerTitleClass = "role-card__power-title";
         private const string PowerDescClass = "role-card__power-desc";
         private const string PassiveRowClass = "role-card__passive-row";
@@ -248,13 +248,13 @@ namespace UI.RoleCard
                 var entry = new VisualElement();
                 entry.AddToClassList(PowerClass);
 
+                var head = new VisualElement();
+                head.AddToClassList(PowerHeadClass);
+
                 var num = new Label(index.ToString());
                 num.AddToClassList(PowerNumClass);
                 num.style.backgroundColor = _cAccent;
                 num.style.color = _cPillDigit;
-
-                var body = new VisualElement();
-                body.AddToClassList(PowerBodyClass);
 
                 var title = new Label(power.powerName.ToString());
                 title.AddToClassList(PowerTitleClass);
@@ -263,10 +263,10 @@ namespace UI.RoleCard
                 var desc = new Label(power.powerDescription.ToString());
                 desc.AddToClassList(PowerDescClass);
 
-                body.Add(title);
-                body.Add(desc);
-                entry.Add(num);
-                entry.Add(body);
+                head.Add(num);
+                head.Add(title);
+                entry.Add(head);
+                entry.Add(desc);
                 _powers.Add(entry);
                 index++;
             }

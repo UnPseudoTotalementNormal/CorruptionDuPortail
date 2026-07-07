@@ -95,9 +95,10 @@ namespace Board.CardComponents
             Debug.LogWarning("SetChainedOverlay should not be called as this is a role card");
         }
 
-        public async UniTask SetRolePortrait(Role _role)
+        public UniTask SetRolePortrait(Role _role)
         {
-            visualComponents.cardImage.sprite = await _role.GetRolePortrait();
+            visualComponents.cardImage.sprite = visualComponents.portraitTable.Get(_role.rolePortrait);
+            return UniTask.CompletedTask;
         }
         
         public void ShowFrontSideInfo(Transform _voteCanvasTransform, Transform _cardEffectsParent)

@@ -112,3 +112,6 @@ fmod_editor.log
 
 # TimeRecorder — Claude working-time data (machine-local, like PlayerPrefs). Hooks/scripts are tracked.
 /.claude/timerecorder/
+
+# Toolkit migration scene/prefab backups (machine-local, OUTSIDE Assets to avoid GUID conflicts)
+/BackupToolkit/

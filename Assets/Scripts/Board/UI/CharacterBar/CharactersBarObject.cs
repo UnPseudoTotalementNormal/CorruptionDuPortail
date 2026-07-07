@@ -22,6 +22,9 @@ namespace Board.UI.CharacterBar
         
         [SerializeField] private Image characterImage;
 
+        [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
+        [SerializeField] private PortraitTable portraitTable;
+
         [SerializeField] private Canvas canvasObject;
         
         [SerializeField] private Image corruptedOverlayImage;
@@ -143,7 +146,7 @@ namespace Board.UI.CharacterBar
             UnsubscribeFromCharacterEvents();
             playerCharacter = _character;
             SubscribeToCharacterEvents();
-            _ = UpdateCharacter();
+            UpdateCharacter();
         }
 
         private bool isSubscribedToCharacter = false;
@@ -170,14 +173,14 @@ namespace Board.UI.CharacterBar
         }
         private void OnCharacterRoleUpdated()
         {
-            _ = UpdateCharacter();
+            UpdateCharacter();
         }
         private void OnCorruptedChanged(bool previous, bool current)
         {
-            _ = UpdateCharacter();
+            UpdateCharacter();
         }
 
-        private async UniTaskVoid UpdateCharacter()
+        private void UpdateCharacter()
         {
             RevealLevel _forceCorruptOnRoleRevealed = CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).forceCorruptOnRoleRevealed;
             bool _isCorrupted = playerCharacter.isCorrupted.Value && _forceCorruptOnRoleRevealed > RevealLevel.False;
@@ -196,14 +199,13 @@ namespace Board.UI.CharacterBar
                 }
                 hoverTooltipComponent.SetTooltipDescription(_description);
             }
-            
-            var _rolePortrait = await playerCharacter.GetRole().GetRolePortrait();
-            characterImage.sprite = _rolePortrait;
+
+            characterImage.sprite = portraitTable.Get(playerCharacter.GetRole().rolePortrait);
         }
         
         private void DoUpdateCharacter()
         {
-            _ = UpdateCharacter();
+            UpdateCharacter();
         }
     }
 }

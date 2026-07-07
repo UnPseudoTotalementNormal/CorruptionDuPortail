@@ -687,6 +687,7 @@ MonoBehaviour:
       byte0509: 0
   maxWaitTime: 0
   isPassive: 1
+  hideFromRoleCard: 1
   hasToBeAwakened: 1
   targetIncludeFlags: 0
   powerUseLeft:

@@ -96,9 +96,10 @@ namespace Board.CardComponents
             lastIsChainedStatus = _isChained;
         }
 
-        public async UniTask SetRolePortrait(Role _role)
+        public UniTask SetRolePortrait(Role _role)
         {
-            _visualComponents.cardImage.sprite = await _role.GetRolePortrait();
+            _visualComponents.cardImage.sprite = _visualComponents.portraitTable.Get(_role.rolePortrait);
+            return UniTask.CompletedTask;
         }
 
         public void ShowFrontSideInfo(Transform _voteCanvasTransform, Transform _cardEffectsParent)

@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5c11028a22fd4646847197c1934eaa3, type: 3}
+  m_Name: PortraitTable
+  m_EditorClassIdentifier: Game::Characters.PortraitTable
+  portraits:
+    _serializedList:
+    - Key: 1048685107
+      Value: {fileID: 21300000, guid: 139c6044c406f4e428fc7f5f8745a4f8, type: 3}
+    - Key: 890829750
+      Value: {fileID: 21300000, guid: 9c05a72cdbe33c449bee94fdbc54e540, type: 3}
+    - Key: 1959347720
+      Value: {fileID: 21300000, guid: 43e7dca12e9f40c4da790b1555df2b61, type: 3}
+    - Key: 295621807
+      Value: {fileID: 21300000, guid: 91ca642893e1a75489eafd5b8086acad, type: 3}
+    - Key: 1970802544
+      Value: {fileID: 21300000, guid: 33ad766d2c1e3694e90e8f823193e43a, type: 3}
+    - Key: 1886328777
+      Value: {fileID: 21300000, guid: 7fd024d18bdd3a04fa1856fc4dade13b, type: 3}
+    - Key: 1605640824
+      Value: {fileID: 21300000, guid: e7357924e28151441be8f2912111f7d2, type: 3}
+    - Key: 403389003
+      Value: {fileID: 21300000, guid: 6b48eedfe03748d4aaa7cc810d24234e, type: 3}
+    - Key: 1674237905
+      Value: {fileID: 21300000, guid: fe938a7bc28628842aa0db5aafb029fe, type: 3}
+    - Key: 1124117774
+      Value: {fileID: 21300000, guid: 8d8b2cdb8ac229445b5f05070711b0ac, type: 3}
+    - Key: 823899898
+      Value: {fileID: 21300000, guid: 6baffbde8ced9c44c844398de055b09d, type: 3}
+    - Key: 1256501025
+      Value: {fileID: 21300000, guid: f750bf4432a03334cbe4b8c65eefb257, type: 3}
+    - Key: 683198692
+      Value: {fileID: 21300000, guid: 702937ee55b1a45469cbd0cfeb146d6e, type: 3}
+    - Key: 632219777
+      Value: {fileID: 21300000, guid: f2bc3a6cf25a6934ebc97d929f96c504, type: 3}
+    - Key: 864506531
+      Value: {fileID: 21300000, guid: 691fa4cdf71adfe4398518c0733b4aca, type: 3}
+    - Key: 1384333719
+      Value: {fileID: 21300000, guid: 59d589297dc7dc0478bb51beea8c79aa, type: 3}
+    - Key: 148354486
+      Value: {fileID: 21300000, guid: 05360864de9355a4fb23bcb2075ed6c7, type: 3}
+    - Key: 883583601
+      Value: {fileID: 21300000, guid: 8da3eddb0a457bf6899d2998959eddad, type: 3}
+    - Key: 787665622
+      Value: {fileID: 21300000, guid: a87bffb8f1cdb374e825c8c2eee3a4fb, type: 3}

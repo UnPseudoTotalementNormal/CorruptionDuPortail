@@ -53,7 +53,7 @@ jobs:
         uses: game-ci/unity-test-runner@v4
         with:
           projectPath: ./
-          unityVersion: 6000.2.6f2
+          unityVersion: 6000.5.0f1
           testMode: all
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: Résultats des Tests Unity

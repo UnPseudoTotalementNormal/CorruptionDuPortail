@@ -27,9 +27,9 @@
                     </ui:VisualElement>
                     <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
                     <ui:VisualElement name="difficulty" class="role-card__difficulty">
-                        <ui:VisualElement class="role-card__pip role-card__pip--filled" />
-                        <ui:VisualElement class="role-card__pip role-card__pip--filled" />
-                        <ui:VisualElement class="role-card__pip role-card__pip--empty" />
+                        <ui:Label text="★" class="role-card__pip" />
+                        <ui:Label text="★" class="role-card__pip" />
+                        <ui:Label text="★" class="role-card__pip role-card__pip--empty" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 

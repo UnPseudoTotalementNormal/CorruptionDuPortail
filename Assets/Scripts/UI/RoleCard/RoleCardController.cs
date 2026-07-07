@@ -42,6 +42,7 @@ namespace UI.RoleCard
         private const string PassiveTextClass = "role-card__passive-text";
         private const string NameLongClass = "role-card__name--long";
         private const string Bullet = "•";
+        private const string Star = "★";
         private const int LongNameThreshold = 18;
         private const int DifficultyPips = 3;
         // Longest staggered exit transition (panel: 100ms delay + 300ms) + a small buffer. We collapse
@@ -200,10 +201,10 @@ namespace UI.RoleCard
             _difficulty.Clear();
             for (var i = 1; i <= DifficultyPips; i++)
             {
-                var pip = new VisualElement();
+                var pip = new Label(Star);
                 pip.AddToClassList(PipClass);
-                if (i > difficulty) pip.AddToClassList(PipEmptyClass);   // empty pips keep the shared gold-dimmed look
-                else pip.style.backgroundColor = _cAccent;                // filled pips take the faction accent
+                if (i > difficulty) pip.AddToClassList(PipEmptyClass);   // empty stars keep the shared dimmed look
+                else pip.style.color = _cAccent;                          // filled stars take the faction accent
                 _difficulty.Add(pip);
             }
         }

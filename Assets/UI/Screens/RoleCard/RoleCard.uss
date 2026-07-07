@@ -150,17 +150,17 @@
     justify-content: center;
 }
 
+/* Difficulty = stars (★). Filled = faction accent (set by the controller), empty = dimmed. */
 .role-card__pip {
-    width: 8px;
-    height: 8px;
-    border-radius: 4px;
-    margin-left: var(--cdp-space-xs);
-    margin-right: var(--cdp-space-xs);
-    background-color: var(--cdp-color-role-title);
+    font-size: 22px;
+    color: var(--cdp-color-role-title);
+    -unity-text-align: middle-center;
+    margin-left: 1px;
+    margin-right: 1px;
 }
 
 .role-card__pip--empty {
-    opacity: 0.25;
+    opacity: 0.28;
 }
 
 /* Single gold rule between header and kit (the dossier's title bar). */

@@ -10351,6 +10351,7 @@ MonoBehaviour:
   charactersBar: {fileID: 463595595}
   frostCanvasGroup: {fileID: 1188295858}
   frostFadeDuration: 0.25
+  factionDatabase: {fileID: 11400000, guid: 19ecc1a7ccad9e642b3c1e9bf0d8cacc, type: 2}
 --- !u!114 &1269060634
 MonoBehaviour:
   m_ObjectHideFlags: 0

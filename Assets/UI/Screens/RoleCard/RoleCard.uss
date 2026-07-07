@@ -103,6 +103,14 @@
     align-items: stretch;
 }
 
+/* Faction line = name (+ tagline) with the faction icon beside it (mockup). */
+.role-card__faction-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--cdp-space-sm);
+}
+
 .role-card__faction {
     color: var(--cdp-color-role-faction);
     font-size: var(--cdp-font-size-sm);
@@ -110,7 +118,14 @@
     -unity-text-align: middle-center;
     letter-spacing: 1px;
     white-space: normal;
-    margin-bottom: var(--cdp-space-sm);
+}
+
+.role-card__faction-icon {
+    width: 26px;
+    height: 26px;
+    margin-left: var(--cdp-space-sm);
+    flex-shrink: 0;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .role-card__name {

@@ -21,7 +21,10 @@
 
                 <!-- Header (cover of the dossier) -->
                 <ui:VisualElement name="header" class="role-card__header">
-                    <ui:Label name="faction" text="ANOMALIE : THE EVIL GUYS" class="role-card__faction" />
+                    <ui:VisualElement name="faction-row" class="role-card__faction-row">
+                        <ui:Label name="faction" text="Anomalie : The Evil Guys" class="role-card__faction" />
+                        <ui:VisualElement name="faction-icon" class="role-card__faction-icon" />
+                    </ui:VisualElement>
                     <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
                     <ui:VisualElement name="difficulty" class="role-card__difficulty">
                         <ui:VisualElement class="role-card__pip role-card__pip--filled" />

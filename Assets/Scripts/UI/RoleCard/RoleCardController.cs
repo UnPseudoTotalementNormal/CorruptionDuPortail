@@ -59,9 +59,13 @@ namespace UI.RoleCard
 
         [SerializeField] private float frostFadeDuration = 0.25f;
 
+        [Tooltip("Faction presentation data (display name / tagline / icon), keyed by FactionType. Wire the FactionDatabase asset.")]
+        [SerializeField] private FactionDatabase factionDatabase;
+
         private VisualElement _root;
         private VisualElement _portrait;
         private Label _faction;
+        private VisualElement _factionIcon;
         private Label _roleName;
         private VisualElement _difficulty;
         private VisualElement _passiveBlock;
@@ -91,6 +95,7 @@ namespace UI.RoleCard
 
             _portrait = _root.Q<VisualElement>("portrait");
             _faction = _root.Q<Label>("faction");
+            _factionIcon = _root.Q<VisualElement>("faction-icon");
             _roleName = _root.Q<Label>("role-name");
             _difficulty = _root.Q<VisualElement>("difficulty");
             _passiveBlock = _root.Q<VisualElement>("passive-block");
@@ -161,7 +166,7 @@ namespace UI.RoleCard
             var roleName = role.roleName.ToString();
             _roleName.text = roleName;
             _roleName.EnableInClassList(NameLongClass, roleName.Length > LongNameThreshold);
-            _faction.text = FactionHeader(role.factionType); // TEMP — replace with Faction SO displayName + tagline
+            BindFaction(role.factionType);
             BuildDifficulty(role.roleDifficulty);
             BuildPassive(role);
             BuildActivePowers(role);
@@ -248,8 +253,31 @@ namespace UI.RoleCard
                 _portrait.style.backgroundImage = new StyleBackground(sprite);
         }
 
-        // TEMP faction header. These are the existing in-game faction names (top bar); the tagline
-        // ("The Evil Guys" in the mockup) is design-owned narrative and stays empty until a Faction SO exists.
+        // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon.
+        // Falls back to a name-only label if the database is unwired or missing the entry.
+        private void BindFaction(FactionType faction)
+        {
+            string text;
+            Sprite icon = null;
+            if (factionDatabase != null && factionDatabase.TryGet(faction, out var data) && data != null)
+            {
+                text = string.IsNullOrEmpty(data.tagline) ? data.displayName : $"{data.displayName} : {data.tagline}";
+                icon = data.icon;
+            }
+            else
+            {
+                text = FactionHeader(faction);
+            }
+
+            _faction.text = text;
+            if (_factionIcon != null)
+            {
+                _factionIcon.style.backgroundImage = icon != null ? new StyleBackground(icon) : new StyleBackground();
+                _factionIcon.style.display = icon != null ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        // Name-only fallback when no FactionDatabase entry is available.
         private static string FactionHeader(FactionType faction) => faction switch
         {
             FactionType.anomaly => "Anomalie",

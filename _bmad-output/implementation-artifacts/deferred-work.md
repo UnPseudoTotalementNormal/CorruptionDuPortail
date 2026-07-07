@@ -161,3 +161,8 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 - Add a BoxCollider to the on-card vote button (VoteCanvas CustomButton) sized to its rect so the center reticle can click it; place it lower-center of the lifted/tilted front face.
 - Make the Skip control a WORLD-space, reticle-targetable button (collider + reuse its handler), off the card cluster (non-overlapping latch volumes).
 - Confirm input binding (_confirmAction InputActionReference) is Poyo's editor wiring regardless of PR.
+
+## 2026-07-07 — from spec-dedup-characters-cache review
+
+- **NetworkList replica divergence is masked, not repaired.** The dedup guard in `CharacterManager.RebuildCharactersCache` heals the projection only; the client's `networkedCharacters` replica keeps the extra entry for the session (clients cannot write a server-write NetworkList). NGO deltas are index-based, so a later server `RemoveAt` on a diverged replica can remove the wrong entry client-side. Fix direction: server-driven full-list resync when a client reports `[CHARLIST]`, and/or NGO upstream issue (2.6.0→2.12.0 bump suspected — see technomancer-duplicate-card investigation).
+- **Permanently unresolved list entry keeps `_cacheDirty` true forever** (pre-existing): every `_characters` read reruns the O(n²) rebuild for the rest of the session. Consider a bounded retry / despawn-aware cleanup.

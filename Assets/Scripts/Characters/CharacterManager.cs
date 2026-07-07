@@ -129,6 +129,12 @@ namespace Characters
         // paying its cost in steady state.
         private bool _cacheDirty = true;
 
+        // Tripwire memory: a duplicated replica entry persists in networkedCharacters
+        // for the whole session (clients cannot repair a server-write NetworkList) and
+        // the rebuild reruns on every list change, so without this set the [CHARLIST]
+        // error would flood the log on every dirty read.
+        private readonly HashSet<ulong> _reportedDuplicateObjectIds = new();
+
         private List<Character> _characters
         {
             get
@@ -149,6 +155,21 @@ namespace Characters
             {
                 if (_networkBehaviourReference.TryGet(out Character _character))
                 {
+                    // Self-healing projection: NGO can deliver the same list entry
+                    // twice to a joining client (initial-sync + pending-delta race —
+                    // see investigations/technomancer-duplicate-card-investigation.md).
+                    // A legitimate game can never hold the same Character instance
+                    // twice (AddNewCharacter dedups by clientId), so dropping by
+                    // reference is safe. The loud log is a permanent tripwire that
+                    // proves the replica divergence in Player.log when it recurs.
+                    if (_charactersCache.Contains(_character))
+                    {
+                        if (_reportedDuplicateObjectIds.Add(_character.NetworkObjectId))
+                        {
+                            Debug.LogError($"[CHARLIST] Duplicate networkedCharacters entry dropped: ownerClientId={_character.ownerClientId.Value} networkObjectId={_character.NetworkObjectId} listCount={networkedCharacters.Count}");
+                        }
+                        continue;
+                    }
                     _charactersCache.Add(_character);
                 }
                 else

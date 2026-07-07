@@ -117,7 +117,8 @@
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     letter-spacing: 1px;
-    white-space: normal;
+    white-space: nowrap;          /* faction line is short — keep it one line (row shrink-wrap wrapped "Élu" mid-word) */
+    flex-shrink: 0;
 }
 
 .role-card__faction-icon {

@@ -5,6 +5,7 @@ using Board.UI.CharacterBar;
 using Characters;
 using Characters.Powers;
 using Cysharp.Threading.Tasks;
+using Extensions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,10 +18,13 @@ namespace UI.RoleCard
     /// this is a consultable panel opened by clicking a character in the power bar. Binds a <see cref="Role"/>
     /// into the card and handles show/hide.
     ///
-    /// Curation (owner-ratified, mockup-faithful): the personal passives render FUSED into one block; any
-    /// power flagged <see cref="Power.hideFromRoleCard"/> (a faction win-objective) is omitted; usage counts
-    /// are static (no live counter). Faction display name is TEMP until a Faction ScriptableObject carries a
-    /// real displayName + tagline (design-owned narrative).
+    /// Curation (owner-ratified): each personal passive is its own bullet row; any power flagged
+    /// <see cref="Power.hideFromRoleCard"/> (a faction win-objective) is omitted; usage counts are static.
+    /// Active powers are shown as numbered pills. Faction display name is TEMP until a Faction
+    /// ScriptableObject carries a real displayName + tagline (design-owned narrative).
+    ///
+    /// The card sits over the existing blurred game backdrop: opening the card fades the shared FrostCanvas
+    /// veil in (the uGUI blur consumer of _BackgroundBlurSource); closing fades it out.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class RoleCardController : MonoBehaviour
@@ -28,18 +32,32 @@ namespace UI.RoleCard
         private const string HiddenClass = "cdp-is-hidden";
         private const string CollapsedClass = "cdp-is-collapsed";
         private const string PipClass = "role-card__pip";
+        private const string PipEmptyClass = "role-card__pip--empty";
         private const string PowerClass = "role-card__power";
+        private const string PowerNumClass = "role-card__power-num";
+        private const string PowerBodyClass = "role-card__power-body";
         private const string PowerTitleClass = "role-card__power-title";
         private const string PowerDescClass = "role-card__power-desc";
         private const string PassiveRowClass = "role-card__passive-row";
         private const string PassiveBulletClass = "role-card__passive-bullet";
         private const string PassiveTextClass = "role-card__passive-text";
+        private const string NameLongClass = "role-card__name--long";
         private const string Bullet = "•";
+        private const int LongNameThreshold = 18;
+        private const int DifficultyPips = 3;
+        // Longest staggered exit transition (panel: 100ms delay + 300ms) + a small buffer. We collapse
+        // (display:none) only after this so the exit animation isn't cut short.
+        private const long ExitCollapseDelayMs = 420;
 
         [SerializeField] private UIDocument document;
 
         [Tooltip("The character bar whose clicks open this card. Wire it in the GameScene.")]
         [SerializeField] private CharactersBar charactersBar;
+
+        [Tooltip("The shared FrostCanvas CanvasGroup (blurred game backdrop). Faded in on open, out on close. Wire it in the GameScene.")]
+        [SerializeField] private CanvasGroup frostCanvasGroup;
+
+        [SerializeField] private float frostFadeDuration = 0.25f;
 
         private VisualElement _root;
         private VisualElement _portrait;
@@ -83,7 +101,6 @@ namespace UI.RoleCard
             // so picking is Ignore until Open() (then Position so the scrim catches the dismiss click).
             _root.pickingMode = PickingMode.Ignore;
             _root.RegisterCallback<PointerDownEvent>(OnRootPointerDown);
-            _root.RegisterCallback<TransitionEndEvent>(OnRootTransitionEnd);
 
             _initialized = true;
         }
@@ -110,14 +127,22 @@ namespace UI.RoleCard
             _root.pickingMode = PickingMode.Position; // modal: scrim blocks the world + catches dismiss clicks
             // Remove the fade class next frame so the opacity transition actually runs from 0 -> 1.
             _root.schedule.Execute(() => _root.RemoveFromClassList(HiddenClass));
+
+            // Fade the shared blurred backdrop in behind the card.
+            if (frostCanvasGroup != null) frostCanvasGroup.DoShowGroup(frostFadeDuration, false, false);
         }
 
-        /// <summary>Fade the card out; it collapses (no layout/input) once the transition ends.</summary>
+        /// <summary>Animate the card out; it collapses (no layout/input) once the exit finishes.</summary>
         public void Close()
         {
             if (_root == null) return;
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
+
+            if (frostCanvasGroup != null) frostCanvasGroup.DoHideGroup(frostFadeDuration, false, false);
+
+            // Collapse only after the staggered exit finishes (guarded, so a re-open in between cancels it).
+            _root.schedule.Execute(CollapseIfHidden).ExecuteLater(ExitCollapseDelayMs);
         }
 
         // Dismiss only when the scrim itself is clicked, not the panel or its children.
@@ -126,14 +151,16 @@ namespace UI.RoleCard
             if (evt.target == _root) Close();
         }
 
-        private void OnRootTransitionEnd(TransitionEndEvent evt)
+        private void CollapseIfHidden()
         {
-            if (_root.ClassListContains(HiddenClass)) _root.AddToClassList(CollapsedClass);
+            if (_root != null && _root.ClassListContains(HiddenClass)) _root.AddToClassList(CollapsedClass);
         }
 
         private void Bind(Role role)
         {
-            _roleName.text = role.roleName.ToString();
+            var roleName = role.roleName.ToString();
+            _roleName.text = roleName;
+            _roleName.EnableInClassList(NameLongClass, roleName.Length > LongNameThreshold);
             _faction.text = FactionHeader(role.factionType); // TEMP — replace with Faction SO displayName + tagline
             BuildDifficulty(role.roleDifficulty);
             BuildPassive(role);
@@ -141,13 +168,16 @@ namespace UI.RoleCard
             BindPortraitAsync(role).Forget();
         }
 
+        // Always DifficultyPips dots; the ones past the role's difficulty are dimmed (empty) — same size,
+        // opacity only, for clean alignment.
         private void BuildDifficulty(int difficulty)
         {
             _difficulty.Clear();
-            for (var i = 0; i < difficulty; i++)
+            for (var i = 1; i <= DifficultyPips; i++)
             {
                 var pip = new VisualElement();
                 pip.AddToClassList(PipClass);
+                if (i > difficulty) pip.AddToClassList(PipEmptyClass);
                 _difficulty.Add(pip);
             }
         }
@@ -179,6 +209,8 @@ namespace UI.RoleCard
             _passiveBlock.EnableInClassList(CollapsedClass, _passiveList.childCount == 0);
         }
 
+        // Each active power: a numbered gold pill (the "I trigger this" marker) + the power name and
+        // description. The number lives in the pill, so the title is just the power name.
         private void BuildActivePowers(Role role)
         {
             _powers.Clear();
@@ -188,14 +220,22 @@ namespace UI.RoleCard
                 var entry = new VisualElement();
                 entry.AddToClassList(PowerClass);
 
-                var title = new Label($"Pouvoir {index} : {power.powerName}");
+                var num = new Label(index.ToString());
+                num.AddToClassList(PowerNumClass);
+
+                var body = new VisualElement();
+                body.AddToClassList(PowerBodyClass);
+
+                var title = new Label(power.powerName.ToString());
                 title.AddToClassList(PowerTitleClass);
 
                 var desc = new Label(power.powerDescription.ToString());
                 desc.AddToClassList(PowerDescClass);
 
-                entry.Add(title);
-                entry.Add(desc);
+                body.Add(title);
+                body.Add(desc);
+                entry.Add(num);
+                entry.Add(body);
                 _powers.Add(entry);
                 index++;
             }

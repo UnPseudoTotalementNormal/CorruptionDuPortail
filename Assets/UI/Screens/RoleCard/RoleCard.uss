@@ -5,6 +5,10 @@
  * tokens (PROVISIONAL, design-owned). USS reality: px/% only, flexbox only, no gradient/box-shadow,
  * -unity-* props, var() can't nest in a function.
  *
+ * Grammar (Sally): passive = recessed/inset/calm (what you HAVE); active = raised, numbered pill
+ * (what you TRIGGER). The card sits over the existing blurred game backdrop (FrostCanvas veil, driven
+ * on/off by the controller), so the scrim is a soft focus veil, not a hard dim.
+ *
  * Show/hide = two-class pair the controller toggles: cdp-is-hidden fades opacity, cdp-is-collapsed
  * removes layout+input. Root picking is driven in C# (Ignore while collapsed; Position while open).
  */
@@ -17,14 +21,28 @@
     bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: var(--cdp-color-scrim);
+    background-color: var(--cdp-color-role-scrim);
     -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
     transition-property: opacity;
-    transition-duration: var(--cdp-dur-panel);
+    transition-duration: 200ms;
     transition-timing-function: ease-out;
 }
 
+/* Entrance/exit (Sally): rise + fade + micro-scale, portrait leads, panel follows. The root scrim fades;
+ * portrait and panel carry their own staggered transitions to the "away" values set here when hidden. */
 .role-card.cdp-is-hidden {
+    opacity: 0;
+}
+
+.role-card.cdp-is-hidden .role-card__portrait {
+    translate: 0 32px;
+    scale: 0.96;
+    opacity: 0;
+}
+
+.role-card.cdp-is-hidden .role-card__panel {
+    translate: 0 24px;
+    scale: 0.97;
     opacity: 0;
 }
 
@@ -32,37 +50,57 @@
     display: none;
 }
 
-/* Portrait (left) + panel (right), centred by the scrim. */
+/* Panel + portrait, centred. row-reverse so the portrait (2nd in DOM) sits to the LEFT and is painted
+ * ON TOP of the panel — the "photo slipped into the dossier" overlap from the mockup. */
 .role-card__row {
-    flex-direction: row;
+    flex-direction: row-reverse;
     align-items: center;
     justify-content: center;
-    max-width: 92%;
-    max-height: 92%;
+    max-width: 94%;
+    max-height: 94%;
 }
 
-/* Tall portrait card. background-image assigned at runtime from Role.rolePortrait. */
+/* Tall portrait card (left, on top). background-image assigned at runtime from Role.rolePortrait;
+ * until then the deep-warm fallback + gold frame avoid an empty hole. */
 .role-card__portrait {
     width: 260px;
     height: 400px;
-    margin-right: calc(var(--cdp-space-lg) * -1);   /* tuck the panel slightly over the portrait */
-    background-color: var(--cdp-color-role-panel);
-    border-radius: var(--cdp-radius-role);
+    margin-right: -24px;                              /* overlap into the panel (painted on top) */
+    background-color: var(--cdp-color-role-panel-deep);
+    border-radius: var(--cdp-radius-role-tight);
     border-width: 2px;
     border-color: var(--cdp-color-role-border);
     -unity-background-scale-mode: scale-and-crop;
     flex-shrink: 0;
+    transform-origin: center bottom;                 /* shared low origin keeps the overlap seam stable while scaling */
+    transition-property: translate, scale, opacity;
+    transition-duration: 300ms;
+    transition-timing-function: ease-out;
+    transition-delay: 40ms;                          /* portrait (hero) leads */
 }
 
 /* Gold info panel (right). */
 .role-card__panel {
     width: 560px;
-    max-height: 92%;
-    padding: var(--cdp-space-lg);
+    max-height: 94%;
+    padding: var(--cdp-space-lg) var(--cdp-space-md);
+    padding-left: var(--cdp-space-xl);               /* extra left inset clears the overlapping portrait */
     background-color: var(--cdp-color-role-panel);
     border-radius: var(--cdp-radius-role);
     border-width: 2px;
     border-color: var(--cdp-color-role-border);
+    transform-origin: center bottom;
+    transition-property: translate, scale, opacity;
+    transition-duration: 300ms;
+    transition-timing-function: ease-out;
+    transition-delay: 100ms;                         /* panel follows the portrait (60ms stagger) */
+}
+
+/* ---- Header (dossier cover) ---- */
+/* Full-width children (stretch) + centered text/justify — NOT align-items:center, which shrink-wraps a
+ * label to a too-narrow measure and wraps even a short faction like "Élu" mid-word. */
+.role-card__header {
+    align-items: stretch;
 }
 
 .role-card__faction {
@@ -72,32 +110,49 @@
     -unity-text-align: middle-center;
     letter-spacing: 1px;
     white-space: normal;
-    margin-bottom: var(--cdp-space-xs);
+    margin-bottom: var(--cdp-space-sm);
 }
 
 .role-card__name {
     color: var(--cdp-color-role-title);
-    font-size: var(--cdp-font-size-title);
+    font-size: var(--cdp-font-size-role-name);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     white-space: normal;
-    margin-bottom: var(--cdp-space-sm);
+    max-width: 100%;
+    margin-bottom: var(--cdp-space-smd);
 }
 
-/* Difficulty pips (1-3) — filled by the controller. Discrete, under the name. */
+/* Stepped down for long names so they wrap on ~2 lines without ever ellipsising (Sally). */
+.role-card__name--long {
+    font-size: var(--cdp-font-size-role-name-long);
+}
+
+/* Difficulty pips — always 3; filled vs empty by opacity only (same size = clean alignment). */
 .role-card__difficulty {
     flex-direction: row;
     justify-content: center;
-    margin-bottom: var(--cdp-space-md);
 }
 
 .role-card__pip {
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    margin-left: 3px;
-    margin-right: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    margin-left: var(--cdp-space-xs);
+    margin-right: var(--cdp-space-xs);
     background-color: var(--cdp-color-role-title);
+}
+
+.role-card__pip--empty {
+    opacity: 0.25;
+}
+
+/* Single gold rule between header and kit (the dossier's title bar). */
+.role-card__divider {
+    height: 1px;
+    background-color: var(--cdp-color-role-border-soft);
+    margin-top: var(--cdp-space-lg);
+    margin-bottom: var(--cdp-space-lg);
 }
 
 /* Bounded kit area: only this scrolls when a long (up to 512-char) description overflows. */
@@ -105,8 +160,7 @@
     flex-grow: 1;
 }
 
-/* Passive block — visually inset + muted so it reads as "a fact about you", distinct from the active
- * powers you trigger (UX: agency grammar). */
+/* ---- Passive block: recessed/inset, calm — "what you HAVE" ---- */
 .role-card__passive {
     background-color: var(--cdp-color-role-surface);
     border-left-width: 3px;
@@ -114,17 +168,17 @@
     border-top-left-radius: 6px;
     border-bottom-left-radius: 6px;
     padding: var(--cdp-space-sm) var(--cdp-space-md);
-    margin-bottom: var(--cdp-space-lg);
+    margin-bottom: var(--cdp-space-md);
 }
 
 .role-card__section-label {
     color: var(--cdp-color-role-title);
     font-size: var(--cdp-font-size-base);
     -unity-font-style: bold;
-    margin-bottom: var(--cdp-space-xs);
+    margin-bottom: var(--cdp-space-sm);
 }
 
-/* One row per passive: a fixed-width gold bullet + wrapping text (Sally: one line = one passive). */
+/* One row per passive: fixed-width gold bullet + wrapping text (one line = one passive). */
 .role-card__passive-row {
     flex-direction: row;
     align-items: flex-start;
@@ -147,9 +201,30 @@
     flex-shrink: 1;
 }
 
-/* Active powers list. */
+/* ---- Active powers: raised, numbered pill — "what you TRIGGER" ---- */
 .role-card__power {
-    margin-bottom: var(--cdp-space-lg);
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: var(--cdp-space-md);
+}
+
+/* The numbered pill = the mental "I click this" marker. */
+.role-card__power-num {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    margin-right: var(--cdp-space-md);
+    background-color: var(--cdp-color-role-title);
+    color: var(--cdp-color-role-panel);
+    border-radius: var(--cdp-radius-role-tight);
+    font-size: var(--cdp-font-size-base);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.role-card__power-body {
+    flex-grow: 1;
+    flex-shrink: 1;
 }
 
 .role-card__power-title {
@@ -166,7 +241,7 @@
     white-space: normal;
 }
 
-/* ---- Slim, on-theme scrollbar (replace the default chunky grey one) ---- */
+/* ---- Slim, on-theme scrollbar ---- */
 .role-card__kit .unity-scroller--vertical {
     width: 6px;
     background-color: transparent;

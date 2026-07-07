@@ -1,36 +1,41 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <!-- Role presentation card — an ON-DEMAND consultable panel (NOT the role-reveal state screen).
          Opened by clicking a character in the power bar; shows that role's faction header, name,
-         difficulty, one fused Passive block, and the active powers (mockup-faithful).
+         difficulty, its passive traits (one bullet each) and its active powers (numbered).
 
-         Tokens + shared components come from the PanelSettings theme (theme.tss); this panel's own
-         layout is in RoleCard.uss. The sample text below is a HARDCODED Mage Occulte placeholder for
-         Split 1 (static skeleton) — RoleCardController will overwrite every field at runtime from a Role.
+         Tokens + shared components come from the PanelSettings theme (theme.tss); layout is RoleCard.uss.
+         The sample text below is a HARDCODED Mage Occulte placeholder — RoleCardController overwrites every
+         field at runtime from a Role (and clears/rebuilds the passive list, active powers, and pips).
 
-         Structure mirrors the mockup: a tall portrait card on the LEFT, the gold info panel on the RIGHT.
-         Curation (design-owned, wired later): the two personal passives render FUSED into one Passive
-         block; the faction win-objective power (hideFromRoleCard) is not shown; usage counts are static. -->
+         Layout mirrors the mockup: a tall portrait card on the LEFT that slightly overlaps the gold info
+         panel on the RIGHT. The panel is a fixed-height dossier: header (faction / name / difficulty) above
+         a single gold rule, then a scrolling kit (passive traits, then active powers). The faction
+         win-objective (Power.hideFromRoleCard) is not shown; usage counts are static. -->
     <ui:Style src="RoleCard.uss" />
     <ui:VisualElement name="role-card" class="role-card cdp-is-hidden cdp-is-collapsed">
         <ui:VisualElement name="role-card-row" class="role-card__row">
 
-            <!-- Portrait card (left). background-image set at runtime from Role.rolePortrait. -->
-            <ui:VisualElement name="portrait" class="role-card__portrait" />
-
-            <!-- Gold info panel (right) -->
+            <!-- Gold info panel (right). NOTE: the row is row-reverse, so this first-in-DOM element sits on
+                 the RIGHT and the portrait (last-in-DOM) sits on the LEFT painted on top (mockup overlap). -->
             <ui:VisualElement name="panel" class="role-card__panel">
 
-                <ui:Label name="faction" text="Anomalie : The Evil Guys" class="role-card__faction" />
-                <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
-                <ui:VisualElement name="difficulty" class="role-card__difficulty" />
+                <!-- Header (cover of the dossier) -->
+                <ui:VisualElement name="header" class="role-card__header">
+                    <ui:Label name="faction" text="ANOMALIE : THE EVIL GUYS" class="role-card__faction" />
+                    <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
+                    <ui:VisualElement name="difficulty" class="role-card__difficulty">
+                        <ui:VisualElement class="role-card__pip role-card__pip--filled" />
+                        <ui:VisualElement class="role-card__pip role-card__pip--filled" />
+                        <ui:VisualElement class="role-card__pip role-card__pip--empty" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
 
-                <!-- Scrollable kit area: bounds the panel height, only the kit scrolls if a long
-                     description overflows (portrait + faction stay anchored). -->
+                <ui:VisualElement class="role-card__divider" />
+
+                <!-- Scrollable kit: bounds the panel height; only this scrolls on overflow. -->
                 <ui:ScrollView name="kit" class="role-card__kit">
 
-                    <!-- Passive block: the controller fills passive-list with one bulleted row per passive
-                         power (isPassive && !hideFromRoleCard) so distinct passives read as a scannable list
-                         instead of a run-on paragraph. -->
+                    <!-- Passive traits: one bullet row per passive (controller fills passive-list). -->
                     <ui:VisualElement name="passive-block" class="role-card__passive">
                         <ui:Label text="Passif" class="role-card__section-label" />
                         <ui:VisualElement name="passive-list" class="role-card__passive-list">
@@ -45,20 +50,30 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <!-- Active powers (numbered). Cloned per active power by the controller. -->
+                    <!-- Active powers: numbered pill + name + description (controller clones per power). -->
                     <ui:VisualElement name="powers" class="role-card__powers">
                         <ui:VisualElement class="role-card__power">
-                            <ui:Label class="role-card__power-title" text="Pouvoir 1 : Corruption Ciblée" />
-                            <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
+                            <ui:Label text="1" class="role-card__power-num" />
+                            <ui:VisualElement class="role-card__power-body">
+                                <ui:Label class="role-card__power-title" text="Corruption Ciblée" />
+                                <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                         <ui:VisualElement class="role-card__power">
-                            <ui:Label class="role-card__power-title" text="Pouvoir 2 : Les Deux Corrupteurs" />
-                            <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
+                            <ui:Label text="2" class="role-card__power-num" />
+                            <ui:VisualElement class="role-card__power-body">
+                                <ui:Label class="role-card__power-title" text="Les Deux Corrupteurs" />
+                                <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
 
                 </ui:ScrollView>
             </ui:VisualElement>
+
+            <!-- Portrait card (left, painted on top via row-reverse + last-in-DOM). Sprite set at runtime;
+                 until then the deep-warm fallback + gold frame avoid an empty hole. -->
+            <ui:VisualElement name="portrait" class="role-card__portrait" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

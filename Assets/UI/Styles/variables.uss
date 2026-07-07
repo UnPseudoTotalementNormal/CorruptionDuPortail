@@ -59,8 +59,15 @@
     --cdp-color-role-title: rgb(240, 208, 138);      /* role name + section/power titles — gold */
     --cdp-color-role-faction: rgb(214, 182, 120);    /* faction header — muted gold */
     --cdp-color-role-panel: rgb(38, 31, 20);         /* panel surface — dark warm (gradient flattened) */
+    --cdp-color-role-panel-deep: rgb(28, 23, 15);    /* portrait fallback / deeper warm */
     --cdp-color-role-border: rgb(191, 154, 82);      /* panel + portrait outline — gold */
+    --cdp-color-role-border-soft: rgba(191, 154, 82, 0.30); /* divider / inner bevel — faint gold */
     --cdp-color-role-passive: rgb(198, 190, 172);    /* passive text — muted warm (recedes vs active, UX agency grammar) */
     --cdp-color-role-surface: rgba(0, 0, 0, 0.25);   /* passive block inset — subtle darkening */
+    --cdp-color-role-scrim: rgba(8, 6, 3, 0.55);     /* softened veil (blur does the calm, scrim does the focus) */
     --cdp-radius-role: 18px;                          /* rounded card corners (mockup) */
+    --cdp-radius-role-tight: 12px;                    /* portrait / pill corners (harder object) */
+    --cdp-space-smd: 12px;                            /* the missing 12px step (name -> pips) */
+    --cdp-font-size-role-name: 44px;                 /* role name (fits ~2 lines at panel width) */
+    --cdp-font-size-role-name-long: 30px;            /* stepped down for long names (no ellipsis) */
 }

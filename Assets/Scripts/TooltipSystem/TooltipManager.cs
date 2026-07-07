@@ -189,7 +189,9 @@ namespace TooltipSystem
                 }
             }
             
-            _tooltipRect.position = _componentScreenPos + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f);
+            _tooltipRect.position = _componentScreenPos
+                + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f)
+                + _tooltipTrigger.tooltipPixelOffset;
         }
 
         private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)

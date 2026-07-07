@@ -14,6 +14,7 @@ namespace TooltipSystem
         public event Action onMouseExitTrigger;
         public event Action onTooltipForceClose;
         public Vector2 tooltipOffsetDirection { get; set; } = Vector2.up;
+        public Vector2 tooltipPixelOffset => Vector2.zero;
         public RectTransform TooltipBoundsOverride => null;
 
         private int linkIndex = -1;

@@ -121,7 +121,7 @@ namespace Reticle
         // Advance one hover track: dispatch enter/exit as the per-track target changes (hysteresis in ReticleHover).
         private void UpdateTrack(ReticleHover _track, ref GameObject _current, GameObject _hit)
         {
-            int _id = _hit != null ? _hit.GetInstanceID() : ReticleHover.None;
+            int _id = _hit != null ? _hit.GetEntityId().GetHashCode() : ReticleHover.None;
             ReticleHoverResult _r = _track.Tick(_id, Time.deltaTime);
             if (_r.Exited != ReticleHover.None)
             {

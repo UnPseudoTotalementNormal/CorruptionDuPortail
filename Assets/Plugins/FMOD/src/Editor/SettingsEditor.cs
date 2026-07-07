@@ -153,7 +153,7 @@ namespace FMODUnity
         private ReorderableList banksToLoadView;
 
         private PlatformsView platformsView;
-        private TreeViewState platformTreeViewState = new TreeViewState();
+        private TreeViewState<int> platformTreeViewState = new TreeViewState<int>();
 
         private string lastSourceBankPath;
 
@@ -1907,7 +1907,7 @@ namespace FMODUnity
             }
         }
 
-        private class PlatformsView : TreeView
+        private class PlatformsView : TreeView<int>
         {
             private const float RowPadding = 2;
 
@@ -1932,7 +1932,7 @@ namespace FMODUnity
             private static readonly Vector2 DragHandleSize = new Vector2(10, 7);
             private static readonly Vector2 DragHandlePadding = new Vector2(5, 6);
 
-            public PlatformsView(Settings settings, TreeViewState state) : base(state)
+            public PlatformsView(Settings settings, TreeViewState<int> state) : base(state)
             {
                 this.settings = settings;
                 rowHeight = EditorGUIUtility.singleLineHeight + RowPadding;
@@ -2231,23 +2231,23 @@ namespace FMODUnity
                 }
             }
 
-            protected override bool CanMultiSelect(TreeViewItem item)
+            protected override bool CanMultiSelect(TreeViewItem<int> item)
             {
                 return false;
             }
 
-            protected override bool CanChangeExpandedState(TreeViewItem item)
+            protected override bool CanChangeExpandedState(TreeViewItem<int> item)
             {
                 return false;
             }
 
-            protected override TreeViewItem BuildRoot()
+            protected override TreeViewItem<int> BuildRoot()
             {
-                TreeViewItem root = new TreeViewItem(-1, -1);
+                TreeViewItem<int> root = new TreeViewItem<int>(-1, -1);
 
                 root.AddChild(CreateItem(settings.PlayInEditorPlatform));
 
-                TreeViewItem defaultItem = CreateItem(settings.DefaultPlatform);
+                TreeViewItem<int> defaultItem = CreateItem(settings.DefaultPlatform);
                 root.AddChild(defaultItem);
 
                 CreateItems(defaultItem, settings.DefaultPlatform.ChildIdentifiers);
@@ -2257,7 +2257,7 @@ namespace FMODUnity
                 return root;
             }
 
-            private class PlatformItem : TreeViewItem
+            private class PlatformItem : TreeViewItem<int>
             {
                 public Platform platform;
 
@@ -2268,7 +2268,7 @@ namespace FMODUnity
                 }
             }
 
-            private void CreateItems(TreeViewItem parent, IEnumerable<string> platformIdentifiers)
+            private void CreateItems(TreeViewItem<int> parent, IEnumerable<string> platformIdentifiers)
             {
                 foreach (string identifier in platformIdentifiers)
                 {
@@ -2276,7 +2276,7 @@ namespace FMODUnity
 
                     if (platform.Active)
                     {
-                        TreeViewItem item = CreateItem(platform);
+                        TreeViewItem<int> item = CreateItem(platform);
                         parent.AddChild(item);
 
                         CreateItems(item, platform.ChildIdentifiers);
@@ -2284,14 +2284,14 @@ namespace FMODUnity
                 }
             }
 
-            private static TreeViewItem CreateItem(Platform platform)
+            private static TreeViewItem<int> CreateItem(Platform platform)
             {
                 return new PlatformItem(platform);
             }
 
             protected override void DoubleClickedItem(int id)
             {
-                TreeViewItem item = FindItem(id, rootItem);
+                TreeViewItem<int> item = FindItem(id, rootItem);
 
                 if (CanRename(item))
                 {
@@ -2299,7 +2299,7 @@ namespace FMODUnity
                 }
             }
 
-            protected override bool CanRename(TreeViewItem item)
+            protected override bool CanRename(TreeViewItem<int> item)
             {
                 PlatformItem platformItem = item as PlatformItem;
                 return (platformItem != null) && (platformItem.platform is PlatformGroup);
@@ -2343,7 +2343,7 @@ namespace FMODUnity
                 return IsItemDraggable(args.draggedItem);
             }
 
-            private bool IsItemDraggable(TreeViewItem draggedItem)
+            private bool IsItemDraggable(TreeViewItem<int> draggedItem)
             {
                 PlatformItem item = draggedItem as PlatformItem;
 

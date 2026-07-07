@@ -49,7 +49,7 @@ namespace FMODUnity
 
         private int executableTaskCount = 0;
 
-        private TreeViewState taskViewState = new TreeViewState();
+        private TreeViewState<int> taskViewState = new TreeViewState<int>();
 
         private TaskView taskView;
 
@@ -1896,7 +1896,7 @@ namespace FMODUnity
 
                     RichText = new GUIStyle(GUI.skin.label) { richText = true };
                     RichTextBox = new GUIStyle(EditorStyles.helpBox) { richText = true };
-                    TreeViewRichText = new GUIStyle(TreeView.DefaultStyles.label) { richText = true };
+                    TreeViewRichText = new GUIStyle(TreeView<int>.DefaultStyles.label) { richText = true };
                 }
             }
         }
@@ -2107,7 +2107,7 @@ namespace FMODUnity
             EditorGUILayout.SelectableLabel(text, style, GUILayout.Height(height));
         }
 
-        private class TaskView : TreeView
+        private class TaskView : TreeView<int>
         {
             private List<Task> tasks;
             private List<Asset> assets;
@@ -2123,7 +2123,7 @@ namespace FMODUnity
 
             public event AssetEventHandler assetEnableStateChanged;
 
-            public TaskView(TreeViewState state, List<Task> tasks, List<Asset> assets, List<Component> components)
+            public TaskView(TreeViewState<int> state, List<Task> tasks, List<Asset> assets, List<Component> components)
                 : base(state, new MultiColumnHeader(CreateHeaderState()))
             {
                 this.tasks = tasks;
@@ -2180,19 +2180,19 @@ namespace FMODUnity
                 Status,
             }
 
-            private class AssetItem : TreeViewItem
+            private class AssetItem : TreeViewItem<int>
             {
                 public Asset asset;
             }
 
-            private class TaskItem : TreeViewItem
+            private class TaskItem : TreeViewItem<int>
             {
                 public Task task;
             }
 
-            protected override TreeViewItem BuildRoot()
+            protected override TreeViewItem<int> BuildRoot()
             {
-                TreeViewItem root = new TreeViewItem(-1, -1);
+                TreeViewItem<int> root = new TreeViewItem<int>(-1, -1);
 
                 if (tasks.Count > 0)
                 {
@@ -2216,7 +2216,7 @@ namespace FMODUnity
                             root.AddChild(assetItem);
                         }
 
-                        TreeViewItem taskItem = new TaskItem() {
+                        TreeViewItem<int> taskItem = new TaskItem() {
                             id = index++,
                             task = task,
                         };
@@ -2226,7 +2226,7 @@ namespace FMODUnity
                 }
                 else
                 {
-                    TreeViewItem item = new TreeViewItem(0);
+                    TreeViewItem<int> item = new TreeViewItem<int>(0);
                     item.displayName = L10n.Tr("No tasks.");
 
                     root.AddChild(item);
@@ -2237,7 +2237,7 @@ namespace FMODUnity
                 return root;
             }
 
-            protected override bool CanMultiSelect(TreeViewItem item)
+            protected override bool CanMultiSelect(TreeViewItem<int> item)
             {
                 return false;
             }
@@ -2265,7 +2265,7 @@ namespace FMODUnity
 
             protected override void SingleClickedItem(int id)
             {
-                TreeViewItem item = FindItem(id, rootItem);
+                TreeViewItem<int> item = FindItem(id, rootItem);
 
                 if (!(item is TaskItem))
                 {
@@ -2294,7 +2294,7 @@ namespace FMODUnity
 
             protected override void RowGUI(RowGUIArgs args)
             {
-                TreeViewItem item = args.item;
+                TreeViewItem<int> item = args.item;
 
                 if (item is TaskItem)
                 {

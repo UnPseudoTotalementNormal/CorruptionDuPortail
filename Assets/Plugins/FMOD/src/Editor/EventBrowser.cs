@@ -99,7 +99,7 @@ namespace FMODUnity
             treeView.Reload();
         }
 
-        private class TreeView : UnityEditor.IMGUI.Controls.TreeView
+        private class TreeView : UnityEditor.IMGUI.Controls.TreeView<int>
         {
             private static readonly Texture2D folderOpenIcon = EditorUtils.LoadImage("FolderIconOpen.png");
             private static readonly Texture2D folderClosedIcon = EditorUtils.LoadImage("FolderIconClosed.png");
@@ -165,7 +165,7 @@ namespace FMODUnity
                 }
             }
 
-            private class LeafItem : TreeViewItem
+            private class LeafItem : TreeViewItem<int>
             {
                 public LeafItem(int id, int depth, ScriptableObject data)
                     : base(id, depth)
@@ -176,7 +176,7 @@ namespace FMODUnity
                 public ScriptableObject Data;
             }
 
-            private class FolderItem : TreeViewItem
+            private class FolderItem : TreeViewItem<int>
             {
                 public FolderItem(int id, int depth, string displayName)
                     : base(id, depth, displayName)
@@ -185,7 +185,7 @@ namespace FMODUnity
             }
 
             private FolderItem CreateFolderItem(string name, string path, bool hasChildren, bool forceExpanded,
-                TreeViewItem parent)
+                TreeViewItem<int> parent)
             {
                 FolderItem item = new FolderItem(AffirmItemID("folder:" + path), 0, name);
 
@@ -225,9 +225,9 @@ namespace FMODUnity
                 return item;
             }
 
-            protected override TreeViewItem BuildRoot()
+            protected override TreeViewItem<int> BuildRoot()
             {
-                return new TreeViewItem(-1, -1);
+                return new TreeViewItem<int>(-1, -1);
             }
 
             private int AffirmItemID(string path)
@@ -246,7 +246,7 @@ namespace FMODUnity
             public TypeFilter TypeFilter { get; set; }
             public bool DragEnabled { get; set; }
 
-            protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
+            protected override IList<TreeViewItem<int>> BuildRows(TreeViewItem<int> root)
             {
                 if (hasSearch)
                 {
@@ -278,7 +278,7 @@ namespace FMODUnity
                         EventManager.Parameters, p => p.StudioPath);
                 }
 
-                List<TreeViewItem> rows = new List<TreeViewItem>();
+                List<TreeViewItem<int>> rows = new List<TreeViewItem<int>>();
 
                 AddChildrenInOrder(rows, rootItem);
 
@@ -315,15 +315,15 @@ namespace FMODUnity
 
                 records = records.OrderBy(r => r.path, naturalComparer);
 
-                TreeViewItem root =
+                TreeViewItem<int> root =
                     CreateFolderItem(rootName, rootPath, records.Any(), TypeFilter != TypeFilter.All, rootItem);
 
-                List<TreeViewItem> currentFolderItems = new List<TreeViewItem>();
+                List<TreeViewItem<int>> currentFolderItems = new List<TreeViewItem<int>>();
 
                 foreach (var record in records)
                 {
                     string leafName;
-                    TreeViewItem parent = CreateFolderItems(record.path, currentFolderItems, root, out leafName);
+                    TreeViewItem<int> parent = CreateFolderItems(record.path, currentFolderItems, root, out leafName);
 
                     if (parent != null)
                     {
@@ -338,7 +338,7 @@ namespace FMODUnity
                             uniquePath = record.path;
                         }
 
-                        TreeViewItem leafItem = new LeafItem(AffirmItemID(uniquePath), 0, record.source);
+                        TreeViewItem<int> leafItem = new LeafItem(AffirmItemID(uniquePath), 0, record.source);
                         leafItem.displayName = leafName;
                         leafItem.icon = IconForRecord(record.source);
 
@@ -385,10 +385,10 @@ namespace FMODUnity
                 return null;
             }
 
-            private TreeViewItem CreateFolderItems(string path, List<TreeViewItem> currentFolderItems,
-                TreeViewItem root, out string leafName)
+            private TreeViewItem<int> CreateFolderItems(string path, List<TreeViewItem<int>> currentFolderItems,
+                TreeViewItem<int> root, out string leafName)
             {
-                TreeViewItem parent = root;
+                TreeViewItem<int> parent = root;
 
                 char separator = '/';
 
@@ -434,30 +434,30 @@ namespace FMODUnity
                 return parent;
             }
 
-            private static void AddChildrenInOrder(List<TreeViewItem> list, TreeViewItem item)
+            private static void AddChildrenInOrder(List<TreeViewItem<int>> list, TreeViewItem<int> item)
             {
                 if (item.children != null)
                 {
-                    foreach (TreeViewItem child in item.children.Where(child => child is FolderItem))
+                    foreach (TreeViewItem<int> child in item.children.Where(child => child is FolderItem))
                     {
                         list.Add(child);
 
                         AddChildrenInOrder(list, child);
                     }
 
-                    foreach (TreeViewItem child in item.children.Where(child => !(child == null || child is FolderItem)))
+                    foreach (TreeViewItem<int> child in item.children.Where(child => !(child == null || child is FolderItem)))
                     {
                         list.Add(child);
                     }
                 }
             }
 
-            protected override bool CanMultiSelect(TreeViewItem item)
+            protected override bool CanMultiSelect(TreeViewItem<int> item)
             {
                 return false;
             }
 
-            protected override bool CanChangeExpandedState(TreeViewItem item)
+            protected override bool CanChangeExpandedState(TreeViewItem<int> item)
             {
                 return item.hasChildren;
             }
@@ -476,7 +476,7 @@ namespace FMODUnity
 
             protected override void SetupDragAndDrop(SetupDragAndDropArgs args)
             {
-                IList<TreeViewItem> items = FindRows(args.draggedItemIDs);
+                IList<TreeViewItem<int>> items = FindRows(args.draggedItemIDs);
 
                 if (items[0] is LeafItem)
                 {
@@ -542,7 +542,7 @@ namespace FMODUnity
 
                 if (selectedIDs.Count > 0)
                 {
-                    TreeViewItem item = FindItem(selectedIDs[0], rootItem);
+                    TreeViewItem<int> item = FindItem(selectedIDs[0], rootItem);
 
                     if (item is LeafItem)
                     {
@@ -553,7 +553,7 @@ namespace FMODUnity
 
             protected override void DoubleClickedItem(int id)
             {
-                TreeViewItem item = FindItem(id, rootItem);
+                TreeViewItem<int> item = FindItem(id, rootItem);
 
                 if (item is LeafItem)
                 {
@@ -577,7 +577,7 @@ namespace FMODUnity
 
                 base.RowGUI(args);
 
-                TreeViewItem item = args.item;
+                TreeViewItem<int> item = args.item;
 
                 if (Event.current.type == EventType.MouseUp && item is FolderItem && item.hasChildren)
                 {
@@ -600,7 +600,7 @@ namespace FMODUnity
             [Serializable]
             public class State
             {
-                public TreeViewState baseState;
+                public TreeViewState<int> baseState;
                 public List<int> noSearchExpandState;
                 public ScriptableObject selectedObject;
                 public List<string> itemPaths = new List<string>();
@@ -608,11 +608,11 @@ namespace FMODUnity
                 public TypeFilter typeFilter = TypeFilter.All;
                 public bool dragEnabled = true;
 
-                public State() : this(new TreeViewState())
+                public State() : this(new TreeViewState<int>())
                 {
                 }
 
-                public State(TreeViewState baseState)
+                public State(TreeViewState<int> baseState)
                 {
                     this.baseState = baseState;
                 }
@@ -1628,7 +1628,7 @@ namespace FMODUnity
 
                 SceneView.duringSceneGui += SceneUpdate;
 
-                EditorApplication.hierarchyWindowItemOnGUI += HierarchyUpdate;
+                EditorApplication.hierarchyWindowItemByEntityIdOnGUI += HierarchyUpdate;
 
                 if (isStandaloneWindow)
                 {
@@ -1667,7 +1667,7 @@ namespace FMODUnity
         }
 
         // This is an event handler on the hierachy view to handle dragging our objects from the browser
-        private void HierarchyUpdate(int instance, Rect rect)
+        private void HierarchyUpdate(UnityEngine.EntityId instance, Rect rect)
         {
             if (Event.current.type == EventType.DragPerform && rect.Contains(Event.current.mousePosition))
             {
@@ -1675,7 +1675,7 @@ namespace FMODUnity
                 {
                     UnityEngine.Object data = DragAndDrop.objectReferences[0];
 
-                    GameObject target = EditorUtility.InstanceIDToObject(instance) as GameObject;
+                    GameObject target = EditorUtility.EntityIdToObject(instance) as GameObject;
 
                     if (data is EditorEventRef)
                     {

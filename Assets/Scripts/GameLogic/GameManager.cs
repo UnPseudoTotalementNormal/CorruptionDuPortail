@@ -620,7 +620,11 @@ namespace GameLogic
         // Branches on game phase: in lobby -> remove the character (kept lobby behavior); mid-game -> chain
         // the leaver INSTANTLY (no ChainingState animation), NOT fakify. Wired as the single server-side
         // OnClientDisconnectCallback subscription (OnNetworkSpawn/OnNetworkDespawn).
-        private void HandlePlayerLeft(ulong _clientId)
+        // [LIVENESS B2] Made public so the liveness layer can use this as a SECOND, faster ignition source
+        // (arch-liveness-heartbeat §8.4): LivenessService routes serverTracker.PeerLost here, the SAME pipeline
+        // the transport-driven OnClientDisconnectCallback drives. Both sources are reconciled by the idempotency
+        // guard below.
+        public void HandlePlayerLeft(ulong _clientId)
         {
             if (!IsServer)
             {
@@ -638,7 +642,15 @@ namespace GameLogic
             // with chaining; the original vote excluded a disconnected seat for free (fakify -> isFake), so we
             // re-record the specific departed client here and re-exclude it in VoteState.CanVote via HasClientLeft —
             // WITHOUT excluding chained-but-present players (owner ruling). Never cleared (reconnection is out of scope).
-            _departedClientIds.Add(_clientId);
+            //
+            // [LIVENESS B2] THIS IS ALSO THE IDEMPOTENCY LOCK (arch §8.7). Two ignition sources now reach here
+            // (liveness ~5s + transport backstop ~12s), in EITHER order. HashSet.Add returns false when the id is
+            // already recorded, so the FIRST call for a client processes and EVERY later call is a total no-op —
+            // no double-chain, no double win-check, no replayed chain, no NRE. Departure record + dedup are one act.
+            if (!_departedClientIds.Add(_clientId))
+            {
+                return;
+            }
 
             // Phase signal: the current game state is a LobbyState iff we are still in the lobby (index 0,
             // pre-start); mid-game it is any other state. The LobbyState check is the precise phase signal —

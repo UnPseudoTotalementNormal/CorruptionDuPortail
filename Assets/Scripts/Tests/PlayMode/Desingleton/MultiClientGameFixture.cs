@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Characters;
 using GameLogic;
+using Network.Liveness;
 using NUnit.Framework;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -55,6 +56,10 @@ namespace Tests.PlayMode.Desingleton
         // Phase 0 (epic-player-leave-stability): a real, owned Character so the mid-game
         // disconnect path (GameManager.OnPlayerDisconnectedServer) has something to act on.
         private const uint CharacterPrefabHash = 0xC0DE0103u;
+        // [LIVENESS B2] A LivenessNetworkBridge prefab so the beat-RPC seam can be exercised over the real
+        // 2-NM loopback. Registered in both NMs but INERT unless a test calls SpawnBridge (mirrors the
+        // Character prefab precedent above — the other fixtures never spawn it, so behaviour is unchanged).
+        private const uint BridgePrefabHash = 0xC0DE0104u;
         private const ushort LoopbackPort = 7788;
 
         /// <summary>Number of DummyGameStates seeded into the GameManager prefab.
@@ -74,6 +79,15 @@ namespace Tests.PlayMode.Desingleton
         // Phase 0 (epic-player-leave-stability): template + registered prefab for a real Character.
         private GameObject _characterPrefabGo;
         private NetworkObject _characterPrefabNo;
+        // [LIVENESS B2] template + registered prefab for the beat carrier (spawned only by SpawnBridge).
+        private GameObject _bridgePrefabGo;
+        private NetworkObject _bridgePrefabNo;
+
+        /// <summary>The host's spawned <see cref="LivenessNetworkBridge"/> (null until <see cref="SpawnBridge"/> runs).</summary>
+        protected LivenessNetworkBridge HostBridge { get; private set; }
+
+        /// <summary>The real client's replica of the bridge (null until <see cref="SpawnBridge"/> runs).</summary>
+        protected LivenessNetworkBridge ClientBridge { get; private set; }
 
         /// <summary>The last Character spawned via <see cref="SpawnRealCharacterForClient"/>.
         /// Held so a test can observe its NetworkVariables after a disconnect fakifies/mutates it
@@ -160,15 +174,22 @@ namespace Tests.PlayMode.Desingleton
             MarkAsNonSceneObject(_characterPrefabNo);
             _characterPrefabGo.AddComponent<Characters.Character>();
 
+            // [LIVENESS B2] Bridge prefab template (inert unless SpawnBridge is called).
+            _bridgePrefabGo = new GameObject("FixtureBridgePrefab");
+            _bridgePrefabNo = _bridgePrefabGo.AddComponent<NetworkObject>();
+            SetGlobalObjectIdHash(_bridgePrefabNo, BridgePrefabHash);
+            MarkAsNonSceneObject(_bridgePrefabNo);
+            _bridgePrefabGo.AddComponent<LivenessNetworkBridge>();
+
             // --- Host NM FIRST: its OnEnable claims NetworkManager.Singleton. ---
             _hostNmGo = new GameObject("FixtureHostNM");
             HostNm = _hostNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo);
+            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo);
 
             // --- Client NM SECOND: Singleton already set, so it stays the host. ---
             _clientNmGo = new GameObject("FixtureClientNM");
             ClientNm = _clientNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo);
+            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo);
 
             Assert.IsTrue(NetworkManager.Singleton == HostNm,
                 "Host NM (created first) must own NetworkManager.Singleton.");
@@ -273,6 +294,10 @@ namespace Tests.PlayMode.Desingleton
             Object.Destroy(_gmPrefabGo);
             Object.Destroy(_cmPrefabGo);
             Object.Destroy(_characterPrefabGo);
+            if (_bridgePrefabGo != null) Object.Destroy(_bridgePrefabGo);
+            // [LIVENESS B2] Clear the bridge static registries so no entry leaks across PlayMode tests
+            // (domain reload is disabled). Idempotent + null-safe.
+            LivenessNetworkBridge.ResetSessionStatics();
 
             // Destroy the seeded DummyGameState SOs (shared by reference with every
             // replica's gameStates) — domain reload is disabled, so they would otherwise
@@ -412,7 +437,7 @@ namespace Tests.PlayMode.Desingleton
 
         // --- helpers (lifted from 5.0e CoexistenceGateTests, the proven substrate) ---
 
-        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab, NetworkObject _characterPrefab)
+        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab, NetworkObject _characterPrefab, NetworkObject _bridgePrefab)
         {
             var _transport = _go.AddComponent<UnityTransport>();
             _transport.SetConnectionData("127.0.0.1", LoopbackPort);
@@ -424,6 +449,27 @@ namespace Tests.PlayMode.Desingleton
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _gmPrefab.gameObject });
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _cmPrefab.gameObject });
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _characterPrefab.gameObject });
+            _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _bridgePrefab.gameObject });
+        }
+
+        /// <summary>
+        /// [LIVENESS B2] Spawn the beat carrier on the host and wait for its replica to reach the real client.
+        /// Exposes <see cref="HostBridge"/> / <see cref="ClientBridge"/>. Opt-in — nothing spawns it otherwise.
+        /// </summary>
+        protected IEnumerator SpawnBridge()
+        {
+            Assert.IsTrue(HostNm != null && HostNm.IsServer, "SpawnBridge must run on the server (host).");
+
+            HostBridge = HostNm.SpawnManager.InstantiateAndSpawn(_bridgePrefabNo, destroyWithScene: true)
+                .GetComponent<LivenessNetworkBridge>();
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(HostBridge, 5f);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => LivenessNetworkBridge.For(ClientNm) != null,
+                10f,
+                "Client replica of the LivenessNetworkBridge never registered (replication did not complete).");
+
+            ClientBridge = LivenessNetworkBridge.For(ClientNm);
         }
 
         private static void SetGlobalObjectIdHash(NetworkObject _networkObject, uint _hash)

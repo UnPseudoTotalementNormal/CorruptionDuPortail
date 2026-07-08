@@ -14,7 +14,15 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public interface ILivenessClock
     {
-        /// <summary>A monotonically non-decreasing tick count from an unspecified epoch. Only deltas are meaningful.</summary>
+        /// <summary>
+        /// A monotonically non-decreasing tick count from an unspecified epoch. Only deltas are meaningful.
+        /// UNIT CONTRACT (load-bearing for the pump's stall-guard): the tick unit MUST match
+        /// <c>System.Diagnostics.Stopwatch.Frequency</c> (i.e. QPC ticks), because the pump derives its
+        /// beat-period threshold as <c>Stopwatch.Frequency * seconds</c> and compares it against
+        /// <see cref="NowTicks"/> deltas. A clock with a different tick base would silently break the
+        /// stall-guard (evict on normal jitter, or never skip on real stalls). The fake test clock returns
+        /// scripted Stopwatch-frequency ticks.
+        /// </summary>
         long NowTicks { get; }
     }
 }

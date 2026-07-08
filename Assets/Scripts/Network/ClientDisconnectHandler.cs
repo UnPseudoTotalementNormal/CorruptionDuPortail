@@ -96,6 +96,21 @@ namespace Network
             s_expectedShutdown = true;
         }
 
+        /// <summary>
+        /// [LIVENESS B2] The client-side liveness layer detected the host has gone silent (no keepalives) and
+        /// declares the host lost — route it through the SAME host-loss path as an abrupt transport drop
+        /// (arch-liveness-heartbeat §8.4). It still consults the graceful <c>expectedShutdown</c> flag and the
+        /// <c>_handlingLoss</c> one-shot, so a pause-leave / ShutOffGame never trips a false liveness host-loss,
+        /// and a later real <c>OnClientStopped</c> cannot double-fire. No-op if the handler is not yet bootstrapped.
+        /// </summary>
+        public static void NotifyLivenessHostLost()
+        {
+            if (s_current != null)
+            {
+                s_current.HandlePotentialHostLoss("LivenessHostLost");
+            }
+        }
+
         private void Awake()
         {
             if (s_current != null && s_current != this)
@@ -220,6 +235,14 @@ namespace Network
             // One-shot: consume the expected flag no matter which path we take.
             s_expectedShutdown = false;
 
+            // Latch on EVERY path, not just the notify path. OnClientStopped and OnTransportFailure can BOTH
+            // fire (and liveness adds a third source): if the first consumes an EXPECTED-shutdown flag here and
+            // does NOT latch, the second re-evaluates with the now-cleared flag and pops a spurious
+            // "Connexion à l'hôte perdue" on a GRACEFUL end — the exact failure this layer exists to prevent
+            // (arch code-review, MED). _handlingLoss resets per session in OnClientStarted, so latching on the
+            // suppressed path is safe.
+            _handlingLoss = true;
+
             if (!_shouldNotify)
             {
                 // Host teardown, graceful ShutOffGame, or the PausePanel self-leave — those paths own their
@@ -227,7 +250,6 @@ namespace Network
                 return;
             }
 
-            _handlingLoss = true;
             _localWasPureClient = false;
 
             // Best-effort: drop the cloud lobby so we don't linger as a ghost member.

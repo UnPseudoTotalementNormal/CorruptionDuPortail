@@ -5757,6 +5757,7 @@ GameObject:
   - component: {fileID: 704980998}
   - component: {fileID: 704980999}
   - component: {fileID: 704981001}
+  - component: {fileID: 704981002}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -5875,6 +5876,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4bd30c1eb4134e74291af0afadda4221, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Misc.DevIdentityController
+--- !u!114 &704981002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 704980997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0542fe9f8feccb3409c3b7b67800587a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Network.Liveness.LivenessNetworkBridge
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &715485107
 GameObject:
   m_ObjectHideFlags: 0

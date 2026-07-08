@@ -248,6 +248,71 @@ namespace Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator HandlePlayerLeft_CalledTwice_LobbyLeaver_RemovesOnce_NoOp_NoError()
+        {
+            // [LIVENESS B2] §8.7c — the LOBBY-branch counterpart to PlayerLeaveIdempotencyTests (which only
+            // exercises the mid-game/chaining branch). Two ignition sources (liveness + transport backstop) now
+            // call HandlePlayerLeft; when the current state is a real LobbyState the FIRST call must run the
+            // characterManager.RemoveCharacter branch EXACTLY ONCE and every later call must be a total no-op —
+            // no NRE, no double-remove. Proven by COUNTING the lobby-remove log (the second call short-circuits
+            // at the idempotency guard BEFORE that log), not merely by the end-state — a double-remove that
+            // happened to leave the same end-state would slip past an end-state-only check.
+            const ulong leaverId = 8;
+            const string lobbyRemoveLogFragment = "left in lobby";
+
+            Character leaver = _characterManager.AddNewCharacter(leaverId);
+            Assert.IsNotNull(leaver, "AddNewCharacter returned null for the lobby leaver.");
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(leaver);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _characterManager.GetCharacter(leaverId, false) != null, 5f,
+                "CharacterManager never projected the lobby leaver before the leave.");
+
+            // Make the real LobbyState the current state so the pipeline takes the `is LobbyState` lobby branch.
+            int lobbyIndex = _gameManager.GetGameStateIndex(_lobbyState);
+            Assert.GreaterOrEqual(lobbyIndex, 0, "Seeded LobbyState index not found.");
+            _gameManager.currentGameStateIndex.Value = lobbyIndex;
+            Assert.IsInstanceOf<LobbyState>(_gameManager.GetGameState(_gameManager.currentGameStateIndex.Value),
+                "Precondition: the current game state must be the LobbyState for the lobby-leave branch.");
+
+            var _errors = new List<string>();
+            int _lobbyRemoveLogCount = 0;
+            Application.LogCallback _handler = (condition, stackTrace, type) =>
+            {
+                if (condition != null && condition.Contains(lobbyRemoveLogFragment)) _lobbyRemoveLogCount++;
+                if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert) return;
+                _errors.Add($"{type}: {condition}");
+            };
+
+            bool _prevIgnore = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            Application.logMessageReceived += _handler;
+            try
+            {
+                InvokeHandlePlayerLeft(leaverId); // first ignition source — runs the lobby-remove branch
+                InvokeHandlePlayerLeft(leaverId); // redundant second source — must short-circuit, total no-op
+                yield return null;
+            }
+            finally
+            {
+                Application.logMessageReceived -= _handler;
+                LogAssert.ignoreFailingMessages = _prevIgnore;
+            }
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _characterManager.GetCharacter(leaverId, false) == null, 5f,
+                "Lobby leave did not REMOVE the leaver's character (pipeline lobby branch).");
+
+            Assert.AreEqual(1, _lobbyRemoveLogCount,
+                "The lobby-remove branch must run EXACTLY ONCE across two calls — the second call is a no-op.");
+            Assert.IsTrue(_gameManager.HasClientLeft(leaverId),
+                "The departed real client must be recorded in the leave bookkeeping.");
+            Assert.IsNull(_characterManager.GetCharacter(leaverId, false),
+                "A repeat lobby leave must keep the character removed (idempotent).");
+            Assert.IsEmpty(_errors,
+                "The redundant lobby leave must not NRE or log any server-side error:\n" + string.Join("\n", _errors));
+        }
+
+        [UnityTest]
         public IEnumerator HandlePlayerLeft_SimulatedBotId_EarlyReturns_NoStateMutation()
         {
             // [LEAVE][PHASE 5] Task 11 — bots use clientId >= 100 and never open a transport connection, so they
@@ -276,12 +341,14 @@ namespace Tests.PlayMode
                 "A bot-id leave must not chain any real character (the pipeline never ran).");
         }
 
-        // Invokes the private single-reaction pipeline directly. The public disconnect-callback wiring is
-        // exercised end-to-end by PlayerLeaveMidGameTests; here we drive the branch logic on a live server.
+        // Invokes the single-reaction pipeline directly. The disconnect-callback wiring is exercised end-to-end
+        // by PlayerLeaveMidGameTests; here we drive the branch logic on a live server. HandlePlayerLeft was made
+        // public in [LIVENESS B2] (the liveness layer is a second ignition source of it), so the lookup accepts
+        // Public | NonPublic to stay robust to the visibility.
         private void InvokeHandlePlayerLeft(ulong _clientId)
         {
             MethodInfo _method = typeof(GameManager).GetMethod("HandlePlayerLeft",
-                BindingFlags.Instance | BindingFlags.NonPublic);
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.IsNotNull(_method, "GameManager.HandlePlayerLeft not found (renamed?).");
             _method.Invoke(_gameManager, new object[] { _clientId });
         }

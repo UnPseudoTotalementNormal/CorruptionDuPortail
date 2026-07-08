@@ -22,11 +22,12 @@ namespace GameLogic.GameStates
             Command.AddNewCharacter(clientId);
         }
 
-        private void OnClientDisconnected(ulong clientId)
-        {
-            Command.RemoveCharacter(clientId);
-        }
-        
+        // [LEAVE] Phase 1 (epic-player-leave-stability): the lobby-disconnect reaction (RemoveCharacter)
+        // and its leaking OnClientDisconnectCallback subscription were REMOVED from here. The single
+        // authoritative server pipeline GameManager.HandlePlayerLeft now owns the lobby-remove branch, so
+        // exactly one code path reacts to a disconnect and the mid-game double-handling / subscription leak
+        // (this state's subscription was never unsubscribed) is gone.
+
         public void OnStartGameButtonPressed()
         {
             int _playerCount = CharacterQuery.GetCharacters().Count;
@@ -44,7 +45,7 @@ namespace GameLogic.GameStates
                 Debug.LogWarning("Not enough roles to attribute to all players!");
                 return;
             }
-            
+
             Loop.NextGameState();
         }
 
@@ -61,7 +62,6 @@ namespace GameLogic.GameStates
             {
                 AddNewCharacter(connectedClient.Key);
             }
-            gameManager.NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
         }
 
         public override void OnStartStateServer()

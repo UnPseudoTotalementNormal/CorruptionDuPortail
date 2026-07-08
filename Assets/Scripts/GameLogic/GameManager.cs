@@ -11,6 +11,7 @@ using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
+using GameLogic.GameStates;
 using Network;
 using Network.Action;
 using Unity.Collections;
@@ -163,7 +164,7 @@ namespace GameLogic
             {
                 currentGameStateIndex.Value = 0;
                 GetGameState(currentGameStateIndex.Value).OnStartStateServer();
-                NetworkManager.OnClientDisconnectCallback += OnPlayerDisconnectedServer;
+                NetworkManager.OnClientDisconnectCallback += HandlePlayerLeft;
             }
         
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();
@@ -173,7 +174,7 @@ namespace GameLogic
         {
             if (IsServer)
             {
-                NetworkManager.OnClientDisconnectCallback -= OnPlayerDisconnectedServer;
+                NetworkManager.OnClientDisconnectCallback -= HandlePlayerLeft;
             }
 
             UnregisterFromRegistry();
@@ -551,24 +552,157 @@ namespace GameLogic
 
         
         
-        private void OnPlayerDisconnectedServer(ulong _clientId)
+        // [LEAVE][PHASE 2] Server-side set of REAL client ids that have left this session (populated by
+        // HandlePlayerLeft). Read by VoteState.CanVote (through HasClientLeft) so a departed player is dropped from
+        // the eligible-voter denominator — the behavior the old fakify-on-disconnect gave for free (isFake), lost
+        // when Phase 1 switched to chaining. Keyed on the true "this real client has left" discriminator, NOT on
+        // isChained (chained-but-present players stay eligible — owner ruling). Never cleared; reconnection is out
+        // of scope. Bots (id >= 100) are never added (they never fire the disconnect callback).
+        private readonly HashSet<ulong> _departedClientIds = new();
+
+        /// <summary>
+        /// [LEAVE] True iff the given REAL client has left this session. Server-side bookkeeping populated by
+        /// <see cref="HandlePlayerLeft"/>; consumed by VoteState.CanVote to exclude a departed voter without
+        /// excluding chained-but-present players.
+        /// </summary>
+        public bool HasClientLeft(ulong _clientId) => _departedClientIds.Contains(_clientId);
+
+        // [LEAVE] Phase 1 (epic-player-leave-stability) — THE ONE authoritative server-side reaction to
+        // a player disconnect. Replaces the four independent, order-undefined callback reactions (the old
+        // fakify here + LobbyState.RemoveCharacter + the ancillary despawns) with one ordered pipeline.
+        // Branches on game phase: in lobby -> remove the character (kept lobby behavior); mid-game -> chain
+        // the leaver INSTANTLY (no ChainingState animation), NOT fakify. Wired as the single server-side
+        // OnClientDisconnectCallback subscription (OnNetworkSpawn/OnNetworkDespawn).
+        private void HandlePlayerLeft(ulong _clientId)
         {
-            if (characterManager.GetCharacters().Any(_c => _c.ownerClientId.Value == _clientId))
+            if (!IsServer)
             {
-                characterManager.GetCharacter(_clientId).ownerClientId.Value = GameValues.FAKE_CLIENT_ID;
-                characterManager.AskForUpdateAllCharactersRpc();
+                return;
             }
 
-            OnPlayerDisconnectedRpc();
+            // Bots (clientId >= 100) never open a transport connection, so they never fire this callback.
+            // Defensive early-return so a stray simulated-id call can never mutate real game state.
+            if (_clientId >= 100)
+            {
+                return;
+            }
+
+            // [LEAVE][PHASE 2] Record this REAL client's departure. Phase 1 replaced the old fakify-on-disconnect
+            // with chaining; the original vote excluded a disconnected seat for free (fakify -> isFake), so we
+            // re-record the specific departed client here and re-exclude it in VoteState.CanVote via HasClientLeft —
+            // WITHOUT excluding chained-but-present players (owner ruling). Never cleared (reconnection is out of scope).
+            _departedClientIds.Add(_clientId);
+
+            // Phase signal: the current game state is a LobbyState iff we are still in the lobby (index 0,
+            // pre-start); mid-game it is any other state. The LobbyState check is the precise phase signal —
+            // hasGameStarted is a coarser proxy that the DummyGameState test substrate cannot set, so the
+            // authoritative branch keys off the current state type.
+            bool _inLobby = GetGameState(currentGameStateIndex.Value) is LobbyState;
+
+            if (_inLobby)
+            {
+                // Lobby leave: remove the character. Conceptually the historical LobbyState.OnClientDisconnected
+                // behavior, now owned HERE so exactly one code path reacts (LobbyState's own subscription is gone).
+                Debug.Log($"[LEAVE] Player {_clientId} left in lobby — removing character.");
+                characterManager.RemoveCharacter(_clientId);
+            }
+            else
+            {
+                // Mid-game leave: chain the leaver instantly (isChained, role revealed, portal/Mage special
+                // case) via the ratified ChainingManager primitive. NOT fakify (the old fakify path is deleted).
+                Character _leaver = characterManager.GetCharacters()
+                    .FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
+                if (_leaver != null)
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — chaining instantly (no animation).");
+                    ChainLeaverInstant(_leaver);
+
+                    // [LEAVE][PHASE 2] Order is load-bearing: chain -> victory -> unblock.
+                    // 1) Re-run the victory evaluation off the fresh chain. If the leaver was the last un-chained
+                    //    anomaly, WChosenChainedAllAnomaly now holds and the chosen (élus) win INSTANTLY — the
+                    //    resolver jumps straight to GameEndingState and there is nothing left to unblock.
+                    if (TryResolveVictoryAfterLeave())
+                    {
+                        Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
+                        return;
+                    }
+
+                    // 2) No winner yet: unblock whatever state was waiting on this specific player so the
+                    //    night/vote/portal cannot hang on a seat that will never act again.
+                    UnblockCurrentStateAfterLeave(_clientId);
+                }
+                else
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game but owned no live character — nothing to chain.");
+                }
+            }
+
+            // Ancillary cleanup (Task 6 decision, documented): player-info removal
+            // (LobbyPlayerInfoHolder.OnClientDisconnected) and avatar despawn (AvatarManager.OnClientDisconnected)
+            // keep their OWN server-gated OnClientDisconnectCallback subscriptions — each already fires exactly
+            // once and neither conflicts with this pipeline. The old board fake-card cleanup is intentionally
+            // DROPPED: it only existed to destroy the fake seat this handler no longer creates (no more fakify).
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void OnPlayerDisconnectedRpc()
+        // Instant-chain primitive. In production the injected ChainingManager runs the full ratified chain
+        // (ChainCharacterServer -> isChained + role reveal + portal/Mage special case + AskForUpdate). Because
+        // ChainCharacterRpc is [Rpc(SendTo.Server)] and we are already on the server, its body executes
+        // immediately; the card ANIMATION lives ONLY in ChainingState.OnStartStateClient, so invoking the apply
+        // here is instant with NO animation.
+        private void ChainLeaverInstant(Character _leaver)
         {
-            // Story 10.3: resolve the still-singleton board through the composition root (the GameManager
-            // hub is not a registered DI consumer; it has a NetworkManager so it resolves directly).
-            var _boardManager = CompositionRoot.For(NetworkManager).BoardManager;
-            _boardManager.DestroyCard(_boardManager.visibleCards.Find(_c => _c.characterInfo.isFake));
+            var _chaining = chainingManager != null
+                ? chainingManager
+                : CompositionRoot.For(NetworkManager).ChainingManager;
+            if (_chaining != null)
+            {
+                _chaining.ChainCharacterRpc(_leaver.ownerClientId.Value);
+                return;
+            }
+
+            // Substrate fallback (no ChainingManager wired — e.g. the 2-NM loopback test fixture): apply the
+            // chain state directly so the seat is still chained. Role-reveal needs the ChainingManager's
+            // GameInfoRevealer surface, which is absent here, so it is skipped in this fallback path only.
+            _leaver.ChainCharacterServer();
+            characterManager.AskForUpdateAllCharactersRpc();
+        }
+
+        // [LEAVE][PHASE 2] Out-of-band victory re-check after a mid-game leave. Resolves the reusable
+        // VictoryConditionCheckState (never SetGameState(VictoryConditionCheckState) blindly from an arbitrary
+        // state — that would disrupt mid-state flow) and asks it to evaluate NOW. Returns true iff the game
+        // ended (the resolver jumped to GameEndingState). Gracefully returns false when no such state is seeded
+        // (e.g. the DummyGameState test substrate), so the caller simply proceeds to state-unblock.
+        private bool TryResolveVictoryAfterLeave()
+        {
+            var _states = GetGameStates(typeof(VictoryConditionCheckState));
+            if (_states.Length == 0)
+            {
+                return false;
+            }
+
+            return ((VictoryConditionCheckState)_states[0]).TryResolveVictoryNow();
+        }
+
+        // [LEAVE][PHASE 2] Route the leave to the ONE currently-active state that could be waiting on this
+        // specific player, so it can drain/advance instead of hanging. Dispatching on the current state (not a
+        // broadcast) is the "only act if this state is current" guarantee the phase spec calls for. States not
+        // listed here (or a state not currently active) have no per-player wait to unblock. ChainingState needs
+        // no server hook — its only leave hazard is the client-side animation NRE, guarded inside the state.
+        private void UnblockCurrentStateAfterLeave(ulong _clientId)
+        {
+            var _current = GetGameState(currentGameStateIndex.Value);
+            switch (_current)
+            {
+                case AwakeningState _awakening:
+                    _awakening.OnPlayerLeftServer(_clientId);
+                    break;
+                case TakeDownThePortalState _portal:
+                    _portal.OnPlayerLeftServer(_clientId);
+                    break;
+                case VoteState _vote:
+                    _vote.OnPlayerLeftServer(_clientId);
+                    break;
+            }
         }
     }
 

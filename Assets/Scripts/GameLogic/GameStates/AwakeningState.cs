@@ -201,8 +201,52 @@ namespace GameLogic.GameStates
             }
             
             currentlyAwakenedCharacters.Remove(_character);
-            
+
             if (currentlyAwakenedCharacters.Count == 0)
+            {
+                GoToNextAwakeLayer();
+            }
+        }
+
+        /// <summary>
+        /// [LEAVE] Phase 2 (epic-player-leave-stability) — server hook the leave pipeline calls after a mid-game
+        /// leaver is chained. Chaining sets <c>isChained</c> but does NOT sleep the character, so a leaver who was
+        /// awakened this layer would keep <see cref="currentlyAwakenedCharacters"/> from ever draining and the night
+        /// would hang (only the layer timer / fake-skip would eventually rescue it). This removes that specific
+        /// leaver from the awaited set and re-runs the layer-complete check so the layer advances immediately.
+        /// The pipeline only invokes this on the currently-active state (GameManager.UnblockCurrentStateAfterLeave),
+        /// which is the "only act if AwakeningState is the current state" contract. Layer START already skips chained
+        /// characters (AwakeLayer), so this only covers the mid-layer case.
+        /// </summary>
+        public void OnPlayerLeftServer(ulong _ownerId)
+        {
+            if (!gameManager.NetworkManager.IsServer)
+            {
+                Debug.LogError("OnPlayerLeftServer can only be called on the server");
+                return;
+            }
+
+            var _character = CharacterQuery.GetCharacter(_ownerId, false);
+            if (_character == null || !currentlyAwakenedCharacters.Contains(_character))
+            {
+                // Not the actor this layer is waiting on — nothing to drain.
+                return;
+            }
+
+            Debug.Log($"[LEAVE] AwakeningState: chained leaver {_ownerId} was awakened this layer — draining it so the layer can advance.");
+
+            // Prefer the production drain: sleeping flips isAwakened, whose OnValueChanged fires
+            // OnCharacterAwakeningChanged, which removes the character and advances the layer if it empties.
+            // Only sleep if still awakened (otherwise no OnValueChanged fires).
+            if (_character.isAwakened.Value)
+            {
+                _character.SleepCharacterServerRpc();
+            }
+
+            // Safety net: if the OnValueChanged drain did NOT run (e.g. the awakening callback was not
+            // subscribed for this character, or it was already asleep), remove + re-check here. If the callback
+            // already drained it, Remove returns false and this is a no-op — so the layer never double-advances.
+            if (currentlyAwakenedCharacters.Remove(_character) && currentlyAwakenedCharacters.Count == 0)
             {
                 GoToNextAwakeLayer();
             }

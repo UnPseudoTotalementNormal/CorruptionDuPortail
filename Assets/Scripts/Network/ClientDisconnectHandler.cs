@@ -34,22 +34,23 @@ namespace Network
 
     /// <summary>
     /// [LEAVE][PHASE 3] Client resilience: detects an abrupt host loss and returns the local client to
-    /// the menu with a notification, provides a non-host in-game "leave to menu" button, and finally
-    /// surfaces the previously produced-but-never-shown <see cref="LobbyManager.OnLobbyError"/> strings.
+    /// the menu with a notification, and surfaces the previously produced-but-never-shown
+    /// <see cref="LobbyManager.OnLobbyError"/> strings. (The in-game "leave to menu" action lives on the
+    /// PausePanel's <c>LeaveGameButton</c>, not here; this only exposes <see cref="NotifyExpectedShutdown"/>
+    /// so that button — and the graceful host ShutOffGame — can suppress the abrupt-loss popup.)
     ///
     /// Lives on a DDoL bootstrap GameObject spawned via <see cref="RuntimeInitializeOnLoadMethod"/> — it
-    /// owns NO scene/prefab state, so it needs no scene mutation or SerializeField wiring. All UI is a
-    /// RAW uGUI placeholder built in code (owner constraint: functional, design-owned look comes later).
+    /// owns NO scene/prefab state. The notification UI is a RAW uGUI placeholder built in code (owner
+    /// constraint: functional, design-owned look comes later).
     ///
-    /// Graceful vs abrupt: <see cref="ShutOffGame"/> (host-triggered) and this component's own leave
-    /// button set a one-shot "expected shutdown" flag (<see cref="NotifyExpectedShutdown"/>) BEFORE the
-    /// NGO shutdown, so the host-loss notification only fires on an UNEXPECTED disconnect.
+    /// Graceful vs abrupt: <see cref="ShutOffGame"/> (host-triggered) and the PausePanel leave button set a
+    /// one-shot "expected shutdown" flag (<see cref="NotifyExpectedShutdown"/>) BEFORE the NGO shutdown, so
+    /// the host-loss notification only fires on an UNEXPECTED disconnect.
     /// </summary>
     public class ClientDisconnectHandler : MonoBehaviour
     {
         private const string LogTag = "[LEAVE][PHASE3]";
         private const int MainMenuSceneIndex = 1; // BootScene=0, MainMenu=1, GameScene=2 (build settings)
-        private const string GameSceneName = "GameScene";
         private const string HostLostMessage = "Connexion à l'hôte perdue";
         private const float NotificationSeconds = 6f;
 
@@ -57,8 +58,8 @@ namespace Network
         // bootstrap dedup guard, not a service locator — nothing resolves the handler through it.
         private static ClientDisconnectHandler s_current;
 
-        // One-shot flag: set by the graceful ShutOffGame path (GameManager) and by our own leave button so
-        // OnClientStopped can tell an expected teardown from an abrupt host loss. Static because the callers
+        // One-shot flag: set by the graceful ShutOffGame path (GameManager) and by the PausePanel leave button
+        // so OnClientStopped can tell an expected teardown from an abrupt host loss. Static because the callers
         // live in other types; consumed (reset) on the next stop. Domain reload is disabled -> reset on start.
         private static bool s_expectedShutdown;
 
@@ -67,11 +68,10 @@ namespace Network
         private bool _localWasPureClient; // captured while connected (client && !server)
         private bool _handlingLoss;        // idempotency vs OnClientStopped + OnTransportFailure double fire
 
-        // RAW placeholder UI (built in code). Colors below are neutral debug values, NOT a design palette.
+        // RAW placeholder notification UI (built in code). Colors below are neutral debug values, NOT a design palette.
         private Canvas _canvas;
         private GameObject _notificationPanel;
         private Text _notificationText;
-        private GameObject _leaveButton;
         private Font _font;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -87,9 +87,9 @@ namespace Network
         }
 
         /// <summary>
-        /// Mark the next NGO shutdown as EXPECTED (graceful ShutOffGame or self-leave) so the abrupt
-        /// host-loss notification is suppressed. Static because the callers (GameManager.ShutOffGame) live
-        /// in other types and the flag must survive even if the handler instance was not yet resolved.
+        /// Mark the next NGO shutdown as EXPECTED (graceful ShutOffGame or the PausePanel self-leave) so the
+        /// abrupt host-loss notification is suppressed. Static because the callers (GameManager.ShutOffGame,
+        /// LeaveGameButton) live in other types and the flag must survive even if the handler was not yet resolved.
         /// </summary>
         public static void NotifyExpectedShutdown()
         {
@@ -114,14 +114,10 @@ namespace Network
             }
 
             BuildUI();
-
-            SceneManager.activeSceneChanged += OnActiveSceneChanged;
-            RefreshLeaveButtonVisibility();
         }
 
         private void OnDestroy()
         {
-            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
             UnsubscribeFromNetworkManager();
             UnsubscribeFromLobbyManager();
             if (s_current == this)
@@ -198,7 +194,6 @@ namespace Network
             s_expectedShutdown = false; // fresh session (domain reload is disabled — never trust a stale flag)
             _handlingLoss = false;
             Debug.Log($"{LogTag} Client started (pureClient={_localWasPureClient}).");
-            RefreshLeaveButtonVisibility();
         }
 
         private void OnClientStopped(bool _wasHost)
@@ -227,7 +222,7 @@ namespace Network
 
             if (!_shouldNotify)
             {
-                // Host teardown, graceful ShutOffGame, or a self-initiated leave — those paths own their
+                // Host teardown, graceful ShutOffGame, or the PausePanel self-leave — those paths own their
                 // own return-to-menu; nothing to do here.
                 return;
             }
@@ -242,33 +237,10 @@ namespace Network
             ReturnToMenu();
         }
 
-        // --- Leave button ----------------------------------------------------------------------------
-
-        private void OnLeaveButtonClicked()
-        {
-            Debug.Log($"{LogTag} Non-host leave button pressed -> NGO shutdown + leave lobby + menu.");
-
-            // Mirror the MainMenu error-teardown sequence. Flag first so our own Shutdown() does NOT trip
-            // the host-loss notification.
-            NotifyExpectedShutdown();
-
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                NetworkManager.Singleton.Shutdown();
-            }
-
-            ResetSessionStatics();
-
-            TryLeaveLobby();
-
-            SceneManager.LoadScene(MainMenuSceneIndex);
-        }
-
-        // [LEAVE][PHASE 4] Explicit per-session static reset on the client return-to-menu paths (self-leave
-        // + abrupt host loss). Domain reload is disabled, so an abrupt teardown that skips the scene-placed
-        // managers' OnDestroy could strand a stale GameManager/CompositionRoot static into the next join.
-        // Both targets are idempotent + null-safe, so calling this here (and again if teardown already ran)
-        // cannot double-free or NRE.
+        // [LEAVE][PHASE 4] Explicit per-session static reset on the client return-to-menu path (abrupt host
+        // loss). Domain reload is disabled, so an abrupt teardown that skips the scene-placed managers'
+        // OnDestroy could strand a stale GameManager/CompositionRoot static into the next join. Both targets
+        // are idempotent + null-safe, so calling this here (and again if teardown already ran) cannot double-free or NRE.
         private static void ResetSessionStatics()
         {
             GameLogic.GameManager.ResetSessionStatics();
@@ -311,26 +283,6 @@ namespace Network
 
         // --- UI (RAW placeholder — design-owned look comes later) ------------------------------------
 
-        private void OnActiveSceneChanged(Scene _previous, Scene _next)
-        {
-            RefreshLeaveButtonVisibility();
-        }
-
-        private void RefreshLeaveButtonVisibility()
-        {
-            if (_leaveButton == null)
-            {
-                return;
-            }
-
-            bool _inGameScene = SceneManager.GetActiveScene().name == GameSceneName;
-            NetworkManager _nm = NetworkManager.Singleton;
-            bool _isServer = _nm != null && _nm.IsServer;
-
-            // Non-host client, in the game scene, only. The host keeps ShutOffGameButton.
-            _leaveButton.SetActive(_inGameScene && !_isServer);
-        }
-
         private void BuildUI()
         {
             var _canvasGo = new GameObject("ClientDisconnectCanvas");
@@ -342,7 +294,6 @@ namespace Network
             _canvasGo.AddComponent<GraphicRaycaster>();
 
             BuildNotificationPanel();
-            BuildLeaveButton();
         }
 
         private void BuildNotificationPanel()
@@ -398,38 +349,6 @@ namespace Network
             _btrt.offsetMax = Vector2.zero;
 
             _notificationPanel.SetActive(false);
-        }
-
-        private void BuildLeaveButton()
-        {
-            _leaveButton = new GameObject("LeaveButton");
-            _leaveButton.transform.SetParent(_canvas.transform, false);
-            var _img = _leaveButton.AddComponent<Image>();
-            _img.color = new Color(0.2f, 0.2f, 0.2f, 0.9f); // neutral debug button, NOT a design choice
-            var _btn = _leaveButton.AddComponent<Button>();
-            _btn.onClick.AddListener(OnLeaveButtonClicked);
-            var _rt = _leaveButton.GetComponent<RectTransform>();
-            _rt.anchorMin = new Vector2(0f, 1f);
-            _rt.anchorMax = new Vector2(0f, 1f);
-            _rt.pivot = new Vector2(0f, 1f);
-            _rt.anchoredPosition = new Vector2(10f, -10f);
-            _rt.sizeDelta = new Vector2(170f, 38f);
-
-            var _textGo = new GameObject("Text");
-            _textGo.transform.SetParent(_leaveButton.transform, false);
-            var _text = _textGo.AddComponent<Text>();
-            _text.font = _font;
-            _text.alignment = TextAnchor.MiddleCenter;
-            _text.color = Color.white;
-            _text.text = "Quitter la partie";
-            _text.fontSize = 16;
-            var _trt = _textGo.GetComponent<RectTransform>();
-            _trt.anchorMin = Vector2.zero;
-            _trt.anchorMax = Vector2.one;
-            _trt.offsetMin = Vector2.zero;
-            _trt.offsetMax = Vector2.zero;
-
-            _leaveButton.SetActive(false);
         }
 
         private void ShowNotification(string _message)

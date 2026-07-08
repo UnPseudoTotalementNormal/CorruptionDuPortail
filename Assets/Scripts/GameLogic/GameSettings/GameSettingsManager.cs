@@ -159,6 +159,24 @@ namespace GameLogic.GameSettings
             return _total;
         }
 
+        // [LEAVE][PHASE 4] Minimum-players floor (owner-ratified formula, Poyo). The hard technical floor is
+        // the number of MANDATORY roles = roles that CANNOT be fake. RoleDistributor fills the missing seats
+        // with FAKE characters drawn ONLY from the canBeFake subset; a role with canBeFake == false MUST go to
+        // a real player, so if real players < Σ(count where !canBeFake) those mandatory roles go undealt and
+        // the game breaks. Sums the count over the non-fakeable entries (mirrors GetTotalRolesToAttribute).
+        public int GetMandatoryRoleCount()
+        {
+            int _total = 0;
+            for (int i = 0; i < _settings.Count; i++)
+            {
+                if (!_settings[i].canBeFake)
+                {
+                    _total += _settings[i].count;
+                }
+            }
+            return _total;
+        }
+
         // ----- write API (views) -----
 
         /// <summary>

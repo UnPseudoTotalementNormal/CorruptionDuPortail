@@ -46,6 +46,23 @@ namespace GameLogic.GameStates
                 return;
             }
 
+            // [LEAVE][PHASE 4] Minimum-players gate (owner-ratified formula, Poyo). The hard floor is the
+            // number of MANDATORY roles = roles that CANNOT be fake: RoleDistributor fills empty seats with
+            // FAKE characters drawn only from the canBeFake subset, so a !canBeFake role MUST land on a real
+            // player. Below that floor those mandatory roles go undealt and the game breaks. Source it from
+            // the replicated, server-authoritative gameSettingsManager when wired; else the authored
+            // RoleAttributionState fallback (sum of counts where !canBeFake) — mirrors the max guard above.
+            int _mandatoryCount = gameSettingsManager != null
+                ? gameSettingsManager.GetMandatoryRoleCount()
+                : ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First())
+                    .roleAttributionDictionary.Values.Where(_setting => !_setting.canBeFake).Sum(_setting => _setting.roleToAttribute);
+
+            if (_playerCount < _mandatoryCount)
+            {
+                Debug.LogWarning("Not enough players to fill the mandatory (non-fakeable) roles!");
+                return;
+            }
+
             Loop.NextGameState();
         }
 

@@ -52,6 +52,20 @@ namespace GameLogic
             return _networkManager == NetworkManager.Singleton ? instance : null;
         }
 
+        // [LEAVE][PHASE 4] Explicit per-session static reset, invoked from the return-to-menu paths
+        // (ShutOffGame + Network.ClientDisconnectHandler leave / host-loss). Domain reload is disabled in
+        // this project, so statics survive across sessions; relying SOLELY on the OnDestroy /
+        // OnNetworkDespawn value-scans + the editor-only SubsystemRegistration backstop can strand a stale
+        // `instance` or per-NM registry entry into the NEXT host/join when a teardown is abrupt and skips
+        // OnDestroy. Clearing both eagerly here guarantees a clean start. Idempotent + null-safe: clearing an
+        // already-empty registry and nulling an already-null instance are no-ops, so a double-invocation
+        // during teardown cannot double-free or NRE.
+        public static void ResetSessionStatics()
+        {
+            s_byNetworkManager.Clear();
+            instance = null;
+        }
+
 #if UNITY_EDITOR
         // Play-restart backstop ONLY. Domain reload is disabled in this project, so
         // statics survive across Play Mode sessions; this fires once at Play entry
@@ -59,12 +73,12 @@ namespace GameLogic
         // session. It does NOT run on scene loads and is NOT a subscription cleanup:
         // the OnClientDisconnectCallback unsubscribe and the registry/instance
         // teardown for normal scene exit live in OnNetworkDespawn and OnDestroy, which
-        // fire because GameManager is scene-placed in GameScene.
+        // fire because GameManager is scene-placed in GameScene. Reuses the same explicit
+        // reset the leave paths call ([LEAVE][PHASE 4]).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticsForDomainReloadDisabled()
         {
-            s_byNetworkManager.Clear();
-            instance = null;
+            ResetSessionStatics();
         }
 #endif
 
@@ -545,8 +559,33 @@ namespace GameLogic
 
         private async UniTaskVoid ShutOffGame()
         {
-            await UniTask.WaitForSeconds(1);
-            NetworkManager.Shutdown();
+            // [LEAVE][PHASE 3] Graceful host end. Flag the imminent shutdown as EXPECTED so the client-side
+            // ClientDisconnectHandler.OnClientStopped does NOT mistake this for an abrupt host loss and pop
+            // the "host connection lost" notification. Runs on Everyone (host + clients); harmless on the host.
+            Network.ClientDisconnectHandler.NotifyExpectedShutdown();
+
+            // [LEAVE][PHASE 4] Tie the grace delay to this object's lifetime. If the session is torn down
+            // abruptly during the 1s wait (object destroyed / scene unloaded), the token cancels the delay so
+            // a dangling continuation cannot resume and race a redundant Shutdown + scene load. UniTaskVoid:
+            // SuppressCancellationThrow keeps a cancellation from surfacing to the unhandled-exception handler.
+            bool _canceled = await UniTask.WaitForSeconds(1, cancellationToken: this.GetCancellationTokenOnDestroy())
+                .SuppressCancellationThrow();
+            if (_canceled)
+            {
+                return;
+            }
+
+            if (NetworkManager != null)
+            {
+                NetworkManager.Shutdown();
+            }
+
+            // [LEAVE][PHASE 4] Explicit per-session static reset on the return-to-menu path, so an abrupt
+            // teardown cannot strand a stale instance / registry entry into the next host or join (domain
+            // reload is disabled). Idempotent + null-safe.
+            ResetSessionStatics();
+            CompositionRoot.ResetSessionStatics();
+
             UnityEngine.SceneManagement.SceneManager.LoadScene(1); // Loading menu
         }
 

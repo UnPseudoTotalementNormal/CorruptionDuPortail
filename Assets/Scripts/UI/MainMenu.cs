@@ -1,6 +1,7 @@
 #region
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using Extensions;
@@ -51,6 +52,10 @@ namespace UI
 
         // Garde de rentrance pour éviter le double déclenchement Host/Join.
         private bool _isBusy;
+
+        // [LEAVE][PHASE 4] Upper bound on how long a client waits for the connection to actually establish
+        // after StartClient() returns true, before treating it as a failed connect and running teardown.
+        private const float ConnectTimeoutSeconds = 10f;
 
         private void Start()
         {
@@ -148,6 +153,16 @@ namespace UI
                     throw new System.Exception("Failed to join game");
                 }
 
+                // [LEAVE][PHASE 4] StartClient() only reports whether the connect attempt STARTED; it never
+                // waits for the connection to actually establish. Bound that wait so a connect that never
+                // completes (dead host, bad connection data) cannot hang forever in a stale "connecting"
+                // state. On timeout, throw into the existing catch teardown (Shutdown + LeaveLobby + UI reset).
+                bool _connected = await WaitForClientConnectedOrTimeout(ConnectTimeoutSeconds);
+                if (!_connected)
+                {
+                    throw new System.Exception("Connection timed out — the host did not respond.");
+                }
+
                 GameCode.gameCode = _lobby.LobbyCode;
                 SwitchToGameScene();
             }
@@ -176,6 +191,43 @@ namespace UI
             {
                 _isBusy = false;
             }
+        }
+
+
+        // [LEAVE][PHASE 4] Bounded wait for the local client to ACTUALLY connect. Polls IsConnectedClient
+        // each frame against a timeout CancellationToken (UniTask — never System.Threading.Tasks.Task):
+        // polling avoids a subscribe/unsubscribe dance around OnClientConnectedCallback and is robust to the
+        // connect failing outright (NGO fires OnClientStopped without a connect callback — the NM stops
+        // listening, the predicate's null/stopped check trips, and we report failure). Returns true iff
+        // connected within the window; false on timeout OR if the NM was torn down mid-wait.
+        private async UniTask<bool> WaitForClientConnectedOrTimeout(float _timeoutSeconds)
+        {
+            NetworkManager _nm = NetworkManager.Singleton;
+            if (_nm == null)
+            {
+                return false;
+            }
+
+            if (_nm.IsConnectedClient)
+            {
+                return true; // already connected — fast path
+            }
+
+            using var _cts = new CancellationTokenSource(System.TimeSpan.FromSeconds(_timeoutSeconds));
+            bool _canceled = await UniTask
+                .WaitUntil(
+                    () => NetworkManager.Singleton == null
+                          || !NetworkManager.Singleton.IsListening
+                          || NetworkManager.Singleton.IsConnectedClient,
+                    cancellationToken: _cts.Token)
+                .SuppressCancellationThrow();
+
+            if (_canceled)
+            {
+                return false; // timed out
+            }
+
+            return NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient;
         }
 
 

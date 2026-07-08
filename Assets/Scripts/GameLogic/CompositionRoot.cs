@@ -189,13 +189,23 @@ namespace GameLogic
             }
         }
 
+        // [LEAVE][PHASE 4] Explicit per-session static reset (mirrors GameManager.ResetSessionStatics),
+        // invoked from the return-to-menu paths (GameManager.ShutOffGame + Network.ClientDisconnectHandler
+        // leave / host-loss). Domain reload is disabled, so an abrupt teardown that skips OnDestroy could
+        // otherwise strand a stale scene-root registry entry into the next session. Idempotent + null-safe.
+        public static void ResetSessionStatics()
+        {
+            s_byNetworkManager.Clear();
+        }
+
 #if UNITY_EDITOR
         // Domain reload is disabled in this project — statics survive Play sessions. Drop any
         // registry entry left from a prior session at Play entry (model: GameManager.cs SubsystemRegistration reset).
+        // Reuses the same explicit reset the leave paths call ([LEAVE][PHASE 4]).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticsForDomainReloadDisabled()
         {
-            s_byNetworkManager.Clear();
+            ResetSessionStatics();
         }
 #endif
 

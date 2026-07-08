@@ -2,6 +2,10 @@
 
 Tracks real-but-not-now items surfaced during reviews. Each entry: source + date, one bullet per item.
 
+## Deferred from: quick-dev fix-vote-skip-dispatch (2026-07-08)
+
+- **Late/stale vote race (LOW, pre-existing on the player-vote path).** `VoteState.OnPlayerVoted` / `OnPlayerVotedRpc` (`Assets/Scripts/GameLogic/GameStates/VoteState.cs:44-84`) have no current-state guard: a remote client clicking a vote **or** skip in the RPC-latency window between the server ending the vote (`StateUpdateServer`→`Loop.NextGameState()`, `:293`, which runs the tally in `OnEndStateServer` `:221`) and that client receiving `OnEndStateClient`→`HideStateUI` can add a late entry to `votesForPlayer` after the outcome is decided, and broadcast `OnRefreshPlayerVotesRpc`, bumping a recap count (`VoteRecapStateUI.cs:28`) that did not count toward the decision. The stray entry only clears at the next `OnStartStateServer` (`:188`). The vote-skip fix routes skip through the same `OnPlayerVoted` path, so skip now shares this pre-existing race — it does NOT introduce it (player-vote `OnVoteButtonClicked`→`OnPlayerVoted` is equally unguarded). Proper fix (guards BOTH): add a current-state check in `OnPlayerVotedRpc` (server) — a UI-only `IsStateActive()` guard on the button handlers is insufficient (RPC-latency race is server-side). Out of scope here (spec forbids changing the player-vote path).
+
 ## Deferred from: quick-dev fix-tooltip-3d-bounds (2026-07-07)
 
 - `TooltipManager.PlaceTooltip` (`Assets/Scripts/TooltipSystem/TooltipManager.cs`) assumes `Camera.main` is non-null and in front of the target across ALL branches (2D and 3D). The new 3D fallback (`TryGetScreenBounds` returns false) re-projects `_worldBounds.center` via `WorldToScreenPoint(Camera.main, ...)`, which yields mirrored/garbage coords if the center is itself behind the camera, and would pass `null` if no MainCamera is tagged. Pre-existing pattern, not introduced by this change; practically unreachable on the 3D-hover path (an off-screen object receives no `OnPointerEnter`). Harden with a single cached `Camera.main` null-check + behind-camera hide if the tooltip system is ever revisited.

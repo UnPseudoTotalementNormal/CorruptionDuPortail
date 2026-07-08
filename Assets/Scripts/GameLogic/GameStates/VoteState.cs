@@ -172,13 +172,6 @@ namespace GameLogic.GameStates
             }
         }
         
-        public void OnVoteSkipButtonPressed(ulong _senderId)
-        {
-            Assert.IsTrue(gameManager.IsServer, "OnVoteSkipButtonPressed can only be called on server");
-            
-            OnPlayerVotedRpc(_senderId, SKIP_VOTE_ID);
-        }
-        
         private void UpdateMostVotedPlayer(ulong _lastVotedPlayer)
         {
             mostVotedPlayer = _lastVotedPlayer;

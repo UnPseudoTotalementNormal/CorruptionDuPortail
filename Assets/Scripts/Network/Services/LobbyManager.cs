@@ -31,7 +31,8 @@ namespace Network.Services
 
         // True when the local player owns the current lobby (Unity's Lobby HostId is the authoritative
         // owner and the only member allowed to DeleteLobbyAsync). Used to decide, on leave, whether to
-        // delete the whole lobby (host) or just remove ourselves (non-host).
+        // delete the whole lobby (host) or just remove ourselves (non-host), and to gate the heartbeat
+        // ping (only the host may SendHeartbeatPingAsync).
         public bool IsLobbyHost =>
             currentLobby != null &&
             currentLobby.HostId == Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
@@ -381,7 +382,10 @@ namespace Network.Services
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(HEARTBEAT_INTERVAL), cancellationToken: _token);
 
-                    if (currentLobby != null)
+                    // Seul l'host du lobby peut heartbeat ; un client non-host déclenche
+                    // "only lobby host can send heartbeat" côté service. Revérifié à chaque
+                    // itération car l'host peut changer (migration).
+                    if (currentLobby != null && IsLobbyHost)
                     {
                         await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
                         Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby.Name}");

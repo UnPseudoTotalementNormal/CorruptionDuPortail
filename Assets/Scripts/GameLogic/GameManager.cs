@@ -564,6 +564,14 @@ namespace GameLogic
             // the "host connection lost" notification. Runs on Everyone (host + clients); harmless on the host.
             Network.ClientDisconnectHandler.NotifyExpectedShutdown();
 
+            // Clean up the cloud lobby on a graceful end: the host DELETES the whole lobby (so it does not
+            // linger for the remaining members until Unity's ~30s no-heartbeat expiry), each client just
+            // removes itself. Fire-and-forget — LobbyManager is DontDestroyOnLoad, so it outlives the scene load.
+            if (Network.Services.LobbyManager.instance != null)
+            {
+                _ = Network.Services.LobbyManager.instance.LeaveOrDeleteLobby();
+            }
+
             // [LEAVE][PHASE 4] Tie the grace delay to this object's lifetime. If the session is torn down
             // abruptly during the 1s wait (object destroyed / scene unloaded), the token cancels the delay so
             // a dangling continuation cannot resume and race a redundant Shutdown + scene load. UniTaskVoid:

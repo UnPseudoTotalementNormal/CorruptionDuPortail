@@ -29,6 +29,13 @@ namespace Network.Services
         public Lobby CurrentLobby => currentLobby;
         public bool IsInLobby => currentLobby != null;
 
+        // True when the local player owns the current lobby (Unity's Lobby HostId is the authoritative
+        // owner and the only member allowed to DeleteLobbyAsync). Used to decide, on leave, whether to
+        // delete the whole lobby (host) or just remove ourselves (non-host).
+        public bool IsLobbyHost =>
+            currentLobby != null &&
+            currentLobby.HostId == Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -54,7 +61,7 @@ namespace Network.Services
         {
             if (currentLobby != null)
             {
-                _ = LeaveLobby(); // Fire and forget
+                _ = LeaveOrDeleteLobby(); // Fire and forget: host deletes the lobby, a client just leaves.
             }
         }
 
@@ -337,6 +344,27 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de suppression du lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de supprimer le lobby: {e.Message}");
+            }
+        }
+
+        // Leave the cloud lobby cleanly on the way out. If we are the host, DELETE the whole lobby now
+        // instead of only removing ourselves — otherwise the lobby lingers (with the remaining members)
+        // until Unity's no-heartbeat auto-expiry (~30s), and those members poll a stale, hostless lobby.
+        // A non-host just removes itself (RemovePlayerAsync). Safe to call when not in a lobby.
+        public async Task LeaveOrDeleteLobby()
+        {
+            if (currentLobby == null)
+            {
+                return;
+            }
+
+            if (IsLobbyHost)
+            {
+                await DeleteLobby();
+            }
+            else
+            {
+                await LeaveLobby();
             }
         }
 

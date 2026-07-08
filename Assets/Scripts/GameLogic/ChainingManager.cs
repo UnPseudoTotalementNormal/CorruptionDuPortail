@@ -81,14 +81,19 @@ namespace GameLogic
             }
         }
 
+        // [LEAVE] _showCardReveal: normally FALSE — the ChainingState card animation performs the flip/reveal
+        // itself, so the reveal is applied silently here to avoid a double flip. The mid-game leave path bypasses
+        // ChainingState (no animation), so it passes TRUE: the reveal then drives GameInfoRevealer's own card
+        // flip+reveal side-effect (the leaver's card is discovered), while the chained sprite still comes from
+        // Card's isChained.OnValueChanged.
         [Rpc(SendTo.Server)]
-        public void ChainCharacterRpc(ulong _characterId)
+        public void ChainCharacterRpc(ulong _characterId, bool _showCardReveal = false)
         {
             var _gameManager = GameManager.For(NetworkManager);
             var _character = Query.GetCharacter(_characterId);
 
             _character.ChainCharacterServer();
-            gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, false);
+            gameInfoRevealer.SetRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, _showCardReveal);
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))
             {

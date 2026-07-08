@@ -99,7 +99,40 @@ namespace GameLogic.GameStates
                 return false; // Player is eliminated or does not exist or is a fake character
             }
 
+            // [LEAVE] Phase 2 — re-exclude a DEPARTED real client (owner ruling: a merely-chained-but-PRESENT
+            // player stays eligible, so we do NOT key on isChained). The original game excluded a disconnected
+            // player because the old handler fakified them and this method already drops isFake; Phase 1 replaced
+            // fakify with chaining, losing that. Re-key it on the true "this real client has left" discriminator
+            // (GameManager's departed-set). Bots (id >= 100) are host-simulated and always present — never excluded.
+            if (_playerId < 100 && gameManager.HasClientLeft(_playerId))
+            {
+                return false;
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// [LEAVE] Phase 2 (epic-player-leave-stability) — server hook the leave pipeline calls after a mid-game
+        /// leave. The eligible-voter denominator (<see cref="CanVote"/>) has just shrunk (the DEPARTED leaver is
+        /// now excluded via GameManager's departed-set — chained-but-present players still count), so an open vote
+        /// where everyone still present has already voted should close NOW rather than waiting out the timer.
+        /// Recomputes the auto-close threshold — the same one <see cref="OnPlayerVotedRpc"/> checks — and collapses
+        /// the timer when it is already met. Invoked only while this state is current
+        /// (GameManager.UnblockCurrentStateAfterLeave).
+        /// </summary>
+        public void OnPlayerLeftServer(ulong _ownerId)
+        {
+            Assert.IsTrue(gameManager.IsServer, "OnPlayerLeftServer can only be called on server");
+
+            int _castVotes = votesForPlayer.Values.Sum(_voteList => _voteList.Count);
+            int _eligibleVoters = CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true));
+
+            if (_castVotes >= _eligibleVoters)
+            {
+                Debug.Log($"[LEAVE] VoteState: after {_ownerId} left, {_castVotes} vote(s) meet the reduced denominator ({_eligibleVoters}) — collapsing the timer to auto-close.");
+                voteTimer = Mathf.Min(voteTimer, 5);
+            }
         }
         
         private void OnRefreshPlayerVotesRpc(ulong[] playerIds, ulong[] votes, ulong[] voteCounts)
@@ -137,13 +170,6 @@ namespace GameLogic.GameStates
                     new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
                 yield return new WaitForSeconds(1);
             }
-        }
-        
-        public void OnVoteSkipButtonPressed(ulong _senderId)
-        {
-            Assert.IsTrue(gameManager.IsServer, "OnVoteSkipButtonPressed can only be called on server");
-            
-            OnPlayerVotedRpc(_senderId, SKIP_VOTE_ID);
         }
         
         private void UpdateMostVotedPlayer(ulong _lastVotedPlayer)
@@ -197,7 +223,16 @@ namespace GameLogic.GameStates
             if (_winner != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);
-                chainingManager.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
+                // [LEAVE] Phase 2 — null-guard: the most-voted seat may have been removed (leaver) between the
+                // vote and this tally. If it is gone there is nothing to chain — skip instead of NRE-ing.
+                if (_votedCharacter != null)
+                {
+                    chainingManager.AddCharacterToChainingList(_votedCharacter.ownerClientId.Value);
+                }
+                else
+                {
+                    Debug.Log($"[LEAVE] VoteState: most-voted player {_winner} is no longer present — skipping chaining.");
+                }
             }
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateMostVotedPlayer), 

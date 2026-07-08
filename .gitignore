@@ -115,3 +115,7 @@ fmod_editor.log
 
 # Toolkit migration scene/prefab backups (machine-local, OUTSIDE Assets to avoid GUID conflicts)
 /BackupToolkit/
+
+# Multiplayer Play Mode transient bootstrap scenes (auto-generated, GUID-named, per playtest session)
+/Assets/InitTestScene*.unity
+/Assets/InitTestScene*.unity.meta

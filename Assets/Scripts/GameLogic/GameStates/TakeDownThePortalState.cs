@@ -40,7 +40,38 @@ namespace GameLogic.GameStates
             mageCharacterOwnerId = _mageCharacterOwnerId;
         }
 
-        
+        /// <summary>
+        /// [LEAVE] Phase 2 (epic-player-leave-stability) — server hook the leave pipeline calls after a mid-game
+        /// leaver is chained. This is a single-target flow: only the Mage (<see cref="mageCharacterOwnerId"/>) is
+        /// subscribed to the click RPCs, so if the Mage leaves the step hangs forever. When the awaited Mage is the
+        /// leaver we advance the loop so the portal step completes cleanly instead of hanging. Any other leaver is a
+        /// spectator here and needs no unblock. Invoked only while this state is current
+        /// (GameManager.UnblockCurrentStateAfterLeave).
+        ///
+        /// Double-fire note: the instant chain that precedes this call runs ChainingManager.ChainCharacterRpc,
+        /// which — because the Mage carries the take-down-the-portal power — already re-set shouldActivate and
+        /// re-pointed SetMageCharacterRpc to this same (now-chained) Mage. We deliberately do NOT touch
+        /// shouldActivate or the mage id again here; we only advance. OnEndStateClient (fired by the transition)
+        /// unsubscribes the client click handlers.
+        /// </summary>
+        public void OnPlayerLeftServer(ulong _ownerId)
+        {
+            if (!gameManager.NetworkManager.IsServer)
+            {
+                Debug.LogError("OnPlayerLeftServer can only be called on the server");
+                return;
+            }
+
+            if (_ownerId != mageCharacterOwnerId)
+            {
+                return;
+            }
+
+            Debug.Log($"[LEAVE] TakeDownThePortal: awaited Mage {_ownerId} left — advancing the loop so the portal step cannot hang.");
+            Loop.NextGameState();
+        }
+
+
         
         private void OnCharacterClickClient(Card _card)
         {
@@ -71,22 +102,40 @@ namespace GameLogic.GameStates
             {
                 return;
             }
-            
+
             clickedCharacter = CharacterQuery.GetCharacter(_ownerId);
-            
-            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick), 
+            // [LEAVE] Phase 2 — the clicked seat may have been removed (leaver) between click and server handling.
+            // Null-guard the single-target flow rather than NRE: nothing to select, so leave the wait open.
+            if (clickedCharacter == null)
+            {
+                Debug.Log($"[LEAVE] TakeDownThePortal: clicked character {_ownerId} no longer present — ignoring the click.");
+                return;
+            }
+
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick),
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
-            
+
             WaitForRoleClickServer();
         }
-        
+
         private void OnRoleClickServer(ulong _ownerId)
         {
-            var _clickedRole = CharacterQuery.GetCharacter(_ownerId).role;
+            // [LEAVE] Phase 2 — both the role-owner just clicked and the earlier clicked character can be
+            // absent now (removed leaver). A missing character means the guess cannot be validated, so end the
+            // step cleanly (same outcome as a wrong guess) instead of NRE-ing the single-target path.
+            Character _clickedRoleCharacter = CharacterQuery.GetCharacter(_ownerId);
+            if (_clickedRoleCharacter == null || clickedCharacter == null)
+            {
+                Debug.Log($"[LEAVE] TakeDownThePortal: role/character for the guess is missing (roleOwner={_ownerId}) — advancing the loop.");
+                Loop.NextGameState();
+                return;
+            }
 
-            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick), 
+            var _clickedRole = _clickedRoleCharacter.role;
+
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick),
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
-            
+
             if (!_clickedRole.IsTheSameRole(clickedCharacter.role))
             {
                 Loop.NextGameState();

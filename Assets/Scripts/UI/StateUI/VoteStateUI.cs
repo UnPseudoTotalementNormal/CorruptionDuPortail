@@ -1,9 +1,7 @@
 #region
 
 using GameLogic.GameStates;
-using Network.Action;
 using TMPro;
-using Unity.Netcode;
 using UnityEngine;
 
 #endregion
@@ -14,31 +12,6 @@ namespace UI
     {
         [SerializeField] private TMP_Text timerText;
         [SerializeField] private TMP_Text skipVoteAmountText;
-        private NetworkAction<ulong> onVoteSkipButtonPressedByClient = new($"onVoteSkipButtonPressedVoteStateUI", true);
-
-        public override void OnNetworkSpawn()
-        {
-            base.OnNetworkSpawn();
-            if (IsServer)
-            {
-                onVoteSkipButtonPressedByClient += OnVoteSkipButtonPressedServer;
-            }
-        }
-
-        private void OnVoteSkipButtonPressedServer(ulong _clientId)
-        {
-            ((VoteState)owningGameState).OnVoteSkipButtonPressed(_clientId);
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            base.OnNetworkDespawn();
-            if (IsServer)
-            {
-                onVoteSkipButtonPressedByClient -= OnVoteSkipButtonPressedServer;
-                onVoteSkipButtonPressedByClient.Unregister();
-            }
-        }
 
         private void Update()
         {
@@ -58,9 +31,11 @@ namespace UI
 
         public void OnVoteSkipButtonPressed()
         {
-            // Story 12.2: read the local client id off the StateUI base's injected ICharacterQuery slice (9.1)
-            // instead of the CharacterManager façade.
-            onVoteSkipButtonPressedByClient?.Invoke(CharacterQuery.GetLocalClientId());
+            // A skip is a vote for SKIP_VOTE_ID. Route through the WORKING player-vote dispatch
+            // (VoteState.OnPlayerVoted -> DoStateMethodRpc -> OnPlayerVotedRpc on the spawned GameManager).
+            // The old NetworkAction path dead-ended: its server handler attached only in OnNetworkSpawn,
+            // which never fires — VoteStateUI is a NetworkBehaviour on a NetworkObject-less, never-spawned prefab.
+            ((VoteState)owningGameState).OnPlayerVoted(VoteState.SKIP_VOTE_ID);
         }
     }
 }

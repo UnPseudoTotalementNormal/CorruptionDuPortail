@@ -139,20 +139,21 @@ jobs:
           printf '%s' "$COMMITS" > "$RUNNER_TEMP/commits.txt"
           echo "status=ok" >> $GITHUB_OUTPUT
 
-      - name: Générer changelog (Claude Opus)
+      # Uses the Claude Code CLI headless (subscription OAuth token, no paid API).
+      # The claude-code-action GitHub Action cannot run on a `push` event
+      # ("Unsupported event type: push"), so we drive the CLI directly instead.
+      - name: Générer changelog (Claude Opus, CLI headless)
         if: success() && steps.commits.outputs.status == 'ok'
         continue-on-error: true
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: |
-            Lis le fichier ${{ runner.temp }}/commits.txt : il liste les commits Unity entre deux builds.
-            Rédige un changelog court en français pour des joueurs (max 400 caractères).
-            Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent.
-            Si aucun commit pertinent, écris seulement : Améliorations internes.
-            Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication)
-            dans le fichier ${{ runner.temp }}/changelog.txt.
-          claude_args: "--model claude-opus-4-8 --allowedTools Read,Write --permission-mode acceptEdits"
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+          claude --version || echo "claude CLI install failed"
+          claude -p "Lis le fichier $RUNNER_TEMP/commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier $RUNNER_TEMP/changelog.txt." \
+            --model claude-opus-4-8 \
+            --allowedTools Read,Write \
+            --permission-mode acceptEdits 2>&1 | tail -5
 
       - name: Lire changelog (fallback Gemini)
         id: changelog
@@ -177,9 +178,10 @@ jobs:
               '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}' \
               > "$RUNNER_TEMP/changelog_payload.json"
             RESPONSE=$(curl -s -X POST \
-              "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=$GEMINI_API_KEY" \
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
               -H "Content-Type: application/json" \
               -d @"$RUNNER_TEMP/changelog_payload.json")
+            echo "Gemini raw response: $RESPONSE"
             TEXT=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // "Changelog indisponible."')
           fi
           echo "text<<EOF" >> $GITHUB_OUTPUT

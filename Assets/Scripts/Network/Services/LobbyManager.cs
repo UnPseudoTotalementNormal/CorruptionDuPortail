@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
+using Unity.Services.Authentication;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
@@ -28,6 +29,16 @@ namespace Network.Services
         
         public Lobby CurrentLobby => currentLobby;
         public bool IsInLobby => currentLobby != null;
+
+        /// <summary>
+        /// True only when the local player owns the current lobby (its HostId).
+        /// Only the lobby host may send heartbeat pings; the Unity Lobby service
+        /// rejects "only lobby host can send heartbeat" otherwise.
+        /// </summary>
+        public bool IsLobbyHost =>
+            currentLobby != null
+            && AuthenticationService.Instance.IsSignedIn
+            && currentLobby.HostId == AuthenticationService.Instance.PlayerId;
 
         private void Awake()
         {
@@ -353,7 +364,10 @@ namespace Network.Services
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(HEARTBEAT_INTERVAL), cancellationToken: _token);
 
-                    if (currentLobby != null)
+                    // Seul l'host du lobby peut heartbeat ; un client non-host déclenche
+                    // "only lobby host can send heartbeat" côté service. Revérifié à chaque
+                    // itération car l'host peut changer (migration).
+                    if (currentLobby != null && IsLobbyHost)
                     {
                         await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
                         Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby.Name}");

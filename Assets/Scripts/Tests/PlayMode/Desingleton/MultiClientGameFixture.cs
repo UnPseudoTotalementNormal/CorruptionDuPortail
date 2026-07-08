@@ -52,6 +52,9 @@ namespace Tests.PlayMode.Desingleton
         // source key (NetworkPrefabs.cs:303), so we force unique values by reflection.
         private const uint GmPrefabHash = 0xC0DE0101u;
         private const uint CmPrefabHash = 0xC0DE0102u;
+        // Phase 0 (epic-player-leave-stability): a real, owned Character so the mid-game
+        // disconnect path (GameManager.OnPlayerDisconnectedServer) has something to act on.
+        private const uint CharacterPrefabHash = 0xC0DE0103u;
         private const ushort LoopbackPort = 7788;
 
         /// <summary>Number of DummyGameStates seeded into the GameManager prefab.
@@ -68,6 +71,14 @@ namespace Tests.PlayMode.Desingleton
         private GameObject _cmPrefabGo;
         private NetworkObject _gmPrefabNo;
         private NetworkObject _cmPrefabNo;
+        // Phase 0 (epic-player-leave-stability): template + registered prefab for a real Character.
+        private GameObject _characterPrefabGo;
+        private NetworkObject _characterPrefabNo;
+
+        /// <summary>The last Character spawned via <see cref="SpawnRealCharacterForClient"/>.
+        /// Held so a test can observe its NetworkVariables after a disconnect fakifies/mutates it
+        /// (the object is server-owned, so it is not destroyed when its client leaves).</summary>
+        protected Characters.Character LastSpawnedCharacter { get; private set; }
 
         private GameObject _hostNmGo;
         private GameObject _clientNmGo;
@@ -139,15 +150,25 @@ namespace Tests.PlayMode.Desingleton
             MarkAsNonSceneObject(_cmPrefabNo);
             _cmPrefabGo.AddComponent<CharacterManager>();
 
+            // Phase 0 (epic-player-leave-stability): a Character prefab template so
+            // CharacterManager.AddNewCharacter can spawn a genuine owned Character. Registered
+            // in BOTH NMs (below) so the replica reaches the late-joining client. Nothing spawns
+            // it unless a test calls SpawnRealCharacterForClient — inert for the other fixtures.
+            _characterPrefabGo = new GameObject("FixtureCharacterPrefab");
+            _characterPrefabNo = _characterPrefabGo.AddComponent<NetworkObject>();
+            SetGlobalObjectIdHash(_characterPrefabNo, CharacterPrefabHash);
+            MarkAsNonSceneObject(_characterPrefabNo);
+            _characterPrefabGo.AddComponent<Characters.Character>();
+
             // --- Host NM FIRST: its OnEnable claims NetworkManager.Singleton. ---
             _hostNmGo = new GameObject("FixtureHostNM");
             HostNm = _hostNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo);
+            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo);
 
             // --- Client NM SECOND: Singleton already set, so it stays the host. ---
             _clientNmGo = new GameObject("FixtureClientNM");
             ClientNm = _clientNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo);
+            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo);
 
             Assert.IsTrue(NetworkManager.Singleton == HostNm,
                 "Host NM (created first) must own NetworkManager.Singleton.");
@@ -167,6 +188,13 @@ namespace Tests.PlayMode.Desingleton
 
             // Production wiring: GameManager.OnPlayerDisconnectedServer reads characterManager.
             ReflectionHelper.SetPrivateField(HostGm, "characterManager", HostCm);
+
+            // Phase 0 (epic-player-leave-stability): wire the CharacterManager's spawn prefab +
+            // parent so AddNewCharacter can spawn a real owned Character. Only the host needs this
+            // (spawns are server-only); the client just receives the replicated NetworkObject. The
+            // parent is HostCm's own (spawned) NetworkObject transform.
+            ReflectionHelper.SetPrivateField(HostCm, "_characterPrefab", _characterPrefabNo);
+            ReflectionHelper.SetPrivateField(HostCm, "_charactersParent", HostCm.transform);
 
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, HostGm, HostCm);
 
@@ -244,6 +272,7 @@ namespace Tests.PlayMode.Desingleton
             Object.Destroy(_hostNmGo);
             Object.Destroy(_gmPrefabGo);
             Object.Destroy(_cmPrefabGo);
+            Object.Destroy(_characterPrefabGo);
 
             // Destroy the seeded DummyGameState SOs (shared by reference with every
             // replica's gameStates) — domain reload is disabled, so they would otherwise
@@ -299,6 +328,40 @@ namespace Tests.PlayMode.Desingleton
         }
 
         /// <summary>
+        /// Phase 0 (epic-player-leave-stability): spawn a REAL, server-owned Character whose
+        /// <see cref="Characters.Character.ownerClientId"/> NetworkVariable equals
+        /// <paramref name="_ownerClientId"/> (production is server-authoritative — the seat identity
+        /// is a NetworkVariable, not NGO ownership). This gives the mid-game disconnect handler
+        /// (GameManager.OnPlayerDisconnectedServer) a seat to act on. Optionally assigns
+        /// <paramref name="_role"/> so "roles exist" before the leave. The spawned Character is
+        /// exposed via <see cref="LastSpawnedCharacter"/>. Waits (bounded) for the host to project
+        /// it, then a couple of frames for replication to the real client.
+        /// </summary>
+        protected IEnumerator SpawnRealCharacterForClient(ulong _ownerClientId, Role _role = null)
+        {
+            Assert.IsNotNull(HostCm, "Host CharacterManager must be spawned before spawning a Character.");
+            Assert.IsTrue(HostNm != null && HostNm.IsServer, "SpawnRealCharacterForClient must run on the server (host).");
+
+            Characters.Character _character = HostCm.AddNewCharacter(_ownerClientId);
+            Assert.IsNotNull(_character,
+                $"AddNewCharacter returned null for clientId {_ownerClientId} (duplicate id, or missing prefab/parent wiring).");
+            if (_role != null)
+            {
+                _character.role = _role;
+            }
+            LastSpawnedCharacter = _character;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(_character, 5f);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => HostCm.GetCharacter(_ownerClientId, false) != null,
+                5f,
+                $"Host CharacterManager never projected the spawned Character for clientId {_ownerClientId}.");
+            // Let the new NetworkObject replicate to the real client.
+            yield return null;
+            yield return null;
+        }
+
+        /// <summary>
         /// Optional simulated-bot proof (AC 3), opt-in and OFF by default — the real
         /// client is the load-bearing addition. Proves the intercepted-dispatch routing:
         /// GetSafeRpcTarget(clientId >= 100) routes to the host (client 0) instead of the
@@ -349,7 +412,7 @@ namespace Tests.PlayMode.Desingleton
 
         // --- helpers (lifted from 5.0e CoexistenceGateTests, the proven substrate) ---
 
-        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab)
+        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab, NetworkObject _characterPrefab)
         {
             var _transport = _go.AddComponent<UnityTransport>();
             _transport.SetConnectionData("127.0.0.1", LoopbackPort);
@@ -360,6 +423,7 @@ namespace Tests.PlayMode.Desingleton
             };
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _gmPrefab.gameObject });
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _cmPrefab.gameObject });
+            _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _characterPrefab.gameObject });
         }
 
         private static void SetGlobalObjectIdHash(NetworkObject _networkObject, uint _hash)

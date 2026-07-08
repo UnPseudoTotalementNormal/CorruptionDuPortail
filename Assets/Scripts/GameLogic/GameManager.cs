@@ -695,7 +695,10 @@ namespace GameLogic
                 : CompositionRoot.For(NetworkManager).ChainingManager;
             if (_chaining != null)
             {
-                _chaining.ChainCharacterRpc(_leaver.ownerClientId.Value);
+                // _showCardReveal: true — no ChainingState animation runs on the leave path, so the reveal
+                // must drive the card flip itself (discover the leaver's role); the chained sprite follows
+                // from Card's isChained.OnValueChanged.
+                _chaining.ChainCharacterRpc(_leaver.ownerClientId.Value, true);
                 return;
             }
 

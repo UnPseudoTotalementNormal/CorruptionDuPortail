@@ -103,6 +103,26 @@ namespace Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator GetMandatoryRoleCount_SumsOnlyNonFakeableRoles()
+        {
+            // [LEAVE][PHASE 4] Mandatory = Σ(count where !canBeFake). Seeded roles: Robot(2,fakeable),
+            // Abyss(1,NOT fakeable), Oracle(3,fakeable) → only Abyss(1) counts. This is the min-players floor.
+            Assert.AreEqual(1, _manager.GetMandatoryRoleCount(), "Only the non-fakeable Abyss(1) is mandatory.");
+
+            // Raising a fakeable role's count must NOT change the mandatory floor.
+            _manager.RequestSetRoleCount(RoleID.Robot, 5);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _manager.GetRoleCount(RoleID.Robot) == 5, 3f, "Robot edit did not replicate.");
+            Assert.AreEqual(1, _manager.GetMandatoryRoleCount(), "Editing a fakeable role must not move the mandatory floor.");
+
+            // Raising the non-fakeable Abyss count DOES raise the floor.
+            _manager.RequestSetRoleCount(RoleID.Abyss, 3);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _manager.GetRoleCount(RoleID.Abyss) == 3, 3f, "Abyss edit did not replicate.");
+            Assert.AreEqual(3, _manager.GetMandatoryRoleCount(), "The non-fakeable Abyss count now sets the floor.");
+        }
+
+        [UnityTest]
         public IEnumerator HostEdit_UpdatesCount_RaisesEvent_AndAdjustsTotal()
         {
             int _changedCount = 0;

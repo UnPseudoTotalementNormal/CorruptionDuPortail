@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Characters;
 using ChatSystem;
+using CorruptionDuPortail.Domain;
+using Network.Liveness;
 using RoleTarget;
 using UI;
 using Unity.Netcode;
@@ -46,6 +48,12 @@ namespace GameLogic
         [SerializeField] private GameSettings.GameSettingsManager gameSettings;
 
         private NetworkManager _networkManager;
+
+        // [LIVENESS B2] The liveness layer for the current session (arch-liveness-heartbeat §8.3). The
+        // CompositionRoot is the sanctioned lifecycle owner: it launches the UniTask pump when the session
+        // starts and Stops it on session teardown / its own destruction, so the pump never outlives a
+        // return-to-menu (the LobbyState-sub-leak family). Null while no session is running.
+        private LivenessService _liveness;
 
         // Per-NetworkManager registry of scene-placed roots, mirroring the proven GameManager.For
         // pattern. Registered at Awake (NEVER OnNetworkSpawn — cross-object spawn order is not
@@ -167,11 +175,83 @@ namespace GameLogic
             if (_networkManager != null)
             {
                 s_byNetworkManager[_networkManager] = this;
+
+                // [LIVENESS B2] Bind the liveness pump to the session lifecycle. In production the GameScene
+                // loads with the NGO session already up (the lobby is a state, not a scene), so the started
+                // events have already fired — start immediately for the current role. The subscriptions cover
+                // the (rare) case where the manager is bound before the session starts, and always drive teardown.
+                _networkManager.OnServerStarted += HandleServerStarted;
+                _networkManager.OnClientStarted += HandleClientStarted;
+                _networkManager.OnServerStopped += HandleSessionStopped;
+                _networkManager.OnClientStopped += HandleSessionStopped;
+                if (_networkManager.IsListening)
+                {
+                    StartLivenessForCurrentRole();
+                }
+            }
+        }
+
+        // [LIVENESS B2] --- session lifecycle -> liveness pump ----------------------------------------
+        private void HandleServerStarted() => StartLivenessForCurrentRole();
+        private void HandleClientStarted() => StartLivenessForCurrentRole();
+        private void HandleSessionStopped(bool _wasHost) => StopLiveness();
+
+        // Launch the liveness layer for whichever role this NetworkManager is (host => server only, so the
+        // host never heartbeat-declares itself). Idempotent per session (no-op if already started). The
+        // PeerLost callbacks resolve their targets lazily so they are safe even if GameManager / the
+        // ClientDisconnectHandler are not yet up at launch.
+        private void StartLivenessForCurrentRole()
+        {
+            if (_liveness != null || _networkManager == null)
+            {
+                return;
+            }
+
+            LivenessConfig _config = LivenessConfig.Default;
+            ILivenessClock _clock = new StopwatchLivenessClock();
+
+            if (_networkManager.IsServer)
+            {
+                _liveness = LivenessService.StartServer(
+                    _networkManager, _config, _clock,
+                    onServerPeerLost: _clientId =>
+                    {
+                        GameManager _gm = GameManager;
+                        if (_gm != null)
+                        {
+                            _gm.HandlePlayerLeft(_clientId);
+                        }
+                    });
+            }
+            else if (_networkManager.IsClient)
+            {
+                _liveness = LivenessService.StartClient(
+                    _networkManager, _config, _clock,
+                    onClientHostLost: Network.ClientDisconnectHandler.NotifyLivenessHostLost);
+            }
+        }
+
+        private void StopLiveness()
+        {
+            if (_liveness != null)
+            {
+                _liveness.Stop();
+                _liveness = null;
             }
         }
 
         private void OnDestroy()
         {
+            // [LIVENESS B2] Drop the session subscriptions and stop the pump so nothing outlives this root.
+            if (_networkManager != null)
+            {
+                _networkManager.OnServerStarted -= HandleServerStarted;
+                _networkManager.OnClientStarted -= HandleClientStarted;
+                _networkManager.OnServerStopped -= HandleSessionStopped;
+                _networkManager.OnClientStopped -= HandleSessionStopped;
+            }
+            StopLiveness();
+
             // Value-scan unregister: NetworkManager.Singleton may already be null during shutdown
             // teardown, so never key off it (mirrors GameManager.UnregisterFromRegistry).
             NetworkManager _key = null;
@@ -189,13 +269,26 @@ namespace GameLogic
             }
         }
 
+        // [LEAVE][PHASE 4] Explicit per-session static reset (mirrors GameManager.ResetSessionStatics),
+        // invoked from the return-to-menu paths (GameManager.ShutOffGame + Network.ClientDisconnectHandler
+        // leave / host-loss). Domain reload is disabled, so an abrupt teardown that skips OnDestroy could
+        // otherwise strand a stale scene-root registry entry into the next session. Idempotent + null-safe.
+        public static void ResetSessionStatics()
+        {
+            s_byNetworkManager.Clear();
+            // [LIVENESS B2] Clear the beat carrier's static registries too, so an abrupt teardown cannot strand
+            // a stale bridge/sink entry into the next session (domain reload is disabled). Idempotent + null-safe.
+            LivenessNetworkBridge.ResetSessionStatics();
+        }
+
 #if UNITY_EDITOR
         // Domain reload is disabled in this project — statics survive Play sessions. Drop any
         // registry entry left from a prior session at Play entry (model: GameManager.cs SubsystemRegistration reset).
+        // Reuses the same explicit reset the leave paths call ([LEAVE][PHASE 4]).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticsForDomainReloadDisabled()
         {
-            s_byNetworkManager.Clear();
+            ResetSessionStatics();
         }
 #endif
 

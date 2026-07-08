@@ -56,6 +56,14 @@ namespace GameLogic.GameStates
             foreach (var _chainingCharacterId in _chainingCharactersId)
             {
                 var _chainingCharacter = CharacterQuery.GetCharacter(_chainingCharacterId);
+                // [LEAVE] Phase 2 — the id may reference a character that was already removed (a leaver), so
+                // GetCharacter returns null. Skip it: the animation loop must never NRE on an absent character.
+                if (_chainingCharacter == null)
+                {
+                    Debug.Log($"[LEAVE] ChainingState: character {_chainingCharacterId} no longer present — skipping its chaining animation.");
+                    continue;
+                }
+
                 await DoCardChainingAnimation(_chainingCharacter);
                 await UniTask.Delay(TimeSpan.FromSeconds(1f));
             }

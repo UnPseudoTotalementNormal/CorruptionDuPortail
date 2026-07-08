@@ -168,7 +168,18 @@ namespace Board.UI.CharacterBar
         }
         private void OnDestroy()
         {
-            CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
+            // Teardown hygiene (project rule: NetworkManager.Singleton may be null in OnDestroy during
+            // shutdown). At game-end / return-to-menu the CompositionRoot registry can already be cleared
+            // (ResetSessionStatics) or the Singleton gone before these bar objects are destroyed, so
+            // CompositionRoot.For(...).GameInfoRevealer would NRE. Null-guard the unsubscribe.
+            if (NetworkManager.Singleton != null)
+            {
+                var _revealer = CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer;
+                if (_revealer != null)
+                {
+                    _revealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
+                }
+            }
             UnsubscribeFromCharacterEvents();
         }
         private void OnCharacterRoleUpdated()

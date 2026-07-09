@@ -100,4 +100,22 @@
     --cdp-color-info-locked-edge: rgb(191, 154, 82);   /* sealed accent — gold */
     --cdp-radius-info: 6px;                             /* unified cell/segment radius */
     --cdp-radius-info-frame: 10px;                      /* dossier frame radius */
+
+    /* ---- InfoTable responsive layout knobs (provisional) — tune the whole responsive behaviour here.
+       Row floors per player tier, glyph size per tier, name-column width per role tier. The COUNT breakpoints
+       themselves (7 / 12 / 16 players, 6 / 9 roles) live as named consts in InfoTableUitkController. ---- */
+    --cdp-info-row-comfort: 64px;      /* row min-height, few players (rows still flex-grow to fill) */
+    --cdp-info-row-compact: 52px;
+    --cdp-info-row-dense: 42px;
+    --cdp-info-row-scroll: 54px;       /* FIXED row height once the body scrolls */
+    --cdp-info-glyph-comfort: 30px;    /* segment glyph size per tier */
+    --cdp-info-glyph-compact: 26px;
+    --cdp-info-glyph-dense: 22px;      /* also used by the scroll tier */
+    --cdp-info-namecol-wide: 26%;      /* player-name column width per role tier */
+    --cdp-info-namecol-compact: 22%;
+    --cdp-info-namecol-icon: 20%;
+    --cdp-info-rolehead-compact: 20px; /* role-header font per role tier */
+    --cdp-info-rolehead-icon: 18px;
+    --cdp-info-scrollbar-w: 10px;      /* vertical scrollbar width */
+    --cdp-info-scrollbar-pad: 13px;    /* header right-pad to keep columns aligned with the scrolled rows */
 }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,9 +10,15 @@ namespace UI.InfoTable
     /// <c>RoleCardController</c> conventions (guarded init, Q-by-name, dynamic children, BEM classes).
     ///
     /// Visual language ("Dossier" direction): each cell is a 3-segment control — Sûr (✓) / Je pense (?) /
-    /// Pas lui (✗) — so all three states stay directly clickable (re-clicking the active one clears it to None,
-    /// preserving the old behaviour). A footer "context bar" fills the panel with per-role capacity counters and
-    /// a conflict banner. Depth is faked with USS bevels/insets (no gradients/shadows in UITK).
+    /// Pas lui (✗) — so all three states stay directly clickable (re-clicking the active one clears it to None).
+    /// A footer "context bar" carries per-role capacity counters + a conflict banner. Depth is faked with USS
+    /// bevels/insets (no gradients/shadows in UITK).
+    ///
+    /// Responsive: the board reads like the SAME dossier breathing at any size. The controller computes a tier
+    /// from the player/role COUNT (UITK runtime has no @media, and the RenderTexture is a fixed size, so pixel
+    /// media-queries would measure the wrong thing) and stamps ONE class on the root; the USS drives the density
+    /// (row floor, glyph size, padding, header/footer compaction). Few players/roles = the lush "comfort" look
+    /// untouched; past the density floor the body becomes a vertical ScrollView with a frozen role-header band.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class InfoTableUitkController : MonoBehaviour
@@ -21,6 +26,8 @@ namespace UI.InfoTable
         private const string RootName = "info-table";
         private const string FrameClass = "info-table__frame";
         private const string HeaderRowClass = "info-table__header-row";
+        private const string GridClass = "info-table__grid";
+        private const string ScrollClass = "info-table__scroll";
         private const string PlayerRowClass = "info-table__player-row";
         private const string PlayerRowAltClass = "info-table__player-row--alt";
         private const string PlayerRowLockedClass = "info-table__player-row--locked";
@@ -46,9 +53,26 @@ namespace UI.InfoTable
         private const string LegendClass = "info-table__legend";
         private const string LegendItemClass = "info-table__legend-item";
 
-        private const string GlyphSure = "✓";      // ✓
+        // Responsive tier classes stamped on the root (mutually exclusive per axis). USS does the rest.
+        private const string PlayerComfortClass = "is-comfort";
+        private const string PlayerCompactClass = "is-compact";
+        private const string PlayerDenseClass = "is-dense";
+        private const string PlayerScrollClass = "is-scroll";
+        private const string RolesWideClass = "roles-wide";
+        private const string RolesCompactClass = "roles-compact";
+        private const string RolesIconClass = "roles-icon";
+
+        // Player-count breakpoints: <7 comfort, 7-11 compact, 12-15 dense, >=16 scroll (rows go fixed + overflow).
+        private const int CompactAtPlayers = 7;
+        private const int DenseAtPlayers = 12;
+        private const int ScrollAtPlayers = 16;
+        // Role-count breakpoints: <6 wide labels, 6-8 compact, >=9 tiny + tooltip.
+        private const int CompactAtRoles = 6;
+        private const int IconAtRoles = 9;
+
+        private const string GlyphSure = "✓";
         private const string GlyphMaybe = "?";
-        private const string GlyphNot = "✗";       // ✗
+        private const string GlyphNot = "✗";
         private const string CollapsedClass = "cdp-is-collapsed";
 
         [SerializeField] private UIDocument _document;
@@ -57,6 +81,10 @@ namespace UI.InfoTable
         [SerializeField] private MonoBehaviour _dataSourceBehaviour;
 
         private static readonly CellState[] SegmentOrder = { CellState.Sure, CellState.Maybe, CellState.SurelyNot };
+        private static readonly string[] AllPlayerTierClasses =
+            { PlayerComfortClass, PlayerCompactClass, PlayerDenseClass, PlayerScrollClass };
+        private static readonly string[] AllRoleTierClasses =
+            { RolesWideClass, RolesCompactClass, RolesIconClass };
 
         private IInfoTableDataSource _data;
         private readonly InfoTableModel _model = new();
@@ -123,18 +151,20 @@ namespace UI.InfoTable
 
         private void BuildGrid()
         {
-            _root.Clear();
             int playerCount = _model.PlayerCount;
             int roleCount = _model.RoleCount;
+            ApplyTierClasses(playerCount, roleCount);
+
+            _root.Clear();
             _cellEls = new VisualElement[playerCount][];
             _rowEls = new VisualElement[playerCount];
             _nameEls = new VisualElement[playerCount];
 
-            // Dossier frame: holds the header + the stretching grid inside a gold-bordered card.
+            // Dossier frame: a gold-bordered card holding the frozen header band + the (scrolling or filling) body.
             var frame = new VisualElement { name = "frame" };
             frame.AddToClassList(FrameClass);
 
-            // Header row: corner label + one header per role (capacity suffix when >1).
+            // Frozen header band: corner + role headers. Stays put while the body scrolls.
             var header = new VisualElement { name = "header-row" };
             header.AddToClassList(HeaderRowClass);
             var corner = new Label("Joueurs / Rôles");
@@ -146,13 +176,32 @@ namespace UI.InfoTable
                 string text = role.Capacity > 1 ? $"{role.RoleName} ×{role.Capacity}" : role.RoleName;
                 var roleHead = new Label(text);
                 roleHead.AddToClassList(RoleHeadClass);
+                roleHead.tooltip = text;   // full name on hover — survives the compact/icon role tiers
                 header.Add(roleHead);
             }
             frame.Add(header);
 
-            // Grid: rows stretch to fill the frame (flex-grow) so the board fills the whole tablet.
-            var grid = new VisualElement { name = "grid" };
-            grid.style.flexGrow = 1f;
+            // Body: past the scroll breakpoint it is a vertical ScrollView (rows go fixed-height + overflow);
+            // otherwise a plain column whose rows flex-grow to fill the tablet. The USS tier class flips the
+            // row layout regime (flex-grow vs fixed height) — see the is-scroll rules.
+            bool scroll = playerCount >= ScrollAtPlayers;
+            VisualElement body;
+            VisualElement rowParent;
+            if (scroll)
+            {
+                var sv = new ScrollView(ScrollViewMode.Vertical) { name = "scroll" };
+                sv.AddToClassList(ScrollClass);
+                body = sv;
+                rowParent = sv.contentContainer;
+            }
+            else
+            {
+                var grid = new VisualElement { name = "grid" };
+                grid.AddToClassList(GridClass);
+                body = grid;
+                rowParent = grid;
+            }
+
             for (int pi = 0; pi < playerCount; pi++)
             {
                 var row = new VisualElement();
@@ -176,16 +225,36 @@ namespace UI.InfoTable
                     _cellEls[pi][ri] = cell;
                     row.Add(cell);
                 }
-                grid.Add(row);
+                rowParent.Add(row);
             }
-            frame.Add(grid);
+            frame.Add(body);
             _root.Add(frame);
 
             BuildFooter(roleCount);
             Render();
         }
 
-        // A single segment of a cell: a glyph tile that is ghosted until selected. Clicking sets/toggles the state.
+        // Compute the responsive tier from the counts and stamp exactly one class per axis on the root.
+        private void ApplyTierClasses(int playerCount, int roleCount)
+        {
+            foreach (string c in AllPlayerTierClasses) _root.RemoveFromClassList(c);
+            foreach (string c in AllRoleTierClasses) _root.RemoveFromClassList(c);
+
+            string playerTier =
+                playerCount >= ScrollAtPlayers ? PlayerScrollClass :
+                playerCount >= DenseAtPlayers ? PlayerDenseClass :
+                playerCount >= CompactAtPlayers ? PlayerCompactClass :
+                PlayerComfortClass;
+            _root.AddToClassList(playerTier);
+
+            string roleTier =
+                roleCount >= IconAtRoles ? RolesIconClass :
+                roleCount >= CompactAtRoles ? RolesCompactClass :
+                RolesWideClass;
+            _root.AddToClassList(roleTier);
+        }
+
+        // A single segment of a cell: a glyph tile, ghosted until selected. Clicking sets/toggles the state.
         private void AddSegment(VisualElement cell, int playerIndex, int roleIndex, CellState state, string colorClass, string glyph)
         {
             var seg = new Label(glyph);
@@ -200,8 +269,7 @@ namespace UI.InfoTable
             cell.Add(seg);
         }
 
-        // Footer "context bar": conflict banner + per-role capacity counters + a states legend. Fills the panel
-        // and turns raw cell colours into readable progress ("Sorcier 1/1", red on over-capacity).
+        // Footer "context bar": conflict banner + per-role capacity counters + a states legend.
         private void BuildFooter(int roleCount)
         {
             var footer = new VisualElement { name = "footer" };

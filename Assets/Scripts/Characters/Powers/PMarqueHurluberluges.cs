@@ -1,0 +1,111 @@
+#region
+
+using System.Collections.Generic;
+using CorruptionDuPortail.Domain;
+using GameLogic;
+using Unity.Netcode;
+using UnityEngine;
+
+#endregion
+
+namespace Characters.Powers
+{
+    /// <summary>
+    /// Ugues' signature power — "Marque d'Hurluberluges" (story role-ugues-marque-hurluberluges).
+    ///
+    /// At game start Ugues copies <see cref="POWERS_TO_STEAL"/> random ACTIVE (non-passive) powers drawn from
+    /// the CHOSEN-faction roles present in the game (real players AND factice decoys, but never Ugues himself).
+    /// Each copy is a one-shot: it appears in Ugues' power bar, is usable once as if it were his own, then is
+    /// spent for good ("une fois utilisé, le pouvoir est perdu"). The original owners keep their powers — this
+    /// steals a COPY, not the instance.
+    ///
+    /// This power is passive itself (it never appears in the bar); it only orchestrates the theft server-side.
+    /// The steal runs inside <see cref="OnGameStartedServer"/>, which fires from PowerManager.OnGameStarted —
+    /// a point where every character's <c>role.powers</c> is already populated (that method iterates them), so
+    /// the eligible pool is complete and there is no attribution race.
+    /// </summary>
+    public class PMarqueHurluberluges : Power
+    {
+        private const int POWERS_TO_STEAL = 3;
+
+        // OnGameStartedServer can be reached twice for a late-spawned power (OnPowerSpawned + OnGameStarted);
+        // steal exactly once.
+        private bool _hasStolen;
+
+        public override void OnGameStartedServer()
+        {
+            base.OnGameStartedServer();
+            if (!IsServer)
+            {
+                return;
+            }
+            if (_hasStolen)
+            {
+                return;
+            }
+            _hasStolen = true;
+            StealPowers();
+        }
+
+        private void StealPowers()
+        {
+            Character _ugues = ownerCharacter;
+            if (_ugues == null)
+            {
+                Debug.LogWarning("[UGUES] Marque d'Hurluberluges: owner character unresolved, nothing stolen.");
+                return;
+            }
+
+            // Build one engine-free descriptor per live power (across every present character, real or factice)
+            // in a list parallel to _powers, so the pure kernel owns the eligibility rule (chosen faction, not
+            // Ugues, active, not an already-stolen copy) — that filter is EditMode-tested, this loop is not.
+            var _powers = new List<Power>();
+            var _candidates = new List<PowerCandidate>();
+            foreach (Character _c in characterManager.GetCharacters(false))
+            {
+                if (_c == null || _c.role == null)
+                {
+                    continue;
+                }
+                bool _ownerIsChosen = _c.role.factionType == FactionType.chosen;
+                bool _ownerIsUgues = _c.ownerClientId.Value == ownerClientId.Value;
+                foreach (Power _p in _c.role.powers)
+                {
+                    if (_p == null)
+                    {
+                        continue;
+                    }
+                    _powers.Add(_p);
+                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.isPassive, _p.isStolenCopy.Value));
+                }
+            }
+
+            // Deterministic-source draw (mirrors RoleAttributionState's UnityRandomProvider); the filter +
+            // distinct-pick + cap-at-what-exists mechanic lives in the EditMode-tested Domain kernel.
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, new UnityRandomProvider());
+            if (_picks.Count == 0)
+            {
+                Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
+                return;
+            }
+            foreach (int _index in _picks)
+            {
+                characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_index], ConfigureStolenCopy);
+            }
+        }
+
+        // Runs on the server once the copy is spawned + reparented under Ugues (via GivePowerToCharacter's
+        // onReady hook). Turns the copy into a single-use, non-regenerating power that stays spent forever.
+        private void ConfigureStolenCopy(Power _copy)
+        {
+            if (!IsServer || _copy == null)
+            {
+                return;
+            }
+            _copy.isStolenCopy.Value = true;
+            _copy.maxPowerUse = 1;
+            _copy.powerUseRegenPerAwakening = 0; // never refilled on awaken → spent means spent ("perdu").
+            _copy.powerUseLeft.Value = 1;
+        }
+    }
+}

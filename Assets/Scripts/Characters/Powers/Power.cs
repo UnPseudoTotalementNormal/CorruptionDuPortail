@@ -95,6 +95,10 @@ namespace Characters.Powers
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
 
+        // Server-set on a copy handed to Ugues by Marque d'Hurluberluges: a one-shot stolen power. Replicated
+        // so the owner's power bar can hide it once spent (powerUseLeft 0). Marker only — authority unchanged.
+        public NetworkVariable<bool> isStolenCopy = new();
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;

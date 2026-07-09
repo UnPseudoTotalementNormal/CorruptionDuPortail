@@ -123,3 +123,4 @@ fmod_editor.log
 # Multiplayer Play Mode transient bootstrap scenes (auto-generated, GUID-named, per playtest session)
 /Assets/InitTestScene*.unity
 /Assets/InitTestScene*.unity.meta
+BackupToolkit/

@@ -1,0 +1,345 @@
+/* Tablet deduction board (InfoTable) — UITK, "Dossier" direction (harmonised with the RoleCard gold/dark look).
+ * SELF-CONTAINED: depends only on the design tokens (variables.uss, via the PanelSettings theme). All
+ * colours/sizes are PROVISIONAL and design-owned — the --cdp-color-info-* block in variables.uss is the ONE
+ * place to swap.
+ *
+ * Layout: a gold-framed dossier holds a dark header row (corner + role columns) over player rows that STRETCH
+ * to fill the whole tablet (flex-grow), then a footer "context bar" (conflict banner + per-role capacity
+ * counters + a states legend) fills what used to be dead grey space. Each cell is a 3-segment control —
+ * Sûr (✓) / Je pense (?) / Pas lui (✗) — ghosted until selected, so all three stay directly clickable.
+ *
+ * USS reality: px/% + flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
+ * Depth is faked with layered borders (bevels) + insets. Transitions are LOCAL (per segment/cell) to keep the
+ * continuously-repainted RenderTexture cheap — never animate the whole grid at once.
+ */
+
+.info-table {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;                 /* the UITK equivalent of the tablet's uGUI stencil Mask */
+    flex-direction: column;
+    background-color: var(--cdp-color-info-field);
+    padding: 14px;
+    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+}
+
+.cdp-is-collapsed {
+    display: none;
+}
+
+/* ---- Dossier frame ---- */
+.info-table__frame {
+    flex-grow: 1;
+    flex-direction: column;
+    overflow: hidden;
+    border-width: 1px;
+    border-color: var(--cdp-color-info-frame);
+    border-radius: var(--cdp-radius-info-frame);
+    background-color: var(--cdp-color-info-cell);
+}
+
+/* ---- Header row ---- */
+.info-table__header-row {
+    flex-direction: row;
+    flex-shrink: 0;                  /* frozen band — stays put while the body (grid/scroll) fills or scrolls */
+    background-color: var(--cdp-color-info-header);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--cdp-color-info-frame);
+}
+
+/* Body: a plain column that fills (non-scroll tiers) or a ScrollView that scrolls (scroll tier). */
+.info-table__grid {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.info-table__scroll {
+    flex-grow: 1;
+}
+
+.info-table__corner {
+    width: var(--cdp-info-namecol-wide);
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+    padding: 10px;
+    white-space: normal;
+}
+
+.info-table__role-head {
+    flex-grow: 1;
+    flex-basis: 0;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: var(--cdp-color-info-header-text);
+    font-size: var(--cdp-font-size-sm);
+    padding: 8px 6px;
+    white-space: normal;
+    border-left-width: 1px;
+    border-left-color: var(--cdp-color-info-frame-soft);
+}
+
+/* ---- Player rows (stretch to fill the frame) ---- */
+.info-table__player-row {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: var(--cdp-info-row-comfort);
+    flex-direction: row;
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-frame-soft);
+}
+
+.info-table__player-row--alt .info-table__name-cell {
+    background-color: var(--cdp-color-info-name-alt);
+}
+
+.info-table__player-row--alt .info-table__cell {
+    background-color: var(--cdp-color-info-cell-alt);
+}
+
+.info-table__player-row--locked {
+    background-color: var(--cdp-color-info-locked);
+}
+
+.info-table__name-cell {
+    width: var(--cdp-info-namecol-wide);
+    -unity-text-align: middle-center;
+    color: var(--cdp-color-info-text);
+    font-size: var(--cdp-font-size-sm);
+    background-color: var(--cdp-color-info-name);
+    border-right-width: 1px;
+    border-right-color: var(--cdp-color-info-frame-soft);
+    /* top bevel (fake light) for a faint engraved-tile feel */
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-bevel-hi);
+    white-space: normal;
+    padding: 4px;
+}
+
+.info-table__name-cell--locked {
+    background-color: transparent;
+    color: var(--cdp-color-info-locked-edge);
+    -unity-font-style: bold;
+    border-left-width: 3px;
+    border-left-color: var(--cdp-color-info-locked-edge);
+}
+
+/* ---- Cells ---- */
+.info-table__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    background-color: var(--cdp-color-info-cell);
+    border-left-width: 1px;
+    border-left-color: var(--cdp-color-info-frame-soft);
+    padding: 6px;
+    transition-property: background-color, border-color;
+    transition-duration: 140ms;
+    transition-timing-function: ease-out;
+}
+
+.info-table__cell--conflict {
+    background-color: var(--cdp-color-info-conflict);
+    border-left-color: var(--cdp-color-info-conflict-edge);
+}
+
+/* Zebra (.player-row--alt .cell) has 2-class specificity and would otherwise beat the 1-class conflict rule,
+   leaving conflict cells on alt rows un-reddened. Match its specificity so conflict wins on alt rows too. */
+.info-table__player-row--alt .info-table__cell--conflict {
+    background-color: var(--cdp-color-info-conflict);
+}
+
+.info-table__cell--locked {
+    opacity: 0.72;
+}
+
+/* ---- Segments (Sûr ✓ / Je pense ? / Pas lui ✗) ---- */
+.info-table__seg {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 3px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: var(--cdp-info-glyph-comfort);
+    color: var(--cdp-color-info-ghost-glyph);
+    background-color: var(--cdp-color-info-ghost);
+    border-width: 2px;
+    border-color: var(--cdp-color-info-ghost-border);
+    border-radius: var(--cdp-radius-info);
+    transition-property: background-color, border-color, scale, color;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+}
+
+.info-table__seg:hover {
+    border-color: var(--cdp-color-info-text);
+    scale: 1.06 1.06;
+}
+
+/* Selected: the whole tile fills with its state colour + a near-black glyph (colour + glyph both encode the
+   state, so it reads without relying on hue — colour-blind + RT-desaturation safe). */
+.info-table__seg--selected {
+    color: var(--cdp-color-info-glyph-on);
+}
+
+.info-table__seg--sure.info-table__seg--selected {
+    background-color: var(--cdp-color-info-sure);
+    border-color: var(--cdp-color-info-sure);
+}
+
+.info-table__seg--maybe.info-table__seg--selected {
+    background-color: var(--cdp-color-info-maybe);
+    border-color: var(--cdp-color-info-maybe);
+}
+
+.info-table__seg--not.info-table__seg--selected {
+    background-color: var(--cdp-color-info-not);
+    border-color: var(--cdp-color-info-not);
+}
+
+/* ---- Footer context bar ---- */
+.info-table__footer {
+    flex-direction: column;
+    flex-shrink: 0;               /* never let the footer be squeezed — the grid gives up the space, so the
+                                     legend at the bottom is never clipped by the panel's overflow:hidden */
+    padding-top: 10px;
+}
+
+.info-table__banner {
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: rgb(250, 224, 218);
+    background-color: var(--cdp-color-info-conflict);
+    border-width: 1px;
+    border-color: var(--cdp-color-info-conflict-edge);
+    border-radius: var(--cdp-radius-info);
+    padding: 7px;
+    margin-bottom: 8px;
+    font-size: var(--cdp-font-size-sm);
+}
+
+.info-table__capacity-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.info-table__chip {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--cdp-color-info-header);
+    border-width: 1px;
+    border-color: var(--cdp-color-info-frame-soft);
+    border-radius: var(--cdp-radius-info);
+    padding: 5px 10px;
+    margin: 3px;
+    transition-property: background-color, border-color;
+    transition-duration: 140ms;
+}
+
+.info-table__chip-name {
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+    margin-right: 8px;
+}
+
+.info-table__chip-count {
+    color: var(--cdp-color-info-text);
+    -unity-font-style: bold;
+    font-size: var(--cdp-font-size-sm);
+}
+
+.info-table__chip--over {
+    background-color: var(--cdp-color-info-conflict);
+    border-color: var(--cdp-color-info-conflict-edge);
+}
+
+.info-table__chip--over .info-table__chip-count {
+    color: rgb(250, 224, 218);
+}
+
+/* ---- Legend ---- */
+.info-table__legend {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.info-table__legend-item {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 10px;
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+}
+
+/* Legend marks are tiny FIXED tiles, not stretchy grid segments. The base .seg has flex-basis:0, which wins
+   over width on the row's main axis and collapses the tile to a sliver — reset flex-basis:auto so width applies. */
+.info-table__legend .info-table__seg {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    margin: 0 6px 0 0;
+}
+
+/* ============================================================================================================
+ * RESPONSIVE TIERS — the controller stamps one class per axis on the root from the player/role COUNT.
+ * The base rules above are the COMFORT look (few players/roles, untouched). These override density as the grid
+ * grows: rows shrink to a floor, glyph/padding tighten, the footer legend folds, role labels compact — then at
+ * the top tier the body scrolls. "Same dossier breathing", not three different UIs. Values are provisional.
+ * ============================================================================================================ */
+
+/* ---- Player density (rows keep flex-grow:1 to fill, only the floor + glyph/padding change) ---- */
+.is-compact .info-table__player-row { min-height: var(--cdp-info-row-compact); }
+.is-compact .info-table__seg { font-size: var(--cdp-info-glyph-compact); margin: 2px; }
+.is-compact .info-table__cell { padding: 4px; }
+
+.is-dense .info-table__player-row { min-height: var(--cdp-info-row-dense); }
+.is-dense .info-table__seg { font-size: var(--cdp-info-glyph-dense); margin: 2px; border-width: 1px; }
+.is-dense .info-table__cell { padding: 3px; }
+.is-dense .info-table__name-cell { font-size: var(--cdp-info-rolehead-compact); }
+.is-dense .info-table__legend { display: none; }        /* footer folds — capacity counters + banner remain */
+
+/* ---- Scroll tier (>= 16 players): dense density + rows go FIXED-height so the body overflows and scrolls.
+   This is the flex-grow -> fixed-height regime flip Cloud flagged: without it the rows would compress to fit
+   instead of overflowing, and the scroll would never trigger. ---- */
+.is-scroll .info-table__seg { font-size: var(--cdp-info-glyph-dense); margin: 2px; border-width: 1px; }
+.is-scroll .info-table__cell { padding: 3px; }
+.is-scroll .info-table__name-cell { font-size: var(--cdp-info-rolehead-compact); }
+.is-scroll .info-table__legend { display: none; }
+.is-scroll .info-table__player-row {
+    flex-grow: 0;
+    flex-basis: auto;
+    flex-shrink: 0;
+    height: var(--cdp-info-row-scroll);
+    min-height: var(--cdp-info-row-scroll);
+}
+/* Compensate the vertical scrollbar width so the frozen header columns stay aligned with the scrolled rows. */
+.is-scroll .info-table__header-row {
+    padding-right: var(--cdp-info-scrollbar-pad);
+}
+
+/* ---- Role density (name column narrows + role labels shrink; NO horizontal scroll — roles always compress) ---- */
+.roles-compact .info-table__corner,
+.roles-compact .info-table__name-cell { width: var(--cdp-info-namecol-compact); }
+.roles-compact .info-table__role-head { font-size: var(--cdp-info-rolehead-compact); padding: 6px 4px; }
+
+.roles-icon .info-table__corner,
+.roles-icon .info-table__name-cell { width: var(--cdp-info-namecol-icon); }
+.roles-icon .info-table__role-head { font-size: var(--cdp-info-rolehead-icon); padding: 4px 2px; }
+
+/* ---- Scroll bar (gold, thin) ---- */
+.info-table__scroll .unity-scroller--vertical {
+    width: var(--cdp-info-scrollbar-w);
+}
+
+.info-table__scroll .unity-base-slider__dragger {
+    background-color: var(--cdp-color-info-frame);
+    border-radius: 4px;
+}

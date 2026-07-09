@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Tablet deduction board (InfoTable) — the UITK replacement for the uGUI HorizontalLayoutGroup grid.
+         Rendered screen-space into a RenderTexture (InfoTableRtPresenter) shown on a uGUI RawImage inside the
+         tablet ScreenCanvas, so it reuses the stencil Mask + PhoneCamera + swipe carousel unchanged.
+
+         The grid is built ENTIRELY at runtime by InfoTableUitkController from an IInfoTableDataSource: this
+         root is just the clipped canvas the controller fills with a header row + player rows + 3-state cells.
+         Tokens come from the PanelSettings theme (theme.tss / variables.uss); layout is InfoTable.uss. -->
+    <ui:Style src="InfoTable.uss" />
+    <ui:VisualElement name="info-table" class="info-table" />
+</ui:UXML>

@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/Screens/Spike/Spike.uss" />
+    <ui:VisualElement name="spike-root" class="spike-root">
+        <ui:Label name="spike-tag" text="SPIKE" class="spike-title" />
+        <ui:VisualElement name="spike-grid" class="spike-grid">
+            <ui:Button name="cell-1" text="1" class="spike-cell" />
+            <ui:Button name="cell-2" text="2" class="spike-cell" />
+            <ui:Button name="cell-3" text="3" class="spike-cell" />
+            <ui:Button name="cell-4" text="4" class="spike-cell" />
+            <ui:Button name="cell-5" text="5" class="spike-cell" />
+            <ui:Button name="cell-6" text="6" class="spike-cell" />
+            <ui:Button name="cell-7" text="7" class="spike-cell" />
+            <ui:Button name="cell-8" text="8" class="spike-cell" />
+            <ui:Button name="cell-9" text="9" class="spike-cell" />
+        </ui:VisualElement>
+        <ui:Label name="spike-overflow" text="OVERFLOW — should be CLIPPED at the panel edge" class="spike-overflow" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -267,6 +267,19 @@ MonoBehaviour:
   _ownerApp: {fileID: 0}
   _rtWidth: 1440
   _rtHeight: 912
+--- !u!114 &1360605941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1360605930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c939abaaf1ad4d04cb5af151b12a0319, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.Spike.SpikeInfoTableControls
+  _source: {fileID: 1360605937}
 --- !u!1 &1427548214
 GameObject:
   m_ObjectHideFlags: 0
@@ -1038,6 +1051,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 87679988841088737, guid: a10109416922e114882e3398e6a7490a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1360605936}
+    - targetCorrespondingSourceObject: {fileID: 87679988841088737, guid: a10109416922e114882e3398e6a7490a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1360605941}
   m_SourcePrefab: {fileID: 100100000, guid: a10109416922e114882e3398e6a7490a, type: 3}
 --- !u!114 &1783546504 stripped
 MonoBehaviour:

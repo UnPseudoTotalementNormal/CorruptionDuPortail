@@ -70,4 +70,19 @@
     --cdp-space-smd: 12px;                            /* the missing 12px step (name -> pips) */
     --cdp-font-size-role-name: 44px;                 /* role name (fits ~2 lines at panel width) */
     --cdp-font-size-role-name-long: 30px;            /* stepped down for long names (no ellipsis) */
+
+    /* ---- InfoTable (deduction board) ---- Values SAMPLED from the board mockup, PROVISIONAL and
+       design-owned: this block is the ONE place to swap when the real palette lands. The old uGUI board
+       used grey for SurelyNot; the mockup uses red — kept as a token so it stays swappable. */
+    --cdp-color-info-field: rgb(142, 142, 142);      /* grid backdrop grey */
+    --cdp-color-info-header: rgb(45, 45, 45);        /* dark header row */
+    --cdp-color-info-name: rgb(210, 210, 210);       /* player name cell — light grey */
+    --cdp-color-info-locked: rgb(120, 170, 110);     /* revealed/locked row — green */
+    --cdp-color-info-cell: rgb(190, 190, 190);       /* cell background */
+    --cdp-color-info-line: rgb(120, 120, 120);       /* grid separators */
+    --cdp-color-info-sure: rgb(40, 160, 60);         /* CheckerType.Sure — green */
+    --cdp-color-info-maybe: rgb(220, 200, 50);       /* CheckerType.Maybe — yellow */
+    --cdp-color-info-not: rgb(200, 55, 55);          /* CheckerType.SurelyNot — red (was grey in uGUI) */
+    --cdp-color-info-conflict: rgba(200, 55, 55, 0.55); /* conflict tint on the cell */
+    --cdp-color-info-check: rgb(60, 60, 60);         /* selected-state check mark fill */
 }

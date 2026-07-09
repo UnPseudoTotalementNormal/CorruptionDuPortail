@@ -1,0 +1,137 @@
+/* Tablet deduction board (InfoTable) — UITK. SELF-CONTAINED: depends only on the design tokens
+ * (variables.uss, via the PanelSettings theme). All colours/sizes are PROVISIONAL and design-owned;
+ * the --cdp-color-info-* block in variables.uss is the ONE place to swap.
+ *
+ * Layout mirrors the mockup: a fixed panel with a dark header row (corner "Joueurs / Rôles" + role columns)
+ * over player rows; each cell holds three state swatches (Sure / Maybe / SurelyNot), each with a check that
+ * shows when that state is selected. Structure is built at runtime by InfoTableUitkController.
+ *
+ * USS reality: px/% only, flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
+ * The mockup draws the check BELOW each swatch — approximated here (box + check stacked in a column).
+ */
+
+.info-table {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;                 /* the UITK equivalent of the tablet's uGUI stencil Mask */
+    flex-direction: column;
+    background-color: var(--cdp-color-info-field);
+    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+}
+
+/* ---- Header row ---- */
+.info-table__header-row {
+    flex-direction: row;
+    background-color: var(--cdp-color-info-header);
+}
+
+.info-table__corner {
+    width: 28%;
+    -unity-text-align: middle-center;
+    color: var(--cdp-color-text);
+    font-size: var(--cdp-font-size-sm);
+    padding: var(--cdp-space-md);
+    white-space: normal;
+}
+
+.info-table__role-head {
+    flex-grow: 1;
+    flex-basis: 0;
+    -unity-text-align: middle-center;
+    color: var(--cdp-color-text);
+    font-size: var(--cdp-font-size-sm);
+    padding: var(--cdp-space-sm);
+    white-space: normal;
+    border-left-width: 1px;
+    border-left-color: var(--cdp-color-info-line);
+}
+
+/* ---- Player rows ---- */
+.info-table__player-row {
+    flex-direction: row;
+    min-height: 96px;
+}
+
+.info-table__name-cell {
+    width: 28%;
+    -unity-text-align: middle-center;
+    color: var(--cdp-color-text);
+    font-size: var(--cdp-font-size-sm);
+    background-color: var(--cdp-color-info-name);
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-line);
+    white-space: normal;
+}
+
+.info-table__name-cell--locked {
+    background-color: var(--cdp-color-info-locked);
+}
+
+/* ---- Cells ---- */
+.info-table__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--cdp-color-info-cell);
+    border-left-width: 1px;
+    border-left-color: var(--cdp-color-info-line);
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-line);
+    padding: var(--cdp-space-xs);
+}
+
+.info-table__cell--conflict {
+    background-color: var(--cdp-color-info-conflict);
+}
+
+.info-table__cell--locked {
+    opacity: 0.9;
+}
+
+/* ---- Swatches (Sure / Maybe / SurelyNot) ---- */
+.info-table__swatch {
+    flex-direction: column;
+    align-items: center;
+    margin: var(--cdp-space-xs);
+}
+
+.info-table__swatch-box {
+    width: 32px;
+    height: 32px;
+    border-width: 2px;
+    border-color: rgba(0, 0, 0, 0.35);
+}
+
+.info-table__swatch--sure .info-table__swatch-box {
+    background-color: var(--cdp-color-info-sure);
+}
+
+.info-table__swatch--maybe .info-table__swatch-box {
+    background-color: var(--cdp-color-info-maybe);
+}
+
+.info-table__swatch--not .info-table__swatch-box {
+    background-color: var(--cdp-color-info-not);
+}
+
+.info-table__swatch:hover .info-table__swatch-box {
+    border-color: var(--cdp-color-text);
+}
+
+/* The check sits under the box; shown only when this swatch's state is the selected one. */
+.info-table__check {
+    width: 16px;
+    height: 16px;
+    margin-top: 4px;
+    background-color: rgba(240, 240, 240, 0.95);
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.55);
+    visibility: hidden;
+}
+
+.info-table__swatch--selected .info-table__check {
+    visibility: visible;
+    background-color: var(--cdp-color-info-check);
+}

@@ -1,13 +1,16 @@
-/* Tablet deduction board (InfoTable) — UITK. SELF-CONTAINED: depends only on the design tokens
- * (variables.uss, via the PanelSettings theme). All colours/sizes are PROVISIONAL and design-owned;
- * the --cdp-color-info-* block in variables.uss is the ONE place to swap.
+/* Tablet deduction board (InfoTable) — UITK, "Dossier" direction (harmonised with the RoleCard gold/dark look).
+ * SELF-CONTAINED: depends only on the design tokens (variables.uss, via the PanelSettings theme). All
+ * colours/sizes are PROVISIONAL and design-owned — the --cdp-color-info-* block in variables.uss is the ONE
+ * place to swap.
  *
- * Layout mirrors the mockup: a fixed panel with a dark header row (corner "Joueurs / Rôles" + role columns)
- * over player rows; each cell holds three state swatches (Sure / Maybe / SurelyNot), each with a check that
- * shows when that state is selected. Structure is built at runtime by InfoTableUitkController.
+ * Layout: a gold-framed dossier holds a dark header row (corner + role columns) over player rows that STRETCH
+ * to fill the whole tablet (flex-grow), then a footer "context bar" (conflict banner + per-role capacity
+ * counters + a states legend) fills what used to be dead grey space. Each cell is a 3-segment control —
+ * Sûr (✓) / Je pense (?) / Pas lui (✗) — ghosted until selected, so all three stay directly clickable.
  *
- * USS reality: px/% only, flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
- * The mockup draws the check BELOW each swatch — approximated here (box + check stacked in a column).
+ * USS reality: px/% + flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
+ * Depth is faked with layered borders (bevels) + insets. Transitions are LOCAL (per segment/cell) to keep the
+ * continuously-repainted RenderTexture cheap — never animate the whole grid at once.
  */
 
 .info-table {
@@ -16,21 +19,40 @@
     overflow: hidden;                 /* the UITK equivalent of the tablet's uGUI stencil Mask */
     flex-direction: column;
     background-color: var(--cdp-color-info-field);
+    padding: 14px;
     -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+}
+
+.cdp-is-collapsed {
+    display: none;
+}
+
+/* ---- Dossier frame ---- */
+.info-table__frame {
+    flex-grow: 1;
+    flex-direction: column;
+    overflow: hidden;
+    border-width: 1px;
+    border-color: var(--cdp-color-info-frame);
+    border-radius: var(--cdp-radius-info-frame);
+    background-color: var(--cdp-color-info-cell);
 }
 
 /* ---- Header row ---- */
 .info-table__header-row {
     flex-direction: row;
     background-color: var(--cdp-color-info-header);
+    border-bottom-width: 1px;
+    border-bottom-color: var(--cdp-color-info-frame);
 }
 
 .info-table__corner {
-    width: 28%;
+    width: 26%;
     -unity-text-align: middle-center;
-    color: var(--cdp-color-text);
+    -unity-font-style: bold;
+    color: var(--cdp-color-info-text-muted);
     font-size: var(--cdp-font-size-sm);
-    padding: var(--cdp-space-md);
+    padding: 10px;
     white-space: normal;
 }
 
@@ -38,33 +60,58 @@
     flex-grow: 1;
     flex-basis: 0;
     -unity-text-align: middle-center;
-    color: var(--cdp-color-text);
+    -unity-font-style: bold;
+    color: var(--cdp-color-info-header-text);
     font-size: var(--cdp-font-size-sm);
-    padding: var(--cdp-space-sm);
+    padding: 8px 6px;
     white-space: normal;
     border-left-width: 1px;
-    border-left-color: var(--cdp-color-info-line);
+    border-left-color: var(--cdp-color-info-frame-soft);
 }
 
-/* ---- Player rows ---- */
+/* ---- Player rows (stretch to fill the frame) ---- */
 .info-table__player-row {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: 64px;
     flex-direction: row;
-    min-height: 96px;
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-frame-soft);
+}
+
+.info-table__player-row--alt .info-table__name-cell {
+    background-color: var(--cdp-color-info-name-alt);
+}
+
+.info-table__player-row--alt .info-table__cell {
+    background-color: var(--cdp-color-info-cell-alt);
+}
+
+.info-table__player-row--locked {
+    background-color: var(--cdp-color-info-locked);
 }
 
 .info-table__name-cell {
-    width: 28%;
+    width: 26%;
     -unity-text-align: middle-center;
-    color: var(--cdp-color-text);
+    color: var(--cdp-color-info-text);
     font-size: var(--cdp-font-size-sm);
     background-color: var(--cdp-color-info-name);
+    border-right-width: 1px;
+    border-right-color: var(--cdp-color-info-frame-soft);
+    /* top bevel (fake light) for a faint engraved-tile feel */
     border-top-width: 1px;
-    border-top-color: var(--cdp-color-info-line);
+    border-top-color: var(--cdp-color-info-bevel-hi);
     white-space: normal;
+    padding: 4px;
 }
 
 .info-table__name-cell--locked {
-    background-color: var(--cdp-color-info-locked);
+    background-color: transparent;
+    color: var(--cdp-color-info-locked-edge);
+    -unity-font-style: bold;
+    border-left-width: 3px;
+    border-left-color: var(--cdp-color-info-locked-edge);
 }
 
 /* ---- Cells ---- */
@@ -73,65 +120,159 @@
     flex-basis: 0;
     flex-direction: row;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     background-color: var(--cdp-color-info-cell);
     border-left-width: 1px;
-    border-left-color: var(--cdp-color-info-line);
-    border-top-width: 1px;
-    border-top-color: var(--cdp-color-info-line);
-    padding: var(--cdp-space-xs);
+    border-left-color: var(--cdp-color-info-frame-soft);
+    padding: 6px;
+    transition-property: background-color, border-color;
+    transition-duration: 140ms;
+    transition-timing-function: ease-out;
 }
 
 .info-table__cell--conflict {
     background-color: var(--cdp-color-info-conflict);
+    border-left-color: var(--cdp-color-info-conflict-edge);
+}
+
+/* Zebra (.player-row--alt .cell) has 2-class specificity and would otherwise beat the 1-class conflict rule,
+   leaving conflict cells on alt rows un-reddened. Match its specificity so conflict wins on alt rows too. */
+.info-table__player-row--alt .info-table__cell--conflict {
+    background-color: var(--cdp-color-info-conflict);
 }
 
 .info-table__cell--locked {
-    opacity: 0.9;
+    opacity: 0.72;
 }
 
-/* ---- Swatches (Sure / Maybe / SurelyNot) ---- */
-.info-table__swatch {
-    flex-direction: column;
-    align-items: center;
-    margin: var(--cdp-space-xs);
-}
-
-.info-table__swatch-box {
-    width: 32px;
-    height: 32px;
+/* ---- Segments (Sûr ✓ / Je pense ? / Pas lui ✗) ---- */
+.info-table__seg {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 3px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: 30px;
+    color: var(--cdp-color-info-ghost-glyph);
+    background-color: var(--cdp-color-info-ghost);
     border-width: 2px;
-    border-color: rgba(0, 0, 0, 0.35);
+    border-color: var(--cdp-color-info-ghost-border);
+    border-radius: var(--cdp-radius-info);
+    transition-property: background-color, border-color, scale, color;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
 }
 
-.info-table__swatch--sure .info-table__swatch-box {
+.info-table__seg:hover {
+    border-color: var(--cdp-color-info-text);
+    scale: 1.06 1.06;
+}
+
+/* Selected: the whole tile fills with its state colour + a near-black glyph (colour + glyph both encode the
+   state, so it reads without relying on hue — colour-blind + RT-desaturation safe). */
+.info-table__seg--selected {
+    color: var(--cdp-color-info-glyph-on);
+}
+
+.info-table__seg--sure.info-table__seg--selected {
     background-color: var(--cdp-color-info-sure);
+    border-color: var(--cdp-color-info-sure);
 }
 
-.info-table__swatch--maybe .info-table__swatch-box {
+.info-table__seg--maybe.info-table__seg--selected {
     background-color: var(--cdp-color-info-maybe);
+    border-color: var(--cdp-color-info-maybe);
 }
 
-.info-table__swatch--not .info-table__swatch-box {
+.info-table__seg--not.info-table__seg--selected {
     background-color: var(--cdp-color-info-not);
+    border-color: var(--cdp-color-info-not);
 }
 
-.info-table__swatch:hover .info-table__swatch-box {
-    border-color: var(--cdp-color-text);
+/* ---- Footer context bar ---- */
+.info-table__footer {
+    flex-direction: column;
+    flex-shrink: 0;               /* never let the footer be squeezed — the grid gives up the space, so the
+                                     legend at the bottom is never clipped by the panel's overflow:hidden */
+    padding-top: 10px;
 }
 
-/* The check sits under the box; shown only when this swatch's state is the selected one. */
-.info-table__check {
-    width: 16px;
-    height: 16px;
-    margin-top: 4px;
-    background-color: rgba(240, 240, 240, 0.95);
+.info-table__banner {
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: rgb(250, 224, 218);
+    background-color: var(--cdp-color-info-conflict);
     border-width: 1px;
-    border-color: rgba(0, 0, 0, 0.55);
-    visibility: hidden;
+    border-color: var(--cdp-color-info-conflict-edge);
+    border-radius: var(--cdp-radius-info);
+    padding: 7px;
+    margin-bottom: 8px;
+    font-size: var(--cdp-font-size-sm);
 }
 
-.info-table__swatch--selected .info-table__check {
-    visibility: visible;
-    background-color: var(--cdp-color-info-check);
+.info-table__capacity-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.info-table__chip {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--cdp-color-info-header);
+    border-width: 1px;
+    border-color: var(--cdp-color-info-frame-soft);
+    border-radius: var(--cdp-radius-info);
+    padding: 5px 10px;
+    margin: 3px;
+    transition-property: background-color, border-color;
+    transition-duration: 140ms;
+}
+
+.info-table__chip-name {
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+    margin-right: 8px;
+}
+
+.info-table__chip-count {
+    color: var(--cdp-color-info-text);
+    -unity-font-style: bold;
+    font-size: var(--cdp-font-size-sm);
+}
+
+.info-table__chip--over {
+    background-color: var(--cdp-color-info-conflict);
+    border-color: var(--cdp-color-info-conflict-edge);
+}
+
+.info-table__chip--over .info-table__chip-count {
+    color: rgb(250, 224, 218);
+}
+
+/* ---- Legend ---- */
+.info-table__legend {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.info-table__legend-item {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 10px;
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+}
+
+/* Legend marks are tiny FIXED tiles, not stretchy grid segments. The base .seg has flex-basis:0, which wins
+   over width on the row's main axis and collapses the tile to a sliver — reset flex-basis:auto so width applies. */
+.info-table__legend .info-table__seg {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: auto;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
+    margin: 0 6px 0 0;
 }

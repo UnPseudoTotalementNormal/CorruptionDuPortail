@@ -71,18 +71,33 @@
     --cdp-font-size-role-name: 44px;                 /* role name (fits ~2 lines at panel width) */
     --cdp-font-size-role-name-long: 30px;            /* stepped down for long names (no ellipsis) */
 
-    /* ---- InfoTable (deduction board) ---- Values SAMPLED from the board mockup, PROVISIONAL and
-       design-owned: this block is the ONE place to swap when the real palette lands. The old uGUI board
-       used grey for SurelyNot; the mockup uses red — kept as a token so it stays swappable. */
-    --cdp-color-info-field: rgb(142, 142, 142);      /* grid backdrop grey */
-    --cdp-color-info-header: rgb(45, 45, 45);        /* dark header row */
-    --cdp-color-info-name: rgb(210, 210, 210);       /* player name cell — light grey */
-    --cdp-color-info-locked: rgb(120, 170, 110);     /* revealed/locked row — green */
-    --cdp-color-info-cell: rgb(190, 190, 190);       /* cell background */
-    --cdp-color-info-line: rgb(120, 120, 120);       /* grid separators */
-    --cdp-color-info-sure: rgb(40, 160, 60);         /* CheckerType.Sure — green */
-    --cdp-color-info-maybe: rgb(220, 200, 50);       /* CheckerType.Maybe — yellow */
-    --cdp-color-info-not: rgb(200, 55, 55);          /* CheckerType.SurelyNot — red (was grey in uGUI) */
-    --cdp-color-info-conflict: rgba(200, 55, 55, 0.55); /* conflict tint on the cell */
-    --cdp-color-info-check: rgb(60, 60, 60);         /* selected-state check mark fill */
+    /* ---- InfoTable (deduction board) — "Dossier" direction, harmonised with the RoleCard gold/dark look.
+       PROVISIONAL + design-owned: this block is the ONE place to swap when the real palette lands. Depth is
+       faked with bevel tokens (UITK has no gradients/shadows). Sûr/Maybe/SurelyNot kept as swappable tokens. */
+    --cdp-color-info-field: rgb(18, 16, 13);           /* board backdrop — deep warm charcoal */
+    --cdp-color-info-frame: rgb(150, 120, 64);         /* dossier frame — gold */
+    --cdp-color-info-frame-soft: rgba(150, 120, 64, 0.22); /* hairlines / separators — faint gold */
+    --cdp-color-info-header: rgb(40, 35, 27);          /* header row surface */
+    --cdp-color-info-header-text: rgb(214, 182, 120);  /* role headers — muted gold */
+    --cdp-color-info-name: rgb(32, 29, 23);            /* player name cell */
+    --cdp-color-info-name-alt: rgb(36, 32, 26);        /* zebra alt name cell */
+    --cdp-color-info-text: rgb(228, 219, 201);         /* strong text */
+    --cdp-color-info-text-muted: rgb(150, 140, 122);   /* muted text */
+    --cdp-color-info-cell: rgb(26, 23, 19);            /* cell surface */
+    --cdp-color-info-cell-alt: rgb(30, 27, 22);        /* zebra alt cell */
+    --cdp-color-info-bevel-hi: rgba(255, 244, 214, 0.06); /* top/left bevel — fake light */
+    --cdp-color-info-bevel-lo: rgba(0, 0, 0, 0.35);    /* bottom/right bevel — fake shade */
+    --cdp-color-info-ghost: rgba(255, 255, 255, 0.04); /* unselected segment fill */
+    --cdp-color-info-ghost-border: rgba(255, 255, 255, 0.10); /* unselected segment border */
+    --cdp-color-info-ghost-glyph: rgba(230, 220, 200, 0.30);  /* unselected glyph */
+    --cdp-color-info-sure: rgb(78, 168, 92);           /* Sûr — green */
+    --cdp-color-info-maybe: rgb(214, 176, 74);         /* Je pense — amber */
+    --cdp-color-info-not: rgb(190, 82, 74);            /* Pas lui — red */
+    --cdp-color-info-glyph-on: rgb(16, 14, 11);        /* glyph on a filled segment — near-black */
+    --cdp-color-info-conflict: rgb(120, 40, 36);       /* conflict row/cell tint */
+    --cdp-color-info-conflict-edge: rgb(224, 96, 84);  /* conflict border — bright red */
+    --cdp-color-info-locked: rgba(150, 120, 64, 0.14); /* sealed row tint */
+    --cdp-color-info-locked-edge: rgb(191, 154, 82);   /* sealed accent — gold */
+    --cdp-radius-info: 6px;                             /* unified cell/segment radius */
+    --cdp-radius-info-frame: 10px;                      /* dossier frame radius */
 }

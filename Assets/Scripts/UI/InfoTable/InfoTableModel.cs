@@ -56,6 +56,32 @@ namespace UI.InfoTable
         public bool IsCellInConflict(int playerIndex, int roleIndex)
             => _cells[playerIndex, roleIndex] == CellState.Sure && _conflict[playerIndex] != ConflictType.None;
 
+        /// <summary>How many players are marked <see cref="CellState.Sure"/> for a role (its column) — the capacity fill.</summary>
+        public int GetSureCountForRole(int roleIndex)
+        {
+            if (roleIndex < 0 || roleIndex >= _roles.Count) return 0;
+            int count = 0;
+            for (int pi = 0; pi < _players.Count; pi++)
+            {
+                if (_cells[pi, roleIndex] == CellState.Sure) count++;
+            }
+            return count;
+        }
+
+        /// <summary>True when more players are marked Sure for a role than its capacity (the over-capacity signal).</summary>
+        public bool IsRoleOverCapacity(int roleIndex)
+            => roleIndex >= 0 && roleIndex < _roles.Count && GetSureCountForRole(roleIndex) > _roles[roleIndex].Capacity;
+
+        /// <summary>True when any player row is currently in a conflict state (drives the footer alert banner).</summary>
+        public bool HasAnyConflict()
+        {
+            for (int pi = 0; pi < _players.Count; pi++)
+            {
+                if (_conflict[pi] != ConflictType.None) return true;
+            }
+            return false;
+        }
+
         /// <summary>User clicked a swatch: set that state, or clear to None when re-clicking the active state. Locked rows ignore.</summary>
         public void SetCell(int playerIndex, int roleIndex, CellState state)
         {

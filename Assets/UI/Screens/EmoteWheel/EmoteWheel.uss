@@ -1,0 +1,88 @@
+/* Radial emote wheel layout. Slots are absolutely positioned by EmoteWheelController (translate per sector).
+ * Visuals reuse the SAMPLED gold/scrim tokens (variables.uss) — provisional + design-owned; this file is a
+ * layout, not a palette. USS reality: px/% only, flexbox only, no gradient/box-shadow. */
+
+.emote-wheel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+/* Show/hide: fade out, then collapse out of layout entirely (mirrors the RoleCard convention). */
+.cdp-is-hidden {
+    opacity: 0;
+}
+
+.cdp-is-collapsed {
+    display: none;
+}
+
+/* Fixed square that holds the ring; the hub + caption + slots all centre on it. */
+.emote-wheel__ring {
+    width: 520px;
+    height: 520px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Centre hub — a small dark disc so the ring reads as a wheel even with one emote. */
+.emote-wheel__hub {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    background-color: var(--cdp-color-role-scrim);
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border-soft);
+}
+
+/* Emote name, centred just below the hub. Hidden (via the modifier) when nothing is pointed at. */
+.emote-wheel__caption {
+    position: absolute;
+    top: 60%;
+    color: var(--cdp-color-role-title);
+    font-size: var(--cdp-font-size-base);
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+.emote-wheel__label--hidden {
+    opacity: 0;
+}
+
+/* One selectable emote. Positioned by the controller; here we only style the disc + hover-select feel. */
+.emote-wheel__slot {
+    width: 120px;
+    height: 120px;
+    border-radius: 60px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cdp-color-role-scrim);
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border-soft);
+    scale: 1 1;
+    transition-property: scale, border-color, background-color;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+.emote-wheel__slot-icon {
+    width: 76px;
+    height: 76px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* Highlighted slot (the emote the pointer/stick points at): grows + takes the gold accent. */
+.emote-wheel__slot--selected {
+    scale: 1.18 1.18;
+    background-color: var(--cdp-color-role-panel);
+    border-color: var(--cdp-color-role-border);
+}

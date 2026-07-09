@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Radial emote wheel — a TRANSIENT HUD overlay held open while the emote key is pressed in the embodied
+         first-person vote. Slots are built at runtime by EmoteWheelController from the wired EmoteSet (one per
+         emote, clockwise from the top); the pointing direction highlights a slot and its name shows in the
+         caption. NON-modal: it never blocks the world. Starts hidden + collapsed.
+
+         Tokens come from the PanelSettings theme (theme.tss); layout is EmoteWheel.uss. -->
+    <ui:Style src="EmoteWheel.uss" />
+    <ui:VisualElement name="emote-wheel" class="emote-wheel cdp-is-hidden cdp-is-collapsed">
+        <ui:VisualElement name="ring" class="emote-wheel__ring">
+            <!-- Centre hub + caption sit on top of the ring; slots are added around them at runtime. -->
+            <ui:VisualElement name="hub" class="emote-wheel__hub" />
+            <ui:Label name="caption" class="emote-wheel__caption emote-wheel__label--hidden" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

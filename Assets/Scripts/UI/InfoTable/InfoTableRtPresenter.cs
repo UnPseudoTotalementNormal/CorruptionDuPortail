@@ -34,21 +34,31 @@ namespace UI.InfoTable
 
         private RenderTexture _rt;
         private RectTransform _rawRect;
+        private PanelSettings _sourcePanel;   // the wired PanelSettings asset, captured once
+        private PanelSettings _runtimePanel;  // per-instance clone we mutate — never touch the shared asset
 
         private void OnEnable()
         {
             if (_document == null) _document = GetComponent<UIDocument>();
 
-            PanelSettings ps = _document != null ? _document.panelSettings : null;
-            if (ps == null)
+            // Capture the wired asset once; from then on we render through a per-instance CLONE so we never
+            // mutate the shared PanelSettings asset (which would dirty it in-editor and could hijack any other
+            // UIDocument — e.g. RoleCard — that references the same asset).
+            if (_sourcePanel == null) _sourcePanel = _document != null ? _document.panelSettings : null;
+            if (_sourcePanel == null)
             {
                 Debug.LogWarning("[InfoTable] RtPresenter: no PanelSettings — nothing installed.");
+                if (_rawImage != null) _rawImage.texture = null;
                 return;
             }
 
+            _runtimePanel = Instantiate(_sourcePanel);
+            _runtimePanel.name = _sourcePanel.name + " (InfoTable runtime)";
+            _document.panelSettings = _runtimePanel;
+
             _rt = new RenderTexture(_rtWidth, _rtHeight, 24, RenderTextureFormat.ARGB32) { name = "RT_InfoTable" };
             _rt.Create();
-            ps.targetTexture = _rt;
+            _runtimePanel.targetTexture = _rt;
 
             if (_rawImage != null)
             {
@@ -57,22 +67,28 @@ namespace UI.InfoTable
                 _rawRect = _rawImage.rectTransform;
             }
 
-            ps.SetScreenToPanelSpaceFunction(ScreenToPanel);
+            _runtimePanel.SetScreenToPanelSpaceFunction(ScreenToPanel);
         }
 
         private void OnDisable()
         {
-            PanelSettings ps = _document != null ? _document.panelSettings : null;
-            if (ps != null)
+            if (_runtimePanel != null)
             {
-                ps.SetScreenToPanelSpaceFunction(null);
-                ps.targetTexture = null;
+                _runtimePanel.SetScreenToPanelSpaceFunction(null);
+                _runtimePanel.targetTexture = null;
             }
             if (_rt != null)
             {
                 _rt.Release();
                 Destroy(_rt);
                 _rt = null;
+            }
+            // Restore the wired asset reference, then destroy our clone (re-enable re-clones from the source).
+            if (_document != null && _sourcePanel != null) _document.panelSettings = _sourcePanel;
+            if (_runtimePanel != null)
+            {
+                Destroy(_runtimePanel);
+                _runtimePanel = null;
             }
         }
 

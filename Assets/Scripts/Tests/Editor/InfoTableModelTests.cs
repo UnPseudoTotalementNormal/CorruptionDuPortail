@@ -146,5 +146,31 @@ namespace Tests.Editor
             m.SetCell(1, 0, CellState.Sure); // second Sure would be over-capacity...
             Assert.AreEqual(ConflictType.None, m.GetConflict(0)); // ...but the locked row is never flagged
         }
+
+        [Test]
+        public void LockRowToRole_NoMatchingColumn_LeavesRowInteractive()
+        {
+            var m = Build(1, 1, 1);
+            m.SetCell(0, 0, CellState.Maybe);
+            m.LockRowToRole(0, "does-not-exist");   // must NOT seal the row into an all-SurelyNot dead state
+            Assert.IsFalse(m.IsLocked(0));
+            Assert.AreEqual(CellState.Maybe, m.GetCell(0, 0)); // untouched
+            m.SetCell(0, 1, CellState.Sure);        // still interactive
+            Assert.AreEqual(CellState.Sure, m.GetCell(0, 1));
+        }
+
+        [Test]
+        public void LockRowToRole_DuplicateRoleName_LocksOnlyFirstColumn()
+        {
+            var players = new List<InfoTablePlayer> { new(0, "P0") };
+            var roles = new List<InfoTableRole> { new("Dup", 1), new("Dup", 1) };
+            var m = new InfoTableModel();
+            m.Build(players, roles);
+
+            m.LockRowToRole(0, "Dup");
+            Assert.IsTrue(m.IsLocked(0));
+            Assert.AreEqual(CellState.Sure, m.GetCell(0, 0));       // first match only
+            Assert.AreEqual(CellState.SurelyNot, m.GetCell(0, 1));  // duplicate column NOT forced Sure
+        }
     }
 }

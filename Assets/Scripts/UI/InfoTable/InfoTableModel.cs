@@ -98,9 +98,21 @@ namespace UI.InfoTable
         {
             if (playerIndex < 0 || playerIndex >= _players.Count) return;
 
+            // Find the FIRST column matching the revealed role. If none matches, do NOT seal the row into an
+            // impossible all-SurelyNot state (it would lock the player as "not any role", permanently
+            // uneditable) — leave it interactive. In-game the column always exists (headers are built from the
+            // same characters), so a no-match only arises from an out-of-band source; matching only the first
+            // column also keeps a duplicate-named column set from being forced Sure twice.
+            int matchIndex = -1;
             for (int ri = 0; ri < _roles.Count; ri++)
             {
-                _cells[playerIndex, ri] = _roles[ri].RoleName == revealedRoleName ? CellState.Sure : CellState.SurelyNot;
+                if (_roles[ri].RoleName == revealedRoleName) { matchIndex = ri; break; }
+            }
+            if (matchIndex < 0) return;
+
+            for (int ri = 0; ri < _roles.Count; ri++)
+            {
+                _cells[playerIndex, ri] = ri == matchIndex ? CellState.Sure : CellState.SurelyNot;
             }
             _locked[playerIndex] = true;
             _conflict[playerIndex] = ConflictType.None;

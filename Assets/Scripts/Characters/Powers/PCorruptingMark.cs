@@ -4,7 +4,9 @@ using System;
 using ArrowSystem;
 using Characters.Powers.Interfaces;
 using Characters.Powers.Target;
-using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -16,14 +18,24 @@ using UnityEngine;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PCorruptingMark : Power, ICorrupterPower, IConcentratedPowerEffect
+    public class PCorruptingMark : Power, ICorrupterPower, IConcentratedPowerEffect,
+        ILastCorruptedState, ICorruptionEvents
     {
         [field:SerializeField] public string concentratedEffectDescription { get; set; }
-        
+
         private NetworkVariable<ulong> lastCorruptedCharacterId = new(9999999);
-        
+
         public event Action<Character> onCharacterCorruptionSuccessful;
         public event Action<Character> onCharacterCorruptionFailed;
+
+        // Powers-POCO v2: server logic in CorruptingMarkDecision (pure). last-corrupted NV + the
+        // corruption-outcome event are power-local, reached by the effect executors through SelfState via
+        // ILastCorruptedState / ICorruptionEvents. Behaviour-identical to the old resolver path.
+        private readonly CorruptingMarkDecision _decision = new();
+
+        void ILastCorruptedState.StoreLastCorrupted(int _slot) => lastCorruptedCharacterId.Value = (ulong)_slot;
+        void ICorruptionEvents.RaiseSucceeded(int _slot) => InvokeOnCharacterCorruptionSuccessfulRpc((ulong)_slot);
+        void ICorruptionEvents.RaiseFailed(int _slot) => InvokeOnCharacterCorruptionFailedRpc((ulong)_slot);
 
         public override void OnNetworkSpawn()
         {
@@ -55,33 +67,11 @@ namespace Characters.Powers
             OnUsed();
         }
 
-        private readonly PowerResolver _resolver = new();
-
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _clickedCharacterId)
         {
-            // Story 4.3: decision-only resolution in Domain; the adapter dispatches the bricks.
-            // StoreLastCorrupted (private NV) + CorruptionSucceeded (power event RPC) are power-LOCAL.
-            var _effects = _resolver.ResolveCorruptingMarkClick((int)ownerClientId.Value, (int)_clickedCharacterId);
-            foreach (var _effect in _effects)
-            {
-                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
-            }
-        }
-
-        private void ApplyLocalEffect(EffectDescriptor _effect)
-        {
-            switch (_effect)
-            {
-                case StoreLastCorrupted _store:
-                    lastCorruptedCharacterId.Value = (ulong)_store.TargetSlot;
-                    break;
-                case CorruptionSucceeded _succeeded:
-                    InvokeOnCharacterCorruptionSuccessfulRpc((ulong)_succeeded.Slot);
-                    break;
-                default:
-                    throw new NotSupportedException($"PCorruptingMark: unexpected local brick {_effect}");
-            }
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_clickedCharacterId), SelfState);
         }
 
         [Rpc(SendTo.Everyone)]

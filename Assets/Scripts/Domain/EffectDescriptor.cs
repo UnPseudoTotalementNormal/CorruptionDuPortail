@@ -357,4 +357,30 @@ namespace CorruptionDuPortail.Domain
         public SetMessageLeft(int slot, int value) { Slot = slot; Value = value; }
         protected override IEnumerable<object> EqualityComponents { get { yield return Slot; yield return Value; } }
     }
+
+    // ---- Give-power (power-local: the engine Power ref lives on the power's carrier) -------
+    /// <summary>PLegacy: grant the power's configured legacy power to the owner (power-local carrier).</summary>
+    public sealed class GrantLegacyPower : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public GrantLegacyPower(int ownerSlot) { OwnerSlot = ownerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
+    }
+
+    /// <summary>PReincarnation: grant every power of the from-role's character to the owner.</summary>
+    public sealed class GrantRolePowers : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public int FromRoleSlot { get; }
+        public GrantRolePowers(int ownerSlot, int fromRoleSlot) { OwnerSlot = ownerSlot; FromRoleSlot = fromRoleSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; yield return FromRoleSlot; } }
+    }
+
+    /// <summary>PReincarnation: broadcast a change to the power's isPassive flag (power-local).</summary>
+    public sealed class SetPassiveBroadcast : EffectDescriptor
+    {
+        public bool Value { get; }
+        public SetPassiveBroadcast(bool value) { Value = value; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Value; } }
+    }
 }

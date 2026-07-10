@@ -357,5 +357,24 @@ namespace Tests.Editor
                 new CorruptPlayer(3),
             }, outcome.Effects);
         }
+
+        [Test]
+        public void Legacy_GrantsLegacyToOwner()
+        {
+            var outcome = new LegacyDecision().Decide(new PowerContext(ownerSlot: 5));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new GrantLegacyPower(5) }, outcome.Effects);
+        }
+
+        [Test]
+        public void Reincarnation_TargetsPassiveThenGrants()
+        {
+            var outcome = new ReincarnationDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 3));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 3),
+                new SetPassiveBroadcast(true),
+                new GrantRolePowers(0, 3),
+            }, outcome.Effects);
+        }
     }
 }

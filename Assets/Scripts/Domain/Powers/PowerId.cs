@@ -23,5 +23,7 @@ namespace CorruptionDuPortail.Domain.Powers
         EmbraceOfShadows = 13,
         LackOfAffection = 14,
         CorruptingMark = 15,
+        Legacy = 16,
+        Reincarnation = 17,
     }
 }

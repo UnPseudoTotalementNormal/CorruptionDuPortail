@@ -59,6 +59,10 @@ namespace Avatars
         // (to drive the tablet UI) and the first-person look is frozen. Null-tolerant — if unwired, the cursor
         // simply follows the camera mode and the look is never frozen.
         [SerializeField] private SmartphoneController _smartphone;
+        // The emote wheel input. While the wheel is held open the seated/free-roam look is FROZEN (the mouse
+        // drives the wheel's virtual stick, not the camera) — same look-gate as the tablet, but the cursor stays
+        // LOCKED (the stick needs the delta). Null-tolerant — unwired just means the wheel never freezes the look.
+        [SerializeField] private EmoteWheelInput _emoteWheel;
 
         private IGameStateQuery Query => gameManager;
 
@@ -69,6 +73,9 @@ namespace Avatars
         // Mirrors the tablet open state via its onPanelOpened/onPanelClosed events. Combined with the camera
         // mode to decide the cursor lock + look freeze.
         private bool _tabletOpen;
+        // Mirrors the emote wheel open state via its Opened/Closed events. ANDed into the look gate (like the
+        // tablet) so the mouse turns the wheel, not the camera, while it is up.
+        private bool _wheelOpen;
         // Last resolved mode, cached so a late-spawning local avatar (below) starts in the right movement
         // state when its controller finally binds.
         private CameraMode _currentMode = CameraMode.Board;
@@ -104,6 +111,14 @@ namespace Avatars
                 _smartphone.onPanelClosed += OnTabletClosed;
             }
 
+            // Emote wheel open/close freezes the look (prime + react, mirroring the tablet).
+            if (_emoteWheel != null)
+            {
+                _wheelOpen = _emoteWheel.IsOpen;
+                _emoteWheel.Opened += OnEmoteWheelOpened;
+                _emoteWheel.Closed += OnEmoteWheelClosed;
+            }
+
             // The seated first-person is a board-camera node during the Vote; follow which board camera is live
             // so the embodied camera / reticle / cursor track the player arrowing between it and the overviews.
             // .instance is a scene singleton set in Awake (before any Start) — available here; guarded anyway.
@@ -128,6 +143,12 @@ namespace Avatars
             {
                 _smartphone.onPanelOpened -= OnTabletOpened;
                 _smartphone.onPanelClosed -= OnTabletClosed;
+            }
+
+            if (_emoteWheel != null)
+            {
+                _emoteWheel.Opened -= OnEmoteWheelOpened;
+                _emoteWheel.Closed -= OnEmoteWheelClosed;
             }
 
             // Mirror the Start subscription to the board manager's current-camera event.
@@ -259,6 +280,18 @@ namespace Avatars
             ApplyCursorAndLook();
         }
 
+        private void OnEmoteWheelOpened()
+        {
+            _wheelOpen = true;
+            ApplyCursorAndLook();
+        }
+
+        private void OnEmoteWheelClosed()
+        {
+            _wheelOpen = false;
+            ApplyCursorAndLook();
+        }
+
         // Single source of truth for the OS cursor + the first-person look gate. First-person modes
         // (FreeRoam/Embodied) lock + hide the cursor so the mouse drives the look — UNLESS the tablet is open,
         // which frees the cursor (to click the tablet UI) and freezes the look so the camera no longer turns
@@ -272,8 +305,10 @@ namespace Avatars
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !_lockCursor;
 
-            // Freeze the look whenever the tablet is open (both look-readers ignore it; default-on otherwise).
-            bool _lookEnabled = !_tabletOpen;
+            // Freeze the look whenever the tablet OR the emote wheel is open (both look-readers ignore it;
+            // default-on otherwise). The wheel keeps the cursor LOCKED (above) but takes the mouse for its
+            // virtual stick, so the camera must not also turn.
+            bool _lookEnabled = !_tabletOpen && !_wheelOpen;
             if (TryBindLocalMovement())
             {
                 _localMovement.SetLookEnabled(_lookEnabled);

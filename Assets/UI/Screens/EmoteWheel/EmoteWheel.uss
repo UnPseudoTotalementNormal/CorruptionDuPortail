@@ -1,0 +1,145 @@
+/* Radial emote wheel layout. The DONUT (band + sectors + separators) is drawn by EmoteWheelController with
+ * Painter2D (its colours are serialized on the component — design-owned + provisional). This file only lays out
+ * the ring box, the per-sector icon/label slots, and the centre caption, reusing the sampled gold/scrim tokens
+ * (variables.uss). USS reality: px/% only, flexbox only, no gradient/box-shadow. */
+
+.emote-wheel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+/* Show/hide: fade out, then collapse out of layout entirely (mirrors the RoleCard convention). */
+.cdp-is-hidden {
+    opacity: 0;
+}
+
+.cdp-is-collapsed {
+    display: none;
+}
+
+/* Fixed square that holds the wheel; the donut, slots and caption all centre on it. Keep in sync with the
+ * controller's MidRadius / SlotSize constants. */
+.emote-wheel__ring {
+    width: 620px;
+    height: 620px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Full-ring anchor that flex-centres the caption over the hole (robust centring, no translate maths). */
+.emote-wheel__caption-anchor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The Painter2D-drawn donut fills the ring box, behind the slots + caption. */
+.emote-wheel__donut {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* PRIMARY focal name: BIG in the centre hole, on a dark pill so it reads over sky OR ground. The text outline
+ * keeps it legible on any background (the hole stays transparent — no full scrim disc). Hidden when nothing is
+ * pointed at. Box is absolutely centred by the controller-independent translate. */
+.emote-wheel__caption {
+    padding: 4px 16px;
+    background-color: rgba(10, 10, 14, 0.72);
+    border-radius: 10px;
+    color: var(--cdp-color-role-title);
+    font-size: 38px;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+.emote-wheel__label--hidden {
+    opacity: 0;
+}
+
+/* One emote slot: a transparent box centred on its sector (the donut draws the band underneath). Holds the
+ * icon only; the label is a separate element placed radially OUTSIDE the ring. */
+.emote-wheel__slot {
+    width: 84px;
+    height: 84px;
+    align-items: center;
+    justify-content: center;
+}
+
+.emote-wheel__slot-icon {
+    width: 68px;
+    height: 68px;
+    -unity-background-scale-mode: scale-to-fit;
+    scale: 1 1;
+    transition-property: scale;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+/* No sprite yet → a rotated square placeholder (the sketch's diamond). */
+.emote-wheel__slot-icon--placeholder {
+    width: 54px;
+    height: 54px;
+    rotate: 45deg;
+    background-color: var(--cdp-color-role-title);
+}
+
+/* SECONDARY name, outside the ring on its sector's ray. Small + dimmed (discovery aid while icons are
+ * placeholder); the outline keeps it legible over any background. Fixed box (controller centres it). */
+.emote-wheel__slot-label {
+    color: var(--cdp-color-role-title);
+    font-size: var(--cdp-font-size-base);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    opacity: 0.82;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+/* Highlighted slot (the emote pointed at): the icon grows (the band accent is drawn by the donut). */
+.emote-wheel__slot--selected .emote-wheel__slot-icon {
+    scale: 1.14 1.14;
+}
+
+/* Release confirmation (icon + name) — a top-level element the controller animates from the chosen sector to
+ * the centre while scaling + fading. Centred origin; the controller drives translate/scale/opacity. */
+.emote-confirm {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 96px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.emote-confirm__label {
+    margin-top: 6px;
+    color: var(--cdp-color-role-title);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+}

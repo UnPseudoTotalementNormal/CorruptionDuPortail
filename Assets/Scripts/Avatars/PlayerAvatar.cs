@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 
 namespace Avatars
@@ -34,6 +35,17 @@ namespace Avatars
         [SerializeField] private Transform _eyePivot;
         public Transform EyePivot => _eyePivot;
 
+        // Emotes: the body's NetworkAnimator (on the Cat_Avatar model child). Emotes are played SERVER-side on
+        // it so the momentary trigger + the EmoteId selector replicate to every client (incl. the owner). Wire
+        // it on the PlayerAvatar prefab. Null-tolerant — an unwired ref simply makes RequestEmote a no-op.
+        [SerializeField] private NetworkAnimator _networkAnimator;
+
+        // Animator wiring for emotes: an integer param selects WHICH emote, a trigger fires it. Names must match
+        // the Cat_Avatar Animator (int "EmoteId", trigger "Emote"). Non-trigger params are set on the Animator
+        // (NetworkAnimator auto-syncs them); the momentary trigger goes through NetworkAnimator.SetTrigger.
+        private const string EmoteIdParam = "EmoteId";
+        private const string EmoteTriggerParam = "Emote";
+
         // Seated-ring gaze: the owner's seated head look, RELATIVE to seat facing (deg) — yaw (left/right) +
         // pitch (up/down). Owner-writable so each player publishes WHERE they look during the embodied Vote;
         // every client renders it on the avatar's HEAD (EyePivot) on top of the LOCALLY-computed seat facing.
@@ -59,6 +71,33 @@ namespace Avatars
                 SeatedYaw.Value = _yawDeg;
                 SeatedPitch.Value = _pitchDeg;
             }
+        }
+
+        /// <summary>
+        /// Owner-only: request playing an emote (by its Animator <c>EmoteId</c>). Routed to the server, which
+        /// sets it on the body's NetworkAnimator so every client — including this owner — sees the animation.
+        /// No-op on non-owners. Values come from the wheel's <see cref="EmoteDefinition"/>.
+        /// </summary>
+        public void RequestEmote(int _emoteId)
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+            PlayEmoteRpc(_emoteId);
+        }
+
+        // Server plays the emote on the NetworkAnimator: set the EmoteId selector (auto-synced param) then fire
+        // the momentary Emote trigger (NetworkAnimator replicates triggers explicitly). Null-tolerant.
+        [Rpc(SendTo.Server)]
+        private void PlayEmoteRpc(int _emoteId)
+        {
+            if (_networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            _networkAnimator.Animator.SetInteger(EmoteIdParam, _emoteId);
+            _networkAnimator.SetTrigger(EmoteTriggerParam);
         }
 
         public override void OnNetworkSpawn()

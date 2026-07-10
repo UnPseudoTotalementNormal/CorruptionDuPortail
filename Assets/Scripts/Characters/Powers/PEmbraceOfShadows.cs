@@ -26,14 +26,15 @@ namespace Characters.Powers
         public event Action onPowerSuccessful;
         public event Action onPowerFailed;
 
-        // Powers-POCO v2 in-place wiring (Phase 3): server logic lives in EmbraceOfShadowsDecision (pure,
-        // char+role branch, EditMode-tested). The success/failure EVENTS are power-local (IFailablePower),
-        // reached by the CorruptionSucceeded/Failed executors through SelfState via ICorruptionEvents. The
-        // faction-independent success/failure SOUNDS stay adapter-side and LOCAL to the picker (the picking
-        // client already knows both picks, so the cue does not wait on the server).
-        // PLAYTEST-REQUIRED before merge: the old path ran targeting/corrupt/reveal directly in the client
-        // selection callback (mixed server-only calls + ServerRpc); moving them behind one ServerRpc shifts
-        // the server/client boundary (validated only by a real 2-build playtest — held-5).
+        // Powers-POCO v2 in-place wiring (Phase 3): logic lives in EmbraceOfShadowsDecision (pure, char+role
+        // branch, EditMode-tested). The success/failure EVENTS are power-local (IFailablePower), reached by
+        // the CorruptionSucceeded/Failed executors through SelfState via ICorruptionEvents. The faction-
+        // independent success/failure SOUNDS stay adapter-side and LOCAL to the picker.
+        // The corruption reveals (RevealInfo Broadcast:false → SetRevealLevel) are OWNER-LOCAL writes; the
+        // authoritative mutations self-RPC to the server (CorruptPlayerServerRpc, NewTargetingRpc) and the
+        // success/failure events fan out via SendTo.Everyone RPCs. The whole decision therefore runs on the
+        // owner's client — exactly as v1 did. An earlier v2 pass forwarded the picks through a SendTo.Server
+        // RPC, which made the reveals land on the host instead of a remote caster's board.
         private readonly EmbraceOfShadowsDecision _decision = new();
 
         void ICorruptionEvents.RaiseSucceeded(int _slot) => InvokeOnCharacterCorruptedRpc((ulong)_slot);
@@ -54,8 +55,13 @@ namespace Characters.Powers
                 return;
             }
 
-            // Server-side effect logic (targeting, corrupt, reveal, success/fail event) runs behind the RPC.
-            EmbraceRpc(_character.ownerClientId.Value, _role.ownerClientId);
+            // Runs on the owner's client (selection callback). Owner-local reveals apply here directly;
+            // the authoritative corrupt/targeting effects self-RPC to the server. See the class-level note.
+            RunClientDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value,
+                targetSlot: (int)_character.ownerClientId.Value,
+                secondaryTargetSlot: (int)_role.ownerClientId,
+                roster: Roster), SelfState);
 
             // Local audio cue for the picker — computed client-side from the two picks, unchanged from v1.
             if (_character.role.IsTheSameRole(_role))
@@ -67,16 +73,6 @@ namespace Characters.Powers
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
-        }
-
-        [Rpc(SendTo.Server)]
-        private void EmbraceRpc(ulong _targetClientId, ulong _roleOwnerClientId)
-        {
-            RunDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)ownerClientId.Value,
-                targetSlot: (int)_targetClientId,
-                secondaryTargetSlot: (int)_roleOwnerClientId,
-                roster: Roster), SelfState);
         }
 
         [Rpc(SendTo.Everyone)]

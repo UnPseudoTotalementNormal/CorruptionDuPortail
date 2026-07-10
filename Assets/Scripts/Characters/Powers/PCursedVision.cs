@@ -7,20 +7,21 @@ using CorruptionDuPortail.Domain.Powers.Decisions;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
-using Unity.Netcode;
 
 namespace Characters.Powers
 {
     [Serializable]
     public class PCursedVision : Power
     {
-        // Powers-POCO v2 in-place wiring (Phase 3): server logic lives in CursedVisionDecision (pure,
-        // EditMode-tested). The selection flow stays client-side; the picked target is forwarded to a
-        // server RPC whose body runs the decision + dispatch. The card-effect id is a prefab-time constant
-        // fed to the decision (the Domain cannot see the Game-side CardEffectID enum).
-        // PLAYTEST-REQUIRED before merge: the old path dispatched effects in the client selection callback;
-        // moving them behind a ServerRpc shifts the server/client boundary (a behaviour change validated
-        // only by a real 2-build playtest — see spec-powers-poco-v2-architecture.md, held-5).
+        // Powers-POCO v2 in-place wiring (Phase 3): logic lives in CursedVisionDecision (pure, EditMode-
+        // tested). The card-effect id is a prefab-time constant fed to the decision (the Domain cannot see
+        // the Game-side CardEffectID enum).
+        // The decision's effects are OWNER-LOCAL presentation (corruption reveal via SetRevealLevel, the
+        // card marker via AddCardEffect, the "élu" verdict via AddMessageLocal) plus self-RPC authoritative
+        // mutations (CorruptPlayerServerRpc, NewTargetingRpc). They MUST run on the owner's client — exactly
+        // as v1 did in the selection callback. An earlier v2 pass forwarded the pick through a SendTo.Server
+        // RPC, which made the local writes land on the host instead of the caster (invisible to any non-host
+        // player). Kept client-side; see spec-powers-poco-v2-architecture.md.
         private readonly CursedVisionDecision _decision = new();
 
         public override void OnNetworkSpawn()
@@ -37,15 +38,11 @@ namespace Characters.Powers
                 return;
             }
 
-            OnCardClickedRpc(_character.ownerClientId.Value);
+            // Runs on the owner's client (selection callback). The decision's owner-local effects apply here
+            // directly; its authoritative effects self-RPC to the server. See the class-level note.
+            RunClientDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_character.ownerClientId.Value, roster: Roster));
             OnUsed();
-        }
-
-        [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _targetClientId)
-        {
-            RunDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId, roster: Roster));
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

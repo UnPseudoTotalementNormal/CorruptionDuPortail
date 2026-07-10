@@ -327,5 +327,45 @@ namespace Tests.PlayMode
             Assert.IsTrue(currentTargets.Contains(target.ownerClientId.Value),
                 "BoundByInk should register the picked character as an ink target.");
         }
+
+        // Powers-POCO v2 wiring golden: PVisionOfTheImpossible delegates its server RPC to
+        // VisionOfTheImpossibleDecision. The picked (character ids, guessed roles) are reduced to a
+        // VisionGuess list via IVisionGuesses; the decision targets each guessed character until the FIRST
+        // whose role matches a guessed role (then stops), and announces a found/not-found line to the owner.
+        // Here character #1 carries a guessed role → it is targeted and the "found" line is broadcast.
+        [UnityTest]
+        public IEnumerator PVisionOfTheImpossible_TargetsMatchAndAnnouncesToOwner()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character match = _characterManager.AddNewCharacter(881);
+            Character other = _characterManager.AddNewCharacter(882);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, match, other);
+
+            match.role = new Role { roleID = RoleID.Omniscient }; // carries a guessed role
+            other.role = new Role { roleID = RoleID.Dryade };     // does not
+
+            GameObject powerGo = new GameObject("VisionOfTheImpossible");
+            var power = powerGo.AddComponent<PVisionOfTheImpossible>();
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            bool received = false;
+            ulong sender = 0;
+            string body = null;
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; body = _m.message.ToString(); };
+
+            var _guessedCharacterIds = new[] { match.ownerClientId.Value, other.ownerClientId.Value };
+            var _guessedRoles = new[] { new Role { roleID = RoleID.Omniscient } };
+            ReflectionHelper.InvokePrivateMethod(power, "OnVisionGuessServerRpc", _guessedCharacterIds, _guessedRoles);
+            yield return null;
+
+            Assert.IsTrue(received, "Vision should announce the guess result to the owner.");
+            Assert.AreEqual(ChatManager.SERVER_CLIENT_ID, sender, "The announcement should come from the server sender id.");
+            Assert.IsTrue(RoleTargetSystem.instance.GetAllTargetingDataForTarget(match.ownerClientId.Value).Count > 0,
+                "Vision should target the matched character.");
+            StringAssert.Contains("est l'un de ces personnages", body,
+                "A matched guess should announce the 'found' line.");
+        }
     }
 }

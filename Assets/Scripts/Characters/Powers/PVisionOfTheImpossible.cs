@@ -1,11 +1,13 @@
-﻿#region
+#region
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Characters.Powers.Target;
-using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using FocusSystem;
 using GameLogic;
 using RoleTarget;
@@ -19,19 +21,47 @@ using FocusType = FocusSystem.FocusType;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PVisionOfTheImpossible : Power
+    public class PVisionOfTheImpossible : Power, IVisionGuesses
     {
         public int charactersToSelect = 2;
         public int rolesToSelect = 2;
-        
+
         [NonSerialized] private List<Character> clickedCharacters = new();
         [NonSerialized] private List<Role> clickedRoles = new();
+
+        // Powers-POCO v2 in-place wiring (Phase 3): server logic lives in VisionOfTheImpossibleDecision
+        // (pure, EditMode-tested, first-match-then-stop). The multi-guess is reduced to a VisionGuess list
+        // exposed via IVisionGuesses (read by the decision through SelfState); the selection flow + the
+        // server RPC plumbing stay adapter-side. The engine reads (role/pseudo) that feed the reduction stay
+        // power-local here.
+        // PLAYTEST-REQUIRED before merge (held-5 — see spec-powers-poco-v2-architecture.md).
+        private readonly VisionOfTheImpossibleDecision _decision = new();
+
+        // Snapshot of the picked (character id, guessed roles) forwarded by the server RPC, reduced on
+        // demand into the VisionGuess list the decision consumes. Populated on the server before Decide.
+        private ulong[] _pendingGuessedCharacterIds = Array.Empty<ulong>();
+        private Role[] _pendingGuessedRoles = Array.Empty<Role>();
+
+        IReadOnlyList<VisionGuess> IVisionGuesses.Guesses
+        {
+            get
+            {
+                var _guesses = new List<VisionGuess>(_pendingGuessedCharacterIds.Length);
+                foreach (var _guessedCharacterId in _pendingGuessedCharacterIds)
+                {
+                    var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
+                    bool _matches = _pendingGuessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role));
+                    _guesses.Add(new VisionGuess((int)_guessedCharacterId, _matches, _guessedCharacter.GetOwnerPseudo()));
+                }
+                return _guesses;
+            }
+        }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
-            targetValidator.AddRule(ctx => 
+            targetValidator.AddRule(ctx =>
             {
                 // Pour les personnages: ne pas inclure ceux déjà cliqués
                 if (ctx.targetType == TargetUtils.TargetType.Character)
@@ -46,7 +76,7 @@ namespace Characters.Powers
                 }
             });
         }
-        
+
         private void OnCharacterPicked(Character _clickedCharacter)
         {
             if (!CheckIsTargetValid(_clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
@@ -85,9 +115,9 @@ namespace Characters.Powers
             if (clickedRoles.Count >= rolesToSelect)
             {
                 focusManager.UnfocusAll();
-                
+
                 OnUsed();
-                
+
                 OnVisionGuessServerRpc(
                     clickedCharacters.Select(_c => _c.ownerClientId.Value).ToArray(),
                     clickedRoles.ToArray());
@@ -107,28 +137,11 @@ namespace Characters.Powers
         private void OnVisionGuessServerRpc(ulong[] _guessedCharacterIds, Role[] _guessedRoles)
         {
             Assert.IsTrue(NetworkManager.IsServer, "OnVisionGuessServerRpc should only be called on server");
-            string _message = string.Empty;
-            foreach (var _guessedCharacterId in _guessedCharacterIds)
-            {
-                var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
-                roleTargetSystem.NewTargeting(ownerClientId.Value, _guessedCharacter.ownerClientId.Value);
-                if (_guessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role)))
-                {
-                    if (_message != String.Empty)
-                    {
-                        _message += "\n";
-                    }
-                    _message += $"{_guessedCharacter.GetOwnerPseudo()} est l'un de ces personnages.";
-                    break;
-                }
-            }
-            if (_message == String.Empty)
-            {
-                _message = "Aucun personnage n'a été trouvé.";
-            }
-            chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.FAKE_CLIENT_ID, _message, (int)ChatWindowIDs.Server),
-                _rpcParams:characterManager.GetSafeRpcTarget(ownerClientId.Value));
-        }   
+            _pendingGuessedCharacterIds = _guessedCharacterIds;
+            _pendingGuessedRoles = _guessedRoles;
+            RunDecisionEffects(_decision,
+                new PowerContext(ownerSlot: (int)ownerClientId.Value, state: SelfState), SelfState);
+        }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
@@ -137,7 +150,7 @@ namespace Characters.Powers
             {
                 return false;
             }
-            
+
             return true;
         }
 
@@ -159,7 +172,7 @@ namespace Characters.Powers
             }
             base.Cancel();
         }
-        
+
         protected override void StopUse()
         {
             base.StopUse();

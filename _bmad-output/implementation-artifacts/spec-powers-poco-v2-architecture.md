@@ -97,7 +97,9 @@ Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtur
 - Built the 5 previously-missing executors + ports: `GrantLegacyPower`/`ILegacyGrant`, `SetPassiveBroadcast`/`ISetPassiveState`, `GrantRolePowers`/`IGrantRolePowers`, `RegisterInkTarget`/`IInkTargetRegister`, `DiscoveredAdd`/`IDiscoveredAdd`. Added `ReflectionHelper.GetPrivateField` for goldens.
 - **KEY FIX**: `RunDecisionEffects` originally passed the state resolver only to the `EffectRuntime` (state-WRITE effects). Decisions that READ `ctx.State<TPort>()` (Clandestine/BoundByInk/CardsShuffling) also need it in the `PowerContext` — the caller now threads `SelfState` into BOTH the context ctor (`state:`) and the runtime.
 
-**17 / 22 powers wired + golden-verified** (10 new goldens this session), covering every integration shape:
+**22 / 22 powers wired.** EditMode 362/362, EntrapmentPowerTests 8/8 (incl. the new Vision golden), compile-clean. The last 5 (below) are wired following the exact established patterns (server RPC delegation / power-local state ports / client-runtime dispatch) but are **PLAYTEST-REQUIRED before merge** — see the held-5 section.
+
+**First 17 / 22 powers wired + golden-verified** (10 new goldens that session), covering every integration shape:
 - Passive, no roster/state: `PCorruptionParanoia`, `PAutoCorruption`.
 - Passive + live roster: `PCorruptionInsight`, `PCorruptionKnowledge`, `PEyeOfTheVoid` (config-in-code chat id).
 - Passive, reparent trigger: `PInfiniteMessage`.
@@ -107,13 +109,16 @@ Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtur
 - Active + power-local READ+WRITE state: `PBoundByInk` (IInkChatState read + IInkTargetRegister write), `PCardsShuffling` (ICardsShufflingGuess read + IDiscoveredAdd write), `PClandestineObservation` (IClandestineReport read).
 - Give-power: `PLegacy` (ILegacyGrant), `PReincarnation` (ISetPassiveState + IGrantRolePowers).
 
-**Remaining 5 powers — HELD for Poyo + a real 2-build playtest.** These genuinely cannot be verified solo:
-- `PCursedVision`, `PEmbraceOfShadows` — v1-pilot shape: their effect logic runs in a **client-side selection callback** (no ServerRpc; mixed ServerRpc + server-only calls). Any clean wiring (IsServer-guarded delegate, or adding a ServerRpc) shifts the server/client boundary — a behaviour change only a playtest can validate.
-- `PLackOfAffection` — runs on the **contacted target's client** (`isTrueLocalTarget`); needs a second real client to exercise.
-- `PVisionOfTheImpossible` — multi-guess over a **target LIST** (client-callback dispatch) + `IVisionGuesses`.
-- `PPersonalBeacons` — **spawns beacon GameObjects** (engine instantiation) + the robot forceCorrupt reveal.
+**The final 5 powers — WIRED, but PLAYTEST-REQUIRED before merge.** All wired following the established patterns; EditMode + EntrapmentPowerTests green. Each carries a `PLAYTEST-REQUIRED` comment. They genuinely cannot be fully verified solo:
+- `PCursedVision` — the old path dispatched effects in the client selection callback; now behind `OnCardClickedRpc` (`SendTo.Server`) → `RunDecisionEffects(CursedVisionDecision)` (`CardEffectId` fed at spawn). Boundary shift (client-callback → server).
+- `PEmbraceOfShadows` — implements `ICorruptionEvents` (RaiseSucceeded/Failed → existing Everyone RPCs); server `EmbraceRpc` runs the char+role decision; the success/fail FMOD cue stays LOCAL to the picker (computed client-side). Boundary shift on the reveal/corrupt path.
+- `PLackOfAffection` — runs on the **contacted target's client**. New `Power.RunClientDecisionEffects` (server-guard-free sibling of `RunDecisionEffects`) dispatches `LackOfAffectionDecision` on that client keyed by `IsTrueLocalTarget`; NewTargeting stays in the picker callback; faction sound stays local. Needs a 2nd real client.
+- `PVisionOfTheImpossible` — implements `IVisionGuesses` (reduces picked chars+roles → ordered `VisionGuess` list); server `OnVisionGuessServerRpc` snapshots the picks then `RunDecisionEffects`. **Behaviour golden added** (`PVisionOfTheImpossible_TargetsMatchAndAnnouncesToOwner`) — first-match-then-stop + owner chat verified. Still playtest-gated for the full selection flow.
+- `PPersonalBeacons` — the robot forceCorrupt reveal moved from the buggy `Awake` (characterManager/ownerClientId not resolved → latent NRE) to `OnGameStartedServer` → `RunDecisionEffects(PersonalBeaconsDecision)`. Beacon-object spawn + corrupted-beacon local chat stay power-local. Engine instantiation of beacons needs a playtest.
 
 The in-place delegation pattern + all shared infra are proven; these 5 are owner-gated on a real 2-build playtest (Claude does not playtest — [[feedback_no_playtest_by_claude]]).
+
+**STALE — to delete in Phase 4:** `PowerGoldenTraceTests.cs` pins the rejected v1 `PowerResolver` + `PowerEffectDispatcher` trace seam (the new registry `EffectDispatcher` does NOT feed `PowerEffectTrace`). It was already 3/4 red on the branch (Omniscience/CorruptingMark/BoundByInk record 0 elements); wiring PCursedVision makes it 4/4 red. Its coverage is superseded by the EditMode decision tests + `EntrapmentPowerTests` behaviour goldens. Delete it alongside `PowerResolver`/`PowerEffectDispatcher`/`PowerEffectTrace` in Phase 4.
 
 **Phase 4 — delete the old inline `Power`/`PowerResolver`/`PowerComponent` path + absence proof + full green gate.**
 

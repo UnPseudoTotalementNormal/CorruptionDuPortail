@@ -151,6 +151,19 @@ namespace Characters.Powers
             PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
         }
 
+        // Client-runtime variant of RunDecisionEffects for the handful of powers whose effect runs on a
+        // SPECIFIC client rather than the server (LackOfAffection — the decision resolves on the contacted
+        // target's own client, keyed by PowerContext.IsTrueLocalTarget). No IsServer guard: the caller is
+        // already inside a client-scoped RPC body and has done its own locality check. The dispatch + state
+        // threading are otherwise identical.
+        protected void RunClientDecisionEffects(IPowerDecision decision, in PowerContext context,
+            IPowerStateResolver state = null)
+        {
+            PowerOutcome outcome = decision.Decide(context);
+            if (!outcome.Accepted) return;
+            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+        }
+
         // Live read-only roster view for roster-reading decisions (faction / same-role / robot / healed /
         // pseudo). Built fresh per call over the already-resolved CharacterManager + lobby holder — cheap,
         // no state. The EditMode counterpart is FakeRoster.

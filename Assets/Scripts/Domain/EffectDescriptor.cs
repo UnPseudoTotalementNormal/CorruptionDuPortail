@@ -102,54 +102,11 @@ namespace CorruptionDuPortail.Domain
         protected static IEnumerable<object> NoComponents => None;
     }
 
-    // ---- Audio (FMOD) -------------------------------------------------------------------
-    public sealed class PlayLoopingSound : EffectDescriptor
-    {
-        public string SoundId { get; }
-        public string LoopKey { get; }
-        public PlayLoopingSound(string soundId, string loopKey) { SoundId = soundId; LoopKey = loopKey; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return SoundId; yield return LoopKey; } }
-    }
-
-    public sealed class StopLoopingSound : EffectDescriptor
-    {
-        public string LoopKey { get; }
-        public StopLoopingSound(string loopKey) { LoopKey = loopKey; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return LoopKey; } }
-    }
-
-    public sealed class PlayOneShotSound : EffectDescriptor
-    {
-        public string SoundId { get; }
-        public PlayOneShotSound(string soundId) { SoundId = soundId; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return SoundId; } }
-    }
-
-    // ---- Focus --------------------------------------------------------------------------
-    public sealed class UnfocusAll : EffectDescriptor
-    {
-        public static readonly UnfocusAll Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
     // ---- Common invocation plumbing (pinned as ADAPTER effects) -------------------------
-    public sealed class DecrementUses : EffectDescriptor
-    {
-        public static readonly DecrementUses Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
     public sealed class RequestCharacterRefresh : EffectDescriptor
     {
         public static readonly RequestCharacterRefresh Instance = new();
         protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
-    public sealed class NotifyOwnerUsed : EffectDescriptor
-    {
-        public int OwnerSlot { get; }
-        public NotifyOwnerUsed(int ownerSlot) { OwnerSlot = ownerSlot; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
     }
 
     // ---- Targeting (RoleTargetSystem) ---------------------------------------------------
@@ -229,28 +186,6 @@ namespace CorruptionDuPortail.Domain
         public PowerEffectAudience Audience { get; }
         public DiscoverChat(int chatId, string chatName, PowerEffectAudience audience) { ChatId = chatId; ChatName = chatName; Audience = audience; }
         protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; yield return ChatName; yield return Audience; } }
-    }
-
-    public sealed class UndiscoverChat : EffectDescriptor
-    {
-        public int ChatId { get; }
-        public PowerEffectAudience Audience { get; }
-        public UndiscoverChat(int chatId, PowerEffectAudience audience) { ChatId = chatId; Audience = audience; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; yield return Audience; } }
-    }
-
-    public sealed class AssignChatId : EffectDescriptor
-    {
-        public int ChatId { get; }
-        public AssignChatId(int chatId) { ChatId = chatId; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; } }
-    }
-
-    // ---- Arrows (ArrowManager) ----------------------------------------------------------
-    public sealed class DestroyAllArrows : EffectDescriptor
-    {
-        public static readonly DestroyAllArrows Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
     }
 
     // ---- State stores (NetworkVariable / NetworkList writes, pinned as adapter effects) --

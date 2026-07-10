@@ -17,17 +17,12 @@ namespace Tests.Editor
     [Category("PowerDecision")]
     public class EffectRegistryCompletenessTests
     {
-        // EffectDescriptor subtypes carried over from the v1 vocabulary that NO v2 decision emits and NO
-        // executor handles (producer-less dead data — pruning is a tracked follow-up). These are the ONLY
-        // legitimate gaps in the registry: every other descriptor must have an executor. Removing a type
-        // from this set without adding its executor (or adding an executor without removing the type) fails
-        // one of the two tests below — by design, so the allowlist cannot silently rot.
-        private static readonly HashSet<string> KnownProducerless = new HashSet<string>
-        {
-            nameof(PlayLoopingSound), nameof(StopLoopingSound), nameof(PlayOneShotSound),
-            nameof(UnfocusAll), nameof(DecrementUses), nameof(NotifyOwnerUsed),
-            nameof(AssignChatId), nameof(DestroyAllArrows), nameof(UndiscoverChat),
-        };
+        // EffectDescriptor subtypes that NO decision emits and NO executor handles (producer-less dead
+        // data). The v1-legacy bricks that used to sit here were pruned, so this set is now EMPTY — every
+        // remaining descriptor must have an executor. Add a name here only if you intentionally introduce a
+        // producer-less descriptor; removing a type without adding its executor (or vice-versa) fails one of
+        // the two tests below by design, so the allowlist cannot silently rot.
+        private static readonly HashSet<string> KnownProducerless = new HashSet<string>();
 
         private static IEnumerable<Type> AllDescriptorTypes() =>
             typeof(EffectDescriptor).Assembly.GetTypes()

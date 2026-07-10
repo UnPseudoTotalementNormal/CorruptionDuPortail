@@ -250,6 +250,35 @@ namespace Tests.PlayMode
                 _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
                 "ChainedByShadows should reveal the matching target's role to the owner.");
         }
+
+        // Powers-POCO v2 wiring golden: PHighPriorityBounty delegates its server RPC to
+        // HighPriorityBountyDecision → self-target, then (robot branch) eliminate + broadcast + public-reveal.
+        [UnityTest]
+        public IEnumerator PHighPriorityBounty_EliminatesAndRevealsRobotTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(8888);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { roleID = RoleID.Robot };
+            owner.role = new Role { roleName = "Hunter" };
+
+            GameObject powerGo = new GameObject("HighPriorityBounty");
+            var power = powerGo.AddComponent<PHighPriorityBounty>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.IsFalse(target.isEliminated.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            Assert.IsTrue(target.isEliminated.Value, "HighPriorityBounty should eliminate a robot target.");
+            Assert.AreEqual(RevealLevel.Public,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "HighPriorityBounty should publicly reveal a robot target's role.");
+        }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
 {

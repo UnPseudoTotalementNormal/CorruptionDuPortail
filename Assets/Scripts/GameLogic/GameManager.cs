@@ -386,6 +386,26 @@ namespace GameLogic
             return gameStates.Keys.ElementAt(index);
         }
 
+        /// <summary>
+        /// Server-side phase gate consumed by the NGO connection-approval callback
+        /// (<see cref="Network.ConnectionApprovalGate"/>): true while the session is still forming in the
+        /// lobby (index 0), false once the game has started. Reuses the exact LobbyState signal that
+        /// HandlePlayerLeft keys off (the _inLobby check). Empty/out-of-range-safe so the approval callback
+        /// can query it during the spawn/setup race without throwing — an un-progressed loop reads as joinable.
+        /// </summary>
+        public bool IsInLobbyPhase
+        {
+            get
+            {
+                int _index = currentGameStateIndex.Value;
+                if (gameStates.Count == 0 || _index < 0 || _index >= gameStates.Count)
+                {
+                    return true;
+                }
+                return GetGameState(_index) is LobbyState;
+            }
+        }
+
         public GameState[] GetGameStates(Type _gameStateType)
         {
             return gameStates.Keys.Where(_state => _state.GetType() == _gameStateType).ToArray();

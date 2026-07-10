@@ -161,8 +161,33 @@ namespace Tests.PlayMode
             ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
             yield return null;
 
-            Assert.IsFalse(ChainingManager.instance.chainingPlayers.Contains(target.ownerClientId.Value), 
+            Assert.IsFalse(ChainingManager.instance.chainingPlayers.Contains(target.ownerClientId.Value),
                 "TruthChains should NOT add non-Anomaly target to chaining list");
+        }
+
+        // Powers-POCO v2 wiring golden: PEyeOfTheVoid delegates OnGameStartedServer to EyeOfTheVoidDecision
+        // → DiscoverChat(AnomalyOnly) for each anomaly-faction slot. Owner is the anomaly here, so the
+        // discover RPC lands on the host and registers the AnomalyOnly chat.
+        [UnityTest]
+        public IEnumerator PEyeOfTheVoid_DiscoversAnomalyChatForAnomalies()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+            owner.role = new Role { factionType = FactionType.anomaly };
+
+            GameObject powerGo = new GameObject("EyeOfTheVoid");
+            var power = powerGo.AddComponent<PEyeOfTheVoid>();
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.IsFalse(ChatManager.instance.discoveredChatIds.Contains((int)ChatWindowIDs.AnomalyOnly));
+
+            power.OnGameStartedServer();
+            yield return null;
+
+            Assert.IsTrue(ChatManager.instance.discoveredChatIds.Contains((int)ChatWindowIDs.AnomalyOnly),
+                "EyeOfTheVoid should discover the anomaly-only chat for an anomaly-faction player.");
         }
 
         [UnityTest]

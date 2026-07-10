@@ -22,8 +22,9 @@ namespace Characters
         /// <summary>Creates a fake character occupying a FAKE_CLIENT_ID slot (server).</summary>
         Character CreateNewFakeCharacter();
 
-        /// <summary>Spawns + reparents a power onto the given character (server).</summary>
-        void GivePowerToCharacter(ulong _characterId, Power _power);
+        /// <summary>Spawns + reparents a power onto the given character (server). Optional <paramref name="_onReady"/>
+        /// fires on the server once the copy is reparented + registered, so the caller can configure it.</summary>
+        void GivePowerToCharacter(ulong _characterId, Power _power, System.Action<Power> _onReady = null);
 
         /// <summary>Despawns + removes a power from the given character (server).</summary>
         void RemovePowerFromCharacter(ulong _characterId, Power _power);

@@ -311,6 +311,19 @@ namespace CorruptionDuPortail.Domain
         protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; yield return FromRoleSlot; } }
     }
 
+    /// <summary>
+    /// PMarqueHurluberluges (Ugues): grant the owner his stolen one-shot power copies. Which powers are
+    /// stolen (the chosen-faction / non-passive filter + random-distinct pick over the live roster) is
+    /// engine-coupled and stays power-local on the carrier, exactly like <see cref="GrantLegacyPower"/> —
+    /// the pure decision only emits the "grant Ugues his stolen copies" intention.
+    /// </summary>
+    public sealed class GrantStolenPowers : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public GrantStolenPowers(int ownerSlot) { OwnerSlot = ownerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
+    }
+
     /// <summary>PReincarnation: broadcast a change to the power's isPassive flag (power-local).</summary>
     public sealed class SetPassiveBroadcast : EffectDescriptor
     {

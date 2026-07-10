@@ -30,5 +30,6 @@ namespace CorruptionDuPortail.Domain.Powers
         VisionOfTheImpossible = 20,
         CardsShuffling = 21,
         PersonalBeacons = 22,
+        MarqueHurluberluges = 23,
     }
 }

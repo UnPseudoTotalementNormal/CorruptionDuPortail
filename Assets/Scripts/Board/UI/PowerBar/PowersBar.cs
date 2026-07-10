@@ -150,7 +150,14 @@ namespace Board.UI.PowerBar
                 {
                     continue;
                 }
-                
+
+                // A spent stolen power (Marque d'Hurluberluges one-shot) leaves the bar — "une fois utilisé,
+                // le pouvoir est perdu". Unspent stolen copies still show and are usable like any other power.
+                if (_currentPower.isStolenCopy.Value && _currentPower.powerUseLeft.Value <= 0)
+                {
+                    continue;
+                }
+
                 GameObject _powerBarGameObject = Instantiate(powerBarObjectPrefab, powersBarParent);
                 PowersBarObject _powersBarObject = _powerBarGameObject.GetComponent<PowersBarObject>();
                 _powersBarObject.SetPower(_currentPower, _fromCharacter);

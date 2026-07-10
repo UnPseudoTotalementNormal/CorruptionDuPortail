@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateUIPrefab: {fileID: 0}
   gameStateDependencies: []
+  forceBoardCamera: 0
+  startingBoardCamera: 0
   useLightColorOverride: 0
   lightColorOverride: {r: 1, g: 1, b: 1, a: 1}
   roleAttributionDictionary:
@@ -63,6 +65,10 @@ MonoBehaviour:
         roleToAttribute: 0
         canBeFake: 1
     - Key: {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
+      Value:
+        roleToAttribute: 0
+        canBeFake: 1
+    - Key: {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
       Value:
         roleToAttribute: 0
         canBeFake: 1

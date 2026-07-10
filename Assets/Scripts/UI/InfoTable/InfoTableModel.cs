@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Characters;
 
 namespace UI.InfoTable
 {
@@ -29,6 +30,12 @@ namespace UI.InfoTable
         private CellState[,] _cells = new CellState[0, 0];
         private bool[] _locked = Array.Empty<bool>();
         private ConflictType[] _conflict = Array.Empty<ConflictType>();
+        private FactionType[] _campGuess = Array.Empty<FactionType>();
+
+        // Camp-guess cycle order (feedback item 1): Inconnu → Élu → Marginal → Anomalie → Inconnu. Note the enum's
+        // default (0) is anomaly, NOT unknown — Build must fill explicitly, and this array fixes the click order.
+        private static readonly FactionType[] CampCycle =
+            { FactionType.unknown, FactionType.chosen, FactionType.marginal, FactionType.anomaly };
 
         /// <summary>Raised after any interaction that mutated cell/conflict/lock state (NOT on <see cref="Build"/>).</summary>
         public event Action OnChanged;
@@ -46,6 +53,9 @@ namespace UI.InfoTable
             _cells = new CellState[_players.Count, _roles.Count];
             _locked = new bool[_players.Count];
             _conflict = new ConflictType[_players.Count];
+            _campGuess = new FactionType[_players.Count];
+            // Enum default is anomaly (0), so fill unknown explicitly — a fresh board must show no camp guess.
+            for (int pi = 0; pi < _players.Count; pi++) _campGuess[pi] = FactionType.unknown;
         }
 
         public CellState GetCell(int playerIndex, int roleIndex) => _cells[playerIndex, roleIndex];
@@ -72,6 +82,36 @@ namespace UI.InfoTable
         public bool IsRoleOverCapacity(int roleIndex)
             => roleIndex >= 0 && roleIndex < _roles.Count && GetSureCountForRole(roleIndex) > _roles[roleIndex].Capacity;
 
+        /// <summary>A row is "found" once it carries at least one <see cref="CellState.Sure"/> — the player has a
+        /// committed role, so the row's remaining cells no longer serve the deduction.</summary>
+        public bool IsRowFound(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= _players.Count) return false;
+            for (int ri = 0; ri < _roles.Count; ri++)
+            {
+                if (_cells[playerIndex, ri] == CellState.Sure) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A column is "claimed" once its Sure count reaches the role's capacity — every seat of that role is
+        /// spoken for, so other players' cells in that column no longer serve the deduction.</summary>
+        public bool IsColumnClaimed(int roleIndex)
+            => roleIndex >= 0 && roleIndex < _roles.Count && GetSureCountForRole(roleIndex) >= _roles[roleIndex].Capacity;
+
+        /// <summary>
+        /// True when a cell should be visually "freed" (dimmed): it is not itself a Sure, and either its row is found
+        /// or its column is claimed. Purely derived — dimming is a VISUAL cue only; the cell stays fully interactive
+        /// (a Sure is just a deduction, the player remains free to change anything). Prevents/blocks nothing.
+        /// </summary>
+        public bool IsCellDimmed(int playerIndex, int roleIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= _players.Count) return false;
+            if (roleIndex < 0 || roleIndex >= _roles.Count) return false;
+            if (_cells[playerIndex, roleIndex] == CellState.Sure) return false;
+            return IsRowFound(playerIndex) || IsColumnClaimed(roleIndex);
+        }
+
         /// <summary>True when any player row is currently in a conflict state (drives the footer alert banner).</summary>
         public bool HasAnyConflict()
         {
@@ -80,6 +120,21 @@ namespace UI.InfoTable
                 if (_conflict[pi] != ConflictType.None) return true;
             }
             return false;
+        }
+
+        /// <summary>The player's coarse camp guess (feedback item 1) — an "Élu/Marginal/Anomalie" hunch made without
+        /// knowing the exact role. Independent of the role cells. Defaults to <see cref="FactionType.unknown"/>.</summary>
+        public FactionType GetCampGuess(int playerIndex)
+            => (playerIndex >= 0 && playerIndex < _players.Count) ? _campGuess[playerIndex] : FactionType.unknown;
+
+        /// <summary>Advance the camp guess one step through the cycle Inconnu → Élu → Marginal → Anomalie → Inconnu.</summary>
+        public void CycleCampGuess(int playerIndex)
+        {
+            if (playerIndex < 0 || playerIndex >= _players.Count) return;
+            int cur = Array.IndexOf(CampCycle, _campGuess[playerIndex]);
+            if (cur < 0) cur = 0;
+            _campGuess[playerIndex] = CampCycle[(cur + 1) % CampCycle.Length];
+            OnChanged?.Invoke();
         }
 
         /// <summary>User clicked a swatch: set that state, or clear to None when re-clicking the active state. Locked rows ignore.</summary>

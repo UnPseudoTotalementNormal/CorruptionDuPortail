@@ -6,7 +6,7 @@
  * Layout: a gold-framed dossier holds a dark header row (corner + role columns) over player rows that STRETCH
  * to fill the whole tablet (flex-grow), then a footer "context bar" (conflict banner + per-role capacity
  * counters + a states legend) fills what used to be dead grey space. Each cell is a 3-segment control —
- * Sûr (✓) / Je pense (?) / Pas lui (✗) — ghosted until selected, so all three stay directly clickable.
+ * Sûr (✓) / peut être (?) / Pas lui (✗) — ghosted until selected, so all three stay directly clickable.
  *
  * USS reality: px/% + flexbox only, no gradient/box-shadow, -unity-* props, var() can't nest in a function.
  * Depth is faked with layered borders (bevels) + insets. Transitions are LOCAL (per segment/cell) to keep the
@@ -67,6 +67,54 @@
     white-space: normal;
 }
 
+/* ---- Camp column (leftmost faction-guess, feedback item 1). Fixed width so it never eats the % name column.
+   The cell fill/text are set INLINE from the FactionDatabase colour (Inconnu = neutral, no fill). ---- */
+.info-table__camp-corner {
+    width: var(--cdp-info-campcol);
+    flex-shrink: 0;
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    color: var(--cdp-color-info-text-muted);
+    font-size: var(--cdp-font-size-sm);
+    padding: 10px 4px;
+    white-space: nowrap;              /* the 78px width fits "Camp" on one line — never split into "Ca / mp" */
+    border-right-width: 1px;
+    border-right-color: var(--cdp-color-info-frame-soft);
+}
+
+/* Camp cell = a centering tile holding the faction ICON (or a "?" text fallback). Fill/text set inline. */
+.info-table__camp-cell {
+    width: var(--cdp-info-campcol);
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--cdp-color-info-name);
+    border-right-width: 1px;
+    border-right-color: var(--cdp-color-info-frame-soft);
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-info-bevel-hi);
+    transition-property: background-color, color;
+    transition-duration: 140ms;
+    transition-timing-function: ease-out;
+}
+
+.info-table__camp-cell:hover {
+    background-color: var(--cdp-color-info-header);
+}
+
+.info-table__camp-icon {
+    width: 48px;
+    height: 48px;
+    -unity-background-scale-mode: scale-to-fit;   /* keep the sprite's aspect, never stretch */
+}
+
+.info-table__camp-text {
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: var(--cdp-font-size-sm);
+    color: var(--cdp-color-info-text-muted);
+}
+
 .info-table__role-head {
     flex-grow: 1;
     flex-basis: 0;
@@ -104,6 +152,10 @@
 
 .info-table__name-cell {
     width: var(--cdp-info-namecol-wide);
+    /* It's a Label, and Unity's default .unity-label carries a margin → the Label would sit ~6px shorter than its
+       VisualElement sibling cells, so its distinct background floats as an inset "box in a box". Zero it so the
+       cell fills the row height like every other cell. */
+    margin: 0;
     -unity-text-align: middle-center;
     color: var(--cdp-color-info-text);
     font-size: var(--cdp-font-size-sm);
@@ -115,6 +167,10 @@
     border-top-color: var(--cdp-color-info-bevel-hi);
     white-space: normal;
     padding: 4px;
+    /* Fade the faction "found" fill in/out (set inline) instead of snapping — matches the segment/cell timing. */
+    transition-property: background-color, color;
+    transition-duration: 140ms;
+    transition-timing-function: ease-out;
 }
 
 .info-table__name-cell--locked {
@@ -136,7 +192,7 @@
     border-left-width: 1px;
     border-left-color: var(--cdp-color-info-frame-soft);
     padding: 6px;
-    transition-property: background-color, border-color;
+    transition-property: background-color, border-color, opacity;
     transition-duration: 140ms;
     transition-timing-function: ease-out;
 }
@@ -156,7 +212,20 @@
     opacity: 0.72;
 }
 
-/* ---- Segments (Sûr ✓ / Je pense ? / Pas lui ✗) ---- */
+/* "Freed" cell: its row is found (a Sure elsewhere) or its column is claimed (capacity reached), so it no longer
+   serves the deduction. Purely visual — it recedes but stays fully clickable (a Sure is just a deduction; the
+   player remains free to change anything). Placed after --locked so it wins the opacity on a locked+found row. */
+.info-table__cell--dimmed {
+    opacity: 0.3;
+}
+
+/* Freed cells shouldn't invite interaction — kill the segment hover lift. They remain clickable regardless. */
+.info-table__cell--dimmed .info-table__seg:hover {
+    border-color: var(--cdp-color-info-ghost-border);
+    scale: 1 1;
+}
+
+/* ---- Segments (Sûr ✓ / peut être ? / Pas lui ✗) ---- */
 .info-table__seg {
     flex-grow: 1;
     flex-basis: 0;

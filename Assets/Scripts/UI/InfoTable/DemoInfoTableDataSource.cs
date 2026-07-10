@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Characters;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -103,9 +104,18 @@ namespace UI.InfoTable
             var list = new List<InfoTableRole>();
             foreach (string r in _roles)
             {
-                list.Add(new InfoTableRole(r, 1));
+                list.Add(new InfoTableRole(r, 1, GuessFaction(r)));
             }
             return list;
+        }
+
+        // Harness-only: the demo roles are bare strings with no real Role/faction, so fake a faction by name so the
+        // board can show the 3 "found" colours (anomaly=scarlet / marginal=orange / chosen=green). Not game logic.
+        private static FactionType GuessFaction(string roleName)
+        {
+            if (roleName.IndexOf("Mage Occulte", StringComparison.OrdinalIgnoreCase) >= 0) return FactionType.anomaly;
+            if (roleName.IndexOf("Robot", StringComparison.OrdinalIgnoreCase) >= 0) return FactionType.marginal;
+            return FactionType.chosen;
         }
 
         public string GetRevealedRoleName(ulong clientId)

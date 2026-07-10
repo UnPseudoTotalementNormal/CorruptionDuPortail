@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Characters;
 
 namespace UI.InfoTable
 {
@@ -18,18 +19,27 @@ namespace UI.InfoTable
 
     /// <summary>
     /// One role column. Identity is <see cref="RoleName"/>; <see cref="Capacity"/> is how many characters
-    /// (fakes included) hold that role — the over-capacity conflict threshold.
+    /// (fakes included) hold that role — the over-capacity conflict threshold. <see cref="Faction"/> drives the
+    /// "found" colour (the confirmed ✓ + pseudo take the role's faction colour, resolved from the FactionDatabase
+    /// — so an Élu reads green, a Mage Occulte scarlet, a Robot orange, generically by faction, never by RoleID).
     /// </summary>
     public readonly struct InfoTableRole
     {
         public readonly string RoleName;
         public readonly int Capacity;
+        public readonly FactionType Faction;
 
-        public InfoTableRole(string roleName, int capacity)
+        public InfoTableRole(string roleName, int capacity, FactionType faction)
         {
             RoleName = roleName;
             Capacity = capacity;
+            Faction = faction;
         }
+
+        /// <summary>Faction-less overload — defaults to <see cref="FactionType.unknown"/> (neutral colour). Kept for
+        /// the harness/tests where a role's faction is irrelevant.</summary>
+        public InfoTableRole(string roleName, int capacity)
+            : this(roleName, capacity, FactionType.unknown) { }
     }
 
     /// <summary>

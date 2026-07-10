@@ -7,8 +7,10 @@ using AudioSystem;
 using ChatSystem;
 using RoleTarget;
 using Characters.Powers.PowerComponents;
+using Characters.Powers.Runtime;
 using Characters.Powers.Target;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Powers;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
@@ -134,6 +136,30 @@ namespace Characters.Powers
         {
             return powerName == _isTheSamePower.powerName;
         }
+
+        // Powers-POCO v2 in-place wiring (Phase 3): run this power's pure decision and dispatch its
+        // effect intentions through the shared executor registry. Server-only — the decision is pure
+        // (returns intentions), the executors carry the NGO side effects. The uses decrement stays in
+        // each power's own use flow (this helper only realises effects); pass a state resolver for the
+        // ~4 stateful powers that write their own replicated carrier.
+        protected void RunDecisionEffects(IPowerDecision decision, in PowerContext context,
+            IPowerStateResolver state = null)
+        {
+            if (!IsServer) return;
+            PowerOutcome outcome = decision.Decide(context);
+            if (!outcome.Accepted) return;
+            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+        }
+
+        // Live read-only roster view for roster-reading decisions (faction / same-role / robot / healed /
+        // pseudo). Built fresh per call over the already-resolved CharacterManager + lobby holder — cheap,
+        // no state. The EditMode counterpart is FakeRoster.
+        protected IRosterView Roster => new CharacterManagerRoster(characterManager, lobbyPlayerInfoHolder);
+
+        // Live state resolver over this power itself: a state-carrier power implements its narrow ports
+        // (IHackTargetState, ICorruptionEvents, …) and passes SelfState so the executors reach its own NVs.
+        // Stateless powers never touch this. The EditMode counterpart is FakeState.
+        protected IPowerStateResolver SelfState => new PowerStateAdapter(this);
         
         public List<ulong> GetValidTargets(TargetType _targetType = TargetType.Character)
         {

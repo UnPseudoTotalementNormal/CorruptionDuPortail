@@ -167,6 +167,33 @@ namespace Tests.PlayMode
             Assert.IsTrue(owner.isCorrupted.Value, "PAutoCorruption should corrupt its owner");
         }
 
+        // Powers-POCO v2 wiring golden: PCorruptionParanoia now delegates OnGameStartedServer to
+        // CorruptionParanoiaDecision → RevealInfo → RevealInfoExecutor.SendRevealLevelRpc. This proves the
+        // in-place decision→dispatch path lights up the same personal-corruption reveal as the old inline call.
+        [UnityTest]
+        public IEnumerator PCorruptionParanoia_RevealsOwnCorruptionAtStart()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+
+            Assert.AreEqual(RevealLevel.False,
+                _revealer.GetCharacterInfo(owner.ownerClientId.Value).isCorruptRevealed);
+
+            GameObject powerGo = new GameObject("CorruptionParanoia");
+            var power = powerGo.AddComponent<PCorruptionParanoia>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            power.OnGameStartedServer();
+            yield return null;
+
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(owner.ownerClientId.Value).isCorruptRevealed,
+                "PCorruptionParanoia should reveal the owner's own corruption (Personal) at game start.");
+        }
+
         [UnityTest]
         public IEnumerator PCorruptingMark_CorruptsTarget()
         {

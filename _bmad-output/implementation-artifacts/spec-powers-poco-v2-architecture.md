@@ -87,7 +87,27 @@ _(historical migration order, all now done):_
   - PersonalBeacons — spawns beacon objects (power-local) + the robot forceCorrupt reveal (already a known bug-fix from v1).
   - Chaining — a `ChainDecorator` POCO wrapping any decision + a `ChainStateCarrier`; folds in the old PCChainer/PCConcentrated/PCReparent components.
 
-**Phase 3 (NGO wiring) — NOT STARTED. Needs Poyo + playtest.** Put `PowerHolder` on the power prefabs, assign each `[SerializeReference]` decision + config, add per-power state carriers, wire the effect-executor registry at boot (catalog/auto-registration), and reroute spawn/attribution. This is network-critical and prefab-authoring heavy — must be paired with a real 2-build playtest (owner's job; Claude does not playtest).
+**Phase 3 (NGO wiring) — IN PROGRESS via in-place delegation (safer than the prefab-holder rewire).** Rather than re-authoring 22 prefabs onto a generic `PowerHolder`, each existing `Power : NetworkBehaviour` keeps its identity/prefab/spawn and just **delegates its server-effect body** to its pure decision + the executor registry. No prefab/spawn/attribution churn, network-safe, verifiable by the existing PlayMode goldens.
+
+Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtures 10/10):
+- `PowerDispatcherHost` — boot registry, reflection-discovers every `IEffectExecutor` in the Game assembly.
+- `Power.RunDecisionEffects(decision, ctx, state?)` — server-only helper: `Decide` → dispatch. Uses decrement stays in each power's own use flow.
+- `Power.Roster` → `CharacterManagerRoster` (live `IRosterView` over CharacterManager; lossless int-slot round-trip incl. fake ids = ulong.MaxValue−n).
+- `Power.SelfState` → `PowerStateAdapter` (live `IPowerStateResolver` over the power itself; a state-carrier power implements its narrow ports).
+
+**5 powers wired + golden-verified**, covering all 5 integration shapes:
+- `PCorruptionParanoia` — passive, no roster/state (new golden `CorruptionTests.PCorruptionParanoia_RevealsOwnCorruptionAtStart`).
+- `PCorruptionInsight` — passive + live roster (`VisionPowerTests.PCorruptionInsight_RevealsCorruptionAtStart`).
+- `PTruthChains` — active + roster, both branches (`EntrapmentPowerTests.PTruthChains_*`).
+- `POmniscience` — active + power-local state via `IHackTargetState` (`VisionPowerTests.POmniscience_RevealsRoleOnUsage`).
+- `PLegacy` — give-power via new `ILegacyGrant` port + `GrantLegacyPowerExecutor` (`EntrapmentPowerTests.PLegacy_InheritsPowerWhenTargetIsChained`).
+
+**Remaining 17 powers — HELD for Poyo + a real 2-build playtest.** Blockers that make blind wiring unsafe:
+1. **No golden** drives their server-effect path (most active powers only reachable through the client selection flow) — can't verify behaviour-preservation without a playtest.
+2. **Client-side pre-effects** interleaved with the server RPC that the decision doesn't model — e.g. `PHighPriorityBounty` fires `NewTargeting(owner→target)` on the client in `OnCharacterPicked` AND `NewTargeting(owner→owner)` server-side; a naive decision-swap would drop/duplicate one.
+3. **Missing executors** still to build for their effects: `GrantRolePowers` (Reincarnation), `SetPassiveBroadcast` (Reincarnation), `DiscoveredAdd` (CardsShuffling), `RegisterInkTarget` (BoundByInk) + their state carriers (BoundByInk/CardsShuffling/CorruptingMark/PersonalBeacons/Clandestine/VisionOfImpossible/EmbraceOfShadows).
+
+The in-place delegation pattern + all shared infra are proven; the remaining rollout is mechanical per power but each needs its own golden (or a playtest) before flipping, which is the owner-gated part.
 
 **Phase 4 — delete the old inline `Power`/`PowerResolver`/`PowerComponent` path + absence proof + full green gate.**
 

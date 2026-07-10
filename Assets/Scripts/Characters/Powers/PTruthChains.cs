@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.Assertions;
 using Characters.Powers.Target;
-using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using GameLogic;
-using Network;
 using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
@@ -12,6 +12,10 @@ namespace Characters.Powers
 {
     public class PTruthChains : Power
     {
+        // Powers-POCO v2: server logic lives in TruthChainsDecision (pure, EditMode-tested, both branches).
+        // The selection flow + RPC plumbing stay here; the RPC body just triggers the decision + dispatch.
+        private readonly TruthChainsDecision _decision = new();
+
         // Lane C (NGO-spawned): resolve the dependency ONCE in OnNetworkSpawn from the one
         // allowed static, store it in a field, and never look it up again
         // (refactor-architecture-despaghetti.md §3 lane C).
@@ -40,21 +44,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _targetClientId);
-            var _targetCharacter = _characterManager.GetCharacter(_targetClientId, false);
-            if (_targetCharacter == null)
-            {
-                return;
-            }
-
-            if (_targetCharacter.role.factionType == FactionType.anomaly)
-            {
-                chainingManager.AddCharacterToChainingList(_targetClientId);
-                chatManager.SendChatMessageServerRpc(
-                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"{lobbyPlayerInfoHolder.GetPlayerInfo(_targetClientId).playerName} sera lié par les chaînes de la vérité.",
-                        (int)ChatWindowIDs.Server));
-            }
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId, roster: Roster));
         }
 
 

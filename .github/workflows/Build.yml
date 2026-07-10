@@ -139,15 +139,38 @@ jobs:
           printf '%s' "$COMMITS" > "$RUNNER_TEMP/commits.txt"
           echo "status=ok" >> $GITHUB_OUTPUT
 
-      # Uses the Claude Code CLI headless (subscription OAuth token, no paid API).
+      # Primary generator: OpenAI Codex CLI headless (ChatGPT subscription auth,
+      # no paid API). Auth = the local `~/.codex/auth.json` (from `codex login`)
+      # stored as the CODEX_AUTH_JSON secret and restored on the runner.
+      # `codex exec --full-auto` runs non-interactively with workspace-write, and
+      # `--cd $RUNNER_TEMP` lets it read commits.txt and write changelog.txt there.
+      - name: Générer changelog (Codex, CLI headless)
+        if: success() && steps.commits.outputs.status == 'ok'
+        continue-on-error: true
+        env:
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+        run: |
+          npm install -g @openai/codex >/dev/null 2>&1
+          codex --version || echo "codex CLI install failed"
+          mkdir -p "$HOME/.codex"
+          printf '%s' "$CODEX_AUTH_JSON" > "$HOME/.codex/auth.json"
+          codex exec --full-auto --skip-git-repo-check --cd "$RUNNER_TEMP" \
+            "Lis le fichier commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier changelog.txt." 2>&1 | tail -20 || true
+
+      # 1st fallback: Claude Code CLI headless (subscription OAuth token, no paid API).
       # The claude-code-action GitHub Action cannot run on a `push` event
       # ("Unsupported event type: push"), so we drive the CLI directly instead.
-      - name: Générer changelog (Claude Opus, CLI headless)
+      # Skipped when Codex already produced a changelog.
+      - name: Générer changelog (Claude Opus, fallback CLI headless)
         if: success() && steps.commits.outputs.status == 'ok'
         continue-on-error: true
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
+          if [ -n "$(cat "$RUNNER_TEMP/changelog.txt" 2>/dev/null | tr -d '[:space:]')" ]; then
+            echo "Changelog déjà généré par Codex — skip Claude."
+            exit 0
+          fi
           npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
           claude --version || echo "claude CLI install failed"
           claude -p "Lis le fichier $RUNNER_TEMP/commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier $RUNNER_TEMP/changelog.txt." \
@@ -172,7 +195,7 @@ jobs:
           fi
           TEXT=$(cat "$RUNNER_TEMP/changelog.txt" 2>/dev/null || echo "")
           if [ -z "$(printf '%s' "$TEXT" | tr -d '[:space:]')" ]; then
-            echo "Claude indisponible — fallback Gemini."
+            echo "Codex + Claude indisponibles — fallback Gemini."
             COMMITS=$(cat "$RUNNER_TEMP/commits.txt" 2>/dev/null || echo "")
             jq -n --arg commits "$COMMITS" \
               '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}' \

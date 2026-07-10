@@ -19,5 +19,6 @@ namespace CorruptionDuPortail.Domain.Powers
         HighPriorityBounty = 9,
         CursedVision = 10,
         Omniscience = 11,
+        InfiniteMessage = 12,
     }
 }

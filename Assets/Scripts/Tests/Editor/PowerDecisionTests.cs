@@ -288,5 +288,12 @@ namespace Tests.Editor
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
         }
+
+        [Test]
+        public void InfiniteMessage_SetsOwnerMessageLeftToMax()
+        {
+            var outcome = new InfiniteMessageDecision().Decide(new PowerContext(ownerSlot: 2));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new SetMessageLeft(2, int.MaxValue) }, outcome.Effects);
+        }
     }
 }

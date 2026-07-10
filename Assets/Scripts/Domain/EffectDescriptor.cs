@@ -348,4 +348,13 @@ namespace CorruptionDuPortail.Domain
             get { yield return Message; yield return WindowId; }
         }
     }
+
+    /// <summary>Server write of a character's messageLeft NetworkVariable (PInfiniteMessage).</summary>
+    public sealed class SetMessageLeft : EffectDescriptor
+    {
+        public int Slot { get; }
+        public int Value { get; }
+        public SetMessageLeft(int slot, int value) { Slot = slot; Value = value; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; yield return Value; } }
+    }
 }

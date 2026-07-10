@@ -115,6 +115,11 @@ namespace Tests.PlayMode
             lobbyGo.AddComponent<LobbyPlayerInfoHolder>();
             lobbyGo.AddComponent<NetworkObject>().Spawn();
 
+            // 9. Setup Chaining (powers-POCO v2 wiring goldens that chain, e.g. ChainedByShadows)
+            GameObject chainingGo = new GameObject("ChainingManager");
+            chainingGo.AddComponent<ChainingManager>();
+            chainingGo.AddComponent<NetworkObject>().Spawn();
+
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _revealer);
         }
 
@@ -131,6 +136,7 @@ namespace Tests.PlayMode
             ReflectionHelper.SetPrivateField(typeof(GameAudioManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(ChatManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(LobbyPlayerInfoHolder), "instance", null);
+            ReflectionHelper.SetPrivateField(typeof(ChainingManager), "instance", null);
 
             Object.Destroy(_gameManagerGo);
             Object.Destroy(_characterManagerGo);
@@ -140,6 +146,7 @@ namespace Tests.PlayMode
             Object.Destroy(GameObject.Find("BoardManager"));
             Object.Destroy(GameObject.Find("ChatManager"));
             Object.Destroy(GameObject.Find("LobbyPlayerInfoHolder"));
+            Object.Destroy(GameObject.Find("ChainingManager"));
             Object.Destroy(_networkManagerGo);
             Object.Destroy(_dummyCharPrefab);
             Object.Destroy(GameObject.Find("AudioManager"));
@@ -212,6 +219,36 @@ namespace Tests.PlayMode
             yield return null;
 
             Assert.IsTrue(target.isCorrupted.Value, "PCorruptingMark should corrupt the target");
+        }
+
+        // Powers-POCO v2 wiring golden: PChainedByTheShadows delegates its char+role RPC to
+        // ChainedByShadowsDecision → NewTargeting + (role matches) reveal + (chosen) AddToChain. The picked
+        // role's owner is the secondary slot the roster compares against (here the target itself).
+        [UnityTest]
+        public IEnumerator PChainedByShadows_RevealsAndChainsMatchingChosenTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(4242);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { factionType = FactionType.chosen, roleName = "Chosen-Test" };
+            var compareRole = new Role { roleName = "Chosen-Test", ownerClientId = target.ownerClientId.Value };
+
+            GameObject powerGo = new GameObject("ChainedByShadows");
+            var power = powerGo.AddComponent<PChainedByTheShadows>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "TryCorruptCharacterServerRpc",
+                target.ownerClientId.Value, compareRole);
+            yield return null;
+
+            Assert.IsTrue(ChainingManager.instance.chainingPlayers.Contains(target.ownerClientId.Value),
+                "ChainedByShadows should chain a matching-role chosen target.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "ChainedByShadows should reveal the matching target's role to the owner.");
         }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()

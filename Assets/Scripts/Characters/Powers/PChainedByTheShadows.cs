@@ -3,7 +3,8 @@
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
-using GameLogic;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
@@ -15,6 +16,11 @@ namespace Characters.Powers
     [Serializable]
     public class PChainedByTheShadows : Power
     {
+        // Powers-POCO v2: server logic in ChainedByShadowsDecision (pure). The char+role selection flow
+        // stays here; the RPC body triggers the decision. The picked role's owner is the secondary slot the
+        // decision compares roles against. Behaviour-identical to the old inline reveal+chain.
+        private readonly ChainedByShadowsDecision _decision = new();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -35,17 +41,11 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
         {
-            Character _corruptingCharacter = characterManager.GetCharacter(_corruptingCharacterId, false);
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _corruptingCharacterId);
-            if (_corruptingCharacter.role.IsTheSameRole(_compareRole))
-            {
-                gameInfoRevealer.SendRevealLevelRpc(
-                    _corruptingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
-                if (_corruptingCharacter.role.factionType == FactionType.chosen)
-                {
-                    chainingManager.AddCharacterToChainingList(_corruptingCharacterId);
-                }
-            }
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value,
+                targetSlot: (int)_corruptingCharacterId,
+                secondaryTargetSlot: (int)_compareRole.ownerClientId,
+                roster: Roster));
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

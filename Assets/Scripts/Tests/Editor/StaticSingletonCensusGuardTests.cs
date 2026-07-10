@@ -29,10 +29,10 @@ namespace Tests.Editor
         private static readonly Dictionary<string, string> RecordedSurvivors = new()
         {
             // The two God-Object façades — kept as recorded exceptions (12.3 strategy B). Read ONLY by
-            // context-less static machinery (W* winning-condition POCOs, TargetUtils, PowerEffectDispatcher)
-            // + ChatManager's own NFR5 GetSafeRpcTarget + the network test fixtures. No injection seam;
-            // CompositionRoot.For(nm) is the sanctioned indirection the rest of the codebase uses (§4a / §10).
-            { "GameManager", "God-Object façade — context-less callers (W*/TargetUtils/PowerEffectDispatcher) + fixtures (§4a/§10)." },
+            // context-less static machinery (W* winning-condition POCOs, TargetUtils) + ChatManager's own
+            // NFR5 GetSafeRpcTarget + the network test fixtures. No injection seam; CompositionRoot.For(nm)
+            // is the sanctioned indirection the rest of the codebase uses (§4a / §10).
+            { "GameManager", "God-Object façade — context-less callers (W*/TargetUtils) + fixtures (§4a/§10)." },
             { "CharacterManager", "God-Object façade — context-less callers + ChatManager NFR5 GetSafeRpcTarget (§4a/§10)." },
             // Replicated singletons NOT de-singletonised by design — served through CompositionRoot.For(nm)
             // (the root forwards to .instance); §4b–§4f.
@@ -58,10 +58,6 @@ namespace Tests.Editor
             { "CardEffectManager", "board FX singleton; §4f." },
             { "BoardCameraManager", "board camera singleton; §4f." },
             { "PowerManager", "power UI/control singleton; §4f." },
-            // Null Object pattern — NOT a locator/God Object: a stateless, immutable (static readonly) no-op
-            // IPowerEffectObserver nested in PowerEffectTrace (the Epic 4 observation seam). Carries no mutable
-            // state, never resolved as a service; it is the canonical default for the swappable trace observer.
-            { "NullObserver", "Null Object pattern — stateless immutable no-op observer (PowerEffectTrace, Epic 4 seam)." },
         };
 
         [Test]

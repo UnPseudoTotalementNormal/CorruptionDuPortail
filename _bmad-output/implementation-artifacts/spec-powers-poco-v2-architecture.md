@@ -118,9 +118,15 @@ Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtur
 
 The in-place delegation pattern + all shared infra are proven; these 5 are owner-gated on a real 2-build playtest (Claude does not playtest — [[feedback_no_playtest_by_claude]]).
 
-**STALE — to delete in Phase 4:** `PowerGoldenTraceTests.cs` pins the rejected v1 `PowerResolver` + `PowerEffectDispatcher` trace seam (the new registry `EffectDispatcher` does NOT feed `PowerEffectTrace`). It was already 3/4 red on the branch (Omniscience/CorruptingMark/BoundByInk record 0 elements); wiring PCursedVision makes it 4/4 red. Its coverage is superseded by the EditMode decision tests + `EntrapmentPowerTests` behaviour goldens. Delete it alongside `PowerResolver`/`PowerEffectDispatcher`/`PowerEffectTrace` in Phase 4.
+**Phase 4 — DONE.** The rejected v1 inline/trace path is deleted, absence-proven, full green gate:
+- Deleted `PowerResolver.cs` (the god-class v2 rejected), `PowerEffectDispatcher.cs` (the v1 static switch), `PowerEffectTrace.cs` (the observation seam), plus the dead tests `PowerGoldenTraceTests.cs` (pinned the seam the registry `EffectDispatcher` never fed) + `PowerResolverTests.cs`.
+- Stripped the 7 observation-only `PowerEffectTrace.Record(...)` calls from `Power.cs` (each sat beside its real verbatim call — pure no-op removal, no behaviour change).
+- Fixed the guard tests that referenced the deleted types: `LeafPocoNoFacadeGuardTests` (dropped `typeof(PowerResolver)`), `StaticSingletonCensusGuardTests` (dropped the now-gone `NullObserver` whitelist entry — its staleness guard would otherwise fail), `DiSeamNoLocatorGuardTests` (comment-only). Cleaned stale `PowerEffectDispatcher` mentions in ChatManager/GameManager/RoleTargetSystem/CharacterManager rationale comments.
+- **Absence proof:** grep `PowerResolver|PowerEffectDispatcher|PowerEffectTrace|IPowerEffectObserver` over `Assets/Scripts` → 0 matches.
+- **Gate:** compile-clean, EditMode **353/353** (was 362 — the 9 `PowerResolverTests` went with the class), EntrapmentPowerTests **8/8**.
+- NOTE: the v1 observation-only `EffectDescriptor` bricks (`PlayLoopingSound`/`NotifyOwnerUsed`/`PlayOneShotSound`/`UnfocusAll`/`StopLoopingSound`/`DecrementUses`) are now producer-less dead data in `EffectDescriptor.cs` (still covered by `EffectDescriptorTests` value-equality). Left in place — harmless Domain vocabulary; prune in a follow-up if desired.
 
-**Phase 4 — delete the old inline `Power`/`PowerResolver`/`PowerComponent` path + absence proof + full green gate.**
+The whole Powers→POCO v2 chantier is code-complete: 22/22 powers are pure `IPowerDecision` POCOs, wired in-place, old path gone. The only gate left before merge is the **2-build playtest of the final 5** (boundary-shifted powers).
 
 ## Guardrails
 - Keep every step compiling + tests green (poll `read_console` after each change; `run_tests` between phases).

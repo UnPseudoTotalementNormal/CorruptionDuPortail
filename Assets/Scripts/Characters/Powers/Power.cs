@@ -214,7 +214,6 @@ namespace Characters.Powers
         public virtual void StartUse()
         {
             isCurrentlyUsed = true;
-            PowerEffectTrace.Record(new PlayLoopingSound(canalisationSound.GetPath(), CANALISATION_SOUND_KEY));
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
             onStartUse?.Invoke();
         }
@@ -253,17 +252,14 @@ namespace Characters.Powers
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
-                PowerEffectTrace.Record(new NotifyOwnerUsed((int)ownerClientId.Value));
                 OnUsedClientRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
         }
         
         protected virtual void OnUsedServer()
         {
-            PowerEffectTrace.Record(DecrementUses.Instance);
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
-            PowerEffectTrace.Record(RequestCharacterRefresh.Instance);
             characterManager.AskForUpdateAllCharactersRpc();
         }
 
@@ -282,18 +278,15 @@ namespace Characters.Powers
             {
                 if (!string.IsNullOrEmpty(onUsedSound.GetPath()))
                 {
-                    PowerEffectTrace.Record(new PlayOneShotSound(onUsedSound.GetPath()));
                     RuntimeManager.PlayOneShot(onUsedSound);
                 }
                 if (focusManager != null)
                 {
-                    PowerEffectTrace.Record(UnfocusAll.Instance);
                     focusManager.UnfocusAll();
                 }
             }
             if (GameAudioManager.instance != null)
             {
-                PowerEffectTrace.Record(new StopLoopingSound(CANALISATION_SOUND_KEY));
                 GameAudioManager.instance.StopEventInstance(CANALISATION_SOUND_KEY);
             }
             isCurrentlyUsed = false;

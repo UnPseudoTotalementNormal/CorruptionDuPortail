@@ -89,25 +89,31 @@ _(historical migration order, all now done):_
 
 **Phase 3 (NGO wiring) — IN PROGRESS via in-place delegation (safer than the prefab-holder rewire).** Rather than re-authoring 22 prefabs onto a generic `PowerHolder`, each existing `Power : NetworkBehaviour` keeps its identity/prefab/spawn and just **delegates its server-effect body** to its pure decision + the executor registry. No prefab/spawn/attribution churn, network-safe, verifiable by the existing PlayMode goldens.
 
-Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtures 10/10):
+Infra built + proven (all compile-clean, EditMode 362/362, PlayMode power fixtures 20/20):
 - `PowerDispatcherHost` — boot registry, reflection-discovers every `IEffectExecutor` in the Game assembly.
 - `Power.RunDecisionEffects(decision, ctx, state?)` — server-only helper: `Decide` → dispatch. Uses decrement stays in each power's own use flow.
 - `Power.Roster` → `CharacterManagerRoster` (live `IRosterView` over CharacterManager; lossless int-slot round-trip incl. fake ids = ulong.MaxValue−n).
 - `Power.SelfState` → `PowerStateAdapter` (live `IPowerStateResolver` over the power itself; a state-carrier power implements its narrow ports).
+- Built the 5 previously-missing executors + ports: `GrantLegacyPower`/`ILegacyGrant`, `SetPassiveBroadcast`/`ISetPassiveState`, `GrantRolePowers`/`IGrantRolePowers`, `RegisterInkTarget`/`IInkTargetRegister`, `DiscoveredAdd`/`IDiscoveredAdd`. Added `ReflectionHelper.GetPrivateField` for goldens.
+- **KEY FIX**: `RunDecisionEffects` originally passed the state resolver only to the `EffectRuntime` (state-WRITE effects). Decisions that READ `ctx.State<TPort>()` (Clandestine/BoundByInk/CardsShuffling) also need it in the `PowerContext` — the caller now threads `SelfState` into BOTH the context ctor (`state:`) and the runtime.
 
-**5 powers wired + golden-verified**, covering all 5 integration shapes:
-- `PCorruptionParanoia` — passive, no roster/state (new golden `CorruptionTests.PCorruptionParanoia_RevealsOwnCorruptionAtStart`).
-- `PCorruptionInsight` — passive + live roster (`VisionPowerTests.PCorruptionInsight_RevealsCorruptionAtStart`).
-- `PTruthChains` — active + roster, both branches (`EntrapmentPowerTests.PTruthChains_*`).
-- `POmniscience` — active + power-local state via `IHackTargetState` (`VisionPowerTests.POmniscience_RevealsRoleOnUsage`).
-- `PLegacy` — give-power via new `ILegacyGrant` port + `GrantLegacyPowerExecutor` (`EntrapmentPowerTests.PLegacy_InheritsPowerWhenTargetIsChained`).
+**17 / 22 powers wired + golden-verified** (10 new goldens this session), covering every integration shape:
+- Passive, no roster/state: `PCorruptionParanoia`, `PAutoCorruption`.
+- Passive + live roster: `PCorruptionInsight`, `PCorruptionKnowledge`, `PEyeOfTheVoid` (config-in-code chat id).
+- Passive, reparent trigger: `PInfiniteMessage`.
+- Active + roster (server RPC): `PTruthChains` (both branches), `PHighPriorityBounty` (robot branch; client-side NewTargeting stays put).
+- Active char+role (server RPC): `PBlessing`, `PChainedByTheShadows`.
+- Active + power-local WRITE state: `POmniscience` (IHackTargetState), `PCorruptingMark` (ILastCorrupted + ICorruptionEvents).
+- Active + power-local READ+WRITE state: `PBoundByInk` (IInkChatState read + IInkTargetRegister write), `PCardsShuffling` (ICardsShufflingGuess read + IDiscoveredAdd write), `PClandestineObservation` (IClandestineReport read).
+- Give-power: `PLegacy` (ILegacyGrant), `PReincarnation` (ISetPassiveState + IGrantRolePowers).
 
-**Remaining 17 powers — HELD for Poyo + a real 2-build playtest.** Blockers that make blind wiring unsafe:
-1. **No golden** drives their server-effect path (most active powers only reachable through the client selection flow) — can't verify behaviour-preservation without a playtest.
-2. **Client-side pre-effects** interleaved with the server RPC that the decision doesn't model — e.g. `PHighPriorityBounty` fires `NewTargeting(owner→target)` on the client in `OnCharacterPicked` AND `NewTargeting(owner→owner)` server-side; a naive decision-swap would drop/duplicate one.
-3. **Missing executors** still to build for their effects: `GrantRolePowers` (Reincarnation), `SetPassiveBroadcast` (Reincarnation), `DiscoveredAdd` (CardsShuffling), `RegisterInkTarget` (BoundByInk) + their state carriers (BoundByInk/CardsShuffling/CorruptingMark/PersonalBeacons/Clandestine/VisionOfImpossible/EmbraceOfShadows).
+**Remaining 5 powers — HELD for Poyo + a real 2-build playtest.** These genuinely cannot be verified solo:
+- `PCursedVision`, `PEmbraceOfShadows` — v1-pilot shape: their effect logic runs in a **client-side selection callback** (no ServerRpc; mixed ServerRpc + server-only calls). Any clean wiring (IsServer-guarded delegate, or adding a ServerRpc) shifts the server/client boundary — a behaviour change only a playtest can validate.
+- `PLackOfAffection` — runs on the **contacted target's client** (`isTrueLocalTarget`); needs a second real client to exercise.
+- `PVisionOfTheImpossible` — multi-guess over a **target LIST** (client-callback dispatch) + `IVisionGuesses`.
+- `PPersonalBeacons` — **spawns beacon GameObjects** (engine instantiation) + the robot forceCorrupt reveal.
 
-The in-place delegation pattern + all shared infra are proven; the remaining rollout is mechanical per power but each needs its own golden (or a playtest) before flipping, which is the owner-gated part.
+The in-place delegation pattern + all shared infra are proven; these 5 are owner-gated on a real 2-build playtest (Claude does not playtest — [[feedback_no_playtest_by_claude]]).
 
 **Phase 4 — delete the old inline `Power`/`PowerResolver`/`PowerComponent` path + absence proof + full green gate.**
 

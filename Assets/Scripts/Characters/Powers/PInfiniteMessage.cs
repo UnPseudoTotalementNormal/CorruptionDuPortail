@@ -1,10 +1,15 @@
-using System;
-using Unity.Netcode;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 
 namespace Characters.Powers
 {
     public class PInfiniteMessage : Power
     {
+        // Powers-POCO v2: InfiniteMessageDecision (pure) — set the owner's messageLeft to int.MaxValue when
+        // the power is reparented. The reparent trigger (an engine event) stays here; RunDecisionEffects is
+        // server-guarded. Behaviour-identical to the old inline write.
+        private readonly InfiniteMessageDecision _decision = new();
+
         private void Awake()
         {
             onPowerReparented += OnPowerReparented;
@@ -12,10 +17,7 @@ namespace Characters.Powers
 
         private void OnPowerReparented()
         {
-            if (NetworkManager.IsServer)
-            {
-                characterManager.GetCharacter(ownerClientId.Value).messageLeft.Value = Int32.MaxValue;
-            }
+            RunDecisionEffects(_decision, new PowerContext(ownerSlot: (int)ownerClientId.Value));
         }
     }
 }

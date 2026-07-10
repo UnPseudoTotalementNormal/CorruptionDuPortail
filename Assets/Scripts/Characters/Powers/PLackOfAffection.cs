@@ -3,11 +3,12 @@
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
-using ChatSystem;
+using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using Extensions;
 using FMODUnity;
 using GameLogic;
-using Network;
 using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
@@ -23,12 +24,21 @@ namespace Characters.Powers
         public EventReference onContactedAsMarginalSound;
         public EventReference onContactedAsAnomalySound;
 
+        // Powers-POCO v2 in-place wiring (Phase 3): the reveal + local-chat logic lives in
+        // LackOfAffectionDecision (pure, EditMode-tested). This power is special — its effect runs on the
+        // CONTACTED TARGET's client, so the decision is dispatched there via RunClientDecisionEffects (no
+        // server guard), keyed by PowerContext.IsTrueLocalTarget. The faction-keyed contact SOUND stays
+        // adapter-side and local. NewTargeting stays exactly where v1 had it (the picker's callback).
+        // PLAYTEST-REQUIRED before merge: needs a real second client to exercise the target-client path
+        // (held-5 — see spec-powers-poco-v2-architecture.md).
+        private readonly LackOfAffectionDecision _decision = new();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
-        
+
         private void OnCharacterPicked(Character _character)
         {
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
@@ -45,19 +55,20 @@ namespace Characters.Powers
         private void OnPlayerContactedRpc(ulong targetClientId, ulong senderClientId, RpcParams rpcParams = default)
         {
             if (!characterManager.IsLocalOrSimulated(targetClientId)) return;
-            
-            Character _targetCharacter = characterManager.GetCharacter(targetClientId, false);
-            Character _senderCharacter = characterManager.GetCharacter(senderClientId, false);
-            
-            if (_targetCharacter.role.factionType == FactionType.chosen)
+
+            bool _isTrueLocalTarget = characterManager.GetLocalClientId() == targetClientId;
+
+            // The decision resolves on THIS (the contacted target's) client: reveal the sender's role when
+            // the target is a "chosen", and post the local contact line only for the true-local target.
+            RunClientDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)senderClientId,
+                targetSlot: (int)targetClientId,
+                isTrueLocalTarget: _isTrueLocalTarget,
+                roster: Roster));
+
+            if (_isTrueLocalTarget)
             {
-                gameInfoRevealer.SetRevealLevel(
-                    senderClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, targetClientId);
-            }
-            
-            if (characterManager.GetLocalClientId() == targetClientId)
-            {
-                chatManager.AddMessageLocal($"{_senderCharacter.role.roleName} est venu(e) vous voir...", GameValues.CHAT_SERVER_CLIENT_ID, (int)ChatWindowIDs.Server);
+                Character _targetCharacter = characterManager.GetCharacter(targetClientId, false);
                 switch (_targetCharacter.role.factionType)
                 {
                     case FactionType.chosen:
@@ -72,7 +83,7 @@ namespace Characters.Powers
                 }
             }
         }
-        
+
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);

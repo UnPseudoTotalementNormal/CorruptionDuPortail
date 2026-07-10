@@ -1,17 +1,32 @@
 ﻿using UnityEngine;
 using Characters.Powers.Target;
-using FocusSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
-using RoleTarget;
-using UI.BoardUI;
 using UI.BoardUI.Selection;
-using Unity.Collections;
 using Unity.Netcode;
 
 namespace Characters.Powers
 {
-    public class PReincarnation : Power
+    public class PReincarnation : Power, ISetPassiveState, IGrantRolePowers
     {
+        // Powers-POCO v2: server logic in ReincarnationDecision (pure) — target, broadcast isPassive=true,
+        // grant the owner every power of the picked role. The isPassive broadcast (an Everyone-RPC) and the
+        // engine power grants are power-local, reached via SelfState. Behaviour-identical to the old inline.
+        private readonly ReincarnationDecision _decision = new();
+
+        void ISetPassiveState.SetPassive(bool _value) => ChangeIsPassiveRpc(_value);
+
+        void IGrantRolePowers.GrantRolePowers(int _ownerSlot, int _fromRoleSlot)
+        {
+            Character _fromRoleCharacter = characterManager.GetCharacter((ulong)_fromRoleSlot);
+            foreach (var _rolePower in _fromRoleCharacter.role.powers)
+            {
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower);
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -46,14 +61,8 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void ReincarnatePlayerRpc(ulong _characterClickedId)
         {
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
-            
-            ChangeIsPassiveRpc(true);
-            Character _characterClicked = characterManager.GetCharacter(_characterClickedId);
-            foreach (var _rolePower in _characterClicked.role.powers)
-            {
-                characterManager.GivePowerToCharacter(ownerClientId.Value, _rolePower);
-            }
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_characterClickedId), SelfState);
         }
 
         [Rpc(SendTo.Everyone)]

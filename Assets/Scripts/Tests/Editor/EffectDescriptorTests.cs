@@ -56,12 +56,9 @@ namespace Tests.Editor
         [Test]
         public void SingletonVariants_AreEqualAcrossInstances()
         {
-            Assert.AreEqual(UnfocusAll.Instance, new UnfocusAll());
-            Assert.AreEqual(DecrementUses.Instance, new DecrementUses());
             Assert.AreEqual(RequestCharacterRefresh.Instance, new RequestCharacterRefresh());
-            Assert.AreEqual(DestroyAllArrows.Instance, new DestroyAllArrows());
-            // Distinct singleton variants never collide.
-            Assert.AreNotEqual((EffectDescriptor)UnfocusAll.Instance, (EffectDescriptor)DecrementUses.Instance);
+            // A singleton variant never collides with a distinct descriptor type.
+            Assert.AreNotEqual((EffectDescriptor)RequestCharacterRefresh.Instance, (EffectDescriptor)new CorruptPlayer(1));
         }
 
         [Test]
@@ -98,7 +95,7 @@ namespace Tests.Editor
         [Test]
         public void ToString_IsStableAndReadable_ForGoldenTraces()
         {
-            Assert.AreEqual("UnfocusAll", UnfocusAll.Instance.ToString());
+            Assert.AreEqual("RequestCharacterRefresh", RequestCharacterRefresh.Instance.ToString());
             Assert.AreEqual("NewTargeting(0, 3)", new NewTargeting(0, 3).ToString());
             Assert.AreEqual("DiscoverChat(7, ink, Specific(2))", new DiscoverChat(7, "ink", PowerEffectAudience.Specific(2)).ToString());
             Assert.AreEqual("RevealInfo(2, RoleRevealed, Personal, 0, True)",
@@ -109,9 +106,9 @@ namespace Tests.Editor
         public void DescriptorList_OrderIsObservable_ViaSequenceEqual()
         {
             // The list IS the contract (NFR4): order matters and is value-comparable.
-            var a = new List<EffectDescriptor> { new NewTargeting(0, 1), new CorruptPlayer(1), UnfocusAll.Instance };
-            var b = new List<EffectDescriptor> { new NewTargeting(0, 1), new CorruptPlayer(1), UnfocusAll.Instance };
-            var reordered = new List<EffectDescriptor> { new CorruptPlayer(1), new NewTargeting(0, 1), UnfocusAll.Instance };
+            var a = new List<EffectDescriptor> { new NewTargeting(0, 1), new CorruptPlayer(1), RequestCharacterRefresh.Instance };
+            var b = new List<EffectDescriptor> { new NewTargeting(0, 1), new CorruptPlayer(1), RequestCharacterRefresh.Instance };
+            var reordered = new List<EffectDescriptor> { new CorruptPlayer(1), new NewTargeting(0, 1), RequestCharacterRefresh.Instance };
             CollectionAssert.AreEqual(a, b);
             CollectionAssert.AreNotEqual(a, reordered);
         }

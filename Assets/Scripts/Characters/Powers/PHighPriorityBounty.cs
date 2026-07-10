@@ -3,10 +3,10 @@
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
-using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using GameLogic;
 using Network;
-using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
 
@@ -18,6 +18,11 @@ namespace Characters.Powers
     public class PHighPriorityBounty : Power
     {
         public RoleID targetRoleID = RoleID.Robot;
+
+        // Powers-POCO v2: server logic in HighPriorityBountyDecision (pure): self-target, then if the target
+        // is the robot eliminate + broadcast + public-reveal, else chain the owner + warn privately. The
+        // client-side NewTargeting(owner->target) in OnCharacterPicked is unchanged. Behaviour-identical.
+        private readonly HighPriorityBountyDecision _decision = new();
 
         public override void OnNetworkSpawn()
         {
@@ -44,31 +49,8 @@ namespace Characters.Powers
         
         private void OnCardClickedRpc(ulong _targetClientId)
         {
-            roleTargetSystem.NewTargeting(ownerClientId.Value, ownerClientId.Value);
-            
-            var _characterTarget = characterManager.GetCharacter(_targetClientId);
-            var _characterOwner = characterManager.GetCharacter(ownerClientId.Value);
-            if (_characterTarget.role.roleID == RoleID.Robot)
-            {
-                _characterTarget.isEliminated.Value = true;
-                string _characterPseudo = lobbyPlayerInfoHolder.GetPlayerInfo(_targetClientId).playerName.ToString();
-                chatManager.ReceiveChatMessageRpc(
-                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"{_characterPseudo} était le robot et a été éliminé par {_characterOwner.role.roleName}.", 
-                        (int)ChatWindowIDs.Server));
-                gameInfoRevealer.SetRevealLevelRpc(_targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Public, true);
-                //TODO: do actual elimination logic & visual
-            }
-            else
-            {
-                chainingManager.AddCharacterToChainingList(_characterOwner.ownerClientId.Value);
-                chatManager.ReceiveChatMessageRpc(
-                    new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                        $"Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
-                        (int)ChatWindowIDs.Server), characterManager.GetSafeRpcTarget(ownerClientId.Value));
-            }
-            
-            characterManager.AskForUpdateAllCharactersRpc();
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId, roster: Roster));
         }
         
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

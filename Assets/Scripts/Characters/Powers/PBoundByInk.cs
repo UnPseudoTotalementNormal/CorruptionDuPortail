@@ -2,10 +2,11 @@ using System.Collections.Generic;
 using System;
 using Characters.Powers.Target;
 using ChatSystem;
-using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
 using GameLogic.GameStates;
-using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Collections;
 using Unity.Netcode;
@@ -13,8 +14,21 @@ using UnityEngine;
 
 namespace Characters.Powers
 {
-    public class PBoundByInk : Power
+    public class PBoundByInk : Power, IInkChatState, IInkTargetRegister
     {
+        // Powers-POCO v2: click logic in BoundByInkDecision (pure). The power's chat id (read) and its ink
+        // target lists (write) are power-local NGO state, exposed via IInkChatState / IInkTargetRegister and
+        // reached through SelfState. Behaviour-identical to the old resolver path.
+        private readonly BoundByInkDecision _decision = new();
+
+        int IInkChatState.ChatId => powerChatId.Value;
+
+        void IInkTargetRegister.RegisterInkTarget(int _slot)
+        {
+            currentTargets.Add((ulong)_slot);
+            alreadyTargetedClients.Add((ulong)_slot);
+        }
+
         private const int PRIMORDIAL_CHAT_ID_BEGIN = 515100;
         private static List<int> usedBoundByInkIds = new();
         
@@ -59,8 +73,6 @@ namespace Characters.Powers
             OnUsed();
         }
 
-        private readonly PowerResolver _resolver = new();
-
         [Rpc(SendTo.Server)]
         private void OnCardClickedRpc(ulong _characterId)
         {
@@ -69,26 +81,11 @@ namespace Characters.Powers
                 return;
             }
 
-            // Story 4.2: decision-only resolution in Domain; the adapter dispatches the bricks.
-            // RegisterInkTarget is power-LOCAL (NetworkList writes) → handled via ApplyLocalEffect.
-            var _effects = _resolver.ResolveBoundByInkClick((int)ownerClientId.Value, (int)_characterId, powerChatId.Value);
-            foreach (var _effect in _effects)
-            {
-                PowerEffectDispatcher.Dispatch(_effect, ApplyLocalEffect);
-            }
-        }
-
-        private void ApplyLocalEffect(EffectDescriptor _effect)
-        {
-            switch (_effect)
-            {
-                case RegisterInkTarget _reg:
-                    currentTargets.Add((ulong)_reg.TargetSlot);
-                    alreadyTargetedClients.Add((ulong)_reg.TargetSlot);
-                    break;
-                default:
-                    throw new NotSupportedException($"PBoundByInk: unexpected local brick {_effect}");
-            }
+            // State goes into the context (the decision READS ctx.State<IInkChatState>().ChatId) and the
+            // runtime (RegisterInkTarget WRITES the ink lists) — both resolve to this carrier via SelfState.
+            var _selfState = SelfState;
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_characterId, state: _selfState), _selfState);
         }
 
         public override void OnGameStartedServer()

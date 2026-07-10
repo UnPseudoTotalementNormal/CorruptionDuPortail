@@ -1,17 +1,12 @@
 ﻿#region
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Characters.Powers.Target;
-using ChatSystem;
-using GameLogic;
-using GameLogic.GameStates;
-using Network;
-using RoleTarget;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
-using UnityEngine.Assertions;
 
 #endregion
 
@@ -20,6 +15,11 @@ namespace Characters.Powers
     [Serializable]
     public class PBlessing : Power
     {
+        // Powers-POCO v2: server logic in BlessingDecision (pure). The char+role selection flow stays here;
+        // the picked role's owner is the secondary slot the decision compares roles against. Behaviour-
+        // identical to the old inline heal + reveal + bless + announce.
+        private readonly BlessingDecision _decision = new();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -42,25 +42,11 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
         {
-            Character _blessingCharacter = characterManager.GetCharacter(_blessingCharacterId, false);
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _blessingCharacterId);
-            
-            if (_blessingCharacter.role.IsTheSameRole(_compareRole))
-            {
-                if (!_blessingCharacter.isHealed.Value)
-                {
-                    _blessingCharacter.HealPlayerServerRpc();
-                }
-                gameInfoRevealer.SendRevealLevelRpc(
-                    _blessingCharacter.ownerClientId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
-                _blessingCharacter.isBlessed.Value = true;
-                
-                chatManager.ReceiveChatMessageRpc(new ChatMessage(
-                    GameValues.FAKE_CLIENT_ID,
-                    $"{lobbyPlayerInfoHolder.GetPlayerInfo(_blessingCharacterId).playerName} est maintenant béni.",
-                    (int)ChatWindowIDs.Server),
-                    characterManager.GetSafeRpcTarget(ownerClientId.Value));
-            }
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value,
+                targetSlot: (int)_blessingCharacterId,
+                secondaryTargetSlot: (int)_compareRole.ownerClientId,
+                roster: Roster));
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

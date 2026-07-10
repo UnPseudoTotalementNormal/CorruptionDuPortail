@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
 using RoleTarget;
 using Unity.Netcode;
@@ -10,10 +12,35 @@ using UnityEngine;
 namespace Characters.Powers
 {
     [Serializable]
-    public class PClandestineObservation : Power
+    public class PClandestineObservation : Power, IClandestineReport
     {
         public RoleID targetRoleID;
-        
+
+        // Powers-POCO v2: the announcement text is composed by ClandestineObservationDecision (pure) from
+        // this report port; the roleTargetSystem/characterManager reads that feed it stay power-local here.
+        private readonly ClandestineObservationDecision _decision = new();
+
+        private IEnumerable<Character> ObservedRoleCharacters =>
+            characterManager.GetCharacters(false).Where(_c => _c.role.roleID == targetRoleID);
+
+        bool IClandestineReport.HasCharacters => ObservedRoleCharacters.Any();
+
+        string IClandestineReport.RoleLabel =>
+            ObservedRoleCharacters.FirstOrDefault()?.role.roleName.ToString() ?? targetRoleID.ToString();
+
+        int IClandestineReport.DistinctTargetingCount
+        {
+            get
+            {
+                List<TargetingData> _targetingDataList = new();
+                foreach (var _observed in ObservedRoleCharacters)
+                {
+                    _targetingDataList.AddRange(roleTargetSystem.GetAllTargetingDataForTarget(_observed.ownerClientId.Value));
+                }
+                return _targetingDataList.Distinct().Count();
+            }
+        }
+
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);
@@ -47,25 +74,11 @@ namespace Characters.Powers
             {
                 return;
             }
-            List<Character> _targetedCharacters = characterManager.GetCharacters(false)
-                .Where(_c => _c.role.roleID == targetRoleID).ToList();
-            if (_targetedCharacters.Count == 0)
-            {
-                chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID, 
-                    $"Total de personne qui ont ciblé le rôle \"{targetRoleID.ToString()}\": 0.", 
-                    (int)ChatWindowIDs.Server),
-                    characterManager.GetSafeRpcTarget(ownerClientId.Value));
-                return;
-            }
-            List<TargetingData> _targetingDataList = new();
-            foreach (var _targetedCharacter in _targetedCharacters)
-            {
-                _targetingDataList.AddRange(roleTargetSystem.GetAllTargetingDataForTarget(_targetedCharacter.ownerClientId.Value));
-            }
-            chatManager.ReceiveChatMessageRpc(new ChatMessage(GameValues.CHAT_SERVER_CLIENT_ID,
-                $"Total de personne qui ont ciblé le rôle \"{_targetedCharacters[0].role.roleName}\": {_targetingDataList.Distinct().Count()}",
-                (int)ChatWindowIDs.Server),
-                characterManager.GetSafeRpcTarget(ownerClientId.Value));
+            // State goes into BOTH the context (this decision READS ctx.State<IClandestineReport>()) and the
+            // runtime (for any state-write executors) — the report is computed by this power's own port.
+            var _selfState = SelfState;
+            RunDecisionEffects(_decision,
+                new PowerContext(ownerSlot: (int)ownerClientId.Value, state: _selfState), _selfState);
         }
     }
 }

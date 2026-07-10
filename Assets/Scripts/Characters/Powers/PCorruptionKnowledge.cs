@@ -1,8 +1,8 @@
 #region
 
 using System;
-using GameLogic;
-using Unity.Netcode;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 
 #endregion
 
@@ -11,6 +11,10 @@ namespace Characters.Powers
     [Serializable]
     public class PCorruptionKnowledge : Power
     {
+        // Powers-POCO v2: CorruptionKnowledgeDecision (pure) — reveal every roster character's
+        // forceCorruptOnRoleRevealed flag to the owner at game start. Same shape as CorruptionInsight.
+        private readonly CorruptionKnowledgeDecision _decision = new();
+
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
             bool _baseValue = base.CanUse(_ignoreCurrentlyUsed);
@@ -43,12 +47,8 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-            foreach (var _character in characterManager.GetCharacters(false))
-            {
-                gameInfoRevealer.SendRevealLevelRpc(
-                    _character.ownerClientId.Value,
-                    nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
-            }
+            RunDecisionEffects(_decision,
+                new PowerContext(ownerSlot: (int)ownerClientId.Value, roster: Roster));
         }
         private void OnGameStartedClient()
         {

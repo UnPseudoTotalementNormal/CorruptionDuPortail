@@ -68,6 +68,27 @@ Test a power = build a `PowerContext` + `Fake` state by hand, call `Decide`, ass
 - **Phase 3 — NGO wiring + prefabs.** Generic holder on prefabs, `[SerializeReference]` decision, per-power carriers, catalog. Rewire spawn/attribution. This is the network-critical, playtest-gated phase.
 - **Phase 4 — delete the old path** (`Power` inline effects, `PowerResolver`, `PowerEffectDispatcher` switch, `PowerComponent`s). Static/grep absence proof. Full green gate + real 2-build playtest.
 
+## Progress log (branch `refactor/powers-poco-v2`)
+
+**Phase 0 (foundation) — DONE.** Decision core (`IPowerDecision`/`PowerContext`/`PowerOutcome`/`IRosterView`/`IPowerStateResolver`), runtime registry (`EffectDispatcher` by-type + `PowerHolder` humble), 15 executors, power-local state mechanism (`EffectRuntime.PowerState` + state ports). All three patterns proven: passive, active, power-local state.
+
+**Phase 1-2 (decision migration) — 12/22 done, all EditMode-green (23 tests, ~0.1s):**
+- Passive: CorruptionParanoia, CorruptionInsight, CorruptionKnowledge, EyeOfTheVoid, AutoCorruption, InfiniteMessage.
+- Active: ChainedByShadows, TruthChains, Blessing, HighPriorityBounty, CursedVision, Omniscience.
+- **Remaining ~10 powers** (each needs a small bespoke infra bit, then the pure decision + test):
+  - BoundByInk / CorruptingMark / CardsShuffling — state carriers (mechanism ready; add each state port + carrier + `FixedList` swap for the lists).
+  - EmbraceOfShadows — char+role branch + IFailablePower success/fail events (power-local event effects).
+  - LackOfAffection — runs on the contacted target's client; needs a client-context flag (`isTrueLocalTarget`).
+  - VisionOfImpossible — multi-guess (needs a target-LIST context + guess-match reduction).
+  - ClandestineObservation — needs a targeting-count query port.
+  - Legacy / Reincarnation — give-power (needs a `GrantPower` effect + a config-power port; engine Power refs).
+  - PersonalBeacons — spawns beacon objects (power-local) + the robot forceCorrupt reveal (already a known bug-fix from v1).
+  - Chaining — a `ChainDecorator` POCO wrapping any decision + a `ChainStateCarrier`; folds in the old PCChainer/PCConcentrated/PCReparent components.
+
+**Phase 3 (NGO wiring) — NOT STARTED. Needs Poyo + playtest.** Put `PowerHolder` on the power prefabs, assign each `[SerializeReference]` decision + config, add per-power state carriers, wire the effect-executor registry at boot (catalog/auto-registration), and reroute spawn/attribution. This is network-critical and prefab-authoring heavy — must be paired with a real 2-build playtest (owner's job; Claude does not playtest).
+
+**Phase 4 — delete the old inline `Power`/`PowerResolver`/`PowerComponent` path + absence proof + full green gate.**
+
 ## Guardrails
 - Keep every step compiling + tests green (poll `read_console` after each change; `run_tests` between phases).
 - `noEngineReferences` on Domain is the purity enforcement — never weaken it.

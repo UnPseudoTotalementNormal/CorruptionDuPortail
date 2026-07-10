@@ -14,5 +14,8 @@ namespace CorruptionDuPortail.Domain.Powers
         EyeOfTheVoid = 4,
         AutoCorruption = 5,
         ChainedByShadows = 6,
+        TruthChains = 7,
+        Blessing = 8,
+        HighPriorityBounty = 9,
     }
 }

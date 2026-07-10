@@ -40,9 +40,15 @@ namespace Tests.Editor
             public readonly System.Collections.Generic.Dictionary<int, Characters.FactionType> Factions = new();
             public readonly System.Collections.Generic.Dictionary<int, string> Pseudos = new();
             public readonly System.Collections.Generic.Dictionary<int, int> Roles = new();
+            public readonly System.Collections.Generic.HashSet<int> Robots = new();
+            public readonly System.Collections.Generic.HashSet<int> Healed = new();
+            public readonly System.Collections.Generic.Dictionary<int, string> RoleNames = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
             public bool SameRole(int a, int b) => Roles.TryGetValue(a, out var ra) && Roles.TryGetValue(b, out var rb) && ra == rb;
+            public bool IsRobot(int slot) => Robots.Contains(slot);
+            public bool IsHealed(int slot) => Healed.Contains(slot);
+            public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 
         [Test]
@@ -148,6 +154,96 @@ namespace Tests.Editor
             var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
 
             CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
+        }
+
+        [Test]
+        public void TruthChains_Anomaly_ChainsAndAnnounces()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Pseudos[1] = "Bob";
+            var outcome = new TruthChainsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new AddToChain(1),
+                new ChatSendServer("Bob sera lié par les chaînes de la vérité.", -1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void TruthChains_NonAnomaly_OnlyTargets()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.chosen;
+            var outcome = new TruthChainsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
+        }
+
+        [Test]
+        public void Blessing_RoleMatch_NotHealed_HealsRevealsBlessesAnnounces()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 7; roster.Pseudos[1] = "Bob";
+            var outcome = new BlessingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new HealPlayer(1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new SetBlessed(1),
+                new ChatBroadcast("Bob est maintenant béni.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Blessing_AlreadyHealed_SkipsHeal()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 7; roster.Pseudos[1] = "Bob"; roster.Healed.Add(1);
+            var outcome = new BlessingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new SetBlessed(1),
+                new ChatBroadcast("Bob est maintenant béni.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void HighPriorityBounty_Robot_EliminatesBroadcastsRevealsRefresh()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Robots.Add(1); roster.Pseudos[1] = "Bob"; roster.RoleNames[0] = "Chasseur";
+            var outcome = new HighPriorityBountyDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 0),
+                new SetEliminated(1),
+                new ChatBroadcast("Bob était le robot et a été éliminé par Chasseur.", -1, PowerEffectAudience.All),
+                new RevealPublic(1, RevealField.RoleRevealed),
+                RequestCharacterRefresh.Instance,
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void HighPriorityBounty_NotRobot_ChainsOwnerWarnsRefresh()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            var outcome = new HighPriorityBountyDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 0),
+                new AddToChain(0),
+                new ChatBroadcast("Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.", -1, PowerEffectAudience.Specific(0)),
+                RequestCharacterRefresh.Instance,
+            }, outcome.Effects);
         }
     }
 }

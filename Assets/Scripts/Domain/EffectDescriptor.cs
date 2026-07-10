@@ -321,33 +321,31 @@ namespace CorruptionDuPortail.Domain
     /// <summary>Server-broadcast chat (ChatManager.ReceiveChatMessageRpc). Audience.All → no rpcParams; Specific → GetSafeRpcTarget.</summary>
     public sealed class ChatBroadcast : EffectDescriptor
     {
-        public ulong SenderId { get; }
         public string Message { get; }
         public int WindowId { get; }
         public PowerEffectAudience Audience { get; }
-        public ChatBroadcast(ulong senderId, string message, int windowId, PowerEffectAudience audience)
+        public ChatBroadcast(string message, int windowId, PowerEffectAudience audience)
         {
-            SenderId = senderId; Message = message; WindowId = windowId; Audience = audience;
+            Message = message; WindowId = windowId; Audience = audience;
         }
         protected override IEnumerable<object> EqualityComponents
         {
-            get { yield return SenderId; yield return Message; yield return WindowId; yield return Audience; }
+            get { yield return Message; yield return WindowId; yield return Audience; }
         }
     }
 
-    /// <summary>Server-routed chat (ChatManager.SendChatMessageServerRpc).</summary>
+    /// <summary>Server-routed chat (ChatManager.SendChatMessageServerRpc). Sender is the server sentinel (executor-supplied).</summary>
     public sealed class ChatSendServer : EffectDescriptor
     {
-        public ulong SenderId { get; }
         public string Message { get; }
         public int WindowId { get; }
-        public ChatSendServer(ulong senderId, string message, int windowId)
+        public ChatSendServer(string message, int windowId)
         {
-            SenderId = senderId; Message = message; WindowId = windowId;
+            Message = message; WindowId = windowId;
         }
         protected override IEnumerable<object> EqualityComponents
         {
-            get { yield return SenderId; yield return Message; yield return WindowId; }
+            get { yield return Message; yield return WindowId; }
         }
     }
 }

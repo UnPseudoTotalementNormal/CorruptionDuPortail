@@ -94,14 +94,12 @@ namespace UI.InfoTable
         // Fallback confirmed colour when the faction can't be resolved (no DB wired / harness role) — mirrors the
         // USS --cdp-color-info-sure green so a faction-less Sûr still reads "confirmed".
         private static readonly Color SureGreenFallback = new(78f / 255f, 168f / 255f, 92f / 255f);
-        // Light text (mirrors --cdp-color-info-text) for the MUTED large pseudo fill — near-black would vanish on it.
-        private static readonly Color LightText = new(228f / 255f, 219f / 255f, 201f / 255f);
-        // The board's dark cell surface (mirrors --cdp-color-info-cell). Faction fills are blended toward this so
-        // large surfaces read as a deep "dossier" tint instead of a searing full-saturation block — chroma × area.
+        // The board's dark cell surface (mirrors --cdp-color-info-cell). Faction fills are blended toward this.
         private static readonly Color BoardDarkBg = new(26f / 255f, 23f / 255f, 19f / 255f);
-        // Blend amounts toward BoardDarkBg. The pseudo tile AND the camp chip get the SAME deep mute (Poyo: "comme
-        // le name"); the ✓ segment stays FULL saturation — small accent, it's the punch. Tune to taste.
-        private const float PseudoMute = 0.55f;
+        // Found pseudo cell: NOT a flat flood (that framed badly against the grid hairlines). Instead a very subtle
+        // faction wash + faction-coloured text. The wash sits close to the dark bg so no liseré.
+        private const float PseudoTint = 0.82f;        // wash blend toward BoardDarkBg (near-dark)
+        // The camp chip is small, so a deeper faction fill there is fine (no large flat surface to frame).
         private const float CampMute = 0.55f;
 
         private static readonly CellState[] SegmentOrder = { CellState.Sure, CellState.Maybe, CellState.SurelyNot };
@@ -492,8 +490,10 @@ namespace UI.InfoTable
             }
 
             // Same deep faction mute as the pseudo tile (Poyo: "comme le name"); Inconnu stays neutral (no fill).
-            if (set) camp.style.backgroundColor = Mute(FactionColor(g), CampMute);
-            else camp.style.backgroundColor = StyleKeyword.Null;
+            // Tile paint neutralises the camp cell's own hairline borders (esp. the right one between camp + name)
+            // so the [camp | name] block reads as one clean green field, not a framed pair.
+            if (set) PaintFactionTile(camp, Mute(FactionColor(g), CampMute));
+            else ClearFactionTile(camp);
         }
 
         // First role column this player is marked Sure for, or -1. Drives the pseudo's faction badge.
@@ -521,18 +521,32 @@ namespace UI.InfoTable
                 ? data.icon
                 : null;
 
-        // The big pseudo tile: a MUTED faction fill (blended toward the dark board) + light text — large surface,
-        // so a deep "dossier" tint instead of a searing full-saturation block. The cell's own decorative borders
-        // (top bevel + right hairline) are painted the fill colour too, else they leave a mismatched outline on it.
-        private static void PaintFaction(VisualElement el, Color c)
+        // Found pseudo cell: a very subtle faction wash + faction-coloured text. No flat flood, no accent bar → no
+        // framing/liseré, just a quiet faction identity on the pseudo.
+        private static void PaintFaction(VisualElement el, Color faction)
         {
-            Color fill = Mute(c, PseudoMute);
+            el.style.backgroundColor = Mute(faction, PseudoTint);
+            el.style.color = faction;
+        }
+
+        // Paint a cell's fill AND all four border colours to the same fill — the camp + name cells carry decorative
+        // hairlines (top bevel / right frame-soft) that otherwise read as a mismatched outline against a bright fill.
+        private static void PaintFactionTile(VisualElement el, Color fill)
+        {
             el.style.backgroundColor = fill;
-            el.style.color = LightText;
             el.style.borderTopColor = fill;
             el.style.borderRightColor = fill;
             el.style.borderBottomColor = fill;
             el.style.borderLeftColor = fill;
+        }
+
+        private static void ClearFactionTile(VisualElement el)
+        {
+            el.style.backgroundColor = StyleKeyword.Null;
+            el.style.borderTopColor = StyleKeyword.Null;
+            el.style.borderRightColor = StyleKeyword.Null;
+            el.style.borderBottomColor = StyleKeyword.Null;
+            el.style.borderLeftColor = StyleKeyword.Null;
         }
 
         // Blend a faction colour toward the dark board surface (0 = full faction, 1 = pure dark).
@@ -542,10 +556,6 @@ namespace UI.InfoTable
         {
             el.style.backgroundColor = StyleKeyword.Null;
             el.style.color = StyleKeyword.Null;
-            el.style.borderTopColor = StyleKeyword.Null;
-            el.style.borderRightColor = StyleKeyword.Null;
-            el.style.borderBottomColor = StyleKeyword.Null;
-            el.style.borderLeftColor = StyleKeyword.Null;
         }
 
         // Fill + all four borders on a segment tile (so the faction colour replaces the USS green border too).

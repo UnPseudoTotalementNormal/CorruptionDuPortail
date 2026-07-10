@@ -27,4 +27,10 @@ public static class ReflectionHelper
         var method = obj.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
         return method?.Invoke(obj, args);
     }
+
+    public static object GetPrivateField(object obj, string fieldName)
+    {
+        var field = obj.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+        return field?.GetValue(obj);
+    }
 }

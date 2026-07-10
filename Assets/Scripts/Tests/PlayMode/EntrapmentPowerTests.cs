@@ -301,5 +301,31 @@ namespace Tests.PlayMode
             Assert.AreEqual(ChatManager.SERVER_CLIENT_ID, sender,
                 "The announcement should come from the server sender id.");
         }
+
+        // Powers-POCO v2 wiring golden: PBoundByInk delegates its server RPC to BoundByInkDecision →
+        // NewTargeting + DiscoverChat(power chat id, read via IInkChatState) + RegisterInkTarget (writes the
+        // ink lists via IInkTargetRegister). Asserts the picked target is registered.
+        [UnityTest]
+        public IEnumerator PBoundByInk_RegistersPickedTargetAsInkTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(4321);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject powerGo = new GameObject("BoundByInk");
+            var power = powerGo.AddComponent<PBoundByInk>();
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            power.OnGameStartedServer(); // attributes the ink chat id (powerChatId)
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            var currentTargets = (List<ulong>)ReflectionHelper.GetPrivateField(power, "currentTargets");
+            Assert.IsTrue(currentTargets.Contains(target.ownerClientId.Value),
+                "BoundByInk should register the picked character as an ink target.");
+        }
     }
 }

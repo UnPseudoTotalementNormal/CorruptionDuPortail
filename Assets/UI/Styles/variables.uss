@@ -91,7 +91,7 @@
     --cdp-color-info-ghost-border: rgba(255, 255, 255, 0.10); /* unselected segment border */
     --cdp-color-info-ghost-glyph: rgba(230, 220, 200, 0.30);  /* unselected glyph */
     --cdp-color-info-sure: rgb(78, 168, 92);           /* Sûr — green */
-    --cdp-color-info-maybe: rgb(214, 176, 74);         /* Je pense — amber */
+    --cdp-color-info-maybe: rgb(214, 176, 74);         /* peut être — amber */
     --cdp-color-info-not: rgb(190, 82, 74);            /* Pas lui — red */
     --cdp-color-info-glyph-on: rgb(16, 14, 11);        /* glyph on a filled segment — near-black */
     --cdp-color-info-conflict: rgb(120, 40, 36);       /* conflict row/cell tint */
@@ -114,6 +114,7 @@
     --cdp-info-namecol-wide: 26%;      /* player-name column width per role tier */
     --cdp-info-namecol-compact: 22%;
     --cdp-info-namecol-icon: 20%;
+    --cdp-info-campcol: 78px;          /* leftmost "Camp" faction-guess column width (fixed; fits "Camp" + icon) */
     --cdp-info-rolehead-compact: 20px; /* role-header font per role tier */
     --cdp-info-rolehead-icon: 18px;
     --cdp-info-scrollbar-w: 10px;      /* vertical scrollbar width */

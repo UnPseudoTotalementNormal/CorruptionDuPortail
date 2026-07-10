@@ -1,3 +1,4 @@
+using Characters;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -9,7 +10,7 @@ namespace UI.InfoTable
     /// conflict/lock visuals. The UITK replacement for the retired uGUI <c>InfoTableSystem</c>; follows the
     /// <c>RoleCardController</c> conventions (guarded init, Q-by-name, dynamic children, BEM classes).
     ///
-    /// Visual language ("Dossier" direction): each cell is a 3-segment control — Sûr (✓) / Je pense (?) /
+    /// Visual language ("Dossier" direction): each cell is a 3-segment control — Sûr (✓) / peut être (?) /
     /// Pas lui (✗) — so all three states stay directly clickable (re-clicking the active one clears it to None).
     /// A footer "context bar" carries per-role capacity counters + a conflict banner. Depth is faked with USS
     /// bevels/insets (no gradients/shadows in UITK).
@@ -32,12 +33,18 @@ namespace UI.InfoTable
         private const string PlayerRowAltClass = "info-table__player-row--alt";
         private const string PlayerRowLockedClass = "info-table__player-row--locked";
         private const string CornerClass = "info-table__corner";
+        private const string CampCornerClass = "info-table__camp-corner";
+        private const string CampCellClass = "info-table__camp-cell";
+        private const string CampSetClass = "info-table__camp-cell--set";
+        private const string CampIconClass = "info-table__camp-icon";
+        private const string CampTextClass = "info-table__camp-text";
         private const string RoleHeadClass = "info-table__role-head";
         private const string NameCellClass = "info-table__name-cell";
         private const string NameLockedClass = "info-table__name-cell--locked";
         private const string CellClass = "info-table__cell";
         private const string CellConflictClass = "info-table__cell--conflict";
         private const string CellLockedClass = "info-table__cell--locked";
+        private const string CellDimmedClass = "info-table__cell--dimmed";
         private const string SegmentClass = "info-table__seg";
         private const string SegSureClass = "info-table__seg--sure";
         private const string SegMaybeClass = "info-table__seg--maybe";
@@ -80,6 +87,23 @@ namespace UI.InfoTable
         [Tooltip("A MonoBehaviour implementing IInfoTableDataSource (GameInfoTableDataSource / DemoInfoTableDataSource).")]
         [SerializeField] private MonoBehaviour _dataSourceBehaviour;
 
+        [Tooltip("The SHARED FactionDatabase asset (same one the RoleCard uses) — the single global source of faction " +
+                 "colours. Never duplicate these colours into USS. Wire the FactionDatabase asset here.")]
+        [SerializeField] private FactionDatabase _factionDatabase;
+
+        // Fallback confirmed colour when the faction can't be resolved (no DB wired / harness role) — mirrors the
+        // USS --cdp-color-info-sure green so a faction-less Sûr still reads "confirmed".
+        private static readonly Color SureGreenFallback = new(78f / 255f, 168f / 255f, 92f / 255f);
+        // Light text (mirrors --cdp-color-info-text) for the MUTED large pseudo fill — near-black would vanish on it.
+        private static readonly Color LightText = new(228f / 255f, 219f / 255f, 201f / 255f);
+        // The board's dark cell surface (mirrors --cdp-color-info-cell). Faction fills are blended toward this so
+        // large surfaces read as a deep "dossier" tint instead of a searing full-saturation block — chroma × area.
+        private static readonly Color BoardDarkBg = new(26f / 255f, 23f / 255f, 19f / 255f);
+        // Blend amounts toward BoardDarkBg. The pseudo tile AND the camp chip get the SAME deep mute (Poyo: "comme
+        // le name"); the ✓ segment stays FULL saturation — small accent, it's the punch. Tune to taste.
+        private const float PseudoMute = 0.55f;
+        private const float CampMute = 0.55f;
+
         private static readonly CellState[] SegmentOrder = { CellState.Sure, CellState.Maybe, CellState.SurelyNot };
         private static readonly string[] AllPlayerTierClasses =
             { PlayerComfortClass, PlayerCompactClass, PlayerDenseClass, PlayerScrollClass };
@@ -92,6 +116,9 @@ namespace UI.InfoTable
         private VisualElement[][] _cellEls;
         private VisualElement[] _rowEls;
         private VisualElement[] _nameEls;
+        private VisualElement[] _campEls;
+        private VisualElement[] _campIconEls;
+        private Label[] _campTextEls;
         private VisualElement[] _capacityChips;
         private Label[] _capacityCounts;
         private Label _banner;
@@ -159,6 +186,9 @@ namespace UI.InfoTable
             _cellEls = new VisualElement[playerCount][];
             _rowEls = new VisualElement[playerCount];
             _nameEls = new VisualElement[playerCount];
+            _campEls = new VisualElement[playerCount];
+            _campIconEls = new VisualElement[playerCount];
+            _campTextEls = new Label[playerCount];
 
             // Dossier frame: a gold-bordered card holding the frozen header band + the (scrolling or filling) body.
             var frame = new VisualElement { name = "frame" };
@@ -167,6 +197,10 @@ namespace UI.InfoTable
             // Frozen header band: corner + role headers. Stays put while the body scrolls.
             var header = new VisualElement { name = "header-row" };
             header.AddToClassList(HeaderRowClass);
+            // Leftmost "Camp" column header (feedback item 1): a coarse faction guess per player.
+            var campCorner = new Label("Camp");
+            campCorner.AddToClassList(CampCornerClass);
+            header.Add(campCorner);
             var corner = new Label("Joueurs / Rôles");
             corner.AddToClassList(CornerClass);
             header.Add(corner);
@@ -208,6 +242,32 @@ namespace UI.InfoTable
                 row.AddToClassList(PlayerRowClass);
                 if ((pi & 1) == 1) row.AddToClassList(PlayerRowAltClass);
                 _rowEls[pi] = row;
+
+                // Camp cell (feedback item 1): tap to cycle the coarse faction guess (Inconnu → Élu → Marginal →
+                // Anomalie). A CYCLE control, not a DropdownField — UITK popups mis-place on a RenderTexture panel.
+                // Container tile holds the faction ICON (or a "?" text fallback for Inconnu / iconless faction).
+                var camp = new VisualElement();
+                camp.AddToClassList(CampCellClass);
+                int piCamp = pi;
+                // Manual cycle only while the row isn't found — a found row's camp is auto-derived (locked).
+                camp.RegisterCallback<ClickEvent>(_ =>
+                {
+                    if (FirstSureRole(piCamp) < 0) _model.CycleCampGuess(piCamp);
+                });
+
+                var campIcon = new VisualElement();
+                campIcon.AddToClassList(CampIconClass);
+                campIcon.pickingMode = PickingMode.Ignore;
+                var campText = new Label();
+                campText.AddToClassList(CampTextClass);
+                campText.pickingMode = PickingMode.Ignore;
+                camp.Add(campIcon);
+                camp.Add(campText);
+
+                _campEls[pi] = camp;
+                _campIconEls[pi] = campIcon;
+                _campTextEls[pi] = campText;
+                row.Add(camp);
 
                 var name = new Label(_model.Players[pi].Pseudo);
                 name.AddToClassList(NameCellClass);
@@ -287,6 +347,9 @@ namespace UI.InfoTable
             {
                 var chip = new VisualElement();
                 chip.AddToClassList(ChipClass);
+                // Unique roles carry no useful capacity signal (always "1/1") — hide their chip to declutter the
+                // context bar (owner decision). Capacity is fixed at build, so this never needs re-toggling.
+                if (_model.Roles[ri].Capacity <= 1) chip.AddToClassList(CollapsedClass);
 
                 var chipName = new Label(_model.Roles[ri].RoleName);
                 chipName.AddToClassList(ChipNameClass);
@@ -305,7 +368,7 @@ namespace UI.InfoTable
             var legend = new VisualElement { name = "legend" };
             legend.AddToClassList(LegendClass);
             legend.Add(BuildLegendItem(SegSureClass, GlyphSure, "Sûr"));
-            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "Je pense"));
+            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "peut être"));
             legend.Add(BuildLegendItem(SegNotClass, GlyphNot, "Pas lui"));
             footer.Add(legend);
 
@@ -354,6 +417,15 @@ namespace UI.InfoTable
                 _rowEls[pi].EnableInClassList(PlayerRowLockedClass, locked);
                 _nameEls[pi].EnableInClassList(NameLockedClass, locked);
 
+                RenderCamp(pi);
+
+                // The pseudo becomes the identity badge once the row is found (feedback items 2/3): it takes the
+                // confirmed role's faction colour (Élu green / Mage scarlet / Robot orange). Reveal-locked rows are
+                // found too, so a revealed player also gets the faction badge (the gold --locked edge still shows).
+                int foundRole = FirstSureRole(pi);
+                if (foundRole >= 0) PaintFaction(_nameEls[pi], FactionColor(_model.Roles[foundRole].Faction));
+                else ClearFaction(_nameEls[pi]);
+
                 VisualElement[] cells = _cellEls[pi];
                 for (int ri = 0; ri < cells.Length; ri++)
                 {
@@ -362,12 +434,21 @@ namespace UI.InfoTable
 
                     cell.EnableInClassList(CellLockedClass, locked);
                     cell.EnableInClassList(CellConflictClass, _model.IsCellInConflict(pi, ri));
+                    // "Freed" cells recede once the row is found or the column is claimed — visual only, still clickable.
+                    cell.EnableInClassList(CellDimmedClass, _model.IsCellDimmed(pi, ri));
 
                     int idx = 0;
                     foreach (VisualElement seg in cell.Children())
                     {
                         bool selected = idx < SegmentOrder.Length && state == SegmentOrder[idx];
                         seg.EnableInClassList(SegSelectedClass, selected);
+                        // The Sûr ✓ segment (idx 0) takes the role's faction colour when confirmed (Option A) —
+                        // painted inline so it overrides the USS green; cleared back to the USS ghost otherwise.
+                        if (idx == 0)
+                        {
+                            if (selected) PaintFactionFill(seg, FactionColor(_model.Roles[ri].Faction));
+                            else ClearFactionFill(seg);
+                        }
                         idx++;
                     }
                 }
@@ -375,6 +456,132 @@ namespace UI.InfoTable
 
             RenderFooter();
         }
+
+        // Camp cell: a letter (É/M/A/?) + full-name tooltip, filled with the guessed faction's colour (Inconnu =
+        // neutral, no inline fill).
+        private void RenderCamp(int playerIndex)
+        {
+            if (_campEls == null) return;
+            // A found row's camp is AUTO-derived from the confirmed role's faction (Poyo: "le bon camp automatiquement
+            // quand on est sûr du rôle"); otherwise it shows the player's manual guess.
+            int foundRole = FirstSureRole(playerIndex);
+            FactionType g = foundRole >= 0 ? _model.Roles[foundRole].Faction : _model.GetCampGuess(playerIndex);
+            VisualElement camp = _campEls[playerIndex];
+            VisualElement icon = _campIconEls[playerIndex];
+            Label text = _campTextEls[playerIndex];
+            camp.tooltip = CampLabel(g);
+
+            bool set = g != FactionType.unknown;
+            camp.EnableInClassList(CampSetClass, set);
+
+            Sprite sprite = set ? FactionIcon(g) : null;
+            if (sprite != null)
+            {
+                // Known faction with an icon: show the icon, hide the text fallback.
+                icon.style.backgroundImage = new StyleBackground(sprite);
+                icon.style.display = DisplayStyle.Flex;
+                text.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                // Inconnu (or an iconless faction): fall back to a letter.
+                icon.style.backgroundImage = StyleKeyword.Null;
+                icon.style.display = DisplayStyle.None;
+                text.text = CampGlyph(g);
+                text.style.display = DisplayStyle.Flex;
+            }
+
+            // Same deep faction mute as the pseudo tile (Poyo: "comme le name"); Inconnu stays neutral (no fill).
+            if (set) camp.style.backgroundColor = Mute(FactionColor(g), CampMute);
+            else camp.style.backgroundColor = StyleKeyword.Null;
+        }
+
+        // First role column this player is marked Sure for, or -1. Drives the pseudo's faction badge.
+        private int FirstSureRole(int playerIndex)
+        {
+            for (int ri = 0; ri < _model.RoleCount; ri++)
+            {
+                if (_model.GetCell(playerIndex, ri) == CellState.Sure) return ri;
+            }
+            return -1;
+        }
+
+        // Faction colour from the ONE global source (the shared FactionDatabase). Falls back to the confirmed-green
+        // when no DB is wired or the faction is unresolved (harness). NEVER duplicated into USS.
+        private Color FactionColor(FactionType faction)
+        {
+            if (_factionDatabase != null && _factionDatabase.TryGet(faction, out FactionData data) && data != null)
+                return data.color;
+            return SureGreenFallback;
+        }
+
+        // Faction icon from the same single source. Null when unresolved or the faction has no icon (e.g. Inconnu).
+        private Sprite FactionIcon(FactionType faction)
+            => _factionDatabase != null && _factionDatabase.TryGet(faction, out FactionData data) && data != null
+                ? data.icon
+                : null;
+
+        // The big pseudo tile: a MUTED faction fill (blended toward the dark board) + light text — large surface,
+        // so a deep "dossier" tint instead of a searing full-saturation block. The cell's own decorative borders
+        // (top bevel + right hairline) are painted the fill colour too, else they leave a mismatched outline on it.
+        private static void PaintFaction(VisualElement el, Color c)
+        {
+            Color fill = Mute(c, PseudoMute);
+            el.style.backgroundColor = fill;
+            el.style.color = LightText;
+            el.style.borderTopColor = fill;
+            el.style.borderRightColor = fill;
+            el.style.borderBottomColor = fill;
+            el.style.borderLeftColor = fill;
+        }
+
+        // Blend a faction colour toward the dark board surface (0 = full faction, 1 = pure dark).
+        private static Color Mute(Color c, float t) => Color.Lerp(c, BoardDarkBg, t);
+
+        private static void ClearFaction(VisualElement el)
+        {
+            el.style.backgroundColor = StyleKeyword.Null;
+            el.style.color = StyleKeyword.Null;
+            el.style.borderTopColor = StyleKeyword.Null;
+            el.style.borderRightColor = StyleKeyword.Null;
+            el.style.borderBottomColor = StyleKeyword.Null;
+            el.style.borderLeftColor = StyleKeyword.Null;
+        }
+
+        // Fill + all four borders on a segment tile (so the faction colour replaces the USS green border too).
+        private static void PaintFactionFill(VisualElement seg, Color c)
+        {
+            seg.style.backgroundColor = c;
+            seg.style.borderTopColor = c;
+            seg.style.borderRightColor = c;
+            seg.style.borderBottomColor = c;
+            seg.style.borderLeftColor = c;
+        }
+
+        private static void ClearFactionFill(VisualElement seg)
+        {
+            seg.style.backgroundColor = StyleKeyword.Null;
+            seg.style.borderTopColor = StyleKeyword.Null;
+            seg.style.borderRightColor = StyleKeyword.Null;
+            seg.style.borderBottomColor = StyleKeyword.Null;
+            seg.style.borderLeftColor = StyleKeyword.Null;
+        }
+
+        private static string CampGlyph(FactionType f) => f switch
+        {
+            FactionType.chosen => "É",
+            FactionType.marginal => "M",
+            FactionType.anomaly => "A",
+            _ => "?",
+        };
+
+        private static string CampLabel(FactionType f) => f switch
+        {
+            FactionType.chosen => "Élu",
+            FactionType.marginal => "Marginal",
+            FactionType.anomaly => "Anomalie",
+            _ => "Inconnu",
+        };
 
         private void RenderFooter()
         {

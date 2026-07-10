@@ -13,5 +13,6 @@ namespace CorruptionDuPortail.Domain.Powers
         CorruptionKnowledge = 3,
         EyeOfTheVoid = 4,
         AutoCorruption = 5,
+        ChainedByShadows = 6,
     }
 }

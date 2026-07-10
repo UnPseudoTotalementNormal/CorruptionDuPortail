@@ -274,4 +274,80 @@ namespace CorruptionDuPortail.Domain
         public RegisterInkTarget(int targetSlot) { TargetSlot = targetSlot; }
         protected override IEnumerable<object> EqualityComponents { get { yield return TargetSlot; } }
     }
+
+    // ====================================================================================
+    // Active-power effect vocabulary (ported from the v1 branch, proven). Each maps to one
+    // typed IEffectExecutor in the runtime registry. Chat sender ids are ulong (the sentinel
+    // is ulong.MaxValue).
+    // ====================================================================================
+
+    public sealed class AddToChain : EffectDescriptor
+    {
+        public int Slot { get; }
+        public AddToChain(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class HealPlayer : EffectDescriptor
+    {
+        public int Slot { get; }
+        public HealPlayer(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class SetBlessed : EffectDescriptor
+    {
+        public int Slot { get; }
+        public SetBlessed(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class SetEliminated : EffectDescriptor
+    {
+        public int Slot { get; }
+        public SetEliminated(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    /// <summary>Public reveal via SetRevealLevelRpc (no observer, Public level).</summary>
+    public sealed class RevealPublic : EffectDescriptor
+    {
+        public int TargetSlot { get; }
+        public RevealField Field { get; }
+        public RevealPublic(int targetSlot, RevealField field) { TargetSlot = targetSlot; Field = field; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return TargetSlot; yield return Field; } }
+    }
+
+    /// <summary>Server-broadcast chat (ChatManager.ReceiveChatMessageRpc). Audience.All → no rpcParams; Specific → GetSafeRpcTarget.</summary>
+    public sealed class ChatBroadcast : EffectDescriptor
+    {
+        public ulong SenderId { get; }
+        public string Message { get; }
+        public int WindowId { get; }
+        public PowerEffectAudience Audience { get; }
+        public ChatBroadcast(ulong senderId, string message, int windowId, PowerEffectAudience audience)
+        {
+            SenderId = senderId; Message = message; WindowId = windowId; Audience = audience;
+        }
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return SenderId; yield return Message; yield return WindowId; yield return Audience; }
+        }
+    }
+
+    /// <summary>Server-routed chat (ChatManager.SendChatMessageServerRpc).</summary>
+    public sealed class ChatSendServer : EffectDescriptor
+    {
+        public ulong SenderId { get; }
+        public string Message { get; }
+        public int WindowId { get; }
+        public ChatSendServer(ulong senderId, string message, int windowId)
+        {
+            SenderId = senderId; Message = message; WindowId = windowId;
+        }
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return SenderId; yield return Message; yield return WindowId; }
+        }
+    }
 }

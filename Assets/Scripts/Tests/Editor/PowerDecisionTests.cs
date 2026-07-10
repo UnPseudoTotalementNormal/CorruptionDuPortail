@@ -39,8 +39,10 @@ namespace Tests.Editor
             public System.Collections.Generic.IReadOnlyList<int> Slots { get; set; } = new int[0];
             public readonly System.Collections.Generic.Dictionary<int, Characters.FactionType> Factions = new();
             public readonly System.Collections.Generic.Dictionary<int, string> Pseudos = new();
+            public readonly System.Collections.Generic.Dictionary<int, int> Roles = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
+            public bool SameRole(int a, int b) => Roles.TryGetValue(a, out var ra) && Roles.TryGetValue(b, out var rb) && ra == rb;
         }
 
         [Test]
@@ -102,6 +104,50 @@ namespace Tests.Editor
         {
             var outcome = new AutoCorruptionDecision().Decide(new PowerContext(ownerSlot: 4));
             CollectionAssert.AreEqual(new EffectDescriptor[] { new CorruptPlayer(4) }, outcome.Effects);
+        }
+
+        // ---- Active powers ---------------------------------------------------------------
+        [Test]
+        public void ChainedByShadows_RoleMatchChosen_TargetsRevealsChains()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 7;                 // target(1) same role as picked-role owner(2)
+            roster.Factions[1] = Characters.FactionType.chosen;
+            var ctx = new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster);
+
+            var outcome = new ChainedByShadowsDecision().Decide(ctx);
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new AddToChain(1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_RoleMatchNotChosen_NoChain()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_RoleMismatch_OnlyTargets()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 9;                 // different roles
+            var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
         }
     }
 }

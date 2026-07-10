@@ -14,5 +14,7 @@ namespace CorruptionDuPortail.Domain.Powers
         IReadOnlyList<int> Slots { get; }
         FactionType FactionOf(int slot);
         string PseudoOf(int slot);
+        /// <summary>True if the two slots' characters have the same role (role-match powers).</summary>
+        bool SameRole(int slotA, int slotB);
     }
 }

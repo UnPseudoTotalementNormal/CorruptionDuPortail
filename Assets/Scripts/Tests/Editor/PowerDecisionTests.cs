@@ -245,5 +245,35 @@ namespace Tests.Editor
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
         }
+
+        [Test]
+        public void CursedVision_NonChosen_CorruptsRevealsCardsChatsBoth()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.anomaly; roster.Pseudos[1] = "Bob";
+            var outcome = new CursedVisionDecision { CardEffectId = 2 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new CorruptPlayer(1),
+                new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
+                new AddCardEffect(2, 1, true),
+                new ChatLocal("Bob n'est pas un élu.", -1),
+                new CorruptPlayer(0),
+                new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void CursedVision_Chosen_FlipsCardAndVerdict()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.chosen; roster.Pseudos[1] = "Alice";
+            var outcome = new CursedVisionDecision { CardEffectId = 2 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+
+            Assert.AreEqual(new AddCardEffect(2, 1, false), outcome.Effects[3]);
+            Assert.AreEqual(new ChatLocal("Alice est un élu.", -1), outcome.Effects[4]);
+        }
     }
 }

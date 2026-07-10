@@ -17,5 +17,6 @@ namespace CorruptionDuPortail.Domain.Powers
         TruthChains = 7,
         Blessing = 8,
         HighPriorityBounty = 9,
+        CursedVision = 10,
     }
 }

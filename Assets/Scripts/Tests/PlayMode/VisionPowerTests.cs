@@ -186,5 +186,58 @@ namespace Tests.PlayMode
             Assert.AreEqual(RevealLevel.Personal, info.isRoleRevealed, "Omniscience should reveal role to owner");
             Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "Omniscience should store the target ID");
         }
+
+        // Powers-POCO v2 wiring golden: PCorruptionKnowledge delegates OnGameStartedServer to
+        // CorruptionKnowledgeDecision → RevealInfo(ForceCorruptOnRoleRevealed) per roster slot.
+        [UnityTest]
+        public IEnumerator PCorruptionKnowledge_RevealsForceCorruptFlagAtStart()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(23456);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject powerGo = new GameObject("CorruptionKnowledge");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<PCorruptionKnowledge>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.AreEqual(RevealLevel.False,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).forceCorruptOnRoleRevealed);
+
+            power.OnGameStartedServer();
+            yield return null;
+
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).forceCorruptOnRoleRevealed,
+                "CorruptionKnowledge should reveal every character's forceCorruptOnRoleRevealed flag to the owner.");
+        }
+
+        // Powers-POCO v2 wiring golden: PInfiniteMessage delegates OnPowerReparented to
+        // InfiniteMessageDecision → SetMessageLeft(owner, int.MaxValue).
+        [UnityTest]
+        public IEnumerator PInfiniteMessage_SetsOwnerMessageLeftToMaxOnReparent()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+
+            GameObject powerGo = new GameObject("InfiniteMessage");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<PInfiniteMessage>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.AreNotEqual(int.MaxValue, owner.messageLeft.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnPowerReparented");
+            yield return null;
+
+            Assert.AreEqual(int.MaxValue, owner.messageLeft.Value,
+                "InfiniteMessage should set the owner's messageLeft to int.MaxValue on reparent.");
+        }
     }
 }

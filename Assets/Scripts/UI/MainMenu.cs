@@ -160,7 +160,13 @@ namespace UI
                 bool _connected = await WaitForClientConnectedOrTimeout(ConnectTimeoutSeconds);
                 if (!_connected)
                 {
-                    throw new System.Exception("Connection timed out — the host did not respond.");
+                    // A server-side rejection (e.g. game already started) fills DisconnectReason; fall back
+                    // to the timeout wording only when the connect simply never completed.
+                    string _reason = NetworkManager.Singleton != null
+                                     && !string.IsNullOrEmpty(NetworkManager.Singleton.DisconnectReason)
+                        ? NetworkManager.Singleton.DisconnectReason
+                        : "Connection timed out — the host did not respond.";
+                    throw new System.Exception(_reason);
                 }
 
                 GameCode.gameCode = _lobby.LobbyCode;
@@ -414,6 +420,10 @@ namespace UI
 
             ulong _hostSteamId = SteamClient.SteamId;
 
+            // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
+            // enabled before StartHost so the server answers approval for every connecting client.
+            ConnectionApprovalGate.Enable(NetworkManager.Singleton);
+
             // Démarrer l'hôte avec FacepunchTransport
             bool _started = NetworkManager.Singleton.StartHost();
             if (!_started)
@@ -433,7 +443,11 @@ namespace UI
                 NetworkManager.Singleton.GetComponent<UnityTransport>()
                     .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
                 var _joinCode = await RelayService.Instance.GetJoinCodeAsync(_allocation.AllocationId);
-                
+
+                // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
+                // enabled before StartHost so the server answers approval for every connecting client.
+                ConnectionApprovalGate.Enable(NetworkManager.Singleton);
+
                 bool _started = NetworkManager.Singleton.StartHost();
                 if (!_started)
                 {

@@ -96,5 +96,12 @@ namespace Tests.Editor
             Assert.IsTrue(outcome.Accepted);
             Assert.AreEqual(0, outcome.Effects.Count);
         }
+
+        [Test]
+        public void AutoCorruption_CorruptsOwner()
+        {
+            var outcome = new AutoCorruptionDecision().Decide(new PowerContext(ownerSlot: 4));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new CorruptPlayer(4) }, outcome.Effects);
+        }
     }
 }

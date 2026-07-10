@@ -378,6 +378,20 @@ namespace Tests.Editor
             }, outcome.Effects);
         }
 
+        [Test]
+        public void MarqueHurluberluges_GrantsStolenPowersToOwner()
+        {
+            var outcome = new MarqueHurluberlugesDecision().Decide(new PowerContext(ownerSlot: 7));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new GrantStolenPowers(7) }, outcome.Effects);
+        }
+
+        [Test]
+        public void MarqueHurluberluges_IsPassive()
+        {
+            Assert.IsTrue(new MarqueHurluberlugesDecision().IsPassive);
+            Assert.AreEqual(PowerId.MarqueHurluberluges, new MarqueHurluberlugesDecision().Id);
+        }
+
         // ---- Query/state-port powers -----------------------------------------------------
         private sealed class FakeState : IPowerStateResolver
         {

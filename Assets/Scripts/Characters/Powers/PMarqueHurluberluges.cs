@@ -2,8 +2,10 @@
 
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
-using Unity.Netcode;
 using UnityEngine;
 
 #endregion
@@ -19,14 +21,22 @@ namespace Characters.Powers
     /// spent for good ("une fois utilisé, le pouvoir est perdu"). The original owners keep their powers — this
     /// steals a COPY, not the instance.
     ///
-    /// This power is passive itself (it never appears in the bar); it only orchestrates the theft server-side.
+    /// Powers-POCO v2: this power is passive; the "grant Ugues his stolen copies" decision is
+    /// <see cref="MarqueHurluberlugesDecision"/> (pure), which emits a single GrantStolenPowers intention. The
+    /// engine-coupled work — walking the LIVE roster, filtering + the random-distinct pick, and the
+    /// spawn/reparent (GivePowerToCharacter) — is power-local, so the carrier realises it via
+    /// <see cref="IStolenPowerGrant"/> (same shape as PLegacy/ILegacyGrant). The pure pick mechanic itself
+    /// lives in the EditMode-tested <see cref="StolenPowerSelector"/>.
+    ///
     /// The steal runs inside <see cref="OnGameStartedServer"/>, which fires from PowerManager.OnGameStarted —
     /// a point where every character's <c>role.powers</c> is already populated (that method iterates them), so
     /// the eligible pool is complete and there is no attribution race.
     /// </summary>
-    public class PMarqueHurluberluges : Power
+    public class PMarqueHurluberluges : Power, IStolenPowerGrant
     {
         private const int POWERS_TO_STEAL = 3;
+
+        private readonly MarqueHurluberlugesDecision _decision = new();
 
         // OnGameStartedServer can be reached twice for a late-spawned power (OnPowerSpawned + OnGameStarted);
         // steal exactly once.
@@ -44,13 +54,19 @@ namespace Characters.Powers
                 return;
             }
             _hasStolen = true;
-            StealPowers();
+            RunDecisionEffects(_decision, new PowerContext(ownerSlot: (int)ownerClientId.Value), SelfState);
         }
 
-        private void StealPowers()
+        // Power-local grant port (IStolenPowerGrant), reached from GrantStolenPowersExecutor via SelfState.
+        // Holds the engine-coupled theft: walk the live roster, build a candidate per live power, let the pure
+        // StolenPowerSelector filter + pick, then give one-shot copies to Ugues.
+        void IStolenPowerGrant.GrantStolen(int _ownerSlot)
         {
-            Character _ugues = ownerCharacter;
-            if (_ugues == null)
+            if (!IsServer)
+            {
+                return;
+            }
+            if (ownerCharacter == null)
             {
                 Debug.LogWarning("[UGUES] Marque d'Hurluberluges: owner character unresolved, nothing stolen.");
                 return;
@@ -68,7 +84,7 @@ namespace Characters.Powers
                     continue;
                 }
                 bool _ownerIsChosen = _c.role.factionType == FactionType.chosen;
-                bool _ownerIsUgues = _c.ownerClientId.Value == ownerClientId.Value;
+                bool _ownerIsUgues = (int)_c.ownerClientId.Value == _ownerSlot;
                 foreach (Power _p in _c.role.powers)
                 {
                     if (_p == null)
@@ -90,7 +106,7 @@ namespace Characters.Powers
             }
             foreach (int _index in _picks)
             {
-                characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_index], ConfigureStolenCopy);
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], ConfigureStolenCopy);
             }
         }
 

@@ -268,5 +268,38 @@ namespace Tests.PlayMode
             Assert.IsTrue(owner.role.powers.Any(p => p.powerName == grantedPower.powerName),
                 "Reincarnation should grant the target role's powers to the owner.");
         }
+
+        // Powers-POCO v2 wiring golden: PClandestineObservation delegates DeclareAllTargetFocusServer to
+        // ClandestineObservationDecision → a single ChatBroadcast announcing the targeting count to the owner.
+        // No character carries the observed role here, so it takes the "0." branch. The server-authored
+        // message reaches the owner (host) via onChatMessageReceived.
+        [UnityTest]
+        public IEnumerator PClandestineObservation_AnnouncesTargetingCountToOwner()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+            owner.role = new Role { roleID = RoleID.Dryade };
+
+            GameObject powerGo = new GameObject("Clandestine");
+            var power = powerGo.AddComponent<PClandestineObservation>();
+            power.targetRoleID = RoleID.Omniscient; // no character carries it -> the "0." branch
+            power.isPassive = false;                // CanUse rejects passive powers; matches the live prefab
+            power.hasToBeAwakened = false;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+            power.powerUseLeft.Value = 1;
+
+            bool received = false;
+            ulong sender = 0;
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; };
+
+            power.DeclareAllTargetFocusServer();
+            yield return null;
+
+            Assert.IsTrue(received, "ClandestineObservation should announce the targeting count to the owner.");
+            Assert.AreEqual(ChatManager.SERVER_CLIENT_ID, sender,
+                "The announcement should come from the server sender id.");
+        }
     }
 }

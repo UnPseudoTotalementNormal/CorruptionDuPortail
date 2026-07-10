@@ -81,7 +81,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4081065072
+  GlobalObjectIdHash: 1478679771
   InScenePlacedSourceGlobalObjectIdHash: 4081065072
   DeferredDespawnTick: 0
   Ownership: 1
@@ -160,6 +160,7 @@ MonoBehaviour:
     m_InternalValue: 18446744073709551615
   _defaultAppearance: {fileID: 0}
   _eyePivot: {fileID: 1776618053946061157}
+  _networkAnimator: {fileID: 6714640243844347891}
   SeatedYaw:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -278,3 +279,14 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3503009208956233112, guid: 59ac7bc14aee6ff46bff00ee6abead1e, type: 3}
   m_PrefabInstance: {fileID: 961825668200779015}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6714640243844347891 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5797864316083878644, guid: 59ac7bc14aee6ff46bff00ee6abead1e, type: 3}
+  m_PrefabInstance: {fileID: 961825668200779015}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator

@@ -11,45 +11,90 @@ namespace UI.EmoteWheel
 {
     /// <summary>
     /// Drives the radial emote wheel (EmoteWheel.uxml) — a transient HUD overlay held open while the player
-    /// presses the emote key in the embodied first-person view. It builds one slot per <see cref="EmoteSet"/>
-    /// entry, laid out clockwise from the top, and highlights the slot the pointer/stick points at. It owns NO
+    /// presses the emote key in the embodied first-person view. It draws a DONUT (an annular band split into one
+    /// sector per <see cref="EmoteSet"/> entry, clockwise from the top) with <see cref="Painter2D"/>, lays an
+    /// icon + optional label over each sector, and shows the pointed-at emote's name big in the hole. It owns NO
     /// input and NO network: <see cref="EmoteWheelInput"/> opens/closes it, feeds the selected index each frame
     /// (from <see cref="EmoteWheelSelection"/>), and on release reads <see cref="GetEmote"/> to play it.
     ///
     /// Show/hide mirrors <see cref="UI.RoleCard.RoleCardController"/> (guarded init, class-toggle with a
     /// staggered collapse), but the root is NON-modal: it never blocks the world (picking stays Ignore) — the
-    /// cursor is locked during the embodied vote and the wheel is a read-only overlay. Visuals reuse the
-    /// sampled gold/scrim tokens (design-owned + provisional, see variables.uss).
+    /// cursor is locked during the embodied vote and the wheel is a read-only overlay. Band / separator /
+    /// highlight colours are serialized (design-owned + provisional — tune in the Inspector, no USS edit).
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class EmoteWheelController : MonoBehaviour
     {
         private const string HiddenClass = "cdp-is-hidden";
         private const string CollapsedClass = "cdp-is-collapsed";
+        private const string DonutClass = "emote-wheel__donut";
         private const string SlotClass = "emote-wheel__slot";
         private const string SlotIconClass = "emote-wheel__slot-icon";
+        private const string SlotIconPlaceholderClass = "emote-wheel__slot-icon--placeholder";
+        private const string SlotLabelClass = "emote-wheel__slot-label";
         private const string SlotSelectedClass = "emote-wheel__slot--selected";
-        private const string LabelHiddenClass = "emote-wheel__label--hidden";
+        private const string CaptionHiddenClass = "emote-wheel__label--hidden";
 
         // Exit transition length (opacity) + buffer before we collapse (display:none), mirroring the RoleCard.
         private const long ExitCollapseDelayMs = 220;
 
-        // Radial layout (px, within the fixed square wheel container). Provisional — Poyo tunes the feel.
-        private const float RingRadius = 190f;
-        private const float SlotSize = 120f;
+        // Radial layout (px). The donut fills the fixed square ring container (see EmoteWheel.uss); the icons ride
+        // the mid-band radius, the labels sit OUTSIDE the outer edge (positioned radially, consistent per sector).
+        // Provisional — Poyo tunes the feel. Keep in sync with EmoteWheel.uss (ring/slot/label sizes).
+        private const float IconRadius = 232f;
+        private const float SlotSize = 84f;
+        // Labels sit OUTSIDE the band. Each is pushed out along its ray so its INNER edge lands at
+        // OuterRadius + LabelGap whatever the angle — side labels go far (room to spare), top/bottom stay near
+        // (no vertical clip). OuterRadius must track the ring (width/2 - separatorWidth ~= 620/2 - 3).
+        private const float OuterRadius = 307f;
+        private const float LabelGap = 12f;
 
         [SerializeField] private UIDocument document;
 
         [Tooltip("The emotes offered by the wheel (order = clockwise-from-top). Wire the EmoteSet asset.")]
         [SerializeField] private EmoteSet emoteSet;
 
+        [Header("Labels")]
+        [Tooltip("Show each emote's name under its icon in the ring. Keep ON while icons are placeholder; turn " +
+                 "OFF once real icons read clearly (the centre caption still names the hovered emote).")]
+        [SerializeField] private bool showSectorLabels = true;
+
+        [Header("Donut colours — provisional, design-owned (tune here, no USS edit)")]
+        [Tooltip("Fill of a resting sector's band (alpha lets the game show through).")]
+        [SerializeField] private Color bandColor = new(0.05f, 0.05f, 0.07f, 0.55f);
+
+        [Tooltip("Fill of the hovered/selected sector's band.")]
+        [SerializeField] private Color bandHighlightColor = new(0.85f, 0.70f, 0.25f, 0.80f);
+
+        [Tooltip("Sector separators + ring outlines.")]
+        [SerializeField] private Color separatorColor = new(0.95f, 0.95f, 0.95f, 0.55f);
+
+        [Tooltip("Inner-hole radius as a fraction of the outer radius (donut thickness).")]
+        [SerializeField, Range(0.2f, 0.85f)] private float innerRatio = 0.55f;
+
+        [SerializeField, Range(1f, 8f)] private float separatorWidth = 3f;
+
+        [Tooltip("Seconds for a sector's band to fade between rest and highlight colour on hover (0 = instant).")]
+        [SerializeField, Range(0f, 0.5f)] private float highlightFadeSeconds = 0.10f;
+
         private VisualElement _root;
         private VisualElement _ring;
+        private VisualElement _donut;
         private Label _caption;
         private readonly List<VisualElement> _slots = new();
+        private readonly List<Label> _labels = new();
         private bool _initialized;
         private bool _built;
         private int _selected = EmoteWheelSelection.None;
+
+        // Snapshot the donut painter reads each repaint (the callback can't see instance selection state cheaply).
+        private int _donutCount;
+        private int _donutSelected = EmoteWheelSelection.None;
+
+        // Per-sector highlight amount [0..1] the painter lerps the band colour with; animated toward the target
+        // (selected = 1, rest = 0) by a paused-when-idle scheduler so the hover colour fades instead of snapping.
+        private float[] _sectorT;
+        private IVisualElementScheduledItem _bandAnim;
 
         /// <summary>Number of emotes in the wheel (0 if unwired) — <see cref="EmoteWheelInput"/> reads it for the selection math.</summary>
         public int Count => emoteSet != null ? emoteSet.Count : 0;
@@ -74,55 +119,222 @@ namespace UI.EmoteWheel
             _ring = _root.Q<VisualElement>("ring");
             _caption = _root.Q<Label>("caption");
 
-            // Non-modal HUD overlay: never intercept world clicks (cursor is locked during the vote anyway).
+            // Non-modal HUD overlay: never intercept world clicks (cursor is locked during the vote anyway). The
+            // caption anchor spans the whole ring, so it must not pick either.
             _root.pickingMode = PickingMode.Ignore;
+            if (_caption != null)
+            {
+                _caption.pickingMode = PickingMode.Ignore;
+                if (_caption.parent != null) _caption.parent.pickingMode = PickingMode.Ignore;
+            }
 
             _initialized = true;
         }
 
-        // Build one slot per emote, positioned around the ring clockwise from the top. Idempotent (once).
+        // Build the donut painter (behind) + one icon/label slot per emote around the ring. Idempotent (once).
         private void BuildSlots()
         {
             if (_built || _ring == null || emoteSet == null) return;
 
-            _ring.Clear();
+            EnsureDonut();
+
+            // Clear any prior slots + labels (keep the donut + caption which live in the ring).
+            foreach (VisualElement _slot in _slots) _slot.RemoveFromHierarchy();
+            foreach (Label _label in _labels) _label.RemoveFromHierarchy();
             _slots.Clear();
+            _labels.Clear();
 
             int _count = emoteSet.Count;
             for (int _i = 0; _i < _count; _i++)
             {
                 EmoteDefinition _emote = emoteSet.Get(_i);
+                float _angleRad = EmoteWheelSelection.SectorCenterAngle(_i, _count) * Mathf.Deg2Rad;
+                float _sin = Mathf.Sin(_angleRad);   // +x = right
+                float _cos = -Mathf.Cos(_angleRad);  // screen y is down, so up (angle 0) = -y
 
+                // --- Icon slot: rides the mid-band radius, box re-centred on the point. ---
                 var _slot = new VisualElement { name = $"slot-{_i}" };
                 _slot.AddToClassList(SlotClass);
                 _slot.pickingMode = PickingMode.Ignore;
 
                 var _icon = new VisualElement();
                 _icon.AddToClassList(SlotIconClass);
+                _icon.pickingMode = PickingMode.Ignore;
                 if (_emote != null && _emote.icon != null)
                 {
                     _icon.style.backgroundImage = new StyleBackground(_emote.icon);
                 }
+                else
+                {
+                    // No sprite yet → a rotated square placeholder (the sketch's diamond).
+                    _icon.AddToClassList(SlotIconPlaceholderClass);
+                }
                 _slot.Add(_icon);
 
-                // Absolute-position the slot centre at the sector angle (CW from up), then re-centre the box.
-                float _angleDeg = EmoteWheelSelection.SectorCenterAngle(_i, _count);
-                float _angleRad = _angleDeg * Mathf.Deg2Rad;
-                float _x = Mathf.Sin(_angleRad) * RingRadius;   // +x = right
-                float _y = -Mathf.Cos(_angleRad) * RingRadius;  // screen y is down, so up (angle 0) = -y
-
-                _slot.style.position = Position.Absolute;
-                _slot.style.left = new Length(50f, LengthUnit.Percent);
-                _slot.style.top = new Length(50f, LengthUnit.Percent);
-                _slot.style.translate = new StyleTranslate(
-                    new Translate(_x - SlotSize / 2f, _y - SlotSize / 2f));
-
+                PlaceAbsolute(_slot, _sin * IconRadius, _cos * IconRadius, SlotSize, SlotSize);
                 _ring.Add(_slot);
                 _slots.Add(_slot);
+
+                // --- Label: OUTSIDE the outer edge, positioned radially (consistent for every sector). ---
+                if (showSectorLabels)
+                {
+                    var _label = new Label(_emote != null ? _emote.displayName : string.Empty);
+                    _label.AddToClassList(SlotLabelClass);
+                    _label.pickingMode = PickingMode.Ignore;
+                    _label.style.position = Position.Absolute;
+                    _label.style.left = new Length(50f, LengthUnit.Percent);
+                    _label.style.top = new Length(50f, LengthUnit.Percent);
+                    // The box hugs the text (auto width), so its resolved size is only known after layout — place
+                    // it (uniform inner-edge gap, whatever the text width) on the geometry event. Capture the ray.
+                    float _labelSin = _sin;
+                    float _labelCos = _cos;
+                    _label.RegisterCallback<GeometryChangedEvent>(_ => PositionLabel(_label, _labelSin, _labelCos));
+                    _ring.Add(_label);
+                    _labels.Add(_label);
+                }
             }
+
+            // Keep the caption (its full-ring anchor) on top of the freshly-added slots.
+            (_caption?.parent ?? _caption)?.BringToFront();
+
+            _donutCount = _count;
+            _donutSelected = EmoteWheelSelection.None;
+            _sectorT = new float[_count];
+            _bandAnim ??= _donut.schedule.Execute(TickBandFade).Every(16);
+            _bandAnim.Pause();
+            _donut?.MarkDirtyRepaint();
 
             _built = true;
         }
+
+        // Absolute-place an element so its CENTRE lands at (dx, dy) px from the ring centre (50%/50% origin),
+        // given its fixed box size. Keeps icons + radial labels on their sector's ray.
+        private static void PlaceAbsolute(VisualElement element, float dx, float dy, float width, float height)
+        {
+            element.style.position = Position.Absolute;
+            element.style.left = new Length(50f, LengthUnit.Percent);
+            element.style.top = new Length(50f, LengthUnit.Percent);
+            element.style.translate = new StyleTranslate(new Translate(dx - width / 2f, dy - height / 2f));
+        }
+
+        // Place a radial label so its box's INNER edge sits a uniform LabelGap outside the band, projecting the
+        // (now-known) box half-size onto the ray. Auto-width means the visible gap is the same for "yo" and
+        // "a l'aide !" alike. Called on each GeometryChangedEvent (size resolves after layout).
+        private static void PositionLabel(VisualElement label, float sin, float cos)
+        {
+            float _w = label.resolvedStyle.width;
+            float _h = label.resolvedStyle.height;
+            if (_w <= 0f || _h <= 0f) return;
+
+            float _r = OuterRadius + LabelGap + (Mathf.Abs(sin) * _w + Mathf.Abs(cos) * _h) * 0.5f;
+            label.style.translate = new StyleTranslate(new Translate(sin * _r - _w / 2f, cos * _r - _h / 2f));
+        }
+
+        // Create the custom donut element once and insert it behind everything in the ring.
+        private void EnsureDonut()
+        {
+            if (_donut != null || _ring == null) return;
+
+            _donut = new VisualElement { name = "donut" };
+            _donut.AddToClassList(DonutClass);
+            _donut.pickingMode = PickingMode.Ignore;
+            _donut.generateVisualContent += OnGenerateDonut;
+            _ring.Insert(0, _donut);
+        }
+
+        // Painter2D: draw one filled annular sector per emote (highlighting the selected one), the radial
+        // separators between sectors, and the inner/outer ring outlines. Reads the _donut* snapshot.
+        private void OnGenerateDonut(MeshGenerationContext mgc)
+        {
+            Rect _rect = mgc.visualElement.contentRect;
+            if (_rect.width < 2f || _rect.height < 2f) return;
+
+            Vector2 _center = _rect.center;
+            float _rOut = Mathf.Min(_rect.width, _rect.height) * 0.5f - separatorWidth;
+            float _rIn = _rOut * innerRatio;
+            int _n = Mathf.Max(_donutCount, 1);
+            Painter2D _p = mgc.painter2D;
+
+            // Filled annular sectors.
+            for (int _i = 0; _i < _n; _i++)
+            {
+                float _centerDeg = SectorCenterScreenDeg(_i, _n);
+                float _half = 180f / _n;
+                float _a0 = _centerDeg - _half;
+                float _a1 = _centerDeg + _half;
+
+                float _t = _sectorT != null && _i < _sectorT.Length ? _sectorT[_i] : 0f;
+                _p.fillColor = Color.Lerp(bandColor, bandHighlightColor, _t);
+                _p.BeginPath();
+                _p.Arc(_center, _rOut, new Angle(_a0, AngleUnit.Degree), new Angle(_a1, AngleUnit.Degree),
+                    ArcDirection.Clockwise);
+                _p.Arc(_center, _rIn, new Angle(_a1, AngleUnit.Degree), new Angle(_a0, AngleUnit.Degree),
+                    ArcDirection.CounterClockwise);
+                _p.ClosePath();
+                _p.Fill();
+            }
+
+            // Radial separators (only meaningful with more than one sector).
+            _p.strokeColor = separatorColor;
+            _p.lineWidth = separatorWidth;
+            if (_n > 1)
+            {
+                for (int _i = 0; _i < _n; _i++)
+                {
+                    float _edgeRad = (SectorCenterScreenDeg(_i, _n) - 180f / _n) * Mathf.Deg2Rad;
+                    var _dir = new Vector2(Mathf.Cos(_edgeRad), Mathf.Sin(_edgeRad));
+                    _p.BeginPath();
+                    _p.MoveTo(_center + _dir * _rIn);
+                    _p.LineTo(_center + _dir * _rOut);
+                    _p.Stroke();
+                }
+            }
+
+            // Inner + outer ring outlines.
+            DrawCircle(_p, _center, _rOut);
+            DrawCircle(_p, _center, _rIn);
+        }
+
+        // Advance every sector's highlight amount toward its target (selected = 1, rest = 0), repaint, and pause
+        // once settled. Framerate-independent (uses the tick's delta). Cheap — only runs mid-transition.
+        private void TickBandFade(TimerState ts)
+        {
+            if (_sectorT == null || _donut == null)
+            {
+                _bandAnim?.Pause();
+                return;
+            }
+
+            float _dt = ts.deltaTime / 1000f;
+            float _step = highlightFadeSeconds <= 0f ? 1f : _dt / highlightFadeSeconds;
+            bool _moving = false;
+
+            for (int _i = 0; _i < _sectorT.Length; _i++)
+            {
+                float _target = _i == _donutSelected ? 1f : 0f;
+                if (!Mathf.Approximately(_sectorT[_i], _target))
+                {
+                    _sectorT[_i] = Mathf.MoveTowards(_sectorT[_i], _target, _step);
+                    _moving = true;
+                }
+            }
+
+            _donut.MarkDirtyRepaint();
+            if (!_moving) _bandAnim?.Pause();
+        }
+
+        private static void DrawCircle(Painter2D p, Vector2 center, float radius)
+        {
+            p.BeginPath();
+            p.Arc(center, radius, new Angle(0f, AngleUnit.Degree), new Angle(360f, AngleUnit.Degree),
+                ArcDirection.Clockwise);
+            p.Stroke();
+        }
+
+        // Sector-centre angle in Painter2D screen space (deg, 0 = +x, y-down => clockwise). The selection math is
+        // CW-from-up, so screen = that minus 90°.
+        private static float SectorCenterScreenDeg(int index, int count) =>
+            EmoteWheelSelection.SectorCenterAngle(index, count) - 90f;
 
         /// <summary>Build (once) + reveal the wheel with no slot selected.</summary>
         public void Open()
@@ -152,8 +364,9 @@ namespace UI.EmoteWheel
         }
 
         /// <summary>
-        /// Highlight the slot at <paramref name="index"/> (<see cref="EmoteWheelSelection.None"/> = clear) and
-        /// update the caption with that emote's name. Cheap + idempotent — safe to call every frame.
+        /// Highlight the sector at <paramref name="index"/> (<see cref="EmoteWheelSelection.None"/> = clear),
+        /// repaint the donut, scale the icon, and show that emote's name big in the hole. Cheap + idempotent —
+        /// safe to call every frame.
         /// </summary>
         public void SetSelection(int index)
         {
@@ -165,12 +378,30 @@ namespace UI.EmoteWheel
                 _slots[_i].EnableInClassList(SlotSelectedClass, _i == index);
             }
 
+            // Hide the selected sector's own label — the centre caption names it, so no duplicate.
+            for (int _i = 0; _i < _labels.Count; _i++)
+            {
+                _labels[_i].EnableInClassList(CaptionHiddenClass, _i == index);
+            }
+
+            _donutSelected = index;
+            if (highlightFadeSeconds <= 0f)
+            {
+                if (_sectorT != null)
+                    for (int _i = 0; _i < _sectorT.Length; _i++) _sectorT[_i] = _i == index ? 1f : 0f;
+                _donut?.MarkDirtyRepaint();
+            }
+            else
+            {
+                _bandAnim?.Resume();
+            }
+
             if (_caption != null)
             {
                 EmoteDefinition _emote = GetEmote(index);
                 bool _has = _emote != null && !string.IsNullOrEmpty(_emote.displayName);
                 _caption.text = _has ? _emote.displayName : string.Empty;
-                _caption.EnableInClassList(LabelHiddenClass, !_has);
+                _caption.EnableInClassList(CaptionHiddenClass, !_has);
             }
         }
     }

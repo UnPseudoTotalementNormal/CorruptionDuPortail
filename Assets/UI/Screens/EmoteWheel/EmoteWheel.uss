@@ -1,6 +1,7 @@
-/* Radial emote wheel layout. Slots are absolutely positioned by EmoteWheelController (translate per sector).
- * Visuals reuse the SAMPLED gold/scrim tokens (variables.uss) — provisional + design-owned; this file is a
- * layout, not a palette. USS reality: px/% only, flexbox only, no gradient/box-shadow. */
+/* Radial emote wheel layout. The DONUT (band + sectors + separators) is drawn by EmoteWheelController with
+ * Painter2D (its colours are serialized on the component — design-owned + provisional). This file only lays out
+ * the ring box, the per-sector icon/label slots, and the centre caption, reusing the sampled gold/scrim tokens
+ * (variables.uss). USS reality: px/% only, flexbox only, no gradient/box-shadow. */
 
 .emote-wheel {
     position: absolute;
@@ -24,32 +25,49 @@
     display: none;
 }
 
-/* Fixed square that holds the ring; the hub + caption + slots all centre on it. */
+/* Fixed square that holds the wheel; the donut, slots and caption all centre on it. Keep in sync with the
+ * controller's MidRadius / SlotSize constants. */
 .emote-wheel__ring {
-    width: 520px;
-    height: 520px;
+    width: 620px;
+    height: 620px;
     align-items: center;
     justify-content: center;
 }
 
-/* Centre hub — a small dark disc so the ring reads as a wheel even with one emote. */
-.emote-wheel__hub {
-    width: 96px;
-    height: 96px;
-    border-radius: 48px;
-    background-color: var(--cdp-color-role-scrim);
-    border-width: 2px;
-    border-color: var(--cdp-color-role-border-soft);
+/* Full-ring anchor that flex-centres the caption over the hole (robust centring, no translate maths). */
+.emote-wheel__caption-anchor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Emote name, centred just below the hub. Hidden (via the modifier) when nothing is pointed at. */
-.emote-wheel__caption {
+/* The Painter2D-drawn donut fills the ring box, behind the slots + caption. */
+.emote-wheel__donut {
     position: absolute;
-    top: 60%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* PRIMARY focal name: BIG in the centre hole, on a dark pill so it reads over sky OR ground. The text outline
+ * keeps it legible on any background (the hole stays transparent — no full scrim disc). Hidden when nothing is
+ * pointed at. Box is absolutely centred by the controller-independent translate. */
+.emote-wheel__caption {
+    padding: 4px 16px;
+    background-color: rgba(10, 10, 14, 0.72);
+    border-radius: 10px;
     color: var(--cdp-color-role-title);
-    font-size: var(--cdp-font-size-base);
+    font-size: 38px;
     -unity-text-align: middle-center;
     -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
     opacity: 1;
     transition-property: opacity;
     transition-duration: var(--cdp-dur-fast);
@@ -59,30 +77,47 @@
     opacity: 0;
 }
 
-/* One selectable emote. Positioned by the controller; here we only style the disc + hover-select feel. */
+/* One emote slot: a transparent box centred on its sector (the donut draws the band underneath). Holds the
+ * icon only; the label is a separate element placed radially OUTSIDE the ring. */
 .emote-wheel__slot {
-    width: 120px;
-    height: 120px;
-    border-radius: 60px;
+    width: 84px;
+    height: 84px;
     align-items: center;
     justify-content: center;
-    background-color: var(--cdp-color-role-scrim);
-    border-width: 2px;
-    border-color: var(--cdp-color-role-border-soft);
-    scale: 1 1;
-    transition-property: scale, border-color, background-color;
-    transition-duration: var(--cdp-dur-fast);
 }
 
 .emote-wheel__slot-icon {
-    width: 76px;
-    height: 76px;
+    width: 68px;
+    height: 68px;
     -unity-background-scale-mode: scale-to-fit;
+    scale: 1 1;
+    transition-property: scale;
+    transition-duration: var(--cdp-dur-fast);
 }
 
-/* Highlighted slot (the emote the pointer/stick points at): grows + takes the gold accent. */
-.emote-wheel__slot--selected {
-    scale: 1.18 1.18;
-    background-color: var(--cdp-color-role-panel);
-    border-color: var(--cdp-color-role-border);
+/* No sprite yet → a rotated square placeholder (the sketch's diamond). */
+.emote-wheel__slot-icon--placeholder {
+    width: 54px;
+    height: 54px;
+    rotate: 45deg;
+    background-color: var(--cdp-color-role-title);
+}
+
+/* SECONDARY name, outside the ring on its sector's ray. Small + dimmed (discovery aid while icons are
+ * placeholder); the outline keeps it legible over any background. Fixed box (controller centres it). */
+.emote-wheel__slot-label {
+    color: var(--cdp-color-role-title);
+    font-size: var(--cdp-font-size-base);
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+    opacity: 0.82;
+    transition-property: opacity;
+    transition-duration: var(--cdp-dur-fast);
+}
+
+/* Highlighted slot (the emote pointed at): the icon grows (the band accent is drawn by the donut). */
+.emote-wheel__slot--selected .emote-wheel__slot-icon {
+    scale: 1.14 1.14;
 }

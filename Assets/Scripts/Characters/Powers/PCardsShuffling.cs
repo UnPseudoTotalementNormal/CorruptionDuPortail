@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Characters.Powers.Target;
 using ChatSystem;
-using FocusSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
-using Network;
 using RoleTarget;
 using UI.BoardUI.Selection;
 using Unity.Netcode;
@@ -13,10 +15,34 @@ using FocusType = FocusSystem.FocusType;
 
 namespace Characters.Powers
 {
-    public class PCardsShuffling : Power
+    public class PCardsShuffling : Power, ICardsShufflingGuess, IDiscoveredAdd
     {
         public NetworkList<ulong> discoveredClientIds = new(); // List of client id role discovered or if discovered that it's not used
         private ulong currentRoleGuessClientId;
+
+        // Powers-POCO v2: the guess-resolution logic lives in CardsShufflingDecision (pure). The guess
+        // report (read) + the discovered-list write are power-local, exposed via ICardsShufflingGuess /
+        // IDiscoveredAdd and reached through SelfState. The multi-step selection flow + fake-card branch stay
+        // here. Behaviour-identical to the old inline GuessRoleRpc.
+        private readonly CardsShufflingDecision _decision = new();
+        private ulong _lastGuessClickedId;
+
+        bool ICardsShufflingGuess.IsCorrect =>
+            characterManager.GetCharacter(_lastGuessClickedId).role.roleID
+            == characterManager.GetCharacter(currentRoleGuessClientId).role.roleID;
+
+        string ICardsShufflingGuess.ClickedPseudo =>
+            lobbyPlayerInfoHolder.GetPlayerInfo(_lastGuessClickedId).playerName.ToString();
+
+        string ICardsShufflingGuess.GuessRoleName =>
+            characterManager.GetCharacter(currentRoleGuessClientId).role.roleName.ToString();
+
+        IReadOnlyList<string> ICardsShufflingGuess.TargetedRoleNames =>
+            roleTargetSystem.GetAllTargetingDataForTargeter(currentRoleGuessClientId)
+                .Select(_td => characterManager.GetCharacter(_td.targetId).role.roleName.ToString())
+                .ToList();
+
+        void IDiscoveredAdd.DiscoveredAdd(int _slot) => discoveredClientIds.Add((ulong)_slot);
 
         public override void OnNetworkSpawn()
         {
@@ -75,47 +101,13 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void GuessRoleRpc(ulong _clickedId)
         {
-            Character _clickedCharacter = characterManager.GetCharacter(_clickedId);
-            Character _guessCharacter = characterManager.GetCharacter(currentRoleGuessClientId);
-            bool _isCorrectGuess = _clickedCharacter.role.roleID == _guessCharacter.role.roleID;
-            
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _clickedCharacter.ownerClientId.Value);
-            
-            ChatMessage _resultMessage = new ChatMessage
-            {
-                senderClientId = ChatManager.SERVER_CLIENT_ID,
-                chatId = (int)ChatWindowIDs.Server,
-                message = _isCorrectGuess
-                    ? $"Vous avez correctement deviné que {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} est {_guessCharacter.role.roleName}."
-                    : $"Votre supposition était incorrecte, {lobbyPlayerInfoHolder.GetPlayerInfo(_clickedId).playerName} n'est pas {_guessCharacter.role.roleName}."
-            };
-            
-            
-            if (_isCorrectGuess)
-            {
-                discoveredClientIds.Add(_clickedId);
-                gameInfoRevealer.SendRevealLevelRpc(_clickedId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
-            }
-            else
-            {
-                List<TargetingData> _targetedClientIds = roleTargetSystem.GetAllTargetingDataForTargeter(currentRoleGuessClientId);
-                if (_targetedClientIds.Count == 0)
-                {
-                    _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} n'a ciblé aucun rôle.";
-                }
-                else
-                {
-                    _resultMessage.message += $"\nLe role {_guessCharacter.role.roleName} a ciblé ces rôles:";
-                    foreach (var _targetData in _targetedClientIds)
-                    {
-                        Character _targetedCharacter = characterManager.GetCharacter(_targetData.targetId);
-                        _resultMessage.message += $"\n- {_targetedCharacter.role.roleName}";
-                    }
-                }
-            }
-            
-            chatManager.ReceiveChatMessageRpc(_resultMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
-            
+            _lastGuessClickedId = _clickedId;
+            // State feeds BOTH the context (the decision READS ctx.State<ICardsShufflingGuess>()) and the
+            // runtime (DiscoveredAdd WRITES the discovered list) — both resolve to this carrier via SelfState.
+            var _selfState = SelfState;
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_clickedId, state: _selfState), _selfState);
+
             OnUsed();
         }
 

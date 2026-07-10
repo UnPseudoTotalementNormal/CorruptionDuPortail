@@ -310,6 +310,38 @@ namespace Tests.PlayMode
                 _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
                 "Blessing should reveal the matching target's role to the owner.");
         }
+
+        // Powers-POCO v2 wiring golden: PCardsShuffling delegates GuessRoleRpc to CardsShufflingDecision →
+        // NewTargeting + (correct) DiscoveredAdd + reveal + an owner-directed result chat. The guess report
+        // is computed by the power's own ICardsShufflingGuess port.
+        [UnityTest]
+        public IEnumerator PCardsShuffling_CorrectGuessRevealsAndRecordsTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character clicked = _characterManager.AddNewCharacter(1122);
+            Character guess = _characterManager.AddNewCharacter(3344);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, clicked, guess);
+
+            clicked.role = new Role { roleID = RoleID.Omniscient, roleName = "Omni" };
+            guess.role = new Role { roleID = RoleID.Omniscient, roleName = "Omni" };
+
+            GameObject powerGo = new GameObject("CardsShuffling");
+            var power = powerGo.AddComponent<PCardsShuffling>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.SetPrivateField(power, "currentRoleGuessClientId", guess.ownerClientId.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "GuessRoleRpc", clicked.ownerClientId.Value);
+            yield return null;
+
+            Assert.IsTrue(power.discoveredClientIds.Contains(clicked.ownerClientId.Value),
+                "CardsShuffling correct guess should record the clicked target as discovered.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(clicked.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "CardsShuffling correct guess should reveal the clicked target's role to the owner.");
+        }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
 {

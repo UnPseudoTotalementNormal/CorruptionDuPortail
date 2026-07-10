@@ -14,18 +14,21 @@ namespace CorruptionDuPortail.Domain.Powers
         /// <summary>A second picked slot for char+role powers (the picked role's owner), or -1.</summary>
         public int SecondaryTargetSlot { get; }
         public int UsesLeft { get; }
+        /// <summary>Client-runtime flag for powers whose effect runs on the contacted target's own client (LackOfAffection).</summary>
+        public bool IsTrueLocalTarget { get; }
         /// <summary>Read-only roster view (slots + faction + pseudo) for roster-reading powers. May be null.</summary>
         public IRosterView Roster { get; }
 
         private readonly IPowerStateResolver _state;
 
         public PowerContext(int ownerSlot, int targetSlot = -1, int secondaryTargetSlot = -1, int usesLeft = 1,
-            IRosterView roster = null, IPowerStateResolver state = null)
+            bool isTrueLocalTarget = false, IRosterView roster = null, IPowerStateResolver state = null)
         {
             OwnerSlot = ownerSlot;
             TargetSlot = targetSlot;
             SecondaryTargetSlot = secondaryTargetSlot;
             UsesLeft = usesLeft;
+            IsTrueLocalTarget = isTrueLocalTarget;
             Roster = roster;
             _state = state;
         }

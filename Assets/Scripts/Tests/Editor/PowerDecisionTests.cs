@@ -295,5 +295,67 @@ namespace Tests.Editor
             var outcome = new InfiniteMessageDecision().Decide(new PowerContext(ownerSlot: 2));
             CollectionAssert.AreEqual(new EffectDescriptor[] { new SetMessageLeft(2, int.MaxValue) }, outcome.Effects);
         }
+
+        [Test]
+        public void EmbraceOfShadows_RoleMatch_CorruptsRaisesRevealsBoth()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var outcome = new EmbraceOfShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new CorruptPlayer(1),
+                new CorruptionSucceeded(1),
+                new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, false),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void EmbraceOfShadows_RoleMismatch_TargetsFails()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Roles[1] = 7; roster.Roles[2] = 9;
+            var outcome = new EmbraceOfShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1), new CorruptionFailed(1) }, outcome.Effects);
+        }
+
+        [Test]
+        public void LackOfAffection_ChosenTrueLocal_RevealsAndChats()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.chosen; roster.RoleNames[0] = "Marginal";
+            var outcome = new LackOfAffectionDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: true, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new RevealInfo(0, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
+                new ChatLocal("Marginal est venu(e) vous voir...", -1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void LackOfAffection_NonChosen_NotTrueLocal_Empty()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            var outcome = new LackOfAffectionDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: false, roster: roster));
+            Assert.AreEqual(0, outcome.Effects.Count);
+        }
+
+        [Test]
+        public void CorruptingMark_TargetsStoresRaisesCorrupts()
+        {
+            var outcome = new CorruptingMarkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 3));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 3),
+                new StoreLastCorrupted(3),
+                new CorruptionSucceeded(3),
+                new CorruptPlayer(3),
+            }, outcome.Effects);
+        }
     }
 }

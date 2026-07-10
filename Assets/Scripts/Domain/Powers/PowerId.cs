@@ -20,5 +20,8 @@ namespace CorruptionDuPortail.Domain.Powers
         CursedVision = 10,
         Omniscience = 11,
         InfiniteMessage = 12,
+        EmbraceOfShadows = 13,
+        LackOfAffection = 14,
+        CorruptingMark = 15,
     }
 }

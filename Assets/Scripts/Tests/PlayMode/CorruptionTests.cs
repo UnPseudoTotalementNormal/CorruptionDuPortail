@@ -279,6 +279,37 @@ namespace Tests.PlayMode
                 _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
                 "HighPriorityBounty should publicly reveal a robot target's role.");
         }
+
+        // Powers-POCO v2 wiring golden: PBlessing delegates its char+role RPC to BlessingDecision → target,
+        // then (role matches) heal-if-needed + reveal + bless + announce.
+        [UnityTest]
+        public IEnumerator PBlessing_HealsBlessesAndRevealsMatchingTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(1357);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { roleName = "Bless-Test" };
+            var compareRole = new Role { roleName = "Bless-Test", ownerClientId = target.ownerClientId.Value };
+
+            GameObject powerGo = new GameObject("Blessing");
+            var power = powerGo.AddComponent<PBlessing>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.IsFalse(target.isBlessed.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "TryBlessCharacterServerRpc",
+                target.ownerClientId.Value, compareRole);
+            yield return null;
+
+            Assert.IsTrue(target.isBlessed.Value, "Blessing should bless a matching-role target.");
+            Assert.IsTrue(target.isHealed.Value, "Blessing should heal a not-yet-healed matching target.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "Blessing should reveal the matching target's role to the owner.");
+        }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
 {

@@ -4,6 +4,19 @@ Branch: `refactor/powers-poco-v2` (off `Dev` @ 9e77d9d). Supersedes the `refacto
 
 Decided by architecture party (Cloud Dragonborn / Winston / Indie), ~95% converged. This spec is the plan of record.
 
+## ⚠️ SHIPPED REALITY (2026-07-10 reconciliation — read this before the idealized sections below)
+
+The sections below (Assemblies, Fork decisions, Per-power authoring rules, Phase 0) describe the **planned** architecture. Phase 3 deliberately took the **in-place delegation** route instead of the prefab-holder rewire, so several headline mechanisms were **never built**. What actually shipped:
+
+- **`PowerHolder` (generic) + `[SerializeReference]` decision on prefabs → NOT USED.** `PowerHolder.cs` exists but is **dead scaffolding**: nothing instantiates it, nothing calls its `ServerRun`, no prefab serializes a decision onto it. The real wiring is: each existing `Power : NetworkBehaviour` keeps its prefab/spawn/identity and delegates its server-effect body to its decision via `Power.RunDecisionEffects` (or `RunClientDecisionEffects` for the owner-client powers). **Prune or clearly quarantine `PowerHolder`.**
+- **`PowerCatalog` + `[PowerLogic(PowerId.X)]` attribute auto-registration → NOT BUILT.** No `PowerCatalog`, no `[PowerLogic]`. Only the *effect executors* self-register (reflection scan in `PowerDispatcherHost`). Powers are NOT attribute-registered.
+- **`ChainDecorator` / `ChainStateCarrier` POCO → NOT BUILT.** Chaining still runs through the existing `ChainingManager` singleton; it was not POCO-migrated.
+- **Completeness guard-test → NOW BUILT** (was missing at Phase 4). `Assets/Scripts/Tests/Editor/EffectRegistryCompletenessTests.cs`: asserts every `EffectDescriptor` subtype has a registered executor OR is in an explicit `KnownProducerless` allowlist (**9** producer-less bricks, not 6 — the admitted 6 **plus** `AssignChatId`/`DestroyAllArrows`/`UndiscoverChat`), and keeps the allowlist honest.
+
+**Real per-power authoring cost (supersedes the payoff table below):** adding a power = `XDecision.cs` (Domain) **+ a `Power : NetworkBehaviour` subclass** that builds the `PowerContext` and calls `RunDecisionEffects` **+ 1 append line to the `PowerId` enum**. So it is **two files per power + a shared enum edit** — NOT the "no shared file / prefab `[SerializeReference]`" the table promises. The genuine, delivered payoff is real and large: each power's *logic* is a pure, one-file, zero-NGO `IPowerDecision` with fast value-asserted tests.
+
+**Merge gate update:** the two boundary-shifted powers `PCursedVision` + `PEmbraceOfShadows` were found (2026-07-10 review) to have a **real regression** — their owner-local effects (reveal/card/verdict via `SetRevealLevel`/`AddCardEffect`/`AddMessageLocal`) ran on the server instead of the caster's client, invisible to a non-host caster and hidden by a host-only playtest. **Fixed** by routing both through `RunClientDecisionEffects` on the owner client (byte-identical to v1), and now covered by an automated **2-NM boundary test** (`Assets/Scripts/Tests/PlayMode/OwnerLocalEffectBoundaryTests.cs`, host + real client, mutation-proven). The remaining gate is a **client-side 2-build playtest of the perceptual layer** the harness can't prove (FMOD cue, card marker render, on-screen verdict) for the held-5.
+
 ## The one idea: humble object, per power
 
 **The POCO decides. The `NetworkBehaviour` replicates (dumb). An executor applies effects.** No layer does two of the three. There is NO central `PowerResolver` and NO central power `switch` — each power owns its own decision.
@@ -126,10 +139,10 @@ The in-place delegation pattern + all shared infra are proven; these 5 are owner
 - **Gate:** compile-clean, EditMode **353/353** (was 362 — the 9 `PowerResolverTests` went with the class), EntrapmentPowerTests **8/8**.
 - NOTE: the v1 observation-only `EffectDescriptor` bricks (`PlayLoopingSound`/`NotifyOwnerUsed`/`PlayOneShotSound`/`UnfocusAll`/`StopLoopingSound`/`DecrementUses`) are now producer-less dead data in `EffectDescriptor.cs` (still covered by `EffectDescriptorTests` value-equality). Left in place — harmless Domain vocabulary; prune in a follow-up if desired.
 
-The whole Powers→POCO v2 chantier is code-complete: 22/22 powers are pure `IPowerDecision` POCOs, wired in-place, old path gone. The only gate left before merge is the **2-build playtest of the final 5** (boundary-shifted powers).
+The whole Powers→POCO v2 chantier is code-complete: 22/22 powers are pure `IPowerDecision` POCOs, wired in-place, old path gone. See the **SHIPPED REALITY** section at the top for what deviated from this plan (dead `PowerHolder`, no catalog/decorator) and for the 2026-07-10 review outcome: two confirmed boundary regressions (`PCursedVision`/`PEmbraceOfShadows`) fixed + netted by an automated 2-NM boundary test, completeness guard-test added. Remaining gate before merge = a **client-side** 2-build playtest of the held-5 perceptual layer.
 
 ## Guardrails
 - Keep every step compiling + tests green (poll `read_console` after each change; `run_tests` between phases).
 - `noEngineReferences` on Domain is the purity enforcement — never weaken it.
 - Server authority: only the server writes NVs / runs decisions that mutate; `Decide` is pure and side-effect-free (it returns intentions).
-- Reuse the golden-trace harness concept for the executor/dispatch realization (Murat's gap: goldens prove intention, add per-effect realization tests).
+- Reuse the golden-trace harness concept for the executor/dispatch realization (Murat's gap: goldens prove intention, add per-effect realization tests). PARTIALLY DONE: PlayMode wiring goldens assert real engine state for ~12 powers, and `OwnerLocalEffectBoundaryTests` (2-NM) proves the owner-local reveal executes on the caster's client for CursedVision + Embrace. Still open: a 3-NM per-observer non-leak test for the `Broadcast:true` (`SendRevealLevelRpc`) reveal path.

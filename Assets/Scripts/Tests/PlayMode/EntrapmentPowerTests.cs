@@ -230,5 +230,43 @@ namespace Tests.PlayMode
             Assert.IsTrue(power.isLegacyInherited, "Legacy should be marked as inherited");
             Assert.IsTrue(owner.role.powers.Any(p => p.powerName == inheritedPower.powerName), "Owner should have received a clone of the inherited power within timeout");
         }
+
+        // Powers-POCO v2 wiring golden: PReincarnation delegates its server RPC to ReincarnationDecision →
+        // NewTargeting + SetPassiveBroadcast(true) + GrantRolePowers. The passive broadcast and the engine
+        // power grants are power-local (ISetPassiveState / IGrantRolePowers via SelfState).
+        [UnityTest]
+        public IEnumerator PReincarnation_GrantsTargetRolePowersAndGoesPassive()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(556);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            owner.role = new Role { roleID = RoleID.Dryade };
+
+            GameObject grantedGo = new GameObject("GrantedPower");
+            grantedGo.AddComponent<NetworkObject>();
+            var grantedPower = grantedGo.AddComponent<Power>();
+            grantedPower.powerName = "Reincarnated";
+            grantedGo.GetComponent<NetworkObject>().Spawn();
+            target.role = new Role { roleID = RoleID.Omniscient };
+            target.role.powers.Add(grantedPower);
+
+            GameObject powerGo = new GameObject("Reincarnation");
+            var power = powerGo.AddComponent<PReincarnation>();
+            power.isPassive = false;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "ReincarnatePlayerRpc", target.ownerClientId.Value);
+
+            float timeout = Time.time + 2.0f;
+            yield return new WaitUntil(() =>
+                owner.role.powers.Any(p => p.powerName == grantedPower.powerName) || Time.time > timeout);
+
+            Assert.IsTrue(power.isPassive, "Reincarnation should broadcast isPassive=true.");
+            Assert.IsTrue(owner.role.powers.Any(p => p.powerName == grantedPower.powerName),
+                "Reincarnation should grant the target role's powers to the owner.");
+        }
     }
 }

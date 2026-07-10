@@ -11,5 +11,6 @@ namespace CorruptionDuPortail.Domain.Powers
         CorruptionParanoia = 1,
         CorruptionInsight = 2,
         CorruptionKnowledge = 3,
+        EyeOfTheVoid = 4,
     }
 }

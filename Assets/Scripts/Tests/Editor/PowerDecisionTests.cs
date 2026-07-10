@@ -32,5 +32,69 @@ namespace Tests.Editor
             Assert.IsTrue(new CorruptionParanoiaDecision().IsPassive);
             Assert.AreEqual(PowerId.CorruptionParanoia, new CorruptionParanoiaDecision().Id);
         }
+
+        // ---- Roster-reading passives -----------------------------------------------------
+        private sealed class FakeRoster : IRosterView
+        {
+            public System.Collections.Generic.IReadOnlyList<int> Slots { get; set; } = new int[0];
+            public readonly System.Collections.Generic.Dictionary<int, Characters.FactionType> Factions = new();
+            public readonly System.Collections.Generic.Dictionary<int, string> Pseudos = new();
+            public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
+            public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
+        }
+
+        [Test]
+        public void CorruptionInsight_RevealsEveryCharacterCorruptionToOwner_InOrder()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 5 } };
+            var outcome = new CorruptionInsightDecision().Decide(new PowerContext(ownerSlot: 0, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, true),
+                new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, true),
+                new RevealInfo(5, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, true),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void CorruptionKnowledge_RevealsForceCorruptPerCharacter()
+        {
+            var roster = new FakeRoster { Slots = new[] { 2, 7 } };
+            var outcome = new CorruptionKnowledgeDecision().Decide(new PowerContext(ownerSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new RevealInfo(2, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 2, true),
+                new RevealInfo(7, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 2, true),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void EyeOfTheVoid_DiscoversAnomalyChat_AnomaliesOnly()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.chosen;
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Factions[2] = Characters.FactionType.anomaly;
+
+            var outcome = new EyeOfTheVoidDecision { AnomalyChatId = 1 }.Decide(new PowerContext(ownerSlot: 0, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new DiscoverChat(1, "", PowerEffectAudience.Specific(1)),
+                new DiscoverChat(1, "", PowerEffectAudience.Specific(2)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void EyeOfTheVoid_NoAnomalies_AcceptsEmpty()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0 } };
+            roster.Factions[0] = Characters.FactionType.chosen;
+            var outcome = new EyeOfTheVoidDecision { AnomalyChatId = 1 }.Decide(new PowerContext(ownerSlot: 0, roster: roster));
+            Assert.IsTrue(outcome.Accepted);
+            Assert.AreEqual(0, outcome.Effects.Count);
+        }
     }
 }

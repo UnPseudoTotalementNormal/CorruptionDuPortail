@@ -63,7 +63,7 @@ namespace UI.InfoTable
                 if (idx >= 0) caps[idx] = new KeyValuePair<Role, int>(caps[idx].Key, caps[idx].Value + 1);
                 else caps.Add(new KeyValuePair<Role, int>(c.role, 1));
             }
-            return caps.Select(rc => new InfoTableRole(rc.Key.roleName.ToString(), rc.Value)).ToList();
+            return caps.Select(rc => new InfoTableRole(rc.Key.roleName.ToString(), rc.Value, rc.Key.factionType)).ToList();
         }
 
         public string GetRevealedRoleName(ulong clientId)

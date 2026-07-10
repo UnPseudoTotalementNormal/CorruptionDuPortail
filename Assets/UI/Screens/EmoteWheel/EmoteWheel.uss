@@ -121,3 +121,25 @@
 .emote-wheel__slot--selected .emote-wheel__slot-icon {
     scale: 1.14 1.14;
 }
+
+/* Release confirmation (icon + name) — a top-level element the controller animates from the chosen sector to
+ * the centre while scaling + fading. Centred origin; the controller drives translate/scale/opacity. */
+.emote-confirm {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 96px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.emote-confirm__label {
+    margin-top: 6px;
+    color: var(--cdp-color-role-title);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+}

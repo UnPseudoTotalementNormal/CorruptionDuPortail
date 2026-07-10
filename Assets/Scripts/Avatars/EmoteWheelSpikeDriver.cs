@@ -52,6 +52,7 @@ namespace Avatars
                 int _index = Selected();
                 EmoteDefinition _emote = wheel != null ? wheel.GetEmote(_index) : null;
                 Debug.Log($"[EMOTESPIKE] release -> index={_index} emote={(_emote != null ? _emote.displayName : "none")}");
+                if (_emote != null) wheel.Confirm(_index);
                 wheel?.Close();
             }
         }

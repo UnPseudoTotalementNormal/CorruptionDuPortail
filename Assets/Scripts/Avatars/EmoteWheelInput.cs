@@ -26,8 +26,9 @@ namespace Avatars
         [Tooltip("The wheel UI this drives. Wire the EmoteWheelController in the GameScene.")]
         [SerializeField] private EmoteWheelController wheel;
 
-        [Tooltip("Camera-mode broadcast (arbiter-written). The wheel is only reachable in Embodied. Wire the " +
-                 "shared CameraModeChannel asset.")]
+        [Tooltip("Camera-mode broadcast (arbiter-written). The wheel is reachable whenever the seated " +
+                 "first-person embodied camera is LIVE (night Board or day Vote — not the lobby, not a board " +
+                 "overview). Wire the shared CameraModeChannel asset.")]
         [SerializeField] private CameraModeChannel cameraModeChannel;
 
         [Header("Feel — placeholder defaults, Poyo-tuned")]
@@ -48,6 +49,15 @@ namespace Avatars
         private Vector2 _stick;
         private PlayerAvatar _localAvatar;
 
+        /// <summary>Whether the wheel is currently held open. The <see cref="AvatarCameraArbiter"/> reads it (+ the
+        /// events below) to FREEZE the camera look while the wheel is up, so the mouse drives the wheel's virtual
+        /// stick without also turning the camera. The cursor stays locked (the stick needs the delta).</summary>
+        public bool IsOpen => _open;
+
+        /// <summary>Raised when the wheel opens / closes — the arbiter subscribes to gate the look (tablet-style).</summary>
+        public event System.Action Opened;
+        public event System.Action Closed;
+
         private void Update()
         {
             Keyboard _keyboard = Keyboard.current;
@@ -57,14 +67,14 @@ namespace Avatars
             bool _pressed = _keyboard[openKey].wasPressedThisFrame;
             bool _released = _keyboard[openKey].wasReleasedThisFrame;
 
-            // Leaving the embodied view mid-hold: close WITHOUT playing (the wheel is embodied-only).
-            if (_open && !IsEmbodied())
+            // Leaving the first-person embodied view mid-hold: close WITHOUT playing (the wheel is FP-only).
+            if (_open && !IsFirstPersonLive())
             {
                 CloseWheel(playSelection: false);
                 return;
             }
 
-            if (_pressed && !_open && IsEmbodied())
+            if (_pressed && !_open && IsFirstPersonLive())
             {
                 OpenWheel();
             }
@@ -80,14 +90,20 @@ namespace Avatars
             }
         }
 
-        private bool IsEmbodied() =>
-            cameraModeChannel != null && cameraModeChannel.Current == CameraMode.Embodied;
+        // The wheel is reachable whenever the player is looking through their own eyes: EITHER the seated
+        // first-person embodied camera is the LIVE camera (arbiter-broadcast SeatedFirstPersonLive — true in
+        // night Board OR day Vote when the FP node is current, false on a board overview), OR the lobby
+        // free-roam first-person (FreeRoam, the separate AvatarFollowCamera — not covered by SeatedFirstPersonLive).
+        private bool IsFirstPersonLive() =>
+            cameraModeChannel != null
+            && (cameraModeChannel.SeatedFirstPersonLive || cameraModeChannel.Current == CameraMode.FreeRoam);
 
         private void OpenWheel()
         {
             _open = true;
             _stick = Vector2.zero;
             wheel?.Open();
+            Opened?.Invoke();
         }
 
         // Compute the pointed-at emote and highlight it. Locked cursor = accumulated mouse-delta stick;
@@ -118,6 +134,7 @@ namespace Avatars
         private void CloseWheel(bool playSelection)
         {
             _open = false;
+            Closed?.Invoke();
             if (wheel == null) return;
 
             if (playSelection)
@@ -130,6 +147,9 @@ namespace Avatars
                 {
                     PlayerAvatar _avatar = ResolveLocalAvatar();
                     _avatar?.RequestEmote(_emote.animatorEmoteId);
+                    // First-person confirmation: the chosen emote flies to the centre + fades (the wheel itself
+                    // has already closed).
+                    wheel.Confirm(_index);
                 }
             }
 

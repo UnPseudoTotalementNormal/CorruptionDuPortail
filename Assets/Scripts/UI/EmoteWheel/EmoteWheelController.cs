@@ -77,12 +77,25 @@ namespace UI.EmoteWheel
         [Tooltip("Seconds for a sector's band to fade between rest and highlight colour on hover (0 = instant).")]
         [SerializeField, Range(0f, 0.5f)] private float highlightFadeSeconds = 0.10f;
 
+        [Tooltip("On release, the chosen emote (icon + name) pops in at the centre and fades — a first-person " +
+                 "confirmation of what you played. This is its total duration (0 = no confirmation).")]
+        [SerializeField, Range(0f, 2f)] private float confirmSeconds = 0.9f;
+
         private VisualElement _root;
         private VisualElement _ring;
         private VisualElement _donut;
         private Label _caption;
         private readonly List<VisualElement> _slots = new();
         private readonly List<Label> _labels = new();
+
+        // Release confirmation: a top-level icon+name (SIBLING of the wheel root, so the wheel collapsing on
+        // release doesn't take it down) that animates from the chosen sector to the centre and fades slowly.
+        private VisualElement _confirm;
+        private VisualElement _confirmIcon;
+        private Label _confirmLabel;
+        private IVisualElementScheduledItem _confirmAnim;
+        private float _confirmT;
+        private const float ConfirmBox = 96f;
         private bool _initialized;
         private bool _built;
         private int _selected = EmoteWheelSelection.None;
@@ -127,6 +140,8 @@ namespace UI.EmoteWheel
                 _caption.pickingMode = PickingMode.Ignore;
                 if (_caption.parent != null) _caption.parent.pickingMode = PickingMode.Ignore;
             }
+
+            EnsureConfirm(_tree);
 
             _initialized = true;
         }
@@ -230,6 +245,95 @@ namespace UI.EmoteWheel
             label.style.translate = new StyleTranslate(new Translate(sin * _r - _w / 2f, cos * _r - _h / 2f));
         }
 
+        // Build the release-confirmation element once, as a SIBLING of the wheel root on the panel tree so the
+        // wheel collapsing on release never hides it. Centred origin (left/top 50%); the tween drives translate.
+        private void EnsureConfirm(VisualElement tree)
+        {
+            if (_confirm != null || tree == null) return;
+
+            _confirm = new VisualElement { name = "emote-confirm" };
+            _confirm.AddToClassList("emote-confirm");
+            _confirm.pickingMode = PickingMode.Ignore;
+            _confirm.style.display = DisplayStyle.None;
+
+            _confirmIcon = new VisualElement();
+            _confirmIcon.AddToClassList(SlotIconClass);
+            _confirmIcon.pickingMode = PickingMode.Ignore;
+            _confirm.Add(_confirmIcon);
+
+            _confirmLabel = new Label();
+            _confirmLabel.AddToClassList("emote-confirm__label");
+            _confirmLabel.pickingMode = PickingMode.Ignore;
+            _confirm.Add(_confirmLabel);
+
+            tree.Add(_confirm);
+        }
+
+        /// <summary>
+        /// Play the "you emoted X" confirmation: the chosen emote's icon + name POP in at the centre and fade out
+        /// over <see cref="confirmSeconds"/> — a first-person cue for what was just played. No-op when disabled
+        /// (0s), unbuilt, or the index is empty.
+        /// </summary>
+        public void Confirm(int index)
+        {
+            if (confirmSeconds <= 0f || _confirm == null) return;
+            EmoteDefinition _emote = GetEmote(index);
+            if (_emote == null) return;
+
+            bool _placeholder = _emote.icon == null;
+            _confirmIcon.EnableInClassList(SlotIconPlaceholderClass, _placeholder);
+            _confirmIcon.style.backgroundImage = _placeholder
+                ? StyleKeyword.None
+                : new StyleBackground(_emote.icon);
+            _confirmLabel.text = _emote.displayName ?? string.Empty;
+
+            _confirmT = 0f;
+            _confirm.style.display = DisplayStyle.Flex;
+            ApplyConfirmFrame();
+
+            _confirmAnim ??= _confirm.schedule.Execute(TickConfirm).Every(16);
+            _confirmAnim.Resume();
+        }
+
+        private void TickConfirm(TimerState ts)
+        {
+            if (_confirm == null)
+            {
+                _confirmAnim?.Pause();
+                return;
+            }
+
+            _confirmT += confirmSeconds <= 0f ? 1f : ts.deltaTime / 1000f / confirmSeconds;
+            if (_confirmT >= 1f)
+            {
+                _confirmT = 1f;
+                _confirm.style.display = DisplayStyle.None;
+                _confirmAnim?.Pause();
+                return;
+            }
+            ApplyConfirmFrame();
+        }
+
+        // Position/scale/opacity for the current confirmation progress: POP in at the centre (a quick scale-up
+        // with a slight overshoot that settles), hold, then fade out. Fixed at the centre — no travel.
+        private void ApplyConfirmFrame()
+        {
+            // Pop: 0.7 -> 1.1 (0..0.15), 1.1 -> 1.0 (0.15..0.28), steady after.
+            float _scale;
+            if (_confirmT < 0.15f) _scale = Mathf.Lerp(0.7f, 1.1f, _confirmT / 0.15f);
+            else if (_confirmT < 0.28f) _scale = Mathf.Lerp(1.1f, 1.0f, (_confirmT - 0.15f) / 0.13f);
+            else _scale = 1.0f;
+
+            // Fade in fast, hold, fade out over the tail.
+            float _alphaIn = Mathf.InverseLerp(0f, 0.1f, _confirmT);
+            float _alphaOut = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1f, _confirmT));
+            float _alpha = Mathf.Min(_alphaIn, _alphaOut);
+
+            _confirm.style.translate = new StyleTranslate(new Translate(-ConfirmBox / 2f, -ConfirmBox / 2f));
+            _confirm.style.scale = new StyleScale(new Scale(new Vector2(_scale, _scale)));
+            _confirm.style.opacity = _alpha;
+        }
+
         // Create the custom donut element once and insert it behind everything in the ring.
         private void EnsureDonut()
         {
@@ -258,20 +362,26 @@ namespace UI.EmoteWheel
             // Filled annular sectors.
             for (int _i = 0; _i < _n; _i++)
             {
-                float _centerDeg = SectorCenterScreenDeg(_i, _n);
-                float _half = 180f / _n;
-                float _a0 = _centerDeg - _half;
-                float _a1 = _centerDeg + _half;
+                // A single sector spans a full turn: use DISTINCT 0/360 endpoints (a centre±180 span gives
+                // -270/+90, which normalize to the same angle and collapse the fill arc into a wedge). n>1
+                // sectors are < 360 with distinct endpoints, so they take the normal centre±half span.
+                float _a0, _a1;
+                if (_n == 1)
+                {
+                    _a0 = 0f;
+                    _a1 = 360f;
+                }
+                else
+                {
+                    float _centerDeg = SectorCenterScreenDeg(_i, _n);
+                    float _half = 180f / _n;
+                    _a0 = _centerDeg - _half;
+                    _a1 = _centerDeg + _half;
+                }
 
                 float _t = _sectorT != null && _i < _sectorT.Length ? _sectorT[_i] : 0f;
                 _p.fillColor = Color.Lerp(bandColor, bandHighlightColor, _t);
-                _p.BeginPath();
-                _p.Arc(_center, _rOut, new Angle(_a0, AngleUnit.Degree), new Angle(_a1, AngleUnit.Degree),
-                    ArcDirection.Clockwise);
-                _p.Arc(_center, _rIn, new Angle(_a1, AngleUnit.Degree), new Angle(_a0, AngleUnit.Degree),
-                    ArcDirection.CounterClockwise);
-                _p.ClosePath();
-                _p.Fill();
+                FillAnnularSector(_p, _center, _rOut, _rIn, _a0, _a1);
             }
 
             // Radial separators (only meaningful with more than one sector).
@@ -321,6 +431,30 @@ namespace UI.EmoteWheel
 
             _donut.MarkDirtyRepaint();
             if (!_moving) _bandAnim?.Pause();
+        }
+
+        // Fill one annular sector [a0..a1] (deg), subdivided so no sub-arc exceeds ~90°. A single Painter2D arc
+        // spanning a large sweep (esp. a full 360° ring) mis-tessellates and leaves a triangular gap; the small
+        // <=90° annular quads (the exact geometry the multi-emote wheel already fills cleanly) don't. Adjacent
+        // sub-fills share coincident edges and the same colour, so the band reads seamless.
+        private static void FillAnnularSector(Painter2D p, Vector2 center, float rOut, float rIn, float a0, float a1)
+        {
+            float _sweep = a1 - a0;
+            int _steps = Mathf.Max(1, Mathf.CeilToInt(Mathf.Abs(_sweep) / 90f));
+            float _d = _sweep / _steps;
+
+            for (int _s = 0; _s < _steps; _s++)
+            {
+                float _b0 = a0 + _d * _s;
+                float _b1 = a0 + _d * (_s + 1);
+                p.BeginPath();
+                p.Arc(center, rOut, new Angle(_b0, AngleUnit.Degree), new Angle(_b1, AngleUnit.Degree),
+                    ArcDirection.Clockwise);
+                p.Arc(center, rIn, new Angle(_b1, AngleUnit.Degree), new Angle(_b0, AngleUnit.Degree),
+                    ArcDirection.CounterClockwise);
+                p.ClosePath();
+                p.Fill();
+            }
         }
 
         private static void DrawCircle(Painter2D p, Vector2 center, float radius)

@@ -383,4 +383,12 @@ namespace CorruptionDuPortail.Domain
         public SetPassiveBroadcast(bool value) { Value = value; }
         protected override IEnumerable<object> EqualityComponents { get { yield return Value; } }
     }
+
+    /// <summary>PCardsShuffling: add a slot to the power's discovered-list (power-local state write).</summary>
+    public sealed class DiscoveredAdd : EffectDescriptor
+    {
+        public int Slot { get; }
+        public DiscoveredAdd(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
 }

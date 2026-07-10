@@ -25,5 +25,10 @@ namespace CorruptionDuPortail.Domain.Powers
         CorruptingMark = 15,
         Legacy = 16,
         Reincarnation = 17,
+        BoundByInk = 18,
+        ClandestineObservation = 19,
+        VisionOfTheImpossible = 20,
+        CardsShuffling = 21,
+        PersonalBeacons = 22,
     }
 }

@@ -1,6 +1,7 @@
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.Powers.State;
 using NUnit.Framework;
 
 namespace Tests.Editor
@@ -374,6 +375,118 @@ namespace Tests.Editor
                 new NewTargeting(0, 3),
                 new SetPassiveBroadcast(true),
                 new GrantRolePowers(0, 3),
+            }, outcome.Effects);
+        }
+
+        // ---- Query/state-port powers -----------------------------------------------------
+        private sealed class FakeState : IPowerStateResolver
+        {
+            private readonly System.Collections.Generic.Dictionary<System.Type, object> _map = new();
+            public FakeState With<T>(T impl) where T : class { _map[typeof(T)] = impl; return this; }
+            public TPort Resolve<TPort>() where TPort : class => _map.TryGetValue(typeof(TPort), out var v) ? (TPort)v : null;
+        }
+        private sealed class FakeInk : IInkChatState { public int ChatId { get; set; } }
+        private sealed class FakeClandestine : IClandestineReport { public bool HasCharacters { get; set; } public string RoleLabel { get; set; } public int DistinctTargetingCount { get; set; } }
+        private sealed class FakeVision : IVisionGuesses { public System.Collections.Generic.IReadOnlyList<VisionGuess> Guesses { get; set; } }
+        private sealed class FakeCards : ICardsShufflingGuess { public bool IsCorrect { get; set; } public string ClickedPseudo { get; set; } public string GuessRoleName { get; set; } public System.Collections.Generic.IReadOnlyList<string> TargetedRoleNames { get; set; } = new string[0]; }
+
+        [Test]
+        public void BoundByInk_TargetsDiscoversRegisters()
+        {
+            var state = new FakeState().With<IInkChatState>(new FakeInk { ChatId = 515100 });
+            var outcome = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new DiscoverChat(515100, "Lié par l'encre", PowerEffectAudience.Specific(1)),
+                new RegisterInkTarget(1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Clandestine_NoChars_ZeroWithPeriod()
+        {
+            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = false, RoleLabel = "Robot", DistinctTargetingCount = 0 });
+            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot\": 0.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Clandestine_HasChars_CountNoPeriod()
+        {
+            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = true, RoleLabel = "Robot Mécanique", DistinctTargetingCount = 3 });
+            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot Mécanique\": 3", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Vision_FirstMatchStops_FoundMessage()
+        {
+            var state = new FakeState().With<IVisionGuesses>(new FakeVision { Guesses = new[] { new VisionGuess(1, false, "Alice"), new VisionGuess(7, true, "Bob"), new VisionGuess(9, false, "Carol") } });
+            var outcome = new VisionOfTheImpossibleDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new NewTargeting(0, 7),
+                new ChatBroadcast("Bob est l'un de ces personnages.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Vision_NoMatch_NotFound()
+        {
+            var state = new FakeState().With<IVisionGuesses>(new FakeVision { Guesses = new[] { new VisionGuess(1, false, "A"), new VisionGuess(7, false, "B") } });
+            var outcome = new VisionOfTheImpossibleDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new NewTargeting(0, 7),
+                new ChatBroadcast("Aucun personnage n'a été trouvé.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void CardsShuffling_Correct_RecordsReveals()
+        {
+            var state = new FakeState().With<ICardsShufflingGuess>(new FakeCards { IsCorrect = true, ClickedPseudo = "Bob", GuessRoleName = "Sorcier" });
+            var outcome = new CardsShufflingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new DiscoveredAdd(1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new ChatBroadcast("Vous avez correctement deviné que Bob est Sorcier.", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void CardsShuffling_Incorrect_WithTargets_AppendsList()
+        {
+            var state = new FakeState().With<ICardsShufflingGuess>(new FakeCards { IsCorrect = false, ClickedPseudo = "Bob", GuessRoleName = "Sorcier", TargetedRoleNames = new[] { "Robot", "Élu" } });
+            var outcome = new CardsShufflingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new ChatBroadcast("Votre supposition était incorrecte, Bob n'est pas Sorcier.\nLe role Sorcier a ciblé ces rôles:\n- Robot\n- Élu", -1, PowerEffectAudience.Specific(0)),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void PersonalBeacons_RevealsForceCorruptPerRobot()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Robots.Add(1); roster.Robots.Add(2);
+            var outcome = new PersonalBeaconsDecision().Decide(new PowerContext(ownerSlot: 0, roster: roster));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new RevealInfo(1, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
+                new RevealInfo(2, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
             }, outcome.Effects);
         }
     }

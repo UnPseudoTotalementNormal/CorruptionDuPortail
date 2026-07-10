@@ -72,7 +72,9 @@ Test a power = build a `PowerContext` + `Fake` state by hand, call `Decide`, ass
 
 **Phase 0 (foundation) — DONE.** Decision core (`IPowerDecision`/`PowerContext`/`PowerOutcome`/`IRosterView`/`IPowerStateResolver`), runtime registry (`EffectDispatcher` by-type + `PowerHolder` humble), 15 executors, power-local state mechanism (`EffectRuntime.PowerState` + state ports). All three patterns proven: passive, active, power-local state.
 
-**Phase 1-2 (decision migration) — 12/22 done, all EditMode-green (23 tests, ~0.1s):**
+**Phase 1-2 (decision migration) — ✅ DONE, 22/22, all EditMode-green (38 PowerDecision tests ~0.14s; full suite 362/362).** Every power's logic is now a pure POCO `IPowerDecision`, unit-tested with zero NGO. The per-power notes below are historical (they list the small infra each needed — all built: roster/query/state ports, event ports, client-context flag, give-power bricks). The state carriers + prefab/spawn wiring are Phase 3.
+
+_(historical migration order, all now done):_
 - Passive: CorruptionParanoia, CorruptionInsight, CorruptionKnowledge, EyeOfTheVoid, AutoCorruption, InfiniteMessage.
 - Active: ChainedByShadows, TruthChains, Blessing, HighPriorityBounty, CursedVision, Omniscience.
 - **Remaining ~10 powers** (each needs a small bespoke infra bit, then the pure decision + test):

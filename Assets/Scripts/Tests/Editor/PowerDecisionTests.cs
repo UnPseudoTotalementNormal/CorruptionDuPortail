@@ -275,5 +275,18 @@ namespace Tests.Editor
             Assert.AreEqual(new AddCardEffect(2, 1, false), outcome.Effects[3]);
             Assert.AreEqual(new ChatLocal("Alice est un élu.", -1), outcome.Effects[4]);
         }
+
+        [Test]
+        public void Omniscience_TargetsStoresRevealsRefreshes()
+        {
+            var outcome = new OmniscienceDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 5));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 5),
+                new StoreHackTarget(5),
+                new RevealInfo(5, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                RequestCharacterRefresh.Instance,
+            }, outcome.Effects);
+        }
     }
 }

@@ -18,5 +18,6 @@ namespace CorruptionDuPortail.Domain.Powers
         Blessing = 8,
         HighPriorityBounty = 9,
         CursedVision = 10,
+        Omniscience = 11,
     }
 }

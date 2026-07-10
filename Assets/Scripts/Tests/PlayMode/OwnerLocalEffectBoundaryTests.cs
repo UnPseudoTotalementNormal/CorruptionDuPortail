@@ -44,12 +44,13 @@ namespace Tests.PlayMode
         private const uint RtsPrefabHash = 0xC0DE0204u;
         private const uint EmbracePrefabHash = 0xC0DE0205u;
         private const uint CursedPrefabHash = 0xC0DE0206u;
+        private const uint LackPrefabHash = 0xC0DE0207u;
         private const ushort LoopbackPort = 7799;
 
         private const ulong TargetSeat = 999UL;
 
-        private GameObject _gmPrefabGo, _cmPrefabGo, _characterPrefabGo, _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo;
-        private NetworkObject _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _rtsPrefabNo, _embracePrefabNo, _cursedPrefabNo;
+        private GameObject _gmPrefabGo, _cmPrefabGo, _characterPrefabGo, _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo, _lackPrefabGo;
+        private NetworkObject _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _rtsPrefabNo, _embracePrefabNo, _cursedPrefabNo, _lackPrefabNo;
         private GameState _seededState;
 
         private GameObject _hostNmGo, _clientNmGo;
@@ -92,6 +93,8 @@ namespace Tests.PlayMode
             _embracePrefabNo = _embracePrefabGo.GetComponent<NetworkObject>();
             _cursedPrefabGo = MakePrefab("BoundaryCursedPrefab", CursedPrefabHash, go => go.AddComponent<PCursedVision>());
             _cursedPrefabNo = _cursedPrefabGo.GetComponent<NetworkObject>();
+            _lackPrefabGo = MakePrefab("BoundaryLackPrefab", LackPrefabHash, go => go.AddComponent<PLackOfAffection>());
+            _lackPrefabNo = _lackPrefabGo.GetComponent<NetworkObject>();
 
             _hostNmGo = new GameObject("BoundaryHostNM");
             _hostNm = _hostNmGo.AddComponent<NetworkManager>();
@@ -181,7 +184,7 @@ namespace Tests.PlayMode
             foreach (var go in new[] { _hostRootGo, _clientRootGo, _hostRevealerGo, _clientRevealerGo,
                                        _chatGo, _cardGo, _dummyBoardGo,
                                        _clientNmGo, _hostNmGo, _gmPrefabGo, _cmPrefabGo, _characterPrefabGo,
-                                       _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo })
+                                       _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo, _lackPrefabGo })
                 if (go != null) Object.Destroy(go);
             if (_seededState != null) Object.Destroy(_seededState);
 
@@ -312,6 +315,64 @@ namespace Tests.PlayMode
                 "The owner-local reveal must NOT land on the host — that was the regression.");
         }
 
+        /// <summary>
+        /// PLackOfAffection is the TARGET-side variant: the decision resolves on the CONTACTED target's
+        /// client (dispatched inside OnPlayerContactedRpc, keyed by IsTrueLocalTarget = GetLocalClientId() ==
+        /// targetClientId), not the caster's. So the discriminating machine is the CLIENT NM acting as the
+        /// target: we invoke the RPC body directly on the client's power replica with targetClientId == the
+        /// client's own LocalClientId, and assert the SENDER's role reveal lands in the CLIENT's revealer,
+        /// not the host's.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator LackOfAffectionContactedOnClient_RevealsSenderRoleOnClientRevealer_NotHost()
+        {
+            ulong clientId = _clientNm.LocalClientId; // the CONTACTED TARGET's real NGO identity
+            const ulong SenderSeat = 777UL;           // caster's seat — distinct from clientId so the
+                                                      // own-role auto-bump (subject == observer) can't mask it
+
+            // The reveal's SUBJECT is the sender seat, so it needs a real Character too (GetCharacterInfo ->
+            // AddCharacterToInfoList dereferences it); the target seat's faction gates the reveal branch.
+            Character hostSender = _hostCm.AddNewCharacter(SenderSeat);
+            Character hostTarget = _hostCm.AddNewCharacter(clientId);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, hostSender, hostTarget);
+            hostSender.role = new Role { roleName = "Sender-Test" };
+            hostTarget.role = new Role { factionType = FactionType.chosen, roleName = "Target-Test" };
+
+            var hostPower = _hostNm.SpawnManager.InstantiateAndSpawn(_lackPrefabNo, destroyWithScene: true)
+                .GetComponent<PLackOfAffection>();
+            hostPower.ownerClientId.Value = SenderSeat;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(hostPower);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => FindReplica<PLackOfAffection>(_clientNm, hostPower.NetworkObjectId) != null
+                      && _clientCm.GetCharacter(clientId, false) != null
+                      && _clientCm.GetCharacter(SenderSeat, false) != null,
+                10f, "Client replicas of the power / target / sender never arrived.");
+
+            // role is not a NetworkVariable; set the target faction on the replica the client-side decision reads.
+            _clientCm.GetCharacter(clientId, false).role = new Role { factionType = FactionType.chosen, roleName = "Target-Test" };
+
+            Assert.AreEqual(RevealLevel.False,
+                _clientRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,
+                "Precondition: client revealer starts with no role reveal for the sender seat.");
+
+            // OnPlayerContactedRpc is [Rpc(SendTo.SpecifiedInParams)] — it cannot be invoked directly to
+            // "receive" (that triggers a SEND that needs a target). Drive it end-to-end exactly like
+            // production: send from the host power, targeted at the client, so NGO delivers it to the
+            // client's replica which runs the body (RunClientDecisionEffects on the client). GetSafeRpcTarget
+            // is the same wrapper the power uses (bot-safe).
+            RpcParams rpcTarget = _hostCm.GetSafeRpcTarget(clientId);
+            ReflectionHelper.InvokePrivateMethod(hostPower, "OnPlayerContactedRpc", clientId, SenderSeat, rpcTarget);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _clientRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed == RevealLevel.Personal,
+                5f, "The sender's role reveal never reached the contacted TARGET's (client) revealer.");
+
+            Assert.AreEqual(RevealLevel.False,
+                _hostRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,
+                "The target-local reveal must NOT land on the host.");
+        }
+
         // --- helpers (MultiClientGameFixture pattern) ---
 
         private GameObject MakePrefab(string name, uint hash, System.Action<GameObject> addComponents)
@@ -335,6 +396,7 @@ namespace Tests.PlayMode
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _rtsPrefabGo });
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _embracePrefabGo });
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _cursedPrefabGo });
+            nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _lackPrefabGo });
         }
 
         private static GameInfoRevealer MakeStandaloneRevealer(out GameObject go, CharacterManager cm)

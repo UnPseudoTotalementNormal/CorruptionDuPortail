@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using Board;
 using Characters;
 using Characters.Powers;
 using Characters.Powers.Target;
+using ChatSystem;
 using GameLogic;
 using GameLogic.Validation;
 using RoleTarget;
@@ -40,12 +43,13 @@ namespace Tests.PlayMode
         private const uint CharacterPrefabHash = 0xC0DE0202u;
         private const uint RtsPrefabHash = 0xC0DE0204u;
         private const uint EmbracePrefabHash = 0xC0DE0205u;
+        private const uint CursedPrefabHash = 0xC0DE0206u;
         private const ushort LoopbackPort = 7799;
 
         private const ulong TargetSeat = 999UL;
 
-        private GameObject _gmPrefabGo, _cmPrefabGo, _characterPrefabGo, _rtsPrefabGo, _embracePrefabGo;
-        private NetworkObject _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _rtsPrefabNo, _embracePrefabNo;
+        private GameObject _gmPrefabGo, _cmPrefabGo, _characterPrefabGo, _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo;
+        private NetworkObject _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _rtsPrefabNo, _embracePrefabNo, _cursedPrefabNo;
         private GameState _seededState;
 
         private GameObject _hostNmGo, _clientNmGo;
@@ -55,6 +59,10 @@ namespace Tests.PlayMode
         private CharacterManager _hostCm, _clientCm;
         private GameInfoRevealer _hostRevealer, _clientRevealer;
         private GameObject _hostRevealerGo, _clientRevealerGo, _hostRootGo, _clientRootGo;
+        // Shared (not per-NM) singletons that CursedVision's non-discriminating effects resolve to
+        // (ChatLocal -> ChatManager.instance, AddCardEffect -> CardEffectManager.instance). They only need
+        // to exist so the client-side dispatch does not NRE before/after the discriminating reveal.
+        private GameObject _chatGo, _cardGo, _dummyBoardGo;
 
         // Minimal state so GameManager.OnNetworkSpawn -> GetGameState(0) does not throw on an empty dict.
         private class DummyGameState : GameState
@@ -82,6 +90,8 @@ namespace Tests.PlayMode
             _rtsPrefabNo = _rtsPrefabGo.GetComponent<NetworkObject>();
             _embracePrefabGo = MakePrefab("BoundaryEmbracePrefab", EmbracePrefabHash, go => go.AddComponent<PEmbraceOfShadows>());
             _embracePrefabNo = _embracePrefabGo.GetComponent<NetworkObject>();
+            _cursedPrefabGo = MakePrefab("BoundaryCursedPrefab", CursedPrefabHash, go => go.AddComponent<PCursedVision>());
+            _cursedPrefabNo = _cursedPrefabGo.GetComponent<NetworkObject>();
 
             _hostNmGo = new GameObject("BoundaryHostNM");
             _hostNm = _hostNmGo.AddComponent<NetworkManager>();
@@ -124,6 +134,33 @@ namespace Tests.PlayMode
             // registry by reflection (bypassing the Singleton binding).
             _hostRootGo = MakeBoundRoot(_hostNm, _hostRevealer, _hostCm);
             _clientRootGo = MakeBoundRoot(_clientNm, _clientRevealer, _clientCm);
+
+            CreateSharedSingletons();
+        }
+
+        // ChatManager + CardEffectManager are NOT de-singletonised (CompositionRoot serves ChatManager.instance
+        // / CardEffectManager.instance), so they are ONE shared instance in this in-process 2-NM world — hence
+        // non-discriminating for the boundary. They exist only so CursedVision's ChatLocal / AddCardEffect
+        // effects do not NRE around the discriminating reveal.
+        private void CreateSharedSingletons()
+        {
+            _chatGo = new GameObject("BoundaryChatManager");
+            _chatGo.AddComponent<NetworkObject>();
+            _chatGo.AddComponent<ChatManager>(); // Awake sets instance; AddMessageLocal is null-safe with no windows
+
+            // BoardManager is needed ONLY as a non-null ref for CardEffectManager.Start's assert; kept INACTIVE
+            // (its Awake never runs, so it never claims the BoardManager singleton).
+            _dummyBoardGo = new GameObject("BoundaryDummyBoard");
+            _dummyBoardGo.SetActive(false);
+            var board = _dummyBoardGo.AddComponent<BoardManager>();
+
+            // CardEffectManager: created inactive, boardManager wired, then activated so Awake (sets instance)
+            // and Start (asserts boardManager, now non-null) run cleanly in order.
+            _cardGo = new GameObject("BoundaryCardEffectManager");
+            _cardGo.SetActive(false);
+            var cem = _cardGo.AddComponent<CardEffectManager>();
+            ReflectionHelper.SetPrivateField(cem, "boardManager", board);
+            _cardGo.SetActive(true);
         }
 
         [UnityTearDown]
@@ -142,13 +179,17 @@ namespace Tests.PlayMode
             UnregisterBoundRoot(_hostNm);
             UnregisterBoundRoot(_clientNm);
             foreach (var go in new[] { _hostRootGo, _clientRootGo, _hostRevealerGo, _clientRevealerGo,
+                                       _chatGo, _cardGo, _dummyBoardGo,
                                        _clientNmGo, _hostNmGo, _gmPrefabGo, _cmPrefabGo, _characterPrefabGo,
-                                       _rtsPrefabGo, _embracePrefabGo })
+                                       _rtsPrefabGo, _embracePrefabGo, _cursedPrefabGo })
                 if (go != null) Object.Destroy(go);
             if (_seededState != null) Object.Destroy(_seededState);
 
             ResetManagerStatics();
             ReflectionHelper.SetPrivateField(typeof(RoleTargetSystem), "instance", null);
+            ReflectionHelper.SetPrivateField(typeof(ChatManager), "instance", null);
+            ReflectionHelper.SetPrivateField(typeof(CardEffectManager), "instance", null);
+            ReflectionHelper.SetPrivateField(typeof(BoardManager), "instance", null);
             yield return null;
         }
 
@@ -207,6 +248,70 @@ namespace Tests.PlayMode
                 "The owner-local reveal must NOT land on the host — that was the regression.");
         }
 
+        /// <summary>
+        /// Same boundary, second power: when the CLIENT casts Cursed Vision on a target, the target-
+        /// corruption reveal must land in the CLIENT's revealer, not the host's. CursedVision also emits a
+        /// card marker and an "élu" verdict chat, but both resolve to SHARED singletons (one instance across
+        /// both NMs here), so they are not per-NM discriminating — the reveal is. They only need to not NRE.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CursedVisionCastByClient_RevealsOnClientRevealer_NotHost()
+        {
+            ulong clientId = _clientNm.LocalClientId;
+
+            // CursedVision's decision corrupts + self-reveals the OWNER too, so the owner seat needs a real
+            // Character alongside the target.
+            Character hostOwner = _hostCm.AddNewCharacter(clientId);
+            Character hostTarget = _hostCm.AddNewCharacter(TargetSeat);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, hostOwner, hostTarget);
+            // Chosen faction => the "élu" verdict branch; the reveal itself is faction-independent.
+            hostTarget.role = new Role { factionType = FactionType.chosen, roleName = "Cursed-Test" };
+
+            var hostPower = _hostNm.SpawnManager.InstantiateAndSpawn(_cursedPrefabNo, destroyWithScene: true)
+                .GetComponent<PCursedVision>();
+            hostPower.ownerClientId.Value = clientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(hostPower);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => FindReplica<PCursedVision>(_clientNm, hostPower.NetworkObjectId) != null
+                      && _clientCm.GetCharacter(TargetSeat, false) != null
+                      && _clientCm.GetCharacter(clientId, false) != null,
+                10f, "Client replicas of the power / target / owner never arrived.");
+
+            var clientPower = FindReplica<PCursedVision>(_clientNm, hostPower.NetworkObjectId);
+            // CursedVision corrupts + self-reveals the OWNER (ctx.OwnerSlot = ownerClientId.Value), so the
+            // seat NetworkVariable must have replicated to the client replica before the cast — otherwise the
+            // owner slot reads 0 and CorruptPlayer(0) dereferences a missing Character.
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => clientPower.ownerClientId.Value == clientId,
+                5f, "Client power replica never received the owner seat id.");
+
+            Character clientTarget = _clientCm.GetCharacter(TargetSeat, false);
+            clientTarget.role = new Role { factionType = FactionType.chosen, roleName = "Cursed-Test" };
+
+            ReflectionHelper.SetPrivateField(clientPower, "targetValidator",
+                new Validator<(ulong targetId, TargetUtils.TargetType targetType)>());
+
+            Assert.AreEqual(RevealLevel.False,
+                _clientRevealer.GetCharacterInfo(TargetSeat, clientId).isCorruptRevealed,
+                "Precondition: client revealer starts with no corruption reveal.");
+
+            // The fixture seeds no card-effect vocabulary, so AddCardEffect logs one error and returns (a
+            // shared-singleton effect dispatched AFTER the discriminating reveal). Allow exactly that log.
+            LogAssert.Expect(LogType.Error, new Regex("No card effect found for ID"));
+
+            ReflectionHelper.InvokePrivateMethod(clientPower, "OnCharacterPicked", clientTarget);
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(RevealLevel.Personal,
+                _clientRevealer.GetCharacterInfo(TargetSeat, clientId).isCorruptRevealed,
+                "The corruption reveal must land in the CASTER's (client) revealer.");
+            Assert.AreEqual(RevealLevel.False,
+                _hostRevealer.GetCharacterInfo(TargetSeat, clientId).isCorruptRevealed,
+                "The owner-local reveal must NOT land on the host — that was the regression.");
+        }
+
         // --- helpers (MultiClientGameFixture pattern) ---
 
         private GameObject MakePrefab(string name, uint hash, System.Action<GameObject> addComponents)
@@ -229,6 +334,7 @@ namespace Tests.PlayMode
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _characterPrefabGo });
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _rtsPrefabGo });
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _embracePrefabGo });
+            nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _cursedPrefabGo });
         }
 
         private static GameInfoRevealer MakeStandaloneRevealer(out GameObject go, CharacterManager cm)

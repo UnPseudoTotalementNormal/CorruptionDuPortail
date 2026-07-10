@@ -152,6 +152,10 @@
 
 .info-table__name-cell {
     width: var(--cdp-info-namecol-wide);
+    /* It's a Label, and Unity's default .unity-label carries a margin → the Label would sit ~6px shorter than its
+       VisualElement sibling cells, so its distinct background floats as an inset "box in a box". Zero it so the
+       cell fills the row height like every other cell. */
+    margin: 0;
     -unity-text-align: middle-center;
     color: var(--cdp-color-info-text);
     font-size: var(--cdp-font-size-sm);

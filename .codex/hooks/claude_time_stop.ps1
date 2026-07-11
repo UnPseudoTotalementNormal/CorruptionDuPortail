@@ -73,16 +73,93 @@ function Acquire-LedgerLock {
     throw "Could not acquire time ledger lock: $LockPath"
 }
 
+function Update-Ledger {
+    param(
+        [string]$LedgerPath,
+        [string]$LockPath,
+        [int]$Seconds,
+        [int]$Year,
+        [int]$Month,
+        [int]$Day
+    )
+
+    $lockStream = $null
+    $tempLedgerPath = $null
+    $backupLedgerPath = $null
+
+    try {
+        $lockStream = Acquire-LedgerLock $LockPath
+
+        # Load existing entries into a hashtable keyed by "y-m-d".
+        $byKey = @{}
+        if (Test-Path -LiteralPath $LedgerPath) {
+            $existing = [System.IO.File]::ReadAllText($LedgerPath)
+            if (-not [string]::IsNullOrWhiteSpace($existing)) {
+                $ledger = $existing | ConvertFrom-Json
+                foreach ($entry in @($ledger.days)) {
+                    if ($null -eq $entry) { continue }
+                    $key = "{0}-{1}-{2}" -f [int]$entry.year, [int]$entry.month, [int]$entry.day
+                    $byKey[$key] = [int64]$entry.seconds
+                }
+            }
+        }
+
+        $key = "{0}-{1}-{2}" -f $Year, $Month, $Day
+        if ($byKey.ContainsKey($key)) { $byKey[$key] += $Seconds } else { $byKey[$key] = $Seconds }
+
+        # Build JSON by hand so a single entry remains an array.
+        $parts = foreach ($entryKey in ($byKey.Keys | Sort-Object)) {
+            $keyParts = $entryKey.Split('-')
+            '{{"year":{0},"month":{1},"day":{2},"seconds":{3}}}' -f `
+                [int]$keyParts[0], [int]$keyParts[1], [int]$keyParts[2], [int64]$byKey[$entryKey]
+        }
+
+        $total = 0L
+        foreach ($value in $byKey.Values) { $total += [int64]$value }
+        $json = '{"days":[' + ($parts -join ',') + '],"totalSeconds":' + $total + '}'
+
+        # Write a complete file and replace the old ledger so Unity never reads
+        # a partially-written JSON document.
+        $tempLedgerPath = "{0}.{1}.{2}.tmp" -f $LedgerPath, $PID, ([guid]::NewGuid().ToString('N'))
+        [System.IO.File]::WriteAllText($tempLedgerPath, $json)
+        if (Test-Path -LiteralPath $LedgerPath) {
+            $backupLedgerPath = "{0}.{1}.{2}.bak" -f $LedgerPath, $PID, ([guid]::NewGuid().ToString('N'))
+            [System.IO.File]::Replace($tempLedgerPath, $LedgerPath, $backupLedgerPath)
+            Remove-Item -LiteralPath $backupLedgerPath -Force -ErrorAction SilentlyContinue
+            $backupLedgerPath = $null
+        } else {
+            [System.IO.File]::Move($tempLedgerPath, $LedgerPath)
+        }
+        $tempLedgerPath = $null
+    } finally {
+        if ($lockStream) { $lockStream.Dispose() }
+        if ($tempLedgerPath -and (Test-Path -LiteralPath $tempLedgerPath)) {
+            Remove-Item -LiteralPath $tempLedgerPath -Force -ErrorAction SilentlyContinue
+        }
+        if ($backupLedgerPath -and (Test-Path -LiteralPath $backupLedgerPath)) {
+            Remove-Item -LiteralPath $backupLedgerPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 try {
     $payload = Read-HookPayload
     $projectDir = Get-ProjectDirectory $payload
     $dir = Join-Path $projectDir '.claude/timerecorder'
-    $marker = Join-Path $dir ("start_{0}.txt" -f (Get-SafeMarkerKey $payload))
+    $markerKey = Get-SafeMarkerKey $payload
+    $marker = Join-Path $dir ("start_{0}.txt" -f $markerKey)
+    $completedMarker = Join-Path $dir ("completed_{0}.txt" -f $markerKey)
 
     # AI tracking paused from the Unity calendar window -> drop any in-flight
     # marker and accrue nothing.
     $pauseFlag = Join-Path $dir 'ai_paused.flag'
     if (Test-Path -LiteralPath $pauseFlag) {
+        Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
+        exit 0
+    }
+
+    # A completed tombstone makes replayed Start and Stop events idempotent.
+    if (Test-Path -LiteralPath $completedMarker) {
         Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
         exit 0
     }
@@ -101,10 +178,8 @@ try {
 
     $ledgerPath = Join-Path $dir 'claude_time.json'
     $lockPath = "$ledgerPath.lock"
-    $lockStream = $null
-    $tempLedgerPath = $null
-    $backupLedgerPath = $null
     $ledgerWritten = $false
+    $turnFinalized = $false
 
     try {
         $startMs = [long]([System.IO.File]::ReadAllText($claimedMarker).Trim())
@@ -113,73 +188,40 @@ try {
 
         if ($seconds -le 0) {
             $ledgerWritten = $true
+            [System.IO.File]::WriteAllText($completedMarker, [string]$nowMs)
+            $turnFinalized = $true
             exit 0
         }
         if ($seconds -gt $MaxTurnSeconds) { $seconds = $MaxTurnSeconds }
 
-        $lockStream = Acquire-LedgerLock $lockPath
-
-        # Load existing entries into a hashtable keyed by "y-m-d".
-        $byKey = @{}
-        if (Test-Path -LiteralPath $ledgerPath) {
-            $existing = [System.IO.File]::ReadAllText($ledgerPath)
-            if (-not [string]::IsNullOrWhiteSpace($existing)) {
-                $ledger = $existing | ConvertFrom-Json
-                foreach ($entry in @($ledger.days)) {
-                    if ($null -eq $entry) { continue }
-                    $key = "{0}-{1}-{2}" -f [int]$entry.year, [int]$entry.month, [int]$entry.day
-                    $byKey[$key] = [int64]$entry.seconds
-                }
+        $now = Get-Date
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                Update-Ledger $ledgerPath $lockPath $seconds $now.Year $now.Month $now.Day
+                $ledgerWritten = $true
+                break
+            } catch {
+                if ($attempt -eq 3) { throw }
+                Start-Sleep -Milliseconds (100 * $attempt)
             }
         }
 
-        $now = Get-Date
-        $key = "{0}-{1}-{2}" -f $now.Year, $now.Month, $now.Day
-        if ($byKey.ContainsKey($key)) { $byKey[$key] += $seconds } else { $byKey[$key] = $seconds }
-
-        # Build JSON by hand so a single entry remains an array.
-        $parts = foreach ($entryKey in ($byKey.Keys | Sort-Object)) {
-            $keyParts = $entryKey.Split('-')
-            '{{"year":{0},"month":{1},"day":{2},"seconds":{3}}}' -f `
-                [int]$keyParts[0], [int]$keyParts[1], [int]$keyParts[2], [int64]$byKey[$entryKey]
-        }
-
-        $total = 0L
-        foreach ($value in $byKey.Values) { $total += [int64]$value }
-        $json = '{"days":[' + ($parts -join ',') + '],"totalSeconds":' + $total + '}'
-
-        # Write a complete file and replace the old ledger so Unity never reads
-        # a partially-written JSON document.
-        $tempLedgerPath = "{0}.{1}.{2}.tmp" -f $ledgerPath, $PID, ([guid]::NewGuid().ToString('N'))
-        [System.IO.File]::WriteAllText($tempLedgerPath, $json)
-        if (Test-Path -LiteralPath $ledgerPath) {
-            $backupLedgerPath = "{0}.{1}.{2}.bak" -f $ledgerPath, $PID, ([guid]::NewGuid().ToString('N'))
-            [System.IO.File]::Replace($tempLedgerPath, $ledgerPath, $backupLedgerPath)
-            Remove-Item -LiteralPath $backupLedgerPath -Force -ErrorAction SilentlyContinue
-            $backupLedgerPath = $null
-        } else {
-            [System.IO.File]::Move($tempLedgerPath, $ledgerPath)
-        }
-        $tempLedgerPath = $null
-        $ledgerWritten = $true
+        [System.IO.File]::WriteAllText($completedMarker, [string]$nowMs)
+        $turnFinalized = $true
     } finally {
-        if ($lockStream) { $lockStream.Dispose() }
-        if ($tempLedgerPath -and (Test-Path -LiteralPath $tempLedgerPath)) {
-            Remove-Item -LiteralPath $tempLedgerPath -Force -ErrorAction SilentlyContinue
-        }
-        if ($backupLedgerPath -and (Test-Path -LiteralPath $backupLedgerPath)) {
-            Remove-Item -LiteralPath $backupLedgerPath -Force -ErrorAction SilentlyContinue
-        }
-        if ($ledgerWritten -and (Test-Path -LiteralPath $claimedMarker)) {
+        if ($turnFinalized -and (Test-Path -LiteralPath $claimedMarker)) {
             Remove-Item -LiteralPath $claimedMarker -Force -ErrorAction SilentlyContinue
-        } elseif (Test-Path -LiteralPath $claimedMarker) {
-            # Preserve the turn for a later retry if ledger IO failed.
+        } elseif ((-not $ledgerWritten) -and (Test-Path -LiteralPath $claimedMarker)) {
+            # Three ledger attempts failed. Preserve the original timestamp in
+            # case Codex replays Stop, without letting a replayed Start reset it.
             if (-not (Test-Path -LiteralPath $marker)) {
                 [System.IO.File]::Move($claimedMarker, $marker)
             } else {
                 Remove-Item -LiteralPath $claimedMarker -Force -ErrorAction SilentlyContinue
             }
         }
+        # If the ledger was committed but the completion tombstone could not be
+        # written, retain the claim as a replay guard rather than double-count.
     }
 } catch {
     [Console]::Error.WriteLine("[timerecorder stop hook] $_")

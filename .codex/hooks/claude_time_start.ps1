@@ -53,24 +53,74 @@ function Get-SafeMarkerKey {
     return ($id -replace '[^A-Za-z0-9._-]', '_')
 }
 
+function Test-TurnClaimed {
+    param([string]$Marker)
+
+    $directory = [System.IO.Path]::GetDirectoryName($Marker)
+    $pattern = "{0}.claiming_*" -f [System.IO.Path]::GetFileName($Marker)
+    return $null -ne (Get-ChildItem -LiteralPath $directory -Filter $pattern -File -ErrorAction SilentlyContinue |
+        Select-Object -First 1)
+}
+
+function Remove-StaleCompletedMarkers {
+    param([string]$Directory)
+
+    # Completed ids only guard against delayed hook replays. Keep a generous
+    # window, then prune them so one small file per turn does not grow forever.
+    $cutoff = [DateTime]::UtcNow.AddDays(-7)
+    Get-ChildItem -LiteralPath $Directory -Filter 'completed_*.txt' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTimeUtc -lt $cutoff } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
 try {
     $payload = Read-HookPayload
     $projectDir = Get-ProjectDirectory $payload
     $dir = Join-Path $projectDir '.claude/timerecorder'
     [System.IO.Directory]::CreateDirectory($dir) | Out-Null
+    Remove-StaleCompletedMarkers $dir
 
     # AI tracking paused from the Unity calendar window -> record no start marker.
     $pauseFlag = Join-Path $dir 'ai_paused.flag'
     if (Test-Path -LiteralPath $pauseFlag) { exit 0 }
 
-    $marker = Join-Path $dir ("start_{0}.txt" -f (Get-SafeMarkerKey $payload))
+    $markerKey = Get-SafeMarkerKey $payload
+    $marker = Join-Path $dir ("start_{0}.txt" -f $markerKey)
+    $completedMarker = Join-Path $dir ("completed_{0}.txt" -f $markerKey)
 
-    # Codex can replay a prompt event for the same turn. Do not reset the clock
-    # when that happens.
-    if (Test-Path -LiteralPath $marker) { exit 0 }
+    # Codex can replay a prompt event for the same turn. A Stop hook may have
+    # moved the start marker while it updates the ledger, so all three states
+    # participate in the idempotency check.
+    if ((Test-Path -LiteralPath $marker) -or
+        (Test-Path -LiteralPath $completedMarker) -or
+        (Test-TurnClaimed $marker)) {
+        exit 0
+    }
 
     $startMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-    [System.IO.File]::WriteAllText($marker, [string]$startMs)
+    $tempMarker = "{0}.{1}.{2}.tmp" -f $marker, $PID, ([guid]::NewGuid().ToString('N'))
+
+    try {
+        # Publish a complete marker with an exclusive move. Concurrent replayed
+        # Start hooks cannot truncate or reset the original timestamp.
+        [System.IO.File]::WriteAllText($tempMarker, [string]$startMs)
+        try {
+            [System.IO.File]::Move($tempMarker, $marker)
+        } catch {
+            if (Test-Path -LiteralPath $marker) { exit 0 }
+            throw
+        }
+
+        # Close the race where Stop claims or completes the turn after the
+        # initial state check but before this Start publishes its marker.
+        if ((Test-Path -LiteralPath $completedMarker) -or (Test-TurnClaimed $marker)) {
+            Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
+        }
+    } finally {
+        if (Test-Path -LiteralPath $tempMarker) {
+            Remove-Item -LiteralPath $tempMarker -Force -ErrorAction SilentlyContinue
+        }
+    }
 } catch {
     [Console]::Error.WriteLine("[timerecorder start hook] $_")
 }

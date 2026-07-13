@@ -23,6 +23,10 @@ namespace UI
         [SerializeField] [Range(0f, 1f)] private float intensity = 1f;
         [SerializeField] private bool applyOnEnable;
 
+        [Tooltip("Sous-arbres exclus du glitch : le Graphic ciblé ET ses descendants gardent leur " +
+                 "matériau d'origine (ex. la bordure de carte, le canvas de vote).")]
+        [SerializeField] private List<Transform> excludedRoots = new();
+
         private readonly Dictionary<Graphic, Material> originalMaterials = new();
         private Material runtimeMaterial;
 
@@ -86,6 +90,11 @@ namespace UI
                     continue;
                 }
 
+                if (IsExcluded(graphic.transform))
+                {
+                    continue;
+                }
+
                 originalMaterials[graphic] = graphic.material;
                 graphic.material = runtimeMaterial;
             }
@@ -111,6 +120,19 @@ namespace UI
 
             originalMaterials.Clear();
             IsApplied = false;
+        }
+
+        /// <summary>True si <paramref name="target"/> est l'un des roots exclus ou un de leurs descendants.</summary>
+        private bool IsExcluded(Transform target)
+        {
+            foreach (Transform excluded in excludedRoots)
+            {
+                if (excluded != null && target.IsChildOf(excluded))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

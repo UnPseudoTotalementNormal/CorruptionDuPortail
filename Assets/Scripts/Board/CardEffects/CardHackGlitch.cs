@@ -81,13 +81,23 @@ namespace Board
         private void Refresh()
         {
             BindRevealer();
-            if (glitchGroup == null || card == null || card.characterInfo == null || revealer == null)
+            if (glitchGroup == null || card == null || card.characterInfo == null)
             {
                 return;
             }
 
-            bool hacked = revealer.GetCharacterInfo(card.characterInfo.ownerClientId.Value).isHacked
-                          >= RevealLevel.Personal;
+            // Le Robot est techniquement auto-piraté (sa condition de victoire = être voté/chaîné, comme
+            // une cible piratée) : sa propre carte glitche pour lui dès le début, sans passer par le flag
+            // reveal (from-start, aucun souci de timing RPC/attribution des rôles).
+            bool hacked = IsLocalRobotOwnCard();
+
+            // Sinon : cible piratée par le Robot, portée uniquement par le flag knowledge (Personal → Robot).
+            if (!hacked && revealer != null)
+            {
+                hacked = revealer.GetCharacterInfo(card.characterInfo.ownerClientId.Value).isHacked
+                         >= RevealLevel.Personal;
+            }
+
             if (hacked)
             {
                 glitchGroup.Apply();
@@ -96,6 +106,22 @@ namespace Board
             {
                 glitchGroup.Remove();
             }
+        }
+
+        // Vrai quand cette carte est celle du joueur local ET que ce joueur est le Robot. La carte du
+        // Robot est alors traitée comme auto-piratée. Vue-locale : aucun autre client ne voit ce glitch.
+        private bool IsLocalRobotOwnCard()
+        {
+            ICharacterQuery query = card.CharacterQuery;
+            if (query == null)
+            {
+                return false;
+            }
+            if (card.characterInfo.ownerClientId.Value != query.GetLocalClientId())
+            {
+                return false;
+            }
+            return card.characterInfo.role != null && card.characterInfo.role.roleID == RoleID.Robot;
         }
     }
 }

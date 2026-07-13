@@ -2127,6 +2127,9 @@ MonoBehaviour:
   glitchMaterial: {fileID: 2100000, guid: 003a2c73e22c4d369d6080f022c30aca, type: 2}
   intensity: 1
   applyOnEnable: 0
+  excludedRoots:
+  - {fileID: 5164962969930923699}
+  - {fileID: 1111650394077542204}
 --- !u!1 &4431371555524111881
 GameObject:
   m_ObjectHideFlags: 0

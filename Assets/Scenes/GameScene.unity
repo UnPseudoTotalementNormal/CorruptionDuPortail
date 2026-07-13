@@ -14844,6 +14844,7 @@ MonoBehaviour:
   innerRatio: 0.55
   separatorWidth: 3
   highlightFadeSeconds: 0.1
+  confirmSeconds: 0.9
 --- !u!114 &1697028113
 MonoBehaviour:
   m_ObjectHideFlags: 0

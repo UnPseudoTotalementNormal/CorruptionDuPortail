@@ -62,15 +62,19 @@ function Test-TurnClaimed {
         Select-Object -First 1)
 }
 
-function Remove-StaleCompletedMarkers {
+function Remove-StaleMarkers {
     param([string]$Directory)
 
-    # Completed ids only guard against delayed hook replays. Keep a generous
-    # window, then prune them so one small file per turn does not grow forever.
+    # Completed ids only guard against delayed hook replays, and orphaned start
+    # or claim files (interrupted turn, Stop hook killed mid-claim) are never
+    # consumed. A marker older than the retention window can no longer be
+    # completed (turns are clamped to 4h), so pruning is always safe.
     $cutoff = [DateTime]::UtcNow.AddDays(-7)
-    Get-ChildItem -LiteralPath $Directory -Filter 'completed_*.txt' -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.LastWriteTimeUtc -lt $cutoff } |
-        Remove-Item -Force -ErrorAction SilentlyContinue
+    foreach ($pattern in 'completed_*.txt', 'start_*.txt', 'start_*.txt.claiming_*') {
+        Get-ChildItem -LiteralPath $Directory -Filter $pattern -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTimeUtc -lt $cutoff } |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+    }
 }
 
 try {
@@ -78,7 +82,7 @@ try {
     $projectDir = Get-ProjectDirectory $payload
     $dir = Join-Path $projectDir '.claude/timerecorder'
     [System.IO.Directory]::CreateDirectory($dir) | Out-Null
-    Remove-StaleCompletedMarkers $dir
+    Remove-StaleMarkers $dir
 
     # AI tracking paused from the Unity calendar window -> record no start marker.
     $pauseFlag = Join-Path $dir 'ai_paused.flag'

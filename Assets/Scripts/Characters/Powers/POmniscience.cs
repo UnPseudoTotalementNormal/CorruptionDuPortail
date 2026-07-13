@@ -48,7 +48,7 @@ namespace Characters.Powers
         private void OnCardClickedRpc(ulong _targetClientId)
         {
             RunDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId), SelfState);
+                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId, roster: Roster), SelfState);
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

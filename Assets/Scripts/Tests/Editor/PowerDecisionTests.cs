@@ -278,15 +278,31 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void Omniscience_TargetsStoresRevealsRefreshes()
+        public void Omniscience_ChosenTarget_TargetsStoresRevealsHacksRefreshes()
         {
-            var outcome = new OmniscienceDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 5));
+            var roster = new FakeRoster { Slots = new[] { 0, 5 } };
+            roster.Factions[5] = Characters.FactionType.chosen;
+            var outcome = new OmniscienceDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 5, roster: roster));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 5),
                 new StoreHackTarget(5),
                 new RevealInfo(5, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
                 new RevealInfo(5, RevealField.Hacked, RevealVisibility.Personal, 0, true),
+                RequestCharacterRefresh.Instance,
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void Omniscience_NonChosenTarget_RevealsRoleOnly_NoHack()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 5 } };
+            roster.Factions[5] = Characters.FactionType.anomaly; // idem marginal : pas de piratage
+            var outcome = new OmniscienceDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 5, roster: roster));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 5),
+                new RevealInfo(5, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
         }

@@ -16,6 +16,7 @@ Shader "Custom/UI_GlitchVideo"
         _ScanlineCount ("Scanline Count", Float) = 220
         _NoiseIntensity ("Static Noise", Range(0, 1)) = 0.2
         _ColorDrift ("Color Drift", Range(0, 1)) = 0.3
+        _ChromaAberration ("Chromatic Aberration", Range(0, 1)) = 0.35
 
         // Required for UI Mask component
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -81,6 +82,7 @@ Shader "Custom/UI_GlitchVideo"
                 float  _ScanlineCount;
                 float  _NoiseIntensity;
                 float  _ColorDrift;
+                float  _ChromaAberration;
             CBUFFER_END
 
             // Renseignés par uGUI au moment du rendu (texte legacy / RectMask2D).
@@ -154,8 +156,8 @@ Shader "Custom/UI_GlitchVideo"
                 float rowGate = step(0.85, Hash21(float2(row, glitchFrame * 3.0 + 7.0)));
                 uv.x += (Hash21(float2(row, glitchFrame)) - 0.5) * rowGate * _JitterIntensity * 0.03 * gi;
 
-                // Séparation RGB : canaux R et B décalés horizontalement.
-                float split = _RGBSplit * (0.3 + 0.7 * Hash11(glitchFrame * 0.531)) * 0.012 * gi;
+                // Aberration chromatique : canaux R et B décalés horizontalement, renforcée par _ChromaAberration.
+                float split = (_RGBSplit * (0.3 + 0.7 * Hash11(glitchFrame * 0.531)) + _ChromaAberration) * 0.012 * gi;
                 half4 texC = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv) + _TextureSampleAdd;
                 half4 texR = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + float2(split, 0.0)) + _TextureSampleAdd;
                 half4 texB = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv - float2(split, 0.0)) + _TextureSampleAdd;
@@ -176,10 +178,14 @@ Shader "Custom/UI_GlitchVideo"
                 float scan = 0.5 + 0.5 * sin(screenUV.y * _ScanlineCount * TWO_PI + _Time.y * 6.0);
                 col.rgb *= 1.0 - _ScanlineIntensity * _GlitchIntensity * scan * 0.5;
 
-                // Neige (bruit statique), grain de 2 px — composée APRÈS la teinte, donc visible même
-                // sur une Image à couleur noire.
-                float snow = Hash21(floor(screenUV * _ScreenParams.xy * 0.5) + glitchFrame * 31.0);
-                col.rgb = lerp(col.rgb, float3(snow, snow, snow), _NoiseIntensity * gi * 0.6);
+                // Neige CHROMATIQUE (aberration rouge/jaune/bleu) — au lieu d'un gris pixelisé, les 3 canaux
+                // du bruit sont échantillonnés sur des cellules décalées → speckles rouges/bleus (jaune/cyan
+                // là où ils se recouvrent). Composée APRÈS la teinte, donc visible même sur une Image noire.
+                float2 snowCell = floor(screenUV * _ScreenParams.xy * 0.5) + glitchFrame * 31.0;
+                float3 snow = float3(Hash21(snowCell + float2(1.0, 0.0)),
+                                     Hash21(snowCell),
+                                     Hash21(snowCell - float2(1.0, 0.0)));
+                col.rgb = lerp(col.rgb, snow, _NoiseIntensity * gi * 0.6);
 
                 // Alpha seul du vertex color (alpha de l'Image + fade CanvasGroup) : le fade reste fonctionnel.
                 col.a *= IN.color.a;

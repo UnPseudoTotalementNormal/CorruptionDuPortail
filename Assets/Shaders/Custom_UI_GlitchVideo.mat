@@ -36,7 +36,7 @@ Material:
     - _GlitchIntensity: 1
     - _GlitchSpeed: 12
     - _JitterIntensity: 0.35
-    - _NoiseIntensity: 0.2
+    - _NoiseIntensity: 0
     - _RGBSplit: 0.5
     - _ScanlineCount: 220
     - _ScanlineIntensity: 0.25

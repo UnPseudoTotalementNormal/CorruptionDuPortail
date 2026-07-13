@@ -215,6 +215,75 @@ namespace Tests.PlayMode
             Assert.AreEqual(POmniscience.HACKED_CHARACTER_DEFAULT, power.hackedCharacterClientId, "A non-chosen target must NOT be stored as hacked");
         }
 
+        [UnityTest]
+        public IEnumerator POmniscience_HackExpires_WhenTargetNotVotedNextTurn()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.chosen };
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            // Empty chaining manager: the target is NOT voted this turn.
+            GameObject cmGo = new GameObject("ChainingManager");
+            var cmNet = cmGo.AddComponent<NetworkObject>();
+            cmGo.AddComponent<ChainingManager>();
+            cmNet.Spawn();
+            yield return null;
+
+            GameObject powerGo = new GameObject("Omniscience");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<POmniscience>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "precondition: chosen target is hacked");
+
+            // Next-day boundary: target was never chained → the hack expires.
+            ReflectionHelper.InvokePrivateMethod(power, "ExpireHackIfTargetNotVotedServer");
+            yield return null;
+
+            Assert.AreEqual(POmniscience.HACKED_CHARACTER_DEFAULT, power.hackedCharacterClientId, "Hack should expire when the target was not voted");
+            var info = _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value);
+            Assert.AreEqual(RevealLevel.False, info.isHacked, "Expiring the hack must clear the owner-only glitch flag");
+        }
+
+        [UnityTest]
+        public IEnumerator POmniscience_HackKept_WhenTargetVotedNextTurn()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.chosen };
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject cmGo = new GameObject("ChainingManager");
+            var cmNet = cmGo.AddComponent<NetworkObject>();
+            var cm = cmGo.AddComponent<ChainingManager>();
+            cmNet.Spawn();
+            yield return null;
+
+            GameObject powerGo = new GameObject("Omniscience");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<POmniscience>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            // Target was voted out this turn (added to the chain) → the hack must be kept.
+            cm.AddCharacterToChainingList(target.ownerClientId.Value);
+            yield return null;
+
+            ReflectionHelper.InvokePrivateMethod(power, "ExpireHackIfTargetNotVotedServer");
+            yield return null;
+
+            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "Hack should be kept when the target was voted/chained");
+        }
+
         // Powers-POCO v2 wiring golden: PCorruptionKnowledge delegates OnGameStartedServer to
         // CorruptionKnowledgeDecision → RevealInfo(ForceCorruptOnRoleRevealed) per roster slot.
         [UnityTest]

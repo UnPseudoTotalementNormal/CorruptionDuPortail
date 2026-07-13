@@ -165,16 +165,24 @@ Shader "Custom/UI_GlitchVideo"
                 float drift = _ColorDrift * gi * (0.5 + 0.5 * sin(_Time.y * 4.0 + screenUV.y * 14.0));
                 col.rgb = lerp(col.rgb, col.brg, drift * 0.2);
 
+                // Teinte de l'Image (vertex color RGB) appliquée ICI, AVANT le glitch génératif. Un
+                // multiply final (col *= IN.color) écrasait tout l'effet quand la COULEUR de l'Image
+                // était noire (ex. bandeau de nom de rôle) — alors qu'un sprite noir, lui, marchait car
+                // la neige le recouvre. En teintant d'abord la texture puis en composant scanlines/neige
+                // PAR-DESSUS, l'effet reste visible quelle que soit la couleur de l'Image.
+                col.rgb *= IN.color.rgb;
+
                 // Scanlines (espace écran, continues sur toute la carte).
                 float scan = 0.5 + 0.5 * sin(screenUV.y * _ScanlineCount * TWO_PI + _Time.y * 6.0);
                 col.rgb *= 1.0 - _ScanlineIntensity * _GlitchIntensity * scan * 0.5;
 
-                // Neige (bruit statique), grain de 2 px.
+                // Neige (bruit statique), grain de 2 px — composée APRÈS la teinte, donc visible même
+                // sur une Image à couleur noire.
                 float snow = Hash21(floor(screenUV * _ScreenParams.xy * 0.5) + glitchFrame * 31.0);
                 col.rgb = lerp(col.rgb, float3(snow, snow, snow), _NoiseIntensity * gi * 0.6);
 
-                // Teinte du Graphic + alpha du CanvasGroup (vertex color) : le fade reste fonctionnel.
-                col *= IN.color;
+                // Alpha seul du vertex color (alpha de l'Image + fade CanvasGroup) : le fade reste fonctionnel.
+                col.a *= IN.color.a;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 float2 inside = step(_ClipRect.xy, IN.canvasPos) * step(IN.canvasPos, _ClipRect.zw);

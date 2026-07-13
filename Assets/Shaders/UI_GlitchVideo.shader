@@ -16,6 +16,7 @@ Shader "Custom/UI_GlitchVideo"
         _ScanlineCount ("Scanline Count", Float) = 220
         _NoiseIntensity ("Static Noise", Range(0, 1)) = 0.2
         _ColorDrift ("Color Drift", Range(0, 1)) = 0.3
+        _TintBypass ("Dark Tint Bypass", Range(0, 1)) = 1
 
         // Required for UI Mask component
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -81,6 +82,7 @@ Shader "Custom/UI_GlitchVideo"
                 float  _ScanlineCount;
                 float  _NoiseIntensity;
                 float  _ColorDrift;
+                float  _TintBypass;
             CBUFFER_END
 
             // Renseignés par uGUI au moment du rendu (texte legacy / RectMask2D).
@@ -173,8 +175,13 @@ Shader "Custom/UI_GlitchVideo"
                 float snow = Hash21(floor(screenUV * _ScreenParams.xy * 0.5) + glitchFrame * 31.0);
                 col.rgb = lerp(col.rgb, float3(snow, snow, snow), _NoiseIntensity * gi * 0.6);
 
-                // Teinte du Graphic + alpha du CanvasGroup (vertex color) : le fade reste fonctionnel.
-                col *= IN.color;
+                // Teinte du Graphic + alpha du CanvasGroup (vertex color). L'alpha reste toujours
+                // appliqué (fade CanvasGroup + alpha de l'Image intacts). Mais l'assombrissement RGB
+                // de la teinte est atténué au pic du glitch : sinon un Graphic à teinte sombre (ex. le
+                // bandeau de nom de rôle, color noire) écrase tout le glitch en noir. Les Graphics à
+                // teinte claire (color blanche = ×1) sont inchangés : lerp entre deux valeurs égales.
+                col.rgb = lerp(col.rgb * IN.color.rgb, col.rgb, saturate(_GlitchIntensity) * _TintBypass);
+                col.a  *= IN.color.a;
 
                 #ifdef UNITY_UI_CLIP_RECT
                 float2 inside = step(_ClipRect.xy, IN.canvasPos) * step(IN.canvasPos, _ClipRect.zw);

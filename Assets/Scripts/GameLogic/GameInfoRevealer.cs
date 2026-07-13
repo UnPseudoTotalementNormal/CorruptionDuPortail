@@ -261,6 +261,9 @@ namespace GameLogic
         public RevealLevel isRoleRevealed = RevealLevel.False;
         public RevealLevel isCorruptRevealed = RevealLevel.False;
         public RevealLevel forceCorruptOnRoleRevealed = RevealLevel.False;
+        // POmniscience (hack) : "cette carte est piratée", révélé Personal au seul Robot. Pilote le
+        // glitch visuel côté client (CardHackGlitch). Aucun autre reveal ne l'écrit.
+        public RevealLevel isHacked = RevealLevel.False;
     }
     
     public enum RevealLevel

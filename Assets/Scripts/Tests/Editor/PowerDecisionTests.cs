@@ -286,6 +286,7 @@ namespace Tests.Editor
                 new NewTargeting(0, 5),
                 new StoreHackTarget(5),
                 new RevealInfo(5, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new RevealInfo(5, RevealField.Hacked, RevealVisibility.Personal, 0, true),
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
         }

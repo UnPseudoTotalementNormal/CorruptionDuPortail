@@ -53,7 +53,7 @@ namespace CorruptionDuPortail.Domain
     public enum RevealVisibility { False = 0, Personal = 10, Public = 20 }
 
     /// <summary>Which CharacterInfoReveal field a <see cref="RevealInfo"/> targets.</summary>
-    public enum RevealField { CorruptRevealed, RoleRevealed, ForceCorruptOnRoleRevealed }
+    public enum RevealField { CorruptRevealed, RoleRevealed, ForceCorruptOnRoleRevealed, Hacked }
 
     /// <summary>
     /// Base of the closed power-effect union. Sealed variants below; a switch over the base

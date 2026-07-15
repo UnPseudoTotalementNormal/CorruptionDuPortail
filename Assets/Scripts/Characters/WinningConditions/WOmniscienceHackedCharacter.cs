@@ -5,6 +5,11 @@ using GameLogic;
 
 namespace Characters.WinningConditions
 {
+    // TODO(robot-victory): refondre le système de victoire du Robot. Le modèle actuel ("le Robot est
+    // techniquement auto-piraté", sa victoire = la cible piratée chaînée + chosen) est jugé bancal par
+    // Poyo. À reprendre proprement (cf. glitch auto-hack from-start dans CardHackGlitch, qui ne fait
+    // qu'illustrer visuellement ce modèle sans le corriger). Ne pas modifier cette condition sans
+    // valider la refonte avec Poyo (design-owned).
     [Serializable]
     public class WOmniscienceHackedCharacter : WinningCondition
     {

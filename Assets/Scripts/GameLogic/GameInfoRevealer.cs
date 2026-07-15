@@ -240,6 +240,56 @@ namespace GameLogic
             }
         }
 
+        // POmniscience expiry: force the owner-only "hacked" flag back OFF for a single viewer. The normal
+        // reveal path (SetRevealLevel) is monotonic (never downgrades), so clearing needs its own route.
+        // Personal-scoped like the hack itself: only the intended viewer (the Robot) clears; a simulated
+        // Robot (id >= 100) redirects to the Host, mirroring SendRevealLevelRpc.
+        public void SendClearHackedRpc(ulong _clientId, ulong _toObserverId)
+        {
+            if (!IsServer) return;
+
+            var _target = RpcTarget.Single(_toObserverId, RpcTargetUse.Persistent);
+            if (_toObserverId >= 100)
+            {
+                _target = RpcTarget.Single(0, RpcTargetUse.Persistent); // Redirect to Host
+                ClearHackedSimulatedRpc(_clientId, _toObserverId, _target);
+            }
+            else
+            {
+                ClearHackedRpc(_clientId, _target);
+            }
+        }
+
+        [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
+        public void ClearHackedRpc(ulong _clientId, RpcParams _rpcParams = default)
+        {
+            // Runs only on the intended viewer, so the local client IS the observer here.
+            ClearHacked(_clientId, CharacterQuery.GetLocalClientId());
+        }
+
+        [Rpc(SendTo.Everyone, AllowTargetOverride = true)]
+        public void ClearHackedSimulatedRpc(ulong _clientId, ulong _intendedReceiverId, RpcParams _rpcParams = default)
+        {
+            ClearHacked(_clientId, _intendedReceiverId);
+        }
+
+        private void ClearHacked(ulong _clientId, ulong _observerId)
+        {
+            CharacterInfoReveal _info = GetCharacterInfo(_clientId, _observerId);
+            if (_info.isHacked == RevealLevel.False)
+            {
+                return;
+            }
+            _info.isHacked = RevealLevel.False;
+
+            // Notify local UI so CardHackGlitch re-evaluates and removes the glitch (the role stays revealed —
+            // only the hack marker is cleared, so no card re-flip here).
+            if (RevealVisibilityRules.ShouldRefreshLocalUi(_observerId, CharacterQuery.GetLocalClientId()))
+            {
+                onCharacterInfoRevealedChanged?.Invoke();
+            }
+        }
+
         private Dictionary<ulong, CharacterInfoReveal> GetSimulatedBrain(ulong _id)
         {
             if (!simulationsKnowledge.ContainsKey(_id))
@@ -261,6 +311,9 @@ namespace GameLogic
         public RevealLevel isRoleRevealed = RevealLevel.False;
         public RevealLevel isCorruptRevealed = RevealLevel.False;
         public RevealLevel forceCorruptOnRoleRevealed = RevealLevel.False;
+        // POmniscience (hack) : "cette carte est piratée", révélé Personal au seul Robot. Pilote le
+        // glitch visuel côté client (CardHackGlitch). Aucun autre reveal ne l'écrit.
+        public RevealLevel isHacked = RevealLevel.False;
     }
     
     public enum RevealLevel

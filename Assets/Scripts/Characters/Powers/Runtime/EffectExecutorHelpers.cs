@@ -18,6 +18,7 @@ namespace Characters.Powers.Runtime
             RevealField.CorruptRevealed => nameof(CharacterInfoReveal.isCorruptRevealed),
             RevealField.RoleRevealed => nameof(CharacterInfoReveal.isRoleRevealed),
             RevealField.ForceCorruptOnRoleRevealed => nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
+            RevealField.Hacked => nameof(CharacterInfoReveal.isHacked),
             _ => throw new NotSupportedException($"Unknown RevealField {field}")
         };
 

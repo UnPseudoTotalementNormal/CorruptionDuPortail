@@ -105,6 +105,10 @@ fmod_editor.log
 # Unity Linux local cache
 /[Ll]ibrary/ShaderCache/
 
+# Local secrets
+.env
+.env.*
+
 # BMad / GDS tooling (generated docs in _bmad-output/ are tracked — source of truth)
 /_bmad/
 *.bmad
@@ -119,3 +123,4 @@ fmod_editor.log
 # Multiplayer Play Mode transient bootstrap scenes (auto-generated, GUID-named, per playtest session)
 /Assets/InitTestScene*.unity
 /Assets/InitTestScene*.unity.meta
+BackupToolkit/

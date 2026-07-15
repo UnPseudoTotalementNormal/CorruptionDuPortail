@@ -10,9 +10,9 @@ namespace RoleTarget
     {
         // Story 10.2 (Epic 10 / D4): the gameplay consumers (targeting powers + RobotBoardInfo) were
         // rerouted off this global onto an injected roleTargetSystem field, resolved through
-        // CompositionRoot. The static now backs ONLY recorded-callers exceptions: the CompositionRoot
-        // targeting accessor (the one sanctioned locator, since RoleTargetSystem is not de-singletonised)
-        // and the PowerEffectDispatcher static POCO (→ Epic 11.1). // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
+        // CompositionRoot. The static now backs ONLY one recorded-caller exception: the CompositionRoot
+        // targeting accessor (the one sanctioned locator, since RoleTargetSystem is not de-singletonised).
+        // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
         public static RoleTargetSystem instance;
         
         public List<TargetingData> currentTargetingDataList = new();

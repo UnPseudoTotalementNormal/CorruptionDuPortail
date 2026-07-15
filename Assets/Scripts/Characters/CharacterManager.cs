@@ -30,10 +30,10 @@ namespace Characters
         // STILL on the façade → Epic 12.3 (the final sweep): RoomFog, CharacterAwakenTimer, TakeDownThePortalTextTitle,
         // ChatWindow, plus the 12.2 recorded OPT-OUTs SelectPanelPlayer / AwakeningRecapMessages /
         // AnonymousRevealedMessagesComponent (no injection context). ChatManager / LobbyPlayerInfoHolder → Epic 10;
-        // W* winning-condition POCOs + TargetUtils + PowerEffectDispatcher = static/POCO façade (no injection context);
+        // W* winning-condition POCOs + TargetUtils = static/POCO façade (no injection context);
         // DevIdentityController = debug F-keys. The field STAYS public for those callers.
         // recorded §4 survivor (12.3 strategy B): kept as a verify-don't-force exception, NOT deleted — read
-        // only by context-less static machinery (W*/TargetUtils/PowerEffectDispatcher) + ChatManager's NFR5
+        // only by context-less static machinery (W*/TargetUtils) + ChatManager's NFR5
         // GetSafeRpcTarget + the network fixtures. Enforced by StaticSingletonCensusGuardTests.
         public static CharacterManager instance;
 
@@ -482,19 +482,28 @@ namespace Characters
             onCharactersListUpdated?.Invoke(_characters);
         }
         
-        public void GivePowerToCharacter(ulong _characterId, Power _power)
+        public void GivePowerToCharacter(ulong _characterId, Power _power, System.Action<Power> _onReady = null)
         {
             Assert.IsTrue(NetworkManager.IsServer, "GivePowerToCharacter should only be called on the server");
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
-            
+
             Power _newPower = Instantiate(_power, null);
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.GetComponent<Power>().idHolderServer = _characterId;
             _powerNetworkObject.Spawn(true);
             StartCoroutine(
-                WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(), 
-                    (_result) => { OnPowerReparentComplete(_newPower, _result); })
+                WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(),
+                    (_result) =>
+                    {
+                        OnPowerReparentComplete(_newPower, _result);
+                        // Fired AFTER the copy is reparented + registered in the new owner's role.powers, so a
+                        // caller (e.g. Marque d'Hurluberluges) can configure the freshly-given instance.
+                        if (_result)
+                        {
+                            _onReady?.Invoke(_newPower);
+                        }
+                    })
                 );
         }
         

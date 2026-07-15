@@ -81,7 +81,10 @@ namespace GameLogic
         {
             Assert.IsTrue(NetworkManager.Singleton.IsServer, "OnGameStarted should only be called on the server");
             
-            foreach (var _rolePower in characterManager.GetCharacters().SelectMany(_character => _character.role.powers))
+            // Snapshot before iterating: OnGameStartedServer can reparent powers (e.g. Marque d'Hurluberluges steals
+            // powers at game-start → Power.Reparent mutates role.powers), which would invalidate a lazy SelectMany
+            // enumerator → "Collection was modified". ToList() captures each power present at game-start exactly once.
+            foreach (var _rolePower in characterManager.GetCharacters().SelectMany(_character => _character.role.powers).ToList())
             {
                 if (characterManager.GetCharacter(_rolePower.ownerClientId.Value, false).isFake)
                 {

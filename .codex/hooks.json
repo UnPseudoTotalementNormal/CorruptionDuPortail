@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\\Users\\azert\\Documents\\PROJECTS\\Unity\\CorruptionDuPortail\\.codex\\hooks\\claude_time_start.ps1'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\\Users\\azert\\Documents\\PROJECTS\\Unity\\CorruptionDuPortail\\.codex\\hooks\\claude_time_stop.ps1'"
+          }
+        ]
+      }
+    ]
+  }
+}

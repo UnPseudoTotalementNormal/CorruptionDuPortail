@@ -27,7 +27,7 @@ namespace GameLogic
     public class GameManager : NetworkBehaviour, IGameLoop, IGameStateQuery
     {
         // Story 12.3 (strategy B): recorded §4 survivor, NOT deleted — read only by context-less static
-        // machinery (W* winning-condition POCOs / TargetUtils / PowerEffectDispatcher) + the network test
+        // machinery (W* winning-condition POCOs / TargetUtils) + the network test
         // fixtures, which have no injection seam. CompositionRoot.For(nm) is the sanctioned indirection the
         // rest of the codebase uses. Whitelisted in StaticSingletonCensusGuardTests.
         public static GameManager instance { get; private set; }
@@ -384,6 +384,26 @@ namespace GameLogic
         public GameState GetGameState(int index)
         {
             return gameStates.Keys.ElementAt(index);
+        }
+
+        /// <summary>
+        /// Server-side phase gate consumed by the NGO connection-approval callback
+        /// (<see cref="Network.ConnectionApprovalGate"/>): true while the session is still forming in the
+        /// lobby (index 0), false once the game has started. Reuses the exact LobbyState signal that
+        /// HandlePlayerLeft keys off (the _inLobby check). Empty/out-of-range-safe so the approval callback
+        /// can query it during the spawn/setup race without throwing — an un-progressed loop reads as joinable.
+        /// </summary>
+        public bool IsInLobbyPhase
+        {
+            get
+            {
+                int _index = currentGameStateIndex.Value;
+                if (gameStates.Count == 0 || _index < 0 || _index >= gameStates.Count)
+                {
+                    return true;
+                }
+                return GetGameState(_index) is LobbyState;
+            }
         }
 
         public GameState[] GetGameStates(Type _gameStateType)

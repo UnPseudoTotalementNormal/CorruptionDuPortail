@@ -1,0 +1,353 @@
+/* Lobby role-attribution (max/forced) — structural USS. Palette is PLACEHOLDER / design-owned (see the proto);
+   tune later, ideally toward variables.uss tokens. UITK has no `gap` or `aspect-ratio`, so spacing uses margins
+   and cards use fixed sizes tuned for the 1440x912 RenderTexture. Font sizes use the shared --cdp-font-rt-* tablet
+   ramp (variables.uss) so tablet text stays legible and retunable in one place — matched to the InfoTable body. */
+
+.lobby-roles {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    padding: 22px 28px 16px 28px;
+    background-color: rgb(10, 7, 8);
+}
+
+/* Option A: the top bands + footer stay fixed; only the sections ScrollView (flex-grow:1) scrolls.
+   flex-shrink:0 stops the fixed-height column from compressing them when the cards overflow the panel. */
+.lobby-roles__topbar,
+.lobby-roles__tabs,
+.lobby-roles__tally,
+.lobby-roles__footer {
+    flex-shrink: 0;
+}
+
+/* Holds the ScrollView (fills) + the top/bottom edge fades (absolute overlays). Takes the remaining height. */
+.lobby-roles__scroll-wrap {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-direction: column;
+}
+
+/* ---- preset bar + tabs (C8) ---- */
+.lobby-roles__topbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+.lobby-roles__preset-classic {
+    padding: 10px 18px;
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    color: rgb(234, 255, 240);
+    background-color: rgb(43, 106, 67);
+    border-width: 2px;
+    border-color: rgba(0, 0, 0, 0);
+    border-radius: 8px;
+    margin-right: 10px;
+}
+.lobby-roles__preset-classic--active {
+    border-color: rgb(150, 240, 180);
+}
+.lobby-roles__preset-wrap {
+    position: relative;
+}
+.lobby-roles__preset-opener {
+    padding: 9px 14px;
+    font-size: var(--cdp-font-rt-sm);
+    color: rgb(164, 147, 138);
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-color: rgb(58, 44, 41);
+    border-radius: 8px;
+}
+.lobby-roles__preset-opener:hover {
+    color: rgb(240, 231, 221);
+}
+.lobby-roles__preset-popover {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    min-width: 260px;
+    flex-direction: column;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    padding: 6px;
+}
+.lobby-roles__preset-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px 12px;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-radius: 6px;
+    margin: 0;
+}
+.lobby-roles__preset-row:hover {
+    background-color: rgb(28, 22, 21);
+}
+.lobby-roles__preset-row--active {
+    background-color: rgb(34, 44, 36);
+}
+.lobby-roles__preset-name {
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    color: rgb(240, 231, 221);
+}
+.lobby-roles__preset-desc {
+    font-size: var(--cdp-font-rt-xs);
+    color: rgb(150, 133, 125);
+    white-space: normal;
+    margin-top: 2px;
+}
+.lobby-roles__preset-status {
+    -unity-text-align: middle-left;
+    margin-left: 12px;
+    font-size: var(--cdp-font-rt-sm);
+    -unity-font-style: bold;
+    color: rgb(150, 240, 180);
+}
+.lobby-roles__preset-status--custom {
+    -unity-font-style: normal;
+    color: rgb(120, 105, 98);
+}
+.lobby-roles__tabs {
+    flex-direction: row;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(42, 33, 31);
+    margin-bottom: 18px;
+}
+.lobby-roles__tab {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 20px;
+    font-size: var(--cdp-font-rt-md);
+    color: rgb(164, 147, 138);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-radius: 0;
+}
+.lobby-roles__tab--active {
+    color: rgb(240, 231, 221);
+    -unity-font-style: bold;
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(95, 217, 135);
+}
+.lobby-roles__tab-badge {
+    margin-left: 7px;
+    min-width: 22px;
+    height: 22px;
+    -unity-text-align: middle-center;
+    font-size: var(--cdp-font-rt-xs);
+    -unity-font-style: bold;
+    border-radius: 9px;
+    color: rgb(164, 147, 138);
+    background-color: rgb(28, 22, 21);
+}
+
+/* ---- tally ---- */
+.lobby-roles__tally {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-width: 1px;
+    border-color: rgb(42, 33, 31);
+    border-radius: 10px;
+    margin-bottom: 22px;
+}
+.lobby-roles__tally-cell {
+    flex-grow: 1;
+    flex-basis: 120px;
+    flex-direction: column;
+    padding: 12px 18px;
+    background-color: rgb(20, 16, 15);
+    border-right-width: 1px;
+    border-right-color: rgb(42, 33, 31);
+}
+.lobby-roles__tally-key {
+    font-size: var(--cdp-font-rt-xs);
+    letter-spacing: 2px;
+    color: rgb(111, 95, 88);
+}
+.lobby-roles__tally-val {
+    font-size: var(--cdp-font-rt-lg);
+    -unity-font-style: bold;
+    color: rgb(240, 231, 221);
+}
+.lobby-roles__tally-val--bad {
+    color: rgb(214, 49, 75);
+}
+
+/* ---- section ---- */
+.lobby-roles__section {
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+.lobby-roles__section-head {
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* ---- grid ---- */
+.lobby-roles__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+/* One card slot = the RoleCardElement (fixed width, it computes its own 5:7 height) + the steppers below. */
+.lobby-roles__unit {
+    width: 200px;
+    flex-direction: column;
+    margin-right: 22px;
+    margin-bottom: 22px;
+}
+.lobby-roles__controls {
+    margin-top: 8px;
+}
+
+.lobby-roles__card {
+    width: 172px;
+    margin-right: 18px;
+    margin-bottom: 18px;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    background-color: rgb(14, 10, 11);
+    padding: 8px;
+    opacity: 0.82;
+}
+.lobby-roles__card--active {
+    opacity: 1;
+}
+.lobby-roles__card-art {
+    height: 168px;
+    border-radius: 8px;
+    background-color: rgb(24, 10, 12);
+}
+.lobby-roles__card-name {
+    font-size: var(--cdp-font-rt-sm);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    color: rgb(240, 231, 221);
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* ---- controls / steppers ---- */
+.lobby-roles__controls {
+    flex-direction: column;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-color: rgb(42, 33, 31);
+    border-radius: 8px;
+    padding: 6px;
+}
+.lobby-roles__ctl {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.lobby-roles__ctl-label {
+    font-size: var(--cdp-font-rt-sm);
+    color: rgb(164, 147, 138);
+}
+.lobby-roles__ctl--forced .lobby-roles__ctl-label {
+    color: rgb(233, 193, 90);
+    -unity-font-style: bold;
+}
+.lobby-roles__stepper {
+    flex-direction: row;
+    align-items: center;
+}
+.lobby-roles__step-btn {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    color: rgb(164, 147, 138);
+    background-color: rgb(28, 22, 21);
+    border-width: 0;
+    border-radius: 6px;
+}
+.lobby-roles__step-btn:hover {
+    color: rgb(240, 231, 221);
+    background-color: rgb(58, 44, 41);
+}
+.lobby-roles__step-btn:disabled {
+    opacity: 0.3;
+}
+.lobby-roles__step-val {
+    width: 44px;
+    -unity-text-align: middle-center;
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    color: rgb(240, 231, 221);
+}
+
+/* ---- footer ---- */
+.lobby-roles__footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+.lobby-roles__reason {
+    font-size: var(--cdp-font-rt-sm);
+    color: rgb(224, 151, 58);
+    margin-right: 16px;
+}
+.lobby-roles__reason--ok {
+    color: rgb(111, 191, 122);
+}
+.lobby-roles__start {
+    padding: 12px 30px;
+    font-size: var(--cdp-font-rt-md);
+    -unity-font-style: bold;
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-width: 0;
+    border-radius: 10px;
+}
+.lobby-roles__start:disabled {
+    color: rgb(111, 95, 88);
+    background-color: rgb(28, 22, 21);
+}
+
+/* ---- scrollbar (Option A ScrollView) — slim dark thumb, no arrow buttons ---- */
+.lobby-roles__scroll .unity-scroller__low-button,
+.lobby-roles__scroll .unity-scroller__high-button {
+    display: none;
+}
+.lobby-roles__scroll .unity-scroller {
+    width: 10px;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    margin-left: 8px;
+}
+.lobby-roles__scroll .unity-scroller__slider {
+    margin: 0;
+    min-width: 10px;
+    width: 10px;
+}
+.lobby-roles__scroll .unity-base-slider__tracker {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-width: 0;
+    border-radius: 5px;
+}
+.lobby-roles__scroll .unity-base-slider__dragger {
+    background-color: rgb(58, 44, 41);
+    border-width: 0;
+    border-radius: 3px;
+    width: 6px;
+    left: 2px;
+}
+.lobby-roles__scroll .unity-base-slider__dragger:hover {
+    background-color: rgb(90, 68, 63);
+}

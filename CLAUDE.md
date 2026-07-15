@@ -51,3 +51,26 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 | Enter play mode | `mcp__UnityMCP__manage_editor` |
 
 After any code change: poll `read_console` for compile errors before assuming anything works. After a feature completes: run `mcp__UnityMCP__run_tests` (filter by category/assembly when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
+
+## Discord task board
+
+The team's task list is a **Discord forum channel** (`liste-de-taches`, one thread = one task). No Discord MCP — talk to it via the **REST API** (`https://discord.com/api/v10`) using the bot token. Credentials live in `.env` at repo root (gitignored):
+
+| Var | Meaning |
+|---|---|
+| `DISCORD_BOT_TOKEN` | Auth: header `Authorization: Bot <token>` |
+| `DISCORD_GUILD_ID` | Server id |
+| `DISCORD_TASK_CHANNEL_ID` | The forum channel |
+| `DISCORD_DONE_TAG_ID` | "Résolu" tag id |
+
+Forum tags (id → name): `1524509766972604517` Haute Priorité · `1524509938116726984` Moyenne Priorité · `1524509912019894373` Faible Priorité · `1524509841043882048` MODELE 3D · `1524511158445277268` Bug · `1524722157689638953` En Cours · `1524514526660263956` Résolu.
+
+Common ops (all authed with the Bot header):
+- **List tasks** — `GET /guilds/{guild}/threads/active` (filter `parent_id == channel`) + `GET /channels/{channel}/threads/archived/public`. Open = tag not in `applied_tags`; done = `DISCORD_DONE_TAG_ID` present.
+- **Read a task** — `GET /channels/{threadId}` (metadata + `applied_tags`) then `GET /channels/{threadId}/messages` (thread body = first message).
+- **Mark in-progress / complete** — `PATCH /channels/{threadId}` with `{"applied_tags":[...]}` (full replacement — read current tags, add/swap, write back). Complete = add Résolu (+ archive via `"archived":true`); starting = add "En Cours".
+- **Create a task** — `POST /channels/{channel}/threads` with `{"name":..., "applied_tags":[...], "message":{"content":...}}`.
+
+**Always confirm with Poyo before any write** (PATCH/POST) to the board — same rule as commits.
+
+Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8.

@@ -162,12 +162,13 @@ namespace Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator POmniscience_RevealsRoleOnUsage()
+        public IEnumerator POmniscience_ChosenTarget_RevealsRoleAndStoresHack()
         {
             // Create Owner
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
-            // Create Target
+            // Create Target — élu (chosen) : la cible peut être piratée.
             Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.chosen };
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
 
             GameObject powerGo = new GameObject("Omniscience");
@@ -184,7 +185,156 @@ namespace Tests.PlayMode
 
             var info = _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value);
             Assert.AreEqual(RevealLevel.Personal, info.isRoleRevealed, "Omniscience should reveal role to owner");
-            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "Omniscience should store the target ID");
+            Assert.AreEqual(RevealLevel.Personal, info.isHacked, "Omniscience should mark a chosen target as hacked (owner-only glitch)");
+            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "Omniscience should store a chosen target ID");
+        }
+
+        [UnityTest]
+        public IEnumerator POmniscience_NonChosenTarget_RevealsRoleOnly_NoHack()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            // Create Target — anomaly : révélé mais NON piraté.
+            Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.anomaly };
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject powerGo = new GameObject("Omniscience");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<POmniscience>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            var info = _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value);
+            Assert.AreEqual(RevealLevel.Personal, info.isRoleRevealed, "Omniscience should still reveal the role of a non-chosen target");
+            Assert.AreEqual(RevealLevel.False, info.isHacked, "A non-chosen target must NOT be marked hacked");
+            Assert.AreEqual(POmniscience.HACKED_CHARACTER_DEFAULT, power.hackedCharacterClientId, "A non-chosen target must NOT be stored as hacked");
+        }
+
+        [UnityTest]
+        public IEnumerator POmniscience_HackExpires_WhenTargetNotVotedNextTurn()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.chosen };
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            // Empty chaining manager: the target is NOT voted this turn.
+            GameObject cmGo = new GameObject("ChainingManager");
+            var cmNet = cmGo.AddComponent<NetworkObject>();
+            cmGo.AddComponent<ChainingManager>();
+            cmNet.Spawn();
+            yield return null;
+
+            GameObject powerGo = new GameObject("Omniscience");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<POmniscience>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "precondition: chosen target is hacked");
+
+            // Next-day boundary: target was never chained → the hack expires.
+            ReflectionHelper.InvokePrivateMethod(power, "ExpireHackIfTargetNotVotedServer");
+            yield return null;
+
+            Assert.AreEqual(POmniscience.HACKED_CHARACTER_DEFAULT, power.hackedCharacterClientId, "Hack should expire when the target was not voted");
+            var info = _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value);
+            Assert.AreEqual(RevealLevel.False, info.isHacked, "Expiring the hack must clear the owner-only glitch flag");
+        }
+
+        [UnityTest]
+        public IEnumerator POmniscience_HackKept_WhenTargetVotedNextTurn()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(54321);
+            target.role = new Role { factionType = FactionType.chosen };
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject cmGo = new GameObject("ChainingManager");
+            var cmNet = cmGo.AddComponent<NetworkObject>();
+            var cm = cmGo.AddComponent<ChainingManager>();
+            cmNet.Spawn();
+            yield return null;
+
+            GameObject powerGo = new GameObject("Omniscience");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<POmniscience>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            // Target was voted out this turn (added to the chain) → the hack must be kept.
+            cm.AddCharacterToChainingList(target.ownerClientId.Value);
+            yield return null;
+
+            ReflectionHelper.InvokePrivateMethod(power, "ExpireHackIfTargetNotVotedServer");
+            yield return null;
+
+            Assert.AreEqual(target.ownerClientId.Value, power.hackedCharacterClientId, "Hack should be kept when the target was voted/chained");
+        }
+
+        // Powers-POCO v2 wiring golden: PCorruptionKnowledge delegates OnGameStartedServer to
+        // CorruptionKnowledgeDecision → RevealInfo(ForceCorruptOnRoleRevealed) per roster slot.
+        [UnityTest]
+        public IEnumerator PCorruptionKnowledge_RevealsForceCorruptFlagAtStart()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(23456);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            GameObject powerGo = new GameObject("CorruptionKnowledge");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<PCorruptionKnowledge>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.AreEqual(RevealLevel.False,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).forceCorruptOnRoleRevealed);
+
+            power.OnGameStartedServer();
+            yield return null;
+
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).forceCorruptOnRoleRevealed,
+                "CorruptionKnowledge should reveal every character's forceCorruptOnRoleRevealed flag to the owner.");
+        }
+
+        // Powers-POCO v2 wiring golden: PInfiniteMessage delegates OnPowerReparented to
+        // InfiniteMessageDecision → SetMessageLeft(owner, int.MaxValue).
+        [UnityTest]
+        public IEnumerator PInfiniteMessage_SetsOwnerMessageLeftToMaxOnReparent()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+
+            GameObject powerGo = new GameObject("InfiniteMessage");
+            var powerNetObj = powerGo.AddComponent<NetworkObject>();
+            var power = powerGo.AddComponent<PInfiniteMessage>();
+            powerNetObj.Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.AreNotEqual(int.MaxValue, owner.messageLeft.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnPowerReparented");
+            yield return null;
+
+            Assert.AreEqual(int.MaxValue, owner.messageLeft.Value,
+                "InfiniteMessage should set the owner's messageLeft to int.MaxValue on reparent.");
         }
     }
 }

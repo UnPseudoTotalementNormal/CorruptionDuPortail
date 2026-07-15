@@ -1,0 +1,400 @@
+<title>Attribution de rôle — proto (max + forcé)</title>
+<style>
+  :root {
+    --bg:#0a0708; --bg-panel:#14100f; --bg-panel-2:#1c1615;
+    --line:#2a211f; --line-strong:#3a2c29;
+    --ink:#f0e7dd; --ink-dim:#a4938a; --ink-faint:#6f5f58;
+    --anomalie:#d6314b; --anomalie-glow:#ff4d67;
+    --elu:#3fae62; --elu-glow:#5fd987;
+    --gold:#e9c15a; --gold-dim:#b8963f;
+    --factice:#7d8ea0;
+    --warn:#e0973a; --bad:#d6314b; --ok:#6fbf7a;
+    --card-ratio:0.7159; --radius:10px;
+    --font:"Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); font-family:var(--font); line-height:1.4; -webkit-font-smoothing:antialiased;
+    background:radial-gradient(120% 80% at 50% -10%, #1a0d10 0%, transparent 55%), var(--bg); }
+  .frame { max-width:1180px; margin:0 auto; padding:22px clamp(12px,3vw,32px) 40px; }
+
+  .titlebar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:14px; flex-wrap:wrap; }
+  .titlebar h1 { margin:0; font-size:20px; font-weight:600; letter-spacing:.02em; }
+  .players { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink-dim); }
+  .players .num { font-size:18px; font-weight:700; color:var(--ink); min-width:20px; text-align:center; font-variant-numeric:tabular-nums; }
+  .mini { appearance:none; border:1px solid var(--line-strong); background:var(--bg-panel-2); color:var(--ink-dim);
+          width:26px; height:26px; border-radius:6px; font-size:16px; font-weight:700; cursor:pointer; line-height:1; }
+  .mini:hover { color:var(--ink); border-color:var(--elu); }
+  .mini:disabled { opacity:.3; cursor:default; }
+
+  .presetbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .btn-preset { appearance:none; cursor:pointer; font:inherit; font-size:14px; font-weight:600; padding:10px 18px; border-radius:8px;
+    border:1px solid transparent; background:linear-gradient(180deg,#2b6a43,#20583a); color:#eafff0;
+    box-shadow:0 4px 14px -6px rgba(63,174,98,.6); display:inline-flex; align-items:center; gap:8px; }
+  .btn-preset:hover { filter:brightness(1.08); } .btn-preset .star { color:var(--elu-glow); }
+  .btn-ghost { appearance:none; cursor:pointer; font:inherit; font-size:13px; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--line-strong); background:var(--bg-panel); color:var(--ink-dim); }
+  .btn-ghost:hover { color:var(--ink); }
+  .popover-wrap { position:relative; }
+  .popover { position:absolute; top:calc(100% + 8px); left:0; z-index:20; width:min(340px,90vw); background:var(--bg-panel);
+    border:1px solid var(--line-strong); border-radius:10px; padding:10px; box-shadow:0 18px 46px -12px rgba(0,0,0,.7); display:none; }
+  .popover.open { display:block; }
+  .popover h3 { margin:4px 6px 8px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint); }
+  .preset-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border-radius:8px;
+    cursor:pointer; border:1px solid transparent; }
+  .preset-row:hover { background:var(--bg-panel-2); border-color:var(--line); }
+  .preset-row .meta { display:flex; flex-direction:column; gap:2px; }
+  .preset-row .pn { font-size:14px; font-weight:600; } .preset-row .pd { font-size:11.5px; color:var(--ink-faint); }
+  .preset-row .tag { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--elu-glow); border:1px solid var(--elu); padding:2px 6px; border-radius:99px; }
+
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; }
+  .tab { appearance:none; background:transparent; border:0; color:var(--ink-dim); font:inherit; font-size:15px; padding:12px 20px; cursor:pointer; position:relative; }
+  .tab[aria-selected="true"] { color:var(--ink); font-weight:600; }
+  .tab[aria-selected="true"]::after { content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:2px;
+    background:linear-gradient(90deg,var(--anomalie),var(--elu)); border-radius:2px; }
+  .tab .badge { display:inline-block; margin-left:7px; min-width:18px; padding:0 5px; height:18px; line-height:18px; font-size:11px;
+    font-weight:700; border-radius:9px; background:var(--bg-panel-2); color:var(--ink-dim); font-variant-numeric:tabular-nums; }
+  .tab[aria-selected="true"] .badge { background:var(--elu); color:#0b1a10; }
+  .mini:focus-visible,.tab:focus-visible,.btn-preset:focus-visible,.btn-ghost:focus-visible,.preset-row:focus-visible { outline:2px solid var(--elu); outline-offset:2px; border-radius:6px; }
+
+  .panel { display:none; } .panel.active { display:block; }
+
+  .tally { display:flex; flex-wrap:wrap; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:26px; }
+  .tally .cell { flex:1 1 0; min-width:118px; background:var(--bg-panel); padding:12px 18px; display:flex; flex-direction:column; gap:2px; }
+  .tally .k { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-faint); }
+  .tally .v { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; display:flex; align-items:baseline; gap:8px; }
+  .tally .v .note { font-size:12px; font-weight:500; letter-spacing:0; color:var(--ink-faint); }
+  .tally .cell.anomalie .v { color:var(--anomalie-glow); } .tally .cell.elu .v { color:var(--elu-glow); }
+  .tally .cell.forced .v { color:var(--gold); }
+  .tally .cell.dot .k::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+  .tally .cell.anomalie .k::before { background:var(--anomalie); } .tally .cell.elu .k::before { background:var(--elu); }
+  .tally .cell.forced .k::before { background:var(--gold); }
+  .v.state-warn { color:var(--warn)!important; } .v.state-bad { color:var(--bad)!important; }
+
+  .section-head { display:flex; align-items:center; gap:12px; margin:22px 0 14px; }
+  .section-head .name { font-size:13px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; }
+  .section-head .rule { flex:1; height:1px; background:linear-gradient(90deg,var(--seam),transparent); }
+  .section-head .count { font-size:12px; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+  .section.anomalie { --seam:var(--anomalie); } .section.anomalie .name { color:var(--anomalie-glow); }
+  .section.elu { --seam:var(--elu); } .section.elu .name { color:var(--elu-glow); }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:20px; }
+  .unit { display:flex; flex-direction:column; gap:8px; }
+
+  .card { position:relative; aspect-ratio:var(--card-ratio); border-radius:var(--radius); overflow:hidden; cursor:pointer;
+    border:1px solid var(--line-strong); background:#0e0a0b;
+    transition:transform .16s ease, box-shadow .22s ease, filter .22s ease, border-color .22s ease;
+    filter:saturate(.35) brightness(.62); opacity:.82; transform:rotate(var(--tilt,0deg)); }
+  .card:hover { transform:rotate(0deg) translateY(-4px); }
+  .card:focus-visible { outline:2px solid var(--elu); outline-offset:3px; }
+  .unit.active .card { filter:none; opacity:1; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 6px 26px -8px var(--accent-glow); }
+  .art { position:absolute; inset:0;
+    background:radial-gradient(60% 45% at 50% 32%, var(--art-hi) 0%, transparent 60%),
+      conic-gradient(from 210deg at 50% 40%, var(--art-a), var(--art-b), var(--art-a)), var(--art-base); }
+  .art::after { content:""; position:absolute; left:50%; top:38%; width:62%; aspect-ratio:1; transform:translate(-50%,-50%);
+    border-radius:50%; border:1px solid rgba(255,255,255,.10); box-shadow:0 0 0 6px rgba(255,255,255,.03), inset 0 0 24px rgba(0,0,0,.5); }
+  .vignette { position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.15),transparent 30%,rgba(6,4,5,.85)); }
+  .forced-tag { position:absolute; top:7px; left:7px; padding:2px 8px; border-radius:99px; font-size:10.5px; font-weight:700;
+    letter-spacing:.04em; background:var(--gold); color:#20180a; box-shadow:0 1px 5px rgba(0,0,0,.5);
+    opacity:0; transform:translateY(-3px); transition:opacity .18s, transform .18s; }
+  .unit.has-forced .forced-tag { opacity:1; transform:none; }
+  .info-btn { position:absolute; top:7px; right:7px; width:22px; height:22px; border-radius:50%; border:1px solid rgba(255,255,255,.25);
+    background:rgba(10,7,8,.6); color:var(--ink); font-size:12px; font-weight:700; font-style:italic; cursor:pointer; display:grid; place-items:center; }
+  .info-btn:hover { background:var(--accent); color:#120b0c; border-color:transparent; }
+  .card .name { position:absolute; left:0; right:0; bottom:0; padding:20px 10px 10px; font-size:12.5px; font-weight:600; text-align:center; text-shadow:0 1px 3px rgba(0,0,0,.9); }
+
+  .controls { display:flex; flex-direction:column; gap:6px; background:var(--bg-panel); border:1px solid var(--line); border-radius:8px; padding:7px 8px; }
+  .ctl { display:grid; grid-template-columns:44px 1fr; align-items:center; gap:8px; }
+  .ctl .lbl { font-size:11px; letter-spacing:.02em; color:var(--ink-dim); }
+  .ctl.forced .lbl { color:var(--gold); font-weight:600; }
+  .stepper { display:grid; grid-template-columns:26px 1fr 26px; align-items:center; gap:3px; }
+  .stepper button { appearance:none; border:0; background:var(--bg-panel-2); color:var(--ink-dim); font-size:16px; font-weight:700;
+    line-height:1; height:26px; border-radius:5px; cursor:pointer; transition:background .12s,color .12s; }
+  .stepper button:hover:not(:disabled) { background:var(--line-strong); color:var(--ink); }
+  .stepper button:disabled { opacity:.28; cursor:default; }
+  .stepper button:focus-visible { outline:2px solid var(--elu); outline-offset:1px; }
+  .stepper .qty { text-align:center; font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .ctl.forced .stepper .qty { color:var(--gold); }
+  .unit.active .ctl.max .stepper .qty { color:var(--accent-glow); }
+
+  .deck-empty { padding:40px 20px; text-align:center; color:var(--ink-faint); font-size:14px; border:1px dashed var(--line-strong); border-radius:10px; }
+  .deck-list { display:flex; flex-direction:column; gap:8px; }
+  .deck-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:8px; background:var(--bg-panel); }
+  .deck-item .swatch { width:8px; height:34px; border-radius:3px; background:var(--accent); flex:none; }
+  .deck-item .dn { flex:1; font-weight:600; font-size:14px; }
+  .deck-item .df { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); }
+  .deck-item .dc { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; min-width:64px; text-align:right; }
+  .deck-item .dc .mx { color:var(--accent-glow); } .deck-item .dc .fx { color:var(--gold); }
+  .deck-sub { margin:20px 0 10px; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-faint); }
+
+  .opts-placeholder { padding:40px 20px; text-align:center; color:var(--ink-faint); border:1px dashed var(--line-strong); border-radius:10px; }
+
+  .footer { position:sticky; bottom:0; margin-top:30px; padding:16px 0 6px; background:linear-gradient(0deg,var(--bg) 60%,transparent);
+    display:flex; align-items:center; justify-content:flex-end; gap:16px; flex-wrap:wrap; }
+  .footer .reason { font-size:13px; color:var(--warn); font-variant-numeric:tabular-nums; }
+  .footer .reason.ok { color:var(--ok); }
+  .btn-start { appearance:none; cursor:pointer; font:inherit; font-size:16px; font-weight:700; letter-spacing:.02em; padding:14px 34px;
+    border-radius:10px; border:0; color:#0b1a10; background:linear-gradient(180deg,var(--elu-glow),var(--elu)); box-shadow:0 8px 24px -8px rgba(63,174,98,.7); }
+  .btn-start:hover:not(:disabled) { filter:brightness(1.06); }
+  .btn-start:disabled { background:var(--bg-panel-2); color:var(--ink-faint); box-shadow:none; cursor:not-allowed; }
+  .btn-start:focus-visible { outline:2px solid var(--elu); outline-offset:3px; }
+
+  .hint { margin-top:24px; padding:14px 16px; border:1px dashed var(--line-strong); border-radius:8px; font-size:12.5px; color:var(--ink-dim); background:rgba(255,255,255,.015); }
+  .hint b { color:var(--ink); } .hint .g { color:var(--gold); } .hint code { background:var(--bg-panel-2); padding:1px 6px; border-radius:4px; color:var(--elu-glow); font-size:12px; }
+
+  @media (prefers-reduced-motion:reduce) { * { transition:none!important; } .card { transform:none!important; } }
+</style>
+
+<div class="frame">
+  <div class="titlebar">
+    <h1>Configuration de la partie</h1>
+    <div class="players">
+      <span>Joueurs&nbsp;:</span>
+      <button class="mini" id="p-minus" aria-label="Moins de joueurs">−</button>
+      <span class="num" id="p-num">5</span>
+      <button class="mini" id="p-plus" aria-label="Plus de joueurs">+</button>
+      <span style="color:var(--ink-faint);font-size:11px">(proto)</span>
+    </div>
+  </div>
+
+  <div class="presetbar">
+    <button class="btn-preset" id="preset-classic"><span class="star">★</span> Preset classique</button>
+    <div class="popover-wrap">
+      <button class="btn-ghost" id="preset-open" aria-expanded="false">Autres presets… ▾</button>
+      <div class="popover" id="preset-pop" role="menu"><h3 id="pop-title">Presets — 5 joueurs</h3><div id="pop-list"></div></div>
+    </div>
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn-ghost" id="reset">Tout réinitialiser</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="attrib">Attribution de rôle</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="deck">Ta partie <span class="badge" id="deck-badge">0</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="opts">Autres options…</button>
+  </div>
+
+  <div class="panel active" data-panel="attrib">
+    <div class="tally" id="tally">
+      <div class="cell"><span class="k">Joueurs</span><span class="v" id="t-players">5</span></div>
+      <div class="cell dot forced"><span class="k">Forcés (min)</span><span class="v" id="t-forced">0 <span class="note" id="t-forced-note"></span></span></div>
+      <div class="cell"><span class="k">Pool max</span><span class="v" id="t-max">0 <span class="note" id="t-max-note"></span></span></div>
+      <div class="cell dot anomalie"><span class="k">Anomalies</span><span class="v" id="t-anomalie">0</span></div>
+      <div class="cell dot elu"><span class="k">Élus</span><span class="v" id="t-elu">0</span></div>
+    </div>
+    <div id="sections"></div>
+  </div>
+
+  <div class="panel" data-panel="deck"><div id="deck-view"></div></div>
+  <div class="panel" data-panel="opts"><div class="opts-placeholder">« Autres options… » — vide pour l'instant.</div></div>
+
+  <div class="footer">
+    <span class="reason" id="reason"></span>
+    <button class="btn-start" id="start" disabled>Démarrer la partie</button>
+  </div>
+
+  <div class="hint">
+    <b>Nouveau modèle par rôle : deux nombres.</b>
+    <b>Max</b> = plafond de copies dans le pool (tirage aléatoire jusque-là) · <b class="g">Forcé</b> = minimum garanti (nombre de joueurs qui auront FORCÉMENT ce rôle).
+    Contrainte <code>forcé ≤ max</code>. Démarrer gaté sur <code>Σforcé ≤ joueurs ≤ Σmax</code> (le forcé remplace l'ancien plancher mandatory).
+    Baisse un « Max » sous son « Forcé » → le forcé suit. Le système <b>factice/leurre</b> (ex-canBeFake) est à redéfinir séparément — pas dans ce mockup.
+  </div>
+</div>
+
+<script>
+  const ROLES = [
+    { id:'vaahl', name:"Va'ahl, Le Mage Occulte",    faction:'anomalie', hue:['#7a1020','#c0304a'] },
+    { id:'abyss', name:"Abyss, L'Extension du Néant", faction:'anomalie', hue:['#3a0d33','#8b2d7a'] },
+    { id:'robot', name:"Le Robot",                    faction:'anomalie', hue:['#5a1414','#a83b2a'] },
+    { id:'orphe', name:"L'Orpheline",                 faction:'anomalie', hue:['#611026','#b13857'] },
+    { id:'techno',name:"Le Technomancien",            faction:'elu',      hue:['#0f5a2a','#2c9a4e'] },
+    { id:'luma',  name:"Luma, la croupière",          faction:'elu',      hue:['#12603a','#33b06a'] },
+    { id:'senti', name:"La Sentinelle",               faction:'elu',      hue:['#12522c','#3aa85e'] },
+    { id:'oracle',name:"L'Oracle",                    faction:'elu',      hue:['#155a30','#48c072'] },
+  ];
+  const FACTIONS = {
+    anomalie:{ label:'Anomalies', accent:'var(--anomalie)', glow:'var(--anomalie-glow)', base:'#180a0c' },
+    elu:     { label:'Élus',      accent:'var(--elu)',      glow:'var(--elu-glow)',      base:'#08160d' },
+  };
+
+  // presets set MAX per role (design-owned placeholder). forced left at 0 unless a preset specifies it.
+  const PRESETS = {
+    5: [
+      { name:'Classique', desc:'1 Mage forcé, pool équilibré', max:{vaahl:1,robot:2,techno:2,senti:1,oracle:1}, forced:{vaahl:1} },
+      { name:'Néant montant', desc:'Anomalies renforcées', max:{vaahl:1,abyss:1,robot:2,techno:1,luma:1,oracle:1}, forced:{abyss:1} },
+      { name:'Duo maudit', desc:'2 mages garantis', max:{vaahl:2,abyss:2,techno:1,senti:1,oracle:1}, forced:{vaahl:1,abyss:1} },
+    ],
+    7: [
+      { name:'Classique', desc:'Compo 7 équilibrée', max:{vaahl:1,abyss:1,robot:2,techno:2,luma:1,senti:1,oracle:1}, forced:{vaahl:1,techno:1} },
+      { name:'Marée du vide', desc:'Anomalies majoritaires', max:{vaahl:1,abyss:2,robot:2,orphe:1,techno:1,luma:1,senti:1}, forced:{abyss:1} },
+      { name:'Conclave', desc:'Élus soudés', max:{vaahl:1,abyss:1,techno:2,luma:2,senti:1,oracle:1,robot:1}, forced:{techno:1,luma:1} },
+      { name:'Chaos', desc:'Gros pool aléatoire', max:{vaahl:2,abyss:2,robot:2,orphe:1,techno:2,luma:1,senti:1,oracle:1}, forced:{} },
+      { name:'Sentinelles', desc:'Défense élue lourde', max:{vaahl:1,abyss:1,techno:1,luma:1,senti:2,oracle:1,orphe:1}, forced:{senti:2} },
+    ],
+  };
+  function presetsFor(n){ return PRESETS[n] || [{ name:'Classique', desc:'Généré à la volée (placeholder)', max:autoMax(n), forced:{} }]; }
+  function autoMax(n){ const m={}; for(let i=0;i<n;i++){ const id=ROLES[i%ROLES.length].id; m[id]=(m[id]||0)+1; } return m; }
+
+  let players = 5;
+  const mx = {}, fc = {}; ROLES.forEach(r=>{ mx[r.id]=0; fc[r.id]=0; });
+
+  function buildCard(r){
+    const f=FACTIONS[r.faction];
+    const tilt=(r.id.charCodeAt(0)%5-2)*0.8;
+    const unit=document.createElement('div');
+    unit.className='unit'; unit.dataset.id=r.id;
+    unit.style.setProperty('--accent',f.accent); unit.style.setProperty('--accent-glow',f.glow);
+    unit.innerHTML=`
+      <div class="card" tabindex="0" role="button" aria-label="Détail du rôle ${r.name}"
+           style="--tilt:${tilt}deg;--art-a:${r.hue[0]};--art-b:${r.hue[1]};--art-base:${f.base};--art-hi:${r.hue[1]}55">
+        <div class="art"></div><div class="vignette"></div>
+        <span class="forced-tag">★ forcé <span class="ft-n">0</span></span>
+        <button class="info-btn" aria-label="Détail du rôle">i</button>
+        <div class="name">${r.name}</div>
+      </div>
+      <div class="controls">
+        <div class="ctl max">
+          <span class="lbl">Max</span>
+          <div class="stepper"><button class="m-minus" aria-label="Max −">−</button><span class="qty q-max" aria-live="polite">0</span><button class="m-plus" aria-label="Max +">+</button></div>
+        </div>
+        <div class="ctl forced">
+          <span class="lbl">Forcé</span>
+          <div class="stepper"><button class="f-minus" aria-label="Forcé −">−</button><span class="qty q-forced" aria-live="polite">0</span><button class="f-plus" aria-label="Forcé +">+</button></div>
+        </div>
+      </div>`;
+    const qMax=unit.querySelector('.q-max'), qF=unit.querySelector('.q-forced'), ftN=unit.querySelector('.ft-n');
+    const mMinus=unit.querySelector('.m-minus'), mPlus=unit.querySelector('.m-plus');
+    const fMinus=unit.querySelector('.f-minus'), fPlus=unit.querySelector('.f-plus');
+
+    mMinus.addEventListener('click',e=>{ e.stopPropagation(); mx[r.id]=Math.max(0,mx[r.id]-1); if(fc[r.id]>mx[r.id]) fc[r.id]=mx[r.id]; refresh(); });
+    mPlus .addEventListener('click',e=>{ e.stopPropagation(); mx[r.id]=Math.min(9,mx[r.id]+1); refresh(); });
+    fMinus.addEventListener('click',e=>{ e.stopPropagation(); fc[r.id]=Math.max(0,fc[r.id]-1); refresh(); });
+    fPlus .addEventListener('click',e=>{ e.stopPropagation(); fc[r.id]=Math.min(mx[r.id],fc[r.id]+1); refresh(); });
+
+    const detail=()=>flash(`Détail : « ${r.name} » → ouvrira la RoleCard UITK`);
+    unit.querySelector('.card').addEventListener('click',detail);
+    unit.querySelector('.info-btn').addEventListener('click',e=>{ e.stopPropagation(); detail(); });
+
+    unit._apply=()=>{
+      const m=mx[r.id], fo=fc[r.id];
+      qMax.textContent=m; qF.textContent=fo; ftN.textContent=fo;
+      unit.classList.toggle('active', m>0);
+      unit.classList.toggle('has-forced', fo>0);
+      mMinus.disabled=m===0;
+      fMinus.disabled=fo===0;
+      fPlus.disabled=fo>=m;          // forced can't exceed max
+      mPlus.disabled=m>=9;
+    };
+    unit._apply();
+    return unit;
+  }
+
+  function buildSection(key, list, tagCount){
+    const f=FACTIONS[key];
+    const sec=document.createElement('section'); sec.className='section '+key;
+    sec.innerHTML=`<div class="section-head"><span class="name">${f.label}</span><span class="rule"></span><span class="count" ${tagCount?`data-count="${key}"`:''}></span></div><div class="grid"></div>`;
+    const grid=sec.querySelector('.grid');
+    list.forEach(r=>grid.appendChild(buildCard(r)));
+    return sec;
+  }
+  const host=document.getElementById('sections');
+  host.appendChild(buildSection('anomalie', ROLES.filter(r=>r.faction==='anomalie'), true));
+  host.appendChild(buildSection('elu', ROLES.filter(r=>r.faction==='elu'), true));
+  const units={}; document.querySelectorAll('.unit').forEach(u=>units[u.dataset.id]=u);
+
+  function refresh(){
+    let aMax=0, eMax=0, totForced=0;
+    ROLES.forEach(r=>{ (r.faction==='anomalie'? aMax+=mx[r.id] : eMax+=mx[r.id]); totForced+=fc[r.id]; });
+    const totMax=aMax+eMax;
+    const factice=Math.max(0,totMax-players);
+
+    Object.values(units).forEach(u=>u._apply());
+
+    document.getElementById('t-players').textContent=players;
+    document.getElementById('t-anomalie').textContent=aMax;
+    document.getElementById('t-elu').textContent=eMax;
+
+    const forcedEl=document.getElementById('t-forced'); forcedEl.childNodes[0].nodeValue=totForced+' ';
+    const maxEl=document.getElementById('t-max'); maxEl.childNodes[0].nodeValue=totMax+' ';
+    document.getElementById('t-max-note').textContent = factice>0 ? `· ${factice} en trop` : (totMax<players?`· ${players-totMax} manquant${players-totMax>1?'s':''}`:'· ok');
+    document.getElementById('t-forced-note').textContent = totForced>players ? `· > joueurs !` : '';
+
+    forcedEl.classList.toggle('state-bad', totForced>players);
+    maxEl.classList.toggle('state-bad', totMax<players);
+
+    document.querySelector('[data-count="anomalie"]').textContent = aMax+(aMax>1?' max':' max');
+    document.querySelector('[data-count="elu"]').textContent = eMax+' max';
+
+    // start gating: Σforced ≤ players ≤ Σmax
+    const start=document.getElementById('start'), reason=document.getElementById('reason');
+    let ok=true, msg='';
+    if(totMax<players){ ok=false; msg=`Pool trop petit : ${players-totMax} rôle${players-totMax>1?'s':''} en moins que de joueurs.`; }
+    else if(totForced>players){ ok=false; msg=`Trop de rôles forcés : ${totForced} garantis pour ${players} joueurs.`; }
+    start.disabled=!ok;
+    reason.classList.toggle('ok',ok);
+    reason.textContent = ok ? (factice>0?`Prêt · ${factice} carte${factice>1?'s':''} en surplus`:'Prêt') : msg;
+
+    const roles=ROLES.filter(r=>mx[r.id]>0).length;
+    document.getElementById('deck-badge').textContent=roles;
+    renderDeck();
+  }
+
+  // "Ta partie" = SAME card grid as Attribution, just filtered to roles with max > 0.
+  function renderDeck(){
+    const v=document.getElementById('deck-view');
+    v.innerHTML='';
+    const picked=ROLES.filter(r=>mx[r.id]>0);
+    if(!picked.length){ v.innerHTML=`<div class="deck-empty">Aucun rôle dans le pool.<br>Ajoute des « Max » depuis l'onglet « Attribution de rôle », ou charge un preset.</div>`; return; }
+    ['anomalie','elu'].forEach(key=>{
+      const list=picked.filter(r=>r.faction===key);
+      if(list.length) v.appendChild(buildSection(key, list, false));
+    });
+  }
+
+  function applyPreset(p){
+    ROLES.forEach(r=>{ mx[r.id]=0; fc[r.id]=0; });
+    Object.entries(p.max||{}).forEach(([id,n])=>{ if(id in mx) mx[id]=n; });
+    Object.entries(p.forced||{}).forEach(([id,n])=>{ if(id in fc) fc[id]=Math.min(n, mx[id]||0); });
+    refresh(); flash(`Preset appliqué : « ${p.name} »`);
+  }
+  document.getElementById('preset-classic').addEventListener('click',()=>applyPreset(presetsFor(players)[0]));
+
+  const pop=document.getElementById('preset-pop'), popBtn=document.getElementById('preset-open');
+  function renderPresetList(){
+    document.getElementById('pop-title').textContent=`Presets — ${players} joueurs`;
+    const list=document.getElementById('pop-list');
+    list.innerHTML=presetsFor(players).map((p,i)=>`
+      <div class="preset-row" role="menuitem" tabindex="0" data-i="${i}">
+        <span class="meta"><span class="pn">${p.name}</span><span class="pd">${p.desc}</span></span>
+        ${i===0?'<span class="tag">Recommandé</span>':''}
+      </div>`).join('');
+    list.querySelectorAll('.preset-row').forEach(row=>{
+      const act=()=>{ applyPreset(presetsFor(players)[+row.dataset.i]); closePop(); };
+      row.addEventListener('click',act);
+      row.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); act(); } });
+    });
+  }
+  function openPop(){ renderPresetList(); pop.classList.add('open'); popBtn.setAttribute('aria-expanded','true'); }
+  function closePop(){ pop.classList.remove('open'); popBtn.setAttribute('aria-expanded','false'); }
+  popBtn.addEventListener('click',e=>{ e.stopPropagation(); pop.classList.contains('open')?closePop():openPop(); });
+  document.addEventListener('click',e=>{ if(!pop.contains(e.target)&&e.target!==popBtn) closePop(); });
+
+  document.getElementById('reset').addEventListener('click',()=>{ ROLES.forEach(r=>{ mx[r.id]=0; fc[r.id]=0; }); refresh(); flash('Compo réinitialisée'); });
+
+  document.getElementById('p-minus').addEventListener('click',()=>{ players=Math.max(3,players-1); document.getElementById('p-num').textContent=players; syncPresetOpener(); refresh(); });
+  document.getElementById('p-plus').addEventListener('click',()=>{ players=Math.min(10,players+1); document.getElementById('p-num').textContent=players; syncPresetOpener(); refresh(); });
+  function syncPresetOpener(){ const hasMore=presetsFor(players).length>1; document.querySelector('.popover-wrap').style.display=hasMore?'':'none'; if(!hasMore) closePop(); }
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected', x===t?'true':'false'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.dataset.panel===t.dataset.tab));
+  }));
+
+  let ft; function flash(msg){
+    let el=document.getElementById('flash');
+    if(!el){ el=document.createElement('div'); el.id='flash';
+      el.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#1c1615;border:1px solid #3a2c29;color:#f0e7dd;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:30;transition:opacity .2s;';
+      document.body.appendChild(el); }
+    el.textContent=msg; el.style.opacity='1'; clearTimeout(ft); ft=setTimeout(()=>el.style.opacity='0',1600);
+  }
+
+  syncPresetOpener(); refresh();
+</script>

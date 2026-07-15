@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8098359a39fe0334a9c552244956c428, type: 3}
+  m_Name: RolePresetDatabase
+  m_EditorClassIdentifier: Game::GameLogic.GameSettings.RolePresetDatabase
+  presets:
+  - {fileID: 11400000, guid: fa2a3f95328fab34c9092d928607168a, type: 2}
+  - {fileID: 11400000, guid: cbd0e2a7492df5643bf908a4593764b7, type: 2}
+  - {fileID: 11400000, guid: 2ab80742398f73a4d9c89fabb7a55838, type: 2}
+  - {fileID: 11400000, guid: 0918ea5c972169844ac3935947fd154b, type: 2}
+  - {fileID: 11400000, guid: 1d6df56d8577d9e4ead143e9e8847278, type: 2}
+  - {fileID: 11400000, guid: 0f9f6614f22e33146b503c5ae5d42310, type: 2}
+  - {fileID: 11400000, guid: 01d1e92dd7b3e0547b09b136b54fbc36, type: 2}
+  - {fileID: 11400000, guid: 88cb0812725a2d64aba3c228f65f72fa, type: 2}
+  - {fileID: 11400000, guid: 6643afb5fe8d4544b84cf4c5a2c9168b, type: 2}

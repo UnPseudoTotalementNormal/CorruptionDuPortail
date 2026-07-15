@@ -4,6 +4,8 @@ using System.Linq;
 using Characters.Powers.PowerObjects;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using Extensions;
 using GameLogic;
 using Network;
@@ -18,6 +20,15 @@ namespace Characters.Powers
     {
         List<PersonalBeaconObject> personalBeacons = new();
 
+        // Powers-POCO v2 in-place wiring (Phase 3): the passive robot reveal lives in PersonalBeaconsDecision
+        // (pure, EditMode-tested) — reveal every Robot's forceCorruptOnRoleRevealed to the owner. It runs in
+        // OnGameStartedServer (the base characterManager + ownerClientId are resolved there); the old code did
+        // it in Awake, where neither was ready — a latent NRE this wiring also fixes. The beacon-object spawn
+        // + the corrupted-beacon local chat cue stay power-local plumbing below.
+        // PLAYTEST-REQUIRED before merge: engine instantiation of beacon objects (held-5 — see
+        // spec-powers-poco-v2-architecture.md).
+        private readonly PersonalBeaconsDecision _decision = new();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -28,18 +39,16 @@ namespace Characters.Powers
         private void Awake()
         {
             if (NetworkManager.IsServer)
-            { 
+            {
                 onPowerReparented += OnPowerReparented;
-                // Story 7.4: pre-spawn (Awake) read — the base Power.characterManager is not resolved until
-                // OnNetworkSpawn, so resolve from the composition root here. Behaviour-identical (delegates to
-                // CharacterManager.For), removes the GameManager hub-hop (deleted in 7.5). Proper fix: Epic 11.
-                IEnumerable<Character> _robots = CompositionRoot.For(NetworkManager).CharacterManager.GetCharacters().Where(_c => _c.role.roleID == RoleID.Robot);
-                foreach (Character _character in _robots)
-                {
-                    gameInfoRevealer.SendRevealLevelRpc(_character.ownerClientId.Value, nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed),
-                        RevealLevel.Personal, ownerClientId.Value);
-                }
             }
+        }
+
+        public override void OnGameStartedServer()
+        {
+            base.OnGameStartedServer();
+            RunDecisionEffects(_decision,
+                new PowerContext(ownerSlot: (int)ownerClientId.Value, roster: Roster));
         }
 
         private void OnPowerReparented()

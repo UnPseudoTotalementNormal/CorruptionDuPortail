@@ -115,6 +115,11 @@ namespace Tests.PlayMode
             lobbyGo.AddComponent<LobbyPlayerInfoHolder>();
             lobbyGo.AddComponent<NetworkObject>().Spawn();
 
+            // 9. Setup Chaining (powers-POCO v2 wiring goldens that chain, e.g. ChainedByShadows)
+            GameObject chainingGo = new GameObject("ChainingManager");
+            chainingGo.AddComponent<ChainingManager>();
+            chainingGo.AddComponent<NetworkObject>().Spawn();
+
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(_gameManager, _characterManager, _revealer);
         }
 
@@ -131,6 +136,7 @@ namespace Tests.PlayMode
             ReflectionHelper.SetPrivateField(typeof(GameAudioManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(ChatManager), "instance", null);
             ReflectionHelper.SetPrivateField(typeof(LobbyPlayerInfoHolder), "instance", null);
+            ReflectionHelper.SetPrivateField(typeof(ChainingManager), "instance", null);
 
             Object.Destroy(_gameManagerGo);
             Object.Destroy(_characterManagerGo);
@@ -140,6 +146,7 @@ namespace Tests.PlayMode
             Object.Destroy(GameObject.Find("BoardManager"));
             Object.Destroy(GameObject.Find("ChatManager"));
             Object.Destroy(GameObject.Find("LobbyPlayerInfoHolder"));
+            Object.Destroy(GameObject.Find("ChainingManager"));
             Object.Destroy(_networkManagerGo);
             Object.Destroy(_dummyCharPrefab);
             Object.Destroy(GameObject.Find("AudioManager"));
@@ -167,6 +174,33 @@ namespace Tests.PlayMode
             Assert.IsTrue(owner.isCorrupted.Value, "PAutoCorruption should corrupt its owner");
         }
 
+        // Powers-POCO v2 wiring golden: PCorruptionParanoia now delegates OnGameStartedServer to
+        // CorruptionParanoiaDecision → RevealInfo → RevealInfoExecutor.SendRevealLevelRpc. This proves the
+        // in-place decision→dispatch path lights up the same personal-corruption reveal as the old inline call.
+        [UnityTest]
+        public IEnumerator PCorruptionParanoia_RevealsOwnCorruptionAtStart()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
+
+            Assert.AreEqual(RevealLevel.False,
+                _revealer.GetCharacterInfo(owner.ownerClientId.Value).isCorruptRevealed);
+
+            GameObject powerGo = new GameObject("CorruptionParanoia");
+            var power = powerGo.AddComponent<PCorruptionParanoia>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            power.OnGameStartedServer();
+            yield return null;
+
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(owner.ownerClientId.Value).isCorruptRevealed,
+                "PCorruptionParanoia should reveal the owner's own corruption (Personal) at game start.");
+        }
+
         [UnityTest]
         public IEnumerator PCorruptingMark_CorruptsTarget()
         {
@@ -185,6 +219,128 @@ namespace Tests.PlayMode
             yield return null;
 
             Assert.IsTrue(target.isCorrupted.Value, "PCorruptingMark should corrupt the target");
+        }
+
+        // Powers-POCO v2 wiring golden: PChainedByTheShadows delegates its char+role RPC to
+        // ChainedByShadowsDecision → NewTargeting + (role matches) reveal + (chosen) AddToChain. The picked
+        // role's owner is the secondary slot the roster compares against (here the target itself).
+        [UnityTest]
+        public IEnumerator PChainedByShadows_RevealsAndChainsMatchingChosenTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(4242);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { factionType = FactionType.chosen, roleName = "Chosen-Test" };
+            var compareRole = new Role { roleName = "Chosen-Test", ownerClientId = target.ownerClientId.Value };
+
+            GameObject powerGo = new GameObject("ChainedByShadows");
+            var power = powerGo.AddComponent<PChainedByTheShadows>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "TryCorruptCharacterServerRpc",
+                target.ownerClientId.Value, compareRole);
+            yield return null;
+
+            Assert.IsTrue(ChainingManager.instance.chainingPlayers.Contains(target.ownerClientId.Value),
+                "ChainedByShadows should chain a matching-role chosen target.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "ChainedByShadows should reveal the matching target's role to the owner.");
+        }
+
+        // Powers-POCO v2 wiring golden: PHighPriorityBounty delegates its server RPC to
+        // HighPriorityBountyDecision → self-target, then (robot branch) eliminate + broadcast + public-reveal.
+        [UnityTest]
+        public IEnumerator PHighPriorityBounty_EliminatesAndRevealsRobotTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(8888);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { roleID = RoleID.Robot };
+            owner.role = new Role { roleName = "Hunter" };
+
+            GameObject powerGo = new GameObject("HighPriorityBounty");
+            var power = powerGo.AddComponent<PHighPriorityBounty>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.IsFalse(target.isEliminated.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCardClickedRpc", target.ownerClientId.Value);
+            yield return null;
+
+            Assert.IsTrue(target.isEliminated.Value, "HighPriorityBounty should eliminate a robot target.");
+            Assert.AreEqual(RevealLevel.Public,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "HighPriorityBounty should publicly reveal a robot target's role.");
+        }
+
+        // Powers-POCO v2 wiring golden: PBlessing delegates its char+role RPC to BlessingDecision → target,
+        // then (role matches) heal-if-needed + reveal + bless + announce.
+        [UnityTest]
+        public IEnumerator PBlessing_HealsBlessesAndRevealsMatchingTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character target = _characterManager.AddNewCharacter(1357);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            target.role = new Role { roleName = "Bless-Test" };
+            var compareRole = new Role { roleName = "Bless-Test", ownerClientId = target.ownerClientId.Value };
+
+            GameObject powerGo = new GameObject("Blessing");
+            var power = powerGo.AddComponent<PBlessing>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            Assert.IsFalse(target.isBlessed.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "TryBlessCharacterServerRpc",
+                target.ownerClientId.Value, compareRole);
+            yield return null;
+
+            Assert.IsTrue(target.isBlessed.Value, "Blessing should bless a matching-role target.");
+            Assert.IsTrue(target.isHealed.Value, "Blessing should heal a not-yet-healed matching target.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(target.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "Blessing should reveal the matching target's role to the owner.");
+        }
+
+        // Powers-POCO v2 wiring golden: PCardsShuffling delegates GuessRoleRpc to CardsShufflingDecision →
+        // NewTargeting + (correct) DiscoveredAdd + reveal + an owner-directed result chat. The guess report
+        // is computed by the power's own ICardsShufflingGuess port.
+        [UnityTest]
+        public IEnumerator PCardsShuffling_CorrectGuessRevealsAndRecordsTarget()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character clicked = _characterManager.AddNewCharacter(1122);
+            Character guess = _characterManager.AddNewCharacter(3344);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, clicked, guess);
+
+            clicked.role = new Role { roleID = RoleID.Omniscient, roleName = "Omni" };
+            guess.role = new Role { roleID = RoleID.Omniscient, roleName = "Omni" };
+
+            GameObject powerGo = new GameObject("CardsShuffling");
+            var power = powerGo.AddComponent<PCardsShuffling>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+
+            ReflectionHelper.SetPrivateField(power, "currentRoleGuessClientId", guess.ownerClientId.Value);
+
+            ReflectionHelper.InvokePrivateMethod(power, "GuessRoleRpc", clicked.ownerClientId.Value);
+            yield return null;
+
+            Assert.IsTrue(power.discoveredClientIds.Contains(clicked.ownerClientId.Value),
+                "CardsShuffling correct guess should record the clicked target as discovered.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(clicked.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
+                "CardsShuffling correct guess should reveal the clicked target's role to the owner.");
         }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()

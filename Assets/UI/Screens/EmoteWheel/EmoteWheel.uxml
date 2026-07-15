@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Radial emote wheel — a TRANSIENT HUD overlay held open while the emote key is pressed in the embodied
+         first-person vote. The DONUT (annular band split into one filled sector per emote) and the icon/label
+         slots are built at runtime by EmoteWheelController with Painter2D; the pointed-at emote's name shows big
+         in the centre hole. NON-modal: it never blocks the world. Starts hidden + collapsed.
+
+         Tokens come from the PanelSettings theme (theme.tss); layout is EmoteWheel.uss. -->
+    <ui:Style src="EmoteWheel.uss" />
+    <ui:VisualElement name="emote-wheel" class="emote-wheel cdp-is-hidden cdp-is-collapsed">
+        <ui:VisualElement name="ring" class="emote-wheel__ring">
+            <!-- Donut painter + emote slots are inserted here at runtime. The caption sits in a full-ring anchor
+                 that flex-centres it, so the pill is dead-centre in the hole whatever its width. -->
+            <ui:VisualElement name="caption-anchor" class="emote-wheel__caption-anchor">
+                <ui:Label name="caption" class="emote-wheel__caption emote-wheel__label--hidden" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

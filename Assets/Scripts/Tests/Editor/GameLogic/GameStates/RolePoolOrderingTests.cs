@@ -67,9 +67,9 @@ namespace Tests.Editor
             var _roleC = NewRole();
 
             // Authored (serialized) insertion order: A, B, C.
-            _state.roleAttributionDictionary.Add(_roleA, new RoleAttributionSetting { roleToAttribute = 1 });
-            _state.roleAttributionDictionary.Add(_roleB, new RoleAttributionSetting { roleToAttribute = 1 });
-            _state.roleAttributionDictionary.Add(_roleC, new RoleAttributionSetting { roleToAttribute = 1 });
+            _state.roleAttributionDictionary.Add(_roleA, new RoleAttributionSetting { max = 1 });
+            _state.roleAttributionDictionary.Add(_roleB, new RoleAttributionSetting { max = 1 });
+            _state.roleAttributionDictionary.Add(_roleC, new RoleAttributionSetting { max = 1 });
 
             CollectionAssert.AreEqual(new[] { _roleA, _roleB, _roleC }, _state.GetFrozenRolePoolOrder(),
                 "Frozen pool order must equal the authored SerializedDictionary order.");
@@ -89,9 +89,9 @@ namespace Tests.Editor
             var _roleB = NewRole();
             var _roleC = NewRole();
 
-            _state.roleAttributionDictionary.Add(_roleA, new RoleAttributionSetting { roleToAttribute = 1 });
-            _state.roleAttributionDictionary.Add(_roleB, new RoleAttributionSetting { roleToAttribute = 1 });
-            _state.roleAttributionDictionary.Add(_roleC, new RoleAttributionSetting { roleToAttribute = 1 });
+            _state.roleAttributionDictionary.Add(_roleA, new RoleAttributionSetting { max = 1 });
+            _state.roleAttributionDictionary.Add(_roleB, new RoleAttributionSetting { max = 1 });
+            _state.roleAttributionDictionary.Add(_roleC, new RoleAttributionSetting { max = 1 });
 
             // Remove the MIDDLE entry — survivors must keep their relative order (A, C).
             // This is exactly what the production selection relies on: it filters the

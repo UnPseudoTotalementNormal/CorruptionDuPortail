@@ -53,7 +53,7 @@ namespace CorruptionDuPortail.Domain
     public enum RevealVisibility { False = 0, Personal = 10, Public = 20 }
 
     /// <summary>Which CharacterInfoReveal field a <see cref="RevealInfo"/> targets.</summary>
-    public enum RevealField { CorruptRevealed, RoleRevealed }
+    public enum RevealField { CorruptRevealed, RoleRevealed, ForceCorruptOnRoleRevealed, Hacked }
 
     /// <summary>
     /// Base of the closed power-effect union. Sealed variants below; a switch over the base
@@ -102,54 +102,11 @@ namespace CorruptionDuPortail.Domain
         protected static IEnumerable<object> NoComponents => None;
     }
 
-    // ---- Audio (FMOD) -------------------------------------------------------------------
-    public sealed class PlayLoopingSound : EffectDescriptor
-    {
-        public string SoundId { get; }
-        public string LoopKey { get; }
-        public PlayLoopingSound(string soundId, string loopKey) { SoundId = soundId; LoopKey = loopKey; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return SoundId; yield return LoopKey; } }
-    }
-
-    public sealed class StopLoopingSound : EffectDescriptor
-    {
-        public string LoopKey { get; }
-        public StopLoopingSound(string loopKey) { LoopKey = loopKey; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return LoopKey; } }
-    }
-
-    public sealed class PlayOneShotSound : EffectDescriptor
-    {
-        public string SoundId { get; }
-        public PlayOneShotSound(string soundId) { SoundId = soundId; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return SoundId; } }
-    }
-
-    // ---- Focus --------------------------------------------------------------------------
-    public sealed class UnfocusAll : EffectDescriptor
-    {
-        public static readonly UnfocusAll Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
     // ---- Common invocation plumbing (pinned as ADAPTER effects) -------------------------
-    public sealed class DecrementUses : EffectDescriptor
-    {
-        public static readonly DecrementUses Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
     public sealed class RequestCharacterRefresh : EffectDescriptor
     {
         public static readonly RequestCharacterRefresh Instance = new();
         protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
-    public sealed class NotifyOwnerUsed : EffectDescriptor
-    {
-        public int OwnerSlot { get; }
-        public NotifyOwnerUsed(int ownerSlot) { OwnerSlot = ownerSlot; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
     }
 
     // ---- Targeting (RoleTargetSystem) ---------------------------------------------------
@@ -231,28 +188,6 @@ namespace CorruptionDuPortail.Domain
         protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; yield return ChatName; yield return Audience; } }
     }
 
-    public sealed class UndiscoverChat : EffectDescriptor
-    {
-        public int ChatId { get; }
-        public PowerEffectAudience Audience { get; }
-        public UndiscoverChat(int chatId, PowerEffectAudience audience) { ChatId = chatId; Audience = audience; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; yield return Audience; } }
-    }
-
-    public sealed class AssignChatId : EffectDescriptor
-    {
-        public int ChatId { get; }
-        public AssignChatId(int chatId) { ChatId = chatId; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return ChatId; } }
-    }
-
-    // ---- Arrows (ArrowManager) ----------------------------------------------------------
-    public sealed class DestroyAllArrows : EffectDescriptor
-    {
-        public static readonly DestroyAllArrows Instance = new();
-        protected override IEnumerable<object> EqualityComponents => NoComponents;
-    }
-
     // ---- State stores (NetworkVariable / NetworkList writes, pinned as adapter effects) --
     public sealed class StoreHackTarget : EffectDescriptor
     {
@@ -273,5 +208,135 @@ namespace CorruptionDuPortail.Domain
         public int TargetSlot { get; }
         public RegisterInkTarget(int targetSlot) { TargetSlot = targetSlot; }
         protected override IEnumerable<object> EqualityComponents { get { yield return TargetSlot; } }
+    }
+
+    // ====================================================================================
+    // Active-power effect vocabulary (ported from the v1 branch, proven). Each maps to one
+    // typed IEffectExecutor in the runtime registry. Chat sender ids are ulong (the sentinel
+    // is ulong.MaxValue).
+    // ====================================================================================
+
+    public sealed class AddToChain : EffectDescriptor
+    {
+        public int Slot { get; }
+        public AddToChain(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class HealPlayer : EffectDescriptor
+    {
+        public int Slot { get; }
+        public HealPlayer(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class SetBlessed : EffectDescriptor
+    {
+        public int Slot { get; }
+        public SetBlessed(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    public sealed class SetEliminated : EffectDescriptor
+    {
+        public int Slot { get; }
+        public SetEliminated(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
+    }
+
+    /// <summary>Public reveal via SetRevealLevelRpc (no observer, Public level).</summary>
+    public sealed class RevealPublic : EffectDescriptor
+    {
+        public int TargetSlot { get; }
+        public RevealField Field { get; }
+        public RevealPublic(int targetSlot, RevealField field) { TargetSlot = targetSlot; Field = field; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return TargetSlot; yield return Field; } }
+    }
+
+    /// <summary>Server-broadcast chat (ChatManager.ReceiveChatMessageRpc). Audience.All → no rpcParams; Specific → GetSafeRpcTarget.</summary>
+    public sealed class ChatBroadcast : EffectDescriptor
+    {
+        public string Message { get; }
+        public int WindowId { get; }
+        public PowerEffectAudience Audience { get; }
+        public ChatBroadcast(string message, int windowId, PowerEffectAudience audience)
+        {
+            Message = message; WindowId = windowId; Audience = audience;
+        }
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return Message; yield return WindowId; yield return Audience; }
+        }
+    }
+
+    /// <summary>Server-routed chat (ChatManager.SendChatMessageServerRpc). Sender is the server sentinel (executor-supplied).</summary>
+    public sealed class ChatSendServer : EffectDescriptor
+    {
+        public string Message { get; }
+        public int WindowId { get; }
+        public ChatSendServer(string message, int windowId)
+        {
+            Message = message; WindowId = windowId;
+        }
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return Message; yield return WindowId; }
+        }
+    }
+
+    /// <summary>Server write of a character's messageLeft NetworkVariable (PInfiniteMessage).</summary>
+    public sealed class SetMessageLeft : EffectDescriptor
+    {
+        public int Slot { get; }
+        public int Value { get; }
+        public SetMessageLeft(int slot, int value) { Slot = slot; Value = value; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; yield return Value; } }
+    }
+
+    // ---- Give-power (power-local: the engine Power ref lives on the power's carrier) -------
+    /// <summary>PLegacy: grant the power's configured legacy power to the owner (power-local carrier).</summary>
+    public sealed class GrantLegacyPower : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public GrantLegacyPower(int ownerSlot) { OwnerSlot = ownerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
+    }
+
+    /// <summary>PReincarnation: grant every power of the from-role's character to the owner.</summary>
+    public sealed class GrantRolePowers : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public int FromRoleSlot { get; }
+        public GrantRolePowers(int ownerSlot, int fromRoleSlot) { OwnerSlot = ownerSlot; FromRoleSlot = fromRoleSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; yield return FromRoleSlot; } }
+    }
+
+    /// <summary>
+    /// PMarqueHurluberluges (Ugues): grant the owner his stolen one-shot power copies. Which powers are
+    /// stolen (the chosen-faction / non-passive filter + random-distinct pick over the live roster) is
+    /// engine-coupled and stays power-local on the carrier, exactly like <see cref="GrantLegacyPower"/> —
+    /// the pure decision only emits the "grant Ugues his stolen copies" intention.
+    /// </summary>
+    public sealed class GrantStolenPowers : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public GrantStolenPowers(int ownerSlot) { OwnerSlot = ownerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
+    }
+
+    /// <summary>PReincarnation: broadcast a change to the power's isPassive flag (power-local).</summary>
+    public sealed class SetPassiveBroadcast : EffectDescriptor
+    {
+        public bool Value { get; }
+        public SetPassiveBroadcast(bool value) { Value = value; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Value; } }
+    }
+
+    /// <summary>PCardsShuffling: add a slot to the power's discovered-list (power-local state write).</summary>
+    public sealed class DiscoveredAdd : EffectDescriptor
+    {
+        public int Slot { get; }
+        public DiscoveredAdd(int slot) { Slot = slot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
     }
 }

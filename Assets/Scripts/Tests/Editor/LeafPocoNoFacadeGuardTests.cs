@@ -11,9 +11,9 @@ namespace Tests.Editor
     ///
     /// The Wave 1–3 extractions re-pointed callers DIRECTLY at their POCO cores
     /// (<c>new VictoryEvaluator().Evaluate(...)</c>, <c>new VoteTally().Resolve(...)</c>,
-    /// <c>new ChainingResolver().IsNewMember(...)</c>, <c>new RoleDistributor().Distribute(...)</c>,
-    /// <c>new PowerResolver()...</c>) — they never introduced a temporary <c>instance</c> strangler
-    /// façade. So "remove the leaf façades" is satisfied by construction; nothing to delete.
+    /// <c>new ChainingResolver().IsNewMember(...)</c>, <c>new RoleDistributor().Distribute(...)</c>)
+    /// — they never introduced a temporary <c>instance</c> strangler façade. So "remove the leaf
+    /// façades" is satisfied by construction; nothing to delete.
     ///
     /// This guard freezes that property: each leaf core must stay a plain instantiable POCO with
     /// NO static singleton accessor (<c>instance</c> / <c>Instance</c>) and NO static mutable state —
@@ -29,7 +29,6 @@ namespace Tests.Editor
             typeof(VoteTally),
             typeof(ChainingResolver),
             typeof(RoleDistributor),
-            typeof(PowerResolver),
         };
 
         [Test]

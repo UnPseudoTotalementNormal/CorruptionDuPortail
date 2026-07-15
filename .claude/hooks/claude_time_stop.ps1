@@ -1,17 +1,18 @@
-# TimeRecorder - Claude Code working-time tracker (STOP / accumulate)
-# Hook: Stop. Computes the elapsed time since the matching start marker and adds it
-# to the per-day Claude ledger that the Unity TimeRecorder calendar reads.
+# TimeRecorder - Claude Code working-time tracker (turn END / accumulate).
+# Hook: Stop. Accrues the compute gap (submit..response) as working time and
+# re-stamps the session's activity time so the following prompt can measure the
+# read/think/type gap from here.
 #
-# Day bucket = local date at turn end. The ledger JSON is owned entirely by these
-# hooks (machine-local, gitignored); Unity only reads it.
+# Day bucket = local date at turn end. The ledger JSON is owned entirely by
+# these hooks (machine-local, gitignored); Unity only reads it. All ledger
+# writes go through the lock in _timerecorder_common.ps1 so parallel sessions
+# can't clobber each other's accruals.
 
 $ErrorActionPreference = 'Stop'
 
-# A single turn longer than this is clamped - protects the ledger against idle
-# permission waits or a session left open for hours. Edit to taste.
-$MaxTurnSeconds = 14400   # 4h
-
 try {
+    . (Join-Path $PSScriptRoot '_timerecorder_common.ps1')
+
     $raw = [Console]::In.ReadToEnd()
 
     $sessionId = 'default'
@@ -20,65 +21,19 @@ try {
         if ($payload.session_id) { $sessionId = [string]$payload.session_id }
     }
 
-    $projectDir = $env:CLAUDE_PROJECT_DIR
-    if ([string]::IsNullOrWhiteSpace($projectDir)) { $projectDir = (Get-Location).Path }
+    $dir = Get-TimeRecorderDir
 
-    $dir    = Join-Path $projectDir '.claude/timerecorder'
-    $marker = Join-Path $dir ("start_{0}.txt" -f $sessionId)
-
-    # AI tracking paused from the Unity calendar window -> drop any in-flight marker
-    # (turn that began before the pause) and accrue nothing.
+    # AI tracking paused from the Unity calendar window -> accrue nothing and
+    # drop the in-flight stamp (turn that began before the pause).
     $pauseFlag = Join-Path $dir 'ai_paused.flag'
     if (Test-Path $pauseFlag) {
-        Remove-Item -Path $marker -Force -ErrorAction SilentlyContinue
+        Clear-Activity -Dir $dir -Session $sessionId
         exit 0
     }
 
-    # No start recorded (e.g. hooks were added mid-turn) -> nothing to do
-    if (-not (Test-Path $marker)) { exit 0 }
-
-    $startMs = [long]([System.IO.File]::ReadAllText($marker).Trim())
-    Remove-Item -Path $marker -Force -ErrorAction SilentlyContinue
-
-    $nowMs   = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-    $seconds = [int][Math]::Floor(($nowMs - $startMs) / 1000.0)
-
-    if ($seconds -le 0) { exit 0 }
-    if ($seconds -gt $MaxTurnSeconds) { $seconds = $MaxTurnSeconds }
-
-    $now = Get-Date
-    $y = $now.Year; $mo = $now.Month; $d = $now.Day
-
-    $ledgerPath = Join-Path $dir 'claude_time.json'
-
-    # Load existing entries into a hashtable keyed by "y-m-d"
-    $byKey = @{}
-    if (Test-Path $ledgerPath) {
-        $existing = [System.IO.File]::ReadAllText($ledgerPath)
-        if (-not [string]::IsNullOrWhiteSpace($existing)) {
-            $ledger = $existing | ConvertFrom-Json
-            foreach ($e in @($ledger.days)) {
-                if ($null -eq $e) { continue }
-                $byKey[("{0}-{1}-{2}" -f [int]$e.year, [int]$e.month, [int]$e.day)] = [int]$e.seconds
-            }
-        }
-    }
-
-    $key = "{0}-{1}-{2}" -f $y, $mo, $d
-    if ($byKey.ContainsKey($key)) { $byKey[$key] += $seconds } else { $byKey[$key] = $seconds }
-
-    # Build JSON by hand so a single entry still serializes as an array (avoids the
-    # PowerShell ConvertTo-Json single-element-collapses-to-object quirk).
-    $parts = foreach ($k in $byKey.Keys) {
-        $kp = $k.Split('-')
-        '{{"year":{0},"month":{1},"day":{2},"seconds":{3}}}' -f [int]$kp[0], [int]$kp[1], [int]$kp[2], [int]$byKey[$k]
-    }
-
-    $total = 0
-    foreach ($v in $byKey.Values) { $total += [int]$v }
-
-    $json = '{"days":[' + ($parts -join ',') + '],"totalSeconds":' + $total + '}'
-    [System.IO.File]::WriteAllText($ledgerPath, $json)
+    # Accrue the compute gap (not idle-gated, clamped to the max turn length)
+    # and re-stamp now as the last activity for the next between-turn measure.
+    [void](Update-Activity -Dir $dir -Session $sessionId -IdleGated $false)
 } catch {
     [Console]::Error.WriteLine("[timerecorder stop hook] $_")
 }

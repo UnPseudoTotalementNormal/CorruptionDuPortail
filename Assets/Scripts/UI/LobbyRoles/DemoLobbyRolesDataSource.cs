@@ -127,6 +127,31 @@ namespace UI.LobbyRoles
             OnChanged?.Invoke();
         }
 
+        public int GetActivePresetIndex()
+        {
+            if (!Presets.TryGetValue(_playerCount, out DemoPreset[] presets)) return -1;
+            for (int i = 0; i < presets.Length; i++)
+                if (MatchesPreset(presets[i])) return i;
+            return -1;
+        }
+
+        // A preset is "active" when every pool role's current (max, forced) equals what the preset would set —
+        // entry (clamped like ApplyPreset) if listed, else (0, 0). Any divergence → not this preset.
+        private bool MatchesPreset(DemoPreset p)
+        {
+            foreach (RoleDataObject rdo in Pool())
+            {
+                if (rdo == null) continue;
+                RoleID id = rdo.role.roleID;
+                (int max, int forced) cur = _state.TryGetValue(id, out var s) ? s : (0, 0);
+                int em = 0, ef = 0;
+                foreach ((RoleID eid, int emax, int eforced) in p.Entries)
+                    if (eid == id) { em = Mathf.Clamp(emax, 0, MaxRoleCount); ef = Mathf.Clamp(eforced, 0, em); break; }
+                if (cur.max != em || cur.forced != ef) return false;
+            }
+            return true;
+        }
+
         public void RequestStart() { /* harness only — no game loop to advance */ }
     }
 }

@@ -79,6 +79,13 @@ namespace UI.LobbyRoles
         /// <summary>Host-only: apply the preset at <paramref name="index"/> of <see cref="GetPresets"/> (fills the whole pool).</summary>
         void ApplyPreset(int index);
 
+        /// <summary>
+        /// Index (into <see cref="GetPresets"/>) of the preset whose composition EXACTLY matches the current pool,
+        /// or -1 if none — i.e. the pool was hand-edited ("Personnalisé"). Lets the UI show the active preset and
+        /// clear that badge the moment a stepper diverges from it. Pure comparison, no state tracking.
+        /// </summary>
+        int GetActivePresetIndex();
+
         /// <summary>Host-only: request the game to start. The server re-validates the composition gate before advancing.</summary>
         void RequestStart();
     }

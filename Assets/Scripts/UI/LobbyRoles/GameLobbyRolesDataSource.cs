@@ -130,6 +130,31 @@ namespace UI.LobbyRoles
         public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);
         public void RequestSetForced(RoleID id, int forced) => _manager?.RequestSetForced(id, forced);
 
+        public int GetActivePresetIndex()
+        {
+            if (!_ready || _presetDatabase == null || _manager == null || _rolePool == null) return -1;
+            List<RolePreset> forCount = _presetDatabase.ForPlayerCount(GetPlayerCount());
+            for (int i = 0; i < forCount.Count; i++)
+                if (MatchesPreset(forCount[i])) return i;
+            return -1;
+        }
+
+        // A preset is "active" when the manager's current (count, forced) for every pool role equals what the
+        // preset would set — entry if listed, else 0/0. Any divergence (a stepper touched) → not this preset.
+        private bool MatchesPreset(RolePreset preset)
+        {
+            foreach (RoleDataObject _rdo in _rolePool.roleAttributionDictionary.Keys)
+            {
+                RoleID _id = _rdo.role.roleID;
+                bool listed = preset.entries.Any(e => e.roleId == _id);
+                RolePreset.Entry entry = preset.entries.FirstOrDefault(e => e.roleId == _id);
+                int em = listed ? entry.max : 0;
+                int ef = listed ? entry.forced : 0;
+                if (_manager.GetRoleCount(_id) != em || _manager.GetForced(_id) != ef) return false;
+            }
+            return true;
+        }
+
         public IReadOnlyList<LobbyPresetView> GetPresets()
         {
             var list = new List<LobbyPresetView>();

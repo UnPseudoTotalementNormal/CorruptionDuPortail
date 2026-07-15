@@ -26,10 +26,16 @@ namespace UI.LobbyRoles
         private const string RootName = "lobby-roles";
         private const string TopBarClass = "lobby-roles__topbar";
         private const string PresetClassicClass = "lobby-roles__preset-classic";
+        private const string PresetClassicActiveClass = "lobby-roles__preset-classic--active";
         private const string PresetWrapClass = "lobby-roles__preset-wrap";
         private const string PresetOpenerClass = "lobby-roles__preset-opener";
         private const string PresetPopoverClass = "lobby-roles__preset-popover";
         private const string PresetRowClass = "lobby-roles__preset-row";
+        private const string PresetRowActiveClass = "lobby-roles__preset-row--active";
+        private const string PresetNameClass = "lobby-roles__preset-name";
+        private const string PresetDescClass = "lobby-roles__preset-desc";
+        private const string PresetStatusClass = "lobby-roles__preset-status";
+        private const string PresetStatusCustomClass = "lobby-roles__preset-status--custom";
         private const string TabsClass = "lobby-roles__tabs";
         private const string TabClass = "lobby-roles__tab";
         private const string TabActiveClass = "lobby-roles__tab--active";
@@ -166,10 +172,15 @@ namespace UI.LobbyRoles
                 perFactionMax[r.Faction] = cur + r.Max;
             }
 
-            VisualElement presetBar = BuildPresetBar();
-            if (presetBar != null) _root.Add(presetBar);
             _root.Add(BuildTabs(inPool));
             _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
+
+            // Presets belong to the "Attribution de rôle" tab only, pinned just under the tally (above the sections).
+            if (_activeTab == TabAttribution)
+            {
+                VisualElement presetBar = BuildPresetBar();
+                if (presetBar != null) _root.Add(presetBar);
+            }
 
             VisualElement content = BuildContent(roles);
             _scroll = content as ScrollView;
@@ -239,6 +250,8 @@ namespace UI.LobbyRoles
             IReadOnlyList<LobbyPresetView> presets = _data.GetPresets();
             if (presets == null || presets.Count == 0) return null;
 
+            int active = _data.GetActivePresetIndex(); // -1 = pool hand-edited ("Personnalisé")
+
             var bar = new VisualElement();
             bar.AddToClassList(TopBarClass);
 
@@ -248,6 +261,7 @@ namespace UI.LobbyRoles
             int ci = classicIndex;
             var classic = new Button(() => _data.ApplyPreset(ci)) { text = "★ Preset classique" };
             classic.AddToClassList(PresetClassicClass);
+            if (active == classicIndex) classic.AddToClassList(PresetClassicActiveClass); // outline the applied preset
             bar.Add(classic);
 
             // Other presets live in a dropdown, shown ONLY when there's more than one preset for this count.
@@ -267,12 +281,21 @@ namespace UI.LobbyRoles
                 {
                     if (i == classicIndex) continue;
                     int idx = i;
-                    var row = new Button(() => _data.ApplyPreset(idx)) // apply → OnChanged → Rebuild closes the popover
-                    {
-                        text = presets[i].Name,
-                        tooltip = presets[i].Description
-                    };
+                    var row = new Button(() => _data.ApplyPreset(idx)); // apply → OnChanged → Rebuild closes the popover
                     row.AddToClassList(PresetRowClass);
+                    if (active == idx) row.AddToClassList(PresetRowActiveClass);
+
+                    // Two lines per row: name (bold) + description (small, grey) — the description is READABLE here,
+                    // unlike a UITK tooltip which doesn't render inside the RenderTexture panel.
+                    var name = new Label(presets[i].Name) { pickingMode = PickingMode.Ignore };
+                    name.AddToClassList(PresetNameClass);
+                    row.Add(name);
+                    if (!string.IsNullOrEmpty(presets[i].Description))
+                    {
+                        var desc = new Label(presets[i].Description) { pickingMode = PickingMode.Ignore };
+                        desc.AddToClassList(PresetDescClass);
+                        row.Add(desc);
+                    }
                     popover.Add(row);
                 }
 
@@ -294,6 +317,16 @@ namespace UI.LobbyRoles
                 wrap.Add(opener);
                 bar.Add(wrap);
             }
+
+            // Status chip: names the applied preset, or "Personnalisé" once a stepper diverges from it.
+            var status = new Label(active >= 0 && active < presets.Count ? "● " + presets[active].Name : "○ Personnalisé")
+            {
+                pickingMode = PickingMode.Ignore
+            };
+            status.AddToClassList(PresetStatusClass);
+            if (active < 0) status.AddToClassList(PresetStatusCustomClass);
+            bar.Add(status);
+
             return bar;
         }
 

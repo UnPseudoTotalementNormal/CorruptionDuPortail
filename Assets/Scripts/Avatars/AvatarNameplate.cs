@@ -19,50 +19,75 @@ namespace Avatars
     ///    with the first-person node live), gated on the shared <see cref="CameraModeChannel"/> — the same
     ///    predicate the <see cref="AvatarCameraArbiter"/> uses.
     ///
-    /// The label is a runtime-built world-space <see cref="TextMeshPro"/> (no prefab asset, TMP default font) —
-    /// placeholder visuals, every size/colour serialized so they are tuned in the Inspector, not enshrined here.
-    /// Lives on the <see cref="PlayerAvatar"/> prefab root; the text GO is parented to it (cleaned up with the
-    /// avatar) but its world pose is driven each <see cref="LateUpdate"/> so head yaw/pitch never skews it.
+    /// The label is a REAL <see cref="TextMeshPro"/> child placed in the PlayerAvatar prefab (wired into
+    /// <see cref="_label"/>) — you keep its TRANSFORM (position/scale) in the editor. Its FONT SIZE is driven by
+    /// <see cref="_fontSize"/>: this component runs in edit mode too (<c>[ExecuteAlways]</c>) so tweaking that
+    /// field updates the label's font size live, WYSIWYG. At runtime it also fills the text, gates visibility,
+    /// and billboards the label toward the camera. Parent the label under the avatar ROOT (not a rig bone) so
+    /// head yaw/pitch never drags it; the runtime billboard overrides only its rotation, never its transform.
     /// </summary>
+    [ExecuteAlways]
     [RequireComponent(typeof(PlayerAvatar))]
     public class AvatarNameplate : MonoBehaviour
     {
         [Tooltip("Shared camera-mode channel (same asset AvatarCameraArbiter writes). Gates first-person visibility.")]
         [SerializeField] private CameraModeChannel _cameraModeChannel;
 
-        [Tooltip("Optional anchor override. Empty = the avatar's EyePivot (head height).")]
-        [SerializeField] private Transform _anchorOverride;
+        [Tooltip("The world-space label child (a TextMeshPro placed in the prefab). Position it above the head " +
+                 "here in the editor — this component fills its text, sizes it, shows/hides it, and faces it to " +
+                 "the camera.")]
+        [SerializeField] private TextMeshPro _label;
 
-        [Header("Placeholder visuals — provisional, tune in the Inspector")]
-        [Tooltip("Metres above the head anchor.")]
-        [SerializeField] private float _worldHeightOffset = 0.5f;
-
+        [Tooltip("Font size applied to the label. Driven by the script (live in edit mode); you keep the child's transform.")]
         [SerializeField] private float _fontSize = 8f;
-
-        [Tooltip("Uniform world scale of the text object (shrinks the world-space TMP to table scale).")]
-        [SerializeField] private float _worldScale = 0.1f;
-
-        [SerializeField] private Color _color = Color.white;
-
-        [Tooltip("Optional font override. Empty = TMP_Settings.defaultFontAsset.")]
-        [SerializeField] private TMP_FontAsset _fontOverride;
 
         private PlayerAvatar _avatar;
         private LobbyPlayerInfoHolder _holder;
-        private Transform _anchor;
-        private TextMeshPro _tmp;
         private Camera _cam;
 
         private bool _initialized;
         private bool _localSuppressed; // this is my OWN avatar → never show a plate
 
-        private void Awake() => _avatar = GetComponent<PlayerAvatar>();
+        private void Awake()
+        {
+            _avatar = GetComponent<PlayerAvatar>();
+            if (Application.isPlaying)
+            {
+                SetLabelActive(false); // hidden until the first-person gate says otherwise
+            }
+        }
+
+        // Keep the label's font size in sync with _fontSize the moment it's edited in the Inspector (edit mode).
+        private void OnValidate() => ApplyFontSize();
+
+        // Font-size drive. Runs in edit mode too (ExecuteAlways) so the size is WYSIWYG; only writes on a real
+        // change so it never spams the editor dirty flag.
+        private void ApplyFontSize()
+        {
+            if (_label == null)
+            {
+                return;
+            }
+            if (!Mathf.Approximately(_label.fontSize, _fontSize))
+            {
+                _label.fontSize = _fontSize;
+            }
+        }
 
         // Lazy init: the avatar's NetworkObject must be spawned (so ownerClientId + IsOwner are meaningful) AND
         // the lobby holder must be resolvable (so the pseudo exists). Both hold shortly after the avatar spawns
         // in a live match; we simply retry until then.
         private void Update()
         {
+            ApplyFontSize(); // edit mode + play: keep the label sized
+
+            // Everything below is runtime-only — ExecuteAlways would otherwise run the network/gate logic in the
+            // editor (NetworkManager is null there), and hide the label you are trying to tune.
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
             if (_initialized || _avatar == null || !_avatar.IsSpawned)
             {
                 return;
@@ -87,17 +112,13 @@ namespace Avatars
         {
             _initialized = true;
 
-            // Never show the local player's own nameplate — build nothing (also saves the per-frame billboard).
+            // Never show the local player's own nameplate.
             if (_avatar.IsOwner)
             {
                 _localSuppressed = true;
+                SetLabelActive(false);
                 return;
             }
-
-            _anchor = _anchorOverride != null ? _anchorOverride
-                : (_avatar.EyePivot != null ? _avatar.EyePivot : transform);
-
-            BuildText();
 
             if (_holder != null && _holder.playerInfos != null)
             {
@@ -106,36 +127,15 @@ namespace Avatars
             RefreshText();
         }
 
-        // Build the world-space label. RectTransform first so the TMP RequireComponent is satisfied at runtime.
-        private void BuildText()
-        {
-            var _go = new GameObject("Nameplate", typeof(RectTransform), typeof(TextMeshPro));
-            _go.transform.SetParent(transform, false);
-            _go.transform.localScale = Vector3.one * _worldScale;
-
-            _tmp = _go.GetComponent<TextMeshPro>();
-            _tmp.font = _fontOverride != null ? _fontOverride : TMP_Settings.defaultFontAsset;
-            _tmp.fontSize = _fontSize;
-            _tmp.color = _color;
-            _tmp.alignment = TextAlignmentOptions.Center;
-            _tmp.overflowMode = TextOverflowModes.Overflow;
-            _tmp.raycastTarget = false;
-
-            var _rt = _tmp.rectTransform;
-            _rt.sizeDelta = new Vector2(4f, 1f);
-
-            _go.SetActive(false); // hidden until the first-person gate says otherwise
-        }
-
         private void OnPlayerInfosChanged(NetworkListEvent<PlayerInfo> _evt) => RefreshText();
 
         private void RefreshText()
         {
-            if (_tmp == null)
+            if (_label == null)
             {
                 return;
             }
-            _tmp.text = NameplatePolicy.ResolveLabel(ResolvePseudo());
+            _label.text = NameplatePolicy.ResolveLabel(ResolvePseudo());
         }
 
         private string ResolvePseudo()
@@ -160,18 +160,23 @@ namespace Avatars
             return _cam;
         }
 
+        private void SetLabelActive(bool _active)
+        {
+            if (_label != null && _label.gameObject.activeSelf != _active)
+            {
+                _label.gameObject.SetActive(_active);
+            }
+        }
+
         private void LateUpdate()
         {
-            if (!_initialized || _localSuppressed || _tmp == null)
+            if (!Application.isPlaying || !_initialized || _localSuppressed || _label == null)
             {
                 return;
             }
 
             bool _show = NameplatePolicy.ShouldShow(false, IsFirstPerson());
-            if (_tmp.gameObject.activeSelf != _show)
-            {
-                _tmp.gameObject.SetActive(_show);
-            }
+            SetLabelActive(_show);
             if (!_show)
             {
                 return;
@@ -183,11 +188,11 @@ namespace Avatars
                 return;
             }
 
-            Transform _t = _tmp.transform;
-            _t.position = _anchor.position + Vector3.up * _worldHeightOffset;
-            // Billboard using the project's proven face-camera math (mirrors CharactersBarObject.GetFaceCameraRotation):
-            // the world-space text front is visible from the opposite side, so forward points AWAY from the
-            // camera; the camera's up keeps the text upright.
+            // Billboard only — height/size come from the label child's transform in the prefab. Uses the
+            // project's proven face-camera math (mirrors CharactersBarObject.GetFaceCameraRotation): the text
+            // front is visible from the opposite side, so forward points AWAY from the camera; camera up keeps
+            // the text upright.
+            Transform _t = _label.transform;
             Vector3 _awayFromCamera = _t.position - _camera.transform.position;
             _t.rotation = Quaternion.LookRotation(_awayFromCamera, _camera.transform.up);
         }

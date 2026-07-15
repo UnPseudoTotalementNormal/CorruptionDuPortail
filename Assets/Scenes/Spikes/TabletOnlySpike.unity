@@ -1033,6 +1033,9 @@ PrefabInstance:
     - {fileID: 7958321736290883000, guid: a10109416922e114882e3398e6a7490a, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1861708315203903669, guid: a10109416922e114882e3398e6a7490a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2036409162}
     - targetCorrespondingSourceObject: {fileID: 4910858291377047190, guid: a10109416922e114882e3398e6a7490a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1752581859}
@@ -1067,6 +1070,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+--- !u!4 &1783546505 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1861708315203903669, guid: a10109416922e114882e3398e6a7490a, type: 3}
+  m_PrefabInstance: {fileID: 1783546503}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1989431299
 GameObject:
   m_ObjectHideFlags: 0
@@ -1194,6 +1202,110 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2036409161
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2036409162}
+  - component: {fileID: 2036409166}
+  - component: {fileID: 2036409165}
+  - component: {fileID: 2036409164}
+  - component: {fileID: 2036409163}
+  m_Layer: 0
+  m_Name: SpikeLobbyRolesUITK
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2036409162
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036409161}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1783546505}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2036409163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036409161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4099bfd15fb96504eaf1e5fd54aed3c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.LobbyRoles.LobbyRolesUitkController
+  _document: {fileID: 0}
+  _dataSourceBehaviour: {fileID: 2036409165}
+  _factionDatabase: {fileID: 11400000, guid: 19ecc1a7ccad9e642b3c1e9bf0d8cacc, type: 2}
+--- !u!114 &2036409164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036409161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 960f284600111754c999b8338405e7f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.LobbyRoles.LobbyRolesRtPresenter
+  _document: {fileID: 0}
+  _rawImage: {fileID: 1752581861}
+  _canvasCamera: {fileID: 1540637922}
+  _ownerApp: {fileID: 0}
+  _rtWidth: 1440
+  _rtHeight: 912
+--- !u!114 &2036409165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036409161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 552b251fb30ce474aaa0f819a15d8fae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.LobbyRoles.DemoLobbyRolesDataSource
+  _playerCount: 5
+--- !u!114 &2036409166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2036409161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: fe0cef76302a146419cc3e3135f4cf04, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 9cbe5f1f8afa11e4da44c463ed339d93, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!224 &2057925951 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4910858291377047190, guid: a10109416922e114882e3398e6a7490a, type: 3}

@@ -130,7 +130,7 @@
 
 .role-card__faction {
     color: var(--cdp-color-role-faction);
-    font-size: var(--cdp-font-size-sm);
+    font-size: 20px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     letter-spacing: 1px;
@@ -148,7 +148,7 @@
 
 .role-card__name {
     color: var(--cdp-color-role-title);
-    font-size: var(--cdp-font-size-role-name);
+    font-size: 32px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     white-space: normal;
@@ -158,7 +158,7 @@
 
 /* Stepped down for long names so they wrap on ~2 lines without ever ellipsising (Sally). */
 .role-card__name--long {
-    font-size: var(--cdp-font-size-role-name-long);
+    font-size: 26px;
 }
 
 /* Difficulty pips — always 3; filled vs empty by opacity only (same size = clean alignment). */
@@ -169,7 +169,7 @@
 
 /* Difficulty = stars (★). Filled = faction accent (set by the controller), empty = dimmed. */
 .role-card__pip {
-    font-size: 22px;
+    font-size: 18px;
     color: var(--cdp-color-role-title);
     -unity-text-align: middle-center;
     margin-left: 1px;
@@ -206,7 +206,7 @@
 
 .role-card__section-label {
     color: var(--cdp-color-role-title);
-    font-size: var(--cdp-font-size-base);
+    font-size: 24px;
     -unity-font-style: bold;
     margin-bottom: var(--cdp-space-sm);
 }
@@ -220,7 +220,7 @@
 
 .role-card__passive-bullet {
     color: var(--cdp-color-role-border);
-    font-size: var(--cdp-font-size-sm);
+    font-size: 18px;
     width: 16px;
     flex-shrink: 0;
     -unity-text-align: upper-left;
@@ -228,7 +228,7 @@
 
 .role-card__passive-text {
     color: var(--cdp-color-role-passive);
-    font-size: var(--cdp-font-size-sm);
+    font-size: 18px;
     white-space: normal;
     flex-grow: 1;
     flex-shrink: 1;
@@ -256,14 +256,14 @@
     background-color: var(--cdp-color-role-title);
     color: var(--cdp-color-role-panel);
     border-radius: 15px;
-    font-size: 18px;
+    font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
 }
 
 .role-card__power-title {
     color: var(--cdp-color-role-title);
-    font-size: var(--cdp-font-size-base);
+    font-size: 24px;
     -unity-font-style: bold;
     white-space: normal;
     flex-shrink: 1;
@@ -271,7 +271,7 @@
 
 .role-card__power-desc {
     color: var(--cdp-color-text);
-    font-size: var(--cdp-font-size-sm);
+    font-size: 18px;
     white-space: normal;
     margin-left: 46px;                 /* indent under the title (pill 30 + margin 16) */
 }

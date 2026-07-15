@@ -112,6 +112,21 @@ namespace UI.LobbyRoles
             return null;
         }
 
+        public void RequestStart()
+        {
+            // Host-only, server-authoritative: mirrors LobbyStartButton. LobbyState.OnStartGameButtonPressed
+            // re-validates the composition (Σforced ≤ players ≤ Σmax) before advancing the loop.
+            if (_nm == null || !_nm.IsServer) return;
+            var lobbyState = CompositionRoot.For(_nm).GameManager
+                .GetGameStates(typeof(LobbyState)).FirstOrDefault() as LobbyState;
+            if (lobbyState == null)
+            {
+                Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot start the game.");
+                return;
+            }
+            lobbyState.OnStartGameButtonPressed();
+        }
+
         public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);
         public void RequestSetForced(RoleID id, int forced) => _manager?.RequestSetForced(id, forced);
 

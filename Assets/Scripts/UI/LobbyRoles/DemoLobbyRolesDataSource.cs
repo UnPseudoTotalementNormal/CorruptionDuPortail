@@ -126,5 +126,7 @@ namespace UI.LobbyRoles
             }
             OnChanged?.Invoke();
         }
+
+        public void RequestStart() { /* harness only — no game loop to advance */ }
     }
 }

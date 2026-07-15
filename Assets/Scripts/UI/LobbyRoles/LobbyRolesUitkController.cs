@@ -472,9 +472,9 @@ namespace UI.LobbyRoles
             if (ok) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
-            var start = new Button { text = "Démarrer la partie" };
+            var start = new Button(() => _data.RequestStart()) { text = "Démarrer la partie" };
             start.AddToClassList(StartBtnClass);
-            start.SetEnabled(ok);
+            start.SetEnabled(ok); // disabled when invalid → no click; the server also re-validates
             footer.Add(start);
             return footer;
         }

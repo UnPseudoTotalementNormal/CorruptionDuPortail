@@ -78,6 +78,9 @@ namespace UI.LobbyRoles
 
         /// <summary>Host-only: apply the preset at <paramref name="index"/> of <see cref="GetPresets"/> (fills the whole pool).</summary>
         void ApplyPreset(int index);
+
+        /// <summary>Host-only: request the game to start. The server re-validates the composition gate before advancing.</summary>
+        void RequestStart();
     }
 
     /// <summary>

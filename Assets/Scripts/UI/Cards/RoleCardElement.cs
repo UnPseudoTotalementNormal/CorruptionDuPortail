@@ -32,8 +32,6 @@ namespace UI.Cards
             style.backgroundColor = Fallback;
             SetRadius(12f);
             SetBorder(2f, FrameDefault);
-            // Keep a true 5:7 height whatever width the parent hands us (UITK has no aspect-ratio).
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 
             _art = new VisualElement { name = "art", pickingMode = PickingMode.Ignore };
             Fill(_art);
@@ -61,13 +59,12 @@ namespace UI.Cards
             Add(_name);
         }
 
-        private void OnGeometryChanged(GeometryChangedEvent evt)
+        /// <summary>Set an explicit width; the height is derived from the 5:7 ratio (deterministic — no async layout pass).</summary>
+        public RoleCardElement SetWidth(float width)
         {
-            float w = evt.newRect.width;
-            if (w <= 0f) return;
-            float target = w / Ratio;
-            float current = resolvedStyle.height;
-            if (Mathf.Abs(current - target) > 0.5f) style.height = target;
+            style.width = width;
+            style.height = width / Ratio;
+            return this;
         }
 
         /// <summary>Set the portrait sprite (fills the card, scale-and-crop). Null clears to the deep fallback.</summary>

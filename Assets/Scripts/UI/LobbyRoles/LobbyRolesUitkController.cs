@@ -37,6 +37,8 @@ namespace UI.LobbyRoles
         private const string SectionClass = "lobby-roles__section";
         private const string SectionHeadClass = "lobby-roles__section-head";
         private const string GridClass = "lobby-roles__grid";
+        private const string ScrollClass = "lobby-roles__scroll";
+        private const string ScrollWrapClass = "lobby-roles__scroll-wrap";
         private const string UnitClass = "lobby-roles__unit";
         private const string CardClass = "lobby-roles__card";
         private const string CardActiveClass = "lobby-roles__card--active";
@@ -62,6 +64,8 @@ namespace UI.LobbyRoles
         private const int TabDeck = 1;
         private const int TabOptions = 2;
 
+        private const float CardWidth = 200f; // matches .lobby-roles__unit width; the card derives its 5:7 height
+
         // Faction render order (unknown is never shown). Labels fall back to these when no FactionDatabase is wired.
         private static readonly FactionType[] FactionOrder = { FactionType.anomaly, FactionType.chosen, FactionType.marginal };
 
@@ -79,6 +83,8 @@ namespace UI.LobbyRoles
         [SerializeField] private PortraitTable _portraitTable;
 
         private VisualElement _root;
+        private ScrollView _scroll;
+        private Texture2D _fadeTex;
         private ILobbyRolesDataSource _data;
         private bool _initialized;
         private bool _everBuilt;
@@ -98,6 +104,7 @@ namespace UI.LobbyRoles
         private void OnDisable()
         {
             if (_data != null) _data.OnChanged -= Rebuild;
+            if (_fadeTex != null) { Destroy(_fadeTex); _fadeTex = null; }
             _initialized = false;
         }
 
@@ -132,6 +139,10 @@ namespace UI.LobbyRoles
             // Never block the tablet's world input at the root (project trap); interactive children pick themselves.
             _root.pickingMode = PickingMode.Ignore;
             _everBuilt = true;
+
+            // Preserve the scroll position across the full rebuild (a stepper click raises OnChanged → Rebuild;
+            // recreating the ScrollView would otherwise snap the grid back to the top).
+            float savedScrollY = _scroll != null ? _scroll.scrollOffset.y : 0f;
             _root.Clear();
 
             int players = _data.GetPlayerCount();
@@ -152,8 +163,67 @@ namespace UI.LobbyRoles
             if (presetBar != null) _root.Add(presetBar);
             _root.Add(BuildTabs(inPool));
             _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
-            _root.Add(BuildContent(roles));
+
+            VisualElement content = BuildContent(roles);
+            _scroll = content as ScrollView;
+
+            // Wrap the ScrollView so short top/bottom fade overlays can sit fixed over its edges (cards dissolve
+            // into the panel instead of a hard cut). The overlays don't scroll and never eat clicks.
+            var scrollWrap = new VisualElement();
+            scrollWrap.AddToClassList(ScrollWrapClass);
+            scrollWrap.Add(content);
+            scrollWrap.Add(MakeEdgeFade(true));
+            scrollWrap.Add(MakeEdgeFade(false));
+            _root.Add(scrollWrap);
+
+            if (_scroll != null)
+            {
+                float y = savedScrollY;
+                _scroll.schedule.Execute(() => { if (_scroll != null) _scroll.scrollOffset = new Vector2(_scroll.scrollOffset.x, y); }).ExecuteLater(0);
+            }
+
             _root.Add(BuildFooter(players, totalForced, totalMax));
+        }
+
+        // ---- scroll edge fades ----
+
+        // A tiny vertical alpha ramp of the panel colour (opaque at the texture top → transparent at the bottom),
+        // generated once so no gradient asset is needed. The top fade uses it as-is; the bottom fade mirrors it
+        // with a -1 vertical scale.
+        private Texture2D FadeTexture()
+        {
+            if (_fadeTex != null) return _fadeTex;
+            const int h = 48;
+            var tex = new Texture2D(1, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            for (int y = 0; y < h; y++)
+            {
+                float a = (float)y / (h - 1);
+                tex.SetPixel(0, y, new Color(0.039f, 0.027f, 0.031f, a)); // panel bg rgb(10,7,8)
+            }
+            tex.Apply();
+            _fadeTex = tex;
+            return tex;
+        }
+
+        private VisualElement MakeEdgeFade(bool top)
+        {
+            var fade = new VisualElement { pickingMode = PickingMode.Ignore };
+            fade.style.position = Position.Absolute;
+            fade.style.left = 0;
+            fade.style.right = 0;
+            fade.style.height = 22;
+            fade.style.backgroundImage = new StyleBackground(FadeTexture());
+            fade.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
+            if (top)
+            {
+                fade.style.top = 0;
+            }
+            else
+            {
+                fade.style.bottom = 0;
+                fade.style.scale = new Scale(new Vector3(1f, -1f, 1f)); // mirror so the opaque edge is at the bottom
+            }
+            return fade;
         }
 
         // ---- preset bar ----
@@ -213,8 +283,14 @@ namespace UI.LobbyRoles
         // ---- content per tab ----
         private VisualElement BuildContent(IReadOnlyList<LobbyRoleView> roles)
         {
-            var content = new VisualElement();
-            content.pickingMode = PickingMode.Ignore;
+            // A vertical ScrollView takes the remaining height and scrolls when the sections exceed the fixed
+            // panel height — the fix for the section overlap (a fixed-height column with no scroll compresses its
+            // overflowing children via the default flex-shrink, so siblings paint on top). The pinned bands
+            // (preset bar / tabs / tally / footer) keep their height via flex-shrink:0 in the USS.
+            var content = new ScrollView(ScrollViewMode.Vertical);
+            content.AddToClassList(ScrollClass);
+            content.style.flexGrow = 1;
+            content.style.flexShrink = 1;
 
             if (_activeTab == TabOptions)
             {
@@ -309,7 +385,7 @@ namespace UI.LobbyRoles
             Sprite portrait = _portraitTable != null
                 ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
                 : null;
-            RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor);
+            RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor).SetWidth(CardWidth);
             card.style.opacity = role.Max > 0 ? 1f : 0.5f; // dim roles not in the pool
 
             if (role.Forced > 0)

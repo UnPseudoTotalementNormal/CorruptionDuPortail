@@ -2,6 +2,14 @@
 
 Tracks real-but-not-now items surfaced during reviews. Each entry: source + date, one bullet per item.
 
+## Deferred from: code review of luma-tricheuse-copy-rework (2026-07-15)
+
+- Re-confirmé par gds-code-review : copie orpheline si le reparent de `GivePowerToCharacter` échoue → voir l'entrée détaillée ci-dessous (quick-dev, même item).
+
+## Deferred from: quick-dev luma-tricheuse-copy-rework (2026-07-15)
+
+- **Copie orpheline si le reparent échoue (LOW, pré-existant, partagé avec Ugues).** `CharacterManager.GivePowerToCharacter` (`Assets/Scripts/Characters/CharacterManager.cs:485`) fait `Spawn()` de la copie PUIS la reparente en coroutine (`WaitForParentToSpawnAndSet`), et n'invoque `onReady` (→ `ConfigureCopy`) que si `_result == true`. Si le reparent échoue, la copie reste un `NetworkObject` spawné mais orphelin (hors `role.powers`, jamais configuré one-shot) — fuite. Impact faible : une copie non parentée n'est pas utilisable. Non causé par ce changement (Luma comme Ugues `PMarqueHurluberluges` héritent du même chemin). Fix éventuel : despawn de la copie dans la branche `_result == false` de `GivePowerToCharacter`.
+
 ## Deferred from: liveness/heartbeat chantier code-review (2026-07-08)
 
 - **Ancillary-cleanup lag on the fast (liveness) leave path (LOW, within design).** The liveness layer now chains a lost peer at ~5 s (`GameManager.HandlePlayerLeft`), but the ancillary cleanups — avatar despawn (`AvatarManager.OnClientDisconnected`) and player-info removal (`LobbyPlayerInfoHolder.OnClientDisconnected`) — stay bound ONLY to the transport `OnClientDisconnectCallback` (~12 s backstop). So for ~7 s a hard-quit leaver's seat is chained-but-still-embodied (avatar visible, player-info present) before the transport backstop cleans it up. State stays consistent and the backstop eventually cleans up — cosmetic lag, not a correctness break (flagged by the arch code-review as within the documented design: liveness feeds only `HandlePlayerLeft`). If it looks bad in playtest, route the avatar despawn + player-info removal through `HandlePlayerLeft` (the unified pipeline) instead of their own transport-only subscriptions, so the fast path cleans everything at once.

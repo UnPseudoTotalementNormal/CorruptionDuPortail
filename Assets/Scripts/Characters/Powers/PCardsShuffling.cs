@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
@@ -49,6 +50,12 @@ namespace Characters.Powers
             base.OnNetworkSpawn();
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
             targetValidator.AddRule(ctx => !discoveredClientIds.Contains(ctx.targetId));
+            // Design (2026-07-15): Luma ne pioche que des rôles élus (faction chosen).
+            targetValidator.AddRule(ctx =>
+            {
+                Character _c = characterManager.GetCharacter(ctx.targetId, false);
+                return _c != null && _c.role != null && _c.role.factionType == FactionType.chosen;
+            });
         }
         
         private void OnRolePicked(Role _role)
@@ -67,25 +74,23 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked)
         {
-            // probably redundant check
-            /*if (!IsTargetValid(_clientIdClicked))
+            // Re-validation autoritaire serveur : les règles d'OnRolePicked ont tourné côté client seulement,
+            // mais cette branche ACCORDE désormais un pouvoir — un client trafiqué ne doit pas contourner les
+            // règles (cible valide, non déjà découverte, faction élue). Rejette aussi les RPC en double (la 2e
+            // arrive après discoveredClientIds.Add → règle !Contains) et les rôles null (règle faction).
+            if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
                 return;
-            }*/
+            }
 
             Character _character = characterManager.GetCharacter(_clientIdClicked);
             if (_character.isFake)
             {
-                ChatMessage _fakeMessage = new ChatMessage
-                {
-                    message = $"Le rôle selectionné ({_character.role.roleName.ToString()}) était une fausse carte.",
-                    senderClientId = ChatManager.SERVER_CLIENT_ID,
-                    chatId = (int)ChatWindowIDs.Server
-                };
-                chatManager.ReceiveChatMessageRpc(_fakeMessage, characterManager.GetSafeRpcTarget(ownerClientId.Value));
+                // Rôle élu absent de la partie : Luma copie temporairement (one-shot) un de ses pouvoirs actifs.
+                GrantCopyFromFakeRole(_character);
                 discoveredClientIds.Add(_clientIdClicked);
                 OnUsed();
-                return; //character was fake, do nothing else
+                return; // carte fausse : la copie remplace l'ancien cul-de-sac, rien d'autre à faire
             }
             
             currentRoleGuessClientId = _character.ownerClientId.Value;
@@ -127,6 +132,65 @@ namespace Characters.Powers
 
         [SerializeField] private string rolePickerDescription;
         [SerializeField] private string guessCharacterPickerDescription;
+
+        // {0} = nom du rôle copié, {1} = nom du pouvoir copié.
+        [SerializeField] private string copyObtainedMessage =
+            "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique).";
+        [SerializeField] private string noActivePowerToCopyMessage =
+            "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier.";
+
+        // Server-only. Rôle élu piochée absent (fausse carte) : tire UN pouvoir actif au hasard et en donne une
+        // copie one-shot à Luma. Réutilise le kernel pur StolenPowerSelector (pickCount 1) + GivePowerToCharacter
+        // + la config one-shot d'Ugues. En fixant ownerIsChosen:true / ownerIsUgues:false, PowerCandidate.IsEligible
+        // se réduit à (!isPassive && !isStolenCopy) = « pouvoir actif copiable ».
+        private void GrantCopyFromFakeRole(Character _fakeCharacter)
+        {
+            List<Power> _powers = _fakeCharacter.role.powers;
+            var _candidates = new List<PowerCandidate>(_powers.Count);
+            foreach (Power _p in _powers)
+            {
+                bool _isPassive = _p == null || _p.isPassive;
+                bool _isStolenCopy = _p != null && _p.isStolenCopy.Value;
+                _candidates.Add(new PowerCandidate(true, false, _isPassive, _isStolenCopy));
+            }
+
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, 1, new UnityRandomProvider());
+            string _message;
+            if (_picks.Count == 0)
+            {
+                Debug.Log("[LUMA] Mélange des cartes : fausse carte élue sans pouvoir actif copiable.");
+                _message = noActivePowerToCopyMessage;
+            }
+            else
+            {
+                Power _template = _powers[_picks[0]];
+                characterManager.GivePowerToCharacter(ownerClientId.Value, _template, ConfigureCopy);
+                _message = string.Format(copyObtainedMessage,
+                    _fakeCharacter.role.roleName.ToString(), _template.powerName.ToString());
+            }
+
+            ChatMessage _chat = new ChatMessage
+            {
+                message = _message,
+                senderClientId = ChatManager.SERVER_CLIENT_ID,
+                chatId = (int)ChatWindowIDs.Server
+            };
+            chatManager.ReceiveChatMessageRpc(_chat, characterManager.GetSafeRpcTarget(ownerClientId.Value));
+        }
+
+        // Fired after the copy is spawned + reparented under Luma (GivePowerToCharacter onReady). Turns it into a
+        // single-use, non-regenerating power that stays spent forever — mirrors PMarqueHurluberluges.ConfigureStolenCopy.
+        private void ConfigureCopy(Power _copy)
+        {
+            if (!IsServer || _copy == null)
+            {
+                return;
+            }
+            _copy.isStolenCopy.Value = true;
+            _copy.maxPowerUse = 1;
+            _copy.powerUseRegenPerAwakening = 0; // jamais rechargé au réveil → « temporaire » = perdu une fois utilisé.
+            _copy.powerUseLeft.Value = 1;
+        }
 
         public override void StartUse()
         {

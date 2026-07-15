@@ -144,13 +144,6 @@
     color: rgb(164, 147, 138);
     background-color: rgb(28, 22, 21);
 }
-.lobby-roles__opts {
-    padding: 40px 20px;
-    -unity-text-align: middle-center;
-    white-space: normal;
-    color: rgb(111, 95, 88);
-    font-size: var(--cdp-font-rt-md);
-}
 
 /* ---- tally ---- */
 .lobby-roles__tally {

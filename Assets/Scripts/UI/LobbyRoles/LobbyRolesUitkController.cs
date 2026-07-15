@@ -62,7 +62,6 @@ namespace UI.LobbyRoles
         private const string StepperClass = "lobby-roles__stepper";
         private const string StepBtnClass = "lobby-roles__step-btn";
         private const string StepValClass = "lobby-roles__step-val";
-        private const string OptsClass = "lobby-roles__opts";
         private const string FooterClass = "lobby-roles__footer";
         private const string ReasonClass = "lobby-roles__reason";
         private const string ReasonOkClass = "lobby-roles__reason--ok";
@@ -178,11 +177,11 @@ namespace UI.LobbyRoles
             }
 
             _root.Add(BuildTabs());
-            _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
 
-            // Presets belong to the "Attribution de rôle" tab only, pinned just under the tally (above the sections).
+            // The tally + preset bar belong to the "Attribution de rôle" tab only (the other tabs stay bare).
             if (_activeTab == TabAttribution)
             {
+                _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
                 VisualElement presetBar = BuildPresetBar();
                 if (presetBar != null) _root.Add(presetBar);
             }
@@ -366,12 +365,7 @@ namespace UI.LobbyRoles
             content.style.flexShrink = 1;
 
             if (_activeTab == TabOptions)
-            {
-                var opts = new Label("« Autres options… » — vide pour l'instant.");
-                opts.AddToClassList(OptsClass);
-                content.Add(opts);
-                return content;
-            }
+                return content; // "Autres options…" — intentionally empty for now
 
             foreach (FactionType faction in FactionOrder)
             {

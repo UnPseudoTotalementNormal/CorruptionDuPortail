@@ -11,6 +11,7 @@ using CorruptionDuPortail.Domain;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 #endregion
 
@@ -42,22 +43,22 @@ namespace GameLogic.GameStates
             // standalone test harnesses that build this state without the DI graph (the RoleAssignment golden
             // master) — there the manager is null and the authored counts are used, byte-identical to before.
             var _initialCounts = new List<int>(_frozenOrder.Count);
-            var _canBeFake = new List<bool>(_frozenOrder.Count);
+            var _forced = new List<int>(_frozenOrder.Count);
             foreach (RoleDataObject _role in _frozenOrder)
             {
                 RoleAttributionSetting _authored = roleAttributionDictionary[_role];
-                _initialCounts.Add(gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.roleToAttribute);
-                _canBeFake.Add(gameSettingsManager != null ? gameSettingsManager.GetCanBeFake(_role.role.roleID) : _authored.canBeFake);
+                _initialCounts.Add(gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.max);
+                _forced.Add(gameSettingsManager != null ? gameSettingsManager.GetForced(_role.role.roleID) : _authored.forced);
             }
 
             int _totalRolesToAttribute = gameSettingsManager != null
                 ? gameSettingsManager.GetTotalRolesToAttribute()
-                : roleAttributionDictionary.Values.Sum(setting => setting.roleToAttribute);
+                : roleAttributionDictionary.Values.Sum(setting => setting.max);
             int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - _totalRolesToAttribute);
             List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
 
             RoleDistribution _distribution = new RoleDistributor().Distribute(
-                _initialCounts, _canBeFake, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
+                _initialCounts, _forced, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
 
             //assign fake roles to freshly created fake characters (fakes draw first, in order)
             foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)
@@ -147,13 +148,23 @@ namespace GameLogic.GameStates
     [Serializable]
     public class RoleAttributionSetting : INetworkSerializable
     {
-        [Range(0, 10)] public int roleToAttribute;
-        public bool canBeFake = true;
-        
+        // max = pool cap (random draw fills up to it). forced = guaranteed minimum reals (forced ≤ max).
+        // [FormerlySerializedAs] remaps the existing serialized `roleToAttribute` int onto `max` (int→int).
+        // The old `canBeFake` bool is intentionally dropped; `forced` defaults to 0 (≡ old canBeFake=true,
+        // the whole pool is fakeable). Authored assets all had roleToAttribute=0 so the migration is lossless.
+        [FormerlySerializedAs("roleToAttribute")]
+        [Range(0, 10)] public int max;
+        [Range(0, 10)] public int forced;
+
+        // Derived fake eligibility (C1 shim — keeps RoleDistributor's bool-canBeFake path unchanged):
+        // a role's non-guaranteed copies (max − forced) are fakeable. forced == max ⇒ 0 fakeable ⇒
+        // old canBeFake == false. forced == 0 ⇒ whole pool fakeable ⇒ old canBeFake == true.
+        public bool CanBeFake => forced < max;
+
         public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
         {
-            _serializer.SerializeValue(ref roleToAttribute);
-            _serializer.SerializeValue(ref canBeFake);
+            _serializer.SerializeValue(ref max);
+            _serializer.SerializeValue(ref forced);
         }
     }
 }

@@ -130,7 +130,8 @@ namespace Tests.PlayMode
             RoleDataObject _roleData = ScriptableObject.CreateInstance<RoleDataObject>();
             _roleData.role = new Role { roleID = _id, roleName = _id.ToString() };
             _roleData.powers = new List<Power>();
-            _state.roleAttributionDictionary.Add(_roleData, new RoleAttributionSetting { roleToAttribute = count, canBeFake = canBeFake });
+            // canBeFake=false (mandatory) ⇒ forced == max; canBeFake=true ⇒ forced == 0 (whole pool fakeable).
+            _state.roleAttributionDictionary.Add(_roleData, new RoleAttributionSetting { max = count, forced = canBeFake ? 0 : count });
         }
 
         [UnityTest]

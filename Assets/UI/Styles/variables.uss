@@ -32,6 +32,16 @@
     --cdp-font-size-title: 72px;    /* TMP_Text title */
     --cdp-font-size-display: 150px; /* login title (sampled) */
 
+    /* ---- Tablet RT-panel font ramp — readability scale for the RenderTexture panels (InfoTable / Lobby).
+       Anchored on --cdp-font-rt-md = 24px = InfoTable body (--cdp-font-size-sm), proven legible at the tablet RT
+       resolution; the other steps are a ~1.25 scale around it. PROVISIONAL / design-owned like the rest — this
+       is the ONE place to retune tablet text sizes. Other RT panels can migrate onto this ramp. ---- */
+    --cdp-font-rt-xs: 16px;   /* captions, descriptions, table keys */
+    --cdp-font-rt-sm: 20px;   /* secondary labels, inline status */
+    --cdp-font-rt-md: 24px;   /* body + interactive (tabs, buttons, values) */
+    --cdp-font-rt-lg: 30px;   /* emphasis numbers / sub-headers */
+    --cdp-font-rt-xl: 40px;   /* big stats / section headers */
+
     /* ---- Spacing scale (TODO: sample real layout paddings/spacing at pilot) ---- */
     --cdp-space-xs: 4px;            /* PLACEHOLDER */
     --cdp-space-sm: 8px;            /* PLACEHOLDER */

@@ -105,8 +105,8 @@ namespace GameLogic.GameSettings
                 _settings.Add(new RoleSettingEntry
                 {
                     roleId = _roleId,
-                    count = _pair.Value.roleToAttribute,
-                    canBeFake = _pair.Value.canBeFake
+                    max = _pair.Value.max,
+                    forced = _pair.Value.forced
                 });
             }
         }
@@ -125,25 +125,42 @@ namespace GameLogic.GameSettings
 
         // ----- read API (distribution + views) -----
 
+        // Pool cap (max) for a role — how many copies may appear (random draw fills up to it). Name kept as
+        // GetRoleCount for the existing uGUI widget; returns the new `max` field.
         public int GetRoleCount(RoleID _roleId)
         {
             for (int i = 0; i < _settings.Count; i++)
             {
                 if (_settings[i].roleId == _roleId)
                 {
-                    return _settings[i].count;
+                    return _settings[i].max;
                 }
             }
             return 0;
         }
 
+        // Guaranteed minimum reals for a role (forced ≤ max). 0 ⇒ the whole pool is fakeable.
+        public int GetForced(RoleID _roleId)
+        {
+            for (int i = 0; i < _settings.Count; i++)
+            {
+                if (_settings[i].roleId == _roleId)
+                {
+                    return _settings[i].forced;
+                }
+            }
+            return 0;
+        }
+
+        // Derived fake eligibility (C1 shim — keeps the RoleDistributor bool-canBeFake path unchanged):
+        // a role's non-guaranteed copies (max − forced) are fakeable. forced == max ⇒ not fakeable.
         public bool GetCanBeFake(RoleID _roleId)
         {
             for (int i = 0; i < _settings.Count; i++)
             {
                 if (_settings[i].roleId == _roleId)
                 {
-                    return _settings[i].canBeFake;
+                    return _settings[i].forced < _settings[i].max;
                 }
             }
             return false;
@@ -154,25 +171,22 @@ namespace GameLogic.GameSettings
             int _total = 0;
             for (int i = 0; i < _settings.Count; i++)
             {
-                _total += _settings[i].count;
+                _total += _settings[i].max;
             }
             return _total;
         }
 
-        // [LEAVE][PHASE 4] Minimum-players floor (owner-ratified formula, Poyo). The hard technical floor is
-        // the number of MANDATORY roles = roles that CANNOT be fake. RoleDistributor fills the missing seats
-        // with FAKE characters drawn ONLY from the canBeFake subset; a role with canBeFake == false MUST go to
-        // a real player, so if real players < Σ(count where !canBeFake) those mandatory roles go undealt and
-        // the game breaks. Sums the count over the non-fakeable entries (mirrors GetTotalRolesToAttribute).
-        public int GetMandatoryRoleCount()
+        // [LEAVE][PHASE 4] Minimum-players floor. Under the max/forced model the hard technical floor is the
+        // number of GUARANTEED reals = Σforced: RoleDistributor reserves `forced` reals per role before the
+        // surplus fake draw, so if real players < Σforced those guaranteed roles cannot all be placed and the
+        // game breaks. (Replaces the old Σ(count where !canBeFake); for a fully-mandatory role forced == max,
+        // so this coincides with the old floor after the canBeFake→forced migration.)
+        public int GetTotalForced()
         {
             int _total = 0;
             for (int i = 0; i < _settings.Count; i++)
             {
-                if (!_settings[i].canBeFake)
-                {
-                    _total += _settings[i].count;
-                }
+                _total += _settings[i].forced;
             }
             return _total;
         }
@@ -184,11 +198,11 @@ namespace GameLogic.GameSettings
         /// only reaches the server when <see cref="_allowClientEditing"/> is on (host-only by default — the
         /// non-host sliders are read-only mirrors, so this is a no-op for them today).
         /// </summary>
-        public void RequestSetRoleCount(RoleID _roleId, int _count)
+        public void RequestSetRoleCount(RoleID _roleId, int _max)
         {
             if (IsServer)
             {
-                ApplyRoleCountServer(_roleId, _count);
+                ApplyRoleCountServer(_roleId, _max);
                 return;
             }
 
@@ -196,41 +210,99 @@ namespace GameLogic.GameSettings
             {
                 return;
             }
-            SubmitRoleCountServerRpc(_roleId, _count);
+            SubmitRoleCountServerRpc(_roleId, _max);
         }
 
         [Rpc(SendTo.Server)]
-        private void SubmitRoleCountServerRpc(RoleID _roleId, int _count)
+        private void SubmitRoleCountServerRpc(RoleID _roleId, int _max)
         {
             // Server-side gate (defence in depth): ignore client proposals unless editing is opened up.
             if (!_allowClientEditing)
             {
                 return;
             }
-            ApplyRoleCountServer(_roleId, _count);
+            ApplyRoleCountServer(_roleId, _max);
         }
 
-        private void ApplyRoleCountServer(RoleID _roleId, int _count)
+        // Sets a role's pool cap (max) and re-clamps its `forced` down so the forced ≤ max invariant holds.
+        private void ApplyRoleCountServer(RoleID _roleId, int _max)
         {
             if (!IsServer)
             {
                 return;
             }
 
-            int _clamped = Mathf.Clamp(_count, 0, MaxRoleCount);
+            int _clampedMax = Mathf.Clamp(_max, 0, MaxRoleCount);
             for (int i = 0; i < _settings.Count; i++)
             {
                 if (_settings[i].roleId != _roleId)
                 {
                     continue;
                 }
-                if (_settings[i].count == _clamped)
+                int _clampedForced = Mathf.Min(_settings[i].forced, _clampedMax);
+                if (_settings[i].max == _clampedMax && _settings[i].forced == _clampedForced)
                 {
                     return; // idempotent — skip no-op replication
                 }
 
                 RoleSettingEntry _entry = _settings[i];
-                _entry.count = _clamped;
+                _entry.max = _clampedMax;
+                _entry.forced = _clampedForced;
+                _settings[i] = _entry;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Propose a new guaranteed minimum (forced) for a role. Host-only by default (mirrors
+        /// <see cref="RequestSetRoleCount"/>); clamped to [0, that role's max] so the forced ≤ max invariant holds.
+        /// </summary>
+        public void RequestSetForced(RoleID _roleId, int _forced)
+        {
+            if (IsServer)
+            {
+                ApplyForcedServer(_roleId, _forced);
+                return;
+            }
+
+            if (!_allowClientEditing)
+            {
+                return;
+            }
+            SubmitForcedServerRpc(_roleId, _forced);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SubmitForcedServerRpc(RoleID _roleId, int _forced)
+        {
+            if (!_allowClientEditing)
+            {
+                return;
+            }
+            ApplyForcedServer(_roleId, _forced);
+        }
+
+        private void ApplyForcedServer(RoleID _roleId, int _forced)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _settings.Count; i++)
+            {
+                if (_settings[i].roleId != _roleId)
+                {
+                    continue;
+                }
+                int _clamped = Mathf.Clamp(_forced, 0, _settings[i].max);
+                if (_settings[i].forced == _clamped)
+                {
+                    return; // idempotent — skip no-op replication
+                }
+
+                RoleSettingEntry _entry = _settings[i];
+                _entry.forced = _clamped;
                 _settings[i] = _entry;
                 return;
             }
@@ -242,24 +314,24 @@ namespace GameLogic.GameSettings
         private struct RoleSettingEntry : INetworkSerializable, IEquatable<RoleSettingEntry>
         {
             public RoleID roleId;
-            public int count;
-            public bool canBeFake;
+            public int max;    // pool cap — how many copies may appear (random draw fills up to it)
+            public int forced; // guaranteed minimum reals (forced ≤ max); replaces the old canBeFake bool
 
             public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
             {
                 _serializer.SerializeValue(ref roleId);
-                _serializer.SerializeValue(ref count);
-                _serializer.SerializeValue(ref canBeFake);
+                _serializer.SerializeValue(ref max);
+                _serializer.SerializeValue(ref forced);
             }
 
             public bool Equals(RoleSettingEntry _other)
             {
-                return roleId == _other.roleId && count == _other.count && canBeFake == _other.canBeFake;
+                return roleId == _other.roleId && max == _other.max && forced == _other.forced;
             }
 
             public override bool Equals(object _obj) => _obj is RoleSettingEntry _other && Equals(_other);
 
-            public override int GetHashCode() => HashCode.Combine((int)roleId, count, canBeFake);
+            public override int GetHashCode() => HashCode.Combine((int)roleId, max, forced);
         }
     }
 }

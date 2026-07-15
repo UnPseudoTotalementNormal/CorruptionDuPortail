@@ -87,7 +87,8 @@ namespace Tests.PlayMode
             RoleDataObject _roleData = ScriptableObject.CreateInstance<RoleDataObject>();
             _roleData.role = new Role { roleID = _id, roleName = _name };
             _roleData.powers = new List<Power>();
-            _state.roleAttributionDictionary.Add(_roleData, new RoleAttributionSetting { roleToAttribute = count, canBeFake = canBeFake });
+            // canBeFake=false (mandatory) ⇒ forced == max; canBeFake=true ⇒ forced == 0 (whole pool fakeable).
+            _state.roleAttributionDictionary.Add(_roleData, new RoleAttributionSetting { max = count, forced = canBeFake ? 0 : count });
         }
 
         [UnityTest]
@@ -103,23 +104,23 @@ namespace Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator GetMandatoryRoleCount_SumsOnlyNonFakeableRoles()
+        public IEnumerator GetTotalForced_IsSumOfForced_AndMaxEditsDoNotMoveIt()
         {
-            // [LEAVE][PHASE 4] Mandatory = Σ(count where !canBeFake). Seeded roles: Robot(2,fakeable),
-            // Abyss(1,NOT fakeable), Oracle(3,fakeable) → only Abyss(1) counts. This is the min-players floor.
-            Assert.AreEqual(1, _manager.GetMandatoryRoleCount(), "Only the non-fakeable Abyss(1) is mandatory.");
+            // Under the max/forced model the min-players floor = Σforced. Seeded roles migrate as:
+            // Robot(max2,forced0), Abyss(max1,forced1 — the ex-!canBeFake mandatory), Oracle(max3,forced0) → Σforced == 1.
+            Assert.AreEqual(1, _manager.GetTotalForced(), "Only Abyss carries a forced minimum (1).");
 
-            // Raising a fakeable role's count must NOT change the mandatory floor.
+            // Raising a role's pool cap (max) must NOT change the forced floor — forced is independent of max.
             _manager.RequestSetRoleCount(RoleID.Robot, 5);
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => _manager.GetRoleCount(RoleID.Robot) == 5, 3f, "Robot edit did not replicate.");
-            Assert.AreEqual(1, _manager.GetMandatoryRoleCount(), "Editing a fakeable role must not move the mandatory floor.");
+            Assert.AreEqual(1, _manager.GetTotalForced(), "Editing a role's max must not move the forced floor.");
 
-            // Raising the non-fakeable Abyss count DOES raise the floor.
+            // Raising the mandatory role's max also leaves the floor untouched (forced stays 1, still ≤ max).
             _manager.RequestSetRoleCount(RoleID.Abyss, 3);
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => _manager.GetRoleCount(RoleID.Abyss) == 3, 3f, "Abyss edit did not replicate.");
-            Assert.AreEqual(3, _manager.GetMandatoryRoleCount(), "The non-fakeable Abyss count now sets the floor.");
+            Assert.AreEqual(1, _manager.GetTotalForced(), "Editing max never changes forced; the floor stays 1.");
         }
 
         [UnityTest]

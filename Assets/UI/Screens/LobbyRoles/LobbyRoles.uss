@@ -42,7 +42,10 @@
     border-radius: 8px;
     margin-right: 10px;
 }
-.lobby-roles__preset-other {
+.lobby-roles__preset-wrap {
+    position: relative;
+}
+.lobby-roles__preset-opener {
     padding: 9px 14px;
     font-size: 13px;
     color: rgb(164, 147, 138);
@@ -50,7 +53,34 @@
     border-width: 1px;
     border-color: rgb(58, 44, 41);
     border-radius: 8px;
-    margin-right: 8px;
+}
+.lobby-roles__preset-opener:hover {
+    color: rgb(240, 231, 221);
+}
+.lobby-roles__preset-popover {
+    position: absolute;
+    top: 44px;
+    left: 0;
+    min-width: 220px;
+    flex-direction: column;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    padding: 6px;
+}
+.lobby-roles__preset-row {
+    padding: 9px 12px;
+    font-size: 13px;
+    -unity-text-align: middle-left;
+    color: rgb(240, 231, 221);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-radius: 6px;
+    margin: 0;
+}
+.lobby-roles__preset-row:hover {
+    background-color: rgb(28, 22, 21);
 }
 .lobby-roles__tabs {
     flex-direction: row;

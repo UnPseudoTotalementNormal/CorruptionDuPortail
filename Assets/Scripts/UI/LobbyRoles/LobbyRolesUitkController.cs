@@ -26,7 +26,10 @@ namespace UI.LobbyRoles
         private const string RootName = "lobby-roles";
         private const string TopBarClass = "lobby-roles__topbar";
         private const string PresetClassicClass = "lobby-roles__preset-classic";
-        private const string PresetOtherClass = "lobby-roles__preset-other";
+        private const string PresetWrapClass = "lobby-roles__preset-wrap";
+        private const string PresetOpenerClass = "lobby-roles__preset-opener";
+        private const string PresetPopoverClass = "lobby-roles__preset-popover";
+        private const string PresetRowClass = "lobby-roles__preset-row";
         private const string TabsClass = "lobby-roles__tabs";
         private const string TabClass = "lobby-roles__tab";
         private const string TabActiveClass = "lobby-roles__tab--active";
@@ -247,14 +250,49 @@ namespace UI.LobbyRoles
             classic.AddToClassList(PresetClassicClass);
             bar.Add(classic);
 
-            for (int i = 0; i < presets.Count; i++)
+            // Other presets live in a dropdown, shown ONLY when there's more than one preset for this count.
+            if (presets.Count > 1)
             {
-                if (i == classicIndex) continue;
-                int idx = i;
-                var other = new Button(() => _data.ApplyPreset(idx)) { text = presets[i].Name };
-                other.AddToClassList(PresetOtherClass);
-                other.tooltip = presets[i].Description;
-                bar.Add(other);
+                var wrap = new VisualElement();
+                wrap.AddToClassList(PresetWrapClass);
+
+                // The popover lives on the ROOT (not the top bar) and is brought to front on open, so it paints
+                // ABOVE the tabs/tally instead of being covered by later siblings. Positioned under the opener.
+                var popover = new VisualElement();
+                popover.AddToClassList(PresetPopoverClass);
+                popover.style.display = DisplayStyle.None;
+                _root.Add(popover);
+
+                for (int i = 0; i < presets.Count; i++)
+                {
+                    if (i == classicIndex) continue;
+                    int idx = i;
+                    var row = new Button(() => _data.ApplyPreset(idx)) // apply → OnChanged → Rebuild closes the popover
+                    {
+                        text = presets[i].Name,
+                        tooltip = presets[i].Description
+                    };
+                    row.AddToClassList(PresetRowClass);
+                    popover.Add(row);
+                }
+
+                var isOpen = new[] { false };
+                var opener = new Button { text = "Autres presets… ▾" };
+                opener.AddToClassList(PresetOpenerClass);
+                opener.clicked += () =>
+                {
+                    isOpen[0] = !isOpen[0];
+                    if (!isOpen[0]) { popover.style.display = DisplayStyle.None; return; }
+                    Rect ob = opener.worldBound;
+                    Rect rb = _root.worldBound;
+                    popover.style.left = ob.x - rb.x;
+                    popover.style.top = ob.yMax - rb.y + 4f;
+                    popover.style.display = DisplayStyle.Flex;
+                    popover.BringToFront();
+                };
+
+                wrap.Add(opener);
+                bar.Add(wrap);
             }
             return bar;
         }

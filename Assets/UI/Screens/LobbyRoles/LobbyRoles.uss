@@ -1,6 +1,7 @@
 /* Lobby role-attribution (max/forced) — structural USS. Palette is PLACEHOLDER / design-owned (see the proto);
    tune later, ideally toward variables.uss tokens. UITK has no `gap` or `aspect-ratio`, so spacing uses margins
-   and cards use fixed sizes tuned for the 1440x912 RenderTexture. */
+   and cards use fixed sizes tuned for the 1440x912 RenderTexture. Font sizes use the shared --cdp-font-rt-* tablet
+   ramp (variables.uss) so tablet text stays legible and retunable in one place — matched to the InfoTable body. */
 
 .lobby-roles {
     width: 100%;
@@ -34,7 +35,7 @@
 }
 .lobby-roles__preset-classic {
     padding: 10px 18px;
-    font-size: 14px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     color: rgb(234, 255, 240);
     background-color: rgb(43, 106, 67);
@@ -51,7 +52,7 @@
 }
 .lobby-roles__preset-opener {
     padding: 9px 14px;
-    font-size: 13px;
+    font-size: var(--cdp-font-rt-sm);
     color: rgb(164, 147, 138);
     background-color: rgb(20, 16, 15);
     border-width: 1px;
@@ -89,12 +90,12 @@
     background-color: rgb(34, 44, 36);
 }
 .lobby-roles__preset-name {
-    font-size: 13px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     color: rgb(240, 231, 221);
 }
 .lobby-roles__preset-desc {
-    font-size: 11px;
+    font-size: var(--cdp-font-rt-xs);
     color: rgb(150, 133, 125);
     white-space: normal;
     margin-top: 2px;
@@ -102,7 +103,7 @@
 .lobby-roles__preset-status {
     -unity-text-align: middle-left;
     margin-left: 12px;
-    font-size: 12px;
+    font-size: var(--cdp-font-rt-sm);
     -unity-font-style: bold;
     color: rgb(150, 240, 180);
 }
@@ -120,7 +121,7 @@
     flex-direction: row;
     align-items: center;
     padding: 12px 20px;
-    font-size: 15px;
+    font-size: var(--cdp-font-rt-md);
     color: rgb(164, 147, 138);
     background-color: rgba(0, 0, 0, 0);
     border-width: 0;
@@ -134,22 +135,21 @@
 }
 .lobby-roles__tab-badge {
     margin-left: 7px;
-    min-width: 18px;
-    height: 18px;
+    min-width: 22px;
+    height: 22px;
     -unity-text-align: middle-center;
-    font-size: 11px;
+    font-size: var(--cdp-font-rt-xs);
     -unity-font-style: bold;
     border-radius: 9px;
     color: rgb(164, 147, 138);
     background-color: rgb(28, 22, 21);
 }
-.lobby-roles__deck-empty,
 .lobby-roles__opts {
     padding: 40px 20px;
     -unity-text-align: middle-center;
     white-space: normal;
     color: rgb(111, 95, 88);
-    font-size: 14px;
+    font-size: var(--cdp-font-rt-md);
 }
 
 /* ---- tally ---- */
@@ -171,12 +171,12 @@
     border-right-color: rgb(42, 33, 31);
 }
 .lobby-roles__tally-key {
-    font-size: 11px;
+    font-size: var(--cdp-font-rt-xs);
     letter-spacing: 2px;
     color: rgb(111, 95, 88);
 }
 .lobby-roles__tally-val {
-    font-size: 26px;
+    font-size: var(--cdp-font-rt-lg);
     -unity-font-style: bold;
     color: rgb(240, 231, 221);
 }
@@ -190,7 +190,7 @@
     margin-bottom: 14px;
 }
 .lobby-roles__section-head {
-    font-size: 13px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     letter-spacing: 3px;
     margin-top: 10px;
@@ -234,19 +234,8 @@
     border-radius: 8px;
     background-color: rgb(24, 10, 12);
 }
-.lobby-roles__forced-tag {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    -unity-font-style: bold;
-    color: rgb(32, 24, 10);
-    background-color: rgb(233, 193, 90);
-}
 .lobby-roles__card-name {
-    font-size: 12px;
+    font-size: var(--cdp-font-rt-sm);
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     white-space: normal;
@@ -271,7 +260,7 @@
     margin-bottom: 4px;
 }
 .lobby-roles__ctl-label {
-    font-size: 11px;
+    font-size: var(--cdp-font-rt-sm);
     color: rgb(164, 147, 138);
 }
 .lobby-roles__ctl--forced .lobby-roles__ctl-label {
@@ -283,11 +272,11 @@
     align-items: center;
 }
 .lobby-roles__step-btn {
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     margin: 0;
     padding: 0;
-    font-size: 16px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     color: rgb(164, 147, 138);
     background-color: rgb(28, 22, 21);
@@ -302,9 +291,9 @@
     opacity: 0.3;
 }
 .lobby-roles__step-val {
-    width: 34px;
+    width: 44px;
     -unity-text-align: middle-center;
-    font-size: 15px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     color: rgb(240, 231, 221);
 }
@@ -317,7 +306,7 @@
     margin-top: 14px;
 }
 .lobby-roles__reason {
-    font-size: 13px;
+    font-size: var(--cdp-font-rt-sm);
     color: rgb(224, 151, 58);
     margin-right: 16px;
 }
@@ -326,7 +315,7 @@
 }
 .lobby-roles__start {
     padding: 12px 30px;
-    font-size: 16px;
+    font-size: var(--cdp-font-rt-md);
     -unity-font-style: bold;
     color: rgb(11, 26, 16);
     background-color: rgb(95, 217, 135);

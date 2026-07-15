@@ -5,14 +5,15 @@ using UI.Cards;
 using UI.RoleCard;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace UI.LobbyRoles
 {
     /// <summary>
     /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml). Builds a faction-grouped grid of role cards
     /// from an <see cref="ILobbyRolesDataSource"/>, each card carrying two steppers — Max (pool cap) and Forcé
-    /// (guaranteed minimum) — plus a preset bar, tabs (Attribution / Ta partie = same grid filtered to max&gt;0 /
-    /// Autres options), a live composition tally and a gated "Démarrer" read. Follows the InfoTable /
+    /// (guaranteed minimum) — plus a preset bar, tabs (Attribution / Autres options), a live composition tally
+    /// and a gated "Démarrer" read. Follows the InfoTable /
     /// RoleCardController conventions: [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start,
     /// Q-by-name, dynamic children in C#, BEM classes, tokens in USS.
     ///
@@ -54,7 +55,6 @@ namespace UI.LobbyRoles
         private const string CardActiveClass = "lobby-roles__card--active";
         private const string CardArtClass = "lobby-roles__card-art";
         private const string CardNameClass = "lobby-roles__card-name";
-        private const string ForcedTagClass = "lobby-roles__forced-tag";
         private const string ControlsClass = "lobby-roles__controls";
         private const string CtlClass = "lobby-roles__ctl";
         private const string CtlLabelClass = "lobby-roles__ctl-label";
@@ -62,7 +62,6 @@ namespace UI.LobbyRoles
         private const string StepperClass = "lobby-roles__stepper";
         private const string StepBtnClass = "lobby-roles__step-btn";
         private const string StepValClass = "lobby-roles__step-val";
-        private const string EmptyClass = "lobby-roles__deck-empty";
         private const string OptsClass = "lobby-roles__opts";
         private const string FooterClass = "lobby-roles__footer";
         private const string ReasonClass = "lobby-roles__reason";
@@ -71,7 +70,6 @@ namespace UI.LobbyRoles
         private const string StateBadClass = "lobby-roles__tally-val--bad";
 
         private const int TabAttribution = 0;
-        private const int TabDeck = 1;
         private const int TabOptions = 2;
 
         private const float CardWidth = 200f; // matches .lobby-roles__unit width; the card derives its 5:7 height
@@ -95,6 +93,10 @@ namespace UI.LobbyRoles
         [Tooltip("The screen-space RoleCard overlay opened when a card is tapped (reused as-is). Null = tap does nothing.")]
         [SerializeField] private RoleCardController _roleCardOverlay;
 
+        private const float PoolOpacity = 1f;
+        private const float DimOpacity = 0.22f;  // roles out of the pool read as clearly muted at a glance
+        private const int CardFadeMs = 200;      // opacity transition when a role enters/leaves the pool
+
         private VisualElement _root;
         private ScrollView _scroll;
         private Texture2D _fadeTex;
@@ -102,6 +104,10 @@ namespace UI.LobbyRoles
         private bool _initialized;
         private bool _everBuilt;
         private int _activeTab = TabAttribution;
+
+        // Last opacity shown per role, so a rebuilt card can animate FROM it TO the new target (a full Rebuild
+        // recreates every card, so a fresh element born at the target opacity would otherwise never transition).
+        private readonly Dictionary<RoleID, float> _cardOpacity = new();
 
         private void OnEnable() => TryInitialize();
         private void Start() => TryInitialize();
@@ -161,18 +167,17 @@ namespace UI.LobbyRoles
             int players = _data.GetPlayerCount();
             IReadOnlyList<LobbyRoleView> roles = _data.GetRoles();
 
-            int totalMax = 0, totalForced = 0, inPool = 0;
+            int totalMax = 0, totalForced = 0;
             var perFactionMax = new Dictionary<FactionType, int>();
             foreach (LobbyRoleView r in roles)
             {
                 totalMax += r.Max;
                 totalForced += r.Forced;
-                if (r.Max > 0) inPool++;
                 perFactionMax.TryGetValue(r.Faction, out int cur);
                 perFactionMax[r.Faction] = cur + r.Max;
             }
 
-            _root.Add(BuildTabs(inPool));
+            _root.Add(BuildTabs());
             _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
 
             // Presets belong to the "Attribution de rôle" tab only, pinned just under the tally (above the sections).
@@ -331,26 +336,19 @@ namespace UI.LobbyRoles
         }
 
         // ---- tabs ----
-        private VisualElement BuildTabs(int inPool)
+        private VisualElement BuildTabs()
         {
             var tabs = new VisualElement();
             tabs.AddToClassList(TabsClass);
-            tabs.Add(Tab("Attribution de rôle", TabAttribution, -1));
-            tabs.Add(Tab("Ta partie", TabDeck, inPool));
-            tabs.Add(Tab("Autres options…", TabOptions, -1));
+            tabs.Add(Tab("Attribution de rôle", TabAttribution));
+            tabs.Add(Tab("Autres options…", TabOptions));
             return tabs;
 
-            VisualElement Tab(string label, int index, int badge)
+            VisualElement Tab(string label, int index)
             {
                 var tab = new Button(() => { _activeTab = index; Rebuild(); }) { text = label };
                 tab.AddToClassList(TabClass);
                 if (_activeTab == index) tab.AddToClassList(TabActiveClass);
-                if (badge >= 0)
-                {
-                    var b = new Label(badge.ToString());
-                    b.AddToClassList(TabBadgeClass);
-                    tab.Add(b);
-                }
                 return tab;
             }
         }
@@ -375,27 +373,13 @@ namespace UI.LobbyRoles
                 return content;
             }
 
-            bool deckOnly = _activeTab == TabDeck;
-            int shown = 0;
             foreach (FactionType faction in FactionOrder)
             {
                 var inFaction = new List<LobbyRoleView>();
                 foreach (LobbyRoleView r in roles)
-                {
-                    if (r.Faction != faction) continue;
-                    if (deckOnly && r.Max <= 0) continue; // "Ta partie" = same grid filtered to max > 0
-                    inFaction.Add(r);
-                }
+                    if (r.Faction == faction) inFaction.Add(r);
                 if (inFaction.Count == 0) continue;
                 content.Add(BuildSection(faction, inFaction));
-                shown += inFaction.Count;
-            }
-
-            if (deckOnly && shown == 0)
-            {
-                var empty = new Label("Aucun rôle dans le pool. Ajoute des « Max » ou charge un preset.");
-                empty.AddToClassList(EmptyClass);
-                content.Add(empty);
             }
             return content;
         }
@@ -461,16 +445,20 @@ namespace UI.LobbyRoles
                 ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
                 : null;
             RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor).SetWidth(CardWidth);
-            card.style.opacity = role.Max > 0 ? 1f : 0.5f; // dim roles not in the pool
+
+            // Animate the pool ↔ dimmed opacity. A full Rebuild recreates the card on every stepper click, so a USS
+            // transition never fires (no resolved "from" value on a newborn element — see the investigation case
+            // file). An explicit value animation is driven frame-by-frame by the panel scheduler and works anyway.
+            // The prev/target memory + no-op-when-equal guard keeps scroll/tab rebuilds from re-animating.
+            float target = role.Max > 0 ? PoolOpacity : DimOpacity;
+            float prev = _cardOpacity.TryGetValue(role.Id, out float p) ? p : target;
+            _cardOpacity[role.Id] = target;
+            card.style.opacity = prev;
+            if (!Mathf.Approximately(prev, target))
+                card.experimental.animation.Start(prev, target, CardFadeMs, (e, v) => e.style.opacity = v).Ease(Easing.OutCubic);
+
             RoleID clickedId = role.Id;
             card.RegisterCallback<ClickEvent>(_ => OpenDetail(clickedId)); // tap the card face → role detail overlay
-
-            if (role.Forced > 0)
-            {
-                var tag = new Label("★ forcé " + role.Forced);
-                tag.AddToClassList(ForcedTagClass);
-                card.Add(tag);
-            }
             unit.Add(card);
 
             var controls = new VisualElement();

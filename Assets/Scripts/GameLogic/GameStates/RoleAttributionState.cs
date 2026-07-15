@@ -43,12 +43,12 @@ namespace GameLogic.GameStates
             // standalone test harnesses that build this state without the DI graph (the RoleAssignment golden
             // master) — there the manager is null and the authored counts are used, byte-identical to before.
             var _initialCounts = new List<int>(_frozenOrder.Count);
-            var _canBeFake = new List<bool>(_frozenOrder.Count);
+            var _forced = new List<int>(_frozenOrder.Count);
             foreach (RoleDataObject _role in _frozenOrder)
             {
                 RoleAttributionSetting _authored = roleAttributionDictionary[_role];
                 _initialCounts.Add(gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.max);
-                _canBeFake.Add(gameSettingsManager != null ? gameSettingsManager.GetCanBeFake(_role.role.roleID) : _authored.CanBeFake);
+                _forced.Add(gameSettingsManager != null ? gameSettingsManager.GetForced(_role.role.roleID) : _authored.forced);
             }
 
             int _totalRolesToAttribute = gameSettingsManager != null
@@ -58,7 +58,7 @@ namespace GameLogic.GameStates
             List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
 
             RoleDistribution _distribution = new RoleDistributor().Distribute(
-                _initialCounts, _canBeFake, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
+                _initialCounts, _forced, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
 
             //assign fake roles to freshly created fake characters (fakes draw first, in order)
             foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)

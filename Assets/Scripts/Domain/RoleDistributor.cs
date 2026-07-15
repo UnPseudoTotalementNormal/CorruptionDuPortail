@@ -23,7 +23,7 @@ namespace CorruptionDuPortail.Domain
 
     /// <summary>
     /// Pure, deterministic role distribution (Story 3.3 — extracted from RoleAttributionState.OnStartStateServer).
-    /// Reproduces the two-loop selection exactly: a fake loop (draws from the canBeFake subset) then a real loop,
+    /// Reproduces the two-loop selection: a fake loop (draws from the fakeable subset = max − forced) then a real loop,
     /// both drawing from the SAME depleting per-role counts via <see cref="IRandomProvider"/> in order. Indexes
     /// into the caller's frozen pool order (Story 1.1) — no Dictionary.Keys drift. Decision-only (NFR4): no NGO,
     /// no RoleDataObject, no Random. Works on an internal copy of the counts — it never mutates the caller's input
@@ -31,28 +31,37 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public sealed class RoleDistributor
     {
-        /// <param name="initialCounts">roleToAttribute per role, in frozen pool order (a 0 means never available).</param>
-        /// <param name="canBeFake">canBeFake per role, same order.</param>
-        /// <param name="fakeCount">number of fake characters to assign first (drawn from the canBeFake subset).</param>
+        /// <param name="initialCounts">max (pool cap) per role, in frozen pool order (a 0 means never available).</param>
+        /// <param name="forced">guaranteed minimum reals per role, same order (forced ≤ max). A role's fakeable
+        /// capacity is max − forced: the forced copies are excluded from the fake pool, so the real loop (which
+        /// consumes every remaining slot) always places at least `forced` reals of that role. Which characters
+        /// receive them stays RNG-random. forced == 0 ⇒ whole pool fakeable (≡ old canBeFake=true); forced == max
+        /// ⇒ nothing fakeable (≡ old canBeFake=false) — so under the canBeFake→forced migration the fake-eligible
+        /// set is byte-identical to the old bool filter and the golden masters are unchanged.</param>
+        /// <param name="fakeCount">number of fake characters to assign first (drawn from the fakeable subset).</param>
         /// <param name="realCount">number of real characters to assign after the fakes.</param>
         public RoleDistribution Distribute(
             IReadOnlyList<int> initialCounts,
-            IReadOnlyList<bool> canBeFake,
+            IReadOnlyList<int> forced,
             int fakeCount,
             int realCount,
             IRandomProvider rng)
         {
             int k = initialCounts.Count;
             var remaining = new int[k];
+            var fakeable = new int[k]; // copies eligible to become a fake = max − forced (forced copies stay real)
             for (int i = 0; i < k; i++)
             {
                 remaining[i] = initialCounts[i];
+                int _forced = i < forced.Count ? forced[i] : 0;
+                int _fakeable = initialCounts[i] - _forced;
+                fakeable[i] = _fakeable > 0 ? _fakeable : 0;
             }
 
             var fakeIndices = new List<int>();
             for (int f = 0; f < fakeCount; f++)
             {
-                List<int> available = AvailableFake(remaining, canBeFake);
+                List<int> available = AvailableFake(fakeable);
                 if (available.Count == 0) // mirrors the live `if (_fakeRoles.Count == 0) break;`
                 {
                     break;
@@ -60,14 +69,16 @@ namespace CorruptionDuPortail.Domain
 
                 int pick = available[rng.Next(available.Count)];
                 fakeIndices.Add(pick);
-                remaining[pick] -= 1;
+                fakeable[pick] -= 1; // one fewer fakeable copy
+                remaining[pick] -= 1; // and one fewer pool slot left for the real loop
             }
 
             var realIndices = new List<int>();
             for (int r = 0; r < realCount; r++)
             {
                 // No empty-guard here — mirrors the live real loop, which indexes available[Range(0,0)]
-                // and throws if the pool is exhausted. Behaviour preserved as-is.
+                // and throws if the pool is exhausted. Behaviour preserved as-is. Because the fake loop can
+                // only touch the max−forced fakeable copies, every role's `forced` copies survive into here.
                 List<int> available = Available(remaining);
                 int pick = available[rng.Next(available.Count)];
                 realIndices.Add(pick);
@@ -91,13 +102,14 @@ namespace CorruptionDuPortail.Domain
             return list;
         }
 
-        // The canBeFake subset still available (= the live _fakeRoles ∩ remaining).
-        private static List<int> AvailableFake(int[] remaining, IReadOnlyList<bool> canBeFake)
+        // The still-fakeable subset: roles with an unreserved (max − forced) copy left. Forced copies are never
+        // in `fakeable`, so they can never be drawn as a fake.
+        private static List<int> AvailableFake(int[] fakeable)
         {
             var list = new List<int>();
-            for (int i = 0; i < remaining.Length; i++)
+            for (int i = 0; i < fakeable.Length; i++)
             {
-                if (canBeFake[i] && remaining[i] > 0)
+                if (fakeable[i] > 0)
                 {
                     list.Add(i);
                 }

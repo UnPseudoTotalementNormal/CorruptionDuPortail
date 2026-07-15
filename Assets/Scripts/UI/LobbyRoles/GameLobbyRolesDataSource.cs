@@ -101,6 +101,17 @@ namespace UI.LobbyRoles
             return list;
         }
 
+        public Role GetRole(RoleID id)
+        {
+            if (_rolePool == null) return null;
+            foreach (RoleDataObject rdo in _rolePool.roleAttributionDictionary.Keys)
+            {
+                if (rdo == null || rdo.role.roleID != id) continue;
+                return LobbyRoleDetail.From(rdo);
+            }
+            return null;
+        }
+
         public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);
         public void RequestSetForced(RoleID id, int forced) => _manager?.RequestSetForced(id, forced);
 

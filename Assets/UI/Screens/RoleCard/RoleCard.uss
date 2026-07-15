@@ -96,6 +96,28 @@
     transition-delay: 100ms;                         /* panel follows the portrait (60ms stagger) */
 }
 
+/* Close button (top-right of the panel). Reliable dismiss alongside the click-outside scrim. */
+.role-card__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    margin: 0;
+    border-radius: 15px;
+    border-width: 1px;
+    border-color: var(--cdp-color-role-border);
+    background-color: rgba(0, 0, 0, 0.35);
+    color: var(--cdp-color-role-title);
+    font-size: 15px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+.role-card__close:hover {
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
 /* ---- Header (dossier cover) ---- */
 /* Full-width children (stretch) + centered text/justify — NOT align-items:center, which shrink-wraps a
  * label to a too-narrow measure and wraps even a short faction like "Élu" mid-word. */

@@ -64,6 +64,9 @@ namespace UI.LobbyRoles
         /// <summary>All roles in the authored pool order, with their current max/forced.</summary>
         IReadOnlyList<LobbyRoleView> GetRoles();
 
+        /// <summary>The full authored <see cref="Role"/> (with its powers) for a role, for the detail overlay. Null if unknown.</summary>
+        Role GetRole(RoleID id);
+
         /// <summary>Host-only: propose a new pool cap (max) for a role. Re-clamps forced &lt;= max server-side.</summary>
         void RequestSetMax(RoleID id, int max);
 
@@ -75,5 +78,30 @@ namespace UI.LobbyRoles
 
         /// <summary>Host-only: apply the preset at <paramref name="index"/> of <see cref="GetPresets"/> (fills the whole pool).</summary>
         void ApplyPreset(int index);
+    }
+
+    /// <summary>
+    /// Builds a detail-ready <see cref="Role"/> for the RoleCard overlay from an authored <see cref="RoleDataObject"/>.
+    /// A fresh Role (its own powers list) whose powers = the authored <c>RoleDataObject.powers</c> — because
+    /// <c>Role.powers</c> is readonly and the authored <c>role.powers</c> is empty pre-game (powers are added to a
+    /// character's role only at distribution). Never mutates the ScriptableObject.
+    /// </summary>
+    public static class LobbyRoleDetail
+    {
+        public static Role From(RoleDataObject rdo)
+        {
+            if (rdo == null) return null;
+            Role src = rdo.role;
+            var detail = new Role
+            {
+                roleName = src.roleName,
+                factionType = src.factionType,
+                roleID = src.roleID,
+                rolePortrait = src.rolePortrait,
+                roleDifficulty = src.roleDifficulty,
+            };
+            if (rdo.powers != null) detail.powers.AddRange(rdo.powers);
+            return detail;
+        }
     }
 }

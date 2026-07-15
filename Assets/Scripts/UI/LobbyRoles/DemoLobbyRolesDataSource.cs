@@ -78,6 +78,16 @@ namespace UI.LobbyRoles
             return list;
         }
 
+        public Role GetRole(RoleID id)
+        {
+            foreach (RoleDataObject rdo in Pool())
+            {
+                if (rdo == null || rdo.role.roleID != id) continue;
+                return LobbyRoleDetail.From(rdo);
+            }
+            return null;
+        }
+
         public void RequestSetMax(RoleID id, int max)
         {
             (int max, int forced) st = _state.TryGetValue(id, out var s) ? s : (0, 0);

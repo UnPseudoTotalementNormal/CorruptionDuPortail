@@ -123,6 +123,9 @@ namespace UI.RoleCard
             _passiveList = _root.Q<VisualElement>("passive-list");
             _powers = _root.Q<VisualElement>("powers");
 
+            var closeButton = _root.Q<Button>("close");
+            if (closeButton != null) closeButton.clicked += Close;
+
             // Starts hidden + collapsed (see UXML). While collapsed the root must NOT block the world,
             // so picking is Ignore until Open() (then Position so the scrim catches the dismiss click).
             _root.pickingMode = PickingMode.Ignore;

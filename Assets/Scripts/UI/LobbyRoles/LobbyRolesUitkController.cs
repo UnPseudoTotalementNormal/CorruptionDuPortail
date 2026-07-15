@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Characters;
 using Characters.Assets;
 using UI.Cards;
+using UI.RoleCard;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -81,6 +82,9 @@ namespace UI.LobbyRoles
         [Tooltip("Resolves a role's portrait (CharacterPortraits) -> Sprite for the card face. Wire the shared " +
                  "PortraitTable asset (same one RoleCard/the character bar use). Null = deep fallback art.")]
         [SerializeField] private PortraitTable _portraitTable;
+
+        [Tooltip("The screen-space RoleCard overlay opened when a card is tapped (reused as-is). Null = tap does nothing.")]
+        [SerializeField] private RoleCardController _roleCardOverlay;
 
         private VisualElement _root;
         private ScrollView _scroll;
@@ -387,6 +391,8 @@ namespace UI.LobbyRoles
                 : null;
             RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor).SetWidth(CardWidth);
             card.style.opacity = role.Max > 0 ? 1f : 0.5f; // dim roles not in the pool
+            RoleID clickedId = role.Id;
+            card.RegisterCallback<ClickEvent>(_ => OpenDetail(clickedId)); // tap the card face → role detail overlay
 
             if (role.Forced > 0)
             {
@@ -406,6 +412,14 @@ namespace UI.LobbyRoles
                 () => _data.RequestSetForced(role.Id, role.Forced + 1)));
             unit.Add(controls);
             return unit;
+        }
+
+        // Tap a card → open the shared screen-space RoleCard overlay with that role's full authored detail.
+        private void OpenDetail(RoleID id)
+        {
+            if (_roleCardOverlay == null || _data == null) return;
+            Role role = _data.GetRole(id);
+            if (role != null) _roleCardOverlay.Open(role);
         }
 
         private VisualElement Stepper(string label, int value, bool minusDisabled, bool plusDisabled, bool forced, System.Action onMinus, System.Action onPlus)

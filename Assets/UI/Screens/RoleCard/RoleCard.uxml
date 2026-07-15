@@ -72,6 +72,9 @@
                     </ui:VisualElement>
 
                 </ui:ScrollView>
+
+                <!-- Close button (top-right, last-in-DOM so it paints above the header). -->
+                <ui:Button name="close" class="role-card__close" text="✕" />
             </ui:VisualElement>
 
             <!-- Portrait card (left, painted on top via row-reverse + last-in-DOM). Sprite set at runtime;

@@ -132,5 +132,30 @@ namespace Tests.Editor
 
             CollectionAssert.IsEmpty(picks);
         }
+
+        // --- Luma « Mélange des cartes » : copie UN pouvoir actif d'un rôle élu absent (pickCount 1).
+        // Luma construit ses PowerCandidate avec ownerIsChosen:true / ownerIsUgues:false, donc IsEligible se
+        // réduit à (!isPassive && !isStolenCopy). Le tirage réutilise le même kernel avec pickCount 1.
+
+        [Test]
+        public void SelectStealable_Luma_PicksExactlyOneActive_SkippingPassives()
+        {
+            // indices: 0 passif, 1 actif, 2 passif, 3 actif → éligibles [1,3], stub(0) prend le 1er.
+            var candidates = new List<PowerCandidate> { Passive(), Eligible(), Passive(), Eligible() };
+
+            var picks = StolenPowerSelector.SelectStealable(candidates, 1, new StubRandomProvider(0));
+
+            CollectionAssert.AreEqual(new[] { 1 }, picks);
+        }
+
+        [Test]
+        public void SelectStealable_Luma_ReturnsEmpty_WhenRoleHasOnlyPassivePowers()
+        {
+            var candidates = new List<PowerCandidate> { Passive(), Passive() };
+
+            var picks = StolenPowerSelector.SelectStealable(candidates, 1, new StubRandomProvider(0));
+
+            CollectionAssert.IsEmpty(picks);
+        }
     }
 }

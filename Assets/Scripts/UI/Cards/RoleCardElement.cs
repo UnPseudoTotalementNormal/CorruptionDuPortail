@@ -6,8 +6,9 @@ namespace UI.Cards
     /// <summary>
     /// THE reusable UITK role-card face — one canonical component so a role card looks identical everywhere
     /// (lobby attribution grid, RoleCard detail, deduction board, …). A 5:7 portrait card (ratio 630/880 from
-    /// Card.prefab): the portrait art fills the face (scale-and-crop), a dark scrim at the bottom carries the
-    /// role name in gold, and a faction-tinted frame wraps it. Self-contained (inline styles) so it needs no
+    /// Card.prefab): the portrait is INSET in a near-black matte (scale-and-crop), the role name sits in gold in
+    /// the bottom matte band (below the art, no overlay), and a faction-tinted frame wraps it. Self-contained so
+    /// it needs no
     /// per-screen USS wiring — create one and drop it anywhere:
     /// <code>root.Add(RoleCardElement.Create(name, portraitSprite, factionColor));</code>
     /// The card stays a PURE visual; screen-specific chrome (steppers, badges, dimming) is added around it by
@@ -18,7 +19,8 @@ namespace UI.Cards
         public const float Ratio = 0.7159f; // width / height = 630 / 880 (Card.prefab)
 
         private static readonly Color FrameDefault = new Color(0.22f, 0.15f, 0.14f);
-        private static readonly Color Fallback = new Color(0.10f, 0.05f, 0.055f);
+        private static readonly Color Matte = new Color(0.031f, 0.023f, 0.027f);  // near-black card = the frame/matte
+        private static readonly Color Fallback = new Color(0.10f, 0.05f, 0.055f); // deep warm art fallback
         private static readonly Color Gold = new Color(0.913f, 0.772f, 0.478f);
 
         private readonly VisualElement _art;
@@ -28,34 +30,33 @@ namespace UI.Cards
         public RoleCardElement()
         {
             style.flexShrink = 0;
+            style.flexDirection = FlexDirection.Column;
             style.overflow = Overflow.Hidden;
-            style.backgroundColor = Fallback;
-            SetRadius(12f);
-            SetBorder(2f, FrameDefault);
+            style.backgroundColor = Matte;              // the black matte/frame the art is inset into
+            style.paddingTop = 7; style.paddingLeft = 7; style.paddingRight = 7; style.paddingBottom = 6;
+            SetRadius(10f);
+            SetBorder(1.5f, FrameDefault);
 
+            // Portrait fills the top of the matte (INSET, not edge-to-edge), scale-and-crop, slightly rounded.
             _art = new VisualElement { name = "art", pickingMode = PickingMode.Ignore };
-            Fill(_art);
+            _art.style.flexGrow = 1;
+            _art.style.flexShrink = 1;
+            _art.style.minHeight = 0;
+            _art.style.backgroundColor = Fallback;
             _art.style.unityBackgroundScaleMode = ScaleMode.ScaleAndCrop;
+            _art.style.borderTopLeftRadius = 5; _art.style.borderTopRightRadius = 5;
+            _art.style.borderBottomLeftRadius = 5; _art.style.borderBottomRightRadius = 5;
             Add(_art);
 
-            // Bottom scrim for name legibility (UITK has no gradients — a solid dark band does the job).
-            var scrim = new VisualElement { pickingMode = PickingMode.Ignore };
-            scrim.style.position = Position.Absolute;
-            scrim.style.left = 0; scrim.style.right = 0; scrim.style.bottom = 0;
-            scrim.style.height = Length.Percent(42f);
-            scrim.style.backgroundColor = new Color(0.03f, 0.02f, 0.025f, 0.78f);
-            Add(scrim);
-
+            // Role name in the bottom matte band (BELOW the art, on the black card — no overlay scrim).
             _name = new Label { pickingMode = PickingMode.Ignore };
-            _name.style.position = Position.Absolute;
-            _name.style.left = 0; _name.style.right = 0; _name.style.bottom = 0;
-            _name.style.paddingLeft = 8; _name.style.paddingRight = 8;
-            _name.style.paddingTop = 6; _name.style.paddingBottom = 10;
+            _name.style.flexShrink = 0;
+            _name.style.marginTop = 7;
             _name.style.color = Gold;
             _name.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _name.style.unityTextAlign = TextAnchor.LowerCenter;
+            _name.style.unityTextAlign = TextAnchor.MiddleCenter;
             _name.style.whiteSpace = WhiteSpace.Normal;
-            _name.style.fontSize = 15;
+            _name.style.fontSize = 14;
             Add(_name);
         }
 
@@ -93,12 +94,6 @@ namespace UI.Cards
             => new RoleCardElement().SetName(roleName).SetPortrait(portrait).SetAccent(accent);
 
         // ---- style helpers ----
-        private void Fill(VisualElement e)
-        {
-            e.style.position = Position.Absolute;
-            e.style.left = 0; e.style.top = 0; e.style.right = 0; e.style.bottom = 0;
-        }
-
         private void SetRadius(float r)
         {
             style.borderTopLeftRadius = r; style.borderTopRightRadius = r;

@@ -62,15 +62,10 @@
 
 /* Tall portrait card (left, on top). background-image assigned at runtime from Role.rolePortrait;
  * until then the deep-warm fallback + gold frame avoid an empty hole. */
+/* Host for the canonical RoleCardElement (which brings its own matte/frame/name); this element only carries the
+   overlap into the panel + the entrance animation. Size comes from the card (SetWidth), so no fixed w/h here. */
 .role-card__portrait {
-    width: 260px;
-    height: 400px;
     margin-right: -24px;                              /* overlap into the panel (painted on top) */
-    background-color: var(--cdp-color-role-panel-deep);
-    border-radius: var(--cdp-radius-role-tight);
-    border-width: 2px;
-    border-color: var(--cdp-color-role-border);
-    -unity-background-scale-mode: scale-and-crop;
     flex-shrink: 0;
     transform-origin: center bottom;                 /* shared low origin keeps the overlap seam stable while scaling */
     transition-property: translate, scale, opacity;

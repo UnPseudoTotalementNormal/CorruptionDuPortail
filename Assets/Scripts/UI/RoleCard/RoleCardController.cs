@@ -5,6 +5,7 @@ using Board.UI.CharacterBar;
 using Characters;
 using Characters.Powers;
 using Extensions;
+using UI.Cards;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -71,8 +72,11 @@ namespace UI.RoleCard
         [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
         [SerializeField] private PortraitTable portraitTable;
 
+        private const float PortraitCardWidth = 250f; // the canonical RoleCardElement face used for the portrait
+
         private VisualElement _root;
         private VisualElement _portrait;
+        private RoleCardElement _portraitCard;
         private Label _faction;
         private VisualElement _factionIcon;
         private Label _roleName;
@@ -125,6 +129,15 @@ namespace UI.RoleCard
 
             var closeButton = _root.Q<Button>("close");
             if (closeButton != null) closeButton.clicked += Close;
+
+            // The portrait is the CANONICAL card face (RoleCardElement) so the overlay's card matches the lobby
+            // grid / in-game card everywhere. The "portrait" element is just its animated, overlapping host.
+            if (_portrait != null)
+            {
+                _portrait.Clear();
+                _portraitCard = new RoleCardElement().SetWidth(PortraitCardWidth);
+                _portrait.Add(_portraitCard);
+            }
 
             // Starts hidden + collapsed (see UXML). While collapsed the root must NOT block the world,
             // so picking is Ignore until Open() (then Position so the scrim catches the dismiss click).
@@ -190,6 +203,7 @@ namespace UI.RoleCard
             var roleName = role.roleName.ToString();
             _roleName.text = roleName;
             _roleName.EnableInClassList(NameLongClass, roleName.Length > LongNameThreshold);
+            _portraitCard?.SetName(roleName);
             BindFaction(role.factionType);
             BuildDifficulty(role.roleDifficulty);
             BuildPassive(role);
@@ -278,8 +292,7 @@ namespace UI.RoleCard
         private void BindPortrait(Role role)
         {
             var sprite = portraitTable != null ? portraitTable.Get(role.rolePortrait) : null;
-            if (_portrait != null)
-                _portrait.style.backgroundImage = sprite != null ? new StyleBackground(sprite) : new StyleBackground();
+            _portraitCard?.SetPortrait(sprite);
         }
 
         // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon,
@@ -315,6 +328,7 @@ namespace UI.RoleCard
             var fMuted = Color.Lerp(f, Color.white, 0.55f);
             var fDivider = new Color(f.r, f.g, f.b, 0.28f);
 
+            _portraitCard?.SetAccent(f);
             _cAccent = f;
             _cInset = fInset;
             _cTitle = fTitle;

@@ -1,0 +1,58 @@
+using System;
+using System.Collections.Generic;
+using Characters;
+
+namespace UI.LobbyRoles
+{
+    /// <summary>
+    /// One role card in the lobby attribution grid: identity + faction (for grouping/tint) + the two editable
+    /// integers of the max/forced model. <see cref="Max"/> is the pool cap; <see cref="Forced"/> is the
+    /// guaranteed minimum of real assignments (forced &lt;= max). A role's fakeable capacity is max - forced.
+    /// </summary>
+    public readonly struct LobbyRoleView
+    {
+        public readonly RoleID Id;
+        public readonly string Name;
+        public readonly FactionType Faction;
+        public readonly int PortraitId; // CharacterPortraits enum as int; the controller resolves the sprite via PortraitTable
+        public readonly int Max;
+        public readonly int Forced;
+
+        public LobbyRoleView(RoleID id, string name, FactionType faction, int portraitId, int max, int forced)
+        {
+            Id = id;
+            Name = name;
+            Faction = faction;
+            PortraitId = portraitId;
+            Max = max;
+            Forced = forced;
+        }
+    }
+
+    /// <summary>
+    /// Presentation-only data seam for the UITK lobby role-attribution app. Keeps the controller free of NGO so
+    /// the grid runs in the standalone Play harness (<c>DemoLobbyRolesDataSource</c>) and is testable. The real
+    /// game wires <c>GameLobbyRolesDataSource</c> (the only implementer that touches the server-authoritative
+    /// <c>GameSettingsManager</c> + the connected-player list). Mirrors the InfoTable seam pattern.
+    ///
+    /// Writes are host-only requests: on a non-host they are no-ops (the manager mirrors are read-only), exactly
+    /// like the uGUI slider path. Which characters receive the roles is decided server-side at game start.
+    /// </summary>
+    public interface ILobbyRolesDataSource
+    {
+        /// <summary>Raised when the settings or the player count changed and the grid + tally should refresh.</summary>
+        event Action OnChanged;
+
+        /// <summary>Connected-player count (read-only — the tablet never edits it).</summary>
+        int GetPlayerCount();
+
+        /// <summary>All roles in the authored pool order, with their current max/forced.</summary>
+        IReadOnlyList<LobbyRoleView> GetRoles();
+
+        /// <summary>Host-only: propose a new pool cap (max) for a role. Re-clamps forced &lt;= max server-side.</summary>
+        void RequestSetMax(RoleID id, int max);
+
+        /// <summary>Host-only: propose a new guaranteed minimum (forced) for a role. Clamped to [0, max].</summary>
+        void RequestSetForced(RoleID id, int forced);
+    }
+}

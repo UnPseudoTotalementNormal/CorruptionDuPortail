@@ -1,0 +1,186 @@
+/* Lobby role-attribution (max/forced) — structural USS. Palette is PLACEHOLDER / design-owned (see the proto);
+   tune later, ideally toward variables.uss tokens. UITK has no `gap` or `aspect-ratio`, so spacing uses margins
+   and cards use fixed sizes tuned for the 1440x912 RenderTexture. */
+
+.lobby-roles {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    padding: 22px 28px 16px 28px;
+    background-color: rgb(10, 7, 8);
+}
+
+/* ---- tally ---- */
+.lobby-roles__tally {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-width: 1px;
+    border-color: rgb(42, 33, 31);
+    border-radius: 10px;
+    margin-bottom: 22px;
+}
+.lobby-roles__tally-cell {
+    flex-grow: 1;
+    flex-basis: 120px;
+    flex-direction: column;
+    padding: 12px 18px;
+    background-color: rgb(20, 16, 15);
+    border-right-width: 1px;
+    border-right-color: rgb(42, 33, 31);
+}
+.lobby-roles__tally-key {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgb(111, 95, 88);
+}
+.lobby-roles__tally-val {
+    font-size: 26px;
+    -unity-font-style: bold;
+    color: rgb(240, 231, 221);
+}
+.lobby-roles__tally-val--bad {
+    color: rgb(214, 49, 75);
+}
+
+/* ---- section ---- */
+.lobby-roles__section {
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+.lobby-roles__section-head {
+    font-size: 13px;
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* ---- grid ---- */
+.lobby-roles__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.lobby-roles__card {
+    width: 172px;
+    margin-right: 18px;
+    margin-bottom: 18px;
+    flex-direction: column;
+    border-width: 1px;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    background-color: rgb(14, 10, 11);
+    padding: 8px;
+    opacity: 0.82;
+}
+.lobby-roles__card--active {
+    opacity: 1;
+}
+.lobby-roles__card-art {
+    height: 168px;
+    border-radius: 8px;
+    background-color: rgb(24, 10, 12);
+}
+.lobby-roles__forced-tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: rgb(32, 24, 10);
+    background-color: rgb(233, 193, 90);
+}
+.lobby-roles__card-name {
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    color: rgb(240, 231, 221);
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* ---- controls / steppers ---- */
+.lobby-roles__controls {
+    flex-direction: column;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-color: rgb(42, 33, 31);
+    border-radius: 8px;
+    padding: 6px;
+}
+.lobby-roles__ctl {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.lobby-roles__ctl-label {
+    font-size: 11px;
+    color: rgb(164, 147, 138);
+}
+.lobby-roles__ctl--forced .lobby-roles__ctl-label {
+    color: rgb(233, 193, 90);
+    -unity-font-style: bold;
+}
+.lobby-roles__stepper {
+    flex-direction: row;
+    align-items: center;
+}
+.lobby-roles__step-btn {
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(164, 147, 138);
+    background-color: rgb(28, 22, 21);
+    border-width: 0;
+    border-radius: 6px;
+}
+.lobby-roles__step-btn:hover {
+    color: rgb(240, 231, 221);
+    background-color: rgb(58, 44, 41);
+}
+.lobby-roles__step-btn:disabled {
+    opacity: 0.3;
+}
+.lobby-roles__step-val {
+    width: 34px;
+    -unity-text-align: middle-center;
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: rgb(240, 231, 221);
+}
+
+/* ---- footer ---- */
+.lobby-roles__footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+.lobby-roles__reason {
+    font-size: 13px;
+    color: rgb(224, 151, 58);
+    margin-right: 16px;
+}
+.lobby-roles__reason--ok {
+    color: rgb(111, 191, 122);
+}
+.lobby-roles__start {
+    padding: 12px 30px;
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-width: 0;
+    border-radius: 10px;
+}
+.lobby-roles__start:disabled {
+    color: rgb(111, 95, 88);
+    background-color: rgb(28, 22, 21);
+}

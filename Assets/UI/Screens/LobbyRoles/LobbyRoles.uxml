@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Tablet lobby role-attribution app (max/forced) — the UITK replacement for the uGUI GameSettingsPanel
+         slider list. Rendered screen-space into a RenderTexture (LobbyRolesRtPresenter) shown on a uGUI RawImage
+         inside the tablet ScreenCanvas, so it reuses the stencil Mask + PhoneCamera + swipe carousel unchanged.
+
+         The grid is built ENTIRELY at runtime by LobbyRolesUitkController from an ILobbyRolesDataSource: this
+         root is just the canvas the controller fills with a tally + faction sections of role cards + a footer.
+         Palette is provisional/design-owned — see the proto. Layout is LobbyRoles.uss. -->
+    <ui:Style src="LobbyRoles.uss" />
+    <ui:VisualElement name="lobby-roles" class="lobby-roles" />
+</ui:UXML>

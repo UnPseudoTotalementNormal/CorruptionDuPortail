@@ -17685,7 +17685,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31bc7dbcf85a08447954959de97b999b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::UI.LobbyRoles.GameLobbyRolesDataSource
-  _presetDatabase: {fileID: 0}
+  _presetDatabase: {fileID: 11400000, guid: 3148cb0efc9e7d743a5b2520239fa4b6, type: 2}
 --- !u!114 &2005486242
 MonoBehaviour:
   m_ObjectHideFlags: 0

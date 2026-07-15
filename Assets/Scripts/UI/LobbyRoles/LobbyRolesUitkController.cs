@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Characters;
+using Characters.Assets;
+using UI.Cards;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -35,6 +37,7 @@ namespace UI.LobbyRoles
         private const string SectionClass = "lobby-roles__section";
         private const string SectionHeadClass = "lobby-roles__section-head";
         private const string GridClass = "lobby-roles__grid";
+        private const string UnitClass = "lobby-roles__unit";
         private const string CardClass = "lobby-roles__card";
         private const string CardActiveClass = "lobby-roles__card--active";
         private const string CardArtClass = "lobby-roles__card-art";
@@ -70,6 +73,10 @@ namespace UI.LobbyRoles
         [Tooltip("Optional SHARED FactionDatabase asset — the single source of faction labels/colours (never duplicate " +
                  "these into USS). If null, fallback labels/colours are used (harness).")]
         [SerializeField] private FactionDatabase _factionDatabase;
+
+        [Tooltip("Resolves a role's portrait (CharacterPortraits) -> Sprite for the card face. Wire the shared " +
+                 "PortraitTable asset (same one RoleCard/the character bar use). Null = deep fallback art.")]
+        [SerializeField] private PortraitTable _portraitTable;
 
         private VisualElement _root;
         private ILobbyRolesDataSource _data;
@@ -291,18 +298,19 @@ namespace UI.LobbyRoles
             return section;
         }
 
+        // A "unit" = the pure 5:7 portrait card (art fills the face, name overlaid at the bottom, forced tag) with
+        // the Max/Forcé steppers BELOW it — the card itself stays a reusable pure-visual, controls live outside.
         private VisualElement BuildCard(LobbyRoleView role, Color factionColor)
         {
-            var card = new VisualElement();
-            card.AddToClassList(CardClass);
-            if (role.Max > 0) card.AddToClassList(CardActiveClass);
-            card.style.borderTopColor = card.style.borderBottomColor =
-                card.style.borderLeftColor = card.style.borderRightColor = factionColor;
+            var unit = new VisualElement();
+            unit.AddToClassList(UnitClass);
 
-            var art = new VisualElement();
-            art.AddToClassList(CardArtClass);
-            art.style.backgroundColor = new Color(factionColor.r, factionColor.g, factionColor.b, role.Max > 0 ? 0.35f : 0.12f);
-            card.Add(art);
+            // THE reusable card face (portrait fills, gold name, faction frame) — one component, uniform everywhere.
+            Sprite portrait = _portraitTable != null
+                ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
+                : null;
+            RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor);
+            card.style.opacity = role.Max > 0 ? 1f : 0.5f; // dim roles not in the pool
 
             if (role.Forced > 0)
             {
@@ -310,10 +318,7 @@ namespace UI.LobbyRoles
                 tag.AddToClassList(ForcedTagClass);
                 card.Add(tag);
             }
-
-            var name = new Label(role.Name);
-            name.AddToClassList(CardNameClass);
-            card.Add(name);
+            unit.Add(card);
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
@@ -323,8 +328,8 @@ namespace UI.LobbyRoles
             controls.Add(Stepper("Forcé", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
                 () => _data.RequestSetForced(role.Id, role.Forced - 1),
                 () => _data.RequestSetForced(role.Id, role.Forced + 1)));
-            card.Add(controls);
-            return card;
+            unit.Add(controls);
+            return unit;
         }
 
         private VisualElement Stepper(string label, int value, bool minusDisabled, bool plusDisabled, bool forced, System.Action onMinus, System.Action onPlus)

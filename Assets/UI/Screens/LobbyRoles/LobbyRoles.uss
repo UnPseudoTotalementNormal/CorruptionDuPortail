@@ -129,6 +129,17 @@
     flex-wrap: wrap;
 }
 
+/* One card slot = the RoleCardElement (fixed width, it computes its own 5:7 height) + the steppers below. */
+.lobby-roles__unit {
+    width: 200px;
+    flex-direction: column;
+    margin-right: 22px;
+    margin-bottom: 22px;
+}
+.lobby-roles__controls {
+    margin-top: 8px;
+}
+
 .lobby-roles__card {
     width: 172px;
     margin-right: 18px;

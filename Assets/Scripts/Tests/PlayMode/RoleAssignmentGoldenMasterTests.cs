@@ -110,7 +110,8 @@ namespace Tests.PlayMode
                 var roleData = ScriptableObject.CreateInstance<RoleDataObject>();
                 roleData.role = new Role { roleName = name };
                 roleData.powers = new List<Power>();
-                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { roleToAttribute = count, canBeFake = false });
+                // canBeFake=false (mandatory) migrates to forced == max: 0 fakeable copies. Σmax==N ⇒ no surplus ⇒ fake path skipped.
+                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { max = count, forced = count });
             }
             return state;
         }
@@ -143,7 +144,8 @@ namespace Tests.PlayMode
                 var roleData = ScriptableObject.CreateInstance<RoleDataObject>();
                 roleData.role = new Role { roleName = name };
                 roleData.powers = new List<Power>();
-                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { roleToAttribute = count, canBeFake = true });
+                // canBeFake=true migrates to forced == 0: the whole pool is fakeable (old behaviour).
+                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { max = count, forced = 0 });
             }
             return state;
         }

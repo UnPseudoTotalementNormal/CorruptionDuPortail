@@ -74,10 +74,19 @@ namespace UI.LobbyRoles
         private VisualElement _root;
         private ILobbyRolesDataSource _data;
         private bool _initialized;
+        private bool _everBuilt;
         private int _activeTab = TabAttribution;
 
         private void OnEnable() => TryInitialize();
         private void Start() => TryInitialize();
+
+        // Retry until the first successful build: the panel tree may not be ready on the frame the data source
+        // first raises OnChanged (the RtPresenter's PanelSettings swap rebuilds it). Once built, this no-ops;
+        // later data-driven rebuilds re-resolve the root themselves.
+        private void Update()
+        {
+            if (_initialized && !_everBuilt) Rebuild();
+        }
 
         private void OnDisable()
         {
@@ -90,21 +99,12 @@ namespace UI.LobbyRoles
             if (_initialized) return;
             if (_document == null) _document = GetComponent<UIDocument>();
 
-            VisualElement docRoot = _document != null ? _document.rootVisualElement : null;
-            if (docRoot == null) return;
-
-            _root = docRoot.Q<VisualElement>(RootName);
-            if (_root == null) return;
-
             _data = _dataSourceBehaviour as ILobbyRolesDataSource;
             if (_data == null)
             {
                 Debug.LogWarning("[LobbyRoles] No ILobbyRolesDataSource wired — grid stays empty.");
                 return;
             }
-
-            // Never block the tablet's world input at the root (project trap); interactive children pick themselves.
-            _root.pickingMode = PickingMode.Ignore;
 
             _data.OnChanged -= Rebuild;
             _data.OnChanged += Rebuild;
@@ -114,7 +114,17 @@ namespace UI.LobbyRoles
 
         private void Rebuild()
         {
-            if (_root == null || _data == null) return;
+            if (_data == null) return;
+
+            // Re-resolve the root every rebuild: the RtPresenter swaps the UIDocument's PanelSettings to a runtime
+            // clone, which rebuilds the visual tree — a root cached at init would be stale/detached (black panel).
+            VisualElement docRoot = _document != null ? _document.rootVisualElement : null;
+            _root = docRoot != null ? docRoot.Q<VisualElement>(RootName) : null;
+            if (_root == null) return;
+
+            // Never block the tablet's world input at the root (project trap); interactive children pick themselves.
+            _root.pickingMode = PickingMode.Ignore;
+            _everBuilt = true;
             _root.Clear();
 
             int players = _data.GetPlayerCount();

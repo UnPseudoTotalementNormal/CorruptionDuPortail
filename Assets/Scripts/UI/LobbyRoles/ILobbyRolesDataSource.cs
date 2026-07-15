@@ -29,6 +29,21 @@ namespace UI.LobbyRoles
         }
     }
 
+    /// <summary>A preset offered for the current player count (name + one-liner + whether it's the classic).</summary>
+    public readonly struct LobbyPresetView
+    {
+        public readonly string Name;
+        public readonly string Description;
+        public readonly bool IsClassic;
+
+        public LobbyPresetView(string name, string description, bool isClassic)
+        {
+            Name = name;
+            Description = description;
+            IsClassic = isClassic;
+        }
+    }
+
     /// <summary>
     /// Presentation-only data seam for the UITK lobby role-attribution app. Keeps the controller free of NGO so
     /// the grid runs in the standalone Play harness (<c>DemoLobbyRolesDataSource</c>) and is testable. The real
@@ -54,5 +69,11 @@ namespace UI.LobbyRoles
 
         /// <summary>Host-only: propose a new guaranteed minimum (forced) for a role. Clamped to [0, max].</summary>
         void RequestSetForced(RoleID id, int forced);
+
+        /// <summary>Presets available for the CURRENT player count, in display order (classic first by convention).</summary>
+        IReadOnlyList<LobbyPresetView> GetPresets();
+
+        /// <summary>Host-only: apply the preset at <paramref name="index"/> of <see cref="GetPresets"/> (fills the whole pool).</summary>
+        void ApplyPreset(int index);
     }
 }

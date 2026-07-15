@@ -40,6 +40,27 @@ namespace UI.LobbyRoles
 
         private const int MaxRoleCount = 15;
 
+        // Harness-only placeholder presets, keyed by player count. Real presets are design-owned (RolePresetDatabase).
+        private struct DemoPreset { public string Name; public string Desc; public bool Classic; public (RoleID id, int max, int forced)[] Entries; }
+
+        private static readonly Dictionary<int, DemoPreset[]> Presets = new()
+        {
+            [5] = new[]
+            {
+                new DemoPreset { Name = "Classique", Desc = "Compo équilibrée, 1 mage garanti", Classic = true,
+                    Entries = new[] { (RoleID.MageOcculte, 1, 1), (RoleID.Robot, 2, 0), (RoleID.Technomancien, 2, 1), (RoleID.Oracle, 1, 0) } },
+                new DemoPreset { Name = "Néant montant", Desc = "Anomalies renforcées", Classic = false,
+                    Entries = new[] { (RoleID.Abyss, 1, 1), (RoleID.MageOcculte, 1, 0), (RoleID.Robot, 2, 0), (RoleID.Croupiere, 1, 0) } },
+            },
+            [7] = new[]
+            {
+                new DemoPreset { Name = "Classique", Desc = "Compo 7 équilibrée", Classic = true,
+                    Entries = new[] { (RoleID.MageOcculte, 1, 1), (RoleID.Abyss, 1, 0), (RoleID.Robot, 2, 0), (RoleID.Technomancien, 2, 1), (RoleID.Croupiere, 1, 0), (RoleID.Oracle, 1, 0) } },
+                new DemoPreset { Name = "Conclave", Desc = "Élus soudés", Classic = false,
+                    Entries = new[] { (RoleID.MageOcculte, 1, 0), (RoleID.Abyss, 1, 0), (RoleID.Technomancien, 2, 1), (RoleID.Croupiere, 2, 1), (RoleID.Oracle, 1, 0), (RoleID.Gardien, 1, 0) } },
+            },
+        };
+
         public event Action OnChanged;
 
         private void Start() => OnChanged?.Invoke();
@@ -89,6 +110,35 @@ namespace UI.LobbyRoles
                 OnChanged?.Invoke();
                 return;
             }
+        }
+
+        public IReadOnlyList<LobbyPresetView> GetPresets()
+        {
+            var list = new List<LobbyPresetView>();
+            if (!Presets.TryGetValue(_playerCount, out DemoPreset[] presets)) return list;
+            foreach (DemoPreset p in presets) list.Add(new LobbyPresetView(p.Name, p.Desc, p.Classic));
+            return list;
+        }
+
+        public void ApplyPreset(int index)
+        {
+            if (!Presets.TryGetValue(_playerCount, out DemoPreset[] presets)) return;
+            if (index < 0 || index >= presets.Length) return;
+
+            for (int i = 0; i < _roles.Count; i++) { Entry e = _roles[i]; e.Max = 0; e.Forced = 0; _roles[i] = e; }
+            foreach ((RoleID id, int max, int forced) in presets[index].Entries)
+            {
+                for (int i = 0; i < _roles.Count; i++)
+                {
+                    if (_roles[i].Id != id) continue;
+                    Entry e = _roles[i];
+                    e.Max = Mathf.Clamp(max, 0, MaxRoleCount);
+                    e.Forced = Mathf.Clamp(forced, 0, e.Max);
+                    _roles[i] = e;
+                    break;
+                }
+            }
+            OnChanged?.Invoke();
         }
     }
 }

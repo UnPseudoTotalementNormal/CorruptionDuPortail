@@ -8,18 +8,26 @@ namespace UI.LobbyRoles
     /// <summary>
     /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml). Builds a faction-grouped grid of role cards
     /// from an <see cref="ILobbyRolesDataSource"/>, each card carrying two steppers — Max (pool cap) and Forcé
-    /// (guaranteed minimum) — plus a live composition tally and a gated "Démarrer" read. Follows the
-    /// <c>InfoTableUitkController</c> / <c>RoleCardController</c> conventions: [RequireComponent(UIDocument)],
-    /// guarded TryInitialize in OnEnable+Start, Q-by-name, dynamic children in C#, BEM classes, tokens in USS.
+    /// (guaranteed minimum) — plus a preset bar, tabs (Attribution / Ta partie = same grid filtered to max&gt;0 /
+    /// Autres options), a live composition tally and a gated "Démarrer" read. Follows the InfoTable /
+    /// RoleCardController conventions: [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start,
+    /// Q-by-name, dynamic children in C#, BEM classes, tokens in USS.
     ///
-    /// Rendered into a RenderTexture by <see cref="LobbyRolesRtPresenter"/> and shown on a tablet RawImage.
-    /// Design polish (portraits, faction art, final palette) is provisional — see the design proto. The root is
+    /// Rendered into a RenderTexture by <see cref="LobbyRolesRtPresenter"/> and shown on a tablet RawImage. Design
+    /// polish (portraits, faction art, final palette) is provisional — see the design proto. The root is
     /// pickingMode=Ignore (never block the tablet's world input at the root; children pick per-element).
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class LobbyRolesUitkController : MonoBehaviour
     {
         private const string RootName = "lobby-roles";
+        private const string TopBarClass = "lobby-roles__topbar";
+        private const string PresetClassicClass = "lobby-roles__preset-classic";
+        private const string PresetOtherClass = "lobby-roles__preset-other";
+        private const string TabsClass = "lobby-roles__tabs";
+        private const string TabClass = "lobby-roles__tab";
+        private const string TabActiveClass = "lobby-roles__tab--active";
+        private const string TabBadgeClass = "lobby-roles__tab-badge";
         private const string TallyClass = "lobby-roles__tally";
         private const string TallyCellClass = "lobby-roles__tally-cell";
         private const string TallyKeyClass = "lobby-roles__tally-key";
@@ -39,11 +47,17 @@ namespace UI.LobbyRoles
         private const string StepperClass = "lobby-roles__stepper";
         private const string StepBtnClass = "lobby-roles__step-btn";
         private const string StepValClass = "lobby-roles__step-val";
+        private const string EmptyClass = "lobby-roles__deck-empty";
+        private const string OptsClass = "lobby-roles__opts";
         private const string FooterClass = "lobby-roles__footer";
         private const string ReasonClass = "lobby-roles__reason";
         private const string ReasonOkClass = "lobby-roles__reason--ok";
         private const string StartBtnClass = "lobby-roles__start";
         private const string StateBadClass = "lobby-roles__tally-val--bad";
+
+        private const int TabAttribution = 0;
+        private const int TabDeck = 1;
+        private const int TabOptions = 2;
 
         // Faction render order (unknown is never shown). Labels fall back to these when no FactionDatabase is wired.
         private static readonly FactionType[] FactionOrder = { FactionType.anomaly, FactionType.chosen, FactionType.marginal };
@@ -60,6 +74,7 @@ namespace UI.LobbyRoles
         private VisualElement _root;
         private ILobbyRolesDataSource _data;
         private bool _initialized;
+        private int _activeTab = TabAttribution;
 
         private void OnEnable() => TryInitialize();
         private void Start() => TryInitialize();
@@ -105,30 +120,116 @@ namespace UI.LobbyRoles
             int players = _data.GetPlayerCount();
             IReadOnlyList<LobbyRoleView> roles = _data.GetRoles();
 
-            int totalMax = 0, totalForced = 0;
+            int totalMax = 0, totalForced = 0, inPool = 0;
             var perFactionMax = new Dictionary<FactionType, int>();
             foreach (LobbyRoleView r in roles)
             {
                 totalMax += r.Max;
                 totalForced += r.Forced;
+                if (r.Max > 0) inPool++;
                 perFactionMax.TryGetValue(r.Faction, out int cur);
                 perFactionMax[r.Faction] = cur + r.Max;
             }
 
+            VisualElement presetBar = BuildPresetBar();
+            if (presetBar != null) _root.Add(presetBar);
+            _root.Add(BuildTabs(inPool));
             _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
+            _root.Add(BuildContent(roles));
+            _root.Add(BuildFooter(players, totalForced, totalMax));
+        }
 
+        // ---- preset bar ----
+        private VisualElement BuildPresetBar()
+        {
+            IReadOnlyList<LobbyPresetView> presets = _data.GetPresets();
+            if (presets == null || presets.Count == 0) return null;
+
+            var bar = new VisualElement();
+            bar.AddToClassList(TopBarClass);
+
+            int classicIndex = 0;
+            for (int i = 0; i < presets.Count; i++) { if (presets[i].IsClassic) { classicIndex = i; break; } }
+
+            int ci = classicIndex;
+            var classic = new Button(() => _data.ApplyPreset(ci)) { text = "★ Preset classique" };
+            classic.AddToClassList(PresetClassicClass);
+            bar.Add(classic);
+
+            for (int i = 0; i < presets.Count; i++)
+            {
+                if (i == classicIndex) continue;
+                int idx = i;
+                var other = new Button(() => _data.ApplyPreset(idx)) { text = presets[i].Name };
+                other.AddToClassList(PresetOtherClass);
+                other.tooltip = presets[i].Description;
+                bar.Add(other);
+            }
+            return bar;
+        }
+
+        // ---- tabs ----
+        private VisualElement BuildTabs(int inPool)
+        {
+            var tabs = new VisualElement();
+            tabs.AddToClassList(TabsClass);
+            tabs.Add(Tab("Attribution de rôle", TabAttribution, -1));
+            tabs.Add(Tab("Ta partie", TabDeck, inPool));
+            tabs.Add(Tab("Autres options…", TabOptions, -1));
+            return tabs;
+
+            VisualElement Tab(string label, int index, int badge)
+            {
+                var tab = new Button(() => { _activeTab = index; Rebuild(); }) { text = label };
+                tab.AddToClassList(TabClass);
+                if (_activeTab == index) tab.AddToClassList(TabActiveClass);
+                if (badge >= 0)
+                {
+                    var b = new Label(badge.ToString());
+                    b.AddToClassList(TabBadgeClass);
+                    tab.Add(b);
+                }
+                return tab;
+            }
+        }
+
+        // ---- content per tab ----
+        private VisualElement BuildContent(IReadOnlyList<LobbyRoleView> roles)
+        {
+            var content = new VisualElement();
+            content.pickingMode = PickingMode.Ignore;
+
+            if (_activeTab == TabOptions)
+            {
+                var opts = new Label("« Autres options… » — vide pour l'instant.");
+                opts.AddToClassList(OptsClass);
+                content.Add(opts);
+                return content;
+            }
+
+            bool deckOnly = _activeTab == TabDeck;
+            int shown = 0;
             foreach (FactionType faction in FactionOrder)
             {
                 var inFaction = new List<LobbyRoleView>();
                 foreach (LobbyRoleView r in roles)
                 {
-                    if (r.Faction == faction) inFaction.Add(r);
+                    if (r.Faction != faction) continue;
+                    if (deckOnly && r.Max <= 0) continue; // "Ta partie" = same grid filtered to max > 0
+                    inFaction.Add(r);
                 }
                 if (inFaction.Count == 0) continue;
-                _root.Add(BuildSection(faction, inFaction));
+                content.Add(BuildSection(faction, inFaction));
+                shown += inFaction.Count;
             }
 
-            _root.Add(BuildFooter(players, totalForced, totalMax));
+            if (deckOnly && shown == 0)
+            {
+                var empty = new Label("Aucun rôle dans le pool. Ajoute des « Max » ou charge un preset.");
+                empty.AddToClassList(EmptyClass);
+                content.Add(empty);
+            }
+            return content;
         }
 
         private VisualElement BuildTally(int players, int totalForced, int totalMax, Dictionary<FactionType, int> perFactionMax)

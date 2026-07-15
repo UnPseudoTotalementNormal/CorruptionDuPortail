@@ -253,6 +253,61 @@ namespace GameLogic.GameSettings
             }
         }
 
+        /// <summary>
+        /// Propose a new guaranteed minimum (forced) for a role. Host-only by default (mirrors
+        /// <see cref="RequestSetRoleCount"/>); clamped to [0, that role's max] so the forced ≤ max invariant holds.
+        /// </summary>
+        public void RequestSetForced(RoleID _roleId, int _forced)
+        {
+            if (IsServer)
+            {
+                ApplyForcedServer(_roleId, _forced);
+                return;
+            }
+
+            if (!_allowClientEditing)
+            {
+                return;
+            }
+            SubmitForcedServerRpc(_roleId, _forced);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SubmitForcedServerRpc(RoleID _roleId, int _forced)
+        {
+            if (!_allowClientEditing)
+            {
+                return;
+            }
+            ApplyForcedServer(_roleId, _forced);
+        }
+
+        private void ApplyForcedServer(RoleID _roleId, int _forced)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _settings.Count; i++)
+            {
+                if (_settings[i].roleId != _roleId)
+                {
+                    continue;
+                }
+                int _clamped = Mathf.Clamp(_forced, 0, _settings[i].max);
+                if (_settings[i].forced == _clamped)
+                {
+                    return; // idempotent — skip no-op replication
+                }
+
+                RoleSettingEntry _entry = _settings[i];
+                _entry.forced = _clamped;
+                _settings[i] = _entry;
+                return;
+            }
+        }
+
         // Replicated DTO: an unmanaged, IEquatable value type — the NetworkList<T> constraint (unmanaged +
         // IEquatable) is satisfied because every field is unmanaged (RoleID enum / int / bool). Mirrors the
         // PlayerInfo shape; the manual NetworkSerialize stays (NGO cannot auto-generate it).

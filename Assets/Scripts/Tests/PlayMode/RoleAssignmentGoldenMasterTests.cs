@@ -4,6 +4,7 @@ using System.Linq;
 using Characters;
 using Characters.Powers;
 using GameLogic;
+using GameLogic.GameSettings;
 using GameLogic.GameStates;
 using NUnit.Framework;
 using Unity.Netcode;
@@ -159,6 +160,50 @@ namespace Tests.PlayMode
             var fakeRoles = _characterManager.GetCharacters(false).Where(c => c.isFake).Select(c => c.role.roleName.ToString()).ToList();
             var realRoles = reals.Select(c => c.role.roleName.ToString()).ToList();
             return (fakeRoles, realRoles);
+        }
+
+        // Standalone state with per-role FACTION + a wired CompositionRuleSet, for the faction-minimum guarantee.
+        private RoleAttributionState BuildFactionState(CompositionRuleSet rules, params (string name, FactionType faction, int max, int forced)[] pool)
+        {
+            var state = ScriptableObject.CreateInstance<RoleAttributionState>();
+            state.gameManager = _gameManager;
+            state.characterManager = _characterManager;
+            if (rules != null) ReflectionHelper.SetPrivateField(state, "_compositionRules", rules);
+            foreach (var (name, faction, max, forced) in pool)
+            {
+                var roleData = ScriptableObject.CreateInstance<RoleDataObject>();
+                roleData.role = new Role { roleName = name, factionType = faction };
+                roleData.powers = new List<Power>();
+                state.roleAttributionDictionary.Add(roleData, new RoleAttributionSetting { max = max, forced = forced });
+            }
+            return state;
+        }
+
+        [UnityTest]
+        public IEnumerator RoleAssignment_FactionMinimums_GuaranteeAtLeastOneRealPerFaction()
+        {
+            // Poyo bug 2 end-to-end through the LIVE OnStartStateServer (proves the adapter builds the frozen
+            // faction list and passes the rule set into RoleDistributor): 5 reals, anomaly max5/forced0 + chosen
+            // max1/forced0. Chosen is scarce (a single fakeable copy) — without the wired rule it could be faked
+            // away and leave 0 real élu. The CompositionRuleSet (anomaly≥1, chosen≥1) reserves one real of each.
+            var chars = new List<Character>();
+            yield return AddCharacters(5, chars);
+
+            var rules = ScriptableObject.CreateInstance<CompositionRuleSet>(); // default anomaly≥1, chosen≥1
+            RoleAttributionState state = BuildFactionState(rules,
+                ("Anom", FactionType.anomaly, 5, 0),
+                ("Elu", FactionType.chosen, 1, 0));
+
+            Random.InitState(42);
+            state.OnStartStateServer();
+
+            int anomalyReals = chars.Count(c => c != null && c.role.factionType == FactionType.anomaly);
+            int chosenReals = chars.Count(c => c != null && c.role.factionType == FactionType.chosen);
+            Assert.GreaterOrEqual(anomalyReals, 1, "the anomaly minimum must place at least one real anomaly");
+            Assert.GreaterOrEqual(chosenReals, 1, "the chosen minimum must place at least one real élu (its scarce copy is protected)");
+
+            Object.Destroy(rules);
+            Object.Destroy(state);
         }
 
         [UnityTest]

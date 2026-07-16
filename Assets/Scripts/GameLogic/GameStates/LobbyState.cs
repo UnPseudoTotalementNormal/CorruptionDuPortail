@@ -2,6 +2,7 @@
 
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -32,34 +33,16 @@ namespace GameLogic.GameStates
         {
             int _playerCount = CharacterQuery.GetCharacters().Count;
 
-            // Quick-dev gamesettings-refonte (2026-06-20): the total comes from the replicated, server-
-            // authoritative gameSettingsManager (pushed lane-B), honouring the host's lobby edits. Fall back
-            // to the authored RoleAttributionState dictionary only when no manager is wired (standalone test).
-            int _totalRolesToAttribute = gameSettingsManager != null
-                ? gameSettingsManager.GetTotalRolesToAttribute()
-                : ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First())
-                    .roleAttributionDictionary.Values.Sum(_setting => _setting.max);
-
-            if (_playerCount > _totalRolesToAttribute)
+            // The start gate is now the composition rule set (coverage Σmax ≥ players, guaranteed-fit — which
+            // subsumes the old Σforced ≤ players floor — plus ≥1 anomaly / ≥1 élu). It is evaluated by the pure
+            // CompositionValidator through RoleAttributionState (same rule surface the tablet footer mirrors and
+            // RoleDistributor guarantees at distribution). Server-authoritative: host-only callers, and it reads
+            // the replicated max/forced through gameSettingsManager, faction from the authored pool.
+            var _roleState = (RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First();
+            CompositionValidation _validation = _roleState.ValidateComposition(_playerCount);
+            if (!_validation.IsValid)
             {
-                Debug.LogWarning("Not enough roles to attribute to all players!");
-                return;
-            }
-
-            // [LEAVE][PHASE 4] Minimum-players gate. Under the max/forced model the hard floor is the number of
-            // GUARANTEED reals = Σforced: RoleDistributor reserves `forced` reals per role before the surplus
-            // fake draw, so below Σforced those guaranteed roles cannot all be placed and the game breaks.
-            // Source it from the replicated, server-authoritative gameSettingsManager when wired; else the
-            // authored RoleAttributionState fallback (Σforced) — mirrors the max guard above. (Replaces the old
-            // Σ(count where !canBeFake); a fully-mandatory role has forced == max, so the floor is preserved.)
-            int _mandatoryCount = gameSettingsManager != null
-                ? gameSettingsManager.GetTotalForced()
-                : ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First())
-                    .roleAttributionDictionary.Values.Sum(_setting => _setting.forced);
-
-            if (_playerCount < _mandatoryCount)
-            {
-                Debug.LogWarning("Not enough players to fill the mandatory (non-fakeable) roles!");
+                Debug.LogWarning($"Cannot start the game — invalid composition: {_validation.FirstReason}");
                 return;
             }
 

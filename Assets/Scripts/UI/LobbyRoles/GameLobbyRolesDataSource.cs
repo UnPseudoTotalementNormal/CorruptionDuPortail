@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Characters;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using GameLogic;
@@ -104,6 +105,9 @@ namespace UI.LobbyRoles
             }
             return list;
         }
+
+        public IReadOnlyList<FactionMinimum> GetFactionMinimums()
+            => _rolePool != null ? _rolePool.GetFactionMinimums() : System.Array.Empty<FactionMinimum>();
 
         public Role GetRole(RoleID id)
         {

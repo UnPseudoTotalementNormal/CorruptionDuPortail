@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Characters;
+using CorruptionDuPortail.Domain;
 
 namespace UI.LobbyRoles
 {
@@ -63,6 +64,12 @@ namespace UI.LobbyRoles
 
         /// <summary>All roles in the authored pool order, with their current max/forced.</summary>
         IReadOnlyList<LobbyRoleView> GetRoles();
+
+        /// <summary>
+        /// The per-faction minimums the start gate enforces (e.g. anomaly ≥ 1, chosen ≥ 1). The footer mirror
+        /// runs the SAME <c>CompositionValidator</c> as the server with these, so its reason/disabled state match.
+        /// </summary>
+        IReadOnlyList<FactionMinimum> GetFactionMinimums();
 
         /// <summary>The full authored <see cref="Role"/> (with its powers) for a role, for the detail overlay. Null if unknown.</summary>
         Role GetRole(RoleID id);

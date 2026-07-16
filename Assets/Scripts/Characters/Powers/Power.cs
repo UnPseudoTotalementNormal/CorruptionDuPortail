@@ -39,6 +39,12 @@ namespace Characters.Powers
         public float maxWaitTime;
 
         public bool isPassive;
+        // The design-time value of isPassive, snapshotted at Awake before any runtime flip. PReincarnation
+        // mutates the LIVE isPassive to true post-use (to disable re-use + skip awakening), which is a gameplay
+        // state, NOT a change of the power's authored nature. The RoleCard categorizes active/passive by THIS
+        // so a spent Réincarnation still reads as its authored active power instead of jumping to the passive
+        // list. Presentation-only; the live isPassive still drives usability/awakening/power-bar.
+        [NonSerialized] public bool authoredIsPassive;
         [Tooltip("Hide this power from the role-presentation card (e.g. a faction win-objective that isn't personal kit). Gameplay-neutral: presentation only.")]
         public bool hideFromRoleCard;
         public bool hasToBeAwakened = true;
@@ -101,6 +107,13 @@ namespace Characters.Powers
         // so the owner's power bar can hide it once spent (powerUseLeft 0). Marker only — authority unchanged.
         public NetworkVariable<bool> isStolenCopy = new();
 
+        // Server-set on a power GRANTED at runtime that must not leak in the RoleCard (e.g. L'Incomplet's
+        // Réincarnation, which grants a chosen role's full power set). Distinct from isStolenCopy: these are
+        // permanent, non-one-shot powers, so they must NOT get the power-bar-hide-when-spent / non-stealable
+        // semantics of isStolenCopy. Replicated so the inspecting client's RoleCard filter can honour it.
+        // Marker only — authority unchanged.
+        public NetworkVariable<bool> hideFromRoleCardRuntime = new();
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;
@@ -114,6 +127,10 @@ namespace Characters.Powers
         public Character ownerCharacter => characterManager.GetCharacter(ownerClientId.Value, false);
         
         [HideInInspector] public ulong idHolderServer;
+        // Snapshot the authored isPassive before any runtime flip (PReincarnation's post-use ChangeIsPassiveRpc).
+        // Awake runs at instantiation on every instance (host + clients), before RPCs can fire.
+        protected virtual void Awake() => authoredIsPassive = isPassive;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

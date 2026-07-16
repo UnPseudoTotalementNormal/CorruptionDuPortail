@@ -4,6 +4,7 @@ using System.Linq;
 using Board.UI.CharacterBar;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using Extensions;
 using UI.Cards;
 using UnityEngine;
@@ -20,6 +21,10 @@ namespace UI.RoleCard
     ///
     /// Curation (owner-ratified): each personal passive is its own bullet row; any power flagged
     /// <see cref="Power.hideFromRoleCard"/> (a faction win-objective) is omitted; usage counts are static.
+    /// Powers granted at runtime are also omitted — showing them would leak that the role is real (not
+    /// factice) and which power/role was copied. Two markers cover the copy roles: <see cref="Power.isStolenCopy"/>
+    /// (Ugues' Marque d'Hurluberluges, Luma's Mélange des cartes — one-shot copies) and
+    /// <see cref="Power.hideFromRoleCardRuntime"/> (L'Incomplet's Réincarnation — permanent grants).
     /// Active powers are shown as numbered pills. Faction display name is TEMP until a Faction
     /// ScriptableObject carries a real displayName + tagline (design-owned narrative).
     ///
@@ -226,15 +231,25 @@ namespace UI.RoleCard
             }
         }
 
-        // One bulleted row per passive (isPassive && !hideFromRoleCard) so distinct passives read as a
-        // scannable list instead of a run-on paragraph. The win-objective power is excluded via hideFromRoleCard.
+        // Single source of truth for card membership + section: the pure RoleCardPowerVisibility classifier
+        // (EditMode-tested in RoleCardPowerVisibilityTests). Categorizes by authoredIsPassive (design-time),
+        // NOT the live isPassive — PReincarnation flips the live flag post-use to disable itself, but the power
+        // must still read as its authored active power here.
+        private static RoleCardSlot SlotOf(Power p) => RoleCardPowerVisibility.Classify(
+            authoredIsPassive: p.authoredIsPassive,
+            hideFromRoleCard: p.hideFromRoleCard,
+            isStolenCopy: p.isStolenCopy.Value,
+            hideFromRoleCardRuntime: p.hideFromRoleCardRuntime.Value,
+            hasDescription: !string.IsNullOrEmpty(p.powerDescription.ToString()));
+
+        // One bulleted row per passive so distinct passives read as a scannable list instead of a run-on
+        // paragraph. Membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
         private void BuildPassive(Role role)
         {
             _passiveList.Clear();
-            foreach (var power in role.powers.Where(p => p.isPassive && !p.hideFromRoleCard))
+            foreach (var power in role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow))
             {
                 var desc = power.powerDescription.ToString();
-                if (string.IsNullOrEmpty(desc)) continue;
 
                 var row = new VisualElement();
                 row.AddToClassList(PassiveRowClass);
@@ -260,7 +275,7 @@ namespace UI.RoleCard
         {
             _powers.Clear();
             var index = 1;
-            foreach (var power in role.powers.Where(p => !p.isPassive && !p.hideFromRoleCard))
+            foreach (var power in role.powers.Where(p => SlotOf(p) == RoleCardSlot.ActivePill))
             {
                 var entry = new VisualElement();
                 entry.AddToClassList(PowerClass);

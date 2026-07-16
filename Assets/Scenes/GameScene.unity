@@ -14422,9 +14422,9 @@ MonoBehaviour:
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1629860980}
-        m_TargetAssemblyTypeName: PanelComponent, Assembly-CSharp
-        m_MethodName: TryOpenPanel
+      - m_Target: {fileID: 1032449284}
+        m_TargetAssemblyTypeName: UI.MessageJournal.MessageJournalController, Game
+        m_MethodName: OpenForBrowse
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

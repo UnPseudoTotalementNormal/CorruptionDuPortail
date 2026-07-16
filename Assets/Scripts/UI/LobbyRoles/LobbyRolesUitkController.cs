@@ -366,7 +366,28 @@ namespace UI.LobbyRoles
             content.style.flexShrink = 1;
 
             if (_activeTab == TabOptions)
-                return content; // "Autres options…" — intentionally empty for now
+            {
+                // Dev-only "Démarrage forcé": skips the all-ready condition (still gated by the composition rules
+                // server-side). Host-only — non-host tablets don't show it.
+                if (_data.IsHost())
+                {
+                    var options = new VisualElement();
+                    options.style.paddingTop = 16;
+                    options.style.paddingLeft = 12;
+                    options.style.paddingRight = 12;
+
+                    var label = new Label("Options développeur");
+                    label.AddToClassList(ReasonClass);
+                    options.Add(label);
+
+                    var force = new Button(() => _data.RequestForceStart()) { text = "Démarrage forcé (dev)" };
+                    force.AddToClassList(StartBtnClass);
+                    options.Add(force);
+
+                    content.Add(options);
+                }
+                return content; // otherwise "Autres options…" stays bare
+            }
 
             foreach (FactionType faction in FactionOrder)
             {
@@ -521,26 +542,32 @@ namespace UI.LobbyRoles
             CompositionValidation validation = CompositionValidator.Validate(
                 new CompositionSnapshot(players, snapshotRoles), _data.GetFactionMinimums());
 
-            string msg;
+            // Composition-invalid → show WHY the game can't start; composition-valid → show ready progress.
+            // There is no start button: the server auto-starts once every player is ready and the composition is
+            // valid (both re-checked server-side). Each player readies only themselves via the toggle below.
+            int readyCount = _data.GetReadyCount();
+            string status;
+            bool statusOk;
             if (!validation.IsValid)
             {
-                msg = validation.FirstReason; // names the offending faction / the fix (Samus's readable-failure rule)
+                status = validation.FirstReason; // names the offending faction / the fix (Samus's readable rule)
+                statusOk = false;
             }
             else
             {
-                int surplus = totalMax - players;
-                msg = surplus > 0 ? $"Prêt · {surplus} carte(s) en surplus" : "Prêt";
+                status = $"{readyCount} / {players} prêt(s)";
+                statusOk = players > 0 && readyCount >= players;
             }
 
-            var reason = new Label(msg);
+            var reason = new Label(status);
             reason.AddToClassList(ReasonClass);
-            if (validation.IsValid) reason.AddToClassList(ReasonOkClass);
+            if (statusOk) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
-            var start = new Button(() => _data.RequestStart()) { text = "Démarrer la partie" };
-            start.AddToClassList(StartBtnClass);
-            start.SetEnabled(validation.IsValid); // disabled when invalid → no click; the server also re-validates
-            footer.Add(start);
+            bool localReady = _data.GetLocalReady();
+            var toggle = new Button(() => _data.RequestSetReady(!localReady)) { text = localReady ? "Pas prêt" : "Prêt" };
+            toggle.AddToClassList(StartBtnClass);
+            footer.Add(toggle);
             return footer;
         }
 

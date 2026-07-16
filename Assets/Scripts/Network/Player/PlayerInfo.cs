@@ -31,6 +31,9 @@ namespace Network.Player
         public ulong playerClientId;
         // Steam-reserved (DO5): currently write-only (no reader) until Steam is wired — keep, do not delete.
         public ulong playerSteamId;
+        // Lobby ready-to-start flag (feat/lobby-ready-system). Server-written only (LobbyPlayerInfoHolder
+        // .SetReadyServerRpc mutates just this field of the sender's entry; simulated bots are auto-ready).
+        public bool isReady;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -38,6 +41,7 @@ namespace Network.Player
             serializer.SerializeValue(ref playerClientId);
             serializer.SerializeValue(ref playerFullName);
             serializer.SerializeValue(ref playerSteamId);
+            serializer.SerializeValue(ref isReady);
         }
 
         public bool Equals(PlayerInfo _other)
@@ -45,11 +49,12 @@ namespace Network.Player
             return playerName.Equals(_other.playerName)
                    && playerFullName.Equals(_other.playerFullName)
                    && playerClientId == _other.playerClientId
-                   && playerSteamId == _other.playerSteamId;
+                   && playerSteamId == _other.playerSteamId
+                   && isReady == _other.isReady;
         }
 
         public override bool Equals(object _obj) => _obj is PlayerInfo _other && Equals(_other);
 
-        public override int GetHashCode() => HashCode.Combine(playerName, playerFullName, playerClientId, playerSteamId);
+        public override int GetHashCode() => HashCode.Combine(playerName, playerFullName, playerClientId, playerSteamId, isReady);
     }
 }

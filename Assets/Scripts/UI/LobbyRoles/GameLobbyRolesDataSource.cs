@@ -120,19 +120,36 @@ namespace UI.LobbyRoles
             return null;
         }
 
-        public void RequestStart()
+        public bool IsHost() => _nm != null && _nm.IsServer;
+
+        public bool GetLocalReady()
         {
-            // Host-only, server-authoritative: mirrors LobbyStartButton. LobbyState.OnStartGameButtonPressed
-            // re-validates the composition (Σforced ≤ players ≤ Σmax) before advancing the loop.
+            if (_nm == null || _lobby == null) return false;
+            return _lobby.GetPlayerInfo(_nm.LocalClientId).isReady;
+        }
+
+        public void RequestSetReady(bool ready)
+        {
+            // SendTo.Server + sender-trusted: readies the LOCAL player only (works on host and non-host).
+            if (_lobby == null) return;
+            _lobby.RequestSetReady(ready);
+        }
+
+        public int GetReadyCount() => _lobby != null ? _lobby.ReadyCount() : 0;
+
+        public void RequestForceStart()
+        {
+            // Host-only DEV control ("Démarrage forcé"): skip the all-ready condition, keep the composition gate
+            // (LobbyState.ForceStart re-validates it server-side). The normal start is now auto-on-all-ready.
             if (_nm == null || !_nm.IsServer) return;
             var lobbyState = CompositionRoot.For(_nm).GameManager
                 .GetGameStates(typeof(LobbyState)).FirstOrDefault() as LobbyState;
             if (lobbyState == null)
             {
-                Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot start the game.");
+                Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot force-start the game.");
                 return;
             }
-            lobbyState.OnStartGameButtonPressed();
+            lobbyState.ForceStart();
         }
 
         public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);

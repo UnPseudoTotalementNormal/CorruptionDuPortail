@@ -160,6 +160,32 @@ Ordering guarantee: this fires at awakening **end**; `RoleTargetSystem` clears a
 4. **Polish pass (Poyo's feel additions, O5).**
 5. `gds-code-review` + `party-mode` → address → merge to `Dev`.
 
+## Review Findings (code review 2026-07-16, 3-layer: Blind / Edge-Case / Acceptance)
+
+Core verdict (Acceptance Auditor): the diff **faithfully implements the spec core** — server-authoritative per-day persistence, anonymity (`senderClientId` never displayed), the no-Robot/fake-Robot rule, non-skippable night timing (`EvaluateDuration` verbatim), dismissible-sacoche/non-dismissible-night split, NetworkList stat dedup, no banned APIs (no AudioSource / Task / owner-write / direct RPC / shared-PanelSettings mutation). `pickingMode` modal is the sanctioned RoleCard pattern, not the flagged anti-pattern.
+
+### Decision needed
+- [ ] [Review][Decision] Outer `.journal__frame` is a rounded bordered card (`border-radius:14px` + `border-width:1px`, MessageJournal.uss) — contradicts Locked decision 5 (diegetic, "no rounded bordered cards"). Per-turn entries ARE continuous/borderless (intent mostly met); values are placeholder/design-owned. Poyo's call (feel pass).
+
+### Patch
+- [x] [Review][Patch] (FIXED) `role == null` NRE aborts the whole recording → empty journal returns [MessageManager.cs RecordCurrentTurnStat] — `_character.role.factionType`/`.roleID` dereferenced for every character with no guard; `Character.role` is null until attribution, so any pre-attribution/leaver/dummy seat throws mid-loop → no `TurnStat` added → the exact bug this feature fixed, relapsed. (blind+edge)
+- [x] [Review][Patch] (FIXED) Data source lifecycle: iterates disposed NetworkLists + dangling subscription + no rebind [GameMessageJournalDataSource] — only `Unsubscribe`s on `OnDisable` (not manager despawn); a rebuild at teardown iterates a disposed `NativeList` → `ObjectDisposedException`; and the `_subscribed` latch never rebinds to a respawned MessageManager (rematch/scene reload → stale/empty). (blind+edge)
+- [x] [Review][Patch] (FIXED) Reveal-mode write-in flicker on incremental replication [MessageJournalController Rebuild/AnimateWriteIn] — `_animateReveal` stays true till Close and `OnChanged` fires per replicated message; each rebuild re-zeros + re-fades the whole newest turn → repeated blank/stutter during a multi-message reveal (worse than the old sequential reveal). Latch once per Open, or animate only newly-added children. (blind+edge)
+- [x] [Review][Patch] (FIXED) `revealedMessages` not deduped for late joiners [GameMessageJournalDataSource.GetTurns] — `DedupByDay` guards `turnStats` only; the message list has the identical NGO late-joiner replay hole → a late joiner sees a turn's last message twice. (Content dedup imperfect since identical text is legit — a pragmatic day-positional last-wins or a reveal-index closes it.) (edge+auditor)
+- [ ] [Review][Patch] `turnStats.Add` unconditional → duplicate same-day rows + unbounded growth [MessageManager] — if the recap `ShowEvent` re-runs for a day, another row appends (UI masked by DedupByDay, but the replicated list grows). Server-side replace-by-day on record. (blind)
+- [ ] [Review][Patch] `nonAnomalyTotal == 0` → "0/0 corrompu" nonsense copy [MessageJournalController.BuildStatText] — no crash; guard the empty-roster/all-fake case. (edge)
+
+### Deferred (pre-existing / planned / design-owned)
+- [x] [Review][Defer] Faction colors in two sources (USS tokens + C# hex consts) — acknowledged unavoidable (UITK rich text can't read `var()`); minor retune tech-debt.
+- [x] [Review][Defer] Serif frontispiece not delivered (LiberationSans) — needs a new `.ttf`; known deferral.
+- [x] [Review][Defer] FMOD open sound (`event:/Interface/Messages General + Anomaly/Menu 2`) not wired — polish/O5.
+- [x] [Review][Defer] Old orphan views not deleted (`AnonymousRevealedMessagesComponent` + old `RevealedMessagePanel`) — planned, playtest-gated cleanup.
+- [x] [Review][Defer] Browse mode dims past turns to 0.6 opacity — spec only specifies dimming for the reveal; harmless, design glance.
+
+### Dismissed (noise / false positive)
+- Double-Robot last-wins tie-break — requires two `roleID==Robot` characters simultaneously (real + decoy), not a normal game state; one Robot slot.
+- `PointerDownEvent` not unregistered — benign, callback lifetime matches the persistent overlay.
+
 ## Commit / process notes
 - Commit the generated `.md` artifacts with their slice ([[feedback-commit-generated-md-artifacts]]).
 - No commit/push without Poyo's explicit per-change OK ([[feedback-no-commit-without-authorization]]).

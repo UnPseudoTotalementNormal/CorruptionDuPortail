@@ -17,6 +17,10 @@ namespace UI.MessageJournal
         private MessageManager _messageManager;
         private bool _subscribed;
 
+        // Unity-alive AND network-spawned: after despawn the NetworkLists are disposed, so reading them would
+        // throw ObjectDisposedException — guard every list access on this.
+        private bool ManagerAlive => _messageManager != null && _messageManager.IsSpawned;
+
         private void OnEnable() => TryResolveAndSubscribe();
 
         private void Start() => TryResolveAndSubscribe();
@@ -25,19 +29,24 @@ namespace UI.MessageJournal
 
         private void TryResolveAndSubscribe()
         {
-            if (_subscribed)
+            if (_subscribed && ManagerAlive)
             {
                 return;
+            }
+            if (_subscribed) // subscribed but the manager despawned (scene reload / rematch) — drop the stale bind, rebind
+            {
+                Unsubscribe();
             }
             if (NetworkManager.Singleton == null)
             {
                 return;
             }
-            _messageManager = CompositionRoot.For(NetworkManager.Singleton).MessageManager;
-            if (_messageManager == null)
+            MessageManager _resolved = CompositionRoot.For(NetworkManager.Singleton).MessageManager;
+            if (_resolved == null || !_resolved.IsSpawned)
             {
-                return; // manager not spawned yet — retried from the other entry point / on next enable
+                return; // not spawned yet — retried lazily from GetTurns / on next enable
             }
+            _messageManager = _resolved;
             _messageManager.turnStats.OnListChanged += OnStatsChanged;
             _messageManager.revealedMessages.OnListChanged += OnRevealedChanged;
             _subscribed = true;
@@ -48,13 +57,17 @@ namespace UI.MessageJournal
 
         private void Unsubscribe()
         {
-            if (!_subscribed || _messageManager == null)
+            if (!_subscribed)
             {
                 return;
             }
-            _messageManager.turnStats.OnListChanged -= OnStatsChanged;
-            _messageManager.revealedMessages.OnListChanged -= OnRevealedChanged;
             _subscribed = false;
+            if (_messageManager != null && _messageManager.IsSpawned) // only touch the lists while they're alive
+            {
+                _messageManager.turnStats.OnListChanged -= OnStatsChanged;
+                _messageManager.revealedMessages.OnListChanged -= OnRevealedChanged;
+            }
+            _messageManager = null;
         }
 
         private void OnStatsChanged(NetworkListEvent<TurnStat> _event) => OnChanged?.Invoke();
@@ -63,13 +76,13 @@ namespace UI.MessageJournal
 
         public IReadOnlyList<JournalTurnView> GetTurns()
         {
-            if (!_subscribed)
+            if (!_subscribed || !ManagerAlive)
             {
-                TryResolveAndSubscribe(); // lazy: MessageManager may network-spawn after this component's Start
+                TryResolveAndSubscribe(); // lazy resolve after a late network spawn, or rebind after a respawn
             }
-            if (_messageManager == null)
+            if (!ManagerAlive)
             {
-                return Array.Empty<JournalTurnView>();
+                return Array.Empty<JournalTurnView>(); // no manager, or it despawned (NetworkLists disposed)
             }
 
             // NetworkList<T> exposes an enumerator (foreach) but does not implement IEnumerable<T>, so
@@ -83,8 +96,15 @@ namespace UI.MessageJournal
             _stats.Sort((_a, _b) => _a.day.CompareTo(_b.day));
 
             Dictionary<int, List<string>> _messagesByDay = new();
+            HashSet<(ulong sender, int day)> _seenMessages = new();
             foreach (MessageInfo _info in _messageManager.revealedMessages)
             {
+                // A player sends at most one message per turn, so (sender, day) is unique — any repeat is the
+                // known NGO NetworkList late-joiner replay (last same-tick entry delivered twice). Skip it.
+                if (!_seenMessages.Add((_info.senderClientId, _info.day)))
+                {
+                    continue;
+                }
                 if (!_messagesByDay.TryGetValue(_info.day, out List<string> _dayMessages))
                 {
                     _dayMessages = new List<string>();

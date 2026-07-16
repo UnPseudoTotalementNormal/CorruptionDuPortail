@@ -36,6 +36,7 @@ namespace UI.MessageJournal
         private bool _initialized;
         private bool _subscribed;
         private bool _animateReveal;
+        private int _revealAnimatedDay = int.MinValue; // newest day already write-in-animated this reveal (anti-flicker latch)
         private bool _canDismiss;
 
         private void OnEnable()
@@ -107,6 +108,7 @@ namespace UI.MessageJournal
             }
             _canDismiss = _dismissible;
             _animateReveal = _animateNewest;
+            _revealAnimatedDay = int.MinValue; // fresh reveal: let the newest turn write in once
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position;
             Rebuild();
@@ -169,11 +171,14 @@ namespace UI.MessageJournal
 
             ScrollToBottom();
 
-            // In reveal mode the newest turn writes in on every (re)build until Close — this keeps the
-            // "written on" animation robust when the turn's messages arrive a frame after the panel opens
-            // (RevealAllMessage replicates independently of the recap ShowEvent RPC). Browse mode stays static.
-            if (_animateReveal && _lastIndex >= 0)
+            // In reveal mode the newest turn writes in ONCE, the first time its day is the newest — not on every
+            // rebuild. The turn's messages replicate as several OnListChanged events (one per message), independent
+            // of the recap ShowEvent RPC; re-animating on each would re-blank + re-fade already-shown lines, a
+            // visible flicker. Latching per-day keeps the "written on" feel without the stutter (messages that
+            // arrive later for the same day pop in without a re-fade). Browse mode stays static.
+            if (_animateReveal && _lastIndex >= 0 && _views[_lastIndex].day != _revealAnimatedDay)
             {
+                _revealAnimatedDay = _views[_lastIndex].day;
                 AnimateWriteIn(_turns[_lastIndex]);
             }
         }

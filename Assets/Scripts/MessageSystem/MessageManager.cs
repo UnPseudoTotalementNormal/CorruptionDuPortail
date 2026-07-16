@@ -64,6 +64,13 @@ namespace MessageSystem
             Character _robot = null;
             foreach (Character _character in _characters)
             {
+                // A seat without an attributed role yet (pre-attribution, a torn-down leaver) has role == null.
+                // Skip it: an unguarded deref here would NRE and abort the whole record → empty journal (the
+                // exact failure this feature fixes). A role-less seat isn't a real participant to count.
+                if (_character.role == null)
+                {
+                    continue;
+                }
                 _states.Add(new CharacterFactionState(_character.role.factionType, _character.isFake, _character.isCorrupted.Value));
                 if (_character.role.roleID == RoleID.Robot)
                 {

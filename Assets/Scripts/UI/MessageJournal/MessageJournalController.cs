@@ -35,7 +35,7 @@ namespace UI.MessageJournal
         private VisualElement _turns;
         private bool _initialized;
         private bool _subscribed;
-        private bool _animateNewestOnNextBuild;
+        private bool _animateReveal;
         private bool _canDismiss;
 
         private void OnEnable()
@@ -106,7 +106,7 @@ namespace UI.MessageJournal
                 return;
             }
             _canDismiss = _dismissible;
-            _animateNewestOnNextBuild = _animateNewest;
+            _animateReveal = _animateNewest;
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position;
             Rebuild();
@@ -119,10 +119,17 @@ namespace UI.MessageJournal
             {
                 return;
             }
+            _animateReveal = false;
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
             _root.schedule.Execute(CollapseIfHidden).ExecuteLater(ExitCollapseDelayMs);
         }
+
+        // Argument-less entry points (UnityEvent-wireable): the sacoche button binds to OpenForBrowse;
+        // the awakening recap event calls OpenForReveal (non-dismissible, newest turn writes in).
+        public void OpenForReveal() => Open(true, false);
+
+        public void OpenForBrowse() => Open(false, true);
 
         private void CollapseIfHidden()
         {
@@ -162,11 +169,13 @@ namespace UI.MessageJournal
 
             ScrollToBottom();
 
-            if (_animateNewestOnNextBuild && _lastIndex >= 0)
+            // In reveal mode the newest turn writes in on every (re)build until Close — this keeps the
+            // "written on" animation robust when the turn's messages arrive a frame after the panel opens
+            // (RevealAllMessage replicates independently of the recap ShowEvent RPC). Browse mode stays static.
+            if (_animateReveal && _lastIndex >= 0)
             {
                 AnimateWriteIn(_turns[_lastIndex]);
             }
-            _animateNewestOnNextBuild = false;
         }
 
         private VisualElement BuildTurn(JournalTurnView _turn, bool _isNewest)

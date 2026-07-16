@@ -41,7 +41,9 @@ namespace UI.MessageJournal
             _messageManager.turnStats.OnListChanged += OnStatsChanged;
             _messageManager.revealedMessages.OnListChanged += OnRevealedChanged;
             _subscribed = true;
-            OnChanged?.Invoke();
+            // No OnChanged here: this can be called lazily from within GetTurns (a build), and notifying
+            // mid-build would re-enter Rebuild. The caller (controller Open/init) already builds; later
+            // NetworkList changes drive OnChanged.
         }
 
         private void Unsubscribe()
@@ -61,6 +63,10 @@ namespace UI.MessageJournal
 
         public IReadOnlyList<JournalTurnView> GetTurns()
         {
+            if (!_subscribed)
+            {
+                TryResolveAndSubscribe(); // lazy: MessageManager may network-spawn after this component's Start
+            }
             if (_messageManager == null)
             {
                 return Array.Empty<JournalTurnView>();

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -77,6 +78,15 @@ namespace UI.LobbyRoles
             }
             return list;
         }
+
+        // Harness mirrors the production default rule set so the footer gates like the real game.
+        private static readonly FactionMinimum[] _minimums =
+        {
+            new FactionMinimum(FactionType.anomaly, 1),
+            new FactionMinimum(FactionType.chosen, 1),
+        };
+
+        public IReadOnlyList<FactionMinimum> GetFactionMinimums() => _minimums;
 
         public Role GetRole(RoleID id)
         {

@@ -22,57 +22,58 @@ MonoBehaviour:
     _serializedList:
     - Key: {fileID: 11400000, guid: f4e47e2c9074f50469c578e2c81a5cc8, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 0
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 795505cbed82e72468f5ed5ccfc4668d, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 21c3fac0a2225d44fabab8617a612ff6, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 097e24f53dad72942a26db84021e845c, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 923e2973ad5a4ef1f943951ca1f8a5a8, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: bc1f3ad52516a4548a1ba211bf003439, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 19babf88e116a5b44b3048408ef1afbe, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 7221064599fa47b4e96372e3866c6b4e, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 21114cc25abd3f08eb4c8380e5926718, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 90f32399e33a9fb489c671312b995815, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: cd93d68563474b548ae99a88a8a7a8c1, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
     - Key: {fileID: 11400000, guid: 127476a0375d6c2499e2d6abc0179b8f, type: 2}
       Value:
-        roleToAttribute: 0
-        canBeFake: 1
+        max: 0
+        forced: 0
+  _compositionRules: {fileID: 11400000, guid: 555881d7c05447f49bb4b4fea414bfc0, type: 2}

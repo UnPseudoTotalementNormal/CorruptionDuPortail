@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Characters;
 using Characters.Assets;
+using CorruptionDuPortail.Domain;
 using UI.Cards;
 using UI.RoleCard;
 using UnityEngine;
@@ -204,7 +205,7 @@ namespace UI.LobbyRoles
                 _scroll.schedule.Execute(() => { if (_scroll != null) _scroll.scrollOffset = new Vector2(_scroll.scrollOffset.x, y); }).ExecuteLater(0);
             }
 
-            _root.Add(BuildFooter(players, totalForced, totalMax));
+            _root.Add(BuildFooter(players, totalForced, totalMax, roles));
         }
 
         // ---- scroll edge fades ----
@@ -504,16 +505,27 @@ namespace UI.LobbyRoles
             return ctl;
         }
 
-        private VisualElement BuildFooter(int players, int totalForced, int totalMax)
+        private VisualElement BuildFooter(int players, int totalForced, int totalMax, IReadOnlyList<LobbyRoleView> roles)
         {
             var footer = new VisualElement();
             footer.AddToClassList(FooterClass);
 
-            // Gate mirrors LobbyState: Σforced <= players <= Σmax. The authoritative check re-runs server-side.
-            bool ok = totalMax >= players && totalForced <= players;
+            // Mirror of the server gate: the SAME pure CompositionValidator LobbyState delegates to — coverage
+            // (Σmax ≥ players), guaranteed-fit (subsumes Σforced ≤ players), and the faction floors (≥1 anomaly,
+            // ≥1 élu). UX-only: RequestStart re-validates server-side, so this mirror is never trusted for authority.
+            var snapshotRoles = new List<RoleComposition>(roles.Count);
+            foreach (LobbyRoleView r in roles)
+            {
+                snapshotRoles.Add(new RoleComposition(r.Faction, r.Max, r.Forced));
+            }
+            CompositionValidation validation = CompositionValidator.Validate(
+                new CompositionSnapshot(players, snapshotRoles), _data.GetFactionMinimums());
+
             string msg;
-            if (totalMax < players) msg = $"Pool trop petit : {players - totalMax} rôle(s) en moins que de joueurs.";
-            else if (totalForced > players) msg = $"Trop de rôles forcés : {totalForced} garantis pour {players} joueurs.";
+            if (!validation.IsValid)
+            {
+                msg = validation.FirstReason; // names the offending faction / the fix (Samus's readable-failure rule)
+            }
             else
             {
                 int surplus = totalMax - players;
@@ -522,12 +534,12 @@ namespace UI.LobbyRoles
 
             var reason = new Label(msg);
             reason.AddToClassList(ReasonClass);
-            if (ok) reason.AddToClassList(ReasonOkClass);
+            if (validation.IsValid) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
             var start = new Button(() => _data.RequestStart()) { text = "Démarrer la partie" };
             start.AddToClassList(StartBtnClass);
-            start.SetEnabled(ok); // disabled when invalid → no click; the server also re-validates
+            start.SetEnabled(validation.IsValid); // disabled when invalid → no click; the server also re-validates
             footer.Add(start);
             return footer;
         }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Characters;
 using Characters.Powers;
 using GameLogic;
@@ -137,14 +138,15 @@ namespace Tests.PlayMode
         [UnityTest]
         public IEnumerator OnStartGameButtonPressed_MorePlayersThanRoles_WarnsAndDoesNotAdvance()
         {
-            // 4 players, only 3 total roles to attribute → the MAX guard must fire (unchanged behavior).
+            // 4 players, only 3 total roles to attribute → the coverage rule (Σmax ≥ players) must fail. The gate
+            // now delegates to CompositionValidator; the warning carries the "Pool trop petit" reason.
             Character c1 = _characterManager.AddNewCharacter(1);
             Character c2 = _characterManager.AddNewCharacter(2);
             Character c3 = _characterManager.AddNewCharacter(3);
             Character c4 = _characterManager.AddNewCharacter(4);
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(c1, c2, c3, c4);
 
-            LogAssert.Expect(LogType.Warning, "Not enough roles to attribute to all players!");
+            LogAssert.Expect(LogType.Warning, new Regex("invalid composition: Pool trop petit"));
             _lobbyState.OnStartGameButtonPressed();
 
             // The warning expectation alone proves the early-return branch ran; an unmet expectation fails the test.
@@ -155,12 +157,12 @@ namespace Tests.PlayMode
         [UnityTest]
         public IEnumerator OnStartGameButtonPressed_FewerPlayersThanMandatoryRoles_WarnsAndDoesNotAdvance()
         {
-            // [LEAVE][PHASE 4] AC1: 1 player < 2 mandatory (non-fakeable) roles → the MIN guard must fire.
-            // Below the max (1 <= 3), so the max guard stays silent — this pins the new minimum floor.
+            // [LEAVE][PHASE 4] AC1: 1 player < 2 guaranteed reals (Robot forced==2) → the guaranteed-fit rule must
+            // fail (it subsumes the old Σforced ≤ players floor). Below the max (1 <= 3), so coverage stays silent.
             Character c1 = _characterManager.AddNewCharacter(1);
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(c1);
 
-            LogAssert.Expect(LogType.Warning, "Not enough players to fill the mandatory (non-fakeable) roles!");
+            LogAssert.Expect(LogType.Warning, new Regex("invalid composition: Trop de r"));
             _lobbyState.OnStartGameButtonPressed();
 
             Assert.AreEqual(0, _gameManager.currentGameStateIndex.Value, "Below-minimum start must not advance the state.");

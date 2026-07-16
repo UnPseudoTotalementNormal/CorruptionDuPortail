@@ -39,10 +39,13 @@ namespace UI.Components
 
         public override void ShowEvent()
         {
-            // Server reveals this turn's messages into the replicated archive; the journal (reading
-            // revealedMessages) then shows them. Do NOT call base.ShowEvent — the old CanvasGroup stays hidden.
+            // Server records this turn's stat (corruption + Robot targeting) and reveals this turn's messages
+            // into the replicated archive; the journal (reading turnStats + revealedMessages) then shows them.
+            // Record BEFORE reveal so the turn's stat exists when the panel rebuilds. Do NOT call
+            // base.ShowEvent — the old CanvasGroup stays hidden.
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             {
+                MessageManager.instance.RecordCurrentTurnStat();
                 MessageManager.instance.RevealAllMessage();
             }
             EnsureJournal();

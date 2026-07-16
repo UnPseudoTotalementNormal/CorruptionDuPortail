@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Characters;
 using GameLogic;
-using GameLogic.GameStates;
 using RoleTarget;
 using Unity.Collections;
 using Unity.Netcode;
@@ -30,12 +29,14 @@ namespace MessageSystem
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slice (IGameLoop) for currentDay.
         [SerializeField] private GameManager gameManager;
         private IGameLoop Loop => gameManager;
-        private IGameStateQuery Query => gameManager;
 
-        // Read slices resolved once from the composition root (like SendMessagePanel), used only server-side
-        // by the per-turn recorder. Neither is owned by this manager.
-        private ICharacterQuery characterQuery;
-        private RoleTargetSystem roleTargetSystem;
+        // Scene-wired direct references (like RobotBoardInfo / CorruptionBoardInfo) — available at Awake, so the
+        // per-turn recorder never races against NGO spawn order. (An earlier spawn-time resolution through the
+        // composition root was racy: when these came back null at spawn, turnStats stayed empty and the night
+        // journal showed nothing. A serialized reference is injection, not the forbidden static locator.)
+        [SerializeField] private CharacterManager characterManager;
+        [SerializeField] private RoleTargetSystem roleTargetSystem;
+        private ICharacterQuery CharacterQuery => characterManager;
 
         private void Awake()
         {
@@ -46,33 +47,19 @@ namespace MessageSystem
             }
             instance = this;
             Assert.IsNotNull(gameManager, "MessageManager.gameManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(characterManager, "MessageManager.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(roleTargetSystem, "MessageManager.roleTargetSystem is not wired — wire it in GameScene (the composition root).");
         }
 
-        public override void OnNetworkSpawn()
+        // Server-only: snapshot this turn's corrupted count and Robot-targeting count. Called from the awakening
+        // RECAP (AwakeningRecapMessages.ShowEvent) — a moment guaranteed to run. Recorded BEFORE RoleTargetSystem
+        // clears its list at the next awakening's start; currentDay is still this turn's day (it increments only
+        // on onNewDayPassed), so the record's day matches the turn's messages.
+        public void RecordCurrentTurnStat()
         {
-            base.OnNetworkSpawn();
-            characterQuery = CompositionRoot.For(NetworkManager).CharacterQuery;
-            roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
-            Assert.IsNotNull(characterQuery, "MessageManager.characterQuery could not be resolved from the composition root.");
-            Assert.IsNotNull(roleTargetSystem, "MessageManager.roleTargetSystem could not be resolved from the composition root.");
+            Assert.IsTrue(IsServer, $"{nameof(RecordCurrentTurnStat)} can only be called on the server.");
 
-            if (!IsServer)
-            {
-                return;
-            }
-            foreach (GameState _awakeningState in Query.GetGameStates(typeof(AwakeningState)))
-            {
-                _awakeningState.onStateEndServer += OnAwakeningStateEnd;
-            }
-        }
-
-        // Server-only: snapshot the turn's corrupted count and Robot-targeting count at awakening end —
-        // BEFORE RoleTargetSystem clears its list at the next awakening's start (it resets on
-        // AwakeningState.onStateStartClient). currentDay is still this turn's day here (it increments only on
-        // onNewDayPassed), so the record's day matches the messages sent during this turn.
-        private void OnAwakeningStateEnd()
-        {
-            List<Character> _characters = characterQuery.GetCharacters();
+            List<Character> _characters = CharacterQuery.GetCharacters();
             List<CharacterFactionState> _states = new(_characters.Count);
             Character _robot = null;
             foreach (Character _character in _characters)

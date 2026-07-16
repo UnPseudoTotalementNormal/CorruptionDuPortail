@@ -8,12 +8,14 @@ namespace UI.MessageJournal
     {
         [SerializeField] private MessageJournalController controller;
         [SerializeField] private bool animateNewest = true;
+        // false = preview the night reveal (non-dismissible); true = preview the sacoche browse (click-outside closes).
+        [SerializeField] private bool dismissible = false;
 
         private void Start()
         {
             if (controller != null)
             {
-                controller.Open(animateNewest);
+                controller.Open(animateNewest, dismissible);
             }
         }
     }

@@ -36,6 +36,7 @@ namespace UI.MessageJournal
         private bool _initialized;
         private bool _subscribed;
         private bool _animateNewestOnNextBuild;
+        private bool _canDismiss;
 
         private void OnEnable()
         {
@@ -95,13 +96,16 @@ namespace UI.MessageJournal
             _subscribed = false;
         }
 
-        public void Open(bool _animateNewest)
+        // _dismissible: night reveal passes false (non-skippable, timed like the legacy AwakeningRecapMessages —
+        // a click outside must NOT close it); the sacoche browse passes true (click-outside dismisses).
+        public void Open(bool _animateNewest, bool _dismissible)
         {
             TryInitialize();
             if (_root == null)
             {
                 return;
             }
+            _canDismiss = _dismissible;
             _animateNewestOnNextBuild = _animateNewest;
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position;
@@ -130,7 +134,7 @@ namespace UI.MessageJournal
 
         private void OnRootPointerDown(PointerDownEvent _evt)
         {
-            if (_evt.target == _root)
+            if (_canDismiss && _evt.target == _root)
             {
                 Close();
             }
@@ -218,7 +222,7 @@ namespace UI.MessageJournal
             string _robot = $"<color={RobotHex}>Robot</color>";
             if (_count <= 0)
             {
-                return $"Personne n'a ciblé le {_robot}";
+                return $"<color={NumberHex}>Personne</color> n'a ciblé le {_robot}";
             }
             string _verb = _count > 1 ? "joueurs ont" : "joueur a";
             return $"<color={NumberHex}>{_count}</color> {_verb} ciblé le {_robot}";

@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using Characters;
 using GameLogic;
+using GameLogic.GameStates;
+using RoleTarget;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,9 +23,19 @@ namespace MessageSystem
         public NetworkList<MessageInfo> revealedMessages = new();
         public NetworkList<MessageInfo> messagesToReveal = new();
 
+        // Per-turn aggregate journal (corrupted count + Robot-targeting count), recorded server-side at each
+        // awakening's end alongside the message reveal. Replicated for the message-journal UI (one entry/day).
+        public NetworkList<TurnStat> turnStats = new();
+
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slice (IGameLoop) for currentDay.
         [SerializeField] private GameManager gameManager;
         private IGameLoop Loop => gameManager;
+        private IGameStateQuery Query => gameManager;
+
+        // Read slices resolved once from the composition root (like SendMessagePanel), used only server-side
+        // by the per-turn recorder. Neither is owned by this manager.
+        private ICharacterQuery characterQuery;
+        private RoleTargetSystem roleTargetSystem;
 
         private void Awake()
         {
@@ -32,6 +46,49 @@ namespace MessageSystem
             }
             instance = this;
             Assert.IsNotNull(gameManager, "MessageManager.gameManager is not wired — wire it in GameScene (the composition root).");
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            characterQuery = CompositionRoot.For(NetworkManager).CharacterQuery;
+            roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
+            Assert.IsNotNull(characterQuery, "MessageManager.characterQuery could not be resolved from the composition root.");
+            Assert.IsNotNull(roleTargetSystem, "MessageManager.roleTargetSystem could not be resolved from the composition root.");
+
+            if (!IsServer)
+            {
+                return;
+            }
+            foreach (GameState _awakeningState in Query.GetGameStates(typeof(AwakeningState)))
+            {
+                _awakeningState.onStateEndServer += OnAwakeningStateEnd;
+            }
+        }
+
+        // Server-only: snapshot the turn's corrupted count and Robot-targeting count at awakening end —
+        // BEFORE RoleTargetSystem clears its list at the next awakening's start (it resets on
+        // AwakeningState.onStateStartClient). currentDay is still this turn's day here (it increments only on
+        // onNewDayPassed), so the record's day matches the messages sent during this turn.
+        private void OnAwakeningStateEnd()
+        {
+            List<Character> _characters = characterQuery.GetCharacters();
+            List<CharacterFactionState> _states = new(_characters.Count);
+            Character _robot = null;
+            foreach (Character _character in _characters)
+            {
+                _states.Add(new CharacterFactionState(_character.role.factionType, _character.isFake, _character.isCorrupted.Value));
+                if (_character.role.roleID == RoleID.Robot)
+                {
+                    _robot = _character;
+                }
+            }
+
+            bool _hasRobot = _robot;
+            int _robotTargeterCount = _hasRobot
+                ? roleTargetSystem.GetAllTargetersForTarget(_robot.ownerClientId.Value).Count
+                : 0;
+            turnStats.Add(TurnStatCalculator.Compute(Loop.currentDay, _states, _hasRobot, _robotTargeterCount));
         }
 
         public override void OnNetworkDespawn()

@@ -8,6 +8,7 @@ using AYellowpaper.SerializedCollections;
 using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
+using GameLogic.GameSettings;
 using Network;
 using Unity.Netcode;
 using UnityEngine;
@@ -21,7 +22,12 @@ namespace GameLogic.GameStates
     public class RoleAttributionState : GameState
     {
         public SerializedDictionary<RoleDataObject, RoleAttributionSetting> roleAttributionDictionary = new();
-        
+
+        [SerializeField]
+        [Tooltip("Faction-minimum rules for the start gate + distribution guarantee. Null ⇒ no faction rules " +
+                 "(the scalar coverage/guaranteed-fit rules still apply) — the headless golden harness leaves it null.")]
+        private CompositionRuleSet _compositionRules;
+
         public override void OnStateCreated()
         { 
             base.OnStateCreated();
@@ -44,21 +50,33 @@ namespace GameLogic.GameStates
             // master) — there the manager is null and the authored counts are used, byte-identical to before.
             var _initialCounts = new List<int>(_frozenOrder.Count);
             var _forced = new List<int>(_frozenOrder.Count);
+            var _factions = new List<FactionType>(_frozenOrder.Count);
             foreach (RoleDataObject _role in _frozenOrder)
             {
                 RoleAttributionSetting _authored = roleAttributionDictionary[_role];
                 _initialCounts.Add(gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.max);
                 _forced.Add(gameSettingsManager != null ? gameSettingsManager.GetForced(_role.role.roleID) : _authored.forced);
+                _factions.Add(_role.role.factionType);
             }
 
-            int _totalRolesToAttribute = gameSettingsManager != null
-                ? gameSettingsManager.GetTotalRolesToAttribute()
-                : roleAttributionDictionary.Values.Sum(setting => setting.max);
+            // Derive the total from the SAME per-role sum the gate (BuildCompositionSnapshot) and _initialCounts
+            // use — NOT GameSettingsManager.GetTotalRolesToAttribute() (which sums the manager's own _settings
+            // list). Keeps fakeCount consistent with the gate's coverage math, so a gate-accepted config can never
+            // make the real loop over-draw. Byte-identical in the normal seeded flow (the two sums are equal).
+            int _totalRolesToAttribute = 0;
+            foreach (int _count in _initialCounts)
+            {
+                _totalRolesToAttribute += _count;
+            }
             int _fakeRoleAmountToRemove = (int)Mathf.Abs(CharacterQuery.GetCharacters().Count - _totalRolesToAttribute);
             List<Character> _realCharacters = CharacterQuery.GetCharacters().Where(_c => !_c.isFake).ToList();
 
+            IReadOnlyList<FactionMinimum> _minimums = _compositionRules != null
+                ? _compositionRules.ToMinimums()
+                : System.Array.Empty<FactionMinimum>();
+
             RoleDistribution _distribution = new RoleDistributor().Distribute(
-                _initialCounts, _forced, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
+                _initialCounts, _forced, _factions, _minimums, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
 
             //assign fake roles to freshly created fake characters (fakes draw first, in order)
             foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)
@@ -87,6 +105,36 @@ namespace GameLogic.GameStates
         internal IReadOnlyList<RoleDataObject> GetFrozenRolePoolOrder()
         {
             return new List<RoleDataObject>(roleAttributionDictionary.Keys);
+        }
+
+        // Composition snapshot for the pure CompositionValidator — joins the replicated max/forced (the host's
+        // lobby edits, via gameSettingsManager) with each role's authored faction. Falls back to the authored
+        // settings when no manager is wired (headless harness), mirroring OnStartStateServer's count sourcing.
+        public CompositionSnapshot BuildCompositionSnapshot(int playerCount)
+        {
+            var _roles = new List<RoleComposition>(roleAttributionDictionary.Count);
+            foreach (RoleDataObject _role in GetFrozenRolePoolOrder())
+            {
+                RoleAttributionSetting _authored = roleAttributionDictionary[_role];
+                int _max = gameSettingsManager != null ? gameSettingsManager.GetRoleCount(_role.role.roleID) : _authored.max;
+                int _forcedValue = gameSettingsManager != null ? gameSettingsManager.GetForced(_role.role.roleID) : _authored.forced;
+                _roles.Add(new RoleComposition(_role.role.factionType, _max, _forcedValue));
+            }
+            return new CompositionSnapshot(playerCount, _roles);
+        }
+
+        // The authoritative start-gate check (LobbyState delegates here). Uses the wired rule set, or no faction
+        // rules when unwired (the scalar coverage / guaranteed-fit rules still apply). Shared by the client mirror.
+        public CompositionValidation ValidateComposition(int playerCount)
+        {
+            return CompositionValidator.Validate(BuildCompositionSnapshot(playerCount), GetFactionMinimums());
+        }
+
+        // The wired faction rules (or none when unwired). Exposed so the client footer mirror runs the SAME rule
+        // set as the server gate — the single source of truth stays this state's CompositionRuleSet.
+        public IReadOnlyList<FactionMinimum> GetFactionMinimums()
+        {
+            return _compositionRules != null ? _compositionRules.ToMinimums() : System.Array.Empty<FactionMinimum>();
         }
 
         // Applies a decided role (RoleDistributor output) to a character: clone, set, give powers, replicate.

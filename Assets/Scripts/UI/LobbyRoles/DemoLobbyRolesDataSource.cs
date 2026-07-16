@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using GameLogic.GameStates;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,6 +27,8 @@ namespace UI.LobbyRoles
         private const int MaxRoleCount = 15;
 
         private readonly Dictionary<RoleID, (int max, int forced)> _state = new();
+
+        private bool _localReady; // harness: the single local player's ready state
 
         // Harness-only placeholder presets, keyed by player count. Real presets are design-owned (RolePresetDatabase).
         private struct DemoPreset { public string Name; public string Desc; public bool Classic; public (RoleID id, int max, int forced)[] Entries; }
@@ -77,6 +80,15 @@ namespace UI.LobbyRoles
             }
             return list;
         }
+
+        // Harness mirrors the production default rule set so the footer gates like the real game.
+        private static readonly FactionMinimum[] _minimums =
+        {
+            new FactionMinimum(FactionType.anomaly, 1),
+            new FactionMinimum(FactionType.chosen, 1),
+        };
+
+        public IReadOnlyList<FactionMinimum> GetFactionMinimums() => _minimums;
 
         public Role GetRole(RoleID id)
         {
@@ -152,6 +164,19 @@ namespace UI.LobbyRoles
             return true;
         }
 
-        public void RequestStart() { /* harness only — no game loop to advance */ }
+        public bool IsHost() => true; // harness acts as the host
+
+        public bool GetLocalReady() => _localReady;
+
+        public void RequestSetReady(bool ready)
+        {
+            if (_localReady == ready) return;
+            _localReady = ready;
+            OnChanged?.Invoke();
+        }
+
+        public int GetReadyCount() => _localReady ? 1 : 0;
+
+        public void RequestForceStart() { /* harness only — no game loop to advance */ }
     }
 }

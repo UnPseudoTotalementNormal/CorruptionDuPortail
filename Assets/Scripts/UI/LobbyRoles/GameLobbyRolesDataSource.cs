@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Characters;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using GameLogic;
@@ -30,6 +31,7 @@ namespace UI.LobbyRoles
 
         private GameSettingsManager _manager;
         private RoleAttributionState _rolePool;
+        private Network.LobbyPlayerInfoHolder _lobby;
         private NetworkManager _nm;
         private bool _ready;
 
@@ -43,19 +45,24 @@ namespace UI.LobbyRoles
             await UniTask.WaitUntil(
                 () => NetworkManager.Singleton != null
                       && CompositionRoot.For(NetworkManager.Singleton).GameSettingsManager != null
-                      && CompositionRoot.For(NetworkManager.Singleton).GameManager != null,
+                      && CompositionRoot.For(NetworkManager.Singleton).GameManager != null
+                      && CompositionRoot.For(NetworkManager.Singleton).LobbyPlayerInfoHolder != null
+                      && CompositionRoot.For(NetworkManager.Singleton).LobbyPlayerInfoHolder.playerInfos != null,
                 cancellationToken: _token);
 
             if (_token.IsCancellationRequested) return;
 
             _nm = NetworkManager.Singleton;
             _manager = CompositionRoot.For(_nm).GameSettingsManager;
+            _lobby = CompositionRoot.For(_nm).LobbyPlayerInfoHolder;
             _rolePool = (RoleAttributionState)CompositionRoot.For(_nm).GameManager
                 .GetGameStates(typeof(RoleAttributionState)).First();
 
+            // Count + live-refresh source is the replicated player census (mirrors ConnectedPlayerPanel), NOT
+            // NGO ConnectedClientsIds: simulated bots (clientId >= 100) enter playerInfos via AddDebugPlayer but
+            // never register as NGO clients, so ConnectedClientsIds undercounts them and never fires connect.
             _manager.OnSettingsChanged += Raise;
-            _nm.OnClientConnectedCallback += OnClientChanged;
-            _nm.OnClientDisconnectCallback += OnClientChanged;
+            _lobby.playerInfos.OnListChanged += OnPlayerListChanged;
             _ready = true;
             Raise();
         }
@@ -63,23 +70,21 @@ namespace UI.LobbyRoles
         private void OnDestroy()
         {
             if (_manager != null) _manager.OnSettingsChanged -= Raise;
-            if (_nm != null)
-            {
-                _nm.OnClientConnectedCallback -= OnClientChanged;
-                _nm.OnClientDisconnectCallback -= OnClientChanged;
-            }
+            if (_lobby != null && _lobby.playerInfos != null)
+                _lobby.playerInfos.OnListChanged -= OnPlayerListChanged;
         }
 
-        private void OnClientChanged(ulong _clientId) => Raise();
+        private void OnPlayerListChanged(NetworkListEvent<Network.Player.PlayerInfo> _e) => Raise();
         private void Raise() => OnChanged?.Invoke();
 
         public int GetPlayerCount()
         {
-            // Lobby is host-configured; the host has the authoritative connected list. (A client-accurate count
-            // would read a replicated player holder — refine at GameScene wiring if the tally must be exact on
-            // non-host tablets.)
-            if (_nm == null) return 0;
-            return _nm.IsServer ? _nm.ConnectedClientsIds.Count : _nm.ConnectedClients.Count;
+            // Replicated census (includes simulated bots, correct on host AND non-host tablets). See the
+            // OnListChanged wiring above for why NGO ConnectedClientsIds is the wrong source here.
+            // Unity-safe null check (NOT `?.`): a destroyed holder is not C#-null, so `?.` would deref it
+            // during teardown and throw on the disposed NetworkList — matches the OnDestroy guard style.
+            if (_lobby == null || _lobby.playerInfos == null) return 0;
+            return _lobby.playerInfos.Count;
         }
 
         public IReadOnlyList<LobbyRoleView> GetRoles()
@@ -101,6 +106,9 @@ namespace UI.LobbyRoles
             return list;
         }
 
+        public IReadOnlyList<FactionMinimum> GetFactionMinimums()
+            => _rolePool != null ? _rolePool.GetFactionMinimums() : System.Array.Empty<FactionMinimum>();
+
         public Role GetRole(RoleID id)
         {
             if (_rolePool == null) return null;
@@ -112,19 +120,36 @@ namespace UI.LobbyRoles
             return null;
         }
 
-        public void RequestStart()
+        public bool IsHost() => _nm != null && _nm.IsServer;
+
+        public bool GetLocalReady()
         {
-            // Host-only, server-authoritative: mirrors LobbyStartButton. LobbyState.OnStartGameButtonPressed
-            // re-validates the composition (Σforced ≤ players ≤ Σmax) before advancing the loop.
+            if (_nm == null || _lobby == null) return false;
+            return _lobby.GetPlayerInfo(_nm.LocalClientId).isReady;
+        }
+
+        public void RequestSetReady(bool ready)
+        {
+            // SendTo.Server + sender-trusted: readies the LOCAL player only (works on host and non-host).
+            if (_lobby == null) return;
+            _lobby.RequestSetReady(ready);
+        }
+
+        public int GetReadyCount() => _lobby != null ? _lobby.ReadyCount() : 0;
+
+        public void RequestForceStart()
+        {
+            // Host-only DEV control ("Démarrage forcé"): skip the all-ready condition, keep the composition gate
+            // (LobbyState.ForceStart re-validates it server-side). The normal start is now auto-on-all-ready.
             if (_nm == null || !_nm.IsServer) return;
             var lobbyState = CompositionRoot.For(_nm).GameManager
                 .GetGameStates(typeof(LobbyState)).FirstOrDefault() as LobbyState;
             if (lobbyState == null)
             {
-                Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot start the game.");
+                Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot force-start the game.");
                 return;
             }
-            lobbyState.OnStartGameButtonPressed();
+            lobbyState.ForceStart();
         }
 
         public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);

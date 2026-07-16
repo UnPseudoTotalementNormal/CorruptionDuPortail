@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Characters;
 using Characters.Assets;
+using CorruptionDuPortail.Domain;
 using UI.Cards;
 using UI.RoleCard;
 using UnityEngine;
@@ -204,7 +205,7 @@ namespace UI.LobbyRoles
                 _scroll.schedule.Execute(() => { if (_scroll != null) _scroll.scrollOffset = new Vector2(_scroll.scrollOffset.x, y); }).ExecuteLater(0);
             }
 
-            _root.Add(BuildFooter(players, totalForced, totalMax));
+            _root.Add(BuildFooter(players, totalForced, totalMax, roles));
         }
 
         // ---- scroll edge fades ----
@@ -365,7 +366,28 @@ namespace UI.LobbyRoles
             content.style.flexShrink = 1;
 
             if (_activeTab == TabOptions)
-                return content; // "Autres options…" — intentionally empty for now
+            {
+                // Dev-only "Démarrage forcé": skips the all-ready condition (still gated by the composition rules
+                // server-side). Host-only — non-host tablets don't show it.
+                if (_data.IsHost())
+                {
+                    var options = new VisualElement();
+                    options.style.paddingTop = 16;
+                    options.style.paddingLeft = 12;
+                    options.style.paddingRight = 12;
+
+                    var label = new Label("Options développeur");
+                    label.AddToClassList(ReasonClass);
+                    options.Add(label);
+
+                    var force = new Button(() => _data.RequestForceStart()) { text = "Démarrage forcé (dev)" };
+                    force.AddToClassList(StartBtnClass);
+                    options.Add(force);
+
+                    content.Add(options);
+                }
+                return content; // otherwise "Autres options…" stays bare
+            }
 
             foreach (FactionType faction in FactionOrder)
             {
@@ -504,31 +526,48 @@ namespace UI.LobbyRoles
             return ctl;
         }
 
-        private VisualElement BuildFooter(int players, int totalForced, int totalMax)
+        private VisualElement BuildFooter(int players, int totalForced, int totalMax, IReadOnlyList<LobbyRoleView> roles)
         {
             var footer = new VisualElement();
             footer.AddToClassList(FooterClass);
 
-            // Gate mirrors LobbyState: Σforced <= players <= Σmax. The authoritative check re-runs server-side.
-            bool ok = totalMax >= players && totalForced <= players;
-            string msg;
-            if (totalMax < players) msg = $"Pool trop petit : {players - totalMax} rôle(s) en moins que de joueurs.";
-            else if (totalForced > players) msg = $"Trop de rôles forcés : {totalForced} garantis pour {players} joueurs.";
+            // Mirror of the server gate: the SAME pure CompositionValidator LobbyState delegates to — coverage
+            // (Σmax ≥ players), guaranteed-fit (subsumes Σforced ≤ players), and the faction floors (≥1 anomaly,
+            // ≥1 élu). UX-only: RequestStart re-validates server-side, so this mirror is never trusted for authority.
+            var snapshotRoles = new List<RoleComposition>(roles.Count);
+            foreach (LobbyRoleView r in roles)
+            {
+                snapshotRoles.Add(new RoleComposition(r.Faction, r.Max, r.Forced));
+            }
+            CompositionValidation validation = CompositionValidator.Validate(
+                new CompositionSnapshot(players, snapshotRoles), _data.GetFactionMinimums());
+
+            // Composition-invalid → show WHY the game can't start; composition-valid → show ready progress.
+            // There is no start button: the server auto-starts once every player is ready and the composition is
+            // valid (both re-checked server-side). Each player readies only themselves via the toggle below.
+            int readyCount = _data.GetReadyCount();
+            string status;
+            bool statusOk;
+            if (!validation.IsValid)
+            {
+                status = validation.FirstReason; // names the offending faction / the fix (Samus's readable rule)
+                statusOk = false;
+            }
             else
             {
-                int surplus = totalMax - players;
-                msg = surplus > 0 ? $"Prêt · {surplus} carte(s) en surplus" : "Prêt";
+                status = $"{readyCount} / {players} prêt(s)";
+                statusOk = players > 0 && readyCount >= players;
             }
 
-            var reason = new Label(msg);
+            var reason = new Label(status);
             reason.AddToClassList(ReasonClass);
-            if (ok) reason.AddToClassList(ReasonOkClass);
+            if (statusOk) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
-            var start = new Button(() => _data.RequestStart()) { text = "Démarrer la partie" };
-            start.AddToClassList(StartBtnClass);
-            start.SetEnabled(ok); // disabled when invalid → no click; the server also re-validates
-            footer.Add(start);
+            bool localReady = _data.GetLocalReady();
+            var toggle = new Button(() => _data.RequestSetReady(!localReady)) { text = localReady ? "Pas prêt" : "Prêt" };
+            toggle.AddToClassList(StartBtnClass);
+            footer.Add(toggle);
             return footer;
         }
 

@@ -2,6 +2,10 @@
 
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
+using GameLogic;
+using Network;
+using Network.Player;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -12,6 +16,9 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "LobbyState", menuName = "GameStates/LobbyState")]
     public class LobbyState : GameState
     {
+        // feat/lobby-ready-system: the bot-aware census this state watches to auto-start once everyone is ready.
+        private LobbyPlayerInfoHolder _lobbyInfo;
+
         private void OnClientConnected(ulong clientId)
         {
             AddNewCharacter(clientId);
@@ -28,42 +35,107 @@ namespace GameLogic.GameStates
         // exactly one code path reacts to a disconnect and the mid-game double-handling / subscription leak
         // (this state's subscription was never unsubscribed) is gone.
 
-        public void OnStartGameButtonPressed()
+        // feat/lobby-ready-system: fires at most once per lobby entry (auto-start OR force-start latches it).
+        private bool _started;
+
+        // The composition gate: coverage Σmax ≥ players, guaranteed-fit (subsumes the old Σforced ≤ players floor),
+        // plus ≥1 anomaly / ≥1 élu — evaluated by the pure CompositionValidator through RoleAttributionState (the
+        // same rule surface the tablet footer mirrors and RoleDistributor guarantees). Reads the replicated
+        // max/forced via gameSettingsManager, faction from the authored pool. Returns false (no advance) if invalid.
+        private bool TryResolveValidComposition(out CompositionValidation validation)
         {
             int _playerCount = CharacterQuery.GetCharacters().Count;
+            var _roleState = (RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First();
+            validation = _roleState.ValidateComposition(_playerCount);
+            return validation.IsValid;
+        }
 
-            // Quick-dev gamesettings-refonte (2026-06-20): the total comes from the replicated, server-
-            // authoritative gameSettingsManager (pushed lane-B), honouring the host's lobby edits. Fall back
-            // to the authored RoleAttributionState dictionary only when no manager is wired (standalone test).
-            int _totalRolesToAttribute = gameSettingsManager != null
-                ? gameSettingsManager.GetTotalRolesToAttribute()
-                : ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First())
-                    .roleAttributionDictionary.Values.Sum(_setting => _setting.max);
-
-            if (_playerCount > _totalRolesToAttribute)
+        // Server-authoritative compo-only start (dev force-start + the guard tests use it). Logs the reason when
+        // refused. Returns true iff the loop advanced.
+        public bool OnStartGameButtonPressed()
+        {
+            if (!TryResolveValidComposition(out CompositionValidation _validation))
             {
-                Debug.LogWarning("Not enough roles to attribute to all players!");
-                return;
-            }
-
-            // [LEAVE][PHASE 4] Minimum-players gate. Under the max/forced model the hard floor is the number of
-            // GUARANTEED reals = Σforced: RoleDistributor reserves `forced` reals per role before the surplus
-            // fake draw, so below Σforced those guaranteed roles cannot all be placed and the game breaks.
-            // Source it from the replicated, server-authoritative gameSettingsManager when wired; else the
-            // authored RoleAttributionState fallback (Σforced) — mirrors the max guard above. (Replaces the old
-            // Σ(count where !canBeFake); a fully-mandatory role has forced == max, so the floor is preserved.)
-            int _mandatoryCount = gameSettingsManager != null
-                ? gameSettingsManager.GetTotalForced()
-                : ((RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First())
-                    .roleAttributionDictionary.Values.Sum(_setting => _setting.forced);
-
-            if (_playerCount < _mandatoryCount)
-            {
-                Debug.LogWarning("Not enough players to fill the mandatory (non-fakeable) roles!");
-                return;
+                Debug.LogWarning($"Cannot start the game — invalid composition: {_validation.FirstReason}");
+                return false;
             }
 
             Loop.NextGameState();
+            return true;
+        }
+
+        // feat/lobby-ready-system: server-side auto-start poll (run from StateUpdateServer, NOT an event callback —
+        // robust to holder spawn order, and free of the re-entrancy a NetworkList callback re-entering NextGameState
+        // would cause). Starts once every game participant is ready AND the composition is valid. Composition is
+        // checked SILENTLY here (this runs every frame) so an invalid pool never spams warnings.
+        private void TryAutoStart()
+        {
+            if (_started || !gameManager.NetworkManager.IsServer)
+            {
+                return;
+            }
+
+            // Resolve the census lazily so a holder that spawns after this state entered still wires up.
+            if (_lobbyInfo == null)
+            {
+                _lobbyInfo = CompositionRoot.For(gameManager.NetworkManager).LobbyPlayerInfoHolder;
+                if (_lobbyInfo == null)
+                {
+                    return;
+                }
+            }
+
+            if (!AllParticipantsReady() || !TryResolveValidComposition(out _))
+            {
+                return;
+            }
+
+            _started = true;
+            Loop.NextGameState();
+        }
+
+        // Every game participant (a spawned Character) must have a ready census entry. Ties readiness to the ACTUAL
+        // players who will receive roles (not the raw census): a just-connected player whose census entry is still
+        // in flight blocks the start; a duplicated census row can't wedge it (GetPlayerInfo takes the first match —
+        // the same one SetReadyServer flips); bots (no character) neither block nor need to be checked.
+        private bool AllParticipantsReady()
+        {
+            var _characters = CharacterQuery.GetCharacters();
+            if (_characters.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var _character in _characters)
+            {
+                if (_character == null)
+                {
+                    continue;
+                }
+
+                ulong _owner = _character.ownerClientId.Value;
+                PlayerInfo _info = _lobbyInfo.GetPlayerInfo(_owner);
+                if (_info.playerClientId != _owner || !_info.isReady)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // feat/lobby-ready-system: dev "Démarrage forcé" (Autres options tab) — skips the all-ready condition ONLY.
+        // The composition gate still applies (OnStartGameButtonPressed re-validates it, and logs if refused). Host-only.
+        public void ForceStart()
+        {
+            if (_started || !gameManager.NetworkManager.IsServer)
+            {
+                return;
+            }
+
+            if (OnStartGameButtonPressed())
+            {
+                _started = true;
+            }
         }
 
         public override void OnStateCreated()
@@ -85,12 +157,18 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             gameManager.NetworkManager.OnClientConnectedCallback += OnClientConnected;
+
+            // feat/lobby-ready-system: fresh lobby entry — the auto-start poll (StateUpdateServer) re-evaluates
+            // every frame and lazily resolves the census, so no subscription to wire here.
+            _started = false;
+            _lobbyInfo = null;
         }
 
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
             gameManager.NetworkManager.OnClientConnectedCallback -= OnClientConnected;
+            _lobbyInfo = null;
         }
         
         public override void OnStartStateClient()
@@ -107,6 +185,12 @@ namespace GameLogic.GameStates
         public override void StateUpdateServer()
         {
             base.StateUpdateServer();
+
+            // feat/lobby-ready-system: poll the auto-start each server tick (latched to fire once).
+            if (gameManager.NetworkManager.IsServer)
+            {
+                TryAutoStart();
+            }
         }
         
         public override void StateUpdateClient()

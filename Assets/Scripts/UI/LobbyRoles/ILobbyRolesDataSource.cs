@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Characters;
+using CorruptionDuPortail.Domain;
 
 namespace UI.LobbyRoles
 {
@@ -64,6 +65,12 @@ namespace UI.LobbyRoles
         /// <summary>All roles in the authored pool order, with their current max/forced.</summary>
         IReadOnlyList<LobbyRoleView> GetRoles();
 
+        /// <summary>
+        /// The per-faction minimums the start gate enforces (e.g. anomaly ≥ 1, chosen ≥ 1). The footer mirror
+        /// runs the SAME <c>CompositionValidator</c> as the server with these, so its reason/disabled state match.
+        /// </summary>
+        IReadOnlyList<FactionMinimum> GetFactionMinimums();
+
         /// <summary>The full authored <see cref="Role"/> (with its powers) for a role, for the detail overlay. Null if unknown.</summary>
         Role GetRole(RoleID id);
 
@@ -86,8 +93,23 @@ namespace UI.LobbyRoles
         /// </summary>
         int GetActivePresetIndex();
 
-        /// <summary>Host-only: request the game to start. The server re-validates the composition gate before advancing.</summary>
-        void RequestStart();
+        /// <summary>True on the host (the tablet may show host-only controls like the dev force-start).</summary>
+        bool IsHost();
+
+        /// <summary>Whether the LOCAL player is marked ready.</summary>
+        bool GetLocalReady();
+
+        /// <summary>Toggle the LOCAL player's ready flag (server-authoritative; a client can only ready itself).</summary>
+        void RequestSetReady(bool ready);
+
+        /// <summary>How many census players are ready (for the "X / N prêts" tally; N = <see cref="GetPlayerCount"/>).</summary>
+        int GetReadyCount();
+
+        /// <summary>
+        /// Host-only DEV control ("Démarrage forcé"): start the game skipping the all-ready condition ONLY.
+        /// The server still re-validates the composition gate before advancing.
+        /// </summary>
+        void RequestForceStart();
     }
 
     /// <summary>

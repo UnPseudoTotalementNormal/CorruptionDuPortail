@@ -181,6 +181,12 @@ namespace Network
                     continue;
                 }
 
+                // feat/lobby-ready-system: isReady is owned exclusively by SetReadyServer (a whole-profile replace
+                // must never change it). Carry the current ready flag onto the incoming profile so a future
+                // appearance/name update can't silently un-ready the player (isReady defaults to false in the
+                // client-supplied _info, and it participates in Equals).
+                _info.isReady = playerInfos[i].isReady;
+
                 // Code-review F3: skip a no-op write so a redundant UpdateLocalPlayerInfo() (e.g. the
                 // personalization UI firing with no real change) does not spam OnListChanged / replication.
                 // Uses the value equality this story tidied up.
@@ -201,8 +207,91 @@ namespace Network
                 playerClientId = _clientId,
                 playerName = _name,
                 playerFullName = _name,
-                playerSteamId = 0
+                playerSteamId = 0,
+                // Simulated bots (clientId >= 100) are auto-ready: they never open a UI to toggle, so without
+                // this the all-ready gate could never be satisfied in solo bot-debug (feat/lobby-ready-system).
+                isReady = true
             });
+        }
+
+        // ─────────────────── Lobby ready-to-start (feat/lobby-ready-system) ───────────────────
+
+        /// <summary>
+        /// Client → server: set THIS client's ready flag. Server-authoritative and sender-trusted (same shape as
+        /// UpdatePlayerInfoServerRpc) — a client can only ready itself, never another player. SendTo.Server has no
+        /// per-target params, so no GetSafeRpcTarget wrap (NFR5), exactly like SavePlayerInfoRpc.
+        /// </summary>
+        public void RequestSetReady(bool ready) => SetReadyServerRpc(ready);
+
+        [Rpc(SendTo.Server)]
+        private void SetReadyServerRpc(bool ready, RpcParams rpcParams = default)
+        {
+            SetReadyServer(rpcParams.Receive.SenderClientId, ready);
+        }
+
+        /// <summary>
+        /// Server-side: flip ONLY the isReady field on one census entry (by clientId) and replicate via index-set.
+        /// Never a whole-PlayerInfo replace (that would clobber name/steamId). Unknown clientId = no-op; unchanged
+        /// value skipped (no redundant OnListChanged). Also the host's direct entry point for a simulated identity.
+        /// </summary>
+        public void SetReadyServer(ulong clientId, bool ready)
+        {
+            if (!IsServer || !IsSpawned || playerInfos == null) return;
+
+            for (int i = 0; i < playerInfos.Count; i++)
+            {
+                if (playerInfos[i].playerClientId != clientId)
+                {
+                    continue;
+                }
+
+                if (playerInfos[i].isReady == ready)
+                {
+                    return; // no-op: skip redundant replication
+                }
+
+                PlayerInfo _info = playerInfos[i];
+                _info.isReady = ready;
+                playerInfos[i] = _info;
+                return;
+            }
+        }
+
+        /// <summary>Every census entry is ready AND there is at least one (an empty census is NOT all-ready).</summary>
+        public bool AllReady()
+        {
+            if (!IsSpawned || playerInfos == null || playerInfos.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (PlayerInfo _info in playerInfos)
+            {
+                if (!_info.isReady)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>Number of ready census entries (for the "X / N prêts" tally).</summary>
+        public int ReadyCount()
+        {
+            if (!IsSpawned || playerInfos == null)
+            {
+                return 0;
+            }
+
+            int _count = 0;
+            foreach (PlayerInfo _info in playerInfos)
+            {
+                if (_info.isReady)
+                {
+                    _count++;
+                }
+            }
+            return _count;
         }
     }
 }

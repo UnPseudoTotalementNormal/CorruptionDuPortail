@@ -28,6 +28,8 @@ namespace UI.LobbyRoles
 
         private readonly Dictionary<RoleID, (int max, int forced)> _state = new();
 
+        private bool _localReady; // harness: the single local player's ready state
+
         // Harness-only placeholder presets, keyed by player count. Real presets are design-owned (RolePresetDatabase).
         private struct DemoPreset { public string Name; public string Desc; public bool Classic; public (RoleID id, int max, int forced)[] Entries; }
 
@@ -162,6 +164,19 @@ namespace UI.LobbyRoles
             return true;
         }
 
-        public void RequestStart() { /* harness only — no game loop to advance */ }
+        public bool IsHost() => true; // harness acts as the host
+
+        public bool GetLocalReady() => _localReady;
+
+        public void RequestSetReady(bool ready)
+        {
+            if (_localReady == ready) return;
+            _localReady = ready;
+            OnChanged?.Invoke();
+        }
+
+        public int GetReadyCount() => _localReady ? 1 : 0;
+
+        public void RequestForceStart() { /* harness only — no game loop to advance */ }
     }
 }

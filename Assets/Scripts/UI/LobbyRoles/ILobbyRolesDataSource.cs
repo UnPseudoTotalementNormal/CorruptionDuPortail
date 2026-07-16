@@ -93,8 +93,23 @@ namespace UI.LobbyRoles
         /// </summary>
         int GetActivePresetIndex();
 
-        /// <summary>Host-only: request the game to start. The server re-validates the composition gate before advancing.</summary>
-        void RequestStart();
+        /// <summary>True on the host (the tablet may show host-only controls like the dev force-start).</summary>
+        bool IsHost();
+
+        /// <summary>Whether the LOCAL player is marked ready.</summary>
+        bool GetLocalReady();
+
+        /// <summary>Toggle the LOCAL player's ready flag (server-authoritative; a client can only ready itself).</summary>
+        void RequestSetReady(bool ready);
+
+        /// <summary>How many census players are ready (for the "X / N prêts" tally; N = <see cref="GetPlayerCount"/>).</summary>
+        int GetReadyCount();
+
+        /// <summary>
+        /// Host-only DEV control ("Démarrage forcé"): start the game skipping the all-ready condition ONLY.
+        /// The server still re-validates the composition gate before advancing.
+        /// </summary>
+        void RequestForceStart();
     }
 
     /// <summary>

@@ -222,5 +222,40 @@ namespace Tests.PlayMode.Desingleton
             Assert.AreEqual(3, ClientCm.GetCharacters(false).Count,
                 "ClientCm's projected character list must count 3 (no [CHARLIST] duplicate).");
         }
+
+        // --- 7. Heal is ONE-SHOT (Character.cs:187-196): HealPlayerServerRpc clears corruption once and sets
+        // isHealed; a re-corrupt afterwards works, but a SECOND heal is a no-op (the isHealed gate), so the target
+        // stays corrupted. A server-authority rule whose final state still replicates to the client. ---
+        [UnityTest]
+        public IEnumerator Heal_IsOneShot_ReCorruptAfterHealStaysCorrupted()
+        {
+            ulong _targetId = ClientNm.LocalClientId;
+            yield return SpawnRealCharacterForClient(_targetId);
+            Character _hostTarget = HostCm.GetCharacter(_targetId, false);
+            Assert.IsNotNull(_hostTarget, $"Host has no Character for clientId {_targetId}.");
+
+            _hostTarget.CorruptPlayerServerRpc();
+            Assert.IsTrue(_hostTarget.isCorrupted.Value, "Corrupt should set isCorrupted.");
+
+            _hostTarget.HealPlayerServerRpc();
+            Assert.IsFalse(_hostTarget.isCorrupted.Value, "Heal should clear corruption.");
+            Assert.IsTrue(_hostTarget.isHealed.Value, "Heal should set isHealed.");
+
+            // Re-corrupt works after a heal.
+            _hostTarget.CorruptPlayerServerRpc();
+            Assert.IsTrue(_hostTarget.isCorrupted.Value, "Re-corrupt after heal should set isCorrupted again.");
+
+            // A SECOND heal is a no-op (isHealed already true) — the target must STAY corrupted.
+            _hostTarget.HealPlayerServerRpc();
+            Assert.IsTrue(_hostTarget.isCorrupted.Value,
+                "A second heal must be a no-op (heal is one-shot), so the re-corrupted target stays corrupted.");
+
+            // The final corrupted state settles on the real client replica (quiescence, not a single tick).
+            Character _clientTarget = null;
+            yield return ResolveClientReplica(_hostTarget, _c => _clientTarget = _c);
+            yield return NetworkTestHelper.WaitUntilStableOrTimeout(
+                () => _clientTarget.isCorrupted.Value, 5f, 3,
+                "The final (re-corrupted, not re-healed) state never settled true on the client replica.");
+        }
     }
 }

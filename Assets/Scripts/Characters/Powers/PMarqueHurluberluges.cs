@@ -106,22 +106,9 @@ namespace Characters.Powers
             }
             foreach (int _index in _picks)
             {
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], ConfigureStolenCopy);
+                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], Power.ConfigureAsOneShotStolenCopy);
             }
-        }
-
-        // Runs on the server once the copy is spawned + reparented under Ugues (via GivePowerToCharacter's
-        // onReady hook). Turns the copy into a single-use, non-regenerating power that stays spent forever.
-        private void ConfigureStolenCopy(Power _copy)
-        {
-            if (!IsServer || _copy == null)
-            {
-                return;
-            }
-            _copy.isStolenCopy.Value = true;
-            _copy.maxPowerUse = 1;
-            _copy.powerUseRegenPerAwakening = 0; // never refilled on awaken → spent means spent ("perdu").
-            _copy.powerUseLeft.Value = 1;
         }
     }
 }

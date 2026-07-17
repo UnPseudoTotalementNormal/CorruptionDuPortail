@@ -80,10 +80,37 @@ namespace Board.UI.PowerBar
             {
                 return;
             }
-            
+
+            // A one-shot stolen copy leaves the bar with a shrink-to-zero animation. Detach it from the tracked
+            // list first so the rebuild logic below (and ArePowerSetsEqual) ignore it — the tween runs on the
+            // detached UI object and self-destroys. Two entry points: (a) caught while still alive at
+            // powerUseLeft==0; (b) its Power already despawned (server despawn beat the poll) → `power` is
+            // Unity-null but `wasStolenCopy` still tells us it was one. Any other Unity-null power (e.g. reparented
+            // away) is dropped instantly — leaving it would make the foreach below deref a destroyed Power.
+            for (int _i = powersBarObjects.Count - 1; _i >= 0; _i--)
+            {
+                PowersBarObject _pbo = powersBarObjects[_i];
+                if (!_pbo)
+                {
+                    powersBarObjects.RemoveAt(_i);
+                    continue;
+                }
+                if (IsSpentStolenCopy(_pbo.power) || (!_pbo.power && _pbo.wasStolenCopy))
+                {
+                    powersBarObjects.RemoveAt(_i);
+                    _pbo.AnimateOutThenDestroy();
+                    continue;
+                }
+                if (!_pbo.power)
+                {
+                    powersBarObjects.RemoveAt(_i);
+                    Destroy(_pbo.gameObject);
+                }
+            }
+
             foreach (var _currentPowerBarObject in powersBarObjects)
             {
-                if (!_currentPowerBarObject)
+                if (!_currentPowerBarObject || !_currentPowerBarObject.power)
                 {
                     continue;
                 }
@@ -95,6 +122,13 @@ namespace Board.UI.PowerBar
                 }
                 _currentPowerBarObject.SetInteractable(_playerPower.CanUse(true));
             }
+        }
+
+        // A one-shot stolen copy (Ugues / Luma) whose last use is spent. Excluded from the displayed set so it is
+        // never (re)built into the bar; its removal is handled by the scale-out animation + server despawn.
+        private static bool IsSpentStolenCopy(Power _power)
+        {
+            return _power && _power.isStolenCopy.Value && _power.powerUseLeft.Value <= 0;
         }
 
         public void RefreshCharacterPowerBar(ulong _characterID)
@@ -151,9 +185,9 @@ namespace Board.UI.PowerBar
                     continue;
                 }
 
-                // A spent stolen power (Marque d'Hurluberluges one-shot) leaves the bar — "une fois utilisé,
-                // le pouvoir est perdu". Unspent stolen copies still show and are usable like any other power.
-                if (_currentPower.isStolenCopy.Value && _currentPower.powerUseLeft.Value <= 0)
+                // Belt-and-suspenders: a spent one-shot stolen copy is animated out + despawned elsewhere; never
+                // rebuild a bar object for one (guards the frame between powerUseLeft==0 and the deferred despawn).
+                if (IsSpentStolenCopy(_currentPower))
                 {
                     continue;
                 }
@@ -202,7 +236,7 @@ namespace Board.UI.PowerBar
 
         public bool ArePowerSetsEqual(List<Power> _powers, List<PowersBarObject> _powersBarObjects)
         {
-            var _leftIds = _powers?.Where(_p => _p).Select(_p => _p.NetworkObjectId).ToList() ??
+            var _leftIds = _powers?.Where(_p => _p && !IsSpentStolenCopy(_p)).Select(_p => _p.NetworkObjectId).ToList() ??
                            new List<ulong>();
             var _rightIds = _powersBarObjects?
                 .Where(_pbo => _pbo.power)

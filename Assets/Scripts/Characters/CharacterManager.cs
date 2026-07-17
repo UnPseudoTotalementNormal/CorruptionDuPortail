@@ -511,8 +511,12 @@ namespace Characters
         {
             Assert.IsTrue(NetworkManager.IsServer, "RemovePowerFromCharacter should only be called on the server");
             Character _character = GetCharacter(_characterId);
-            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power {_power.powerName}");
-            
+            // Owner may have vanished the same frame the copy is spent (disconnect chain): quiet no-op, not an assert.
+            if (_character == null || _power == null)
+            {
+                return;
+            }
+
             if (_power.ownerCharacter != _character)
             {
                 Debug.LogError($"Power {_power.powerName} does not belong to character {_characterId}");

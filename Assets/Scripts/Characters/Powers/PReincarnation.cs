@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using Characters.Powers.Target;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
@@ -21,9 +22,31 @@ namespace Characters.Powers
         void IGrantRolePowers.GrantRolePowers(int _ownerSlot, int _fromRoleSlot)
         {
             Character _fromRoleCharacter = characterManager.GetCharacter((ulong)_fromRoleSlot);
+
+            // If THIS Réincarnation is itself a copy (stolen by Ugues/Luma), its grants are one-shot — a temporary
+            // copy power must never mint permanent powers (balance). L'Incomplet's own Réincarnation grants stay
+            // permanent, but still flagged as copies so no copier can re-copy them.
+            bool _isCopiedReincarnation = isStolenCopy.Value;
+            Action<Power> _onReady = _isCopiedReincarnation
+                ? (Action<Power>)Power.ConfigureAsOneShotStolenCopy
+                : Power.MarkAsPermanentCopy;
+
             foreach (var _rolePower in _fromRoleCharacter.role.powers)
             {
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower);
+                // Never copy an already-copied power (of any provenance, passive or active) — no copy chains.
+                if (_rolePower == null || _rolePower.isCopiedPower.Value)
+                {
+                    continue;
+                }
+                // A copied (one-shot) Réincarnation skips PASSIVE powers: a passive is never "spent", so the
+                // one-shot config would never despawn it and it would persist forever — a temporary copy minting a
+                // permanent power (Poyo, option A, 2026-07-17). The real Incomplet still grants passives normally.
+                // Design choice, may be revisited later (e.g. passives lasting one awakening).
+                if (_isCopiedReincarnation && _rolePower.isPassive)
+                {
+                    continue;
+                }
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower, _onReady);
             }
         }
 

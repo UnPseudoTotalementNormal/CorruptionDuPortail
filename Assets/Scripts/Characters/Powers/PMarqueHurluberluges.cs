@@ -92,7 +92,7 @@ namespace Characters.Powers
                         continue;
                     }
                     _powers.Add(_p);
-                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.isPassive, _p.isStolenCopy.Value));
+                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.isPassive, _p.isCopiedPower.Value));
                 }
             }
 

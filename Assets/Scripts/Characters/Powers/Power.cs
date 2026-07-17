@@ -98,11 +98,16 @@ namespace Characters.Powers
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
 
-        // Server-set on a one-shot copy handed to a thief (Ugues' Marque d'Hurluberluges, Luma's fake-card copy).
-        // Replicated. When such a copy is spent (powerUseLeft 0) the server despawns it for good — see OnUsed —
-        // so "temporaire = perdu" holds literally instead of leaving a greyed-out husk in the bar. Also feeds the
-        // stealable-candidate filter (a copy can't itself be re-stolen). Marker only — authority unchanged.
+        // LIFETIME marker. Server-set on a one-shot copy handed to a thief (Ugues' Marque d'Hurluberluges, Luma's
+        // fake-card copy). Replicated. When such a copy is spent (powerUseLeft 0) the server despawns it for good —
+        // see OnUsed — so "temporaire = perdu" holds literally instead of leaving a greyed-out husk. Distinct from
+        // isCopiedPower: a one-shot copy IS a copy, but l'Incomplet's permanent grants are copies that never despawn.
         public NetworkVariable<bool> isStolenCopy = new();
+
+        // PROVENANCE marker. Server-set on ANY power that is a copy of another role's power — one-shot thief copies
+        // (Ugues/Luma) AND l'Incomplet's Réincarnation grants (permanent OR one-shot). Feeds the copier eligibility
+        // filter: a copy can never itself be re-copied. Orthogonal to isStolenCopy (lifetime). Marker only.
+        public NetworkVariable<bool> isCopiedPower = new();
 
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
@@ -310,10 +315,23 @@ namespace Characters.Powers
             {
                 return;
             }
+            _copy.isCopiedPower.Value = true; // a one-shot copy is also a copy → not re-copiable
             _copy.isStolenCopy.Value = true;
             _copy.maxPowerUse = 1;
             _copy.powerUseRegenPerAwakening = 0; // never refilled on awaken → spent means spent ("perdu").
             _copy.powerUseLeft.Value = 1;
+        }
+
+        // Server-only. Marks a freshly-granted copy as a permanent copy — usable/regenerating like a normal power,
+        // but flagged so no copier can re-copy it. Used by l'Incomplet's own (non-copied) Réincarnation grants:
+        // permanent (Q3) yet still "a copy" (Q1). Pass as the GivePowerToCharacter onReady hook.
+        public static void MarkAsPermanentCopy(Power _copy)
+        {
+            if (_copy == null || !_copy.IsServer)
+            {
+                return;
+            }
+            _copy.isCopiedPower.Value = true;
         }
 
         public virtual void Cancel()

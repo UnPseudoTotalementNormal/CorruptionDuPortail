@@ -150,8 +150,8 @@ namespace Characters.Powers
             foreach (Power _p in _powers)
             {
                 bool _isPassive = _p == null || _p.isPassive;
-                bool _isStolenCopy = _p != null && _p.isStolenCopy.Value;
-                _candidates.Add(new PowerCandidate(true, false, _isPassive, _isStolenCopy));
+                bool _isCopied = _p != null && _p.isCopiedPower.Value;
+                _candidates.Add(new PowerCandidate(true, false, _isPassive, _isCopied));
             }
 
             List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, 1, new UnityRandomProvider());

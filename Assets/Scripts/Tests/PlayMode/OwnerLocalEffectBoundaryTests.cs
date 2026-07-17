@@ -373,6 +373,60 @@ namespace Tests.PlayMode
                 "The target-local reveal must NOT land on the host.");
         }
 
+        /// <summary>
+        /// The Orpheline mechanic's CONDITIONAL rule (LackOfAffectionDecision: the sender's role is revealed to
+        /// the contacted target ONLY when that target is a "chosen"/élu). Complement of
+        /// <see cref="LackOfAffectionContactedOnClient_RevealsSenderRoleOnClientRevealer_NotHost"/>: here the
+        /// contacted target is an ANOMALY, so contacting them must reveal NOTHING — the target does not learn who
+        /// the Orpheline is. Proven on the real remote client (the contacted party), which is the only place the
+        /// target-local decision runs. A StartHost-only harness can't exercise the target-client dispatch at all.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator LackOfAffectionContactedOnClient_NonChosenTarget_RevealsNothing()
+        {
+            ulong clientId = _clientNm.LocalClientId; // the CONTACTED TARGET's real NGO identity
+            const ulong SenderSeat = 777UL;           // the Orpheline (caster) seat
+
+            Character hostSender = _hostCm.AddNewCharacter(SenderSeat);
+            Character hostTarget = _hostCm.AddNewCharacter(clientId);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, hostSender, hostTarget);
+            hostSender.role = new Role { roleName = "Orpheline-Test" };
+            // NOT chosen -> the reveal branch must not fire.
+            hostTarget.role = new Role { factionType = FactionType.anomaly, roleName = "Target-Test" };
+
+            var hostPower = _hostNm.SpawnManager.InstantiateAndSpawn(_lackPrefabNo, destroyWithScene: true)
+                .GetComponent<PLackOfAffection>();
+            hostPower.ownerClientId.Value = SenderSeat;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(hostPower);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => FindReplica<PLackOfAffection>(_clientNm, hostPower.NetworkObjectId) != null
+                      && _clientCm.GetCharacter(clientId, false) != null
+                      && _clientCm.GetCharacter(SenderSeat, false) != null,
+                10f, "Client replicas of the power / target / sender never arrived.");
+
+            // Set the target faction on the replica the client-side decision reads (role is not a NetworkVariable).
+            _clientCm.GetCharacter(clientId, false).role = new Role { factionType = FactionType.anomaly, roleName = "Target-Test" };
+
+            Assert.AreEqual(RevealLevel.False,
+                _clientRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,
+                "Precondition: client revealer starts with no role reveal for the Orpheline seat.");
+
+            // Contact the client-target exactly like production (host power -> SpecifiedInParams -> client body).
+            RpcParams rpcTarget = _hostCm.GetSafeRpcTarget(clientId);
+            ReflectionHelper.InvokePrivateMethod(hostPower, "OnPlayerContactedRpc", clientId, SenderSeat, rpcTarget);
+
+            // Give the client-side decision several frames to run — enough that a (buggy) reveal would have landed.
+            for (int i = 0; i < 6; i++) yield return null;
+
+            Assert.AreEqual(RevealLevel.False,
+                _clientRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,
+                "A non-chosen target must NOT learn the Orpheline's role — the reveal branch is gated on 'chosen'.");
+            Assert.AreEqual(RevealLevel.False,
+                _hostRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,
+                "Nothing must land on the host revealer either.");
+        }
+
         // --- helpers (MultiClientGameFixture pattern) ---
 
         private GameObject MakePrefab(string name, uint hash, System.Action<GameObject> addComponents)

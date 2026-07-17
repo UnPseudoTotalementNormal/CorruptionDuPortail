@@ -46,10 +46,18 @@ namespace Characters.Powers
         // so a copy always starts at base state. [NonSerialized]: a prefab ref, never replicated; server-only reads.
         [System.NonSerialized] public Power basePrefab;
 
-        // isPassive as defined on the base prefab (falls back to the live value off-server / for legacy powers).
-        // Copier eligibility reads THIS so a base-active power that turned passive at runtime (e.g. a used
-        // Réincarnation) stays copiable and comes back fresh. Provenance (isCopiedPower) is still read live.
-        public bool BaseIsPassive => basePrefab != null ? basePrefab.isPassive : isPassive;
+        // The design-time value of isPassive, snapshotted at Awake before any runtime flip. PReincarnation
+        // mutates the LIVE isPassive to true post-use (to disable re-use + skip awakening), which is a gameplay
+        // state, NOT a change of the power's authored nature. The RoleCard categorizes active/passive by THIS
+        // so a spent Réincarnation still reads as its authored active power instead of jumping to the passive
+        // list. Presentation-only; the live isPassive still drives usability/awakening/power-bar.
+        [NonSerialized] public bool authoredIsPassive;
+
+        // Authored (base) passive value, used by copier eligibility: a base-active power that turned passive at
+        // runtime (e.g. a used Réincarnation) stays copiable and comes back fresh. Reuses the Awake snapshot
+        // (authoredIsPassive) — replicated-independent and correct on every instance. Provenance (isCopiedPower)
+        // is still read live.
+        public bool BaseIsPassive => authoredIsPassive;
         [Tooltip("Hide this power from the role-presentation card (e.g. a faction win-objective that isn't personal kit). Gameplay-neutral: presentation only.")]
         public bool hideFromRoleCard;
         public bool hasToBeAwakened = true;
@@ -119,6 +127,13 @@ namespace Characters.Powers
         // filter: a copy can never itself be re-copied. Orthogonal to isStolenCopy (lifetime). Marker only.
         public NetworkVariable<bool> isCopiedPower = new();
 
+        // Server-set on a power GRANTED at runtime that must not leak in the RoleCard (e.g. L'Incomplet's
+        // Réincarnation, which grants a chosen role's full power set). Distinct from isStolenCopy: these are
+        // permanent, non-one-shot powers, so they must NOT get the power-bar-hide-when-spent / non-stealable
+        // semantics of isStolenCopy. Replicated so the inspecting client's RoleCard filter can honour it.
+        // Marker only — authority unchanged.
+        public NetworkVariable<bool> hideFromRoleCardRuntime = new();
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;
@@ -132,6 +147,10 @@ namespace Characters.Powers
         public Character ownerCharacter => characterManager.GetCharacter(ownerClientId.Value, false);
         
         [HideInInspector] public ulong idHolderServer;
+        // Snapshot the authored isPassive before any runtime flip (PReincarnation's post-use ChangeIsPassiveRpc).
+        // Awake runs at instantiation on every instance (host + clients), before RPCs can fire.
+        protected virtual void Awake() => authoredIsPassive = isPassive;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

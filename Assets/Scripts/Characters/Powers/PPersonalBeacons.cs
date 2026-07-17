@@ -36,8 +36,9 @@ namespace Characters.Powers
             targetValidator.AddRule(ctx => personalBeacons.All(_p => _p.targetClientId != ctx.targetId));
         }
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (NetworkManager.IsServer)
             {
                 onPowerReparented += OnPowerReparented;

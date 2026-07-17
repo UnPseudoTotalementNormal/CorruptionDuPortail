@@ -23,30 +23,52 @@ namespace Characters.Powers
         {
             Character _fromRoleCharacter = characterManager.GetCharacter((ulong)_fromRoleSlot);
 
-            // If THIS Réincarnation is itself a copy (stolen by Ugues/Luma), its grants are one-shot — a temporary
-            // copy power must never mint permanent powers (balance). L'Incomplet's own Réincarnation grants stay
-            // permanent, but still flagged as copies so no copier can re-copy them.
+            // A copied (Ugues/Luma) Reincarnation grants ONE-SHOT copies (a temporary copy must never mint
+            // permanent powers); l'Incomplet's own Reincarnation grants PERMANENT copies. Either way the grants
+            // are hidden from the RoleCard (showing them leaks a real Incomplet + the copied role) via the onReady.
             bool _isCopiedReincarnation = isStolenCopy.Value;
-            Action<Power> _onReady = _isCopiedReincarnation
-                ? (Action<Power>)Power.ConfigureAsOneShotStolenCopy
-                : Power.MarkAsPermanentCopy;
+            Action<Power> _onReady = _isCopiedReincarnation ? ConfigureOneShotGrant : ConfigurePermanentGrant;
 
             foreach (var _rolePower in _fromRoleCharacter.role.powers)
             {
-                // Never copy an already-copied power (of any provenance, passive or active) — no copy chains.
+                // Never copy an already-copied power (of any provenance, passive or active) -- no copy chains.
                 if (_rolePower == null || _rolePower.isCopiedPower.Value)
                 {
                     continue;
                 }
-                // A copied (one-shot) Réincarnation skips PASSIVE powers: a passive is never "spent", so the
-                // one-shot config would never despawn it and it would persist forever — a temporary copy minting a
+                // A copied (one-shot) Reincarnation skips PASSIVE powers: a passive is never "spent", so the
+                // one-shot config would never despawn it and it would persist forever -- a temporary copy minting a
                 // permanent power (Poyo, option A, 2026-07-17). The real Incomplet still grants passives normally.
-                // Design choice, may be revisited later (e.g. passives lasting one awakening).
                 if (_isCopiedReincarnation && _rolePower.BaseIsPassive)
                 {
                     continue;
                 }
                 characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower, _onReady);
+            }
+        }
+
+        // onReady for a PERMANENT grant (real Incomplet): mark it a copy (non-recopiable, permanent) + hide it
+        // from the RoleCard. Server-only (runs from GivePowerToCharacter's server-side onReady hook).
+        private static void ConfigurePermanentGrant(Power _granted)
+        {
+            Power.MarkAsPermanentCopy(_granted);
+            HideGrantFromRoleCard(_granted);
+        }
+
+        // onReady for a ONE-SHOT grant (a copied Reincarnation): one-shot stolen-copy semantics (despawn-on-use,
+        // non-recopiable) + hide it from the RoleCard.
+        private static void ConfigureOneShotGrant(Power _granted)
+        {
+            Power.ConfigureAsOneShotStolenCopy(_granted);
+            HideGrantFromRoleCard(_granted);
+        }
+
+        // Hide a runtime-granted power from the RoleCard so it doesn't leak the Incomplet identity / copied role.
+        private static void HideGrantFromRoleCard(Power _granted)
+        {
+            if (_granted != null && _granted.IsServer)
+            {
+                _granted.hideFromRoleCardRuntime.Value = true;
             }
         }
 

@@ -48,13 +48,29 @@ décision→dispatch→executor du pouvoir. La couche décision/dispatch au-dess
 **IN :** un fichier de test, une classe dérivant de `MultiClientGameFixture`, un `[UnityTest]`. Aucune modification
 de code de prod. Aucune modification du fixture.
 
-**OUT (follow-ups documentés, PAS dans ce proto) :**
-- Proto B — spawn d'un vrai `Power` NetworkObject dans le fixture : exige un `CompositionRoot` câblé **par-NM**
-  (host + client), car `Power.OnNetworkSpawn` (`Power.cs:154-167`) tourne aussi sur la réplique client et assert
-  `CompositionRoot.For(nm).CharacterManager != null`. `NetworkTestHelper.RegisterCompositionRoot` ne sert que
-  `NetworkManager.Singleton` (host). C'est un investissement fixture séparé.
+**OUT de CE proto (Proto A) — Proto B fait séparément, voir ci-dessous :**
+- Proto B — spawn d'un vrai `Power` NetworkObject dans le fixture.
 - Effets owner-local (LackOfAffection/CursedVision/Embrace via `RunClientDecisionEffects`) — classe de bug la plus
-  intéressante à couvrir en 2-NM, mais nécessite Proto B.
+  intéressante à couvrir en 2-NM. Toujours ouverte après Proto B (nécessite `RunClientDecisionEffects` côté client).
+
+## Proto B — RÉSULTAT (2026-07-17, agent Fable 5) — VERT
+
+`PowerObjectReplicationProtoTests.SpawnedPCorruptingMark_FullPipeline_CorruptsTargetOnRemoteClientReplica` : spawn
+d'un **vrai `PCorruptingMark`** dans le fixture 2-NM, pipeline complet (OnCardClickedRpc → `CorruptingMarkDecision` →
+dispatcher → executors), corruption observée sur la réplique client du target. **5/5 verts** avec Proto A + les
+self-tests fixture (vérif indépendante) ; 32/32 sur tout le namespace Desingleton (agent).
+
+**CORRECTION de mon hypothèse (Proto A scoping) :** le "mur CompositionRoot-par-NM" **n'existait pas**.
+`CompositionRoot.For(nm)` est une **struct sans état** qui délègue aux registres per-NM
+(`CharacterManager.For(nm)` / `GameManager.For(nm)`) — aucune instance root nécessaire ; c'est documenté dans le doc
+de classe de `CompositionRoot.cs`. HostCm/ClientCm déjà enregistrés par le fixture → l'Assert de
+`Power.OnNetworkSpawn:158` passe sur les 2 répliques sans rien ajouter. Le vrai blocage était `RoleTargetSystem.instance`
+(singleton non-dé-singletonisé) déréférencé par `NewTargetingExecutor` → résolu en spawnant un vrai RTS dans les 2 NM.
+
+**Fichiers Proto B :** `Assets/Scripts/Tests/PlayMode/Desingleton/PowerObjectReplicationProtoTests.cs` (nouveau) +
+extension **additive** de `MultiClientGameFixture.cs` (hook `virtual BuildExtraNetworkPrefabs`, défaut vide → zéro
+impact fixtures existants ; 2 helpers private→protected). Pattern réutilisable pour spawner n'importe quel
+NetworkBehaviour de prod dans le 2-NM. Non committé (décision Poyo).
 
 ## Fichier
 

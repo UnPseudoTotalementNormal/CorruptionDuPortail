@@ -488,7 +488,12 @@ namespace Characters
             Character _character = GetCharacter(_characterId);
             Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to give power {_power.powerName}");
 
-            Power _newPower = Instantiate(_power, null);
+            // Clone the BASE PREFAB, not the (possibly runtime-mutated) instance passed in, so a copy always starts
+            // fresh. Initial attribution + Legacy pass prefabs already (basePrefab null → _source == _power, no change);
+            // the copiers pass live instances whose basePrefab points to the prefab → they now clone fresh.
+            Power _source = _power != null && _power.basePrefab != null ? _power.basePrefab : _power;
+            Power _newPower = Instantiate(_source, null);
+            _newPower.basePrefab = _source;
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.GetComponent<Power>().idHolderServer = _characterId;
             _powerNetworkObject.Spawn(true);

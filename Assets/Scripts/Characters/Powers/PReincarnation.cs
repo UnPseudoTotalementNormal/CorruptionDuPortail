@@ -42,7 +42,7 @@ namespace Characters.Powers
                 // one-shot config would never despawn it and it would persist forever — a temporary copy minting a
                 // permanent power (Poyo, option A, 2026-07-17). The real Incomplet still grants passives normally.
                 // Design choice, may be revisited later (e.g. passives lasting one awakening).
-                if (_isCopiedReincarnation && _rolePower.isPassive)
+                if (_isCopiedReincarnation && _rolePower.BaseIsPassive)
                 {
                     continue;
                 }

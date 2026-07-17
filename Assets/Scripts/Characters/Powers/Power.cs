@@ -40,6 +40,16 @@ namespace Characters.Powers
         public float maxWaitTime;
 
         public bool isPassive;
+
+        // Server-set to the source PREFAB this instance was cloned from (see CharacterManager.GivePowerToCharacter).
+        // Copiers (Ugues/Luma/Réincarnation) clone this base prefab instead of the live, possibly-mutated instance,
+        // so a copy always starts at base state. [NonSerialized]: a prefab ref, never replicated; server-only reads.
+        [System.NonSerialized] public Power basePrefab;
+
+        // isPassive as defined on the base prefab (falls back to the live value off-server / for legacy powers).
+        // Copier eligibility reads THIS so a base-active power that turned passive at runtime (e.g. a used
+        // Réincarnation) stays copiable and comes back fresh. Provenance (isCopiedPower) is still read live.
+        public bool BaseIsPassive => basePrefab != null ? basePrefab.isPassive : isPassive;
         [Tooltip("Hide this power from the role-presentation card (e.g. a faction win-objective that isn't personal kit). Gameplay-neutral: presentation only.")]
         public bool hideFromRoleCard;
         public bool hasToBeAwakened = true;

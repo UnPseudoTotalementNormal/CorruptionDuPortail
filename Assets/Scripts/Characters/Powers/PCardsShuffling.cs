@@ -149,7 +149,7 @@ namespace Characters.Powers
             var _candidates = new List<PowerCandidate>(_powers.Count);
             foreach (Power _p in _powers)
             {
-                bool _isPassive = _p == null || _p.isPassive;
+                bool _isPassive = _p == null || _p.BaseIsPassive;
                 bool _isCopied = _p != null && _p.isCopiedPower.Value;
                 _candidates.Add(new PowerCandidate(true, false, _isPassive, _isCopied));
             }

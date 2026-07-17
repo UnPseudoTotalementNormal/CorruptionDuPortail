@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
 using ChatSystem;
+using Cysharp.Threading.Tasks;
 using RoleTarget;
 using Characters.Powers.PowerComponents;
 using Characters.Powers.Runtime;
@@ -39,12 +40,24 @@ namespace Characters.Powers
         public float maxWaitTime;
 
         public bool isPassive;
+
+        // Server-set to the source PREFAB this instance was cloned from (see CharacterManager.GivePowerToCharacter).
+        // Copiers (Ugues/Luma/Réincarnation) clone this base prefab instead of the live, possibly-mutated instance,
+        // so a copy always starts at base state. [NonSerialized]: a prefab ref, never replicated; server-only reads.
+        [System.NonSerialized] public Power basePrefab;
+
         // The design-time value of isPassive, snapshotted at Awake before any runtime flip. PReincarnation
         // mutates the LIVE isPassive to true post-use (to disable re-use + skip awakening), which is a gameplay
         // state, NOT a change of the power's authored nature. The RoleCard categorizes active/passive by THIS
         // so a spent Réincarnation still reads as its authored active power instead of jumping to the passive
         // list. Presentation-only; the live isPassive still drives usability/awakening/power-bar.
         [NonSerialized] public bool authoredIsPassive;
+
+        // Authored (base) passive value, used by copier eligibility: a base-active power that turned passive at
+        // runtime (e.g. a used Réincarnation) stays copiable and comes back fresh. Reuses the Awake snapshot
+        // (authoredIsPassive) — replicated-independent and correct on every instance. Provenance (isCopiedPower)
+        // is still read live.
+        public bool BaseIsPassive => authoredIsPassive;
         [Tooltip("Hide this power from the role-presentation card (e.g. a faction win-objective that isn't personal kit). Gameplay-neutral: presentation only.")]
         public bool hideFromRoleCard;
         public bool hasToBeAwakened = true;
@@ -103,9 +116,16 @@ namespace Characters.Powers
         public const string CANALISATION_SOUND_KEY = "PowerCanalisationSound";
         [NonSerialized] public bool isCurrentlyUsed;
 
-        // Server-set on a copy handed to Ugues by Marque d'Hurluberluges: a one-shot stolen power. Replicated
-        // so the owner's power bar can hide it once spent (powerUseLeft 0). Marker only — authority unchanged.
+        // LIFETIME marker. Server-set on a one-shot copy handed to a thief (Ugues' Marque d'Hurluberluges, Luma's
+        // fake-card copy). Replicated. When such a copy is spent (powerUseLeft 0) the server despawns it for good —
+        // see OnUsed — so "temporaire = perdu" holds literally instead of leaving a greyed-out husk. Distinct from
+        // isCopiedPower: a one-shot copy IS a copy, but l'Incomplet's permanent grants are copies that never despawn.
         public NetworkVariable<bool> isStolenCopy = new();
+
+        // PROVENANCE marker. Server-set on ANY power that is a copy of another role's power — one-shot thief copies
+        // (Ugues/Luma) AND l'Incomplet's Réincarnation grants (permanent OR one-shot). Feeds the copier eligibility
+        // filter: a copy can never itself be re-copied. Orthogonal to isStolenCopy (lifetime). Marker only.
+        public NetworkVariable<bool> isCopiedPower = new();
 
         // Server-set on a power GRANTED at runtime that must not leak in the RoleCard (e.g. L'Incomplet's
         // Réincarnation, which grants a chosen role's full power set). Distinct from isStolenCopy: these are
@@ -275,6 +295,37 @@ namespace Characters.Powers
             {
                 OnUsedClientRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
+
+            // A spent one-shot stolen copy (Ugues / Luma) despawns for good — "temporaire = perdu". DEFERRED one
+            // frame, never synchronous: an "act-then-RPC" power issues a second ServerRpc on `this` right after
+            // OnUsed() (Vision of the Impossible, Lack of Affection); despawning now would drop that RPC and lose
+            // the effect. The frame's incoming RPCs run before the next-frame despawn, and clients get a frame to
+            // catch powerUseLeft==0 for the bar's scale-out animation.
+            if (isStolenCopy.Value && powerUseLeft.Value <= 0)
+            {
+                DespawnSpentCopyNextFrameServer().Forget();
+            }
+        }
+
+        private bool _despawnScheduled;
+
+        private async UniTaskVoid DespawnSpentCopyNextFrameServer()
+        {
+            if (_despawnScheduled)
+            {
+                return;
+            }
+            _despawnScheduled = true;
+
+            ulong _owner = ownerClientId.Value;
+            await UniTask.NextFrame();
+
+            // `this` may have been despawned by another path in the meantime (game end, disconnect chain).
+            if (this == null || !IsSpawned || !IsServer)
+            {
+                return;
+            }
+            characterManager.RemovePowerFromCharacter(_owner, this);
         }
         
         protected virtual void OnUsedServer()
@@ -282,6 +333,34 @@ namespace Characters.Powers
             powerUseLeft.Value -= 1;
             onPowerUsedServer?.Invoke();
             characterManager.AskForUpdateAllCharactersRpc();
+        }
+
+        // Server-only. Turns a freshly-granted copy into a single-use, non-regenerating stolen power that stays
+        // spent forever (spent → despawned by OnUsed). Shared by Ugues (Marque d'Hurluberluges) and Luma (fake-card
+        // copy) — pass as the GivePowerToCharacter onReady hook so both configure copies identically.
+        public static void ConfigureAsOneShotStolenCopy(Power _copy)
+        {
+            if (_copy == null || !_copy.IsServer)
+            {
+                return;
+            }
+            _copy.isCopiedPower.Value = true; // a one-shot copy is also a copy → not re-copiable
+            _copy.isStolenCopy.Value = true;
+            _copy.maxPowerUse = 1;
+            _copy.powerUseRegenPerAwakening = 0; // never refilled on awaken → spent means spent ("perdu").
+            _copy.powerUseLeft.Value = 1;
+        }
+
+        // Server-only. Marks a freshly-granted copy as a permanent copy — usable/regenerating like a normal power,
+        // but flagged so no copier can re-copy it. Used by l'Incomplet's own (non-copied) Réincarnation grants:
+        // permanent (Q3) yet still "a copy" (Q1). Pass as the GivePowerToCharacter onReady hook.
+        public static void MarkAsPermanentCopy(Power _copy)
+        {
+            if (_copy == null || !_copy.IsServer)
+            {
+                return;
+            }
+            _copy.isCopiedPower.Value = true;
         }
 
         public virtual void Cancel()

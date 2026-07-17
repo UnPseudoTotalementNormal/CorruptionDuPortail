@@ -144,13 +144,31 @@ namespace GameLogic
         public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, NetworkBehaviourReference _powerNetworkRef)
         {
             Character _character = characterManager.GetCharacter(_characterId);
-            Assert.IsNotNull(_character, $"Character with id {_characterId} not found when trying to remove power");
-            _powerNetworkRef.TryGet(out Power _power);
-            Assert.IsNotNull(_power, $"Power with id {_powerNetworkRef} not found on character {_characterId}");
-            
-            if (_character.role.powers.Contains(_power))
+            if (_character == null || _character.role == null)
             {
-                _character.role.powers.Remove(_power);
+                return;
+            }
+
+            // Tolerate an already-despawned reference. This RPC (SendTo.Everyone) races the NetworkObject.Despawn
+            // that follows it in RemovePowerFromCharacter: the HOST processes its own copy AFTER the synchronous
+            // despawn, so TryGet fails there; a remote client that handled the despawn message first is in the same
+            // boat. In that case drop any dead entries so no fake-null husk lingers in role.powers.
+            bool _changed;
+            if (_powerNetworkRef.TryGet(out Power _power) && _power != null)
+            {
+                _changed = _character.role.powers.Remove(_power);
+            }
+            else
+            {
+                _changed = _character.role.powers.RemoveAll(_p => !_p) > 0;
+            }
+
+            // Symmetric with the add path (Character populates role.powers then fires onPowersUpdated): the power
+            // bar subscribes to this event, so a removal (spent one-shot copy, reparent) refreshes it. Only fire
+            // when the list actually changed to avoid a redundant rebuild.
+            if (_changed)
+            {
+                _character.InvokeOnPowersUpdated();
             }
         }
 

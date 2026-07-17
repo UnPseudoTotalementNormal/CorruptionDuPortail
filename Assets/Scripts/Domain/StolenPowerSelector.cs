@@ -76,23 +76,23 @@ namespace CorruptionDuPortail.Domain
     /// Engine-free descriptor of one candidate power for <see cref="StolenPowerSelector.SelectStealable"/>. The
     /// adapter (PMarqueHurluberluges) builds one per live power so the eligibility rule stays pure and testable:
     /// a power is stealable iff its owner is a CHOSEN-faction character other than Ugues, and the power is an
-    /// active (non-passive) power that is not itself an already-stolen copy.
+    /// active (non-passive) power that is not itself a copy (of any provenance — a copy is never re-copiable).
     /// </summary>
     public readonly struct PowerCandidate
     {
         public readonly bool OwnerIsChosen;
         public readonly bool OwnerIsUgues;
         public readonly bool IsPassive;
-        public readonly bool IsStolenCopy;
+        public readonly bool IsCopiedPower;
 
-        public PowerCandidate(bool ownerIsChosen, bool ownerIsUgues, bool isPassive, bool isStolenCopy)
+        public PowerCandidate(bool ownerIsChosen, bool ownerIsUgues, bool isPassive, bool isCopiedPower)
         {
             OwnerIsChosen = ownerIsChosen;
             OwnerIsUgues = ownerIsUgues;
             IsPassive = isPassive;
-            IsStolenCopy = isStolenCopy;
+            IsCopiedPower = isCopiedPower;
         }
 
-        public bool IsEligible => OwnerIsChosen && !OwnerIsUgues && !IsPassive && !IsStolenCopy;
+        public bool IsEligible => OwnerIsChosen && !OwnerIsUgues && !IsPassive && !IsCopiedPower;
     }
 }

@@ -338,10 +338,12 @@ namespace Tests.PlayMode.Desingleton
 
             // Statics must be clean for the next test (domain reload is disabled).
             ResetManagerStatics();
-            // Belt-and-suspenders (spec R8): wipe the FULL production static inventory via the single source of
-            // truth, so no singleton this fixture (or a derived one) touched leaks into the next PlayMode test.
-            // Idempotent — nulling an already-null singleton is a no-op, so behaviour is unchanged for existing tests.
-            Tests.PlayMode.Infra.TestStaticReset.ResetAll();
+            // NOTE: intentionally NOT calling TestStaticReset.ResetAll() here. Several existing PlayMode tests
+            // (e.g. CorruptionTests.PCardsShuffling — needs SelectionFlowService.instance; OwnerLocalEffectBoundary)
+            // pass only because a prior test LEAKS a singleton they never wire themselves. A blanket ResetAll in a
+            // shared fixture teardown clears those leaks and breaks them (Amelia's ordering warning: fix the
+            // leak-dependent tests FIRST, then wire ResetAll). ResetAll stays an opt-in tool for NEW batches that
+            // wire their own singletons; the fixture-reset gate (FixtureResetTests) proves it works in isolation.
 
             yield return null;
 

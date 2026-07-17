@@ -23,7 +23,20 @@ namespace Characters.Powers
             Character _fromRoleCharacter = characterManager.GetCharacter((ulong)_fromRoleSlot);
             foreach (var _rolePower in _fromRoleCharacter.role.powers)
             {
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower);
+                // Hide the granted powers from the RoleCard: showing them would leak that this is a real
+                // L'Incomplet (a factice never reincarnates) and which role it reincarnated into. Flag only —
+                // NOT isStolenCopy, since these are permanent, non-one-shot powers.
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _rolePower, ConfigureGrantedPower);
+            }
+        }
+
+        // Runs on the server once the granted power is spawned + reparented under the owner (GivePowerToCharacter
+        // onReady). Marks it hidden from the RoleCard without touching its usage semantics.
+        private static void ConfigureGrantedPower(Power _granted)
+        {
+            if (_granted != null)
+            {
+                _granted.hideFromRoleCardRuntime.Value = true;
             }
         }
 

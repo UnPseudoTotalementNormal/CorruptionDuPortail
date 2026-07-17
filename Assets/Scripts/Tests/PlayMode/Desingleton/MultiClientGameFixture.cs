@@ -338,6 +338,10 @@ namespace Tests.PlayMode.Desingleton
 
             // Statics must be clean for the next test (domain reload is disabled).
             ResetManagerStatics();
+            // Belt-and-suspenders (spec R8): wipe the FULL production static inventory via the single source of
+            // truth, so no singleton this fixture (or a derived one) touched leaks into the next PlayMode test.
+            // Idempotent — nulling an already-null singleton is a no-op, so behaviour is unchanged for existing tests.
+            Tests.PlayMode.Infra.TestStaticReset.ResetAll();
 
             yield return null;
 

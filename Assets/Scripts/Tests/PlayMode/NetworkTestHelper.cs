@@ -106,5 +106,42 @@ namespace Tests.PlayMode
                 yield return null;
             }
         }
+
+        /// <summary>
+        /// Quiescence primitive (spec R8): yields until <paramref name="condition"/> has held true for
+        /// <paramref name="stableFrames"/> CONSECUTIVE frames — i.e. the observed state reached its value AND
+        /// stopped changing — or fails after the timeout. Use for "assert client state after quiescence" so a
+        /// test never reads a mid-replication tick. This is the single shared definition of "settled".
+        /// </summary>
+        public static IEnumerator WaitUntilStableOrTimeout(Func<bool> condition, float timeoutSeconds, int stableFrames = 3, string failureMessage = null)
+        {
+            float elapsed = 0f;
+            int stable = 0;
+            while (stable < stableFrames)
+            {
+                stable = condition() ? stable + 1 : 0;
+                if (stable >= stableFrames)
+                {
+                    yield break;
+                }
+                if (elapsed >= timeoutSeconds)
+                {
+                    Assert.Fail(failureMessage ?? $"Condition never held stable for {stableFrames} consecutive frames within {timeoutSeconds}s.");
+                    yield break;
+                }
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        /// <summary>Drains <paramref name="ticks"/> frames so both NetworkManagers flush pending replication.
+        /// Prefer <see cref="WaitUntilStableOrTimeout"/> when the settled condition can be expressed.</summary>
+        public static IEnumerator WaitForTicks(int ticks)
+        {
+            for (int i = 0; i < ticks; i++)
+            {
+                yield return null;
+            }
+        }
     }
 }

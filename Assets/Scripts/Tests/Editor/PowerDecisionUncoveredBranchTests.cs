@@ -7,12 +7,11 @@ using NUnit.Framework;
 namespace Tests.Editor
 {
     /// <summary>
-    /// EditMode-pure branch coverage for the power decisions the catalog marked "à implémenter" (A1/A2): the
-    /// CONDITIONAL branches PowerDecisionTests did not yet pin. Same pattern — build a PowerContext + FakeRoster,
-    /// call Decide, assert the ordered EffectDescriptor list BY VALUE (assert on the contract, never the line).
+    /// EditMode-pure coverage for the ONLY power-decision branches PowerDecisionTests does not already pin
+    /// (verified against its method list — no duplicates). Assert on the returned EffectDescriptor contract.
     /// </summary>
     [Category("PowerDecision")]
-    public class PowerDecisionBranchTests
+    public class PowerDecisionUncoveredBranchTests
     {
         private sealed class FakeRoster : IRosterView
         {
@@ -31,33 +30,19 @@ namespace Tests.Editor
             public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 
-        // ---- Blessing (BlessingDecision) --------------------------------------------------
+        // Blessing: PowerDecisionTests covers match/not-healed and match/already-healed, but NOT role-mismatch.
         [Test]
         public void Blessing_RoleMismatch_TargetsOnly()
         {
             var r = new FakeRoster();
-            r.Roles[1] = 5; r.Roles[2] = 9; // picked target and picked role differ
+            r.Roles[1] = 5; r.Roles[2] = 9;
             var o = new BlessingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: r));
             Assert.IsTrue(o.Accepted);
             CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, o.Effects);
         }
 
-        [Test]
-        public void Blessing_RoleMatch_AlreadyHealed_SkipsHeal_StillRevealsBlessesAnnounces()
-        {
-            var r = new FakeRoster();
-            r.Roles[1] = 7; r.Roles[2] = 7; r.Healed.Add(1); r.Pseudos[1] = "Bob";
-            var o = new BlessingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: r));
-            CollectionAssert.AreEqual(new EffectDescriptor[]
-            {
-                new NewTargeting(0, 1),
-                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
-                new SetBlessed(1),
-                new ChatBroadcast("Bob est maintenant béni.", ChatWindows.Server, PowerEffectAudience.Specific(0)),
-            }, o.Effects);
-        }
-
-        // ---- EyeOfTheVoid (EyeOfTheVoidDecision) ------------------------------------------
+        // EyeOfTheVoid: the existing test has a non-anomaly owner; this pins that an ANOMALY owner is itself
+        // included in the discover fan-out (owner is not excluded).
         [Test]
         public void EyeOfTheVoid_OwnerIsAnomaly_OwnerAlsoDiscovers()
         {
@@ -71,31 +56,7 @@ namespace Tests.Editor
             }, o.Effects);
         }
 
-        // ---- TruthChains (TruthChainsDecision) --------------------------------------------
-        [Test]
-        public void TruthChains_NonAnomalyTarget_TargetsOnly()
-        {
-            var r = new FakeRoster();
-            r.Factions[1] = Characters.FactionType.chosen;
-            var o = new TruthChainsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: r));
-            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, o.Effects);
-        }
-
-        [Test]
-        public void TruthChains_AnomalyTarget_ChainsAndAnnounces()
-        {
-            var r = new FakeRoster();
-            r.Factions[1] = Characters.FactionType.anomaly; r.Pseudos[1] = "Bob";
-            var o = new TruthChainsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: r));
-            CollectionAssert.AreEqual(new EffectDescriptor[]
-            {
-                new NewTargeting(0, 1),
-                new AddToChain(1),
-                new ChatSendServer("Bob sera lié par les chaînes de la vérité.", ChatWindows.Server),
-            }, o.Effects);
-        }
-
-        // ---- PersonalBeacons (PersonalBeaconsDecision) ------------------------------------
+        // PersonalBeacons: existing covers robots-present; this pins the no-robot empty-accept branch.
         [Test]
         public void PersonalBeacons_NoRobot_AcceptsEmpty()
         {
@@ -105,20 +66,22 @@ namespace Tests.Editor
             Assert.AreEqual(0, o.Effects.Count);
         }
 
+        // Omniscience: existing covers chosen/non-chosen with a roster; this pins the null-roster guard path
+        // (Roster == null must be treated as non-chosen, no hack).
         [Test]
-        public void PersonalBeacons_RobotsPresent_RevealsForceCorruptPerRobot()
+        public void Omniscience_NullRoster_TreatedAsNonChosen_NoHack()
         {
-            var r = new FakeRoster { Slots = new[] { 0, 1, 2 } };
-            r.Robots.Add(1); r.Robots.Add(2);
-            var o = new PersonalBeaconsDecision().Decide(new PowerContext(ownerSlot: 0, roster: r));
+            var o = new OmniscienceDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new RevealInfo(1, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
-                new RevealInfo(2, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                RequestCharacterRefresh.Instance,
             }, o.Effects);
         }
 
-        // ---- LackOfAffection (LackOfAffectionDecision) — the two CROSSED branches ----------
+        // LackOfAffection: existing covers (chosen + true-local = both) and (non-chosen + not-local = empty).
+        // These are the two UNcovered crossed combinations.
         [Test]
         public void LackOfAffection_ChosenTarget_NotTrueLocal_RevealsSenderRoleOnly()
         {
@@ -141,6 +104,19 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new ChatLocal("Orpheline est venu(e) vous voir...", ChatWindows.Server),
+            }, o.Effects);
+        }
+
+        // BoundByInk: existing supplies a real IInkChatState; this pins the missing-state fallback to id -1.
+        [Test]
+        public void BoundByInk_NoInkChatState_ChatIdFallsBackToMinusOne()
+        {
+            var o = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new DiscoverChat(-1, "Lié par l'encre", PowerEffectAudience.Specific(1)),
+                new RegisterInkTarget(1),
             }, o.Effects);
         }
     }

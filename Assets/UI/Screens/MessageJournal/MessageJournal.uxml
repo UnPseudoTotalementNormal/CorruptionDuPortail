@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="message-journal" class="journal cdp-is-hidden cdp-is-collapsed">
+        <Style src="MessageJournal.uss" />
+        <ui:VisualElement name="journal-frame" class="journal__frame">
+            <ui:Label name="journal-title" text="Messages anonymes" class="journal__title" />
+            <ui:ScrollView name="journal-scroll" class="journal__scroll" mode="Vertical">
+                <ui:VisualElement name="journal-turns" class="journal__turns" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

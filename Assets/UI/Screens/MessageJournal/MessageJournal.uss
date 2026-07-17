@@ -1,0 +1,100 @@
+/* Message journal overlay — per-turn anonymous-message dossier.
+ * Screen-space overlay (PS_ScreenOverlay), RoleCard-style enter/exit. Diegetic direction validated with
+ * Poyo 2026-07-16: continuous flow (no bordered cards), turns split by a plain hairline rule with a
+ * centered label, gold numbers, red corrompus, orange Robot. All colors via --cdp-color-journal-* tokens
+ * (PROVISIONAL / design-owned). Font = LiberationSans (no serif asset in project yet — frontispiece is
+ * sans for now; a true serif would need a new .ttf). */
+
+.journal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cdp-color-role-scrim);
+    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+    transition-property: opacity;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+}
+
+.journal.cdp-is-hidden { opacity: 0; }
+.journal.cdp-is-collapsed { display: none; }
+
+.journal__frame {
+    width: 640px;
+    max-height: 74%;
+    background-color: var(--cdp-color-journal-bg);
+    border-width: 1px;
+    border-color: var(--cdp-color-journal-frame);
+    border-radius: 14px;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: 22px;
+    padding-bottom: 28px;
+}
+
+.journal__title {
+    -unity-text-align: middle-center;
+    font-size: 34px;
+    letter-spacing: 2px;
+    color: var(--cdp-color-journal-muted);
+    margin-bottom: 8px;
+    white-space: normal;
+}
+
+.journal__scroll {
+    flex-grow: 1;
+}
+
+.journal__turns {
+    flex-direction: column;
+}
+
+.journal__turn {
+    flex-direction: column;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-bottom: 2px;
+}
+
+.journal__turn-div {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 22px;
+    margin-bottom: 13px;
+}
+
+.journal__turn-line {
+    flex-grow: 1;
+    height: 1px;
+    background-color: var(--cdp-color-journal-hairline);
+}
+
+.journal__turn-label {
+    color: var(--cdp-color-journal-text);
+    font-size: 24px;
+    letter-spacing: 8px;
+    -unity-font-style: bold;
+    margin-left: 16px;
+    margin-right: 16px;
+}
+
+.journal__stat {
+    -unity-text-align: middle-center;
+    white-space: normal;
+    font-size: 26px;
+    color: var(--cdp-color-journal-text-soft);
+    margin-bottom: 8px;
+}
+
+.journal__msg {
+    white-space: normal;
+    font-size: 26px;
+    color: var(--cdp-color-journal-text);
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 22px;
+}

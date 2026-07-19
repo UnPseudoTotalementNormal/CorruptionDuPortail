@@ -231,3 +231,7 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 - FMOD open sound (`event:/Interface/Messages General + Anomaly/Menu 2`) not wired on journal open — polish pass (O5).
 - Old orphan views not deleted (`AnonymousRevealedMessagesComponent` + old `RevealedMessagePanel` in GameScene) — planned cleanup, playtest-gated.
 - Browse mode dims past turns to 0.6 opacity (spec only specifies dimming for the reveal) — harmless; design glance for Poyo.
+
+## Deferred from: code review of spec-proto-power-effect-2client-replication (2026-07-18)
+
+- Teardowns des nouvelles fixtures 2-NM (`PowerPipelineClientReplicationTests`, `PowerObjectReplicationProtoTests`) nullent `RoleTargetSystem.instance` / `ChatManager.instance` / `ChainingManager.instance` alors que la NOTE de `MultiClientGameFixture` refuse `ResetAll` précisément pour préserver des tests leak-dépendants — risque latent de couplage d'ordre, non manifesté (suite PlayMode verte). À surveiller si un test préexistant flake selon l'ordre d'exécution.

@@ -37,6 +37,22 @@ namespace Network.Services
             currentLobby != null &&
             currentLobby.HostId == Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
 
+        /// <summary>
+        /// Surface a message on the shared lobby-error channel (investigation join-started-game-gate). The event
+        /// itself cannot be invoked from outside the declaring type, and the join UIs — which produce the most
+        /// user-visible failures — had no way to reach the notification that
+        /// <c>ClientDisconnectHandler.OnLobbyError</c> already renders. Their messages were logged and never shown.
+        /// </summary>
+        public void ReportError(string _message)
+        {
+            if (string.IsNullOrEmpty(_message))
+            {
+                return;
+            }
+
+            OnLobbyError?.Invoke(_message);
+        }
+
         private void Awake()
         {
             if (instance != null && instance != this)

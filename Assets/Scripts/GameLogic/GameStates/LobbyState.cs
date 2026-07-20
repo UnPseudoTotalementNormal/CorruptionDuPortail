@@ -162,6 +162,10 @@ namespace GameLogic.GameStates
             // every frame and lazily resolves the census, so no subscription to wire here.
             _started = false;
             _lobbyInfo = null;
+
+            // Symmetric counterpart of the lock below: re-entering the lobby makes the session joinable again, so
+            // it must reappear in the lobby list.
+            SetCloudLobbyLocked(false);
         }
 
         public override void OnEndStateServer()
@@ -169,6 +173,31 @@ namespace GameLogic.GameStates
             base.OnEndStateServer();
             gameManager.NetworkManager.OnClientConnectedCallback -= OnClientConnected;
             _lobbyInfo = null;
+
+            // The game just started. Hide the session from the lobby list (investigation join-started-game-gate):
+            // ConnectionApprovalGate already REJECTS a mid-game joiner, but a still-listed lobby invites a join
+            // that can only fail. This is the exact same phase boundary the gate reads through
+            // GameManager.IsInLobbyPhase — leaving LobbyState IS the start of the game.
+            SetCloudLobbyLocked(true);
+        }
+
+        // Server-only, fire-and-forget: only the lobby host may update the cloud lobby, and both call sites run on
+        // the server (SwitchGameState asserts IsServer). Null-safe — EditMode / bot flows have no LobbyManager.
+        // No end-of-game counterpart is needed: GameManager.ShutOffGame already deletes the lobby outright.
+        private void SetCloudLobbyLocked(bool _locked)
+        {
+            if (!gameManager.NetworkManager.IsServer)
+            {
+                return;
+            }
+
+            var _lobbyManager = Network.Services.LobbyManager.instance;
+            if (_lobbyManager == null || !_lobbyManager.IsInLobby || !_lobbyManager.IsLobbyHost)
+            {
+                return;
+            }
+
+            _ = _lobbyManager.SetLobbyLocked(_locked);
         }
         
         public override void OnStartStateClient()

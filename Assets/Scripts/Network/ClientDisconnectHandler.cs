@@ -25,10 +25,18 @@ namespace Network
         /// <paramref name="expectedShutdown"/>: a graceful <c>ShutOffGame</c> or a self-initiated leave
         /// already flagged the shutdown as expected. Only a pure client that lost the session
         /// unexpectedly is treated as a host drop.
+        /// <paramref name="joinHandshakeInProgress"/>: the menu is still waiting on a join verdict
+        /// (<see cref="JoinHandshake"/>). A rejected join stops NGO exactly like a host drop, but the menu owns
+        /// that failure and shows the server's own reason ("La partie a déjà commencé."), so this layer must stay
+        /// quiet — otherwise it overwrites it with the generic "Connexion à l'hôte perdue"
+        /// (investigation join-started-game-gate).
         /// </summary>
-        public static bool ShouldNotifyHostLoss(bool wasPureClient, bool expectedShutdown)
+        public static bool ShouldNotifyHostLoss(
+            bool wasPureClient,
+            bool expectedShutdown,
+            bool joinHandshakeInProgress = false)
         {
-            return wasPureClient && !expectedShutdown;
+            return wasPureClient && !expectedShutdown && !joinHandshakeInProgress;
         }
     }
 
@@ -63,6 +71,13 @@ namespace Network
         // live in other types; consumed (reset) on the next stop. Domain reload is disabled -> reset on start.
         private static bool s_expectedShutdown;
 
+        // True while a menu join is still waiting on its verdict (JoinHandshake). A server-rejected join tears NGO
+        // down exactly like a host drop, and OnClientStopped fires BEFORE the waiting menu code can react — so
+        // without this the generic host-loss popup won the race and the joiner saw "Connexion à l'hôte perdue"
+        // instead of "La partie a déjà commencé.". NOT reset by OnClientStarted: the window opens right after
+        // StartClient, i.e. after that callback has already run.
+        private static bool s_joinHandshakeInProgress;
+
         private NetworkManager _subscribedNm;
         private bool _lobbySubscribed;
         private bool _localWasPureClient; // captured while connected (client && !server)
@@ -94,6 +109,18 @@ namespace Network
         public static void NotifyExpectedShutdown()
         {
             s_expectedShutdown = true;
+        }
+
+        /// <summary>
+        /// Open (<c>true</c>) or close (<c>false</c>) the menu-owned join window. While it is open, an NGO stop is
+        /// a join verdict — the menu reports it with the server's reason — not a host drop, so this layer stays
+        /// silent and does NOT force a return to the menu. Always closed in a <c>finally</c> by
+        /// <see cref="JoinHandshake.WaitForConnectedOrTimeout"/>, so a successful join cannot leave it latched and
+        /// mute a later, genuine host loss.
+        /// </summary>
+        public static void SetJoinHandshakeInProgress(bool _inProgress)
+        {
+            s_joinHandshakeInProgress = _inProgress;
         }
 
         /// <summary>
@@ -229,8 +256,9 @@ namespace Network
             }
 
             bool _expected = s_expectedShutdown;
-            bool _shouldNotify = HostDropPolicy.ShouldNotifyHostLoss(_localWasPureClient, _expected);
-            Debug.Log($"{LogTag} {_source}: pureClient={_localWasPureClient} expected={_expected} -> notify={_shouldNotify}");
+            bool _joining = s_joinHandshakeInProgress;
+            bool _shouldNotify = HostDropPolicy.ShouldNotifyHostLoss(_localWasPureClient, _expected, _joining);
+            Debug.Log($"{LogTag} {_source}: pureClient={_localWasPureClient} expected={_expected} joining={_joining} -> notify={_shouldNotify}");
 
             // One-shot: consume the expected flag no matter which path we take.
             s_expectedShutdown = false;

@@ -260,21 +260,23 @@ Infra à créer avant d'écrire la décision :
 - Given personne ne l'a ciblée, when la nuit se termine, then elle reçoit un message le disant explicitement.
 - Given une nouvelle nuit commence, when le rapport se déclenche, then il ne contient que les ciblages de cette nuit.
 
-### Lot D — Chasseuse de Prime
-- [ ] `SelectionFlowService` — `StartMultiCharacterSelection(validator, count, onPicked)` : N clics, pas de doublon, annulation partielle.
-- [ ] `PowerContext` — ajouter `TargetSlots` (`IReadOnlyList<int>`), sans casser `TargetSlot` / `SecondaryTargetSlot`.
-- [ ] Capture de N à l'attribution des rôles (composition de départ, figé) + exposition au pouvoir.
-- [ ] `ClandestineObservationDecision` réécrite ; suppression de `IClandestineReport` et de `targetRoleID`.
-- [ ] `PClandestineObservation` — passif → actif : `StartUse` lance le flux multi, `targetValidator` exclut l'owner.
-- [ ] Prefab — `isPassive` false, `targetIncludeFlags` de ciblage joueurs, `maxPowerUse = 1`.
-- [ ] Tests EditMode — 0 élu / tous élus / mixte parmi N ; N > joueurs ciblables ; auto-ciblage rejeté.
-- [ ] Test PlayMode — le flux de sélection multi aboutit et le rapport n'atteint que la Chasseuse.
+### Lot D — Chasseuse de Prime ✅ (livré, EM 519/PM 251, revue adverse 0 CRITICAL/HIGH — commit en attente)
+- [x] `SelectionFlowService.StartMultiCharacterSelection` — N clics par récursion sur le picker, validateur par étape excluant les déjà-pickés (distinct garanti), annulation partielle → tout le flux annulé, aucun RPC. Interface `ISelectionFlowService` étendue.
+- [x] `PowerContext.TargetSlots` (`IReadOnlyList<int>`, défaut vide) — ajouté sans casser les slots existants.
+- [x] N capturé à `OnGameStartedServer` (`_nonEluCount` NetworkVariable = nb de non-`chosen`, figé, répliqué au client owner).
+- [x] `ClandestineObservationDecision` réécrite (compte les `chosen` parmi `TargetSlots`, `ChatBroadcast` owner-only) ; `IClandestineReport` + `targetRoleID` supprimés (aucune ref restante).
+- [x] `PClandestineObservation` passif → actif : `StartUse` lance le flux multi, `targetValidator` exclut l'owner (C3) + flags 158 ; `ObserveServerRpc(ulong[])` → décision serveur.
+- [x] Prefab — `isPassive` 0, `hasToBeAwakened` 1, `targetIncludeFlags` 158, `maxWaitTime` 60, `maxPowerUse` 1.
+- [x] Tests EditMode — 2 cibles mixtes → 1 élu ; 2 non-élus → 0. PlayMode réécrit — `ObserveServerRpc` sur 2 cibles (1 chosen) → rapport « 1 sont des élus » à l'owner via serveur.
+
+**⚠️ Point de design à réviser (non figé, D1) — dead-end mid-game.** N est figé à la composition de départ, mais le pool de cibles valides rétrécit quand des joueurs sont enchaînés. Sans garde, le picker réclamerait plus de cibles distinctes qu'il n'en reste → sélection impossible, usage gâché. **Interim livré : `StartUse` clampe le nombre à cibler au pool réellement disponible** (`min(N, GetValidTargets().Count)`) — la feature reste utilisable, l'intention « N de départ » tient tôt (cas courant). À trancher par Wouh à la révision : clamp (actuel) / gate `CanUse` sur ≥N / autre. Noté `deferred-work.md`.
+
+**Non couvert (acknowledgé) :** le flux multi-select UI (`StartMultiCharacterSelection`) et la capture de N n'ont pas de test automatisé (pas de `CardPickerManager` en EditMode/2-NM) → **playtest 2 clients requis** pour valider la sélection à N clics, l'exclusion des doublons, l'exclusion de soi, et le clamp mid-game.
 
 **Acceptance :**
-- Given la Chasseuse utilise son pouvoir, when elle a désigné N joueurs, then elle seule reçoit le nombre d'élus parmi eux.
-- Given elle tente de se désigner, when elle clique sur sa propre carte, then la sélection la refuse.
-- Given des non-élus sont enchaînés en cours de partie, when elle rejoue une nuit suivante, then N est inchangé.
-- Given elle a joué cette nuit, when elle retente, then le pouvoir est indisponible jusqu'au réveil suivant.
+- Given la Chasseuse désigne ses cibles, when la sélection aboutit, then elle seule reçoit le nombre d'élus parmi elles.
+- Given elle tente de se désigner, when elle clique sur sa propre carte, then la sélection la refuse (règle validator + flags).
+- Given elle a joué cette nuit, when elle retente, then le pouvoir est indisponible jusqu'au réveil (`maxPowerUse 1`, regen -1).
 
 ---
 

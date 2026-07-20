@@ -11,14 +11,6 @@ namespace CorruptionDuPortail.Domain.Powers.State
     /// </summary>
     public interface ITargetedByReport { IReadOnlyList<int> TargeterSlots { get; } }
 
-    /// <summary>PClandestineObservation's engine-computed report of who targeted the observed role.</summary>
-    public interface IClandestineReport
-    {
-        bool HasCharacters { get; }
-        string RoleLabel { get; }
-        int DistinctTargetingCount { get; }
-    }
-
     /// <summary>
     /// PChainedByTheShadows's once-per-night guard: true once the sole-anomaly extra use has already been
     /// granted this night, so a second correct guess the same night does not grant another (Lot B, B2).

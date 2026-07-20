@@ -526,7 +526,6 @@ namespace Tests.Editor
             public TPort Resolve<TPort>() where TPort : class => _map.TryGetValue(typeof(TPort), out var v) ? (TPort)v : null;
         }
         private sealed class FakeInk : IInkChatState { public int ChatId { get; set; } }
-        private sealed class FakeClandestine : IClandestineReport { public bool HasCharacters { get; set; } public string RoleLabel { get; set; } public int DistinctTargetingCount { get; set; } }
         private sealed class FakeVision : IVisionGuesses { public System.Collections.Generic.IReadOnlyList<VisionGuess> Guesses { get; set; } }
         private sealed class FakeCards : ICardsShufflingGuess { public bool IsCorrect { get; set; } public string ClickedPseudo { get; set; } public string GuessRoleName { get; set; } public System.Collections.Generic.IReadOnlyList<string> TargetedRoleNames { get; set; } = new string[0]; }
         private sealed class FakeExtraUse : IExtraUseState { public bool BonusConsumedThisNight { get; set; } }
@@ -545,24 +544,33 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void Clandestine_NoChars_ZeroWithPeriod()
+        public void Clandestine_CountsChosenAmongPickedTargets_OwnerOnly()
         {
-            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = false, RoleLabel = "Robot", DistinctTargetingCount = 0 });
-            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2, 3 } };
+            roster.Factions[1] = Characters.FactionType.chosen;
+            roster.Factions[2] = Characters.FactionType.anomaly;
+            roster.Factions[3] = Characters.FactionType.chosen;
+            var outcome = new ClandestineObservationDecision().Decide(
+                new PowerContext(ownerSlot: 0, roster: roster, targetSlots: new[] { 1, 2, 3 }));
+
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot\": 0.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast("Parmi les joueurs observés, 2 sont des élus.", -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
         [Test]
-        public void Clandestine_HasChars_CountNoPeriod()
+        public void Clandestine_NoChosenAmongTargets_ReportsZero()
         {
-            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = true, RoleLabel = "Robot Mécanique", DistinctTargetingCount = 3 });
-            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Factions[2] = Characters.FactionType.marginal;
+            var outcome = new ClandestineObservationDecision().Decide(
+                new PowerContext(ownerSlot: 0, roster: roster, targetSlots: new[] { 1, 2 }));
+
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot Mécanique\": 3", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast("Parmi les joueurs observés, 0 sont des élus.", -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 

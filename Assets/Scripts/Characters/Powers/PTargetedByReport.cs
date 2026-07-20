@@ -4,10 +4,7 @@ using System.Linq;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
-using GameLogic;
-using GameLogic.GameStates;
 using Unity.Netcode;
-using UnityEngine;
 
 namespace Characters.Powers
 {
@@ -15,16 +12,17 @@ namespace Characters.Powers
     public class PTargetedByReport : Power, ITargetedByReport
     {
         // Orpheline passive (spec Lot C.2). Shape mirrors PClandestineObservation (pure decision + report
-        // port implemented by this adapter); the end-of-night trigger is borrowed from PDroolyHealing
-        // (AwakeningState.onStateEndServer) so late-awakening roles (Traqueuse/Robot/Croupière) that target
-        // her AFTER her own awakening layer are still captured. Delivery is icon-only (private player-icon
-        // channel) — no chat.
+        // port implemented by this adapter). Trigger is PER-TARGETING (RoleTargetSystem.onTargetingAddedServer):
+        // the moment a role targets her, its icon lands on that role's thumbnail — no waiting for end of night.
+        // This inherently captures late-awakening roles (Traqueuse/Robot/Croupière) too, since each targeting
+        // fires when it happens whatever the layer order. Delivery is icon-only (private player-icon channel).
         private readonly TargetedByReportDecision _decision = new();
 
-        // The exact AwakeningState references we subscribed to, cached so OnNetworkDespawn unsubscribes from
-        // the SAME objects. GameState is a persistent ScriptableObject: a leaked handler outlives this power
-        // and would fire on a dead instance. PDroolyHealing omits this cleanup — deliberately not copied.
-        private readonly List<GameState> _subscribedAwakeningStates = new();
+        // Whether we are currently subscribed to the targeting event, so OnGameStartedServer's idempotent
+        // re-entry (PowerManager.OnPowerSpawned replay) never doubles the handler, and OnNetworkDespawn
+        // unsubscribes exactly once. roleTargetSystem is a shared long-lived object: a leaked handler would
+        // fire on a dead power.
+        private bool _subscribedToTargeting;
 
         // Deduplicated upstream: GetAllTargetersForTarget returns a HashSet, so no targeter appears twice.
         IReadOnlyList<int> ITargetedByReport.TargeterSlots =>
@@ -41,39 +39,45 @@ namespace Characters.Powers
         public override void OnGameStartedServer()
         {
             base.OnGameStartedServer();
-
-            // Idempotent: OnGameStartedServer can be replayed at spawn when the game has already started
-            // (PowerManager.OnPowerSpawned). Drop any prior subscriptions before re-subscribing so a replay
-            // never doubles the handler.
-            UnsubscribeAll();
-
-            var _gameManager = GameManager.For(NetworkManager);
-            foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
-            {
-                _awakeningState.onStateEndServer += OnNightEndedServer;
-                _subscribedAwakeningStates.Add(_awakeningState);
-            }
+            SubscribeToTargeting();
         }
 
         public override void OnNetworkDespawn()
         {
-            UnsubscribeAll();
+            UnsubscribeFromTargeting();
             base.OnNetworkDespawn();
         }
 
-        private void UnsubscribeAll()
+        private void SubscribeToTargeting()
         {
-            foreach (var _awakeningState in _subscribedAwakeningStates)
+            if (_subscribedToTargeting || roleTargetSystem == null)
             {
-                _awakeningState.onStateEndServer -= OnNightEndedServer;
+                return;
             }
-            _subscribedAwakeningStates.Clear();
+            roleTargetSystem.onTargetingAddedServer += OnTargetingAddedServer;
+            _subscribedToTargeting = true;
         }
 
-        private void OnNightEndedServer()
+        private void UnsubscribeFromTargeting()
         {
-            // State goes into BOTH the context (the decision READS ctx.State<ITargetedByReport>(), which
-            // resolves back to this power) and the runtime. RunDecisionEffects is server-guarded.
+            if (!_subscribedToTargeting || roleTargetSystem == null)
+            {
+                return;
+            }
+            roleTargetSystem.onTargetingAddedServer -= OnTargetingAddedServer;
+            _subscribedToTargeting = false;
+        }
+
+        private void OnTargetingAddedServer(RoleTarget.TargetingData _data)
+        {
+            // Only react when SHE is the one being targeted; every other targeting in the game is ignored.
+            if (_data.targetId != ownerClientId.Value)
+            {
+                return;
+            }
+            // Re-run the whole decision: it reads every current targeter and emits one AddPlayerIcon each;
+            // PlayerIconManager.AddIcon dedups, so re-emitting already-placed icons is a harmless no-op and
+            // only the new targeter's icon is actually added.
             var _selfState = SelfState;
             RunDecisionEffects(_decision,
                 new PowerContext(ownerSlot: (int)ownerClientId.Value, state: _selfState), _selfState);

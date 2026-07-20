@@ -126,16 +126,21 @@ Le compte d'anomalies vit dans la décision (pur, testable). ⚠️ `IRosterView
 
 `Orpheline.asset` : supprimer `guid: 487847a75662496b09d32f94a06a1fd8` (CorruptionParanoia). Le prefab reste — le Lot A le réutilise sur le Repenti.
 
-### C.2 — Nouveau passif « Ciblée »
+### C.2 — Nouveau passif « Ciblée » (via le canal d'icônes privées)
 
-Trois fichiers, sur le modèle de `PClandestineObservation` pour la **forme** (passif à rapport : décision pure + port de rapport implémenté par l'adaptateur) et de `PDroolyHealing` pour le **déclenchement fin de nuit** ([PDroolyHealing.cs:91](Assets/Scripts/Characters/Powers/PDroolyHealing.cs#L91) : `_awakeningState.onStateEndServer += …`) :
+**Décision Poyo (2026-07-20) : livraison par ICÔNE SEULE, plus de chat.** Le canal d'icônes privées existe désormais (branche `feat/targeting-icons`, mergée ici). Le passif s'appuie dessus : quand un joueur cible l'Orpheline, l'icône du pouvoir de l'Orpheline se pose sur **la vignette du cibleur**, visible **d'elle seule**. C'est exactement le premier consommateur prévu par [[spec-charactersbar-icon-system]].
+
+Forme calquée sur `PClandestineObservation` (passif à rapport : décision pure + port implémenté par l'adaptateur) ; déclenchement fin de nuit calqué sur `PDroolyHealing` ([PDroolyHealing.cs:91](Assets/Scripts/Characters/Powers/PDroolyHealing.cs#L91) : `_awakeningState.onStateEndServer += …`) ; id d'icône fourni par l'adaptateur comme `CursedVision` fournit son `CardEffectId` ([PCursedVision.cs:31](Assets/Scripts/Characters/Powers/PCursedVision.cs#L31)).
 
 - `PowerId` : append `TargetedByReport = 25`.
-- **Domaine** — `TargetedByReportDecision : IPowerDecision`, `IsPassive => true`. Lit un port de rapport (`ITargetedByReport { IReadOnlyList<string> TargeterRoleNames }`) et émet un `ChatBroadcast` adressé au seul owner (`PowerEffectAudience.Specific(ctx.OwnerSlot)`), exactement comme `ClandestineObservationDecision`.
-- **Adaptateur** — `PTargetedByReport : Power, ITargetedByReport` : implémente le port via `roleTargetSystem.GetAllTargetingDataForTarget(ownerClientId.Value)` puis `characterManager.GetCharacter(targeterId).role.roleName`.
-- **Prefab** — `Assets/Prefabs/Powers/TargetedByReport.prefab`, `isPassive = true`, `targetIncludeFlags = 0`, ajouté à `Orpheline.asset`.
+- **Domaine** — `TargetedByReportDecision : IPowerDecision`, `IsPassive => true`, champ `public ulong IconId` (posé par l'adaptateur). Lit un port `ITargetedByReport { IReadOnlyList<int> TargeterSlots }` et émet **un `AddPlayerIcon` par cibleur** : `new AddPlayerIcon(IconId, markedSlot: targeter, viewerSlot: ctx.OwnerSlot, PlayerIconLifetime.ClearAtAwakeningStart)`. Pur, testable par valeur (liste d'effets = un par cibleur).
+- **Adaptateur** — `PTargetedByReport : Power, ITargetedByReport` : `TargeterSlots` lit `roleTargetSystem.GetAllTargetersForTarget(ownerClientId.Value)` (déjà un `HashSet<ulong>`, donc **pas de doublon** — répond à C2 sans code). Pose `_decision.IconId = NetworkObjectId` en `OnNetworkSpawn`. S'abonne à `onStateEndServer` de chaque `AwakeningState` en `OnGameStartedServer`, **et se désabonne en `OnNetworkDespawn`** (symétrie d'abonnement — `GameState` est un `ScriptableObject` persistant, ne pas fuir ; `PDroolyHealing` omet ce désabonnement, ne pas copier ce trou). À la fin de la nuit : `RunDecisionEffects(_decision, new PowerContext(ownerSlot:(int)ownerClientId.Value, state:SelfState), SelfState)`.
+- **Prefab** — `Assets/Prefabs/Powers/TargetedByReport.prefab`, `isPassive = true`, `hasToBeAwakened = false` (passif), `targetIncludeFlags = 0`, `barIcon` = sprite placeholder `MeIcon` (`guid 543077bfedecd36eca0aa48a0a0b575b`) — moche mais visible, à remplacer par le vrai visuel plus tard. Ajouté à `Orpheline.asset`.
+- **Nom** : placeholder clair (`powerName = "Paranoïa [WIP]"`), à trancher par Wouh — se change en une ligne dans le prefab.
 
-⚠️ **Timing load-bearing.** L'Orpheline est **couche 8** de l'ordre de réveil ; Traqueuse (9), Robot (10) et Croupière (12) la ciblent **après**. Se brancher sur `onCharacterAwakened` (le hook de `PClandestineObservation`) raterait ces ciblages. Le rapport doit se déclencher sur `AwakeningState.onStateEndServer` ([GameState.cs:75](Assets/Scripts/GameLogic/GameState.cs#L75), invoqué :100). L'ordre est sûr : `RoleTargetSystem.ResetTargetingData` est branché sur `onStateStartClient` ([RoleTargetSystem.cs:45](Assets/Scripts/RoleTargetSystem/RoleTargetSystem.cs#L45)), donc la fin de la nuit N précède toujours le début de la nuit N+1, et il n'existe qu'un seul asset `AwakeningState`.
+⚠️ **Timing load-bearing.** L'Orpheline est **couche 8** de l'ordre de réveil ; Traqueuse (9), Robot (10) et Croupière (12) la ciblent **après**. Se brancher sur `onCharacterAwakened` (le hook de `PClandestineObservation`) raterait ces ciblages. Le rapport se déclenche sur `AwakeningState.onStateEndServer` ([GameState.cs:75](Assets/Scripts/GameLogic/GameState.cs#L75), invoqué :100). L'ordre est sûr : `RoleTargetSystem.ResetTargetingData` est sur `onStateStartClient` ([RoleTargetSystem.cs:45](Assets/Scripts/RoleTargetSystem/RoleTargetSystem.cs#L45)), donc la fin de la nuit N précède toujours le début de la nuit N+1, et il n'existe qu'un seul asset `AwakeningState`.
+
+⚠️ **Durée de vie de l'icône.** `ClearAtAwakeningStart` : l'icône posée en fin de nuit N survit au jour et au vote, et est purgée au **début de la nuit N+1** par `PlayerIconManager` — comportement voulu par Poyo (« en début d'awakening ça enlève toutes les icônes pour paranoïa »).
 
 ---
 
@@ -175,10 +180,11 @@ Infra à créer avant d'écrire la décision :
 | B4 | Abyss + une autre anomalie, devinette juste | ≥2 anomalies | Aucun bonus |
 | B5 | Nuit suivante | — | `AwakenRole` remet `powerUseLeft` à `maxPowerUse` ; le drapeau bonus est remis à zéro |
 | B6 | Rôle configuré en `roleForLegacy` enchaîné | — | **Rien** — Abyss n'a plus Héritage |
-| C1 | Personne n'a ciblé l'Orpheline | liste de ciblage vide | Message « personne » (formulation à valider) |
-| C2 | Deux joueurs du même rôle la ciblent | 2 entrées même rôle | ⚠️ Open Question C2 (dédoublonner ou non) |
-| C3 | Un rôle la cible après sa couche de réveil | Traqueuse (couche 9) | **Doit apparaître** — d'où le déclenchement fin de nuit |
-| C4 | L'Orpheline se cible elle-même | auto-ciblage | ⚠️ Open Question C3 |
+| C1 | Personne n'a ciblé l'Orpheline | liste de cibleurs vide | Aucune icône posée, aucun effet |
+| C2 | Deux cibleurs du même rôle | 2 clientIds distincts | 2 icônes, sur 2 vignettes — pas de collision (marqueurs à `markedSlot` différents) |
+| C3 | Un rôle la cible après sa couche de réveil | Traqueuse (couche 9) | **Icône posée** — déclenchement fin de nuit |
+| C4 | L'Orpheline se cible elle-même via un autre pouvoir | targeter==owner | Icône sur sa propre vignette, vue d'elle seule — inoffensif, non filtré |
+| C5 | Le sprite n'est pas encore le vrai | `barIcon` = placeholder | Icône visible (placeholder), pouvoir testable de bout en bout |
 
 ---
 
@@ -278,7 +284,7 @@ Infra à créer avant d'écrire la décision :
 | C1 | Précision du rapport Orpheline | **Noms de rôles** (« le Mage Occulte t'a ciblée ») |
 | C2 | Deux joueurs du même rôle la ciblent | Non-problème une fois les icônes livrées (une icône par carte dans la `CharactersBar`). **Intérim chat : une ligne par joueur**, l'info de volume est conservée |
 | C3 | La Chasseuse peut-elle se cibler ? | **Non, elle s'exclut** |
-| C4 | Canal d'icône entre joueurs | **Hors de ce chantier.** Lot C livre le rapport **par chat** ; le système d'icônes part en tâche Discord + branche dédiées |
+| C4 | Canal d'icône entre joueurs | **RENÉGOCIÉ 2026-07-20 : le canal d'icônes a été construit ([[spec-charactersbar-icon-system]], mergé) et le lot C livre désormais par ICÔNE SEULE, plus par chat.** Voir `### C.2`. L'ancienne décision (chat provisoire + icône plus tard) est caduque |
 | D1 | Design Chasseuse figé ? | **Pas figé, mais à construire quand même** — révision ultérieure assumée |
 | D2 | Calcul de N | **Composition de départ, fixe toute la partie** |
 | D4 | Fréquence d'*Observation Clandestine* | **Une fois par nuit** |

@@ -5,6 +5,12 @@ namespace CorruptionDuPortail.Domain.Powers.State
     /// <summary>PBoundByInk's power-local chat id (assigned when the ink chat is created).</summary>
     public interface IInkChatState { int ChatId { get; } }
 
+    /// <summary>
+    /// PTargetedByReport's engine-computed list of the logical slots that targeted the Orpheline this
+    /// night (Lot C.2). Deduplicated upstream by RoleTargetSystem.GetAllTargetersForTarget (a HashSet).
+    /// </summary>
+    public interface ITargetedByReport { IReadOnlyList<int> TargeterSlots { get; } }
+
     /// <summary>PClandestineObservation's engine-computed report of who targeted the observed role.</summary>
     public interface IClandestineReport
     {

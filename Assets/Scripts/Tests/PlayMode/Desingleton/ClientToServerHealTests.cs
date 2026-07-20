@@ -22,8 +22,8 @@ namespace Tests.PlayMode.Desingleton
             yield return SpawnRealCharacterForClient(id);
             Character host = HostCm.GetCharacter(id, false);
             Assert.IsNotNull(host, "Host character missing.");
-            Character client = ClientNm.SpawnManager.SpawnedObjects[host.NetworkObjectId].GetComponent<Character>();
-            Assert.IsNotNull(client, "Client replica missing.");
+            Character client = null;
+            yield return WaitForClientReplica<Character>(host, c => client = c);
 
             // Corrupt on the server first so heal has something to clear.
             host.CorruptPlayerServerRpc();

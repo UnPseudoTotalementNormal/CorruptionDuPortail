@@ -114,6 +114,11 @@ namespace Tests.PlayMode.Desingleton
                 "Host never projected all 3 pre-spawned characters.");
 
             // --- NOW the client joins: it receives a pre-populated networkedCharacters via initial-sync.
+            // If NGO #3280 actually double-delivers here, the [CHARLIST] guard drops the dup and logs ONE
+            // Debug.LogError — the exact scenario this test absorbs. UTF would fail the test on that
+            // unexpected error even though every assertion holds, so failing logs are ignored for the
+            // sync/settle window only (the explicit assertions below are unaffected by this flag).
+            LogAssert.ignoreFailingMessages = true;
             Assert.IsTrue(_clientNm.StartClient(), "StartClient failed.");
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => CharacterManager.For(_clientNm) != null, 10f,
@@ -127,6 +132,7 @@ namespace Tests.PlayMode.Desingleton
             yield return NetworkTestHelper.WaitUntilStableOrTimeout(
                 () => clientCm.GetCharacters(false).Count == 3, 10f, 3,
                 "Late-joiner never settled on exactly 3 projected characters (charlist guard failed?).");
+            LogAssert.ignoreFailingMessages = false;
 
             // Now verify the CLIENT's OWN replicas: read the client's raw networkedCharacters and resolve each
             // entry against the CLIENT NM explicitly — GetCharacters/RebuildCache uses TryGet WITHOUT a NM, which

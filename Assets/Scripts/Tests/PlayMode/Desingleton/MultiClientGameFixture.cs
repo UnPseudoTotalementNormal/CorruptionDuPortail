@@ -383,7 +383,28 @@ namespace Tests.PlayMode.Desingleton
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => _remoteIndexTrace.Count >= _count,
                 _timeoutSeconds,
-                $"Remote client index trace never reached {_count} entries (got {_remoteIndexTrace.Count}).");
+                () => $"Remote client index trace never reached {_count} entries (got {_remoteIndexTrace.Count}).");
+        }
+
+        /// <summary>
+        /// Bounded-wait resolution of the CLIENT NM's OWN replica of a host-spawned object.
+        /// <see cref="SpawnRealCharacterForClient"/> only waits for the HOST projection plus two frames,
+        /// so indexing <c>ClientNm.SpawnManager.SpawnedObjects[...]</c> directly after it races the
+        /// replication (an editor hitch past two frames = KeyNotFoundException). Always resolve through
+        /// this wait instead.
+        /// </summary>
+        protected IEnumerator WaitForClientReplica<T>(NetworkBehaviour _hostObject, System.Action<T> _assign, float _timeoutSeconds = 5f)
+            where T : NetworkBehaviour
+        {
+            ulong _netId = _hostObject.NetworkObjectId;
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => ClientNm.SpawnManager.SpawnedObjects.ContainsKey(_netId),
+                _timeoutSeconds,
+                $"Client NM never spawned its replica of {typeof(T).Name} (networkObjectId {_netId}).");
+            T _replica = ClientNm.SpawnManager.SpawnedObjects[_netId].GetComponent<T>();
+            Assert.IsNotNull(_replica, $"Client {typeof(T).Name} replica missing after wait.");
+            Assert.AreNotSame(_hostObject, _replica, $"{typeof(T).Name} replicas must be distinct objects.");
+            _assign(_replica);
         }
 
         /// <summary>

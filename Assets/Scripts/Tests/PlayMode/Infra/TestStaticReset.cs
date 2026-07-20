@@ -11,8 +11,8 @@ namespace Tests.PlayMode.Infra
     /// #1 cause of order-dependent, non-reproducible flakes. Every PlayMode fixture teardown should call
     /// <see cref="ResetAll"/>.
     ///
-    /// Types are resolved by SIMPLE NAME across loaded assemblies (namespace-agnostic, survives a type move),
-    /// and this inventory MUST stay in sync with the singletons tracked by StaticSingletonCensusGuardTests.
+    /// Types are resolved by SIMPLE NAME within the production (`Game`) assembly (namespace-agnostic, survives
+    /// a type move), and this inventory MUST stay in sync with the singletons tracked by StaticSingletonCensusGuardTests.
     /// Spec + rationale: _bmad-output/implementation-artifacts/test-infra-foundation.md.
     /// </summary>
     public static class TestStaticReset
@@ -58,8 +58,14 @@ namespace Tests.PlayMode.Infra
             bridge?.GetMethod("ResetSessionStatics", BindingFlags.Public | BindingFlags.Static)?.Invoke(null, null);
         }
 
+        // Pinned to the assembly that declares the production managers (asmdef `Game`). A simple-name
+        // search across ALL loaded assemblies is collision-prone (`GameManager` / `InputManager` are
+        // ubiquitous in packages and samples), and a foreign match makes ResetAll silently no-op on the
+        // real singleton while the gate stays green — the exact failure mode this class exists to prevent.
+        private static readonly Assembly ProductionAssembly = typeof(Characters.CharacterManager).Assembly;
+
         public static Type ResolveType(string simpleName) =>
-            AppDomain.CurrentDomain.GetAssemblies().SelectMany(SafeTypes).FirstOrDefault(t => t.Name == simpleName);
+            SafeTypes(ProductionAssembly).FirstOrDefault(t => t.Name == simpleName);
 
         private static IEnumerable<Type> SafeTypes(Assembly a)
         {

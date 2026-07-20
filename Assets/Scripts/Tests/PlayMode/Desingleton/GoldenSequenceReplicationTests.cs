@@ -37,13 +37,12 @@ namespace Tests.PlayMode.Desingleton
             _hostB.ChainCharacterServer();
 
             // --- Resolve BOTH client replicas (client NM's own objects, via SpawnManager — not GetCharacter,
-            // which resolves against Singleton=host in this 2-NM process).
-            Character _clientA = FindClientReplica(_hostA);
-            Character _clientB = FindClientReplica(_hostB);
-            Assert.IsNotNull(_clientA, "Client replica of seat A missing.");
-            Assert.IsNotNull(_clientB, "Client replica of seat B missing.");
-            Assert.AreNotSame(_hostA, _clientA);
-            Assert.AreNotSame(_hostB, _clientB);
+            // which resolves against Singleton=host in this 2-NM process). Bounded wait: the spawn helper
+            // only guarantees the HOST projection, not the client-side replica.
+            Character _clientA = null;
+            Character _clientB = null;
+            yield return WaitForClientReplica<Character>(_hostA, _c => _clientA = _c);
+            yield return WaitForClientReplica<Character>(_hostB, _c => _clientB = _c);
 
             // --- The FINAL coherent state must settle on the client (all mutations drained).
             yield return NetworkTestHelper.WaitUntilStableOrTimeout(
@@ -62,12 +61,5 @@ namespace Tests.PlayMode.Desingleton
             Assert.IsFalse(_clientB.isHealed.Value, "Seat B must not be healed by A's heal.");
         }
 
-        private Character FindClientReplica(Character hostCharacter)
-        {
-            ulong _netId = hostCharacter.NetworkObjectId;
-            return ClientNm.SpawnManager.SpawnedObjects.TryGetValue(_netId, out var no)
-                ? no.GetComponent<Character>()
-                : null;
-        }
     }
 }

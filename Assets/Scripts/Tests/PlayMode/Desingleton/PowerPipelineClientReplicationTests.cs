@@ -83,6 +83,12 @@ namespace Tests.PlayMode.Desingleton
             ReflectionHelper.SetPrivateField(_revealerTemplate, "gameManager", _placeholderGm);
             _templates.Add(_revealerPrefabGo);
 
+            // Defensive: a LIVE ChatManager/ChainingManager leaked by an earlier suite would make these
+            // templates' destroy-duplicate Awake destroy the TEMPLATE itself (and the fixture would then
+            // register a destroyed GameObject as a network prefab) — free the statics BEFORE the claims too.
+            ChatManager.instance = null;
+            ChainingManager.instance = null;
+
             _chatPrefabGo = MakePrefab("PipelineChatPrefab", ChatPrefabHash, out _chatPrefabNo);
             _chatPrefabGo.AddComponent<ChatManager>(); // Awake claims the static on the TEMPLATE...
             _templates.Add(_chatPrefabGo);

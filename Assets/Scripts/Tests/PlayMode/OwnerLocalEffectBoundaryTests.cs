@@ -416,8 +416,18 @@ namespace Tests.PlayMode
             RpcParams rpcTarget = _hostCm.GetSafeRpcTarget(clientId);
             ReflectionHelper.InvokePrivateMethod(hostPower, "OnPlayerContactedRpc", clientId, SenderSeat, rpcTarget);
 
-            // Give the client-side decision several frames to run — enough that a (buggy) reveal would have landed.
-            for (int i = 0; i < 6; i++) yield return null;
+            // Delivery-proven drain instead of a blind frame count: a server NetworkVariable write enqueued
+            // AFTER the contact RPC travels the same reliable sequenced connection, so its arrival on the
+            // client replica proves the contact RPC was delivered and its body already ran — a (buggy)
+            // reveal would have landed by now.
+            Character clientTargetReplica = null;
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => (clientTargetReplica = FindReplica<Character>(_clientNm, hostTarget.NetworkObjectId)) != null,
+                5f, "Client replica of the contacted target never resolved for the drain marker.");
+            hostTarget.messageLeft.Value = 42;
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => clientTargetReplica.messageLeft.Value == 42,
+                5f, "The drain marker never reached the client — cannot conclude on the negative.");
 
             Assert.AreEqual(RevealLevel.False,
                 _clientRevealer.GetCharacterInfo(SenderSeat, clientId).isRoleRevealed,

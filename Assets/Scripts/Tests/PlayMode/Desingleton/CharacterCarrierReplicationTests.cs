@@ -21,9 +21,8 @@ namespace Tests.PlayMode.Desingleton
             yield return SpawnRealCharacterForClient(_seat);
             Character _host = HostCm.GetCharacter(_seat, false);
             Assert.IsNotNull(_host, "Host character missing.");
-            Character _client = ClientNm.SpawnManager.SpawnedObjects[_host.NetworkObjectId].GetComponent<Character>();
-            Assert.IsNotNull(_client, "Client replica missing.");
-            Assert.AreNotSame(_host, _client, "Must be a distinct client replica.");
+            Character _client = null;
+            yield return WaitForClientReplica<Character>(_host, _c => _client = _c);
             assign(_host, _client);
         }
 

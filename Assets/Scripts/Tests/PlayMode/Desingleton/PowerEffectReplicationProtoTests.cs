@@ -20,9 +20,10 @@ namespace Tests.PlayMode.Desingleton
     /// /dispatch layer above it is already covered host-only by CorruptionTests.PCorruptingMark_CorruptsTarget;
     /// this proto adds ONLY the wire crossing.
     ///
-    /// SCOPE: no production code touched, no fixture change. Spawning a real Power NetworkObject in the fixture
-    /// (Proto B) is a separate, larger investment — Power.OnNetworkSpawn runs on the client replica too and asserts
-    /// a per-NM CompositionRoot, which the fixture does not provide.
+    /// SCOPE: no production code touched, no fixture change. Proto B (spawning a real Power NetworkObject in
+    /// the fixture) shipped alongside — see PowerObjectReplicationProtoTests: the per-NM CompositionRoot "wall"
+    /// did not survive contact. This proto remains as the minimal wire-crossing pin for the terminal Character
+    /// mutation, below the full power pipeline.
     /// </summary>
     public class PowerEffectReplicationProtoTests : MultiClientGameFixture
     {

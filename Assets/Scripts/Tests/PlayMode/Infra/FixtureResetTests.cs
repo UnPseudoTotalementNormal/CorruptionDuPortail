@@ -14,6 +14,26 @@ namespace Tests.PlayMode.Infra
     public class FixtureResetTests
     {
         private GameObject _dirtyGo;
+        private readonly Dictionary<Type, object> _preTestInstances = new();
+
+        [SetUp]
+        public void SnapshotSingletons()
+        {
+            // ResetAll wipes singletons to NULL — fine for this gate's assertions, fatal for the rest of
+            // the session: SelectionFlowService backs `instance` with an EAGER `static readonly _instance
+            // = new()` (private ctor), so once nulled NOTHING ever re-creates it (domain reload is OFF).
+            // This gate runs MID-suite (alphabetical order), so it must restore whatever was live before
+            // it ran — otherwise it becomes the very blanket-reset the MultiClientGameFixture NOTE forbids.
+            _preTestInstances.Clear();
+            foreach (string name in TestStaticReset.SingletonTypeNames)
+            {
+                Type t = TestStaticReset.ResolveType(name);
+                if (t != null)
+                {
+                    _preTestInstances[t] = TestStaticReset.GetStaticInstance(t);
+                }
+            }
+        }
 
         [TearDown]
         public void Cleanup()
@@ -25,6 +45,12 @@ namespace Tests.PlayMode.Infra
                 UnityEngine.Object.DestroyImmediate(_dirtyGo);
                 _dirtyGo = null;
             }
+            // Restore the PRE-test session state (see SnapshotSingletons).
+            foreach (KeyValuePair<Type, object> saved in _preTestInstances)
+            {
+                TestStaticReset.SetStaticInstance(saved.Key, saved.Value);
+            }
+            _preTestInstances.Clear();
         }
 
         [Test]

@@ -198,10 +198,11 @@ namespace Tests.PlayMode.Desingleton
                 ClientCm, "networkedCharacters");
             Assert.IsNotNull(_clientList, "Could not read the client CM's networkedCharacters NetworkList.");
 
-            yield return NetworkTestHelper.WaitUntilOrTimeout(
-                () => _clientList.Count >= 3,
-                5f,
-                $"Client networkedCharacters never reached 3 entries (got {_clientList.Count}).");
+            // Stable wait on EXACTLY 3: a duplicate landing one tick after the third entry resets the
+            // stability counter, so the no-dup claim is checked over a settled window, not a snapshot.
+            yield return NetworkTestHelper.WaitUntilStableOrTimeout(
+                () => _clientList.Count == 3, 5f, 3,
+                () => $"Client networkedCharacters never settled on exactly 3 entries (got {_clientList.Count}).");
 
             Assert.AreEqual(3, _clientList.Count,
                 "Client's replicated character list must have EXACTLY one entry per spawned seat (no duplicates).");

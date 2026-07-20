@@ -13,7 +13,7 @@ namespace Tests.PlayMode.SnapshotOracle
     /// coupled victory to heal/faction/chaining would slip past the verdict tests but fail here). Pure [Test]
     /// methods in a setup-free class so no NetworkManager is spawned.
     /// </summary>
-    [Category("PowerDecision")]
+    [Category("SnapshotOracle")]
     public class WinningConditionFieldIndifferenceTests
     {
         private const ulong Default = POmniscience.HACKED_CHARACTER_DEFAULT;

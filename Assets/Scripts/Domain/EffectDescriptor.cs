@@ -339,4 +339,48 @@ namespace CorruptionDuPortail.Domain
         public DiscoveredAdd(int slot) { Slot = slot; }
         protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
     }
+
+    // ---- Private player icons (PlayerIconManager) ---------------------------------------
+    // A marker is (icon, marked player, viewer) and is PRIVATE: exactly ONE viewer ever learns it.
+    // The icon identifies the POWER that produced the information, not a state of the marked player.
+    // IconId is an opaque icon identity — the adapter uses the declaring Power's NetworkObjectId, which
+    // the receiving client resolves back to that Power's bar sprite. Slots stay LOGICAL (int), as
+    // everywhere else in this vocabulary; the adapter maps slot -> clientId -> GetSafeRpcTarget.
+
+    /// <summary>Place a private icon on <see cref="MarkedSlot"/>'s thumbnail, visible ONLY to <see cref="ViewerSlot"/>.</summary>
+    public sealed class AddPlayerIcon : EffectDescriptor
+    {
+        public ulong IconId { get; }
+        public int MarkedSlot { get; }
+        public int ViewerSlot { get; }
+        public PlayerIcons.PlayerIconLifetime Lifetime { get; }
+
+        public AddPlayerIcon(ulong iconId, int markedSlot, int viewerSlot, PlayerIcons.PlayerIconLifetime lifetime)
+        {
+            IconId = iconId; MarkedSlot = markedSlot; ViewerSlot = viewerSlot; Lifetime = lifetime;
+        }
+
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return IconId; yield return MarkedSlot; yield return ViewerSlot; yield return Lifetime; }
+        }
+    }
+
+    /// <summary>Remove the private icon (<see cref="IconId"/>, <see cref="MarkedSlot"/>) from <see cref="ViewerSlot"/>'s view. Unknown marker = silent no-op.</summary>
+    public sealed class RemovePlayerIcon : EffectDescriptor
+    {
+        public ulong IconId { get; }
+        public int MarkedSlot { get; }
+        public int ViewerSlot { get; }
+
+        public RemovePlayerIcon(ulong iconId, int markedSlot, int viewerSlot)
+        {
+            IconId = iconId; MarkedSlot = markedSlot; ViewerSlot = viewerSlot;
+        }
+
+        protected override IEnumerable<object> EqualityComponents
+        {
+            get { yield return IconId; yield return MarkedSlot; yield return ViewerSlot; }
+        }
+    }
 }

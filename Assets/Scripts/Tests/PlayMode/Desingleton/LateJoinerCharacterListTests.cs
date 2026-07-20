@@ -88,10 +88,14 @@ namespace Tests.PlayMode.Desingleton
             LogAssert.ignoreFailingMessages = true;
             if (_clientNm != null && _clientNm.IsListening) _clientNm.Shutdown();
             if (_hostNm != null && _hostNm.IsListening) _hostNm.Shutdown();
-            yield return NetworkTestHelper.WaitUntilOrTimeout(
+            // Wait WITHOUT asserting — ignoreFailingMessages is process-wide and must be restored before
+            // anything here can throw, otherwise every remaining PlayMode test stops failing on error logs.
+            bool stoppedListening = false;
+            yield return NetworkTestHelper.WaitUntilOrElapsed(
                 () => (_clientNm == null || !_clientNm.IsListening) && (_hostNm == null || !_hostNm.IsListening),
-                5f, "NGO did not stop listening after Shutdown().");
+                5f, ok => stoppedListening = ok);
             LogAssert.ignoreFailingMessages = false;
+            Assert.IsTrue(stoppedListening, "NGO did not stop listening after Shutdown().");
 
             foreach (var go in new[] { _clientNmGo, _hostNmGo, _gmPrefabGo, _cmPrefabGo, _characterPrefabGo })
                 if (go != null) Object.Destroy(go);

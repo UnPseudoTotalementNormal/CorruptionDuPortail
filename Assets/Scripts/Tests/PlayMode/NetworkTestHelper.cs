@@ -118,6 +118,37 @@ namespace Tests.PlayMode
         }
 
         /// <summary>
+        /// Bounded wait that REPORTS instead of failing: yields until <paramref name="condition"/> is true or the
+        /// timeout elapses, then hands the outcome to <paramref name="onResult"/> (true = satisfied).
+        /// <para>
+        /// Use this — not <see cref="WaitUntilOrTimeout(Func{bool}, float, string)"/> — inside a teardown that must
+        /// still run cleanup after the wait. Assert.Fail throws out of the enumerator, and Unity's runner flattens
+        /// nested enumerators itself, so the caller's remaining statements (and even a try/finally on the caller's
+        /// own iterator) are NOT guaranteed to run. A teardown that restores process-wide state
+        /// (e.g. <c>LogAssert.ignoreFailingMessages</c>) must therefore wait without throwing, restore, THEN assert.
+        /// </para>
+        /// </summary>
+        public static IEnumerator WaitUntilOrElapsed(Func<bool> condition, float timeoutSeconds, Action<bool> onResult)
+        {
+            float elapsed = 0f;
+            while (!condition())
+            {
+                if (elapsed >= timeoutSeconds)
+                {
+                    onResult(false);
+                    yield break;
+                }
+
+                // Unscaled: a timeScale left at 0 by a prior test must still reach this timeout instead of
+                // spinning until the runner's global per-test timeout.
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            onResult(true);
+        }
+
+        /// <summary>
         /// Quiescence primitive (spec R8): yields until <paramref name="condition"/> has held true for
         /// <paramref name="stableFrames"/> CONSECUTIVE frames — i.e. the observed state reached its value AND
         /// stopped changing — or fails after the timeout. Use for "assert client state after quiescence" so a

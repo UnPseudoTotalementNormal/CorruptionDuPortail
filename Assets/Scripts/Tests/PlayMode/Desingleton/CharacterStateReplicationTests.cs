@@ -118,6 +118,41 @@ namespace Tests.PlayMode.Desingleton
                 "The server mutation never re-replicated back to the client replica.");
         }
 
+        // --- 3b. SECOND client->server leg, folded in from the former ClientToServerHealTests (it re-paid a full
+        // 2-NM boot for one extra RPC). HealPlayerServerRpc is a DISTINCT [Rpc(SendTo.Server, RequireOwnership=false)]
+        // entry point from the Corrupt one above and clears two NetworkVariables instead of setting one, so it is
+        // worth covering — but it belongs on this fixture's existing boot, not its own. ---
+        [UnityTest]
+        public IEnumerator HealPlayerServerRpc_InvokedOnClientReplica_ClearsCorruptionOnServer_ThenReReplicates()
+        {
+            ulong _seat = ClientNm.LocalClientId;
+            yield return SpawnRealCharacterForClient(_seat);
+            Character _hostTarget = HostCm.GetCharacter(_seat, false);
+            Assert.IsNotNull(_hostTarget, $"Host has no Character for seat {_seat}.");
+
+            Character _clientTarget = null;
+            yield return ResolveClientReplica(_hostTarget, _c => _clientTarget = _c);
+
+            // Corrupt on the SERVER first so the heal has something to clear.
+            _hostTarget.CorruptPlayerServerRpc();
+            yield return NetworkTestHelper.WaitUntilStableOrTimeout(
+                () => _clientTarget.isCorrupted.Value, 5f, 3,
+                "Corruption never reached the client replica.");
+
+            // CLIENT drives the heal on its own replica -> serializes to the host.
+            _clientTarget.HealPlayerServerRpc();
+
+            // A client cannot write these server-write NVs locally, so the HOST observing the change is the
+            // proof the RPC actually travelled the socket.
+            yield return NetworkTestHelper.WaitUntilStableOrTimeout(
+                () => _hostTarget.isHealed.Value && !_hostTarget.isCorrupted.Value, 5f, 3,
+                "The heal ServerRpc sent from the client never mutated the server state.");
+
+            yield return NetworkTestHelper.WaitUntilStableOrTimeout(
+                () => _clientTarget.isHealed.Value && !_clientTarget.isCorrupted.Value, 5f, 3,
+                "The server heal never re-replicated to the client replica.");
+        }
+
         // --- 4. Seat isolation: a targeted server mutation on seat A must reach ONLY A's replica; seat B's
         // replica stays untouched. A slot/index mixup in replication would be invisible under StartHost
         // (single shared object graph). ---

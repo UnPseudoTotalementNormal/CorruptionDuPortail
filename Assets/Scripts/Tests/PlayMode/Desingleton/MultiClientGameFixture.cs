@@ -300,15 +300,21 @@ namespace Tests.PlayMode.Desingleton
             if (ClientNm != null && ClientNm.IsListening) ClientNm.Shutdown();
             if (HostNm != null && HostNm.IsListening) HostNm.Shutdown();
 
-            yield return NetworkTestHelper.WaitUntilOrTimeout(
+            // Wait WITHOUT asserting: ignoreFailingMessages is a process-wide static, so it must be restored
+            // before anything in this teardown can throw. An Assert.Fail here would leave it stuck at true and
+            // silently suppress unexpected-error-log failures for every REMAINING PlayMode test in the session.
+            bool _stoppedListening = false;
+            yield return NetworkTestHelper.WaitUntilOrElapsed(
                 () => (ClientNm == null || !ClientNm.IsListening) && (HostNm == null || !HostNm.IsListening),
                 5f,
-                "NGO did not stop listening within 5s after Shutdown().");
+                ok => _stoppedListening = ok);
 
             // The UTP socket-close noise is now past — stop ignoring failing logs so the
             // explicit regression assertions below (and the NEXT test) are not silently
             // suppressed by this static flag leaking across tests.
             LogAssert.ignoreFailingMessages = false;
+
+            Assert.IsTrue(_stoppedListening, "NGO did not stop listening within 5s after Shutdown().");
 
             Object.Destroy(_clientNmGo);
             Object.Destroy(_hostNmGo);

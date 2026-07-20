@@ -340,6 +340,18 @@ namespace CorruptionDuPortail.Domain
         protected override IEnumerable<object> EqualityComponents { get { yield return Slot; } }
     }
 
+    /// <summary>
+    /// PChainedByTheShadows (Abyss): grant the owner one extra use of THIS power for the current night. The
+    /// use-count bump + the once-per-night guard flag live power-local on the carrier (IExtraUseGrant), so —
+    /// like <see cref="GrantLegacyPower"/> — the pure decision only emits the "grant an extra use" intention.
+    /// </summary>
+    public sealed class GrantExtraUse : EffectDescriptor
+    {
+        public int OwnerSlot { get; }
+        public GrantExtraUse(int ownerSlot) { OwnerSlot = ownerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return OwnerSlot; } }
+    }
+
     // ---- Private player icons (PlayerIconManager) ---------------------------------------
     // A marker is (icon, marked player, viewer) and is PRIVATE: exactly ONE viewer ever learns it.
     // The icon identifies the POWER that produced the information, not a state of the marked player.

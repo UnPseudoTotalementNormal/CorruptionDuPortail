@@ -19,6 +19,13 @@ namespace CorruptionDuPortail.Domain.Powers.State
         int DistinctTargetingCount { get; }
     }
 
+    /// <summary>
+    /// PChainedByTheShadows's once-per-night guard: true once the sole-anomaly extra use has already been
+    /// granted this night, so a second correct guess the same night does not grant another (Lot B, B2).
+    /// The flag lives power-local (server-side) and resets at each awakening start.
+    /// </summary>
+    public interface IExtraUseState { bool BonusConsumedThisNight { get; } }
+
     /// <summary>One reduced guess for PVisionOfTheImpossible: slot, whether its role matches a guessed role, pseudo.</summary>
     public readonly struct VisionGuess
     {

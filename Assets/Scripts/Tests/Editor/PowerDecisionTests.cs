@@ -44,6 +44,8 @@ namespace Tests.Editor
             public readonly System.Collections.Generic.HashSet<int> Robots = new();
             public readonly System.Collections.Generic.HashSet<int> Healed = new();
             public readonly System.Collections.Generic.HashSet<int> Corrupted = new();
+            public readonly System.Collections.Generic.HashSet<int> Chained = new();
+            public readonly System.Collections.Generic.HashSet<int> Eliminated = new();
             public readonly System.Collections.Generic.Dictionary<int, string> RoleNames = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
@@ -51,6 +53,8 @@ namespace Tests.Editor
             public bool IsRobot(int slot) => Robots.Contains(slot);
             public bool IsHealed(int slot) => Healed.Contains(slot);
             public bool IsCorrupted(int slot) => Corrupted.Contains(slot);
+            public bool IsChained(int slot) => Chained.Contains(slot);
+            public bool IsEliminated(int slot) => Eliminated.Contains(slot);
             public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 
@@ -155,6 +159,110 @@ namespace Tests.Editor
             var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
             roster.Roles[1] = 7; roster.Roles[2] = 9;                 // different roles
             var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
+        }
+
+        // ---- Lot B (Abyss): sole-anomaly extra-use bonus ---------------------------------
+        // Note: FactionType default is `anomaly` (enum value 0), so every slot's faction is set explicitly —
+        // an unset slot would silently count as an in-play anomaly and skew the "sole anomaly" test.
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_CorrectGuess_BonusFresh_GrantsExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;   // owner = the only anomaly in play
+            roster.Factions[1] = Characters.FactionType.marginal;  // target: non-chosen so the chain stays out
+            roster.Factions[2] = Characters.FactionType.chosen;    // picked-role owner
+            roster.Roles[1] = 7; roster.Roles[2] = 7;              // guessed right
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new GrantExtraUse(0),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_CorrectGuess_BonusAlreadyConsumed_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.marginal;
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = true });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_TwoAnomaliesInPlay_CorrectGuess_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.anomaly;   // a second anomaly still in play
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_OtherAnomalyChained_CountsAsSole_GrantsExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Chained.Add(1);                                  // the other anomaly is out of play
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            // target(1) is anomaly (not chosen) so no chain; sole anomaly in play => the bonus fires.
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new GrantExtraUse(0),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_WrongGuess_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.marginal;
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 9;              // wrong guess
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
 
             CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
         }
@@ -421,6 +529,7 @@ namespace Tests.Editor
         private sealed class FakeClandestine : IClandestineReport { public bool HasCharacters { get; set; } public string RoleLabel { get; set; } public int DistinctTargetingCount { get; set; } }
         private sealed class FakeVision : IVisionGuesses { public System.Collections.Generic.IReadOnlyList<VisionGuess> Guesses { get; set; } }
         private sealed class FakeCards : ICardsShufflingGuess { public bool IsCorrect { get; set; } public string ClickedPseudo { get; set; } public string GuessRoleName { get; set; } public System.Collections.Generic.IReadOnlyList<string> TargetedRoleNames { get; set; } = new string[0]; }
+        private sealed class FakeExtraUse : IExtraUseState { public bool BonusConsumedThisNight { get; set; } }
 
         [Test]
         public void BoundByInk_TargetsDiscoversRegisters()

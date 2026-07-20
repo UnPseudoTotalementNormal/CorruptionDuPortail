@@ -271,3 +271,14 @@ Constats réels mais **non causés** par ce chantier, ou hors de son périmètre
 - **`NetworkManager.Singleton` préexistant dans la CharactersBar.** `CharacterAwakenTimer.cs:31,44` et `CharactersBarObject.cs:84,182,184,203` le lisent encore. Antérieur à ce chantier (le nouveau code n'en a aucun), mais c'est la même classe de bug multi-NM et ça rend ces vues intestables sous `MultiClientGameFixture`.
 
 - **`expandTweenDuration: 0.35` résiduel dans `CharacterBarObject.prefab`.** Le champ sérialisé a été supprimé du code au profit de la lecture sur `CharactersBarObject.HoverTweenDuration`. Unity ignore silencieusement une clé inconnue ; elle disparaîtra à la prochaine réécriture du prefab. Sans effet, noté pour que personne ne s'en inquiète.
+
+## Deferred from: lot B Abyss — bug préexistant onCharacterAwakened jamais levé (2026-07-21)
+
+**[BUG PRÉEXISTANT, hors périmètre lot B] `Character.onCharacterAwakened` n'est JAMAIS levé.** `Character.AwakenCharacterServerRpc` ([Character.cs:140](../../Assets/Scripts/Characters/Character.cs#L140)) fait `isAwakened.Value = true; role.AwakenRole();` puis appelle **`SleepCharacterClientRpc()`** ligne 145 — un copier-coller : ça devrait être `AwakenCharacterClientRpc()`, le seul endroit qui fait `onCharacterAwakened?.Invoke()` (ligne 151). Résultat : l'event est mort dans tout le projet.
+
+**Cinq abonnés silencieusement inertes :**
+- `PClandestineObservation.cs:67` — le passif *Observation Clandestine* de la Traqueuse (`DeclareAllTargetFocusServer`) ne se déclenche jamais → **pouvoir shippé cassé**.
+- `PCChainer.cs:28`, `AwakeningState.cs:147`, `PowerManager.cs:98` (`OnCharacterAwakenedServer`) — comportements dormants, dont deux au cœur du game loop.
+- `PChainedByTheShadows` (lot B) — contourné : le reset du bonus Abyss passe par `isAwakened.OnValueChanged` (écriture directe de NetworkVariable, fiable), PAS par cet event.
+
+**Pourquoi différé et non corrigé dans le lot B :** le fix est 1 ligne (`SleepCharacterClientRpc()` → `AwakenCharacterClientRpc()`), mais il **réveillerait les cinq handlers d'un coup**, dont `PowerManager`/`AwakeningState` au cœur du loop. Turn-on simultané = risque de régression imprévisible, à ne pas empaqueter dans une feature de rôle. Mérite sa propre tâche + playtest 2 clients (vérifier que la Traqueuse rapporte, que le son de réveil joue, et qu'aucun handler dormant ne casse le loop en se rallumant). Le jeu tourne malgré le bug parce que le refill des usages passe par `role.AwakenRole()` appelé en direct (ligne 144), pas par l'event.

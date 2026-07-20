@@ -230,13 +230,15 @@ Infra à créer avant d'écrire la décision :
 - Given la partie démarre, when les passifs se résolvent, then le Repenti est corrompu et voit sa propre corruption.
 - Given le Repenti est soigné puis reciblé par un pouvoir de corruption, when le soin est consommé, then il peut être recorrompu normalement.
 
-### Lot B — Abyss
-- [ ] `Abyss.asset` — retirer l'entrée Legacy.
-- [ ] `EffectDescriptor.cs` — ajouter `GrantExtraUse(int ownerSlot)` (immuable, value-equatable).
-- [ ] Nouvel executor `GrantExtraUseExecutor` enregistré (sinon `EffectRegistryCompletenessTests` rougit).
-- [ ] `ChainedByShadowsDecision` — sur `roleGuessed` + owner seule Anomalie + bonus non consommé, ajouter `GrantExtraUse(ctx.OwnerSlot)`.
-- [ ] `PChainedByTheShadows` — port d'état du drapeau bonus, remis à zéro au réveil. **Le prefab n'est pas touché** (`maxPowerUse` reste à 1).
-- [ ] Tests EditMode — les 4 combinaisons (seule/pas seule) × (juste/faux) + le second déclenchement dans le même tour.
+### Lot B — Abyss ✅ (livré, EM 519/PM 251, revue adverse 1 HIGH résolu — commit en attente)
+- [x] `Abyss.asset` — entrée Legacy retirée (Legacy.prefab/PLegacy conservés, détachés).
+- [x] `EffectDescriptor.cs` — `GrantExtraUse(int ownerSlot)` ajouté.
+- [x] `GrantExtraUseExecutor` (créé via `create_script` — piège d'exclusion silencieuse évité) + carrier `IExtraUseGrant` + read port `IExtraUseState`.
+- [x] `ChainedByShadowsDecision` — branche bonus : `roleGuessed` + `OwnerIsSoleAnomalyInPlay` (anomalies non-chained/non-eliminated == 1) + `IExtraUseState.BonusConsumedThisNight == false` → `GrantExtraUse`. `IRosterView` étendu (`IsChained`/`IsEliminated`, 4 impls).
+- [x] `PChainedByTheShadows` — carrier (`powerUseLeft += 1` + drapeau) + read port ; **prefab intouché** (`maxPowerUse` reste 1). Reset du drapeau via `isAwakened.OnValueChanged` (PAS `onCharacterAwakened` — event mort projet-wide, cf. `deferred-work.md`).
+- [x] Tests EditMode — 5 cas : seule+juste+bonus frais→grant ; seule+juste+déjà consommé→pas de grant ; 2 anomalies→pas de grant ; autre anomalie chained→compte comme seule→grant ; seule+faux→rien.
+
+**Décision de scope (autonome) :** le bug préexistant `onCharacterAwakened` (jamais levé — copier-coller `Character.cs:145`) a été **contourné** (reset sur `isAwakened`), **pas corrigé** — le fix réveillerait 5 handlers dormants dont `PowerManager`/`AwakeningState`, trop risqué à empaqueter ici. Documenté dans `deferred-work.md` pour une tâche + playtest dédiés.
 
 **Acceptance :**
 - Given Abyss est la seule Anomalie et devine juste, when la décision se résout, then un usage supplémentaire lui est rendu pour ce tour.

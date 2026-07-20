@@ -342,7 +342,6 @@ MonoBehaviour:
   collapsedStep: 8
   expandedStep: 26
   maxVisible: 3
-  expandTweenDuration: 0.35
 --- !u!1 &5947809086267332709
 GameObject:
   m_ObjectHideFlags: 0
@@ -432,7 +431,6 @@ GameObject:
   - component: {fileID: 6371621035504576672}
   - component: {fileID: 7457916283588836762}
   - component: {fileID: 6574735506729409167}
-  - component: {fileID: 8991915726581910073}
   - component: {fileID: 4440877599346030364}
   - component: {fileID: 8200000000000000001}
   - component: {fileID: 8200000000000000002}
@@ -480,7 +478,6 @@ MonoBehaviour:
   portraitTable: {fileID: 11400000, guid: 60ad95a6ca4f42344af418149260738c, type: 2}
   canvasObject: {fileID: 7457916283588836762}
   corruptedOverlayImage: {fileID: 5021932142332569484}
-  hoverTooltipComponent: {fileID: 8991915726581910073}
   hoverVisual: {fileID: 8300000000000000002}
   hoverCameraZoomDistance: 9
   hoverFaceCamera: 1
@@ -565,23 +562,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &8991915726581910073
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7913822557668518461}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85e0e0efaccb4de99cbd9dcc142ca719, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tooltipTitle: Dr Gloubi (test)
-  tooltipDescription: "ceci est un test, t'es pas sens\xE9 voir \xE7a"
-  <tooltipOffsetDirection>k__BackingField: {x: 0, y: -1}
-  <tooltipPixelOffset>k__BackingField: {x: 0, y: 0}
-  tooltipBoundsOverride: {fileID: 2741389485759409227}
 --- !u!114 &4440877599346030364
 MonoBehaviour:
   m_ObjectHideFlags: 0

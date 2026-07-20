@@ -2,11 +2,9 @@
 
 using System;
 using Characters;
-using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameLogic;
-using TooltipSystem;
 using UI;
 using Unity.Netcode;
 using UnityEngine;
@@ -28,8 +26,6 @@ namespace Board.UI.CharacterBar
         [SerializeField] private Canvas canvasObject;
         
         [SerializeField] private Image corruptedOverlayImage;
-        
-        [SerializeField] private HoverTooltipComponent hoverTooltipComponent;
         
         private CustomButton customButton;
 
@@ -205,17 +201,6 @@ namespace Board.UI.CharacterBar
             if (corruptedOverlayImage)
             {
                 corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
-            }
-
-            if (hoverTooltipComponent)
-            {
-                hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
-                string _description = "Pouvoirs:";
-                foreach (Power _power in playerCharacter.role.powers)
-                {
-                    _description += $"\n- <link=power_{_power.ownerClientId.Value}_{_power.NetworkObjectId}>{_power.powerName}</link>";
-                }
-                hoverTooltipComponent.SetTooltipDescription(_description);
             }
 
             characterImage.sprite = portraitTable.Get(playerCharacter.GetRole().rolePortrait);

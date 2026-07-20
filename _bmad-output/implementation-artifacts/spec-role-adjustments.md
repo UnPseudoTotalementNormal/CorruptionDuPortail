@@ -2,7 +2,7 @@
 title: 'Ajustements des Rôles — Chasseuse de Prime, Abyss, Orpheline, Repenti'
 type: 'feature'
 created: '2026-07-20'
-status: 'ready-for-dev'
+status: 'done — 4 lots livrés (A/B/C/D), tests verts, revue adverse par lot ; playtest 2 clients requis (Orpheline icône, Chasseuse multi-select, Abyss bonus)'
 baseline_commit: '509793e1'
 branch: 'feat/role-adjustments'
 source: 'Discord thread 1528057133575176242 « Ajustements des Rôles » (Wouh, 2026-07-18)'

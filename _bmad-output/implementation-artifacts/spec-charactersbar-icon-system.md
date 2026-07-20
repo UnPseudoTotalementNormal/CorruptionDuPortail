@@ -96,6 +96,48 @@ Premier consommateur prévu : le nouveau passif de l'Orpheline — **hors périm
 - Given la barre est reconstruite en cours de partie, when elle se réaffiche, then les icônes du spectateur sont restaurées à l'identique.
 - Given un pouvoir sans sprite pose un marqueur, when le client le reçoit, then rien ne s'affiche et la console reste propre.
 
+## Spec Change Log
+
+### Itération 2 — 2026-07-20, après revue adverse à 3 couches (aveugle / cas limites / conformité)
+
+**Baseline relue :** commit `2c8c30d7` (EditMode 510/510, PlayMode 251/251, console propre).
+
+**Ce qui a déclenché l'amendement.** Quatre défauts structurels, dont trois signalés indépendamment par au moins deux relecteurs. Aucun n'était interdit par la spec — elle était muette dessus. D'où un amendement plutôt qu'un simple correctif.
+
+**Ce qui est amendé** (sections non gelées seulement — Tâches, Notes de design) :
+
+1. **Coexistence hôte / bot simulé.** La ligne « Spectateur = bot simulé » disait « `GetSafeRpcTarget` intercepte, le host traite » sans dire **comment l'hôte garde sa propre tranche**. Comme `IconEntry` ne porte pas le spectateur et qu'il n'existe qu'une seule liste locale, la tranche du bot écrase celle de l'hôte. → Nouvelle exigence : le payload porte le spectateur, et le pair conserve une tranche **par spectateur**, à la manière du `simulationsKnowledge` de `GameInfoRevealer`.
+2. **Résolution paresseuse des dépendances.** La spec renvoyait au modèle `AvatarManager` sans exiger de re-tentative. `_characterManager` et `GameManager` résolus une seule fois dans `OnNetworkSpawn` meurent silencieusement sur une course d'ordre de spawn. → Nouvelle exigence : re-résoudre à l'usage, et journaliser l'échec au lieu de retourner en silence.
+3. **Ordre d'initialisation de la vue.** `ResetCharactersBar` instancie la vignette **puis** lui assigne son personnage. Le premier `Rebuild` part donc sur un personnage null et rien ne le rappelle. → Nouvelle exigence : la reconstruction est déclenchée par l'assignation du personnage, pas par `OnEnable` seul.
+4. **`NetworkManager.Singleton` interdit dans la vue.** Déjà couvert par les règles projet, jamais rappelé dans la spec ; la vue étant un `MonoBehaviour` sans `base.NetworkManager`, la source du NM doit être **désignée explicitement**. → Nouvelle exigence : résoudre via le `NetworkObject` du personnage de la vignette.
+
+**État connu-mauvais que ça évite.** Un système qui passe 761 tests au vert tout en étant, en partie réelle : muet pour tous les clients distants si l'ordre de spawn tourne mal, jamais purgé entre deux nuits, invisible après chaque reconstruction de barre, et corrompant la vue de l'hôte dès qu'un bot est marqué. Les trois pannes sont **silencieuses** et **invisibles en playtest host-only**.
+
+**KEEP — à préserver impérativement en re-dérivation :**
+- Le chemin de confidentialité tel quel : un `PushSliceTo` par spectateur, court-circuit local si `viewer == ServerClientId`, `[Rpc(SendTo.SpecifiedInParams)]` + `GetSafeRpcTarget` sinon, `BuildSlice` ne lisant que `_byViewer[viewer]`. Vérifié conforme, et le test 2-NM échoue réellement sur une régression en broadcast.
+- `IconStackLayout` et ses tests : POCO pur, bornes clampées, couverture complète. Ne pas y toucher.
+- Le registre `For(nm)` : garde de doublon, désinscription **par valeur**, reset `SubsystemRegistration`. Conforme au patron `AvatarManager`, zéro entrée aux guards.
+- Le câblage prefab et scène (`IconStack` sous `hoverVisual`, `---GameLogic---/PlayerIconManager` + `NetworkObject`), vérifié en YAML. **Ne pas refaire.**
+- Le comportement « pouvoir sans sprite » : rien affiché, console propre.
+
+**Rejeté.** Le cast `(ulong)slot` dans les executors : `NewTargetingExecutor` fait strictement pareil, les slots logiques mappent 1:1 sur les clientIds dans ce codebase. Le relecteur aveugle manquait ce contexte. En revanche, les commentaires contradictoires entre `EffectDescriptor` et l'executor sont à harmoniser.
+
+**Différé** (vers `deferred-work.md`, non causé par ce chantier) : absence de plafond sur la taille de tranche RPC, `Destroy(gameObject)` sur un `NetworkObject` spawné dans la garde anti-doublon (partagé avec `AvatarManager`), marqueurs pointant un joueur déconnecté, et la question de savoir si `iconId = NetworkObjectId` d'un `Power` ouvre un chemin de lecture côté client.
+
+## Tâches — itération 2 (correction ciblée)
+
+Périmètre : **deux fichiers**. Le Domain, les assets, les tests de layout et le câblage sont conformes et hors périmètre.
+
+- [ ] `Assets/Scripts/GameLogic/PlayerIconManager.cs` -- (a) `IconEntry` porte le `ViewerClientId` ; le pair conserve une tranche **par spectateur** et la vue lit celle de son identité locale, pour que l'hôte et un bot simulé coexistent sans s'écraser. (b) `_characterManager` et `GameManager` re-résolus à l'usage si null, avec un log explicite en cas d'échec persistant — plus de `return` muet. (c) `Teardown` vide les tables serveur et locale. (d) Garde sur slot négatif / `ulong.MaxValue`.
+- [ ] `Assets/Scripts/Board/UI/CharacterBar/CharacterBarIconStack.cs` -- (a) résoudre le `NetworkManager` via le `NetworkObject` du personnage de la vignette, **jamais** `NetworkManager.Singleton`. (b) Reconstruire quand le personnage est assigné, pas seulement sur `OnEnable`. (c) Une seule boucle de résolution à la fois et un seul abonnement, quel que soit le cycle enable/disable. (d) `.Forget()` avec `this.GetCancellationTokenOnDestroy()`. (e) Lire la durée de tween sur `CharactersBarObject.hoverTweenDuration` au lieu d'un champ dupliqué. (f) `DOKill` des icônes clonées au teardown. (g) Le repli anime aussi les icônes qui sortent du champ visible. (h) Le compteur « +X » ne compte que les icônes réellement affichables.
+- [ ] `Assets/Scripts/Tests/PlayMode/PlayerIconPrivacyTests.cs` -- corriger le test bot : il doit prouver que la tranche propre de l'hôte **survit** au marquage d'un bot, au lieu de graver l'écrasement. Ajouter la couverture de la purge d'éveil **par son câblage réel** et non par appel direct.
+
+**Acceptance Criteria — itération 2 :**
+- Given l'hôte possède déjà un marqueur, when un marqueur est posé pour un bot simulé, then l'hôte conserve le sien et les deux tranches coexistent.
+- Given une dépendance n'est pas encore enregistrée au spawn, when un marqueur est poussé plus tard, then la dépendance est re-résolue et la livraison aboutit ; si elle échoue durablement, la console le dit.
+- Given la barre est reconstruite en cours de partie, when les vignettes reçoivent leur personnage, then les icônes réapparaissent sans attendre un nouveau push ni un survol.
+- Given deux NetworkManagers en process, when une vue résout son manager, then elle obtient celui de son propre NetworkManager.
+
 ## Design Notes
 
 **La fuite d'information est le vrai risque de ce chantier.** `RoleTargetSystem` réplique déjà sa liste à tous les clients (`ReceiveTargetingDataRpc`, `SendTo.Everyone`, `RoleTargetSystem.cs:70`). Personne ne l'affiche, donc rien ne fuit aujourd'hui. Reproduire ce schéma pour les marqueurs donnerait à chaque joueur la carte complète de qui est marqué par quoi — soit, une fois l'Orpheline branchée, son pouvoir entier offert à la table. **Et la fuite serait invisible en playtest host-only**, le host voyant tout légitimement. D'où le test 2-NM en critère d'acceptation n°1.

@@ -48,6 +48,13 @@ namespace Board.UI.CharacterBar
 
         [SerializeField] private float hoverTweenDuration = 0.35f;
 
+        /// <summary>
+        /// The hover motion's duration, exposed READ-ONLY so children riding that motion
+        /// (CharacterBarIconStack) share the single source of truth instead of duplicating the value on
+        /// their own serialized field, where the two could silently drift apart.
+        /// </summary>
+        public float HoverTweenDuration => hoverTweenDuration;
+
         private Transform HoverVisual => hoverVisual != null ? hoverVisual : transform;
 
         private Camera _mainCamera;

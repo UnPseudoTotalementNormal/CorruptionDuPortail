@@ -345,7 +345,8 @@ namespace CorruptionDuPortail.Domain
     // The icon identifies the POWER that produced the information, not a state of the marked player.
     // IconId is an opaque icon identity — the adapter uses the declaring Power's NetworkObjectId, which
     // the receiving client resolves back to that Power's bar sprite. Slots stay LOGICAL (int), as
-    // everywhere else in this vocabulary; the adapter maps slot -> clientId -> GetSafeRpcTarget.
+    // everywhere else in this vocabulary, and map 1:1 onto clientIds in this codebase — the adapter casts
+    // them straight across, exactly like NewTargetingExecutor does.
 
     /// <summary>Place a private icon on <see cref="MarkedSlot"/>'s thumbnail, visible ONLY to <see cref="ViewerSlot"/>.</summary>
     public sealed class AddPlayerIcon : EffectDescriptor

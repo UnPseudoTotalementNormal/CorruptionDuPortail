@@ -1,6 +1,8 @@
 #region
 
 using System.Collections.Generic;
+using System.Threading;
+using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain.PlayerIcons;
 using Cysharp.Threading.Tasks;
@@ -22,8 +24,8 @@ namespace Board.UI.CharacterBar
     ///
     /// All the placement maths is the pure <see cref="IconStackLayout"/> POCO — this class only turns
     /// <see cref="LayoutPoint"/>s into anchored positions and tweens between the collapsed and expanded
-    /// arrangement, reusing the thumbnail's OWN hover events, duration and easing (0.35s / Ease.OutQuint)
-    /// so there is never a second competing animation.
+    /// arrangement, reusing the thumbnail's OWN hover events, duration and easing so there is never a
+    /// second competing animation.
     ///
     /// Nothing here is Canvas-specific beyond the Image renderer: offsets are local units, so when the
     /// thumbnails become 3D objects only the renderer swaps out.
@@ -46,18 +48,26 @@ namespace Board.UI.CharacterBar
         [Tooltip("How many icons the collapsed pile shows before the '+X' badge takes over.")]
         [SerializeField] private int maxVisible = 3;
 
-        [Tooltip("Must match CharactersBarObject.hoverTweenDuration — the fan-out rides the same hover motion.")]
-        [SerializeField] private float expandTweenDuration = 0.35f;
-
         // Pure placement. Stateless, so one instance per view costs nothing.
         private readonly IconStackLayout _layout = new IconStackLayout();
 
         private readonly List<Image> _spawnedIcons = new();
+        private readonly List<Sprite> _renderableSprites = new();
 
         private CharactersBarObject _barObject;
         private PlayerIconManager _iconManager;
+        private Character _observedCharacter;
         private bool _expanded;
         private bool _subscribedToManager;
+
+        // Generation stamp, NOT a bool. Enable/disable cycles can leave a previous frame-loop mid-await, and
+        // a flag it already passed cannot stop it — two loops would then resolve and subscribe twice. Every
+        // OnEnable/OnDisable bumps the stamp, and a loop whose stamp is stale returns on its next tick.
+        private int _loopGeneration;
+
+        // Single source of truth: the fan-out rides the thumbnail's OWN hover motion, so it must read that
+        // motion's duration rather than keep a copy that can silently drift.
+        private float ExpandTweenDuration => _barObject != null ? _barObject.HoverTweenDuration : 0.35f;
 
         private void Awake()
         {
@@ -83,56 +93,123 @@ namespace Board.UI.CharacterBar
                 _barObject.onCharacterBarObjectHovered += OnHovered;
                 _barObject.onCharacterBarObjectUnhovered += OnUnhovered;
             }
-            // The bar is rebuilt wholesale by CharactersBar.ResetCharactersBar, which re-instantiates this
-            // component — so re-resolving and rebuilding here IS the re-application after a rebuild.
-            ResolveManagerAndRebuild().Forget();
+            _loopGeneration++;
+            WatchAsync(_loopGeneration, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         private void OnDisable()
         {
+            // Bump FIRST so the in-flight loop is already stale when it next resumes.
+            _loopGeneration++;
+
             if (_barObject != null)
             {
                 _barObject.onCharacterBarObjectHovered -= OnHovered;
                 _barObject.onCharacterBarObjectUnhovered -= OnUnhovered;
             }
+            UnsubscribeFromManager();
+            KillIconTweens();
+            _observedCharacter = null;
+            _expanded = false;
+        }
+
+        private void OnDestroy()
+        {
+            // Cloned icons outlive nothing, but a live tween holding a destroyed RectTransform does.
+            KillIconTweens();
+        }
+
+        private void UnsubscribeFromManager()
+        {
             if (_iconManager != null && _subscribedToManager)
             {
                 _iconManager.onLocalIconsChanged -= Rebuild;
             }
             _subscribedToManager = false;
             _iconManager = null;
-            _expanded = false;
         }
 
         /// <summary>
-        /// The manager is a spawned NetworkObject, so it may not be registered yet on the frame this view
-        /// enables. Poll briefly, then give up SILENTLY — a bare harness (or a bar shown outside a live
-        /// session) legitimately has no manager, and that is not an error worth logging.
+        /// ONE long-lived loop per enable cycle. It does two jobs that both have to survive an ordering race:
+        /// the manager is a spawned NetworkObject that may not be registered yet, and — the load-bearing part —
+        /// CharactersBar.ResetCharactersBar INSTANTIATES the thumbnail and only THEN calls SetCharacter, so the
+        /// first rebuild would otherwise run against a null character with nothing to re-trigger it. The rebuild
+        /// is therefore driven by the character being assigned, never by OnEnable alone.
         /// </summary>
-        private async UniTaskVoid ResolveManagerAndRebuild()
+        private async UniTaskVoid WatchAsync(int _generation, CancellationToken _token)
         {
-            const int _maxFrames = 300;
-            for (int _frame = 0; _frame < _maxFrames; _frame++)
+            while (_generation == _loopGeneration)
             {
-                if (this == null || !isActiveAndEnabled)
+                if (this == null || _barObject == null)
                 {
                     return;
                 }
 
-                _iconManager = PlayerIconManager.For(NetworkManager.Singleton);
-                if (_iconManager != null)
+                if (_iconManager == null)
                 {
-                    _iconManager.onLocalIconsChanged += Rebuild;
-                    _subscribedToManager = true;
+                    TryResolveManager();
+                }
+
+                Character _current = _barObject.playerCharacter;
+                if (!ReferenceEquals(_current, _observedCharacter))
+                {
+                    _observedCharacter = _current;
                     Rebuild();
+                }
+
+                bool _cancelled = await UniTask.NextFrame(_token).SuppressCancellationThrow();
+                if (_cancelled)
+                {
                     return;
                 }
-                await UniTask.NextFrame();
             }
         }
 
-        private void OnHovered(Characters.Character _character) => SetExpanded(true);
-        private void OnUnhovered(Characters.Character _character) => SetExpanded(false);
+        private void TryResolveManager()
+        {
+            NetworkManager _networkManager = ResolveNetworkManager();
+            if (_networkManager == null)
+            {
+                return;
+            }
+
+            PlayerIconManager _manager = PlayerIconManager.For(_networkManager);
+            if (_manager == null)
+            {
+                // A bare harness (or a bar shown outside a live session) legitimately has no manager; the
+                // loop simply keeps looking. Nothing to log.
+                return;
+            }
+
+            _iconManager = _manager;
+            if (!_subscribedToManager)
+            {
+                _iconManager.onLocalIconsChanged += Rebuild;
+                _subscribedToManager = true;
+            }
+            Rebuild();
+        }
+
+        /// <summary>
+        /// NEVER <c>NetworkManager.Singleton</c>: this view is a plain MonoBehaviour with no
+        /// <c>base.NetworkManager</c>, and with two in-process NetworkManagers the Singleton is the HOST's —
+        /// a client view would then read the host's manager and show the host's icons. The thumbnail's
+        /// character is a spawned NetworkObject, so it names its own NetworkManager unambiguously.
+        /// </summary>
+        private NetworkManager ResolveNetworkManager()
+        {
+            Character _character = _barObject != null ? _barObject.playerCharacter : null;
+            if (_character == null)
+            {
+                return null;
+            }
+            // TryGetComponent rather than NetworkBehaviour.NetworkObject: the latter logs its own error
+            // when the object is not spawned yet, and "not spawned yet" is a normal frame here.
+            return _character.TryGetComponent(out NetworkObject _networkObject) ? _networkObject.NetworkManager : null;
+        }
+
+        private void OnHovered(Character _character) => SetExpanded(true);
+        private void OnUnhovered(Character _character) => SetExpanded(false);
 
         private void SetExpanded(bool _value)
         {
@@ -141,7 +218,7 @@ namespace Board.UI.CharacterBar
                 return;
             }
             _expanded = _value;
-            // Expanding reveals the overflowed icons, so the set of spawned icons changes, not just their
+            // Expanding reveals the overflowed icons, so the set of shown icons changes, not just their
             // positions — rebuild, then tween each one to its new place.
             Rebuild();
         }
@@ -154,29 +231,34 @@ namespace Board.UI.CharacterBar
                 return;
             }
 
-            List<ulong> _iconIds = ResolveIconIds();
+            // Only icons that can ACTUALLY RENDER take part. A power with no barIcon draws nothing — a
+            // normal case, never an error — and must not occupy a slot nor inflate the "+X" counter with
+            // icons the player could never see however far the stack is fanned out.
+            ResolveRenderableSprites();
+            int _count = _renderableSprites.Count;
 
-            int _visible = _layout.VisibleCount(_iconIds.Count, _expanded, maxVisible);
-            int _overflow = _layout.OverflowCount(_iconIds.Count, _expanded, maxVisible);
+            int _visible = _layout.VisibleCount(_count, _expanded, maxVisible);
+            int _overflow = _layout.OverflowCount(_count, _expanded, maxVisible);
             IReadOnlyList<LayoutPoint> _points =
-                _layout.Compute(_iconIds.Count, _expanded, collapsedStep, expandedStep, maxVisible);
+                _layout.Compute(_count, _expanded, collapsedStep, expandedStep, maxVisible);
 
             EnsureIconCount(_visible);
 
             for (int _i = 0; _i < _visible; _i++)
             {
                 Image _icon = _spawnedIcons[_i];
-                _icon.sprite = ResolveSprite(_iconIds[_i]);
-                // A power with no barIcon draws nothing — a NORMAL case, never an error.
-                _icon.gameObject.SetActive(_icon.sprite != null);
+                _icon.sprite = _renderableSprites[_i];
+                _icon.gameObject.SetActive(true);
 
                 var _rect = (RectTransform)_icon.transform;
                 var _destination = new Vector2(_points[_i].X, _points[_i].Y);
                 // DOKill before re-tweening so a hover-exit mid-expansion folds back in the same easing
                 // instead of fighting a live tween.
                 _rect.DOKill();
-                _rect.DOAnchorPos(_destination, expandTweenDuration).SetEase(Ease.OutQuint);
+                _rect.DOAnchorPos(_destination, ExpandTweenDuration).SetEase(Ease.OutQuint);
             }
+
+            FoldAwaySurplusIcons(_visible, _points);
 
             if (overflowLabel != null)
             {
@@ -189,22 +271,70 @@ namespace Board.UI.CharacterBar
             }
         }
 
-        // This thumbnail's marked-player id, then the icons THIS peer is allowed to see on it. A client
-        // only ever holds its own slice, so there is nothing to filter for privacy here.
-        private List<ulong> ResolveIconIds()
+        /// <summary>
+        /// Collapsing REMOVES icons from the visible set. They travel back into the pile in the same motion
+        /// and only then disappear — snapping them off mid-hover would read as a glitch, not as a fold.
+        /// </summary>
+        private void FoldAwaySurplusIcons(int _visible, IReadOnlyList<LayoutPoint> _points)
         {
+            Vector2 _foldTarget = _visible > 0 && _points.Count >= _visible
+                ? new Vector2(_points[_visible - 1].X, _points[_visible - 1].Y)
+                : Vector2.zero;
+
+            for (int _i = _visible; _i < _spawnedIcons.Count; _i++)
+            {
+                Image _icon = _spawnedIcons[_i];
+                if (_icon == null)
+                {
+                    continue;
+                }
+
+                var _rect = (RectTransform)_icon.transform;
+                _rect.DOKill();
+                if (!_icon.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                _rect.DOAnchorPos(_foldTarget, ExpandTweenDuration)
+                    .SetEase(Ease.OutQuint)
+                    .OnComplete(() =>
+                    {
+                        if (_icon != null)
+                        {
+                            _icon.gameObject.SetActive(false);
+                        }
+                    });
+            }
+        }
+
+        // This thumbnail's marked-player id, then the icons THIS peer is allowed to see on it, reduced to the
+        // ones that resolve to a real sprite. A peer only ever holds its own slice, so there is nothing to
+        // filter for privacy here.
+        private void ResolveRenderableSprites()
+        {
+            _renderableSprites.Clear();
             if (_iconManager == null || _barObject.playerCharacter == null)
             {
-                return new List<ulong>();
+                return;
             }
-            return _iconManager.GetLocalIconsFor(_barObject.playerCharacter.ownerClientId.Value);
+
+            List<ulong> _iconIds = _iconManager.GetLocalIconsFor(_barObject.playerCharacter.ownerClientId.Value);
+            foreach (ulong _iconId in _iconIds)
+            {
+                Sprite _sprite = ResolveSprite(_iconId);
+                if (_sprite != null)
+                {
+                    _renderableSprites.Add(_sprite);
+                }
+            }
         }
 
         // An icon id is the declaring Power's NetworkObjectId; the sprite is that power's BarIcon. A
-        // despawned power or a power with no sprite yields null and the slot simply stays blank.
+        // despawned power or a power with no sprite yields null and the icon is simply not shown.
         private Sprite ResolveSprite(ulong _iconId)
         {
-            NetworkManager _networkManager = NetworkManager.Singleton;
+            NetworkManager _networkManager = ResolveNetworkManager();
             if (_networkManager == null || _networkManager.SpawnManager == null)
             {
                 return null;
@@ -217,6 +347,7 @@ namespace Board.UI.CharacterBar
             return _power != null ? _power.BarIcon : null;
         }
 
+        // Grows only — shrinking is the animated fold in FoldAwaySurplusIcons.
         private void EnsureIconCount(int _count)
         {
             while (_spawnedIcons.Count < _count)
@@ -226,13 +357,15 @@ namespace Board.UI.CharacterBar
                 _clone.gameObject.SetActive(true);
                 _spawnedIcons.Add(_clone);
             }
+        }
 
-            for (int _i = _count; _i < _spawnedIcons.Count; _i++)
+        private void KillIconTweens()
+        {
+            foreach (Image _icon in _spawnedIcons)
             {
-                if (_spawnedIcons[_i] != null)
+                if (_icon != null)
                 {
-                    _spawnedIcons[_i].transform.DOKill();
-                    _spawnedIcons[_i].gameObject.SetActive(false);
+                    _icon.transform.DOKill();
                 }
             }
         }

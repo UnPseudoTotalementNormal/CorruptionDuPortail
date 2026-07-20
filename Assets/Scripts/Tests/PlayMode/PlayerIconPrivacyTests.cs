@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using CorruptionDuPortail.Domain.PlayerIcons;
 using GameLogic;
+using GameLogic.GameStates;
 using NUnit.Framework;
 using Tests.PlayMode.Desingleton;
 using Unity.Netcode;
@@ -40,6 +42,46 @@ namespace Tests.PlayMode
 
         private PlayerIconManager _hostIcons;
         private PlayerIconManager _clientIcons;
+
+        // Declared by the awakening test only. Domain reload is disabled, so it must be destroyed and
+        // removed from the (shared) GameManager again or it leaks into the rest of the PlayMode session.
+        private AwakeningState _fixtureAwakeningState;
+
+        [TearDown]
+        public void DestroyFixtureAwakeningState()
+        {
+            if (_fixtureAwakeningState == null)
+            {
+                return;
+            }
+            if (HostGm != null)
+            {
+                HostGm.gameStates.Remove(_fixtureAwakeningState);
+            }
+            UnityEngine.Object.Destroy(_fixtureAwakeningState);
+            _fixtureAwakeningState = null;
+        }
+
+        /// <summary>
+        /// Fires the state's own <c>onStateStartServer</c>. <c>AwakeningState.OnStartStateServer()</c> cannot
+        /// be called here — it drives the entire awakening (characters, audio, timers) — and a C# event
+        /// cannot be raised from outside its declaring type, so the event is raised through its backing
+        /// field. The subscription itself is what is under test: a null handler means PlayerIconManager
+        /// never hooked this state, which is the silent failure mode.
+        /// </summary>
+        private static void RaiseStateStartServer(GameState _state)
+        {
+            FieldInfo _field = typeof(GameState).GetField("onStateStartServer",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(_field,
+                "GameState.onStateStartServer went missing — the awakening purge has no trigger to hook.");
+
+            var _handler = (Action)_field.GetValue(_state);
+            Assert.IsNotNull(_handler,
+                "Nothing is subscribed to this AwakeningState's onStateStartServer — PlayerIconManager " +
+                "never wired the awakening purge through GameManager.GetGameStates.");
+            _handler.Invoke();
+        }
 
         protected override void BuildExtraNetworkPrefabs(List<GameObject> _templates)
         {
@@ -81,9 +123,23 @@ namespace Tests.PlayMode
             }
         }
 
+        /// <summary>What this peer holds AS ITSELF.</summary>
         private static bool Holds(PlayerIconManager _manager, ulong _iconId, ulong _markedClientId)
         {
             foreach (var _entry in _manager.GetLocalIcons())
+            {
+                if (_entry.IconId == _iconId && _entry.MarkedClientId == _markedClientId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>What this peer holds ON BEHALF OF another viewer (the intercepted simulated-bot case).</summary>
+        private static bool HoldsForViewer(PlayerIconManager _manager, ulong _viewerClientId, ulong _iconId, ulong _markedClientId)
+        {
+            foreach (var _entry in _manager.GetLocalIconsForViewer(_viewerClientId))
             {
                 if (_entry.IconId == _iconId && _entry.MarkedClientId == _markedClientId)
                 {
@@ -168,9 +224,20 @@ namespace Tests.PlayMode
             Assert.AreEqual(1, _clientIcons.GetLocalIcons().Count);
         }
 
+        /// <summary>
+        /// The purge is exercised through its REAL WIRING, not by calling ClearTransientMarkers(): a real
+        /// AwakeningState is declared on the GameManager BEFORE the manager spawns, so PlayerIconManager has
+        /// to find it through its production path (CompositionRoot -> GameManager.GetGameStates ->
+        /// onStateStartServer) for anything at all to happen here. Calling the purge directly would prove the
+        /// filtering and nothing about the subscription — and a missing subscription is precisely the silent
+        /// failure iteration 2 is about.
+        /// </summary>
         [UnityTest]
-        public IEnumerator AwakeningStart_PurgesOnlyTheTransientMarkers()
+        public IEnumerator AwakeningStart_PurgesOnlyTheTransientMarkers_ThroughItsRealWiring()
         {
+            _fixtureAwakeningState = ScriptableObject.CreateInstance<AwakeningState>();
+            HostGm.gameStates.Add(_fixtureAwakeningState, new GameStateSettings());
+
             yield return SpawnIconManagers();
 
             ulong _clientId = ClientNm.LocalClientId;
@@ -182,7 +249,7 @@ namespace Tests.PlayMode
                 5f,
                 "The client never received both markers.");
 
-            _hostIcons.ClearTransientMarkers();
+            RaiseStateStartServer(_fixtureAwakeningState);
 
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => _clientIcons.GetLocalIcons().Count == 1,
@@ -221,23 +288,42 @@ namespace Tests.PlayMode
                 "INFORMATION LEAK: the late-joiner push handed the client more than its own slice.");
         }
 
+        /// <summary>
+        /// The host and an intercepted simulated bot must COEXIST on the same peer. GetSafeRpcTarget routes
+        /// clientId >= 100 to the host (client 0), so the host applies the bot's slice itself — and with a
+        /// single flat local list that application wiped the host's OWN icons. The host is therefore given a
+        /// marker FIRST, and the assertion is that it SURVIVES.
+        /// </summary>
         [UnityTest]
-        public IEnumerator SimulatedBotMarker_IsInterceptedByTheHost_AndNeverSentOverTheWire()
+        public IEnumerator SimulatedBotMarker_IsInterceptedByTheHost_WithoutErasingTheHostsOwnSlice()
         {
             yield return SpawnIconManagers();
 
-            // GetSafeRpcTarget routes clientId >= 100 to the host (client 0), so the host processes the
-            // bot's slice itself — the bot-debug flow, unchanged.
-            _hostIcons.AddIcon(BotIconId, MarkedPlayerId, SimulatedBotClientId, PlayerIconLifetime.Persistent);
-
+            _hostIcons.AddIcon(HostIconId, MarkedPlayerId, NetworkManager.ServerClientId, PlayerIconLifetime.Persistent);
             yield return NetworkTestHelper.WaitUntilOrTimeout(
-                () => Holds(_hostIcons, BotIconId, MarkedPlayerId),
+                () => Holds(_hostIcons, HostIconId, MarkedPlayerId),
+                5f,
+                "The host never applied its own slice locally (the server short-circuit did not fire).");
+
+            _hostIcons.AddIcon(BotIconId, MarkedPlayerId, SimulatedBotClientId, PlayerIconLifetime.Persistent);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => HoldsForViewer(_hostIcons, SimulatedBotClientId, BotIconId, MarkedPlayerId),
                 5f,
                 "The simulated bot's slice was not intercepted by the host (GetSafeRpcTarget wrap missing?).");
             yield return Settle();
 
+            // THE regression this test exists for: both slices live on the host, neither overwrites the other.
+            Assert.IsTrue(Holds(_hostIcons, HostIconId, MarkedPlayerId),
+                "The host's OWN marker was erased when it intercepted the simulated bot's slice.");
+            Assert.AreEqual(1, _hostIcons.GetLocalIcons().Count,
+                "The host's own slice must still hold exactly its own marker.");
+            Assert.IsFalse(Holds(_hostIcons, BotIconId, MarkedPlayerId),
+                "The bot's marker bled into the slice the host sees AS ITSELF.");
+            Assert.AreEqual(1, _hostIcons.GetLocalIconsForViewer(SimulatedBotClientId).Count,
+                "The bot's own slice must hold exactly the bot's marker.");
+
             Assert.AreEqual(0, _clientIcons.GetLocalIcons().Count,
-                "INFORMATION LEAK: a simulated bot's marker travelled to the real client.");
+                "INFORMATION LEAK: a simulated bot's (or the host's) marker travelled to the real client.");
             Assert.AreEqual(1, _hostIcons.GetServerMarkersFor(SimulatedBotClientId).Count,
                 "The bot's marker must still be recorded under the BOT's viewer id on the server.");
         }

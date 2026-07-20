@@ -47,6 +47,9 @@ namespace Characters.Powers.Runtime
         public bool IsHealed(int slot) =>
             CharacterAt(slot)?.isHealed.Value ?? false;
 
+        public bool IsCorrupted(int slot) =>
+            CharacterAt(slot)?.isCorrupted.Value ?? false;
+
         public string RoleNameOf(int slot) =>
             CharacterAt(slot)?.role.roleName.ToString() ?? string.Empty;
 

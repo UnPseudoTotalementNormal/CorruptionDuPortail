@@ -17,7 +17,8 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
         public PowerOutcome Decide(in PowerContext ctx)
         {
             var effects = new List<EffectDescriptor> { new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot) };
-            if (ctx.Roster.SameRole(ctx.TargetSlot, ctx.SecondaryTargetSlot))
+            bool roleGuessed = ctx.Roster.SameRole(ctx.TargetSlot, ctx.SecondaryTargetSlot);
+            if (roleGuessed)
             {
                 effects.Add(new RevealInfo(ctx.TargetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.OwnerSlot, true));
                 if (ctx.Roster.FactionOf(ctx.TargetSlot) == FactionType.chosen)
@@ -25,7 +26,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                     effects.Add(new AddToChain(ctx.TargetSlot));
                 }
             }
-            return PowerOutcome.Accept(effects);
+            return PowerOutcome.Accept(effects, roleGuessed ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

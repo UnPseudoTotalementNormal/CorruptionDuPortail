@@ -15,7 +15,8 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
         public PowerOutcome Decide(in PowerContext ctx)
         {
             var effects = new List<EffectDescriptor> { new NewTargeting(ctx.OwnerSlot, ctx.OwnerSlot) };
-            if (ctx.Roster.IsRobot(ctx.TargetSlot))
+            bool hitTheRobot = ctx.Roster.IsRobot(ctx.TargetSlot);
+            if (hitTheRobot)
             {
                 effects.Add(new SetEliminated(ctx.TargetSlot));
                 effects.Add(new ChatBroadcast(
@@ -31,7 +32,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                     ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
             }
             effects.Add(RequestCharacterRefresh.Instance);
-            return PowerOutcome.Accept(effects);
+            return PowerOutcome.Accept(effects, hitTheRobot ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

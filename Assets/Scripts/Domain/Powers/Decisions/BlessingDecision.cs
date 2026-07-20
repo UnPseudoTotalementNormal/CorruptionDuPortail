@@ -15,7 +15,8 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
         public PowerOutcome Decide(in PowerContext ctx)
         {
             var effects = new List<EffectDescriptor> { new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot) };
-            if (ctx.Roster.SameRole(ctx.TargetSlot, ctx.SecondaryTargetSlot))
+            bool roleGuessed = ctx.Roster.SameRole(ctx.TargetSlot, ctx.SecondaryTargetSlot);
+            if (roleGuessed)
             {
                 if (!ctx.Roster.IsHealed(ctx.TargetSlot))
                 {
@@ -26,7 +27,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                 effects.Add(new ChatBroadcast(
                     $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} est maintenant béni.", ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
             }
-            return PowerOutcome.Accept(effects);
+            return PowerOutcome.Accept(effects, roleGuessed ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

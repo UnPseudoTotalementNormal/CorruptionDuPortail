@@ -420,21 +420,32 @@ namespace Characters.Powers
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
+            // SendTo.Everyone + fire-and-forget: this runs on every peer the instant the server
+            // reparents, but a target Character may not be in a remote client's roster yet. At game
+            // start the fake-client / bot owner (ownerClientId == GameValues.FAKE_CLIENT_ID =
+            // ulong.MaxValue) lags replication, so GetCharacter returns null there while the host
+            // (which simulates the bot synchronously) resolves it. Skipping the powers-list edit on
+            // null is safe: Character.CheckForPowersRpc rebuilds role.powers from the reparented
+            // Power children once the character syncs, so the client still converges. Mirrors the
+            // null-guard in the sibling SendTo.Everyone RPC PowerManager.RemovePowerFromCharacterPowerListRpc.
             var _oldParentCharacter = characterManager.GetCharacter(_oldParentId, false);
             var _newParentCharacter = characterManager.GetCharacter(_newParentId, false);
-            if (_oldParentCharacter)
+
+            if (_oldParentCharacter && _oldParentCharacter.role != null)
             {
                 _oldParentCharacter.role.powers.Remove(this);
+                _oldParentCharacter.InvokeOnPowersUpdated();
             }
 
-            if (!_newParentCharacter.role.powers.Contains(this))
+            if (_newParentCharacter && _newParentCharacter.role != null)
             {
-                _newParentCharacter.role.powers.Add(this);
+                if (!_newParentCharacter.role.powers.Contains(this))
+                {
+                    _newParentCharacter.role.powers.Add(this);
+                }
+                _newParentCharacter.InvokeOnPowersUpdated();
             }
-            
-            _oldParentCharacter.InvokeOnPowersUpdated();
-            _newParentCharacter.InvokeOnPowersUpdated();
-            
+
             onPowerReparented?.Invoke();
         }
     }

@@ -345,11 +345,23 @@ namespace Tests.PlayMode.Desingleton
             // Statics must be clean for the next test (domain reload is disabled).
             ResetManagerStatics();
             // NOTE: intentionally NOT calling TestStaticReset.ResetAll() here. Several existing PlayMode tests
-            // (e.g. CorruptionTests.PCardsShuffling — needs SelectionFlowService.instance; OwnerLocalEffectBoundary)
             // pass only because a prior test LEAKS a singleton they never wire themselves. A blanket ResetAll in a
             // shared fixture teardown clears those leaks and breaks them (Amelia's ordering warning: fix the
             // leak-dependent tests FIRST, then wire ResetAll). ResetAll stays an opt-in tool for NEW batches that
             // wire their own singletons; the fixture-reset gate (FixtureResetTests) proves it works in isolation.
+            //
+            // BLAST RADIUS, MEASURED 2026-07-20 (dry run, reverted) — exactly 3 failures out of 244:
+            //   CorruptionTests.PCardsShuffling_CorrectGuessRevealsAndRecordsTarget          (NullReferenceException)
+            //   OwnerLocalEffectBoundaryTests.CursedVisionCastByClient_RevealsOnClientRevealer_NotHost
+            //   OwnerLocalEffectBoundaryTests.EmbraceCastByClient_RevealsOnClientRevealer_NotHost
+            // So wiring ResetAll is a small job, not a rewrite. Details + next steps: deferred-work.md,
+            // "audit des tests PlayMode post-PR#91".
+            //
+            // TRAP if you re-measure this: enabling ResetAll HERE ONLY yields 244/244 green, and that green is a
+            // FALSE NEGATIVE. Execution order puts Tests.PlayMode.CorruptionTests at index 29 and the first
+            // Tests.PlayMode.Desingleton.* at index 38, so this teardown never runs before CorruptionTests. To get
+            // the real number you must force a reset BEFORE index 29 (the dry run temporarily called ResetAll() in
+            // CorruptionTests' own [UnitySetUp], simulating "the previous fixture cleaned everything").
 
             yield return null;
 

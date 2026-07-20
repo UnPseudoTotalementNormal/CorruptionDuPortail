@@ -8,8 +8,15 @@ namespace Tests.PlayMode.Infra
     /// <summary>
     /// Single source of truth for wiping production static state between PlayMode tests. Domain reload is OFF in
     /// this project, so any surviving singleton `.instance` or static collection leaks into the NEXT test — the
-    /// #1 cause of order-dependent, non-reproducible flakes. Every PlayMode fixture teardown should call
-    /// <see cref="ResetAll"/>.
+    /// #1 cause of order-dependent, non-reproducible flakes.
+    ///
+    /// STATUS 2026-07-20 — NOT WIRED. <see cref="ResetAll"/> has NO caller outside its own gate
+    /// (FixtureResetTests). Do not read this class as an active protection: nothing in the suite is isolated from
+    /// static leaks today. MultiClientGameFixture.TearDown declines to call it on purpose (see the NOTE there) —
+    /// a measured 3 tests out of 244 currently depend on a leaked singleton and fail the moment it is wired.
+    /// Either finish the job (instrument those 3, wire their singletons, then call ResetAll from the fixture
+    /// teardowns) or delete this file and FixtureResetTests. Plan: deferred-work.md, "audit des tests PlayMode
+    /// post-PR#91".
     ///
     /// Types are resolved by SIMPLE NAME within the production (`Game`) assembly (namespace-agnostic, survives
     /// a type move), and this inventory MUST stay in sync with the singletons tracked by StaticSingletonCensusGuardTests.

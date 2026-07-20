@@ -235,3 +235,23 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 ## Deferred from: code review of spec-proto-power-effect-2client-replication (2026-07-18)
 
 - Teardowns des nouvelles fixtures 2-NM (`PowerPipelineClientReplicationTests`, `PowerObjectReplicationProtoTests`) nullent `RoleTargetSystem.instance` / `ChatManager.instance` / `ChainingManager.instance` alors que la NOTE de `MultiClientGameFixture` refuse `ResetAll` précisément pour préserver des tests leak-dépendants — risque latent de couplage d'ordre, non manifesté (suite PlayMode verte). À surveiller si un test préexistant flake selon l'ordre d'exécution.
+
+## Deferred from: audit des tests PlayMode post-PR#91 (2026-07-20)
+
+- **[MESURÉ] Câbler `TestStaticReset.ResetAll()` dans les teardowns de fixture = 3 tests à réparer, pas plus.** `TestStaticReset` (`Assets/Scripts/Tests/PlayMode/Infra/TestStaticReset.cs`) n'a aujourd'hui **aucun appelant** hors son propre gate `FixtureResetTests` : la NOTE de `MultiClientGameFixture.TearDown` refuse explicitement de l'appeler pour ne pas casser des tests leak-dépendants, sans chiffrer l'ampleur. Dry-run fait le 2026-07-20 — voici le chiffre :
+
+  ```
+  Tests.PlayMode.CorruptionTests.PCardsShuffling_CorrectGuessRevealsAndRecordsTarget
+    → Unhandled log message: '[Exception] NullReferenceException'
+  Tests.PlayMode.OwnerLocalEffectBoundaryTests.CursedVisionCastByClient_RevealsOnClientRevealer_NotHost
+  Tests.PlayMode.OwnerLocalEffectBoundaryTests.EmbraceCastByClient_RevealsOnClientRevealer_NotHost
+    → TargetInvocationException ----> NullReferenceException
+  ```
+
+  **3 échecs sur 244**, exactement les 2 classes que la NOTE nommait. Option A (câbler `ResetAll`) est donc faisable — ce n'est pas un chantier à 30 tests.
+
+- **[PIÈGE DE MÉTHODE — lire avant de re-mesurer] Activer `ResetAll` dans le seul teardown de `MultiClientGameFixture` donne 244/244 VERT, et ce vert est un faux négatif.** L'ordre d'exécution PlayMode place `Tests.PlayMode.CorruptionTests` à l'**index 29** et la première fixture `Tests.PlayMode.Desingleton.*` à l'**index 38** : le reset ne s'exécute jamais avant `CorruptionTests`. Pour obtenir la vraie mesure il faut forcer le reset **avant** l'index 29 (dry-run fait en ajoutant temporairement `ResetAll()` dans le `[UnitySetUp]` de `CorruptionTests`, ce qui simule « la fixture précédente a tout nettoyé »). Quiconque re-teste ceci en câblant uniquement le teardown de `MultiClientGameFixture` conclura à tort que c'est gratuit.
+
+- **[NON ÉLUCIDÉ] La dépendance de `OwnerLocalEffectBoundaryTests` n'est pas un simple « singleton laissé par un test antérieur ».** En passe 1 (reset au teardown Desingleton, index 38) il PASSE à l'index 160, alors que le reset a déjà nettoyé les statiques. En passe 2 (reset aussi avant `CorruptionTests`) il ÉCHOUE. Donc quelque chose entre 38 et 160 réapprovisionne l'état en passe 1, et la chute de `CorruptionTests` casse cette chaîne. Le NRE ne dit pas quel champ est nul. **Prochaine étape : instrumenter les 3 NRE (logs taggés sur le champ nul) AVANT de théoriser** — c'est ce qui décide si le fix est 3 lignes de câblage dans les 2 setups ou une refonte de leur harnais.
+
+- **Séquence pour plus tard :** instrumenter les 3 NRE → câbler les singletons manquants dans `CorruptionTests.SetUp` + `OwnerLocalEffectBoundaryTests.SetUp` → activer `ResetAll()` dans les teardowns de fixture → re-run PlayMode complet. Compter ~1 session. **Décision alternative assumée :** si personne ne prend ce chantier, supprimer `TestStaticReset.cs` + `FixtureResetTests.cs` plutôt que les laisser en place — du code qui a l'air d'être une protection active alors qu'il ne protège rien est pire que son absence (et `FixtureResetTests` installe 21 managers frais comme singletons de prod en plein milieu de la suite, contaminant tout si une exception tombe entre son snapshot et son restore).

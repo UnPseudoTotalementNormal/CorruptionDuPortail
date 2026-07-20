@@ -142,7 +142,7 @@ namespace Characters
             isAwakened.Value = true;
             hasSentMessageThisTurn.Value = false;
             role.AwakenRole();
-            SleepCharacterClientRpc();
+            AwakenCharacterClientRpc();
         }
 
         [Rpc(SendTo.Everyone)]

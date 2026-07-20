@@ -28,6 +28,11 @@ namespace Characters.Powers
         private readonly CardsShufflingDecision _decision = new();
         private ulong _lastGuessClickedId;
 
+        // Seed seam (story d'archi, catalogue 246-252): the fake-card copy pick goes through an INJECTABLE random
+        // provider instead of a hard-wired new UnityRandomProvider(). Prod default = UnityRandomProvider; tests seed
+        // it via reflection. Server-only path (GrantCopyFromFakeRole), so no client-side draw to diverge.
+        private IRandomProvider _randomProvider = new UnityRandomProvider();
+
         bool ICardsShufflingGuess.IsCorrect =>
             characterManager.GetCharacter(_lastGuessClickedId).role.roleID
             == characterManager.GetCharacter(currentRoleGuessClientId).role.roleID;
@@ -154,7 +159,7 @@ namespace Characters.Powers
                 _candidates.Add(new PowerCandidate(true, false, _isPassive, _isCopied));
             }
 
-            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, 1, new UnityRandomProvider());
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, 1, _randomProvider);
             string _message;
             if (_picks.Count == 0)
             {

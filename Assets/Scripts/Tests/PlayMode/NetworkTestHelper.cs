@@ -93,16 +93,65 @@ namespace Tests.PlayMode
         /// </summary>
         public static IEnumerator WaitUntilOrTimeout(Func<bool> condition, float timeoutSeconds, string failureMessage)
         {
+            yield return WaitUntilOrTimeout(condition, timeoutSeconds, () => failureMessage);
+        }
+
+        /// <summary>
+        /// Same bounded wait, with the failure message BUILT AT FAILURE TIME. Use this overload when the
+        /// message interpolates live state — an eagerly-built string captures the PRE-wait value, so a
+        /// timeout would always report "got 0" no matter what actually arrived.
+        /// </summary>
+        public static IEnumerator WaitUntilOrTimeout(Func<bool> condition, float timeoutSeconds, Func<string> failureMessage)
+        {
             float elapsed = 0f;
             while (!condition())
             {
                 if (elapsed >= timeoutSeconds)
                 {
-                    Assert.Fail(failureMessage);
+                    Assert.Fail(failureMessage());
                     yield break;
                 }
 
                 elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// Quiescence primitive (spec R8): yields until <paramref name="condition"/> has held true for
+        /// <paramref name="stableFrames"/> CONSECUTIVE frames — i.e. the observed state reached its value AND
+        /// stopped changing — or fails after the timeout. Use for "assert client state after quiescence" so a
+        /// test never reads a mid-replication tick. This is the single shared definition of "settled".
+        /// </summary>
+        public static IEnumerator WaitUntilStableOrTimeout(Func<bool> condition, float timeoutSeconds, int stableFrames = 3, string failureMessage = null)
+        {
+            yield return WaitUntilStableOrTimeout(condition, timeoutSeconds, stableFrames,
+                failureMessage == null ? (Func<string>)null : () => failureMessage);
+        }
+
+        /// <summary>Same quiescence wait, with the failure message built at failure time (see the
+        /// <see cref="WaitUntilOrTimeout(Func{bool}, float, Func{string})"/> overload's rationale).</summary>
+        public static IEnumerator WaitUntilStableOrTimeout(Func<bool> condition, float timeoutSeconds, int stableFrames, Func<string> failureMessage)
+        {
+            // stableFrames <= 0 would skip the loop and "succeed" without ever evaluating the condition.
+            Assert.Greater(stableFrames, 0, "WaitUntilStableOrTimeout requires stableFrames >= 1.");
+            float elapsed = 0f;
+            int stable = 0;
+            while (stable < stableFrames)
+            {
+                stable = condition() ? stable + 1 : 0;
+                if (stable >= stableFrames)
+                {
+                    yield break;
+                }
+                if (elapsed >= timeoutSeconds)
+                {
+                    Assert.Fail(failureMessage?.Invoke() ?? $"Condition never held stable for {stableFrames} consecutive frames within {timeoutSeconds}s.");
+                    yield break;
+                }
+                // Unscaled: a timeScale left at 0 by a prior test must still hit THIS timeout (with its
+                // diagnostic) instead of spinning silently until the runner's global per-test timeout.
+                elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
         }

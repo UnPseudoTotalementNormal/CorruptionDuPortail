@@ -83,6 +83,22 @@ namespace Tests.PlayMode.Desingleton
         private GameObject _bridgePrefabGo;
         private NetworkObject _bridgePrefabNo;
 
+        // Proto B (spec-proto-power-effect-2client-replication): extra prefab templates contributed by a
+        // derived fixture via BuildExtraNetworkPrefabs. Registered in BOTH NMs before StartHost/StartClient
+        // (NGO's AddNetworkPrefab throws after start when ForceSamePrefabs is on, the default here) and
+        // destroyed in teardown. Empty for every existing fixture — behaviour unchanged.
+        private readonly List<GameObject> _extraPrefabTemplates = new();
+
+        /// <summary>
+        /// Extension hook for derived fixtures that need ADDITIONAL registered network prefabs (e.g. a real
+        /// Power NetworkObject). Called during SetUp BEFORE the NetworkManagers are created; add fully-built,
+        /// active template GameObjects (with a NetworkObject carrying a unique GlobalObjectIdHash via
+        /// <see cref="SetGlobalObjectIdHash"/> and excluded from the scene sweep via
+        /// <see cref="MarkAsNonSceneObject"/>) to <paramref name="_templates"/>. The base fixture registers
+        /// them in both NMs and destroys them in TearDown.
+        /// </summary>
+        protected virtual void BuildExtraNetworkPrefabs(List<GameObject> _templates) { }
+
         /// <summary>The host's spawned <see cref="LivenessNetworkBridge"/> (null until <see cref="SpawnBridge"/> runs).</summary>
         protected LivenessNetworkBridge HostBridge { get; private set; }
 
@@ -181,15 +197,20 @@ namespace Tests.PlayMode.Desingleton
             MarkAsNonSceneObject(_bridgePrefabNo);
             _bridgePrefabGo.AddComponent<LivenessNetworkBridge>();
 
+            // Proto B extension hook: derived fixtures contribute extra prefab templates BEFORE the NMs
+            // exist, so both NMs register them pre-start (ForceSamePrefabs forbids post-start additions).
+            _extraPrefabTemplates.Clear();
+            BuildExtraNetworkPrefabs(_extraPrefabTemplates);
+
             // --- Host NM FIRST: its OnEnable claims NetworkManager.Singleton. ---
             _hostNmGo = new GameObject("FixtureHostNM");
             HostNm = _hostNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo);
+            ConfigureNetworkManager(HostNm, _hostNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo, _extraPrefabTemplates);
 
             // --- Client NM SECOND: Singleton already set, so it stays the host. ---
             _clientNmGo = new GameObject("FixtureClientNM");
             ClientNm = _clientNmGo.AddComponent<NetworkManager>();
-            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo);
+            ConfigureNetworkManager(ClientNm, _clientNmGo, _gmPrefabNo, _cmPrefabNo, _characterPrefabNo, _bridgePrefabNo, _extraPrefabTemplates);
 
             Assert.IsTrue(NetworkManager.Singleton == HostNm,
                 "Host NM (created first) must own NetworkManager.Singleton.");
@@ -295,6 +316,13 @@ namespace Tests.PlayMode.Desingleton
             Object.Destroy(_cmPrefabGo);
             Object.Destroy(_characterPrefabGo);
             if (_bridgePrefabGo != null) Object.Destroy(_bridgePrefabGo);
+            // Proto B: destroy the derived-fixture templates (domain reload is disabled — they would
+            // otherwise leak across the whole PlayMode session).
+            foreach (var _extra in _extraPrefabTemplates)
+            {
+                if (_extra != null) Object.Destroy(_extra);
+            }
+            _extraPrefabTemplates.Clear();
             // [LIVENESS B2] Clear the bridge static registries so no entry leaks across PlayMode tests
             // (domain reload is disabled). Idempotent + null-safe.
             LivenessNetworkBridge.ResetSessionStatics();
@@ -310,6 +338,12 @@ namespace Tests.PlayMode.Desingleton
 
             // Statics must be clean for the next test (domain reload is disabled).
             ResetManagerStatics();
+            // NOTE: intentionally NOT calling TestStaticReset.ResetAll() here. Several existing PlayMode tests
+            // (e.g. CorruptionTests.PCardsShuffling — needs SelectionFlowService.instance; OwnerLocalEffectBoundary)
+            // pass only because a prior test LEAKS a singleton they never wire themselves. A blanket ResetAll in a
+            // shared fixture teardown clears those leaks and breaks them (Amelia's ordering warning: fix the
+            // leak-dependent tests FIRST, then wire ResetAll). ResetAll stays an opt-in tool for NEW batches that
+            // wire their own singletons; the fixture-reset gate (FixtureResetTests) proves it works in isolation.
 
             yield return null;
 
@@ -349,7 +383,28 @@ namespace Tests.PlayMode.Desingleton
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => _remoteIndexTrace.Count >= _count,
                 _timeoutSeconds,
-                $"Remote client index trace never reached {_count} entries (got {_remoteIndexTrace.Count}).");
+                () => $"Remote client index trace never reached {_count} entries (got {_remoteIndexTrace.Count}).");
+        }
+
+        /// <summary>
+        /// Bounded-wait resolution of the CLIENT NM's OWN replica of a host-spawned object.
+        /// <see cref="SpawnRealCharacterForClient"/> only waits for the HOST projection plus two frames,
+        /// so indexing <c>ClientNm.SpawnManager.SpawnedObjects[...]</c> directly after it races the
+        /// replication (an editor hitch past two frames = KeyNotFoundException). Always resolve through
+        /// this wait instead.
+        /// </summary>
+        protected IEnumerator WaitForClientReplica<T>(NetworkBehaviour _hostObject, System.Action<T> _assign, float _timeoutSeconds = 5f)
+            where T : NetworkBehaviour
+        {
+            ulong _netId = _hostObject.NetworkObjectId;
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => ClientNm.SpawnManager.SpawnedObjects.ContainsKey(_netId),
+                _timeoutSeconds,
+                $"Client NM never spawned its replica of {typeof(T).Name} (networkObjectId {_netId}).");
+            T _replica = ClientNm.SpawnManager.SpawnedObjects[_netId].GetComponent<T>();
+            Assert.IsNotNull(_replica, $"Client {typeof(T).Name} replica missing after wait.");
+            Assert.AreNotSame(_hostObject, _replica, $"{typeof(T).Name} replicas must be distinct objects.");
+            _assign(_replica);
         }
 
         /// <summary>
@@ -437,7 +492,7 @@ namespace Tests.PlayMode.Desingleton
 
         // --- helpers (lifted from 5.0e CoexistenceGateTests, the proven substrate) ---
 
-        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab, NetworkObject _characterPrefab, NetworkObject _bridgePrefab)
+        private static void ConfigureNetworkManager(NetworkManager _nm, GameObject _go, NetworkObject _gmPrefab, NetworkObject _cmPrefab, NetworkObject _characterPrefab, NetworkObject _bridgePrefab, IReadOnlyList<GameObject> _extraPrefabs)
         {
             var _transport = _go.AddComponent<UnityTransport>();
             _transport.SetConnectionData("127.0.0.1", LoopbackPort);
@@ -450,6 +505,12 @@ namespace Tests.PlayMode.Desingleton
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _cmPrefab.gameObject });
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _characterPrefab.gameObject });
             _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _bridgePrefab.gameObject });
+            // Proto B: derived-fixture templates, registered in BOTH NMs so their replicas can reach the
+            // real client (hashes are the templates' own — unique by the hook's contract).
+            foreach (var _extra in _extraPrefabs)
+            {
+                _nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = _extra });
+            }
         }
 
         /// <summary>
@@ -472,7 +533,7 @@ namespace Tests.PlayMode.Desingleton
             ClientBridge = LivenessNetworkBridge.For(ClientNm);
         }
 
-        private static void SetGlobalObjectIdHash(NetworkObject _networkObject, uint _hash)
+        protected static void SetGlobalObjectIdHash(NetworkObject _networkObject, uint _hash)
         {
             // GlobalObjectIdHash is an internal field set during editor validation; a
             // runtime-created NetworkObject has 0. Force a unique value so replication
@@ -482,7 +543,7 @@ namespace Tests.PlayMode.Desingleton
             _field.SetValue(_networkObject, _hash);
         }
 
-        private static void MarkAsNonSceneObject(NetworkObject _networkObject)
+        protected static void MarkAsNonSceneObject(NetworkObject _networkObject)
         {
             // The templates are active GameObjects with a NetworkObject, so StartHost's
             // in-scene sweep (NetworkSpawnManager.ServerSpawnSceneObjectsOnStartSweep,

@@ -38,6 +38,12 @@ namespace Characters.Powers
 
         private readonly MarqueHurluberlugesDecision _decision = new();
 
+        // Seed seam (story d'archi, catalogue 246-252): the random distinct-pick goes through an INJECTABLE
+        // provider instead of a hard-wired new UnityRandomProvider(). Prod default = UnityRandomProvider; tests
+        // seed it (SeededRandomProvider) via reflection to make the boundary pick deterministic. This runs on the
+        // SERVER only (OnGameStartedServer / IsServer guard), so there is no client-side draw that could diverge.
+        private IRandomProvider _randomProvider = new UnityRandomProvider();
+
         // OnGameStartedServer can be reached twice for a late-spawned power (OnPowerSpawned + OnGameStarted);
         // steal exactly once.
         private bool _hasStolen;
@@ -98,7 +104,7 @@ namespace Characters.Powers
 
             // Deterministic-source draw (mirrors RoleAttributionState's UnityRandomProvider); the filter +
             // distinct-pick + cap-at-what-exists mechanic lives in the EditMode-tested Domain kernel.
-            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, new UnityRandomProvider());
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, _randomProvider);
             if (_picks.Count == 0)
             {
                 Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");

@@ -218,12 +218,12 @@ Infra à créer avant d'écrire la décision :
 
 ## Tasks & Acceptance
 
-### Lot A — Repenti
-- [ ] `CursedVisionDecision.cs` — supprimer `CorruptPlayer(ctx.OwnerSlot)` et le `RevealInfo` owner qui suit (lignes 32-33). Mettre à jour le commentaire de classe (il documente l'auto-corruption).
-- [ ] `Repenti.asset` — ajouter AutoCorruption et CorruptionParanoia à `powers:` (ordre libre).
-- [ ] [PowerDecisionTests.cs:253](Assets/Scripts/Tests/Editor/PowerDecisionTests.cs#L253) — `CursedVision_NonChosen_CorruptsRevealsCardsChatsBoth` asserte les **7** effets : ramener à 5 **et renommer** (le suffixe `Both` désigne la double corruption qui disparaît). `CursedVision_Chosen_FlipsCardAndVerdict` (:272, indices [3]/[4]) survit tel quel.
-- [ ] [OwnerLocalEffectBoundaryTests.cs:265](Assets/Scripts/Tests/PlayMode/OwnerLocalEffectBoundaryTests.cs#L265) — le test **passe** toujours (il n'asserte que la révélation de `TargetSeat`), mais son échafaudage n'existe que pour l'auto-corruption : le `Character` `hostOwner` (:266), l'attente de réplication de `ownerClientId` (:288-291) et les commentaires de justification (:265, :285-287) deviennent faux. Nettoyer — sinon documentation trompeuse + surface de flake inutile.
-- [ ] Test PlayMode — au démarrage, le Repenti est `isCorrupted` et sa corruption lui est révélée.
+### Lot A — Repenti ✅ (livré, tests verts, revue adverse RAS — commit en attente)
+- [x] `CursedVisionDecision.cs` — supprimé `CorruptPlayer(ctx.OwnerSlot)` + le `RevealInfo` owner. Commentaire de classe mis à jour.
+- [x] `Repenti.asset` — ajouté AutoCorruption (`fileID 2782998364119609300`) et CorruptionParanoia (`fileID 4186362527338676593`) — fileID **composant** vérifiés (piège du fileID-GameObject évité).
+- [x] `PowerDecisionTests.cs` — renommé `CursedVision_NonChosen_CorruptsTargetRevealsCardsChats`, ramené à 5 effets. `CursedVision_Chosen_FlipsCardAndVerdict` inchangé (indices [3]/[4] survivent, effets retirés en fin).
+- [x] `OwnerLocalEffectBoundaryTests.cs` — commentaires corrigés (le siège owner reste requis comme **viewer** du reveal + source du NewTargeting, pas comme cible d'auto-corruption). Test toujours vert.
+- [x] Test PlayMode dédié **non créé** (décision) — `AutoCorruptionDecision`/`CorruptionParanoiaDecision` sont déjà couverts EditMode (`AutoCorruption_CorruptsOwner`, `CorruptionParanoia_RevealsOwnCorruptionToSelf_Broadcast`) + `CorruptionTests` PlayMode ; un test Repenti dédié re-testerait de la machinerie de boot partagée. A2 satisfait par la couverture existante + le câblage.
 
 **Acceptance :**
 - Given le Repenti utilise Vision Maudite, when la cible est traitée, then la cible est corrompue et le Repenti **ne** l'est **pas** du fait de ce lancer.

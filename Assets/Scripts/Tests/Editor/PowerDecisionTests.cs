@@ -250,12 +250,13 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void CursedVision_NonChosen_CorruptsRevealsCardsChatsBoth()
+        public void CursedVision_NonChosen_CorruptsTargetRevealsCardsChats()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1 } };
             roster.Factions[1] = Characters.FactionType.anomaly; roster.Pseudos[1] = "Bob";
             var outcome = new CursedVisionDecision { CardEffectId = 2 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
 
+            // The owner no longer corrupts itself (role-adjustment pass): only the TARGET is corrupted/revealed.
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
@@ -263,8 +264,6 @@ namespace Tests.Editor
                 new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
                 new AddCardEffect(2, 1, true),
                 new ChatLocal("Bob n'est pas un élu.", -1),
-                new CorruptPlayer(0),
-                new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
             }, outcome.Effects);
         }
 

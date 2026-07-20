@@ -105,6 +105,8 @@ MonoBehaviour:
     ownerClientId: 0
   powers:
   - {fileID: 3089346778958882421, guid: f720e39e7d629eea1956cd43e6242597, type: 3}
+  - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
+  - {fileID: 4186362527338676593, guid: 487847a75662496b09d32f94a06a1fd8, type: 3}
   references:
     version: 2
     RefIds:

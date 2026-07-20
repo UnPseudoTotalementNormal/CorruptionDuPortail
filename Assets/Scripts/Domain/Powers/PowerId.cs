@@ -31,5 +31,6 @@ namespace CorruptionDuPortail.Domain.Powers
         CardsShuffling = 21,
         PersonalBeacons = 22,
         MarqueHurluberluges = 23,
+        DroolyHealing = 24,
     }
 }

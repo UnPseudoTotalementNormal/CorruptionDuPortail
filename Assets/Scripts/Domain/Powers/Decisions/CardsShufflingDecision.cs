@@ -39,7 +39,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                 }
             }
             effects.Add(new ChatBroadcast(message, ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
-            return PowerOutcome.Accept(effects);
+            return PowerOutcome.Accept(effects, guess.IsCorrect ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

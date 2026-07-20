@@ -15,15 +15,23 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             if (ctx.Roster.SameRole(ctx.TargetSlot, ctx.SecondaryTargetSlot))
             {
                 return PowerOutcome.Accept(
-                    new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),
-                    new CorruptPlayer(ctx.TargetSlot),
-                    new CorruptionSucceeded(ctx.TargetSlot),
-                    new RevealInfo(ctx.TargetSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ctx.OwnerSlot, false),
-                    new RevealInfo(ctx.TargetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.OwnerSlot, false));
+                    new EffectDescriptor[]
+                    {
+                        new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),
+                        new CorruptPlayer(ctx.TargetSlot),
+                        new CorruptionSucceeded(ctx.TargetSlot),
+                        new RevealInfo(ctx.TargetSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ctx.OwnerSlot, false),
+                        new RevealInfo(ctx.TargetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.OwnerSlot, false),
+                    },
+                    PowerVerdict.Correct);
             }
             return PowerOutcome.Accept(
-                new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),
-                new CorruptionFailed(ctx.TargetSlot));
+                new EffectDescriptor[]
+                {
+                    new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),
+                    new CorruptionFailed(ctx.TargetSlot),
+                },
+                PowerVerdict.Incorrect);
         }
     }
 }

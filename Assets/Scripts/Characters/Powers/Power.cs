@@ -142,6 +142,20 @@ namespace Characters.Powers
         public event Action onStartUse;
         public event Action onStopUse;
 
+        /// <summary>
+        /// CLIENT-SIDE, CASTER-ONLY. Raised on the owner's client with the grade of the use that just
+        /// resolved — the "did my power work?" signal the playtesters asked for. Never raised for
+        /// <see cref="PowerVerdict.None"/>, so the unconditional-effect powers stay silent.
+        ///
+        /// Deliberately NOT piggybacked on onStopUse / OnUsedClientRpc: most powers call OnUsed() BEFORE
+        /// their decision runs (see PBlessing, PTruthChains, POmniscience, …), so at OnUsed time the verdict
+        /// does not exist yet. This is its own channel, emitted from the decision seam instead.
+        ///
+        /// Private by design: the grade goes to the caster only, never broadcast — a public "raté" would
+        /// hand free deduction information to the table.
+        /// </summary>
+        public event Action<PowerVerdict> onPowerVerdict;
+
         public List<PowerComponent> powerComponents = new();
 
         public Character ownerCharacter => characterManager.GetCharacter(ownerClientId.Value, false);
@@ -183,13 +197,18 @@ namespace Characters.Powers
         // (returns intentions), the executors carry the NGO side effects. The uses decrement stays in
         // each power's own use flow (this helper only realises effects); pass a state resolver for the
         // ~4 stateful powers that write their own replicated carrier.
-        protected void RunDecisionEffects(IPowerDecision decision, in PowerContext context,
+        // Returns the outcome's verdict (None when it did not run or the power has no notion of correctness)
+        // so an adapter that still owns engine-coupled bookkeeping can key off the same grade instead of
+        // re-deriving it — see PDroolyHealing's per-night healed roster.
+        protected PowerVerdict RunDecisionEffects(IPowerDecision decision, in PowerContext context,
             IPowerStateResolver state = null)
         {
-            if (!IsServer) return;
+            if (!IsServer) return PowerVerdict.None;
             PowerOutcome outcome = decision.Decide(context);
-            if (!outcome.Accepted) return;
+            if (!outcome.Accepted) return PowerVerdict.None;
             PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+            EmitVerdictServer(outcome.Verdict);
+            return outcome.Verdict;
         }
 
         // Client-runtime variant of RunDecisionEffects for the handful of powers whose effect runs on a
@@ -197,13 +216,57 @@ namespace Characters.Powers
         // target's own client, keyed by PowerContext.IsTrueLocalTarget). No IsServer guard: the caller is
         // already inside a client-scoped RPC body and has done its own locality check. The dispatch + state
         // threading are otherwise identical.
-        protected void RunClientDecisionEffects(IPowerDecision decision, in PowerContext context,
+        protected PowerVerdict RunClientDecisionEffects(IPowerDecision decision, in PowerContext context,
             IPowerStateResolver state = null)
         {
             PowerOutcome outcome = decision.Decide(context);
-            if (!outcome.Accepted) return;
+            if (!outcome.Accepted) return PowerVerdict.None;
             PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+            EmitVerdictFromClient(outcome.Verdict);
+            return outcome.Verdict;
         }
+
+        // ---- Caster-facing verdict channel ------------------------------------------------------------
+        // Owner-only, one hop. Server path: raise locally when the owner IS the server (host / simulated
+        // bot), else one targeted RPC. Client path: a client-runtime decision (RunClientDecisionEffects)
+        // may resolve on the OWNER's client (CursedVision, EmbraceOfShadows) — raise straight away — or on
+        // the CONTACTED TARGET's client (LackOfAffection) — bounce through the server so the grade still
+        // lands on the caster. PowerVerdict.None never travels.
+
+        /// <summary>Server-side entry: route an outcome's verdict to the caster. No-op for None.</summary>
+        protected void EmitVerdictServer(PowerVerdict verdict)
+        {
+            if (verdict == PowerVerdict.None || !IsServer) return;
+
+            ulong _owner = ownerClientId.Value;
+            if (_owner == NetworkManager.ServerClientId)
+            {
+                onPowerVerdict?.Invoke(verdict);
+                return;
+            }
+            // GetSafeRpcTarget keeps the simulated-bot flow intact (id >= 100 → host intercepts).
+            OnPowerVerdictClientRpc(verdict, characterManager.GetSafeRpcTarget(_owner));
+        }
+
+        /// <summary>Client-side entry for the client-runtime decision path. No-op for None.</summary>
+        protected void EmitVerdictFromClient(PowerVerdict verdict)
+        {
+            if (verdict == PowerVerdict.None) return;
+
+            if (characterManager.IsLocalOrSimulated(ownerClientId.Value))
+            {
+                onPowerVerdict?.Invoke(verdict);
+                return;
+            }
+            ReportVerdictServerRpc(verdict);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void ReportVerdictServerRpc(PowerVerdict _verdict) => EmitVerdictServer(_verdict);
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void OnPowerVerdictClientRpc(PowerVerdict _verdict, RpcParams _params)
+            => onPowerVerdict?.Invoke(_verdict);
 
         // Live read-only roster view for roster-reading decisions (faction / same-role / robot / healed /
         // pseudo). Built fresh per call over the already-resolved CharacterManager + lobby holder — cheap,

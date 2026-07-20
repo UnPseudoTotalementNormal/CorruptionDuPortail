@@ -2,7 +2,7 @@
 title: "Système d'icônes privées sur la CharactersBar"
 type: 'feature'
 created: '2026-07-20'
-status: 'in-review'
+status: 'done'
 branch: 'feat/targeting-icons'
 baseline_commit: '509793e1'
 source: 'Discord thread 1528819335815237633 (Poyo, 2026-07-20)'
@@ -160,4 +160,50 @@ Périmètre : **deux fichiers**. Le Domain, les assets, les tests de layout et l
 - **Playtest 2 builds obligatoire** : la confidentialité ne peut pas se valider en host-only, le host voit légitimement tout.
 - Lisibilité de la pile au survol et repli propre en sortie de survol.
 
-**Baseline :** EditMode 462 / PlayMode 47+2 au commit `509793e1`.
+**Baseline réelle mesurée :** EditMode 510 / PlayMode 251 au commit `509793e1`. (Le « 462 / 47+2 » annoncé initialement provenait d'une note périmée — corrigé après mesure.)
+
+## Suggested Review Order
+
+**La confidentialité — le cœur, et le plus à risque**
+
+- Point d'entrée : un seul chemin d'envoi, une tranche par spectateur, jamais de diffusion.
+  [`PlayerIconManager.cs:421`](../../Assets/Scripts/GameLogic/PlayerIconManager.cs#L421)
+
+- La tranche ne lit que la ligne du spectateur — c'est là que la fuite serait née.
+  [`PlayerIconManager.cs:428`](../../Assets/Scripts/GameLogic/PlayerIconManager.cs#L428)
+
+- L'entrée porte son spectateur : sans ça, la tranche d'un bot écrasait celle de l'hôte.
+  [`PlayerIconManager.cs:73`](../../Assets/Scripts/GameLogic/PlayerIconManager.cs#L73)
+
+**Les pannes silencieuses fermées en itération 2**
+
+- Re-résolution à l'usage : une course d'ordre de spawn ne condamne plus la partie.
+  [`PlayerIconManager.cs:188`](../../Assets/Scripts/GameLogic/PlayerIconManager.cs#L188)
+
+- L'abonnement à la purge se retente jusqu'à ce que le GameManager existe.
+  [`PlayerIconManager.cs:226`](../../Assets/Scripts/GameLogic/PlayerIconManager.cs#L226)
+
+- Le NetworkManager vient du personnage de la vignette, jamais du Singleton.
+  [`CharacterBarIconStack.cs:199`](../../Assets/Scripts/Board/UI/CharacterBar/CharacterBarIconStack.cs#L199)
+
+- La reconstruction suit l'assignation du personnage, pas `OnEnable` seul.
+  [`CharacterBarIconStack.cs:139`](../../Assets/Scripts/Board/UI/CharacterBar/CharacterBarIconStack.cs#L139)
+
+- Estampille de génération : deux cycles enable/disable ne peuvent plus double-abonner.
+  [`CharacterBarIconStack.cs:97`](../../Assets/Scripts/Board/UI/CharacterBar/CharacterBarIconStack.cs#L97)
+
+**Le noyau pur**
+
+- Placement et débordement en floats nus — survit au passage des vignettes en 3D.
+  [`IconStackLayout.cs:53`](../../Assets/Scripts/Domain/PlayerIcons/IconStackLayout.cs#L53)
+
+**Les tests qui comptent**
+
+- Prouve que l'hôte garde sa tranche quand un bot est marqué (ce test affirmait le bug avant).
+  [`PlayerIconPrivacyTests.cs:298`](../../Assets/Scripts/Tests/PlayMode/PlayerIconPrivacyTests.cs#L298)
+
+- La purge est exercée par son câblage réel, pas par appel direct de la méthode.
+  [`PlayerIconPrivacyTests.cs:236`](../../Assets/Scripts/Tests/PlayMode/PlayerIconPrivacyTests.cs#L236)
+
+- Les deux sens de la confidentialité, sur deux NetworkManagers distincts.
+  [`PlayerIconPrivacyTests.cs:153`](../../Assets/Scripts/Tests/PlayMode/PlayerIconPrivacyTests.cs#L153)

@@ -134,6 +134,10 @@ namespace UI
                     throw new System.Exception("Failed to join lobby");
                 }
 
+                // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
+                // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
+                GameCode.gameCode = _lobby.LobbyCode;
+
                 bool joinSuccess = false;
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
@@ -169,8 +173,9 @@ namespace UI
                     throw new System.Exception(_failureMessage);
                 }
 
-                GameCode.gameCode = _lobby.LobbyCode;
-                SwitchToGameScene();
+                // No scene load on the client: NGO already synchronized us into GameScene before the handshake
+                // above returned. SwitchToGameScene() is the SERVER entry point (host path) — calling it here was
+                // a silent ServerOnlyAction no-op (investigation client-join-lobby-desync).
             }
             catch (System.Exception e)
             {

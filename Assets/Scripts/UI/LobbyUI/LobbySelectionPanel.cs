@@ -139,7 +139,7 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Échec de la connexion au lobby: {e}");
-                loadingCanvasGroup.DoHideGroup();
+                HideLoadingSafe();
             }
             finally
             {
@@ -294,7 +294,11 @@ namespace UI.Lobby
                     loadingCanvasGroup.DoHideGroup();
                     return false;
                 }
-                
+
+                // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
+                // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
+                GameCode.gameCode = lobby.LobbyCode;
+
                 // Détecter le type de transport et se connecter en conséquence
                 bool connected = false;
                 
@@ -332,13 +336,31 @@ namespace UI.Lobby
                     return false;
                 }
 
-                GameCode.gameCode = lobby.LobbyCode;
-                UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                // Do NOT load GameScene here. The handshake above only returns once NGO reported
+                // SynchronizeComplete, which happens AFTER NGO itself loaded GameScene on this client
+                // (EnableSceneManagement = 1). A raw SceneManager.LoadScene at this point re-loads the scene
+                // OUTSIDE NGO: every replicated NetworkObject in it is destroyed while the DontDestroyOnLoad
+                // NetworkManager stays connected, leaving the joiner desynced — a movable body with no
+                // embodiment, and a census stuck at 1 because LobbyPlayerInfoHolder's client replica dies before
+                // it can answer AskForPlayerInfoRpc (investigation client-join-lobby-desync).
+                //
+                // Touch NO UI past this point either: the menu scene is ALREADY unloaded, so every serialized
+                // reference on this panel is a destroyed object. Hiding the loading group here threw an NRE that
+                // fell into the catch below and ran AbortJoin — shutting down a perfectly good connection.
                 return true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"Failed to join lobby: {e.Message}");
+
+                // Never tear down an ESTABLISHED session on a stray exception. AbortJoin shuts NGO down and leaves
+                // the cloud lobby — correct while the join is still pending, catastrophic once we are connected and
+                // synchronized (that is exactly how an NRE on a destroyed menu widget killed a healthy join).
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient)
+                {
+                    return false;
+                }
+
                 await AbortJoin(null);
                 return false;
             }
@@ -358,6 +380,20 @@ namespace UI.Lobby
             if (LobbyManager.instance != null && LobbyManager.instance.IsInLobby)
             {
                 await LobbyManager.instance.LeaveLobby();
+            }
+
+            HideLoadingSafe();
+        }
+
+        // The join path awaits across frames, and NGO can unload the menu scene underneath us (a successful
+        // synchronization switches the client to GameScene). Every serialized reference on this panel is then a
+        // destroyed object, and touching one throws — which previously cascaded into an AbortJoin that killed a
+        // healthy connection. Always hide through this guard from an async continuation.
+        private void HideLoadingSafe()
+        {
+            if (loadingCanvasGroup == null)
+            {
+                return;
             }
 
             loadingCanvasGroup.DoHideGroup();

@@ -53,15 +53,9 @@ namespace UI
         // Garde de rentrance pour éviter le double déclenchement Host/Join.
         private bool _isBusy;
 
-        // Two-phase connect deadline (investigation join-load-timeout-kick). A joining client's
-        // IsConnectedClient flips true only at NGO SynchronizeComplete, i.e. AFTER GameScene finished loading,
-        // so a single deadline spanning the whole load kicked slow-PC joiners mid-load. Split it:
-        // - ApprovalTimeoutSeconds: applies ONLY until synchronization starts (OnSynchronize) — fast-fails a
-        //   dead / silent host that never approves us.
-        // - SyncTotalTimeoutSeconds: generous absolute cap that lets an honest slow load finish yet still
-        //   bounds a genuinely stuck synchronization. Decision lives in the pure ConnectHandshakePolicy.
-        private const float ApprovalTimeoutSeconds = 10f;
-        private const float SyncTotalTimeoutSeconds = 90f;
+        // The two-phase connect wait and its deadlines now live in the shared Network.JoinHandshake, so the
+        // lobby-list join path (LobbySelectionPanel) uses the exact same handshake instead of loading GameScene
+        // blind after StartClient (investigation join-started-game-gate).
 
         private void Start()
         {
@@ -163,10 +157,16 @@ namespace UI
                 // waits for the connection to actually establish. Bound that wait so a connect that never
                 // completes (dead host, bad connection data) cannot hang forever in a stale "connecting"
                 // state. On timeout, throw into the existing catch teardown (Shutdown + LeaveLobby + UI reset).
-                ConnectFailReason _fail = await WaitForClientConnectedOrTimeout();
+                ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
                 if (_fail != ConnectFailReason.None)
                 {
-                    throw new System.Exception(BuildJoinFailureMessage(_fail));
+                    // Build BEFORE the teardown below shuts NGO down — Shutdown may clear DisconnectReason.
+                    string _failureMessage = JoinHandshake.BuildFailureMessage(_fail);
+                    if (LobbyManager.instance != null)
+                    {
+                        LobbyManager.instance.ReportError(_failureMessage);
+                    }
+                    throw new System.Exception(_failureMessage);
                 }
 
                 GameCode.gameCode = _lobby.LobbyCode;
@@ -197,89 +197,6 @@ namespace UI
             {
                 _isBusy = false;
             }
-        }
-
-
-        // Bounded two-phase wait for the local client to ACTUALLY connect (investigation
-        // join-load-timeout-kick). Polls each frame (UniTask — never System.Threading.Tasks.Task) and defers
-        // the decision to the pure ConnectHandshakePolicy. The approval deadline only bites until NGO reports
-        // synchronization has STARTED (OnSynchronize) — after that the generous total deadline governs, so a
-        // slow-PC GameScene load is no longer kicked mid-load. Returns ConnectFailReason.None on success.
-        // Fast-fails on a torn-down / rejected NetworkManager (!IsListening — reject fills DisconnectReason).
-        private async UniTask<ConnectFailReason> WaitForClientConnectedOrTimeout()
-        {
-            NetworkManager _nm = NetworkManager.Singleton;
-            if (_nm == null)
-            {
-                return ConnectFailReason.SessionEnded;
-            }
-
-            if (_nm.IsConnectedClient)
-            {
-                return ConnectFailReason.None; // already connected — fast path
-            }
-
-            double _startTime = Time.realtimeSinceStartupAsDouble;
-            bool _syncStarted = false;
-
-            // OnSynchronize fires client-side once the server has approved us and begun synchronizing (a
-            // network round-trip after StartClient, so it cannot arrive before we subscribe here). It marks the
-            // load as STARTED, which cancels the short approval deadline. SceneManager is created inside
-            // StartClient (before it returns), so it is non-null on this path; guard defensively anyway.
-            NetworkSceneManager _sceneManager = _nm.SceneManager;
-            NetworkSceneManager.OnSynchronizeDelegateHandler _onSynchronize = _clientId => _syncStarted = true;
-            if (_sceneManager != null)
-            {
-                _sceneManager.OnSynchronize += _onSynchronize;
-            }
-
-            try
-            {
-                while (true)
-                {
-                    NetworkManager _current = NetworkManager.Singleton;
-                    bool _sessionAlive = _current != null && _current.IsListening;
-                    bool _isConnected = _current != null && _current.IsConnectedClient;
-                    double _elapsed = Time.realtimeSinceStartupAsDouble - _startTime;
-
-                    ConnectWaitState _state = ConnectHandshakePolicy.Evaluate(
-                        _elapsed, _syncStarted, _isConnected, _sessionAlive,
-                        ApprovalTimeoutSeconds, SyncTotalTimeoutSeconds);
-
-                    if (_state.Outcome == ConnectWaitOutcome.Connected)
-                    {
-                        return ConnectFailReason.None;
-                    }
-                    if (_state.Outcome == ConnectWaitOutcome.Failed)
-                    {
-                        return _state.Reason;
-                    }
-
-                    await UniTask.Yield(PlayerLoopTiming.Update);
-                }
-            }
-            finally
-            {
-                if (_sceneManager != null)
-                {
-                    _sceneManager.OnSynchronize -= _onSynchronize;
-                }
-            }
-        }
-
-        // A server-side rejection (e.g. game already started) fills DisconnectReason; prefer it. Otherwise
-        // pick wording by failure phase: a stuck load reads differently from a host that never answered.
-        private string BuildJoinFailureMessage(ConnectFailReason _reason)
-        {
-            NetworkManager _nm = NetworkManager.Singleton;
-            if (_nm != null && !string.IsNullOrEmpty(_nm.DisconnectReason))
-            {
-                return _nm.DisconnectReason;
-            }
-
-            return _reason == ConnectFailReason.TotalTimeout
-                ? "Connection failed — the game took too long to load."
-                : "Connection timed out — the host did not respond.";
         }
 
 

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
@@ -119,7 +119,32 @@ namespace UI.Lobby
             if (currentLobbySelected == null)
                 return;
 
-            _ = JoinLobby(currentLobbySelected);
+            if (_isJoining)
+                return;
+            _isJoining = true;
+
+            OnConnectButtonClickedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnConnectButtonClickedAsync()
+        {
+            try
+            {
+                await JoinLobby(currentLobbySelected);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec de la connexion au lobby: {e}");
+                loadingCanvasGroup.DoHideGroup();
+            }
+            finally
+            {
+                _isJoining = false;
+            }
         }
 
         private void Update()
@@ -239,8 +264,18 @@ namespace UI.Lobby
             existingEntries[_lobby.Id] = _entry;
         }
         
-        private async Task<bool> JoinLobby(Unity.Services.Lobbies.Models.Lobby lobby, string password = null)
+        private async UniTask<bool> JoinLobby(Unity.Services.Lobbies.Models.Lobby lobby, string password = null)
         {
+            // Cheap pre-shot: the list refreshes every AUTO_REFRESH_INTERVAL, so a lobby locked between the last
+            // refresh and this click is still selectable. Refuse it here rather than paying a full connect just to
+            // be rejected by ConnectionApprovalGate (investigation join-started-game-gate).
+            if (lobby.IsLocked)
+            {
+                ReportJoinFailure(ConnectionApprovalGate.GameInProgressReason);
+                loadingCanvasGroup.DoHideGroup();
+                return false;
+            }
+
             // Si le lobby a un mot de passe et qu'on ne l'a pas fourni, demander le mot de passe
             if (lobby.HasPassword && string.IsNullOrEmpty(password))
             {
@@ -248,7 +283,7 @@ namespace UI.Lobby
                 enterPasswordCanvasGroup.DoShowGroup();
                 return false;
             }
-            
+
             loadingCanvasGroup.DoShowGroup();
             
             try
@@ -281,7 +316,19 @@ namespace UI.Lobby
                 if (!connected)
                 {
                     Debug.LogError("Failed to connect to game");
-                    loadingCanvasGroup.DoHideGroup();
+                    await AbortJoin(null);
+                    return false;
+                }
+
+                // StartClient() only reports that the connect attempt STARTED. Wait for the ACTUAL verdict before
+                // loading GameScene — otherwise a server rejection (mid-game join) only lands once we are already
+                // in the game scene, where it degrades into "Connexion à l'hôte perdue" instead of the server's own
+                // "La partie a déjà commencé." (investigation join-started-game-gate).
+                ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+                if (_fail != ConnectFailReason.None)
+                {
+                    // Build BEFORE AbortJoin shuts NGO down — Shutdown may clear DisconnectReason.
+                    await AbortJoin(JoinHandshake.BuildFailureMessage(_fail));
                     return false;
                 }
 
@@ -292,8 +339,43 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Failed to join lobby: {e.Message}");
-                loadingCanvasGroup.DoHideGroup();
+                await AbortJoin(null);
                 return false;
+            }
+        }
+
+        // Failed join teardown, mirroring MainMenu's: drop the half-open NGO session and the cloud lobby, surface the
+        // reason, restore the menu. We NEVER leave the menu on a failed join — that is the whole point of the fix.
+        private async UniTask AbortJoin(string _failureMessage)
+        {
+            ReportJoinFailure(_failureMessage);
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            if (LobbyManager.instance != null && LobbyManager.instance.IsInLobby)
+            {
+                await LobbyManager.instance.LeaveLobby();
+            }
+
+            loadingCanvasGroup.DoHideGroup();
+        }
+
+        // Routes the message to the shared lobby-error channel, which ClientDisconnectHandler already renders as an
+        // on-screen notification. Logging alone left the player staring at a menu with no explanation.
+        private void ReportJoinFailure(string _failureMessage)
+        {
+            if (string.IsNullOrEmpty(_failureMessage))
+            {
+                return;
+            }
+
+            Debug.LogError($"Join refused: {_failureMessage}");
+            if (LobbyManager.instance != null)
+            {
+                LobbyManager.instance.ReportError(_failureMessage);
             }
         }
 
@@ -334,7 +416,7 @@ namespace UI.Lobby
             return true;
         }
 
-        private async Task<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
             if (!lobby.Data.ContainsKey("joinCode"))

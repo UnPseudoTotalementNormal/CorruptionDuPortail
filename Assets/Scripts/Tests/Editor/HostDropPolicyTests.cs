@@ -45,5 +45,27 @@ namespace Tests.Editor
             Assert.IsFalse(HostDropPolicy.ShouldNotifyHostLoss(wasPureClient: false, expectedShutdown: true),
                 "A host with an expected shutdown never raises the client host-loss notification.");
         }
+
+        [Test]
+        public void PureClient_StopDuringJoinHandshake_DoesNotNotify()
+        {
+            // investigation join-started-game-gate: a join REJECTED by ConnectionApprovalGate stops NGO exactly
+            // like a host drop. The menu owns that failure and shows the server's reason ("La partie a déjà
+            // commencé."), so this layer must not overwrite it with the generic host-loss wording.
+            Assert.IsFalse(
+                HostDropPolicy.ShouldNotifyHostLoss(
+                    wasPureClient: true, expectedShutdown: false, joinHandshakeInProgress: true),
+                "A stop while the menu is still awaiting a join verdict is a rejected join, not a host loss.");
+        }
+
+        [Test]
+        public void PureClient_StopAfterJoinHandshakeClosed_StillNotifies()
+        {
+            // The window is closed in a finally, so a successful join cannot latch it and mute a real host loss.
+            Assert.IsTrue(
+                HostDropPolicy.ShouldNotifyHostLoss(
+                    wasPureClient: true, expectedShutdown: false, joinHandshakeInProgress: false),
+                "Once the join settled, an abrupt host loss MUST still be notified.");
+        }
     }
 }

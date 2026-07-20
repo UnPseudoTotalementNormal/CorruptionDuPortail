@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: RolePresetDatabase
   m_EditorClassIdentifier: Game::GameLogic.GameSettings.RolePresetDatabase
   presets:
-  - {fileID: 11400000, guid: fa2a3f95328fab34c9092d928607168a, type: 2}
   - {fileID: 11400000, guid: cbd0e2a7492df5643bf908a4593764b7, type: 2}
   - {fileID: 11400000, guid: 2ab80742398f73a4d9c89fabb7a55838, type: 2}
   - {fileID: 11400000, guid: 0918ea5c972169844ac3935947fd154b, type: 2}
@@ -22,3 +21,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 01d1e92dd7b3e0547b09b136b54fbc36, type: 2}
   - {fileID: 11400000, guid: 88cb0812725a2d64aba3c228f65f72fa, type: 2}
   - {fileID: 11400000, guid: 6643afb5fe8d4544b84cf4c5a2c9168b, type: 2}
+  - {fileID: 11400000, guid: 7a1c4e2b9d38f544ab6c0e5137d92b41, type: 2}
+  - {fileID: 11400000, guid: 3e8b52c71af64a4d9b70c2e845f13d6a, type: 2}

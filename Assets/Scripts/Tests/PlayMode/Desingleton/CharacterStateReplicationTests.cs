@@ -187,9 +187,11 @@ namespace Tests.PlayMode.Desingleton
         }
 
         // --- 5. Awakening: the server flips isAwakened AND fires a SendTo.Everyone RPC; both must be
-        // observed on the remote replica (NetworkVariable leg + broadcast-RPC leg of the same action). ---
+        // observed on the remote replica (NetworkVariable leg + broadcast-RPC leg of the same action).
+        // AwakenCharacterServerRpc raises the AWAKEN notification (onCharacterAwakened) — a prior copy-paste
+        // had it firing the sleep broadcast instead; the fix (fix(character) 313a1a71) is pinned here. ---
         [UnityTest]
-        public IEnumerator AwakenServerRpc_SetsAwakenedAndFiresSleepBroadcast_OnRemoteClientReplica()
+        public IEnumerator AwakenServerRpc_SetsAwakenedAndFiresAwakenBroadcast_OnRemoteClientReplica()
         {
             ulong _targetId = ClientNm.LocalClientId;
             yield return SpawnRealCharacterForClient(_targetId);
@@ -203,17 +205,17 @@ namespace Tests.PlayMode.Desingleton
             Character _clientTarget = null;
             yield return ResolveClientReplica(_hostTarget, _c => _clientTarget = _c);
 
-            bool _clientSleepEventFired = false;
-            _clientTarget.onCharacterSleep += () => _clientSleepEventFired = true;
+            bool _clientAwakenEventFired = false;
+            _clientTarget.onCharacterAwakened += () => _clientAwakenEventFired = true;
 
             // Invoked on the host object on the server: executes the server body directly (the RPC
             // fan-out to Everyone is the wire crossing under test).
             _hostTarget.AwakenCharacterServerRpc();
 
             yield return NetworkTestHelper.WaitUntilOrTimeout(
-                () => _clientTarget.isAwakened.Value && _clientSleepEventFired,
+                () => _clientTarget.isAwakened.Value && _clientAwakenEventFired,
                 5f,
-                "isAwakened and/or the SendTo.Everyone sleep-notification RPC never reached the remote client replica.");
+                "isAwakened and/or the SendTo.Everyone awaken-notification RPC never reached the remote client replica.");
         }
 
         // --- 6. The character roster projects EXACTLY once per seat on the remote client: the replicated

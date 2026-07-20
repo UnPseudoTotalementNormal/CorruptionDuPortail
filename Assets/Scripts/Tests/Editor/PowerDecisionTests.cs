@@ -134,22 +134,25 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
                 new AddToChain(1),
             }, outcome.Effects);
         }
 
         [Test]
-        public void ChainedByShadows_RoleMatchNotChosen_NoChain()
+        public void ChainedByShadows_RoleMatchNotChosen_CorruptsButNoChain()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
             roster.Roles[1] = 7; roster.Roles[2] = 7;
             roster.Factions[1] = Characters.FactionType.anomaly;
             var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
 
+            // A correct guess corrupts the target even when it is NOT chosen (so no chain).
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
             }, outcome.Effects);
         }
 
@@ -184,6 +187,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
                 new GrantExtraUse(0),
             }, outcome.Effects);
         }
@@ -205,6 +209,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
             }, outcome.Effects);
         }
 
@@ -221,10 +226,12 @@ namespace Tests.Editor
             var outcome = new ChainedByShadowsDecision().Decide(
                 new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
 
+            // Two anomalies in play => no bonus. The correct guess still corrupts the (anomaly) target.
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
             }, outcome.Effects);
         }
 
@@ -242,11 +249,13 @@ namespace Tests.Editor
             var outcome = new ChainedByShadowsDecision().Decide(
                 new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
 
-            // target(1) is anomaly (not chosen) so no chain; sole anomaly in play => the bonus fires.
+            // target(1) is anomaly (not chosen) so no chain, but the correct guess corrupts it; sole anomaly
+            // in play => the bonus fires.
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
                 new GrantExtraUse(0),
             }, outcome.Effects);
         }

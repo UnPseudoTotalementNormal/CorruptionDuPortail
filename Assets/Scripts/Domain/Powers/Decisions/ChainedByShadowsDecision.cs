@@ -7,9 +7,9 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
 {
     /// <summary>
     /// PChainedByTheShadows — active (char + role pick): target the picked character; if its role matches
-    /// the picked role (secondary target's role), reveal its role to the owner (broadcast); and if it is a
-    /// "chosen" faction, add it to the chaining list. NewTargeting is unconditional. All the branch logic
-    /// lives here, pure — the roster supplies the role-match + faction reads.
+    /// the picked role (secondary target's role), reveal its role to the owner, CORRUPT it (always, whatever
+    /// its faction), and if it is a "chosen" faction add it to the chaining list. NewTargeting is
+    /// unconditional. All the branch logic lives here, pure — the roster supplies the role-match + faction reads.
     ///
     /// Lot B (Abyss): on a correct guess, if the owner is the SOLE anomaly still in play (no other anomaly
     /// that is not chained/eliminated) and the once-per-night bonus has not fired yet, grant one extra use of
@@ -28,6 +28,9 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             if (roleGuessed)
             {
                 effects.Add(new RevealInfo(ctx.TargetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.OwnerSlot, true));
+                // On a correct guess the target is ALWAYS corrupted ("il le corrompt"), whatever its faction.
+                // Chaining (chosen only) corrupts again downstream — redundant but idempotent for an élu.
+                effects.Add(new CorruptPlayer(ctx.TargetSlot));
                 if (ctx.Roster.FactionOf(ctx.TargetSlot) == FactionType.chosen)
                 {
                     effects.Add(new AddToChain(ctx.TargetSlot));

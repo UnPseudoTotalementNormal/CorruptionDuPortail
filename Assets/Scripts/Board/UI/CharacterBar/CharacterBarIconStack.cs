@@ -56,9 +56,11 @@ namespace Board.UI.CharacterBar
 
         private CharactersBarObject _barObject;
         private PlayerIconManager _iconManager;
+        private LocalBarIconRegistry _localRegistry;
         private Character _observedCharacter;
         private bool _expanded;
         private bool _subscribedToManager;
+        private bool _subscribedToLocalRegistry;
 
         // Generation stamp, NOT a bool. Enable/disable cycles can leave a previous frame-loop mid-await, and
         // a flag it already passed cannot stop it — two loops would then resolve and subscribe twice. Every
@@ -108,6 +110,7 @@ namespace Board.UI.CharacterBar
                 _barObject.onCharacterBarObjectUnhovered -= OnUnhovered;
             }
             UnsubscribeFromManager();
+            UnsubscribeFromLocalRegistry();
             KillIconTweens();
             _observedCharacter = null;
             _expanded = false;
@@ -129,6 +132,16 @@ namespace Board.UI.CharacterBar
             _iconManager = null;
         }
 
+        private void UnsubscribeFromLocalRegistry()
+        {
+            if (_localRegistry != null && _subscribedToLocalRegistry)
+            {
+                _localRegistry.onLocalIconsChanged -= Rebuild;
+            }
+            _subscribedToLocalRegistry = false;
+            _localRegistry = null;
+        }
+
         /// <summary>
         /// ONE long-lived loop per enable cycle. It does two jobs that both have to survive an ordering race:
         /// the manager is a spawned NetworkObject that may not be registered yet, and — the load-bearing part —
@@ -148,6 +161,11 @@ namespace Board.UI.CharacterBar
                 if (_iconManager == null)
                 {
                     TryResolveManager();
+                }
+
+                if (_localRegistry == null)
+                {
+                    TryResolveLocalRegistry();
                 }
 
                 Character _current = _barObject.playerCharacter;
@@ -186,6 +204,34 @@ namespace Board.UI.CharacterBar
             {
                 _iconManager.onLocalIconsChanged += Rebuild;
                 _subscribedToManager = true;
+            }
+            Rebuild();
+        }
+
+        /// <summary>
+        /// Resolves the CLIENT-side local channel (<see cref="LocalBarIconRegistry"/>) for this thumbnail's
+        /// NetworkManager and subscribes its change event. Unlike the server manager the registry is born on
+        /// first <c>For(nm)</c>, so once the character (and thus the NetworkManager) is known this never fails.
+        /// </summary>
+        private void TryResolveLocalRegistry()
+        {
+            NetworkManager _networkManager = ResolveNetworkManager();
+            if (_networkManager == null)
+            {
+                return;
+            }
+
+            LocalBarIconRegistry _registry = LocalBarIconRegistry.For(_networkManager);
+            if (_registry == null)
+            {
+                return;
+            }
+
+            _localRegistry = _registry;
+            if (!_subscribedToLocalRegistry)
+            {
+                _localRegistry.onLocalIconsChanged += Rebuild;
+                _subscribedToLocalRegistry = true;
             }
             Rebuild();
         }
@@ -314,18 +360,37 @@ namespace Board.UI.CharacterBar
         private void ResolveRenderableSprites()
         {
             _renderableSprites.Clear();
-            if (_iconManager == null || _barObject.playerCharacter == null)
+            if (_barObject.playerCharacter == null)
             {
                 return;
             }
 
-            List<ulong> _iconIds = _iconManager.GetLocalIconsFor(_barObject.playerCharacter.ownerClientId.Value);
-            foreach (ulong _iconId in _iconIds)
+            ulong _markedClientId = _barObject.playerCharacter.ownerClientId.Value;
+
+            // CLIENT channel FIRST: locally-derived icons (e.g. corruption knowledge) draw ahead of the
+            // server power markers, matching the intended [corrupt][power...] order.
+            if (_localRegistry != null)
             {
-                Sprite _sprite = ResolveSprite(_iconId);
-                if (_sprite != null)
+                foreach (Sprite _sprite in _localRegistry.GetIconsFor(_markedClientId))
                 {
-                    _renderableSprites.Add(_sprite);
+                    if (_sprite != null)
+                    {
+                        _renderableSprites.Add(_sprite);
+                    }
+                }
+            }
+
+            // SERVER slice: the private power markers this peer is allowed to see on this thumbnail.
+            if (_iconManager != null)
+            {
+                List<ulong> _iconIds = _iconManager.GetLocalIconsFor(_markedClientId);
+                foreach (ulong _iconId in _iconIds)
+                {
+                    Sprite _sprite = ResolveSprite(_iconId);
+                    if (_sprite != null)
+                    {
+                        _renderableSprites.Add(_sprite);
+                    }
                 }
             }
         }

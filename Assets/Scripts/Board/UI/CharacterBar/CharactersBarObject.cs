@@ -24,9 +24,7 @@ namespace Board.UI.CharacterBar
         [SerializeField] private PortraitTable portraitTable;
 
         [SerializeField] private Canvas canvasObject;
-        
-        [SerializeField] private Image corruptedOverlayImage;
-        
+
         private CustomButton customButton;
 
         [Tooltip("Visual that is moved toward the camera on hover (e.g. the portrait child). Kept separate " +
@@ -157,16 +155,14 @@ namespace Board.UI.CharacterBar
         {
             if (playerCharacter == null || isSubscribedToCharacter) return;
             playerCharacter.onRoleUpdated += OnCharacterRoleUpdated;
-            playerCharacter.isCorrupted.OnValueChanged += OnCorruptedChanged;
-            
+
             isSubscribedToCharacter = true;
         }
         private void UnsubscribeFromCharacterEvents()
         {
             if (playerCharacter == null || !isSubscribedToCharacter) return;
             playerCharacter.onRoleUpdated -= OnCharacterRoleUpdated;
-            playerCharacter.isCorrupted.OnValueChanged -= OnCorruptedChanged;
-            
+
             isSubscribedToCharacter = false;
         }
         private void OnDestroy()
@@ -189,20 +185,9 @@ namespace Board.UI.CharacterBar
         {
             UpdateCharacter();
         }
-        private void OnCorruptedChanged(bool previous, bool current)
-        {
-            UpdateCharacter();
-        }
 
         private void UpdateCharacter()
         {
-            RevealLevel _forceCorruptOnRoleRevealed = CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).forceCorruptOnRoleRevealed;
-            bool _isCorrupted = playerCharacter.isCorrupted.Value && _forceCorruptOnRoleRevealed > RevealLevel.False;
-            if (corruptedOverlayImage)
-            {
-                corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
-            }
-
             characterImage.sprite = portraitTable.Get(playerCharacter.GetRole().rolePortrait);
         }
         

@@ -67,10 +67,21 @@ namespace RoleTarget
             ReceiveTargetingDataRpc(_targetingData);
         }
         
+        /// <summary>
+        /// Server-only: raised the instant a new targeting is recorded, carrying (targeter, target). For
+        /// powers that must react the moment they are targeted rather than at end of night — the Orpheline's
+        /// passive drops a private icon on the targeter's thumbnail as soon as it fires.
+        /// </summary>
+        public event Action<TargetingData> onTargetingAddedServer;
+
         [Rpc(SendTo.Everyone)]
         private void ReceiveTargetingDataRpc(TargetingData _targetingData)
         {
             currentTargetingDataList.Add(_targetingData);
+            if (IsServer)
+            {
+                onTargetingAddedServer?.Invoke(_targetingData);
+            }
         }
         
         public HashSet<ulong> GetAllTargetersForTarget(ulong _targetId)

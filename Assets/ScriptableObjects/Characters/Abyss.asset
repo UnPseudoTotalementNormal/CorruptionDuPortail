@@ -108,7 +108,6 @@ MonoBehaviour:
   - {fileID: 8296718483155507466, guid: 4be4aaf929ad584e6b113b69c1ef5a31, type: 3}
   - {fileID: 2782998364119609300, guid: ec614f265e6f87da9b63730bf86cc449, type: 3}
   - {fileID: 5190409391054709449, guid: 8aded5866a7c938e59edb0d72ad82038, type: 3}
-  - {fileID: 2397874720278988406, guid: 9119f49837d8ccfa2be2803dd7270f0a, type: 3}
   references:
     version: 2
     RefIds:

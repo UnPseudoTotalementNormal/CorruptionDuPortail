@@ -2,11 +2,9 @@
 
 using System;
 using Characters;
-using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameLogic;
-using TooltipSystem;
 using UI;
 using Unity.Netcode;
 using UnityEngine;
@@ -29,8 +27,6 @@ namespace Board.UI.CharacterBar
         
         [SerializeField] private Image corruptedOverlayImage;
         
-        [SerializeField] private HoverTooltipComponent hoverTooltipComponent;
-        
         private CustomButton customButton;
 
         [Tooltip("Visual that is moved toward the camera on hover (e.g. the portrait child). Kept separate " +
@@ -47,6 +43,13 @@ namespace Board.UI.CharacterBar
         [SerializeField] private bool hoverFaceCamera = true;
 
         [SerializeField] private float hoverTweenDuration = 0.35f;
+
+        /// <summary>
+        /// The hover motion's duration, exposed READ-ONLY so children riding that motion
+        /// (CharacterBarIconStack) share the single source of truth instead of duplicating the value on
+        /// their own serialized field, where the two could silently drift apart.
+        /// </summary>
+        public float HoverTweenDuration => hoverTweenDuration;
 
         private Transform HoverVisual => hoverVisual != null ? hoverVisual : transform;
 
@@ -198,17 +201,6 @@ namespace Board.UI.CharacterBar
             if (corruptedOverlayImage)
             {
                 corruptedOverlayImage.DOFade(_isCorrupted ? 0.65f : 0, 0.35f);
-            }
-
-            if (hoverTooltipComponent)
-            {
-                hoverTooltipComponent.SetTooltipTitle(playerCharacter.role.roleName.ToString());
-                string _description = "Pouvoirs:";
-                foreach (Power _power in playerCharacter.role.powers)
-                {
-                    _description += $"\n- <link=power_{_power.ownerClientId.Value}_{_power.NetworkObjectId}>{_power.powerName}</link>";
-                }
-                hoverTooltipComponent.SetTooltipDescription(_description);
             }
 
             characterImage.sprite = portraitTable.Get(playerCharacter.GetRole().rolePortrait);

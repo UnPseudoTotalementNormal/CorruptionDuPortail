@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Board;
 using Characters;
@@ -110,6 +111,54 @@ namespace UI.BoardUI.Selection
                     _onComplete?.Invoke(_character, _role);
                 }, _step2Options.GetStepDescription(1), _step2Options);
             }, _resolvedOptions.GetStepDescription(0), _resolvedOptions);
+        }
+
+        public void StartMultiCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
+            int _count, Action<List<Character>> _onAllSelected, SelectionFlowOptions _options = null)
+        {
+            if (!CanUsePicker())
+            {
+                return;
+            }
+            if (_count <= 0)
+            {
+                _onAllSelected?.Invoke(new List<Character>());
+                return;
+            }
+
+            ResetCurrentSelection(_invokeCanceled: false, _clearFocus: true);
+            SelectionFlowOptions _resolvedOptions = _options ?? new SelectionFlowOptions();
+            _resolvedOptions.focusType ??= FocusType.Cards;
+
+            StartFlow(_resolvedOptions);
+            PickNextCharacter(_validator, _count, new List<Character>(), _resolvedOptions, _onAllSelected);
+        }
+
+        // Re-shows the character picker once per remaining pick. The per-step validator is the caller's rules
+        // AND "not one of the already-picked players", so the same player can never be chosen twice. The whole
+        // flow shares ONE StartFlow/CompleteFlow bracket — cancelling any step drops the partial picks.
+        private void PickNextCharacter(Validator<(ulong targetId, TargetType targetType)> _baseValidator,
+            int _count, List<Character> _picked, SelectionFlowOptions _options, Action<List<Character>> _onAllSelected)
+        {
+            var _stepValidator = new Validator<(ulong targetId, TargetType targetType)>();
+            _stepValidator.AddRule(_ctx => _baseValidator == null || _baseValidator.Evaluate(_ctx));
+            _stepValidator.AddRule(_ctx => _picked.All(_c => _c == null || _c.ownerClientId.Value != _ctx.targetId));
+
+            ApplyFocus(_options.focusType, _stepValidator);
+
+            CardPickerManager.instance.ShowCharacterPicker(_stepValidator, _character =>
+            {
+                _picked.Add(_character);
+                if (_picked.Count >= _count)
+                {
+                    CompleteFlow();
+                    _onAllSelected?.Invoke(_picked);
+                }
+                else
+                {
+                    PickNextCharacter(_baseValidator, _count, _picked, _options, _onAllSelected);
+                }
+            }, _options.GetStepDescription(_picked.Count), _options);
         }
 
         public void CancelSelection(bool _invokeCanceled = false)

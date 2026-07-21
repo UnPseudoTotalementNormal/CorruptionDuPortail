@@ -134,6 +134,19 @@ namespace Characters.Powers
         // Marker only — authority unchanged.
         public NetworkVariable<bool> hideFromRoleCardRuntime = new();
 
+        // APPENDED (feat/targeting-icons) — never reorder/rename the fields above it. The sprite this power
+        // draws on a marked player's CharactersBar thumbnail through the private player-icon channel. The
+        // icon identifies THE POWER that produced the information, not a state of the marked player.
+        // Deliberately left null on every power today: the system ships without its first consumer, and a
+        // marker whose power has no sprite simply draws nothing (no error log — that is a normal case).
+        [Header("Bar icon (private player-icon channel)")]
+        [Tooltip("Sprite shown on a marked player's CharactersBar thumbnail, to the ONE viewer this power " +
+                 "marked them for. Leave empty for powers that place no icon.")]
+        [SerializeField] private Sprite barIcon;
+
+        /// <summary>The private-marker sprite for this power (null when the power places no icon).</summary>
+        public Sprite BarIcon => barIcon;
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;

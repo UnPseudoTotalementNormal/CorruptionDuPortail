@@ -32,5 +32,6 @@ namespace CorruptionDuPortail.Domain.Powers
         PersonalBeacons = 22,
         MarqueHurluberluges = 23,
         DroolyHealing = 24,
+        TargetedByReport = 25,
     }
 }

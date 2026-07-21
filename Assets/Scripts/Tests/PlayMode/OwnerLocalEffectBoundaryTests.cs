@@ -262,8 +262,9 @@ namespace Tests.PlayMode
         {
             ulong clientId = _clientNm.LocalClientId;
 
-            // CursedVision's decision corrupts + self-reveals the OWNER too, so the owner seat needs a real
-            // Character alongside the target.
+            // The owner seat needs a real, replicated Character because it is the VIEWER of the target's
+            // corruption reveal (RevealInfo viewer = ownerClientId) and the source of NewTargeting. (The
+            // decision no longer self-corrupts the owner — that cost was removed in the role-adjustment pass.)
             Character hostOwner = _hostCm.AddNewCharacter(clientId);
             Character hostTarget = _hostCm.AddNewCharacter(TargetSeat);
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(5f, hostOwner, hostTarget);
@@ -282,9 +283,9 @@ namespace Tests.PlayMode
                 10f, "Client replicas of the power / target / owner never arrived.");
 
             var clientPower = FindReplica<PCursedVision>(_clientNm, hostPower.NetworkObjectId);
-            // CursedVision corrupts + self-reveals the OWNER (ctx.OwnerSlot = ownerClientId.Value), so the
-            // seat NetworkVariable must have replicated to the client replica before the cast — otherwise the
-            // owner slot reads 0 and CorruptPlayer(0) dereferences a missing Character.
+            // The reveal's VIEWER is ctx.OwnerSlot = ownerClientId.Value, so the seat NetworkVariable must
+            // have replicated to the client replica before the cast — otherwise the owner slot reads 0 and the
+            // corruption reveal is keyed to observer 0 (the host) instead of the caster.
             yield return NetworkTestHelper.WaitUntilOrTimeout(
                 () => clientPower.ownerClientId.Value == clientId,
                 5f, "Client power replica never received the owner seat id.");

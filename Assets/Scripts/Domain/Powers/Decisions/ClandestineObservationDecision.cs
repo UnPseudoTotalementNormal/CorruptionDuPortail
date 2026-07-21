@@ -1,23 +1,24 @@
-using CorruptionDuPortail.Domain.Powers.State;
+using System.Linq;
+using Characters;
 
 namespace CorruptionDuPortail.Domain.Powers.Decisions
 {
     /// <summary>
-    /// PClandestineObservation — passive (owner awakening): announce to the owner how many players targeted
-    /// the observed role. No characters carry the role → enum label + ": 0." (period); otherwise the role
-    /// display name + ": {count}" (no period). The engine reads are supplied by the report port.
+    /// PClandestineObservation (Traqueuse) — active, multi-target (Lot D): the owner picks as many players as
+    /// there are non-chosen in the starting composition, and learns how many of them are "chosen" (élus). The
+    /// count is announced to the owner alone. Pure: the roster supplies each picked slot's faction.
     /// </summary>
     public sealed class ClandestineObservationDecision : IPowerDecision
     {
         public PowerId Id => PowerId.ClandestineObservation;
-        public bool IsPassive => true;
+        public bool IsPassive => false;
 
         public PowerOutcome Decide(in PowerContext ctx)
         {
-            var report = ctx.State<IClandestineReport>();
-            string message = report.HasCharacters
-                ? $"Total de personne qui ont ciblé le rôle \"{report.RoleLabel}\": {report.DistinctTargetingCount}"
-                : $"Total de personne qui ont ciblé le rôle \"{report.RoleLabel}\": 0.";
+            // Copy the roster out of the `in` parameter — an `in`/`ref` param can't be captured in a lambda.
+            IRosterView roster = ctx.Roster;
+            int chosenCount = ctx.TargetSlots.Count(slot => roster.FactionOf(slot) == FactionType.chosen);
+            string message = $"Parmi les joueurs observés, {chosenCount} sont des élus.";
             return PowerOutcome.Accept(new ChatBroadcast(message, ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
         }
     }

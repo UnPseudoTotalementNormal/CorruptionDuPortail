@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CorruptionDuPortail.Domain.Powers
 {
     /// <summary>
@@ -13,6 +15,8 @@ namespace CorruptionDuPortail.Domain.Powers
         public int TargetSlot { get; }
         /// <summary>A second picked slot for char+role powers (the picked role's owner), or -1.</summary>
         public int SecondaryTargetSlot { get; }
+        /// <summary>Every picked slot for multi-target powers (Observation Clandestine). Empty when the power takes one or no target.</summary>
+        public IReadOnlyList<int> TargetSlots { get; }
         public int UsesLeft { get; }
         /// <summary>Client-runtime flag for powers whose effect runs on the contacted target's own client (LackOfAffection).</summary>
         public bool IsTrueLocalTarget { get; }
@@ -22,7 +26,8 @@ namespace CorruptionDuPortail.Domain.Powers
         private readonly IPowerStateResolver _state;
 
         public PowerContext(int ownerSlot, int targetSlot = -1, int secondaryTargetSlot = -1, int usesLeft = 1,
-            bool isTrueLocalTarget = false, IRosterView roster = null, IPowerStateResolver state = null)
+            bool isTrueLocalTarget = false, IRosterView roster = null, IPowerStateResolver state = null,
+            IReadOnlyList<int> targetSlots = null)
         {
             OwnerSlot = ownerSlot;
             TargetSlot = targetSlot;
@@ -31,6 +36,7 @@ namespace CorruptionDuPortail.Domain.Powers
             IsTrueLocalTarget = isTrueLocalTarget;
             Roster = roster;
             _state = state;
+            TargetSlots = targetSlots ?? System.Array.Empty<int>();
         }
 
         public bool HasTarget => TargetSlot >= 0;

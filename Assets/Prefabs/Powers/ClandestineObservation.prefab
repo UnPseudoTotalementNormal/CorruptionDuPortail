@@ -685,10 +685,10 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
-  maxWaitTime: 0
-  isPassive: 1
-  hasToBeAwakened: 0
-  targetIncludeFlags: 0
+  maxWaitTime: 60
+  isPassive: 0
+  hasToBeAwakened: 1
+  targetIncludeFlags: 158
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1

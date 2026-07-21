@@ -50,6 +50,12 @@ namespace Characters.Powers.Runtime
         public bool IsCorrupted(int slot) =>
             CharacterAt(slot)?.isCorrupted.Value ?? false;
 
+        public bool IsChained(int slot) =>
+            CharacterAt(slot)?.isChained.Value ?? false;
+
+        public bool IsEliminated(int slot) =>
+            CharacterAt(slot)?.isEliminated.Value ?? false;
+
         public string RoleNameOf(int slot) =>
             CharacterAt(slot)?.role.roleName.ToString() ?? string.Empty;
 

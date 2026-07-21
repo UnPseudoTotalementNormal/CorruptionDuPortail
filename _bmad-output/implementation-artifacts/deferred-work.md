@@ -255,3 +255,40 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 - **[NON ÉLUCIDÉ] La dépendance de `OwnerLocalEffectBoundaryTests` n'est pas un simple « singleton laissé par un test antérieur ».** En passe 1 (reset au teardown Desingleton, index 38) il PASSE à l'index 160, alors que le reset a déjà nettoyé les statiques. En passe 2 (reset aussi avant `CorruptionTests`) il ÉCHOUE. Donc quelque chose entre 38 et 160 réapprovisionne l'état en passe 1, et la chute de `CorruptionTests` casse cette chaîne. Le NRE ne dit pas quel champ est nul. **Prochaine étape : instrumenter les 3 NRE (logs taggés sur le champ nul) AVANT de théoriser** — c'est ce qui décide si le fix est 3 lignes de câblage dans les 2 setups ou une refonte de leur harnais.
 
 - **Séquence pour plus tard :** instrumenter les 3 NRE → câbler les singletons manquants dans `CorruptionTests.SetUp` + `OwnerLocalEffectBoundaryTests.SetUp` → activer `ResetAll()` dans les teardowns de fixture → re-run PlayMode complet. Compter ~1 session. **Décision alternative assumée :** si personne ne prend ce chantier, supprimer `TestStaticReset.cs` + `FixtureResetTests.cs` plutôt que les laisser en place — du code qui a l'air d'être une protection active alors qu'il ne protège rien est pire que son absence (et `FixtureResetTests` installe 21 managers frais comme singletons de prod en plein milieu de la suite, contaminant tout si une exception tombe entre son snapshot et son restore).
+
+## Deferred from: système d'icônes CharactersBar — revue adverse 3 couches (2026-07-20)
+
+Constats réels mais **non causés** par ce chantier, ou hors de son périmètre. Branche `feat/targeting-icons`, commits `2c8c30d7` + `27acd0fb`.
+
+- **Aucun plafond sur la taille d'une tranche RPC.** `PlayerIconManager.AddIcon` n'a pas de limite par spectateur et `BuildSlice` sérialise toute la liste dans un `IconEntry[]`. Au-delà de la taille maximale d'un message NGO, l'RPC est rejeté et le spectateur cesse **silencieusement** de recevoir toute mise à jour, purges comprises. Aucun pouvoir ne pose d'icône aujourd'hui, donc c'est théorique — à borner (ou à journaliser) avant le premier vrai consommateur.
+
+- **`Destroy(gameObject)` sur un `NetworkObject` spawné dans la garde anti-doublon.** Deux instances du manager sur le même `NetworkManager` → destruction locale d'un objet réseau vivant, au lieu d'un despawn autoritaire serveur. **Défaut partagé avec `AvatarManager`**, dont le patron a été copié : à corriger aux deux endroits ensemble, pas ici seul.
+
+- **Marqueurs orphelins après déconnexion.** `OnClientDisconnected` retire la ligne du partant en tant que **spectateur**, mais les marqueurs où il est le joueur **marqué** survivent dans toutes les autres tranches. Si un nouvel arrivant réutilise son `clientId`, il hérite visuellement des icônes de l'ancien joueur. Demande une décision de game design (« une marque survit-elle au départ de sa cible ? ») autant qu'un correctif.
+
+- **`iconId` = `NetworkObjectId` d'un `Power` : chemin de lecture côté client à auditer.** La vue résout le sprite via `SpawnedObjects[iconId].GetComponent<Power>()`. Si les `Power` exposent des `NetworkVariable` lisibles par tous, un client pourrait remonter du marqueur au pouvoir puis à son détenteur — ce qui contournerait la confidentialité que le système existe pour garantir. **Non démontré**, à vérifier avant qu'un pouvoir réel n'utilise le canal.
+
+- **`NetworkManager.Singleton` préexistant dans la CharactersBar.** `CharacterAwakenTimer.cs:31,44` et `CharactersBarObject.cs:84,182,184,203` le lisent encore. Antérieur à ce chantier (le nouveau code n'en a aucun), mais c'est la même classe de bug multi-NM et ça rend ces vues intestables sous `MultiClientGameFixture`.
+
+- **`expandTweenDuration: 0.35` résiduel dans `CharacterBarObject.prefab`.** Le champ sérialisé a été supprimé du code au profit de la lecture sur `CharactersBarObject.HoverTweenDuration`. Unity ignore silencieusement une clé inconnue ; elle disparaîtra à la prochaine réécriture du prefab. Sans effet, noté pour que personne ne s'en inquiète.
+
+## Deferred from: lot B Abyss — bug préexistant onCharacterAwakened jamais levé (2026-07-21)
+
+**[BUG PRÉEXISTANT, hors périmètre lot B] `Character.onCharacterAwakened` n'est JAMAIS levé.** `Character.AwakenCharacterServerRpc` ([Character.cs:140](../../Assets/Scripts/Characters/Character.cs#L140)) fait `isAwakened.Value = true; role.AwakenRole();` puis appelle **`SleepCharacterClientRpc()`** ligne 145 — un copier-coller : ça devrait être `AwakenCharacterClientRpc()`, le seul endroit qui fait `onCharacterAwakened?.Invoke()` (ligne 151). Résultat : l'event est mort dans tout le projet.
+
+**Cinq abonnés silencieusement inertes :**
+- `PClandestineObservation.cs:67` — le passif *Observation Clandestine* de la Traqueuse (`DeclareAllTargetFocusServer`) ne se déclenche jamais → **pouvoir shippé cassé**.
+- `PCChainer.cs:28`, `AwakeningState.cs:147`, `PowerManager.cs:98` (`OnCharacterAwakenedServer`) — comportements dormants, dont deux au cœur du game loop.
+- `PChainedByTheShadows` (lot B) — contourné : le reset du bonus Abyss passe par `isAwakened.OnValueChanged` (écriture directe de NetworkVariable, fiable), PAS par cet event.
+
+**Pourquoi différé et non corrigé dans le lot B :** le fix est 1 ligne (`SleepCharacterClientRpc()` → `AwakenCharacterClientRpc()`), mais il **réveillerait les cinq handlers d'un coup**, dont `PowerManager`/`AwakeningState` au cœur du loop. Turn-on simultané = risque de régression imprévisible, à ne pas empaqueter dans une feature de rôle. Mérite sa propre tâche + playtest 2 clients (vérifier que la Traqueuse rapporte, que le son de réveil joue, et qu'aucun handler dormant ne casse le loop en se rallumant). Le jeu tourne malgré le bug parce que le refill des usages passe par `role.AwakenRole()` appelé en direct (ligne 144), pas par l'event.
+
+## Deferred from: lot D Chasseuse de Prime — design non figé + gaps (2026-07-21)
+
+- **[DESIGN — à trancher par Wouh] Dead-end de sélection mid-game.** Observation Clandestine (réécrite en actif multi-cibles) fige N = nb de non-élus de la composition de départ (décision D2), mais le pool de cibles valides rétrécit quand des joueurs sont enchaînés. Interim livré : `PClandestineObservation.StartUse` clampe le nombre à cibler à `min(N, GetValidTargets().Count)` — évite le picker bloqué / l'usage gâché, garde la feature utilisable. À arbitrer à la révision de la Chasseuse (design non figé) : garder le clamp / gater `CanUse` sur ≥N cibles / autoriser complétion partielle explicite. C'est une décision de game design, pas un bug.
+
+- **[TEST GAP — playtest requis] Le flux multi-select UI n'a aucune couverture automatisée.** `SelectionFlowService.StartMultiCharacterSelection`/`PickNextCharacter` (N clics, exclusion doublons, exclusion self, annulation partielle) + la capture de N (`OnGameStartedServer`) ne sont pas testés (pas de `CardPickerManager` en EditMode ni en 2-NM). Le comptage `chosen` parmi les cibles EST couvert (EditMode + PlayMode `ObserveServerRpc`). → Playtest 2 clients requis avant de considérer la Chasseuse validée : sélection à N clics aboutit, doublons refusés, auto-ciblage refusé, clamp mid-game, rapport privé correct.
+
+- **[MINEUR] `ObserveServerRpc` ne revalide pas les ids côté serveur.** Un client trafiqué peut envoyer doublons / son propre id / ids inconnus ; inoffensif (rapport privé `Specific(owner)`, ids inconnus → faction `default`≠chosen, pas de crash ni de gonflage). À durcir si la Chasseuse devient sensible (re-valider via `CheckIsTargetValid` côté serveur, comme `PCardsShuffling`).
+
+- **[COSMÉTIQUE] Champ orphelin `targetRoleID: 3917` dans `ClandestineObservation.prefab`** — la classe a supprimé le champ, Unity ignore la clé, disparaîtra à la prochaine réécriture du prefab.

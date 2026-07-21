@@ -333,21 +333,24 @@ namespace Tests.PlayMode
                 "Reincarnation must stay an active pill after use, not a passive row.");
         }
 
-        // Powers-POCO v2 wiring golden: PClandestineObservation delegates DeclareAllTargetFocusServer to
-        // ClandestineObservationDecision → a single ChatBroadcast announcing the targeting count to the owner.
-        // No character carries the observed role here, so it takes the "0." branch. The server-authored
-        // message reaches the owner (host) via onChatMessageReceived.
+        // Lot D wiring golden: PClandestineObservation is now an active multi-target power. Its server RPC
+        // (ObserveServerRpc, given the picked player ids) delegates to ClandestineObservationDecision, which
+        // counts the "chosen" (élus) among them and announces the count to the owner alone via a server
+        // ChatBroadcast. Here two picked targets — one chosen, one anomaly — must report exactly one élu.
         [UnityTest]
-        public IEnumerator PClandestineObservation_AnnouncesTargetingCountToOwner()
+        public IEnumerator PClandestineObservation_AnnouncesChosenCountAmongPickedTargets()
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
-            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
-            owner.role = new Role { roleID = RoleID.Dryade };
+            Character chosenTarget = _characterManager.AddNewCharacter(4321);
+            Character anomalyTarget = _characterManager.AddNewCharacter(4322);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, chosenTarget, anomalyTarget);
+            owner.role = new Role { roleID = RoleID.ChasseuseDePrime, factionType = FactionType.chosen };
+            chosenTarget.role = new Role { factionType = FactionType.chosen };
+            anomalyTarget.role = new Role { factionType = FactionType.anomaly };
 
             GameObject powerGo = new GameObject("Clandestine");
             var power = powerGo.AddComponent<PClandestineObservation>();
-            power.targetRoleID = RoleID.Omniscient; // no character carries it -> the "0." branch
-            power.isPassive = false;                // CanUse rejects passive powers; matches the live prefab
+            power.isPassive = false;
             power.hasToBeAwakened = false;
             powerGo.AddComponent<NetworkObject>().Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
@@ -356,14 +359,17 @@ namespace Tests.PlayMode
 
             bool received = false;
             ulong sender = 0;
-            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; };
+            string message = null;
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; message = _m.message.ToString(); };
 
-            power.DeclareAllTargetFocusServer();
+            ReflectionHelper.InvokePrivateMethod(power, "ObserveServerRpc", new object[] { new ulong[] { 4321, 4322 } });
             yield return null;
 
-            Assert.IsTrue(received, "ClandestineObservation should announce the targeting count to the owner.");
+            Assert.IsTrue(received, "ClandestineObservation should announce the chosen count to the owner.");
             Assert.AreEqual(ChatManager.SERVER_CLIENT_ID, sender,
                 "The announcement should come from the server sender id.");
+            StringAssert.Contains("1 sont des élus", message,
+                "Exactly one of the two picked targets is a chosen — the reported count must be 1.");
         }
 
         // Powers-POCO v2 wiring golden: PBoundByInk delegates its server RPC to BoundByInkDecision →

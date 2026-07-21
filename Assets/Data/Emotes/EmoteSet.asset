@@ -16,3 +16,5 @@ MonoBehaviour:
   - displayName: Coucou
     icon: {fileID: 0}
     animatorEmoteId: 1
+    loops: 1
+    oneShotSeconds: 2

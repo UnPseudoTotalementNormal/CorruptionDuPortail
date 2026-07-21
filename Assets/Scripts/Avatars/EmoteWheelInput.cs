@@ -26,6 +26,10 @@ namespace Avatars
         [Tooltip("The wheel UI this drives. Wire the EmoteWheelController in the GameScene.")]
         [SerializeField] private EmoteWheelController wheel;
 
+        [Tooltip("Emote playback orchestrator (third-person self-feedback + loop/stop). If wired, release routes " +
+                 "the chosen emote through it; if null, it falls back to playing the emote directly on the avatar.")]
+        [SerializeField] private EmotePlaybackController playback;
+
         [Tooltip("Camera-mode broadcast (arbiter-written). The wheel is reachable whenever the seated " +
                  "first-person embodied camera is LIVE (night Board or day Vote — not the lobby, not a board " +
                  "overview). Wire the shared CameraModeChannel asset.")]
@@ -145,8 +149,19 @@ namespace Avatars
                 EmoteDefinition _emote = wheel.GetEmote(_index);
                 if (_emote != null)
                 {
-                    PlayerAvatar _avatar = ResolveLocalAvatar();
-                    _avatar?.RequestEmote(_emote.animatorEmoteId);
+                    // Route through the playback orchestrator (third-person self-feedback + loop/stop) when wired;
+                    // otherwise fall back to playing the emote directly on the local avatar.
+                    if (playback != null)
+                    {
+                        playback.Begin(_emote);
+                    }
+                    else
+                    {
+                        // Fallback (no playback orchestrator wired): force ONE-SHOT. A loop emote here would set
+                        // the server Emoting bool with no stop path (no controller to detect input / call End()),
+                        // holding forever. One-shot returns on its own via the Animator exit-time.
+                        ResolveLocalAvatar()?.RequestEmote(_emote.animatorEmoteId, false);
+                    }
                     // First-person confirmation: the chosen emote flies to the centre + fades (the wheel itself
                     // has already closed).
                     wheel.Confirm(_index);

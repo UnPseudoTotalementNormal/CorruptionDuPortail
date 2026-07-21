@@ -710,6 +710,8 @@ MonoBehaviour:
   _cameraModeChannel: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   _smartphone: {fileID: 724818885}
   _emoteWheel: {fileID: 1697028111}
+  _emotePlayback: {fileID: 1697028115}
+  _orbitCamera: {fileID: 1359693619}
 --- !u!114 &54114942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11538,6 +11540,104 @@ MonoBehaviour:
   m_ChildScaleWidth: 1
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1359693618
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1359693621}
+  - component: {fileID: 1359693620}
+  - component: {fileID: 1359693619}
+  m_Layer: 0
+  m_Name: AvatarEmoteOrbitCamera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1359693619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359693618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8153714fad01c5546aa786c2c720787f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarEmoteOrbitCamera
+  _camera: {fileID: 1359693620}
+  _distance: 3.2
+  _pivotHeight: 1.1
+  _yawSensitivity: 0.15
+  _pitchSensitivity: 0.12
+  _minPitch: -10
+  _maxPitch: 60
+  _startPitch: 15
+  _activePriority: 200
+  _inactivePriority: -100
+--- !u!114 &1359693620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359693618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
+  Priority:
+    Enabled: 0
+    m_Value: 0
+  OutputChannel: 1
+  StandbyUpdate: 2
+  m_StreamingVersion: 0
+  m_LegacyPriority: 0
+  Target:
+    TrackingTarget: {fileID: 0}
+    LookAtTarget: {fileID: 0}
+    CustomLookAtTarget: 0
+  Lens:
+    FieldOfView: 40
+    OrthographicSize: 10
+    NearClipPlane: 0.1
+    FarClipPlane: 5000
+    Dutch: 0
+    ModeOverride: 0
+    PhysicalProperties:
+      GateFit: 2
+      SensorSize: {x: 21.946, y: 16.002}
+      LensShift: {x: 0, y: 0}
+      FocusDistance: 10
+      Iso: 200
+      ShutterSpeed: 0.005
+      Aperture: 16
+      BladeCount: 5
+      Curvature: {x: 2, y: 11}
+      BarrelClipping: 0.25
+      Anamorphism: 0
+  BlendHint: 0
+--- !u!4 &1359693621
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359693618}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1362275530
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14865,6 +14965,7 @@ GameObject:
   - component: {fileID: 1697028113}
   - component: {fileID: 1697028112}
   - component: {fileID: 1697028111}
+  - component: {fileID: 1697028115}
   m_Layer: 0
   m_Name: EmoteWheel
   m_TagString: Untagged
@@ -14885,6 +14986,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Avatars.EmoteWheelInput
   wheel: {fileID: 1697028112}
+  playback: {fileID: 1697028115}
   cameraModeChannel: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   openKey: 34
   stickSensitivity: 1
@@ -14950,6 +15052,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1697028115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697028110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2eab104a1742e1242ad4cd57363758be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.EmotePlaybackController
 --- !u!1 &1713363389
 GameObject:
   m_ObjectHideFlags: 0
@@ -19558,3 +19672,4 @@ SceneRoots:
   - {fileID: 1697028114}
   - {fileID: 2005486243}
   - {fileID: 1032449286}
+  - {fileID: 1359693621}

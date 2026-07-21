@@ -63,6 +63,12 @@ namespace Avatars
         // drives the wheel's virtual stick, not the camera) — same look-gate as the tablet, but the cursor stays
         // LOCKED (the stick needs the delta). Null-tolerant — unwired just means the wheel never freezes the look.
         [SerializeField] private EmoteWheelInput _emoteWheel;
+        // Emote self-feedback: while the local player emotes, the arbiter swaps to the third-person orbit camera
+        // and reveals the local body (both below). The playback controller raises Started/Stopped (mirroring the
+        // wheel's Opened/Closed). Any camera/state/tablet change ends the emote (arbiter calls End()). Both
+        // null-tolerant — unwired means no third-person emote view.
+        [SerializeField] private EmotePlaybackController _emotePlayback;
+        [SerializeField] private AvatarEmoteOrbitCamera _orbitCamera;
 
         private IGameStateQuery Query => gameManager;
 
@@ -76,6 +82,11 @@ namespace Avatars
         // Mirrors the emote wheel open state via its Opened/Closed events. ANDed into the look gate (like the
         // tablet) so the mouse turns the wheel, not the camera, while it is up.
         private bool _wheelOpen;
+        // Mirrors the emote playback state via its Started/Stopped events. While true the third-person orbit
+        // camera is live + the local body revealed, and the embodied head-look is FROZEN (the mouse orbits the
+        // camera, it does not turn the character). The cursor stays LOCKED (the orbit needs the mouse delta).
+        private bool _emoteActive;
+        private bool _emoteSubscribed;
         // Last resolved mode, cached so a late-spawning local avatar (below) starts in the right movement
         // state when its controller finally binds.
         private CameraMode _currentMode = CameraMode.Board;
@@ -119,6 +130,15 @@ namespace Avatars
                 _emoteWheel.Closed += OnEmoteWheelClosed;
             }
 
+            // Emote playback start/stop drives the third-person orbit camera + local-body reveal + look freeze.
+            if (_emotePlayback != null)
+            {
+                _emoteActive = _emotePlayback.IsEmoting;
+                _emotePlayback.EmoteStarted += OnEmoteStarted;
+                _emotePlayback.EmoteStopped += OnEmoteStopped;
+                _emoteSubscribed = true;
+            }
+
             // The seated first-person is a board-camera node during the Vote; follow which board camera is live
             // so the embodied camera / reticle / cursor track the player arrowing between it and the overviews.
             // .instance is a scene singleton set in Awake (before any Start) — available here; guarded anyway.
@@ -151,6 +171,12 @@ namespace Avatars
                 _emoteWheel.Closed -= OnEmoteWheelClosed;
             }
 
+            if (_emoteSubscribed && _emotePlayback != null)
+            {
+                _emotePlayback.EmoteStarted -= OnEmoteStarted;
+                _emotePlayback.EmoteStopped -= OnEmoteStopped;
+            }
+
             // Mirror the Start subscription to the board manager's current-camera event.
             if (_boardCameraSubscribed && BoardCameraManager.instance != null)
             {
@@ -162,6 +188,15 @@ namespace Avatars
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
+            // Emote-presentation teardown symmetry: if we tore down mid-emote while the orbit camera / visibility
+            // controller outlive us (independent destroy order), stand the orbit camera down + re-hide the local
+            // body so nothing is left stuck at priority 200 / revealed. Idempotent + null-tolerant.
+            _orbitCamera?.SetActive(false);
+            if (_visibility != null)
+            {
+                _visibility.SetLocalBodyVisibleOverride(false);
+            }
+
             // Cleanup symmetry (archi §5b): this arbiter is the SOLE owner of the board-camera 'Avatar'
             // source. If we tore down while a non-Board mode had set it false, a surviving
             // BoardCameraManager.instance (a sanctioned static survivor) would keep arrow neighbour-nav cut
@@ -172,6 +207,9 @@ namespace Avatars
 
         private void OnGameStateChanged(int _previousValue, int _newValue)
         {
+            // A game-state change is a camera change → end any running emote (restores FP + hides the local body).
+            _emotePlayback?.End();
+
             CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
             _currentMode = _newMode;
 
@@ -255,6 +293,9 @@ namespace Avatars
         // the player's arrow navigation between it and the board overviews. Ignored only in FreeRoam (lobby).
         private void OnCurrentBoardCameraChanged(BoardCameraIdEnum _id)
         {
+            // Arrowing between board cameras is a camera change → end any running emote.
+            _emotePlayback?.End();
+
             if (_currentMode != CameraMode.Board && _currentMode != CameraMode.Embodied)
             {
                 return;
@@ -271,18 +312,47 @@ namespace Avatars
         private void OnTabletOpened()
         {
             _tabletOpen = true;
+            _emotePlayback?.End();
             ApplyCursorAndLook();
         }
 
         private void OnTabletClosed()
         {
             _tabletOpen = false;
+            _emotePlayback?.End();
             ApplyCursorAndLook();
         }
 
         private void OnEmoteWheelOpened()
         {
             _wheelOpen = true;
+            // Opening the wheel to pick a new emote ends the current one.
+            _emotePlayback?.End();
+            ApplyCursorAndLook();
+        }
+
+        // Playback raised Started: swap to the third-person orbit camera, reveal the local body, freeze the
+        // embodied head-look (the mouse orbits the camera, not the character). Gated on the orbit camera being
+        // wired — without it there is no third-person view, so revealing the body would just clip the FP camera
+        // (contract: "unwired means no third-person emote view"). The emote itself still plays (networked).
+        private void OnEmoteStarted()
+        {
+            if (_orbitCamera == null)
+            {
+                return;
+            }
+            _emoteActive = true;
+            _orbitCamera.SetActive(true);
+            _visibility.SetLocalBodyVisibleOverride(true);
+            ApplyCursorAndLook();
+        }
+
+        // Playback raised Stopped: stand the orbit camera down, re-hide the local body, unfreeze the look.
+        private void OnEmoteStopped()
+        {
+            _emoteActive = false;
+            _orbitCamera?.SetActive(false);
+            _visibility.SetLocalBodyVisibleOverride(false);
             ApplyCursorAndLook();
         }
 
@@ -305,10 +375,10 @@ namespace Avatars
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !_lockCursor;
 
-            // Freeze the look whenever the tablet OR the emote wheel is open (both look-readers ignore it;
-            // default-on otherwise). The wheel keeps the cursor LOCKED (above) but takes the mouse for its
-            // virtual stick, so the camera must not also turn.
-            bool _lookEnabled = !_tabletOpen && !_wheelOpen;
+            // Freeze the look whenever the tablet OR the emote wheel is open OR an emote is playing (all three
+            // look-readers ignore it; default-on otherwise). The wheel/emote keep the cursor LOCKED (above) but
+            // take the mouse for the wheel's virtual stick / the emote orbit, so the character must not also turn.
+            bool _lookEnabled = !_tabletOpen && !_wheelOpen && !_emoteActive;
             if (TryBindLocalMovement())
             {
                 _localMovement.SetLookEnabled(_lookEnabled);

@@ -22,6 +22,10 @@ namespace Avatars
     public class AvatarVisibilityController : MonoBehaviour
     {
         private CameraMode _mode = CameraMode.Board;
+        // Emote self-feedback: while the local player emotes they watch their OWN body via a third-person orbit
+        // camera, so the normally-hidden owner body must be revealed. Arbiter-driven; overrides the "hide the
+        // local first-person body" rule for the owner only, and only outside Board (night stays fully hidden).
+        private bool _localBodyOverride;
         // Cached renderer arrays per avatar (GetComponentsInChildren allocates — do it once, not per frame).
         private readonly Dictionary<PlayerAvatar, Renderer[]> _renderers = new();
         // Reused scratch for evicting despawned avatars from _renderers: a despawned PlayerAvatar key is never
@@ -31,6 +35,10 @@ namespace Avatars
 
         /// <summary>Arbiter contract: the resolved camera mode (mirror AvatarSeatingPresenter.SetActive).</summary>
         public void SetMode(CameraMode _newMode) => _mode = _newMode;
+
+        /// <summary>Arbiter contract: reveal the local (owner) body while emoting so the third-person orbit
+        /// camera can show it. Only takes effect outside Board (night hides everyone). Applied next LateUpdate.</summary>
+        public void SetLocalBodyVisibleOverride(bool _revealLocalBody) => _localBodyOverride = _revealLocalBody;
 
         /// <summary>
         /// Pure visibility policy (EditMode-testable): is an avatar's body shown in <paramref name="_mode"/>?
@@ -59,7 +67,16 @@ namespace Avatars
                 {
                     continue;
                 }
-                Apply(_avatar, ResolveVisible(_mode, _avatar.IsOwner));
+                bool _visible = ResolveVisible(_mode, _avatar.IsOwner);
+                // Emote self-feedback override: reveal the OWNER's own body during an emote (third-person orbit
+                // view) — including at night (Board). It is local + owner-only, so the "you only see each other
+                // during the day" rule is preserved for OTHERS (non-owners stay hidden); the emoting player just
+                // sees their own cat instead of orbiting empty space.
+                if (_avatar.IsOwner && _localBodyOverride)
+                {
+                    _visible = true;
+                }
+                Apply(_avatar, _visible);
             }
 
             // Evict entries whose avatar was despawned (Unity-null key) — the live-roster loop above never

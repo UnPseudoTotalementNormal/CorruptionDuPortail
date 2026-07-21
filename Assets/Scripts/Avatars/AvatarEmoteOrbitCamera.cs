@@ -31,10 +31,23 @@ namespace Avatars
         [SerializeField] private CinemachineCamera _camera;
 
         [Header("Feel — placeholder defaults, Poyo-tuned")]
-        [Tooltip("Orbit radius (m) from the avatar pivot to the camera.")]
+        [Tooltip("MANUAL fallback orbit radius (m), used only when Auto Frame is off.")]
         [SerializeField] private float _distance = 3.2f;
-        [Tooltip("Pivot height (m) above the avatar root — aim roughly at the chest/head so the emote is framed.")]
+        [Tooltip("MANUAL fallback pivot height (m) above the avatar root, used only when Auto Frame is off.")]
         [SerializeField] private float _pivotHeight = 1.1f;
+
+        [Header("Auto-framing (from the avatar's visual bounds)")]
+        [Tooltip("Derive the pivot height and the orbit radius from the avatar's RENDERER BOUNDS instead of the " +
+                 "fixed values above. Robust to the model's scale — the raw root pivot sits at the FEET and a " +
+                 "fixed radius can end up INSIDE the model.")]
+        [SerializeField] private bool _autoFrame = true;
+        [Tooltip("Orbit radius as a multiple of the avatar's bounding radius. ~2.5 frames the whole body.")]
+        [SerializeField] private float _distanceMultiplier = 2.5f;
+        [Tooltip("Floor for the auto radius (m) — never get closer than this whatever the bounds say.")]
+        [SerializeField] private float _minDistance = 1.5f;
+        [Tooltip("Nudge (m) applied to the auto pivot height. 0 = the exact vertical centre of the visual bounds; " +
+                 "positive aims higher (towards the head).")]
+        [SerializeField] private float _heightBias = 0f;
         [Tooltip("Yaw degrees per horizontal mouse-delta unit.")]
         [SerializeField] private float _yawSensitivity = 0.15f;
         [Tooltip("Pitch degrees per vertical mouse-delta unit.")]
@@ -54,6 +67,10 @@ namespace Avatars
         private float _pitch;
         private AvatarManager _manager;
         private PlayerAvatar _boundAvatar;
+        // Auto-framing, measured ONCE per bind — a skinned mesh's bounds breathe with the animation, so
+        // re-measuring every frame would make the camera creep/jitter while the emote plays.
+        private float _autoPivotHeight;
+        private float _autoDistance;
 
         /// <summary>Whether the emote orbit camera is currently outranking the other cameras.</summary>
         public bool IsActive => _active;
@@ -136,9 +153,53 @@ namespace Avatars
             _yaw += _delta.x * _yawSensitivity;
             _pitch = Mathf.Clamp(_pitch - _delta.y * _pitchSensitivity, _minPitch, _maxPitch);
 
-            Vector3 _pivot = _boundAvatar.transform.position + Vector3.up * _pivotHeight;
-            EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _distance, out Vector3 _position, out Quaternion _rotation);
+            // Frame on the visual CENTRE at a radius that clears the model. The raw root pivot is at the FEET and
+            // a fixed radius can land inside the mesh, so auto-framing measures the renderer bounds instead.
+            float _height = _autoFrame ? _autoPivotHeight : _pivotHeight;
+            float _radius = _autoFrame ? _autoDistance : _distance;
+
+            Vector3 _pivot = _boundAvatar.transform.position + Vector3.up * _height;
+            EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _radius, out Vector3 _position, out Quaternion _rotation);
             _camera.transform.SetPositionAndRotation(_position, _rotation);
+        }
+
+        /// <summary>
+        /// Measure the avatar's combined RENDERER bounds once and derive the framing from it: the pivot height is
+        /// the vertical centre of the visible body (the root pivot sits at the FEET), and the orbit radius is a
+        /// multiple of the bounding radius (a fixed radius ends up INSIDE a larger model). Falls back to the manual
+        /// values if the avatar has no renderers. Bounds are read from renderers even while disabled, so this is
+        /// valid whether or not the local body has been revealed yet this frame.
+        /// </summary>
+        private void MeasureAutoFrame(PlayerAvatar _avatar)
+        {
+            Bounds _bounds = default;
+            bool _any = false;
+            foreach (Renderer _renderer in _avatar.GetComponentsInChildren<Renderer>(true))
+            {
+                if (_renderer == null)
+                {
+                    continue;
+                }
+                if (!_any)
+                {
+                    _bounds = _renderer.bounds;
+                    _any = true;
+                }
+                else
+                {
+                    _bounds.Encapsulate(_renderer.bounds);
+                }
+            }
+
+            if (!_any)
+            {
+                _autoPivotHeight = _pivotHeight;
+                _autoDistance = _distance;
+                return;
+            }
+
+            _autoPivotHeight = (_bounds.center.y - _avatar.transform.position.y) + _heightBias;
+            _autoDistance = Mathf.Max(_minDistance, _bounds.extents.magnitude * _distanceMultiplier);
         }
 
         // Resolve the local owned avatar (mirror AvatarEmbodiedCamera.TryBind). On the first bind, seed the
@@ -160,6 +221,7 @@ namespace Avatars
                     _boundAvatar = _avatar;
                     _manager = _resolved;
                     _bound = true;
+                    MeasureAutoFrame(_avatar);
                     if (!_seeded)
                     {
                         // Camera in FRONT of the avatar = its facing yaw + 180 (behind the pivot's back would be

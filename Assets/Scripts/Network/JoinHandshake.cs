@@ -28,7 +28,11 @@ namespace Network
         //   dead / silent host that never approves us.
         // - SyncTotalTimeoutSeconds: generous absolute cap that lets an honest slow load finish yet still bounds a
         //   genuinely stuck synchronization. Decision lives in the pure ConnectHandshakePolicy.
-        public const float ApprovalTimeoutSeconds = 10f;
+        // Raised 10s -> 30s (investigation vpn-instant-disconnect): 10s was not enough for a client whose
+        // Relay/DTLS handshake is slow (VPN, mobile, distant relay region) — it fast-failed an honest joiner as
+        // a "dead host". Unreal's own InitialConnectTimeout is 60s; 30s stays well inside NGO's transport-level
+        // connect budget (ConnectTimeoutMS 1000 x MaxConnectAttempts 60).
+        public const float ApprovalTimeoutSeconds = 30f;
         public const float SyncTotalTimeoutSeconds = 90f;
 
         /// <summary>

@@ -1,7 +1,6 @@
 #region
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
@@ -9,13 +8,10 @@ using Network;
 using Network.Services;
 using TMPro;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using Netcode.Transports.Facepunch;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
 using Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -138,39 +134,51 @@ namespace UI
                 // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
                 GameCode.gameCode = _lobby.LobbyCode;
 
-                bool joinSuccess = false;
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    joinSuccess = JoinWithFacepunch(_lobby);
+                    if (!JoinWithFacepunch(_lobby))
+                    {
+                        throw new System.Exception("Failed to join game");
+                    }
+
+                    // [LEAVE][PHASE 4] StartClient() only reports whether the connect attempt STARTED; it never
+                    // waits for the connection to actually establish. Bound that wait so a connect that never
+                    // completes (dead host, bad connection data) cannot hang forever in a stale "connecting"
+                    // state. On timeout, throw into the existing catch teardown (Shutdown + LeaveLobby + UI reset).
+                    ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+                    if (_fail != ConnectFailReason.None)
+                    {
+                        // Build BEFORE the teardown below shuts NGO down — Shutdown may clear DisconnectReason.
+                        string _failureMessage = JoinHandshake.BuildFailureMessage(_fail);
+                        if (LobbyManager.instance != null)
+                        {
+                            LobbyManager.instance.ReportError(_failureMessage);
+                        }
+                        throw new System.Exception(_failureMessage);
+                    }
                 }
                 else if (NetworkTransportDetector.IsUsingUnityRelay())
                 {
-                    joinSuccess = await JoinWithUnityRelay(_lobby);
+                    // The relay path owns its own handshake wait — and the dtls -> wss fallback — inside
+                    // RelayConnector; the shared wait that used to sit below would double-run it.
+                    RelayConnectResult _result = await JoinWithUnityRelay(_lobby);
+                    if (!_result.Success)
+                    {
+                        if (!string.IsNullOrEmpty(_result.FailureMessage))
+                        {
+                            // Message was built BEFORE any teardown (Shutdown may clear DisconnectReason).
+                            if (LobbyManager.instance != null)
+                            {
+                                LobbyManager.instance.ReportError(_result.FailureMessage);
+                            }
+                            throw new System.Exception(_result.FailureMessage);
+                        }
+                        throw new System.Exception("Failed to join game");
+                    }
                 }
                 else
                 {
                     throw new System.Exception("Unknown transport type!");
-                }
-
-                if (!joinSuccess)
-                {
-                    throw new System.Exception("Failed to join game");
-                }
-
-                // [LEAVE][PHASE 4] StartClient() only reports whether the connect attempt STARTED; it never
-                // waits for the connection to actually establish. Bound that wait so a connect that never
-                // completes (dead host, bad connection data) cannot hang forever in a stale "connecting"
-                // state. On timeout, throw into the existing catch teardown (Shutdown + LeaveLobby + UI reset).
-                ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
-                if (_fail != ConnectFailReason.None)
-                {
-                    // Build BEFORE the teardown below shuts NGO down — Shutdown may clear DisconnectReason.
-                    string _failureMessage = JoinHandshake.BuildFailureMessage(_fail);
-                    if (LobbyManager.instance != null)
-                    {
-                        LobbyManager.instance.ReportError(_failureMessage);
-                    }
-                    throw new System.Exception(_failureMessage);
                 }
 
                 // No scene load on the client: NGO already synchronized us into GameScene before the handshake
@@ -242,30 +250,18 @@ namespace UI
             return true;
         }
 
-        private async Task<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
             if (!lobby.Data.TryGetValue("joinCode", out var _value))
             {
                 Debug.Log("Lobby missing joinCode");
-                return false;
+                return RelayConnectResult.Failed(null);
             }
 
-            string _relayJoinCode = _value.Value;
-
-            try
-            {
-                var _allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: _relayJoinCode);
-                NetworkManager.Singleton.GetComponent<UnityTransport>()
-                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
-            }
-            catch (RelayServiceException e)
-            {
-                Debug.LogError($"Relay join failed: {e.Message}");
-                return false;
-            }
-
-            return NetworkManager.Singleton.StartClient();
+            // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
+            // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
+            return await RelayConnector.ConnectClientAsync(_value.Value);
         }
 
 
@@ -403,33 +399,17 @@ namespace UI
             return _hostSteamId.ToString();
         }
 
-        private async Task<string> HostWithUnityRelay(int maxConnections)
+        private async UniTask<string> HostWithUnityRelay(int maxConnections)
         {
-            try
-            {
-                var _allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
-                NetworkManager.Singleton.GetComponent<UnityTransport>()
-                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
-                var _joinCode = await RelayService.Instance.GetJoinCodeAsync(_allocation.AllocationId);
+            // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
+            // enabled before StartHost (inside HostAsync) so the server answers approval for every connecting
+            // client — and it survives the connector's inter-attempt Shutdown (NetworkConfig + callback, not
+            // driver state).
+            ConnectionApprovalGate.Enable(NetworkManager.Singleton);
 
-                // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
-                // enabled before StartHost so the server answers approval for every connecting client.
-                ConnectionApprovalGate.Enable(NetworkManager.Singleton);
-
-                bool _started = NetworkManager.Singleton.StartHost();
-                if (!_started)
-                {
-                    Debug.LogError("Failed to start host");
-                    return null;
-                }
-
-                return _joinCode;
-            }
-            catch (RelayServiceException e)
-            {
-                Debug.LogError($"Relay host failed: {e.Message}");
-                return null;
-            }
+            // Allocation + StartHost + relay BIND check with the dtls -> wss fallback; the join code returned
+            // (and published to the lobby) always belongs to the allocation that actually bound.
+            return await RelayConnector.HostAsync(maxConnections);
         }
 
 

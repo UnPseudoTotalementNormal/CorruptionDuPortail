@@ -338,3 +338,128 @@ whether that specific mechanism produced this specific report (no log, no repro)
 
 The widened windows are a justified fix on their own merits regardless of the VPN report. They are **not** a
 confirmed fix for it — H1 remains fully live and needs a separate `wss` fallback.
+
+## Follow-up: 2026-07-21 #2 — Backlog #7 feasibility: `wss` Relay fallback
+
+Scope: answer the three blocking constraints for the `wss` fallback (backlog #7 / H1) from the project's ACTUAL
+package versions, then settle the architecture. All three answered from primary sources (package source in
+`Library/PackageCache` + version-matched Unity docs). Design ready; implementation not started (owner gate).
+
+Package versions (Confirmed, `Packages/packages-lock.json`): NGO **2.12.0**, `com.unity.transport` **6.5.0**
+(resolved above NGO's 2.6.0 floor), `com.unity.services.multiplayer` **2.1.3** (Relay SDK lives here — there is
+no standalone `com.unity.services.relay` package in this project).
+
+### Constraint 1 — Do host and clients need the same connection type? **NO (Confirmed)**
+
+- Doc for the exact UTP major in use ([UTP 6.5 cross-play manual](https://docs.unity3d.com/Packages/com.unity.transport@6.5/manual/cross-play.html)):
+  *"Cross-play support is automatic if you are using Unity Relay. The host could connect to the Relay server
+  from an Android device using DTLS, and a client could connect from a web browser using WebSockets, and both
+  would be able to communicate without any issue."* The page's own example is host=`"dtls"`, client=`"wss"`.
+- Mechanism: each peer connects to the Relay server independently; the peer↔relay hop's protocol is a purely
+  local choice. The connection type never crosses to the other peers.
+- Corroborated in source: `AllocationUtils.GetValidProtocols()` returns per-PLATFORM valid sets (WebGL: WSS only;
+  desktop: UDP/DTLS/WSS) — mixed-platform lobbies are only possible because types are per-peer
+  (`Library/PackageCache/com.unity.services.multiplayer@01ce6abde85b/Runtime/Relay/Models/AllocationUtils.cs:250-263`).
+
+**Architectural consequence:** the fallback is **purely local to each peer**. No host↔client negotiation, no
+transit through the UGS lobby, no `LobbyManager` change. The Opus-prompt's "type must travel via the lobby"
+branch is dead.
+
+### Constraint 2 — `UseWebSockets` coherence: **runtime-settable, MANDATORY, must be set before Start\* (Confirmed)**
+
+- NGO's `UnityTransport` picks the driver interface from `m_UseWebSockets` ALONE:
+  `driver = NetworkDriver.Create(new WebSocketNetworkInterface(), …)` only when the flag is true
+  (`…netcode.gameobjects@aaabf07f880c/Runtime/Transports/UTP/UnityTransport.cs:1866-1877`).
+- A `wss` `RelayServerData` with the flag false (or vice-versa) is only a `Debug.LogError` — NO auto-correction
+  (`UnityTransport.cs:1853-1864`); UTP double-checks the same invariant at driver level
+  (`…transport@68f8ff7cdc01/Runtime/NetworkDriver.cs:508-520`).
+- `UseWebSockets` is a public property (`UnityTransport.cs:99-103`) — settable at runtime; the driver is created
+  inside `StartClient`/`StartHost`, so it must be set BEFORE the Start call, alongside `SetRelayServerData`.
+- `BootScene.unity` keeps `m_UseWebSockets: 0` serialized — the helper sets the property explicitly on EVERY
+  attempt (true for wss, back to false for dtls), so no scene edit and no stale-flag leak into a later session
+  or the UTP loopback tests.
+
+### Constraint 3 — WebSocket support in the shipped transport: **YES (Confirmed)**
+
+- `com.unity.transport` 6.5.0 ships `WebSocketNetworkInterface` (used across
+  `Runtime/NetworkDriver.cs`, `Runtime/NetworkStack.cs:171-187`, `Runtime/Layers/NetworkInterfaceLayer.cs`).
+- `AllocationUtils.ToRelayServerData(alloc, "wss")` is valid on desktop builds and returns
+  `RelayServerData(isSecure: endpoint.Secure, isWebSocket: true)` (`AllocationUtils.cs:86-146`). Only
+  `udp`/`dtls`/`wss` are accepted — plain `ws` is NOT in the map (`AllocationUtils.cs:19-25`).
+- Caveat (runtime-only): the wss endpoint must exist in `allocation.ServerEndpoints`; `GetEndpoint` throws
+  `ArgumentException` otherwise (`AllocationUtils.cs:153-168`). Docs say allocations expose all types; verify
+  once with a log line in the first playtest.
+
+### Additional Findings
+
+#### Finding 8: The failure taxonomy needed for a safe retry already exists
+
+**Evidence:** `Assets/Scripts/Domain/ConnectHandshakePolicy.cs:6-18` (`ConnectFailReason`:
+`SessionEnded` / `ApprovalTimeout` / `TotalTimeout`); `Assets/Scripts/Network/JoinHandshake.cs:46-114`.
+
+**Detail:** A UDP-blocked path produces `ApprovalTimeout` (transport keeps retrying ~60 s
+— `ConnectTimeoutMS 1000 × MaxConnectAttempts 60` — so the 30 s approval deadline always fires first). An
+explicit server rejection (mid-game join, `ConnectionApprovalGate`) tears NGO down ⇒ `SessionEnded` **with
+`NetworkManager.DisconnectReason` filled**. A transport give-up ⇒ `SessionEnded` with an EMPTY reason. Retry
+policy: retry on `ApprovalTimeout` or empty-reason `SessionEnded`; never retry a filled-reason rejection.
+
+#### Finding 9: Host-side BIND failure is detectable — `GetRelayConnectionStatus()`
+
+**Evidence:** `UnityTransport.GetNetworkDriver()` is public (`UnityTransport.cs:382`); NGO itself polls
+`m_Driver.GetRelayConnectionStatus() == RelayConnectionStatus.AllocationInvalid` each early-update
+(`UnityTransport.cs:1161-1167`).
+
+**Detail:** After `StartHost()` (which returns true on a merely-local bind), the host can poll
+`GetNetworkDriver().GetRelayConnectionStatus()` until `Established` or a short deadline (~10 s). `NotEstablished`
+at deadline ⇒ relay unreachable over dtls ⇒ shutdown, re-allocate, retry wss. Today `GetJoinCodeAsync` runs
+BEFORE `StartHost` (`MainMenu.cs:413`) — it must move after the bind check so the published join code always
+belongs to the surviving allocation.
+
+#### Finding 10: A fresh `JoinAllocationAsync` per attempt is required
+
+**Evidence:** Relay idle TTL ≈ 10 s pre-connect (Follow-up #1 table); client attempt lasts up to 30 s.
+
+**Detail:** By the time a dtls attempt times out, the join allocation created for it is expired. Each retry must
+re-call `JoinAllocationAsync(joinCode)` (host allocation is untouched; a new client allocation is cheap).
+
+#### Finding 11: The retry loop must hold the `SetJoinHandshakeInProgress` claim across attempts
+
+**Evidence:** `JoinHandshake.cs:75-78, 105-107`; `ClientDisconnectHandler` pops "Connexion à l'hôte perdue" on
+`OnClientStopped` otherwise.
+
+**Detail:** Between a failed dtls attempt and the wss attempt there is a `Shutdown()` — without the claim held
+across the whole loop, the intermediate teardown flashes a bogus disconnect notification mid-fallback.
+
+### Settled architecture (design ready — NOT implemented)
+
+One decision point, e.g. `Assets/Scripts/Network/RelayConnector.cs` (static, UniTask):
+
+- `ConnectClientAsync(joinCode)` — for `type in [dtls, wss]`: fresh `JoinAllocationAsync` →
+  `transport.UseWebSockets = (type==wss)` → `SetRelayServerData(alloc.ToRelayServerData(type))` →
+  `StartClient()` → `JoinHandshake.WaitForConnectedOrTimeout()`. Retry per Finding 8 only; between attempts
+  `Shutdown()` + await `!IsListening`; claim held per Finding 11.
+- `HostAsync(maxConnections)` — `CreateAllocationAsync` → dtls → `StartHost` → poll relay status per Finding 9;
+  on failure re-allocate in wss; `GetJoinCodeAsync` only after `Established`.
+- The 3 call sites (`MainMenu.cs:260`, `MainMenu.cs:412`, `LobbySelectionPanel.cs:470`) collapse onto it; the
+  `WaitForConnectedOrTimeout` calls move from the callers into the loop.
+- Testing: retry decision extracted as a pure Domain policy (reason × disconnect-reason → verdict) + EditMode
+  tests; no real-wss PlayMode test (loopback stays UTP/UDP per project test-transport rule).
+
+**Open decisions for Poyo:** (1) first-attempt dtls deadline — keep 30 s (worst case 60 s to a final failure) or
+shorten to ~15 s for a snappier fallback (a false-positive only costs "connected via wss instead of dtls", not a
+failure); (2) show a "nouvelle tentative en mode compatible…" UI hint during the wss retry; (3) ship host-side
+fallback in the same change or client-only first.
+
+**Player-facing effect:** a player whose network blocks UDP (VPN, captive portal, strict NAT) connects via
+WebSocket/TCP 443 after the dtls deadline instead of never connecting. wss has higher latency (TCP
+head-of-line blocking) — it stays a fallback, never the default.
+
+**Real-playtest checklist:** tester behind a UDP-blocking network (corporate VPN / UDP-filtered Wi-Fi); log
+`allocation.ServerEndpoints` once to confirm the wss endpoint exists in prod; confirm a wss session survives the
+15 s liveness window; TLS-MITM proxies may still break wss — out of scope.
+
+### Backlog Changes (#2)
+
+| # | Path to Explore | Priority | Status |
+| - | --- | --- | --- |
+| 7 | Add a `"wss"` Relay fallback | High | **Implemented** (2026-07-21, spec-wss-relay-fallback, EM 548/PM 251 green) — awaiting commit authorization + a UDP-blocked playtest (owner has no VPN; needs an external tester). Review discovery: NGO fills `DisconnectReason` with a "[Disconnect Event]…" placeholder on EVERY client transport drop — the retry verdict discriminates via `RelayFallbackPolicy.HasServerReason` |

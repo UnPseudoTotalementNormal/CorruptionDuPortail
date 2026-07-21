@@ -8,10 +8,7 @@ using Network.Services;
 using TMPro;
 using UI.LobbyUI;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
 using Netcode.Transports.Facepunch;
 using Steamworks;
 using UnityEngine;
@@ -300,39 +297,43 @@ namespace UI.Lobby
                 GameCode.gameCode = lobby.LobbyCode;
 
                 // Détecter le type de transport et se connecter en conséquence
-                bool connected = false;
-                
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    connected = JoinWithFacepunch(lobby);
+                    if (!JoinWithFacepunch(lobby))
+                    {
+                        Debug.LogError("Failed to connect to game");
+                        await AbortJoin(null);
+                        return false;
+                    }
+
+                    // StartClient() only reports that the connect attempt STARTED. Wait for the ACTUAL verdict
+                    // before loading GameScene — otherwise a server rejection (mid-game join) only lands once we
+                    // are already in the game scene, where it degrades into "Connexion à l'hôte perdue" instead of
+                    // the server's own "La partie a déjà commencé." (investigation join-started-game-gate).
+                    ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+                    if (_fail != ConnectFailReason.None)
+                    {
+                        // Build BEFORE AbortJoin shuts NGO down — Shutdown may clear DisconnectReason.
+                        await AbortJoin(JoinHandshake.BuildFailureMessage(_fail));
+                        return false;
+                    }
                 }
                 else if (NetworkTransportDetector.IsUsingUnityRelay())
                 {
-                    connected = await JoinWithUnityRelay(lobby);
+                    // The relay path owns its own handshake wait — and the dtls -> wss fallback — inside
+                    // RelayConnector (investigation vpn-instant-disconnect, backlog #7). Its FailureMessage was
+                    // built BEFORE any teardown, so AbortJoin can safely shut NGO down afterwards.
+                    RelayConnectResult _result = await JoinWithUnityRelay(lobby);
+                    if (!_result.Success)
+                    {
+                        await AbortJoin(_result.FailureMessage);
+                        return false;
+                    }
                 }
                 else
                 {
                     Debug.LogError("Unknown transport type!");
                     loadingCanvasGroup.DoHideGroup();
-                    return false;
-                }
-
-                if (!connected)
-                {
-                    Debug.LogError("Failed to connect to game");
-                    await AbortJoin(null);
-                    return false;
-                }
-
-                // StartClient() only reports that the connect attempt STARTED. Wait for the ACTUAL verdict before
-                // loading GameScene — otherwise a server rejection (mid-game join) only lands once we are already
-                // in the game scene, where it degrades into "Connexion à l'hôte perdue" instead of the server's own
-                // "La partie a déjà commencé." (investigation join-started-game-gate).
-                ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
-                if (_fail != ConnectFailReason.None)
-                {
-                    // Build BEFORE AbortJoin shuts NGO down — Shutdown may clear DisconnectReason.
-                    await AbortJoin(JoinHandshake.BuildFailureMessage(_fail));
                     return false;
                 }
 
@@ -452,37 +453,18 @@ namespace UI.Lobby
             return true;
         }
 
-        private async UniTask<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
             if (!lobby.Data.ContainsKey("joinCode"))
             {
                 Debug.LogError("Lobby missing joinCode");
-                return false;
+                return RelayConnectResult.Failed(null);
             }
 
-            string _joinCode = lobby.Data["joinCode"].Value;
-
-            try
-            {
-                var _allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: _joinCode);
-                NetworkManager.Singleton.GetComponent<UnityTransport>()
-                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
-            }
-            catch (RelayServiceException e)
-            {
-                Debug.LogError($"Relay join failed: {e.Message}");
-                return false;
-            }
-
-            bool ok = NetworkManager.Singleton.StartClient();
-            if (!ok)
-            {
-                Debug.LogError("Failed to start client");
-                return false;
-            }
-
-            return true;
+            // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
+            // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
+            return await RelayConnector.ConnectClientAsync(lobby.Data["joinCode"].Value);
         }
 
         private void OnLobbyEntryClicked(Unity.Services.Lobbies.Models.Lobby lobby, LobbyEntryUI lobbyEntryUI)

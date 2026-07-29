@@ -40,11 +40,14 @@ namespace Avatars
         // it on the PlayerAvatar prefab. Null-tolerant — an unwired ref simply makes RequestEmote a no-op.
         [SerializeField] private NetworkAnimator _networkAnimator;
 
-        // Animator wiring for emotes: an integer param selects WHICH emote, a trigger fires it. Names must match
-        // the Cat_Avatar Animator (int "EmoteId", trigger "Emote"). Non-trigger params are set on the Animator
-        // (NetworkAnimator auto-syncs them); the momentary trigger goes through NetworkAnimator.SetTrigger.
+        // Animator wiring for emotes: an integer param selects WHICH emote. LOOP emotes ride the "Emoting" bool
+        // (held true → the emote clip loops; false → back to Idle); ONE-SHOT emotes fire the momentary "Emote"
+        // trigger (play once → exit-time → Idle). Names must match the Cat_Avatar Animator. Non-trigger params
+        // (EmoteId, Emoting) are set on the Animator (NetworkAnimator auto-syncs them); the trigger goes through
+        // NetworkAnimator.SetTrigger.
         private const string EmoteIdParam = "EmoteId";
         private const string EmoteTriggerParam = "Emote";
+        private const string EmotingParam = "Emoting";
 
         // Seated-ring gaze: the owner's seated head look, RELATIVE to seat facing (deg) — yaw (left/right) +
         // pitch (up/down). Owner-writable so each player publishes WHERE they look during the embodied Vote;
@@ -76,28 +79,62 @@ namespace Avatars
         /// <summary>
         /// Owner-only: request playing an emote (by its Animator <c>EmoteId</c>). Routed to the server, which
         /// sets it on the body's NetworkAnimator so every client — including this owner — sees the animation.
-        /// No-op on non-owners. Values come from the wheel's <see cref="EmoteDefinition"/>.
+        /// <paramref name="_loops"/> chooses the path: LOOP holds the <c>Emoting</c> bool (until
+        /// <see cref="StopEmote"/>); ONE-SHOT fires the momentary <c>Emote</c> trigger. No-op on non-owners.
+        /// Values come from the wheel's <see cref="EmoteDefinition"/>.
         /// </summary>
-        public void RequestEmote(int _emoteId)
+        public void RequestEmote(int _emoteId, bool _loops)
         {
             if (!IsOwner)
             {
                 return;
             }
-            PlayEmoteRpc(_emoteId);
+            PlayEmoteRpc(_emoteId, _loops);
         }
 
-        // Server plays the emote on the NetworkAnimator: set the EmoteId selector (auto-synced param) then fire
-        // the momentary Emote trigger (NetworkAnimator replicates triggers explicitly). Null-tolerant.
+        /// <summary>
+        /// Owner-only: stop a LOOPing emote (clears the <c>Emoting</c> bool on the server so every client
+        /// returns to Idle). No-op on non-owners / one-shot emotes (harmless: the bool is already false).
+        /// </summary>
+        public void StopEmote()
+        {
+            if (!IsOwner)
+            {
+                return;
+            }
+            StopEmoteRpc();
+        }
+
+        // Server plays the emote on the NetworkAnimator: set the EmoteId selector (auto-synced param), then EITHER
+        // hold the Emoting bool (loop, auto-synced) OR fire the momentary Emote trigger (one-shot, replicated
+        // explicitly). Null-tolerant.
         [Rpc(SendTo.Server)]
-        private void PlayEmoteRpc(int _emoteId)
+        private void PlayEmoteRpc(int _emoteId, bool _loops)
         {
             if (_networkAnimator == null || _networkAnimator.Animator == null)
             {
                 return;
             }
             _networkAnimator.Animator.SetInteger(EmoteIdParam, _emoteId);
-            _networkAnimator.SetTrigger(EmoteTriggerParam);
+            if (_loops)
+            {
+                _networkAnimator.Animator.SetBool(EmotingParam, true);
+            }
+            else
+            {
+                _networkAnimator.SetTrigger(EmoteTriggerParam);
+            }
+        }
+
+        // Server stops a looping emote by clearing the auto-synced Emoting bool. Null-tolerant.
+        [Rpc(SendTo.Server)]
+        private void StopEmoteRpc()
+        {
+            if (_networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            _networkAnimator.Animator.SetBool(EmotingParam, false);
         }
 
         public override void OnNetworkSpawn()

@@ -1,6 +1,7 @@
 using System.Collections;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using AudioSystem;
 using RoleTarget;
@@ -269,21 +270,87 @@ namespace Tests.PlayMode
                 "Reincarnation should grant the target role's powers to the owner.");
         }
 
-        // Powers-POCO v2 wiring golden: PClandestineObservation delegates DeclareAllTargetFocusServer to
-        // ClandestineObservationDecision → a single ChatBroadcast announcing the targeting count to the owner.
-        // No character carries the observed role here, so it takes the "0." branch. The server-authored
-        // message reaches the owner (host) via onChatMessageReceived.
+        // Mirrors the RoleCard's own membership rule so the assertion runs the SAME code path as the UI.
+        private static RoleCardSlot Slot(Power p) => RoleCardPowerVisibility.Classify(
+            p.authoredIsPassive, p.hideFromRoleCard, p.isStolenCopy.Value, p.hideFromRoleCardRuntime.Value,
+            !string.IsNullOrEmpty(p.powerDescription.ToString()));
+
+        // End-to-end RoleCard-visibility wiring for L'Incomplet's Réincarnation. Proves what the pure classifier
+        // cannot: (1) the granted power carries hideFromRoleCardRuntime — PReincarnation's onReady ran through the
+        // real GivePowerToCharacter spawn/reparent path; and (2) the Réincarnation power's authoredIsPassive
+        // survives the post-use live isPassive flip (the Awake snapshot on a real spawned NetworkBehaviour). Then
+        // feeds the REAL spawned powers through the same classifier the card uses: grant Hidden, Réincarnation
+        // still an active pill (NOT demoted to a passive row).
         [UnityTest]
-        public IEnumerator PClandestineObservation_AnnouncesTargetingCountToOwner()
+        public IEnumerator PReincarnation_RoleCard_HidesGrantsKeepsReincarnationActive()
         {
             Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
-            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(owner);
-            owner.role = new Role { roleID = RoleID.Dryade };
+            Character target = _characterManager.AddNewCharacter(557);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, target);
+
+            owner.role = new Role { roleID = RoleID.Incomplet };
+
+            // The target chosen role carries one active power that Réincarnation copies to the owner.
+            GameObject grantedGo = new GameObject("GrantedPower");
+            grantedGo.AddComponent<NetworkObject>();
+            var grantedPower = grantedGo.AddComponent<Power>();
+            grantedPower.powerName = "Reincarnated";
+            grantedPower.powerDescription = "Granted active power.";
+            grantedGo.GetComponent<NetworkObject>().Spawn();
+            target.role = new Role { roleID = RoleID.Omniscient };
+            target.role.powers.Add(grantedPower);
+
+            // The Réincarnation power itself — authored active — sitting in the owner's kit so the card lists it.
+            GameObject powerGo = new GameObject("Reincarnation");
+            var power = powerGo.AddComponent<PReincarnation>();
+            power.powerName = "Reincarnation";
+            power.powerDescription = "Copy a role's powers.";
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+            owner.role.powers.Add(power);
+
+            ReflectionHelper.InvokePrivateMethod(power, "ReincarnatePlayerRpc", target.ownerClientId.Value);
+
+            float timeout = Time.time + 2.0f;
+            yield return new WaitUntil(() =>
+                owner.role.powers.Any(p => p.powerName == grantedPower.powerName) || Time.time > timeout);
+
+            var grantedClone = owner.role.powers.FirstOrDefault(p => p.powerName == grantedPower.powerName);
+            Assert.IsNotNull(grantedClone, "Reincarnation should have granted a clone of the target role's power.");
+
+            // (1) Wiring: the live flip happened, the authored snapshot held, and the grant got the hide marker.
+            Assert.IsTrue(power.isPassive, "Reincarnation flips its live isPassive to true post-use.");
+            Assert.IsFalse(power.authoredIsPassive,
+                "authoredIsPassive must survive the live isPassive flip (Awake snapshot).");
+            Assert.IsTrue(grantedClone.hideFromRoleCardRuntime.Value,
+                "The granted power must be flagged hidden from the RoleCard.");
+
+            // (2) End-to-end verdict through the same classifier the card renders from.
+            Assert.AreEqual(RoleCardSlot.Hidden, Slot(grantedClone),
+                "Granted (copied) powers must be hidden from the card.");
+            Assert.AreEqual(RoleCardSlot.ActivePill, Slot(power),
+                "Reincarnation must stay an active pill after use, not a passive row.");
+        }
+
+        // Lot D wiring golden: PClandestineObservation is now an active multi-target power. Its server RPC
+        // (ObserveServerRpc, given the picked player ids) delegates to ClandestineObservationDecision, which
+        // counts the "chosen" (élus) among them and announces the count to the owner alone via a server
+        // ChatBroadcast. Here two picked targets — one chosen, one anomaly — must report exactly one élu.
+        [UnityTest]
+        public IEnumerator PClandestineObservation_AnnouncesChosenCountAmongPickedTargets()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character chosenTarget = _characterManager.AddNewCharacter(4321);
+            Character anomalyTarget = _characterManager.AddNewCharacter(4322);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, chosenTarget, anomalyTarget);
+            owner.role = new Role { roleID = RoleID.ChasseuseDePrime, factionType = FactionType.chosen };
+            chosenTarget.role = new Role { factionType = FactionType.chosen };
+            anomalyTarget.role = new Role { factionType = FactionType.anomaly };
 
             GameObject powerGo = new GameObject("Clandestine");
             var power = powerGo.AddComponent<PClandestineObservation>();
-            power.targetRoleID = RoleID.Omniscient; // no character carries it -> the "0." branch
-            power.isPassive = false;                // CanUse rejects passive powers; matches the live prefab
+            power.isPassive = false;
             power.hasToBeAwakened = false;
             powerGo.AddComponent<NetworkObject>().Spawn();
             power.ownerClientId.Value = _networkManager.LocalClientId;
@@ -292,14 +359,17 @@ namespace Tests.PlayMode
 
             bool received = false;
             ulong sender = 0;
-            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; };
+            string message = null;
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; message = _m.message.ToString(); };
 
-            power.DeclareAllTargetFocusServer();
+            ReflectionHelper.InvokePrivateMethod(power, "ObserveServerRpc", new object[] { new ulong[] { 4321, 4322 } });
             yield return null;
 
-            Assert.IsTrue(received, "ClandestineObservation should announce the targeting count to the owner.");
+            Assert.IsTrue(received, "ClandestineObservation should announce the chosen count to the owner.");
             Assert.AreEqual(ChatManager.SERVER_CLIENT_ID, sender,
                 "The announcement should come from the server sender id.");
+            StringAssert.Contains("1 sont des élus", message,
+                "Exactly one of the two picked targets is a chosen — the reported count must be 1.");
         }
 
         // Powers-POCO v2 wiring golden: PBoundByInk delegates its server RPC to BoundByInkDecision →

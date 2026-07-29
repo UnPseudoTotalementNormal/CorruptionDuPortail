@@ -43,12 +43,18 @@ namespace Tests.Editor
             public readonly System.Collections.Generic.Dictionary<int, int> Roles = new();
             public readonly System.Collections.Generic.HashSet<int> Robots = new();
             public readonly System.Collections.Generic.HashSet<int> Healed = new();
+            public readonly System.Collections.Generic.HashSet<int> Corrupted = new();
+            public readonly System.Collections.Generic.HashSet<int> Chained = new();
+            public readonly System.Collections.Generic.HashSet<int> Eliminated = new();
             public readonly System.Collections.Generic.Dictionary<int, string> RoleNames = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
             public bool SameRole(int a, int b) => Roles.TryGetValue(a, out var ra) && Roles.TryGetValue(b, out var rb) && ra == rb;
             public bool IsRobot(int slot) => Robots.Contains(slot);
             public bool IsHealed(int slot) => Healed.Contains(slot);
+            public bool IsCorrupted(int slot) => Corrupted.Contains(slot);
+            public bool IsChained(int slot) => Chained.Contains(slot);
+            public bool IsEliminated(int slot) => Eliminated.Contains(slot);
             public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 
@@ -128,22 +134,25 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
                 new AddToChain(1),
             }, outcome.Effects);
         }
 
         [Test]
-        public void ChainedByShadows_RoleMatchNotChosen_NoChain()
+        public void ChainedByShadows_RoleMatchNotChosen_CorruptsButNoChain()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
             roster.Roles[1] = 7; roster.Roles[2] = 7;
             roster.Factions[1] = Characters.FactionType.anomaly;
             var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
 
+            // A correct guess corrupts the target even when it is NOT chosen (so no chain).
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
             }, outcome.Effects);
         }
 
@@ -153,6 +162,116 @@ namespace Tests.Editor
             var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
             roster.Roles[1] = 7; roster.Roles[2] = 9;                 // different roles
             var outcome = new ChainedByShadowsDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
+        }
+
+        // ---- Lot B (Abyss): sole-anomaly extra-use bonus ---------------------------------
+        // Note: FactionType default is `anomaly` (enum value 0), so every slot's faction is set explicitly —
+        // an unset slot would silently count as an in-play anomaly and skew the "sole anomaly" test.
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_CorrectGuess_BonusFresh_GrantsExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;   // owner = the only anomaly in play
+            roster.Factions[1] = Characters.FactionType.marginal;  // target: non-chosen so the chain stays out
+            roster.Factions[2] = Characters.FactionType.chosen;    // picked-role owner
+            roster.Roles[1] = 7; roster.Roles[2] = 7;              // guessed right
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
+                new GrantExtraUse(0),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_CorrectGuess_BonusAlreadyConsumed_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.marginal;
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = true });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_TwoAnomaliesInPlay_CorrectGuess_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.anomaly;   // a second anomaly still in play
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            // Two anomalies in play => no bonus. The correct guess still corrupts the (anomaly) target.
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_OtherAnomalyChained_CountsAsSole_GrantsExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Chained.Add(1);                                  // the other anomaly is out of play
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 7;
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
+
+            // target(1) is anomaly (not chosen) so no chain, but the correct guess corrupts it; sole anomaly
+            // in play => the bonus fires.
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new NewTargeting(0, 1),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
+                new CorruptPlayer(1),
+                new GrantExtraUse(0),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void ChainedByShadows_SoleAnomaly_WrongGuess_NoExtraUse()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[0] = Characters.FactionType.anomaly;
+            roster.Factions[1] = Characters.FactionType.marginal;
+            roster.Factions[2] = Characters.FactionType.chosen;
+            roster.Roles[1] = 7; roster.Roles[2] = 9;              // wrong guess
+            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
+
+            var outcome = new ChainedByShadowsDecision().Decide(
+                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
 
             CollectionAssert.AreEqual(new EffectDescriptor[] { new NewTargeting(0, 1) }, outcome.Effects);
         }
@@ -248,12 +367,13 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void CursedVision_NonChosen_CorruptsRevealsCardsChatsBoth()
+        public void CursedVision_NonChosen_CorruptsTargetRevealsCardsChats()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1 } };
             roster.Factions[1] = Characters.FactionType.anomaly; roster.Pseudos[1] = "Bob";
             var outcome = new CursedVisionDecision { CardEffectId = 2 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
 
+            // The owner no longer corrupts itself (role-adjustment pass): only the TARGET is corrupted/revealed.
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
@@ -261,8 +381,6 @@ namespace Tests.Editor
                 new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
                 new AddCardEffect(2, 1, true),
                 new ChatLocal("Bob n'est pas un élu.", -1),
-                new CorruptPlayer(0),
-                new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
             }, outcome.Effects);
         }
 
@@ -417,9 +535,9 @@ namespace Tests.Editor
             public TPort Resolve<TPort>() where TPort : class => _map.TryGetValue(typeof(TPort), out var v) ? (TPort)v : null;
         }
         private sealed class FakeInk : IInkChatState { public int ChatId { get; set; } }
-        private sealed class FakeClandestine : IClandestineReport { public bool HasCharacters { get; set; } public string RoleLabel { get; set; } public int DistinctTargetingCount { get; set; } }
         private sealed class FakeVision : IVisionGuesses { public System.Collections.Generic.IReadOnlyList<VisionGuess> Guesses { get; set; } }
         private sealed class FakeCards : ICardsShufflingGuess { public bool IsCorrect { get; set; } public string ClickedPseudo { get; set; } public string GuessRoleName { get; set; } public System.Collections.Generic.IReadOnlyList<string> TargetedRoleNames { get; set; } = new string[0]; }
+        private sealed class FakeExtraUse : IExtraUseState { public bool BonusConsumedThisNight { get; set; } }
 
         [Test]
         public void BoundByInk_TargetsDiscoversRegisters()
@@ -435,24 +553,33 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void Clandestine_NoChars_ZeroWithPeriod()
+        public void Clandestine_CountsChosenAmongPickedTargets_OwnerOnly()
         {
-            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = false, RoleLabel = "Robot", DistinctTargetingCount = 0 });
-            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2, 3 } };
+            roster.Factions[1] = Characters.FactionType.chosen;
+            roster.Factions[2] = Characters.FactionType.anomaly;
+            roster.Factions[3] = Characters.FactionType.chosen;
+            var outcome = new ClandestineObservationDecision().Decide(
+                new PowerContext(ownerSlot: 0, roster: roster, targetSlots: new[] { 1, 2, 3 }));
+
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot\": 0.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast("Parmi les joueurs observés, 2 sont des élus.", -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
         [Test]
-        public void Clandestine_HasChars_CountNoPeriod()
+        public void Clandestine_NoChosenAmongTargets_ReportsZero()
         {
-            var state = new FakeState().With<IClandestineReport>(new FakeClandestine { HasCharacters = true, RoleLabel = "Robot Mécanique", DistinctTargetingCount = 3 });
-            var outcome = new ClandestineObservationDecision().Decide(new PowerContext(ownerSlot: 0, state: state));
+            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Factions[2] = Characters.FactionType.marginal;
+            var outcome = new ClandestineObservationDecision().Decide(
+                new PowerContext(ownerSlot: 0, roster: roster, targetSlots: new[] { 1, 2 }));
+
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Total de personne qui ont ciblé le rôle \"Robot Mécanique\": 3", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast("Parmi les joueurs observés, 0 sont des élus.", -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 

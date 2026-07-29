@@ -73,12 +73,12 @@ namespace Tests.Editor
 
         // --- SelectStealable (filter + pick) — Ugues eligibility rule (AC 7) ---
 
-        // ownerIsChosen, ownerIsUgues, isPassive, isStolenCopy
+        // ownerIsChosen, ownerIsUgues, isPassive, isCopiedPower
         private static PowerCandidate Eligible() => new PowerCandidate(true, false, false, false);
         private static PowerCandidate NotChosen() => new PowerCandidate(false, false, false, false);
         private static PowerCandidate Passive() => new PowerCandidate(true, false, true, false);
         private static PowerCandidate OwnedByUgues() => new PowerCandidate(true, true, false, false);
-        private static PowerCandidate AlreadyStolen() => new PowerCandidate(true, false, false, true);
+        private static PowerCandidate AlreadyCopied() => new PowerCandidate(true, false, false, true);
 
         [Test]
         public void SelectStealable_ReturnsOriginalIndices_OfEligibleOnly()
@@ -86,7 +86,7 @@ namespace Tests.Editor
             // indices:   0 elig, 1 anomaly, 2 passive, 3 elig, 4 ugues, 5 stolen, 6 elig
             var candidates = new List<PowerCandidate>
             {
-                Eligible(), NotChosen(), Passive(), Eligible(), OwnedByUgues(), AlreadyStolen(), Eligible()
+                Eligible(), NotChosen(), Passive(), Eligible(), OwnedByUgues(), AlreadyCopied(), Eligible()
             };
 
             // 3 eligible → all taken; stub draws 0,0,0 walk the eligible subset in order [0,3,6].
@@ -96,11 +96,11 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void SelectStealable_ExcludesNonChosen_Passive_Self_AndAlreadyStolen()
+        public void SelectStealable_ExcludesNonChosen_Passive_Self_AndAlreadyCopied()
         {
             var candidates = new List<PowerCandidate>
             {
-                NotChosen(), Passive(), OwnedByUgues(), AlreadyStolen(), Eligible()
+                NotChosen(), Passive(), OwnedByUgues(), AlreadyCopied(), Eligible()
             };
 
             var picks = StolenPowerSelector.SelectStealable(candidates, 3, new StubRandomProvider(0));
@@ -126,7 +126,7 @@ namespace Tests.Editor
         [Test]
         public void SelectStealable_ReturnsEmpty_WhenNothingEligible()
         {
-            var candidates = new List<PowerCandidate> { NotChosen(), Passive(), OwnedByUgues(), AlreadyStolen() };
+            var candidates = new List<PowerCandidate> { NotChosen(), Passive(), OwnedByUgues(), AlreadyCopied() };
 
             var picks = StolenPowerSelector.SelectStealable(candidates, 3, new StubRandomProvider(0));
 
@@ -135,7 +135,7 @@ namespace Tests.Editor
 
         // --- Luma « Mélange des cartes » : copie UN pouvoir actif d'un rôle élu absent (pickCount 1).
         // Luma construit ses PowerCandidate avec ownerIsChosen:true / ownerIsUgues:false, donc IsEligible se
-        // réduit à (!isPassive && !isStolenCopy). Le tirage réutilise le même kernel avec pickCount 1.
+        // réduit à (!isPassive && !isCopiedPower). Le tirage réutilise le même kernel avec pickCount 1.
 
         [Test]
         public void SelectStealable_Luma_PicksExactlyOneActive_SkippingPassives()

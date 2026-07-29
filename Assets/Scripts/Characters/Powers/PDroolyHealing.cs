@@ -6,6 +6,8 @@ using System.Linq;
 using AudioSystem;
 using Characters.Powers.Target;
 using ChatSystem;
+using CorruptionDuPortail.Domain.Powers;
+using CorruptionDuPortail.Domain.Powers.Decisions;
 using Extensions;
 using FMODUnity;
 using GameLogic;
@@ -23,6 +25,11 @@ namespace Characters.Powers
     [Serializable]
     public class PDroolyHealing : Power
     {
+        // Powers-POCO: the heal + reveal branch lives in DroolyHealingDecision (pure, EditMode-testable),
+        // like every other active power. Only the engine-coupled bookkeeping stays here: the per-night
+        // healed roster (read back at end of night for the public announce) and the outcome FMOD one-shot.
+        private readonly DroolyHealingDecision _decision = new();
+
         public EventReference onHealSuccessfulSound;
         public EventReference onHealFailedSound;
 
@@ -48,30 +55,31 @@ namespace Characters.Powers
         [Rpc(SendTo.Server)]
         private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
         {
-            roleTargetSystem.NewTargeting(ownerClientId.Value, _healingCharacterId);
-            PDroolyHealing _power = (PDroolyHealing)characterManager.GetCharacter(ownerClientId.Value).role.powers.First(_p => _p.GetType() == typeof(PDroolyHealing));
+            // Snapshot the target's corruption state BEFORE the decision runs: its heal effect clears
+            // isCorrupted / sets isHealed, so reading them afterwards would always report "not healable".
             var _choosedCharacter = characterManager.GetCharacter(_healingCharacterId, false);
-            bool _healSuccess = false;
-            if (_compareRole.IsTheSameRole(_choosedCharacter.role))
+            bool _wasHealable = _choosedCharacter &&
+                                (_choosedCharacter.isCorrupted.Value || _choosedCharacter.isHealed.Value);
+
+            PowerVerdict _verdict = RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value,
+                targetSlot: (int)_healingCharacterId,
+                secondaryTargetSlot: (int)_compareRole.ownerClientId,
+                roster: Roster));
+
+            bool _roleGuessed = _verdict == PowerVerdict.Correct;
+            if (_roleGuessed)
             {
-                if (_choosedCharacter.isCorrupted.Value || _choosedCharacter.isHealed.Value)
-                {
-                    _healSuccess = true;
-                    _choosedCharacter.HealPlayerServerRpc();
-                    characterManager.AskForUpdateAllCharactersRpc();
-                }
                 healedCharactersThisNight.Add(_healingCharacterId);
-                OnHealSuccessfulRpc(_choosedCharacter.ownerClientId.Value, characterManager.GetSafeRpcTarget(ownerClientId.Value));
             }
+
+            // v1 PARITY, DELIBERATE: the one-shot still keys on the EFFECTIVE heal, not on the role guess,
+            // so a right guess on an uncorrupted target keeps playing the failure sound while the new
+            // onPowerVerdict channel reports Correct. Poyo owns that call — flagged, not silently changed.
+            bool _healSuccess = _roleGuessed && _wasHealable;
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
                 characterManager.GetSafeRpcTarget(ownerClientId.Value));
-        }
-        [Rpc(SendTo.SpecifiedInParams)]
-        private void OnHealSuccessfulRpc(ulong _targetClientId, RpcParams _rpcParams = default)
-        {
-            gameInfoRevealer.SetRevealLevel(
-                _targetClientId, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value);
         }
 
         public override void OnGameStartedServer()

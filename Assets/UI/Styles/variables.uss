@@ -129,4 +129,19 @@
     --cdp-info-rolehead-icon: 18px;
     --cdp-info-scrollbar-w: 10px;      /* vertical scrollbar width */
     --cdp-info-scrollbar-pad: 13px;    /* header right-pad to keep columns aligned with the scrolled rows */
+
+    /* ---- Message journal (per-turn anonymous-message dossier) — PROVISIONAL, design-owned. Lobby
+       green/faction lane (validated with Poyo 2026-07-16): near-black bg, off-white text, green accent,
+       gold numbers, red corrompus, orange Robot. Values sampled from LobbyRoles.uss literals; this block
+       is the ONE place to retune the journal look. ---- */
+    --cdp-color-journal-bg: rgb(10, 7, 8);             /* near-black warm — LobbyRoles .lobby-roles bg */
+    --cdp-color-journal-frame: rgb(58, 44, 41);        /* panel hairline frame */
+    --cdp-color-journal-hairline: rgb(58, 44, 41);     /* turn separators / dividers */
+    --cdp-color-journal-text: rgb(240, 231, 221);      /* primary warm off-white */
+    --cdp-color-journal-text-soft: rgb(210, 199, 186); /* stat line body */
+    --cdp-color-journal-muted: rgb(164, 147, 138);     /* frontispiece / muted */
+    --cdp-color-journal-accent: rgb(95, 217, 135);     /* lobby green accent */
+    --cdp-color-journal-number: rgb(238, 201, 122);    /* gold numbers */
+    --cdp-color-journal-corrupt: rgb(219, 74, 86);     /* corrompus — red */
+    --cdp-color-journal-robot: rgb(226, 150, 58);      /* Robot — orange */
 }

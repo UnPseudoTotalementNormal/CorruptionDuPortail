@@ -10,8 +10,9 @@ namespace Characters.Powers
         // server-guarded. Behaviour-identical to the old inline write.
         private readonly InfiniteMessageDecision _decision = new();
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             onPowerReparented += OnPowerReparented;
         }
 

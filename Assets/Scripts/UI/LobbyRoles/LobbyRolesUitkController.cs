@@ -407,7 +407,7 @@ namespace UI.LobbyRoles
             tally.pickingMode = PickingMode.Ignore;
 
             tally.Add(Cell("Joueurs", players.ToString(), false));
-            tally.Add(Cell("Forcés (min)", totalForced.ToString(), totalForced > players));
+            tally.Add(Cell("Imposés (min)", totalForced.ToString(), totalForced > players));
             tally.Add(Cell("Pool max", totalMax.ToString(), totalMax < players));
             foreach (FactionType faction in FactionOrder)
             {
@@ -482,7 +482,7 @@ namespace UI.LobbyRoles
             controls.Add(Stepper("Max", role.Max, role.Max <= 0, role.Max >= 15, false,
                 () => _data.RequestSetMax(role.Id, role.Max - 1),
                 () => _data.RequestSetMax(role.Id, role.Max + 1)));
-            controls.Add(Stepper("Forcé", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
+            controls.Add(Stepper("Imposé", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
                 () => _data.RequestSetForced(role.Id, role.Forced - 1),
                 () => _data.RequestSetForced(role.Id, role.Forced + 1)));
             unit.Add(controls);

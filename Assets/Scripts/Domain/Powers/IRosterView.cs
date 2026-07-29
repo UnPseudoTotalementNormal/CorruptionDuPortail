@@ -20,6 +20,12 @@ namespace CorruptionDuPortail.Domain.Powers
         bool IsRobot(int slot);
         /// <summary>Whether the slot's character is currently healed (Blessing skips re-heal).</summary>
         bool IsHealed(int slot);
+        /// <summary>Whether the slot's character is currently corrupted (DroolyHealing only heals a corrupted/healed target).</summary>
+        bool IsCorrupted(int slot);
+        /// <summary>Whether the slot's character is currently chained (ChainedByShadows "sole anomaly still in play" count).</summary>
+        bool IsChained(int slot);
+        /// <summary>Whether the slot's character is currently eliminated (ChainedByShadows "sole anomaly still in play" count).</summary>
+        bool IsEliminated(int slot);
         /// <summary>The slot's character's role display name (message composition).</summary>
         string RoleNameOf(int slot);
     }

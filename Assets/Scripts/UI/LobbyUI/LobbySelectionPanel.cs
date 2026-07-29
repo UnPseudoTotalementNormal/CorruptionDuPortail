@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
@@ -8,10 +8,7 @@ using Network.Services;
 using TMPro;
 using UI.LobbyUI;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
 using Netcode.Transports.Facepunch;
 using Steamworks;
 using UnityEngine;
@@ -119,7 +116,32 @@ namespace UI.Lobby
             if (currentLobbySelected == null)
                 return;
 
-            _ = JoinLobby(currentLobbySelected);
+            if (_isJoining)
+                return;
+            _isJoining = true;
+
+            OnConnectButtonClickedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnConnectButtonClickedAsync()
+        {
+            try
+            {
+                await JoinLobby(currentLobbySelected);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec de la connexion au lobby: {e}");
+                HideLoadingSafe();
+            }
+            finally
+            {
+                _isJoining = false;
+            }
         }
 
         private void Update()
@@ -239,8 +261,18 @@ namespace UI.Lobby
             existingEntries[_lobby.Id] = _entry;
         }
         
-        private async Task<bool> JoinLobby(Unity.Services.Lobbies.Models.Lobby lobby, string password = null)
+        private async UniTask<bool> JoinLobby(Unity.Services.Lobbies.Models.Lobby lobby, string password = null)
         {
+            // Cheap pre-shot: the list refreshes every AUTO_REFRESH_INTERVAL, so a lobby locked between the last
+            // refresh and this click is still selectable. Refuse it here rather than paying a full connect just to
+            // be rejected by ConnectionApprovalGate (investigation join-started-game-gate).
+            if (lobby.IsLocked)
+            {
+                ReportJoinFailure(ConnectionApprovalGate.GameInProgressReason);
+                loadingCanvasGroup.DoHideGroup();
+                return false;
+            }
+
             // Si le lobby a un mot de passe et qu'on ne l'a pas fourni, demander le mot de passe
             if (lobby.HasPassword && string.IsNullOrEmpty(password))
             {
@@ -248,7 +280,7 @@ namespace UI.Lobby
                 enterPasswordCanvasGroup.DoShowGroup();
                 return false;
             }
-            
+
             loadingCanvasGroup.DoShowGroup();
             
             try
@@ -259,17 +291,44 @@ namespace UI.Lobby
                     loadingCanvasGroup.DoHideGroup();
                     return false;
                 }
-                
+
+                // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
+                // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
+                GameCode.gameCode = lobby.LobbyCode;
+
                 // Détecter le type de transport et se connecter en conséquence
-                bool connected = false;
-                
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    connected = JoinWithFacepunch(lobby);
+                    if (!JoinWithFacepunch(lobby))
+                    {
+                        Debug.LogError("Failed to connect to game");
+                        await AbortJoin(null);
+                        return false;
+                    }
+
+                    // StartClient() only reports that the connect attempt STARTED. Wait for the ACTUAL verdict
+                    // before loading GameScene — otherwise a server rejection (mid-game join) only lands once we
+                    // are already in the game scene, where it degrades into "Connexion à l'hôte perdue" instead of
+                    // the server's own "La partie a déjà commencé." (investigation join-started-game-gate).
+                    ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+                    if (_fail != ConnectFailReason.None)
+                    {
+                        // Build BEFORE AbortJoin shuts NGO down — Shutdown may clear DisconnectReason.
+                        await AbortJoin(JoinHandshake.BuildFailureMessage(_fail));
+                        return false;
+                    }
                 }
                 else if (NetworkTransportDetector.IsUsingUnityRelay())
                 {
-                    connected = await JoinWithUnityRelay(lobby);
+                    // The relay path owns its own handshake wait — and the dtls -> wss fallback — inside
+                    // RelayConnector (investigation vpn-instant-disconnect, backlog #7). Its FailureMessage was
+                    // built BEFORE any teardown, so AbortJoin can safely shut NGO down afterwards.
+                    RelayConnectResult _result = await JoinWithUnityRelay(lobby);
+                    if (!_result.Success)
+                    {
+                        await AbortJoin(_result.FailureMessage);
+                        return false;
+                    }
                 }
                 else
                 {
@@ -278,22 +337,82 @@ namespace UI.Lobby
                     return false;
                 }
 
-                if (!connected)
-                {
-                    Debug.LogError("Failed to connect to game");
-                    loadingCanvasGroup.DoHideGroup();
-                    return false;
-                }
-
-                GameCode.gameCode = lobby.LobbyCode;
-                UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
+                // Do NOT load GameScene here. The handshake above only returns once NGO reported
+                // SynchronizeComplete, which happens AFTER NGO itself loaded GameScene on this client
+                // (EnableSceneManagement = 1). A raw SceneManager.LoadScene at this point re-loads the scene
+                // OUTSIDE NGO: every replicated NetworkObject in it is destroyed while the DontDestroyOnLoad
+                // NetworkManager stays connected, leaving the joiner desynced — a movable body with no
+                // embodiment, and a census stuck at 1 because LobbyPlayerInfoHolder's client replica dies before
+                // it can answer AskForPlayerInfoRpc (investigation client-join-lobby-desync).
+                //
+                // Touch NO UI past this point either: the menu scene is ALREADY unloaded, so every serialized
+                // reference on this panel is a destroyed object. Hiding the loading group here threw an NRE that
+                // fell into the catch below and ran AbortJoin — shutting down a perfectly good connection.
                 return true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"Failed to join lobby: {e.Message}");
-                loadingCanvasGroup.DoHideGroup();
+
+                // Never tear down an ESTABLISHED session on a stray exception. AbortJoin shuts NGO down and leaves
+                // the cloud lobby — correct while the join is still pending, catastrophic once we are connected and
+                // synchronized (that is exactly how an NRE on a destroyed menu widget killed a healthy join).
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient)
+                {
+                    return false;
+                }
+
+                await AbortJoin(null);
                 return false;
+            }
+        }
+
+        // Failed join teardown, mirroring MainMenu's: drop the half-open NGO session and the cloud lobby, surface the
+        // reason, restore the menu. We NEVER leave the menu on a failed join — that is the whole point of the fix.
+        private async UniTask AbortJoin(string _failureMessage)
+        {
+            ReportJoinFailure(_failureMessage);
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            if (LobbyManager.instance != null && LobbyManager.instance.IsInLobby)
+            {
+                await LobbyManager.instance.LeaveLobby();
+            }
+
+            HideLoadingSafe();
+        }
+
+        // The join path awaits across frames, and NGO can unload the menu scene underneath us (a successful
+        // synchronization switches the client to GameScene). Every serialized reference on this panel is then a
+        // destroyed object, and touching one throws — which previously cascaded into an AbortJoin that killed a
+        // healthy connection. Always hide through this guard from an async continuation.
+        private void HideLoadingSafe()
+        {
+            if (loadingCanvasGroup == null)
+            {
+                return;
+            }
+
+            loadingCanvasGroup.DoHideGroup();
+        }
+
+        // Routes the message to the shared lobby-error channel, which ClientDisconnectHandler already renders as an
+        // on-screen notification. Logging alone left the player staring at a menu with no explanation.
+        private void ReportJoinFailure(string _failureMessage)
+        {
+            if (string.IsNullOrEmpty(_failureMessage))
+            {
+                return;
+            }
+
+            Debug.LogError($"Join refused: {_failureMessage}");
+            if (LobbyManager.instance != null)
+            {
+                LobbyManager.instance.ReportError(_failureMessage);
             }
         }
 
@@ -334,37 +453,18 @@ namespace UI.Lobby
             return true;
         }
 
-        private async Task<bool> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
             if (!lobby.Data.ContainsKey("joinCode"))
             {
                 Debug.LogError("Lobby missing joinCode");
-                return false;
+                return RelayConnectResult.Failed(null);
             }
 
-            string _joinCode = lobby.Data["joinCode"].Value;
-
-            try
-            {
-                var _allocation = await RelayService.Instance.JoinAllocationAsync(joinCode: _joinCode);
-                NetworkManager.Singleton.GetComponent<UnityTransport>()
-                    .SetRelayServerData(_allocation.ToRelayServerData("dtls"));
-            }
-            catch (RelayServiceException e)
-            {
-                Debug.LogError($"Relay join failed: {e.Message}");
-                return false;
-            }
-
-            bool ok = NetworkManager.Singleton.StartClient();
-            if (!ok)
-            {
-                Debug.LogError("Failed to start client");
-                return false;
-            }
-
-            return true;
+            // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
+            // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
+            return await RelayConnector.ConnectClientAsync(lobby.Data["joinCode"].Value);
         }
 
         private void OnLobbyEntryClicked(Unity.Services.Lobbies.Models.Lobby lobby, LobbyEntryUI lobbyEntryUI)

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Preset_Classique_9
   m_EditorClassIdentifier: Game::GameLogic.GameSettings.RolePreset
   displayName: Classique
-  description: "Compo \xE9quilibr\xE9e"
+  description: "Compo officielle à 9 joueurs"
   playerCount: 9
   isClassic: 1
   entries:
@@ -22,28 +22,34 @@ MonoBehaviour:
     forced: 1
   - roleId: 1042
     max: 1
-    forced: 0
+    forced: 1
   - roleId: 3917
     max: 1
     forced: 0
-  - roleId: 5555
-    max: 1
-    forced: 0
-  - roleId: 8239
-    max: 1
-    forced: 0
-  - roleId: 2468
-    max: 1
-    forced: 0
-  - roleId: 7615
-    max: 1
-    forced: 0
-  - roleId: 5871
+  - roleId: 2048
     max: 1
     forced: 0
   - roleId: 3920
     max: 1
     forced: 0
+  - roleId: 5871
+    max: 1
+    forced: 0
+  - roleId: 5555
+    max: 1
+    forced: 0
+  - roleId: 2468
+    max: 1
+    forced: 0
   - roleId: 4321
+    max: 1
+    forced: 0
+  - roleId: 6592
+    max: 1
+    forced: 0
+  - roleId: 9999
+    max: 1
+    forced: 0
+  - roleId: 9154
     max: 1
     forced: 0

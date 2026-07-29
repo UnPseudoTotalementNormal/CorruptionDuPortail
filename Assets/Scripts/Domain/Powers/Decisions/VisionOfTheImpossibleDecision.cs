@@ -27,9 +27,10 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                     break;
                 }
             }
-            if (message == string.Empty) message = "Aucun personnage n'a été trouvé.";
+            bool foundOne = message != string.Empty;
+            if (!foundOne) message = "Aucun personnage n'a été trouvé.";
             effects.Add(new ChatBroadcast(message, ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
-            return PowerOutcome.Accept(effects);
+            return PowerOutcome.Accept(effects, foundOne ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

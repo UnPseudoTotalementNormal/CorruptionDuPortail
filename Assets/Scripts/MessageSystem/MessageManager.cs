@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using Characters;
 using GameLogic;
+using RoleTarget;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -19,9 +22,21 @@ namespace MessageSystem
         public NetworkList<MessageInfo> revealedMessages = new();
         public NetworkList<MessageInfo> messagesToReveal = new();
 
+        // Per-turn aggregate journal (corrupted count + Robot-targeting count), recorded server-side at each
+        // awakening's end alongside the message reveal. Replicated for the message-journal UI (one entry/day).
+        public NetworkList<TurnStat> turnStats = new();
+
         // Story 8.3 lane A: scene-wired GameManager, narrowed to the loop slice (IGameLoop) for currentDay.
         [SerializeField] private GameManager gameManager;
         private IGameLoop Loop => gameManager;
+
+        // Scene-wired direct references (like RobotBoardInfo / CorruptionBoardInfo) — available at Awake, so the
+        // per-turn recorder never races against NGO spawn order. (An earlier spawn-time resolution through the
+        // composition root was racy: when these came back null at spawn, turnStats stayed empty and the night
+        // journal showed nothing. A serialized reference is injection, not the forbidden static locator.)
+        [SerializeField] private CharacterManager characterManager;
+        [SerializeField] private RoleTargetSystem roleTargetSystem;
+        private ICharacterQuery CharacterQuery => characterManager;
 
         private void Awake()
         {
@@ -32,6 +47,42 @@ namespace MessageSystem
             }
             instance = this;
             Assert.IsNotNull(gameManager, "MessageManager.gameManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(characterManager, "MessageManager.characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(roleTargetSystem, "MessageManager.roleTargetSystem is not wired — wire it in GameScene (the composition root).");
+        }
+
+        // Server-only: snapshot this turn's corrupted count and Robot-targeting count. Called from the awakening
+        // RECAP (AwakeningRecapMessages.ShowEvent) — a moment guaranteed to run. Recorded BEFORE RoleTargetSystem
+        // clears its list at the next awakening's start; currentDay is still this turn's day (it increments only
+        // on onNewDayPassed), so the record's day matches the turn's messages.
+        public void RecordCurrentTurnStat()
+        {
+            Assert.IsTrue(IsServer, $"{nameof(RecordCurrentTurnStat)} can only be called on the server.");
+
+            List<Character> _characters = CharacterQuery.GetCharacters();
+            List<CharacterFactionState> _states = new(_characters.Count);
+            Character _robot = null;
+            foreach (Character _character in _characters)
+            {
+                // A seat without an attributed role yet (pre-attribution, a torn-down leaver) has role == null.
+                // Skip it: an unguarded deref here would NRE and abort the whole record → empty journal (the
+                // exact failure this feature fixes). A role-less seat isn't a real participant to count.
+                if (_character.role == null)
+                {
+                    continue;
+                }
+                _states.Add(new CharacterFactionState(_character.role.factionType, _character.isFake, _character.isCorrupted.Value));
+                if (_character.role.roleID == RoleID.Robot)
+                {
+                    _robot = _character;
+                }
+            }
+
+            bool _hasRobot = _robot;
+            int _robotTargeterCount = _hasRobot
+                ? roleTargetSystem.GetAllTargetersForTarget(_robot.ownerClientId.Value).Count
+                : 0;
+            turnStats.Add(TurnStatCalculator.Compute(Loop.currentDay, _states, _hasRobot, _robotTargeterCount));
         }
 
         public override void OnNetworkDespawn()

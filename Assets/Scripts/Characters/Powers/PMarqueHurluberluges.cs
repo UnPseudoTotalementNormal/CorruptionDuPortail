@@ -38,6 +38,12 @@ namespace Characters.Powers
 
         private readonly MarqueHurluberlugesDecision _decision = new();
 
+        // Seed seam (story d'archi, catalogue 246-252): the random distinct-pick goes through an INJECTABLE
+        // provider instead of a hard-wired new UnityRandomProvider(). Prod default = UnityRandomProvider; tests
+        // seed it (SeededRandomProvider) via reflection to make the boundary pick deterministic. This runs on the
+        // SERVER only (OnGameStartedServer / IsServer guard), so there is no client-side draw that could diverge.
+        private IRandomProvider _randomProvider = new UnityRandomProvider();
+
         // OnGameStartedServer can be reached twice for a late-spawned power (OnPowerSpawned + OnGameStarted);
         // steal exactly once.
         private bool _hasStolen;
@@ -92,13 +98,13 @@ namespace Characters.Powers
                         continue;
                     }
                     _powers.Add(_p);
-                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.isPassive, _p.isStolenCopy.Value));
+                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.BaseIsPassive, _p.isCopiedPower.Value));
                 }
             }
 
             // Deterministic-source draw (mirrors RoleAttributionState's UnityRandomProvider); the filter +
             // distinct-pick + cap-at-what-exists mechanic lives in the EditMode-tested Domain kernel.
-            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, new UnityRandomProvider());
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, _randomProvider);
             if (_picks.Count == 0)
             {
                 Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
@@ -106,22 +112,9 @@ namespace Characters.Powers
             }
             foreach (int _index in _picks)
             {
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], ConfigureStolenCopy);
+                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], Power.ConfigureAsOneShotStolenCopy);
             }
-        }
-
-        // Runs on the server once the copy is spawned + reparented under Ugues (via GivePowerToCharacter's
-        // onReady hook). Turns the copy into a single-use, non-regenerating power that stays spent forever.
-        private void ConfigureStolenCopy(Power _copy)
-        {
-            if (!IsServer || _copy == null)
-            {
-                return;
-            }
-            _copy.isStolenCopy.Value = true;
-            _copy.maxPowerUse = 1;
-            _copy.powerUseRegenPerAwakening = 0; // never refilled on awaken → spent means spent ("perdu").
-            _copy.powerUseLeft.Value = 1;
         }
     }
 }

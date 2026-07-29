@@ -162,10 +162,18 @@ namespace Tests.PlayMode.Desingleton
                 _hostNm.Shutdown();
             }
 
-            yield return NetworkTestHelper.WaitUntilOrTimeout(
+            // Wait WITHOUT asserting so the process-wide flag is restored before anything can throw.
+            bool _stoppedListening = false;
+            yield return NetworkTestHelper.WaitUntilOrElapsed(
                 () => (_clientNm == null || !_clientNm.IsListening) && (_hostNm == null || !_hostNm.IsListening),
                 5f,
-                "NGO did not stop listening within 5s after Shutdown().");
+                ok => _stoppedListening = ok);
+
+            // Stop ignoring failing logs: this flag is static and process-wide, so leaving it set here
+            // suppressed unexpected-error-log failures for every PlayMode test that ran after this fixture.
+            LogAssert.ignoreFailingMessages = false;
+
+            Assert.IsTrue(_stoppedListening, "NGO did not stop listening within 5s after Shutdown().");
 
             Object.Destroy(_clientNmGo);
             Object.Destroy(_hostNmGo);

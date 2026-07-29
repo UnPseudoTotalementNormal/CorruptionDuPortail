@@ -22,5 +22,13 @@ namespace Avatars
         [Tooltip("Animator EmoteId integer set (with the Emote trigger) to play this emote. 0 = none/idle; " +
                  "coucou = 1. Keep in sync with the Cat_Avatar Animator's emote sub-states.")]
         public int animatorEmoteId = 1;
+
+        [Tooltip("LOOP: the emote holds until the player acts (any key/click, camera change, tablet exit). " +
+                 "Off = ONE-SHOT: it plays once and auto-returns after oneShotSeconds. Coucou = loop.")]
+        public bool loops = true;
+
+        [Tooltip("One-shot only: how long (s) the third-person view holds before auto-returning to first " +
+                 "person. Ignored when 'loops' is on. Match it to the emote clip length.")]
+        public float oneShotSeconds = 2f;
     }
 }

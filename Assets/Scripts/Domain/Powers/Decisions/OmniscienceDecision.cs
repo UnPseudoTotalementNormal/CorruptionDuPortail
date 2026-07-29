@@ -30,7 +30,9 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             }
             effects.Add(RequestCharacterRefresh.Instance);
 
-            return PowerOutcome.Accept(effects);
+            // The bet is "my target is an élu" — only then does the hack land. A non-élu still gets its role
+            // revealed, but the power did NOT do what the caster spent it for.
+            return PowerOutcome.Accept(effects, isChosen ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }
     }
 }

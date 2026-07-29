@@ -102,8 +102,9 @@ namespace Board.UI.PowerBar
             _transform.localScale = Vector3.one;
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if (power != null)
             {
                 power.onStartUse -= StartUsePower;

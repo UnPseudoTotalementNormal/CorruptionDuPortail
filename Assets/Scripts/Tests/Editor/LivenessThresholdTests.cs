@@ -45,11 +45,12 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void LivenessConfig_Default_YieldsThresholdFive()
+        public void LivenessConfig_Default_YieldsThresholdFifteen()
         {
-            // Locked v1 defaults (§8.6): 5s @ 1 Hz -> threshold 5. The tracker only ever sees this int.
+            // v2 defaults (investigation vpn-instant-disconnect): 15s @ 1 Hz -> threshold 15. The tracker only
+            // ever sees this int. Pinned here so a future tightening below the transport timeout is caught.
             var config = LivenessConfig.Default;
-            Assert.AreEqual(5, config.Threshold);
+            Assert.AreEqual(15, config.Threshold);
         }
     }
 }

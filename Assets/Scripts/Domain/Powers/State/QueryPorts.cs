@@ -5,13 +5,18 @@ namespace CorruptionDuPortail.Domain.Powers.State
     /// <summary>PBoundByInk's power-local chat id (assigned when the ink chat is created).</summary>
     public interface IInkChatState { int ChatId { get; } }
 
-    /// <summary>PClandestineObservation's engine-computed report of who targeted the observed role.</summary>
-    public interface IClandestineReport
-    {
-        bool HasCharacters { get; }
-        string RoleLabel { get; }
-        int DistinctTargetingCount { get; }
-    }
+    /// <summary>
+    /// PTargetedByReport's engine-computed list of the logical slots that targeted the Orpheline this
+    /// night (Lot C.2). Deduplicated upstream by RoleTargetSystem.GetAllTargetersForTarget (a HashSet).
+    /// </summary>
+    public interface ITargetedByReport { IReadOnlyList<int> TargeterSlots { get; } }
+
+    /// <summary>
+    /// PChainedByTheShadows's once-per-night guard: true once the sole-anomaly extra use has already been
+    /// granted this night, so a second correct guess the same night does not grant another (Lot B, B2).
+    /// The flag lives power-local (server-side) and resets at each awakening start.
+    /// </summary>
+    public interface IExtraUseState { bool BonusConsumedThisNight { get; } }
 
     /// <summary>One reduced guess for PVisionOfTheImpossible: slot, whether its role matches a guessed role, pseudo.</summary>
     public readonly struct VisionGuess

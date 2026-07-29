@@ -223,3 +223,80 @@ PR2 also absorbs from PR1 (coupled to the lift, only ergonomic once the card is 
 - **[UX, LOW — ready tally denominator is the census, the gate keys off characters].** The footer tally "X / N prêt(s)" uses the bot-aware census (`GetReadyCount`/`GetPlayerCount` = `playerInfos`), while the auto-start GATE (`LobbyState.AllParticipantsReady`) keys off the spawned `Character`s (the players who receive roles). These can differ (bots are census-only; a just-connected player has a character before its census entry lands). Not a correctness bug — the footer is composition-first (it shows the composition reason, not the ready tally, whenever the compo is invalid), so there is no "green tally but server refuses" contradiction, and the gate is authoritative + participant-based. Residual: the displayed "N" is the roster count, which can momentarily differ from the participant count. Reconcile only if/when the census↔CharacterManager roster divergence (already deferred from `fix-lobby-tablet-player-count` and `gamesettings-refonte`) is unified. `CompositionFailure`/participant plumbing is already in place.
 - **[cleanup, LOW — `AddDebugPlayer` auto-readies ANY id, not just clientId >= 100].** `LobbyPlayerInfoHolder.AddDebugPlayer` sets `isReady = true` unconditionally; the comment scopes it to simulated bots. Harmless today (only the bot-spawn path calls it) but the invariant is looser than documented. Tighten to `isReady = _clientId >= 100` if `AddDebugPlayer` ever gains a non-bot caller.
 - **[pre-existing, not this story — role-grid steppers rendered to non-host].** The lobby role-grid steppers are shown to every tablet (inert server-side for non-host via the manager's host-only writes), while the new dev force-start button is `IsHost()`-gated to render. Spec says "role grid stays host-only read/write" — the read side is visible to all. Predates this change (composition-rules / lobby-uitk work); fold into a lobby host-gating pass if the non-host read surface is unwanted.
+
+## Deferred from: code review of spec-message-journal-per-turn-uitk (2026-07-16)
+
+- Faction colors live in two sources (USS `--cdp-color-journal-*` tokens + C# hex consts in MessageJournalController) — unavoidable (UITK rich text can't read `var()`); a retune must touch both. Minor tech-debt.
+- Serif frontispiece not delivered — `.journal` title uses LiberationSans; a true serif needs a new `.ttf` asset.
+- FMOD open sound (`event:/Interface/Messages General + Anomaly/Menu 2`) not wired on journal open — polish pass (O5).
+- Old orphan views not deleted (`AnonymousRevealedMessagesComponent` + old `RevealedMessagePanel` in GameScene) — planned cleanup, playtest-gated.
+- Browse mode dims past turns to 0.6 opacity (spec only specifies dimming for the reveal) — harmless; design glance for Poyo.
+
+## Deferred from: code review of spec-proto-power-effect-2client-replication (2026-07-18)
+
+- Teardowns des nouvelles fixtures 2-NM (`PowerPipelineClientReplicationTests`, `PowerObjectReplicationProtoTests`) nullent `RoleTargetSystem.instance` / `ChatManager.instance` / `ChainingManager.instance` alors que la NOTE de `MultiClientGameFixture` refuse `ResetAll` précisément pour préserver des tests leak-dépendants — risque latent de couplage d'ordre, non manifesté (suite PlayMode verte). À surveiller si un test préexistant flake selon l'ordre d'exécution.
+
+## Deferred from: audit des tests PlayMode post-PR#91 (2026-07-20)
+
+- **[MESURÉ] Câbler `TestStaticReset.ResetAll()` dans les teardowns de fixture = 3 tests à réparer, pas plus.** `TestStaticReset` (`Assets/Scripts/Tests/PlayMode/Infra/TestStaticReset.cs`) n'a aujourd'hui **aucun appelant** hors son propre gate `FixtureResetTests` : la NOTE de `MultiClientGameFixture.TearDown` refuse explicitement de l'appeler pour ne pas casser des tests leak-dépendants, sans chiffrer l'ampleur. Dry-run fait le 2026-07-20 — voici le chiffre :
+
+  ```
+  Tests.PlayMode.CorruptionTests.PCardsShuffling_CorrectGuessRevealsAndRecordsTarget
+    → Unhandled log message: '[Exception] NullReferenceException'
+  Tests.PlayMode.OwnerLocalEffectBoundaryTests.CursedVisionCastByClient_RevealsOnClientRevealer_NotHost
+  Tests.PlayMode.OwnerLocalEffectBoundaryTests.EmbraceCastByClient_RevealsOnClientRevealer_NotHost
+    → TargetInvocationException ----> NullReferenceException
+  ```
+
+  **3 échecs sur 244**, exactement les 2 classes que la NOTE nommait. Option A (câbler `ResetAll`) est donc faisable — ce n'est pas un chantier à 30 tests.
+
+- **[PIÈGE DE MÉTHODE — lire avant de re-mesurer] Activer `ResetAll` dans le seul teardown de `MultiClientGameFixture` donne 244/244 VERT, et ce vert est un faux négatif.** L'ordre d'exécution PlayMode place `Tests.PlayMode.CorruptionTests` à l'**index 29** et la première fixture `Tests.PlayMode.Desingleton.*` à l'**index 38** : le reset ne s'exécute jamais avant `CorruptionTests`. Pour obtenir la vraie mesure il faut forcer le reset **avant** l'index 29 (dry-run fait en ajoutant temporairement `ResetAll()` dans le `[UnitySetUp]` de `CorruptionTests`, ce qui simule « la fixture précédente a tout nettoyé »). Quiconque re-teste ceci en câblant uniquement le teardown de `MultiClientGameFixture` conclura à tort que c'est gratuit.
+
+- **[NON ÉLUCIDÉ] La dépendance de `OwnerLocalEffectBoundaryTests` n'est pas un simple « singleton laissé par un test antérieur ».** En passe 1 (reset au teardown Desingleton, index 38) il PASSE à l'index 160, alors que le reset a déjà nettoyé les statiques. En passe 2 (reset aussi avant `CorruptionTests`) il ÉCHOUE. Donc quelque chose entre 38 et 160 réapprovisionne l'état en passe 1, et la chute de `CorruptionTests` casse cette chaîne. Le NRE ne dit pas quel champ est nul. **Prochaine étape : instrumenter les 3 NRE (logs taggés sur le champ nul) AVANT de théoriser** — c'est ce qui décide si le fix est 3 lignes de câblage dans les 2 setups ou une refonte de leur harnais.
+
+- **Séquence pour plus tard :** instrumenter les 3 NRE → câbler les singletons manquants dans `CorruptionTests.SetUp` + `OwnerLocalEffectBoundaryTests.SetUp` → activer `ResetAll()` dans les teardowns de fixture → re-run PlayMode complet. Compter ~1 session. **Décision alternative assumée :** si personne ne prend ce chantier, supprimer `TestStaticReset.cs` + `FixtureResetTests.cs` plutôt que les laisser en place — du code qui a l'air d'être une protection active alors qu'il ne protège rien est pire que son absence (et `FixtureResetTests` installe 21 managers frais comme singletons de prod en plein milieu de la suite, contaminant tout si une exception tombe entre son snapshot et son restore).
+
+## Deferred from: système d'icônes CharactersBar — revue adverse 3 couches (2026-07-20)
+
+Constats réels mais **non causés** par ce chantier, ou hors de son périmètre. Branche `feat/targeting-icons`, commits `2c8c30d7` + `27acd0fb`.
+
+- **Aucun plafond sur la taille d'une tranche RPC.** `PlayerIconManager.AddIcon` n'a pas de limite par spectateur et `BuildSlice` sérialise toute la liste dans un `IconEntry[]`. Au-delà de la taille maximale d'un message NGO, l'RPC est rejeté et le spectateur cesse **silencieusement** de recevoir toute mise à jour, purges comprises. Aucun pouvoir ne pose d'icône aujourd'hui, donc c'est théorique — à borner (ou à journaliser) avant le premier vrai consommateur.
+
+- **`Destroy(gameObject)` sur un `NetworkObject` spawné dans la garde anti-doublon.** Deux instances du manager sur le même `NetworkManager` → destruction locale d'un objet réseau vivant, au lieu d'un despawn autoritaire serveur. **Défaut partagé avec `AvatarManager`**, dont le patron a été copié : à corriger aux deux endroits ensemble, pas ici seul.
+
+- **Marqueurs orphelins après déconnexion.** `OnClientDisconnected` retire la ligne du partant en tant que **spectateur**, mais les marqueurs où il est le joueur **marqué** survivent dans toutes les autres tranches. Si un nouvel arrivant réutilise son `clientId`, il hérite visuellement des icônes de l'ancien joueur. Demande une décision de game design (« une marque survit-elle au départ de sa cible ? ») autant qu'un correctif.
+
+- **`iconId` = `NetworkObjectId` d'un `Power` : chemin de lecture côté client à auditer.** La vue résout le sprite via `SpawnedObjects[iconId].GetComponent<Power>()`. Si les `Power` exposent des `NetworkVariable` lisibles par tous, un client pourrait remonter du marqueur au pouvoir puis à son détenteur — ce qui contournerait la confidentialité que le système existe pour garantir. **Non démontré**, à vérifier avant qu'un pouvoir réel n'utilise le canal.
+
+- **`NetworkManager.Singleton` préexistant dans la CharactersBar.** `CharacterAwakenTimer.cs:31,44` et `CharactersBarObject.cs:84,182,184,203` le lisent encore. Antérieur à ce chantier (le nouveau code n'en a aucun), mais c'est la même classe de bug multi-NM et ça rend ces vues intestables sous `MultiClientGameFixture`.
+
+- **`expandTweenDuration: 0.35` résiduel dans `CharacterBarObject.prefab`.** Le champ sérialisé a été supprimé du code au profit de la lecture sur `CharactersBarObject.HoverTweenDuration`. Unity ignore silencieusement une clé inconnue ; elle disparaîtra à la prochaine réécriture du prefab. Sans effet, noté pour que personne ne s'en inquiète.
+
+## Deferred from: lot B Abyss — bug préexistant onCharacterAwakened jamais levé (2026-07-21)
+
+**[BUG PRÉEXISTANT, hors périmètre lot B] `Character.onCharacterAwakened` n'est JAMAIS levé.** `Character.AwakenCharacterServerRpc` ([Character.cs:140](../../Assets/Scripts/Characters/Character.cs#L140)) fait `isAwakened.Value = true; role.AwakenRole();` puis appelle **`SleepCharacterClientRpc()`** ligne 145 — un copier-coller : ça devrait être `AwakenCharacterClientRpc()`, le seul endroit qui fait `onCharacterAwakened?.Invoke()` (ligne 151). Résultat : l'event est mort dans tout le projet.
+
+**Cinq abonnés silencieusement inertes :**
+- `PClandestineObservation.cs:67` — le passif *Observation Clandestine* de la Traqueuse (`DeclareAllTargetFocusServer`) ne se déclenche jamais → **pouvoir shippé cassé**.
+- `PCChainer.cs:28`, `AwakeningState.cs:147`, `PowerManager.cs:98` (`OnCharacterAwakenedServer`) — comportements dormants, dont deux au cœur du game loop.
+- `PChainedByTheShadows` (lot B) — contourné : le reset du bonus Abyss passe par `isAwakened.OnValueChanged` (écriture directe de NetworkVariable, fiable), PAS par cet event.
+
+**Pourquoi différé et non corrigé dans le lot B :** le fix est 1 ligne (`SleepCharacterClientRpc()` → `AwakenCharacterClientRpc()`), mais il **réveillerait les cinq handlers d'un coup**, dont `PowerManager`/`AwakeningState` au cœur du loop. Turn-on simultané = risque de régression imprévisible, à ne pas empaqueter dans une feature de rôle. Mérite sa propre tâche + playtest 2 clients (vérifier que la Traqueuse rapporte, que le son de réveil joue, et qu'aucun handler dormant ne casse le loop en se rallumant). Le jeu tourne malgré le bug parce que le refill des usages passe par `role.AwakenRole()` appelé en direct (ligne 144), pas par l'event.
+
+## Deferred from: lot D Chasseuse de Prime — design non figé + gaps (2026-07-21)
+
+- **[DESIGN — à trancher par Wouh] Dead-end de sélection mid-game.** Observation Clandestine (réécrite en actif multi-cibles) fige N = nb de non-élus de la composition de départ (décision D2), mais le pool de cibles valides rétrécit quand des joueurs sont enchaînés. Interim livré : `PClandestineObservation.StartUse` clampe le nombre à cibler à `min(N, GetValidTargets().Count)` — évite le picker bloqué / l'usage gâché, garde la feature utilisable. À arbitrer à la révision de la Chasseuse (design non figé) : garder le clamp / gater `CanUse` sur ≥N cibles / autoriser complétion partielle explicite. C'est une décision de game design, pas un bug.
+
+- **[TEST GAP — playtest requis] Le flux multi-select UI n'a aucune couverture automatisée.** `SelectionFlowService.StartMultiCharacterSelection`/`PickNextCharacter` (N clics, exclusion doublons, exclusion self, annulation partielle) + la capture de N (`OnGameStartedServer`) ne sont pas testés (pas de `CardPickerManager` en EditMode ni en 2-NM). Le comptage `chosen` parmi les cibles EST couvert (EditMode + PlayMode `ObserveServerRpc`). → Playtest 2 clients requis avant de considérer la Chasseuse validée : sélection à N clics aboutit, doublons refusés, auto-ciblage refusé, clamp mid-game, rapport privé correct.
+
+- **[MINEUR] `ObserveServerRpc` ne revalide pas les ids côté serveur.** Un client trafiqué peut envoyer doublons / son propre id / ids inconnus ; inoffensif (rapport privé `Specific(owner)`, ids inconnus → faction `default`≠chosen, pas de crash ni de gonflage). À durcir si la Chasseuse devient sensible (re-valider via `CheckIsTargetValid` côté serveur, comme `PCardsShuffling`).
+
+- **[COSMÉTIQUE] Champ orphelin `targetRoleID: 3917` dans `ClandestineObservation.prefab`** — la classe a supprimé le champ, Unity ignore la clé, disparaîtra à la prochaine réécriture du prefab.
+
+## From spec-wss-relay-fallback review (2026-07-21)
+
+- **[PRÉ-EXISTANT] `JoinFailureMessage.Build` affiche le header transport brut.** Sur un give-up transport, NGO remplit `DisconnectReason` avec « [Disconnect Event][Client-N]… » ; `Build` le préfère à `SilentHostMessage` → le joueur voit la chaîne technique brute. Fix trivial désormais possible : router par `RelayFallbackPolicy.HasServerReason` dans `Build` — MAIS c'est une sémantique `JoinHandshake` (Ask First du spec wss) → validation Poyo requise.
+- **[PRÉ-EXISTANT] Popup générique après le message d'échec précis.** Sur échec FINAL de join laissant NGO listening (ApprovalTimeout), le teardown caller (`AbortJoin`/catch → `Shutdown`) fire `OnClientStopped` latch=false → « Connexion à l'hôte perdue » peut écraser le message précis affiché juste avant. Comportement identique à l'avant-fallback ; fix = tenir le latch à travers le teardown final (change le contrat `JoinHandshake`).
+- **[AMÉLIORATION] Aucun feedback joueur sur `RelayConnectResult.Failed(null)`** (allocation UGS down, endpoint absent, StartClient refusé) : `AbortJoin(null)`/throw générique → le joueur retombe au menu sans explication (log `[RELAY]` seul). Mapper null → message générique au call site.
+- **[AMÉLIORATION] Pas de CancellationToken dans le flux join** (pré-existant, allongé par le fallback : pire cas ~70 s non annulable). Le threader exigerait de toucher `WaitForConnectedOrTimeout` (Ask First). Un bouton annuler sur l'overlay de chargement irait avec.
+- **[PRÉ-EXISTANT] Réentrance cross-panels** : `MainMenu._isBusy` et `LobbySelectionPanel._isJoining` sont des gardes indépendantes ; deux joins simultanés depuis les deux panels peuvent se marcher dessus (Shutdown croisé + latch statique togglé). Fenêtre allongée par le fallback. Garde statique partagée à envisager.

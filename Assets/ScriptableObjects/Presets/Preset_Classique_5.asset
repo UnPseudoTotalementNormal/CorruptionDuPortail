@@ -13,25 +13,28 @@ MonoBehaviour:
   m_Name: Preset_Classique_5
   m_EditorClassIdentifier: Game::GameLogic.GameSettings.RolePreset
   displayName: Classique
-  description: "Compo \xE9quilibr\xE9e"
+  description: "Compo officielle à 5 joueurs"
   playerCount: 5
   isClassic: 1
   entries:
   - roleId: 3307
     max: 1
     forced: 1
-  - roleId: 3917
+  - roleId: 5871
     max: 1
     forced: 0
   - roleId: 5555
     max: 1
     forced: 0
-  - roleId: 8239
+  - roleId: 4321
     max: 1
     forced: 0
-  - roleId: 2468
+  - roleId: 6592
     max: 1
     forced: 0
-  - roleId: 5871
+  - roleId: 9999
+    max: 1
+    forced: 0
+  - roleId: 9154
     max: 1
     forced: 0

@@ -72,6 +72,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 23
@@ -142,133 +145,133 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 67
+    utf8LengthInBytes: 117
     bytes:
       offset0000:
         byte0000: 67
-        byte0001: 104
-        byte0002: 97
-        byte0003: 113
-        byte0004: 117
-        byte0005: 101
+        byte0001: 105
+        byte0002: 98
+        byte0003: 108
+        byte0004: 101
+        byte0005: 122
         byte0006: 32
-        byte0007: 110
+        byte0007: 97
         byte0008: 117
-        byte0009: 105
-        byte0010: 116
-        byte0011: 44
-        byte0012: 32
-        byte0013: 101
-        byte0014: 108
-        byte0015: 108
+        byte0009: 116
+        byte0010: 97
+        byte0011: 110
+        byte0012: 116
+        byte0013: 32
+        byte0014: 100
+        byte0015: 101
       offset0016:
+        byte0000: 32
+        byte0001: 106
+        byte0002: 111
+        byte0003: 117
+        byte0004: 101
+        byte0005: 117
+        byte0006: 114
+        byte0007: 115
+        byte0008: 32
+        byte0009: 113
+        byte0010: 117
+        byte0011: 39
+        byte0012: 105
+        byte0013: 108
+        byte0014: 32
+        byte0015: 121
+      offset0032:
+        byte0000: 32
+        byte0001: 97
+        byte0002: 32
+        byte0003: 100
+        byte0004: 101
+        byte0005: 32
+        byte0006: 110
+        byte0007: 111
+        byte0008: 110
+        byte0009: 45
+        byte0010: 195
+        byte0011: 169
+        byte0012: 108
+        byte0013: 117
+        byte0014: 115
+        byte0015: 32
+      offset0048:
+        byte0000: 100
+        byte0001: 97
+        byte0002: 110
+        byte0003: 115
+        byte0004: 32
+        byte0005: 108
+        byte0006: 97
+        byte0007: 32
+        byte0008: 112
+        byte0009: 97
+        byte0010: 114
+        byte0011: 116
+        byte0012: 105
+        byte0013: 101
+        byte0014: 44
+        byte0015: 32
+      offset0064:
         byte0000: 101
-        byte0001: 32
-        byte0002: 100
-        byte0003: 195
-        byte0004: 169
-        byte0005: 99
-        byte0006: 111
-        byte0007: 117
-        byte0008: 118
-        byte0009: 114
-        byte0010: 101
+        byte0001: 116
+        byte0002: 32
+        byte0003: 97
+        byte0004: 112
+        byte0005: 112
+        byte0006: 114
+        byte0007: 101
+        byte0008: 110
+        byte0009: 101
+        byte0010: 122
         byte0011: 32
         byte0012: 99
         byte0013: 111
         byte0014: 109
         byte0015: 98
-      offset0032:
+      offset0080:
         byte0000: 105
         byte0001: 101
         byte0002: 110
         byte0003: 32
-        byte0004: 100
-        byte0005: 101
-        byte0006: 32
-        byte0007: 106
-        byte0008: 111
-        byte0009: 117
-        byte0010: 101
-        byte0011: 117
-        byte0012: 114
-        byte0013: 115
-        byte0014: 32
-        byte0015: 111
-      offset0048:
-        byte0000: 110
-        byte0001: 116
-        byte0002: 32
-        byte0003: 99
         byte0004: 105
-        byte0005: 98
-        byte0006: 108
-        byte0007: 195
-        byte0008: 169
-        byte0009: 32
-        byte0010: 108
-        byte0011: 101
-        byte0012: 32
-        byte0013: 82
-        byte0014: 111
-        byte0015: 98
-      offset0064:
-        byte0000: 111
-        byte0001: 116
-        byte0002: 46
-        byte0003: 0
-        byte0004: 0
-        byte0005: 0
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
-        byte0009: 0
-        byte0010: 0
-        byte0011: 0
-        byte0012: 0
-        byte0013: 0
-        byte0014: 0
-        byte0015: 0
-      offset0080:
-        byte0000: 0
-        byte0001: 0
-        byte0002: 0
-        byte0003: 0
-        byte0004: 0
-        byte0005: 0
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
-        byte0009: 0
-        byte0010: 0
-        byte0011: 0
-        byte0012: 0
-        byte0013: 0
-        byte0014: 0
-        byte0015: 0
+        byte0005: 108
+        byte0006: 32
+        byte0007: 121
+        byte0008: 32
+        byte0009: 97
+        byte0010: 32
+        byte0011: 100
+        byte0012: 39
+        byte0013: 195
+        byte0014: 169
+        byte0015: 108
       offset0096:
-        byte0000: 0
-        byte0001: 0
-        byte0002: 0
-        byte0003: 0
-        byte0004: 0
-        byte0005: 0
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
-        byte0009: 0
-        byte0010: 0
-        byte0011: 0
-        byte0012: 0
-        byte0013: 0
-        byte0014: 0
-        byte0015: 0
+        byte0000: 117
+        byte0001: 115
+        byte0002: 32
+        byte0003: 112
+        byte0004: 97
+        byte0005: 114
+        byte0006: 109
+        byte0007: 105
+        byte0008: 32
+        byte0009: 99
+        byte0010: 101
+        byte0011: 115
+        byte0012: 32
+        byte0013: 106
+        byte0014: 111
+        byte0015: 117
       offset0112:
-        byte0000: 0
-        byte0001: 0
-        byte0002: 0
-        byte0003: 0
-        byte0004: 0
+        byte0000: 101
+        byte0001: 117
+        byte0002: 114
+        byte0003: 115
+        byte0004: 46
         byte0005: 0
         byte0006: 0
         byte0007: 0
@@ -685,13 +688,19 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
-  maxWaitTime: 0
-  isPassive: 1
-  hasToBeAwakened: 0
-  targetIncludeFlags: 0
+  power3DObjectPrefab: {fileID: 0}
+  maxWaitTime: 60
+  isPassive: 0
+  hideFromRoleCard: 0
+  hasToBeAwakened: 1
+  targetIncludeFlags: 158
   powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 0
@@ -706,5 +715,22 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 0}
   powerComponents: []
-  targetRoleID: 3917
+  idHolderServer: 0
+  pickerStepDescriptions: []

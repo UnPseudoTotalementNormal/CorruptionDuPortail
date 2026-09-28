@@ -1,0 +1,3 @@
+H1 X=Q Y=P
+H2 X=P Y=Q
+H3 X=Q Y=P

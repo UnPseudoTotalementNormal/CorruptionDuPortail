@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Corruption du Portail — Révélation de rôle</title>
+<style>
+/* =====================================================================
+   H2 — Écran de révélation de rôle « Corruption du Portail »
+   Cible : transposition UXML/USS (Unity 6000.5.0f1).
+   Palette / grammaire visuelle reprises de Assets/UI (RoleCard) :
+   dossier sombre chaud + liseré or ; passif = inset/calme,
+   actif = pastille relevée. USS-safe : px/% seulement, flexbox,
+   pas de gradient ni box-shadow, propriétés -unity-* transposées.
+   Détails de transposition dans RAPPORT.md.
+   ===================================================================== */
+
+/* Reset minimal (transposable : marges/paddings à 0). */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;      /* USS : modèle de boîte = border-box par défaut */
+}
+
+/* Fond de scène (simule le backdrop de jeu flouté par une couleur plate). */
+html, body {
+    width: 100%;
+    height: 100%;
+}
+body {
+    /* Font stack générique : en USS -> -unity-font-definition (asset Font). */
+    font-family: "Segoe UI", "Trebuchet MS", Tahoma, sans-serif;
+    background-color: rgb(14, 11, 8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* ---- Overlay / scrim (élément racine plein écran) ---- */
+.H2_reveal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(8, 6, 3, 0.62);     /* --cdp-color-role-scrim (proche) */
+}
+
+/* ---- Rangée carte : portrait/emblème à gauche, dossier à droite ---- */
+.H2_card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    max-width: 94%;
+    max-height: 94%;
+}
+
+/* ============ Emblème (à la place d'une illustration externe) ============ */
+/* Aucune image distante autorisée : l'emblème est composé de VisualElements
+   (cercles via border-radius + glyphe). Transposable tel quel en USS. */
+.H2_portrait {
+    width: 320px;
+    height: 440px;
+    flex-shrink: 0;
+    margin-right: -28px;                       /* chevauchement sur le dossier */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(24, 19, 12);         /* deep-warm (--cdp-color-role-panel-deep) */
+    border-width: 3px;
+    border-color: rgb(191, 154, 82);           /* --cdp-color-role-border (or) */
+    border-radius: 16px;
+}
+
+/* Anneaux concentriques du portail (cercles emboîtés). */
+.H2_emblem_ring_outer {
+    width: 180px;
+    height: 180px;
+    border-radius: 90px;
+    border-width: 3px;
+    border-color: rgba(191, 154, 82, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.25);
+}
+.H2_emblem_ring_inner {
+    width: 128px;
+    height: 128px;
+    border-radius: 64px;
+    border-width: 2px;
+    border-color: rgb(214, 182, 120);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.H2_emblem_glyph {
+    font-size: 64px;
+    color: rgb(240, 208, 138);                 /* --cdp-color-role-title (or clair) */
+    text-align: center;                        /* USS -> -unity-text-align: middle-center */
+    font-weight: bold;
+}
+.H2_portrait_caption {
+    margin-top: 22px;
+    color: rgb(214, 182, 120);
+    font-size: 15px;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+/* ==================== Dossier (panneau or/sombre) ==================== */
+.H2_panel {
+    width: 620px;
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 20px 44px;              /* inset gauche = dégage l'emblème */
+    background-color: rgb(38, 31, 20);         /* --cdp-color-role-panel */
+    border-width: 2px;
+    border-color: rgb(191, 154, 82);
+    border-radius: 18px;
+    position: relative;
+}
+
+/* ---- En-tête ---- */
+.H2_faction_row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+.H2_faction {
+    color: rgb(214, 182, 120);                 /* --cdp-color-role-faction */
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+    white-space: nowrap;
+}
+.H2_faction_icon {
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    border-radius: 12px;
+    border-width: 2px;
+    border-color: rgb(191, 154, 82);
+    background-color: rgba(191, 154, 82, 0.18);
+    color: rgb(240, 208, 138);
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* USS -> -unity-text-align: middle-center sur le Label */
+}
+.H2_name {
+    color: rgb(240, 208, 138);
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    white-space: normal;
+    margin-bottom: 10px;
+}
+.H2_difficulty {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+.H2_pip {
+    font-size: 18px;
+    color: rgb(240, 208, 138);
+    text-align: center;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+.H2_pip_empty {
+    opacity: 0.28;
+}
+.H2_difficulty_label {
+    color: rgb(198, 190, 172);
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+/* ---- Filet or ---- */
+.H2_divider {
+    height: 1px;
+    background-color: rgba(191, 154, 82, 0.30);
+    margin-top: 6px;
+    margin-bottom: 16px;
+}
+
+/* ---- Description du rôle ---- */
+.H2_desc {
+    color: rgb(228, 219, 201);
+    font-size: 16px;
+    white-space: normal;
+    margin-bottom: 18px;
+}
+
+/* ---- Section pouvoirs ---- */
+.H2_section_label {
+    color: rgb(240, 208, 138);
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Zone défilable des pouvoirs (USS -> ScrollView). */
+.H2_powers {
+    flex-grow: 1;
+    overflow-y: auto;                          /* USS : encapsuler dans un ScrollView */
+    padding-right: 6px;
+}
+
+.H2_power {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.22);
+    border-left-width: 3px;
+    border-left-color: rgba(191, 154, 82, 0.35);
+}
+/* Actif = liseré or plein (relevé). Passif = liseré atténué (inset). */
+.H2_power_active {
+    border-left-color: rgb(191, 154, 82);
+    background-color: rgba(191, 154, 82, 0.10);
+}
+
+.H2_power_body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.H2_power_head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.H2_power_title {
+    color: rgb(240, 208, 138);
+    font-size: 17px;
+    font-weight: bold;
+    white-space: normal;
+    flex-shrink: 1;
+}
+.H2_power_desc {
+    color: rgb(198, 190, 172);
+    font-size: 14px;
+    white-space: normal;
+}
+
+/* Badge type (Actif / Passif). */
+.H2_badge {
+    flex-shrink: 0;
+    margin-left: 10px;
+    padding: 2px 10px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+}
+.H2_badge_active {
+    background-color: rgb(191, 154, 82);
+    color: rgb(28, 23, 15);
+}
+.H2_badge_passive {
+    background-color: rgba(198, 190, 172, 0.14);
+    color: rgb(198, 190, 172);
+    border-width: 1px;
+    border-color: rgba(198, 190, 172, 0.35);
+}
+/* Compteur d'utilisations (pouvoirs actifs). */
+.H2_uses {
+    color: rgb(214, 182, 120);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* ---- Pied : bouton de confirmation ---- */
+.H2_footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 16px;
+    flex-shrink: 0;
+}
+.H2_confirm {
+    padding: 12px 40px;
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: rgb(191, 154, 82);
+    background-color: rgb(191, 154, 82);
+    color: rgb(24, 19, 12);
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+    cursor: pointer;                           /* USS : propriété cursor existe */
+    transition-property: background-color;
+    transition-duration: 150ms;
+}
+.H2_confirm:hover {
+    background-color: rgb(214, 182, 120);
+}
+</style>
+</head>
+<body>
+    <!-- Overlay / scrim -->
+    <div class="H2_reveal" id="H2_root">
+        <div class="H2_card">
+
+            <!-- Emblème (illustration composée, aucune ressource externe) -->
+            <div class="H2_portrait">
+                <div class="H2_emblem_ring_outer">
+                    <div class="H2_emblem_ring_inner">
+                        <div class="H2_emblem_glyph">&#9670;</div><!-- ◆ -->
+                    </div>
+                </div>
+                <div class="H2_portrait_caption" id="H2_caption">EMBLÈME · ANOMALIE</div>
+            </div>
+
+            <!-- Dossier du rôle -->
+            <div class="H2_panel">
+
+                <!-- En-tête : faction + icône, nom, difficulté -->
+                <div class="H2_faction_row">
+                    <div class="H2_faction" id="H2_faction">Anomalie</div>
+                    <div class="H2_faction_icon">&#9670;</div>
+                </div>
+                <div class="H2_name" id="H2_name">Le Mage Occulte</div>
+                <div class="H2_difficulty" id="H2_difficulty">
+                    <span class="H2_pip">&#9733;</span>
+                    <span class="H2_pip">&#9733;</span>
+                    <span class="H2_pip">&#9733;</span>
+                </div>
+                <div class="H2_difficulty_label">DIFFICULTÉ · EXPERT</div>
+
+                <div class="H2_divider"></div>
+
+                <!-- Description -->
+                <div class="H2_desc" id="H2_desc">
+                    Maître corrupteur du portail, vous œuvrez dans l'ombre pour
+                    propager la corruption parmi les Élus. Vous commencez la partie
+                    déjà corrompu et percevez l'état de chaque joueur. Si vous êtes
+                    enchaîné, une dernière chance s'offre à vous : abattre le portail.
+                </div>
+
+                <!-- Pouvoirs -->
+                <div class="H2_section_label">Pouvoirs</div>
+                <div class="H2_powers" id="H2_powers">
+                    <!-- Injectés en JS (données factices) ; fallback statique ci-dessous
+                         si le JS est désactivé. -->
+                    <div class="H2_power H2_power_active">
+                        <div class="H2_power_body">
+                            <div class="H2_power_head">
+                                <div class="H2_power_title">Étreintes des ombres</div>
+                            </div>
+                            <div class="H2_power_desc">Ciblez un joueur et devinez son rôle. En cas de réussite, corrompez-le et révélez son rôle ; l'effet peut s'enchaîner jusqu'à 2 fois.</div>
+                            <div class="H2_uses">2 utilisations</div>
+                        </div>
+                        <div class="H2_badge H2_badge_active">ACTIF</div>
+                    </div>
+                    <div class="H2_power H2_power_active">
+                        <div class="H2_power_body">
+                            <div class="H2_power_head">
+                                <div class="H2_power_title">Corruption ciblée</div>
+                            </div>
+                            <div class="H2_power_desc">Ciblez un joueur pour le corrompre et révéler son état de corruption.</div>
+                            <div class="H2_uses">1 utilisation</div>
+                        </div>
+                        <div class="H2_badge H2_badge_active">ACTIF</div>
+                    </div>
+                    <div class="H2_power">
+                        <div class="H2_power_body">
+                            <div class="H2_power_head">
+                                <div class="H2_power_title">Auto Corruption</div>
+                            </div>
+                            <div class="H2_power_desc">Dès le début de la partie, vous êtes automatiquement corrompu.</div>
+                        </div>
+                        <div class="H2_badge H2_badge_passive">PASSIF</div>
+                    </div>
+                    <div class="H2_power">
+                        <div class="H2_power_body">
+                            <div class="H2_power_head">
+                                <div class="H2_power_title">Corruption Insight</div>
+                            </div>
+                            <div class="H2_power_desc">Vous connaissez l'état de corruption de chaque joueur dès le début.</div>
+                        </div>
+                        <div class="H2_badge H2_badge_passive">PASSIF</div>
+                    </div>
+                    <div class="H2_power">
+                        <div class="H2_power_body">
+                            <div class="H2_power_head">
+                                <div class="H2_power_title">Abattre le portail</div>
+                            </div>
+                            <div class="H2_power_desc">Si vous êtes enchaîné, tentez de deviner tous les rôles restants pour faire triompher les Anomalies.</div>
+                        </div>
+                        <div class="H2_badge H2_badge_passive">PASSIF</div>
+                    </div>
+                </div>
+
+                <!-- Confirmation -->
+                <div class="H2_footer">
+                    <button class="H2_confirm" id="H2_confirm" type="button">J'ai compris mon rôle</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+<script>
+/* JS FACULTATIF — sert uniquement à injecter des données factices et à
+   démontrer la fermeture. Aucune logique métier ; en UITK, un contrôleur C#
+   remplirait ces champs depuis un Role. */
+(function () {
+    "use strict";
+
+    var roleData = {
+        faction: "Anomalie",
+        name: "Le Mage Occulte",
+        difficulty: 3,
+        maxDifficulty: 3,
+        difficultyLabel: "EXPERT",
+        description:
+            "Maître corrupteur du portail, vous œuvrez dans l'ombre pour " +
+            "propager la corruption parmi les Élus. Vous commencez la partie " +
+            "déjà corrompu et percevez l'état de chaque joueur. Si vous êtes " +
+            "enchaîné, une dernière chance s'offre à vous : abattre le portail.",
+        powers: [
+            { title: "Étreintes des ombres", type: "active", uses: 2,
+              desc: "Ciblez un joueur et devinez son rôle. En cas de réussite, corrompez-le et révélez son rôle ; l'effet peut s'enchaîner jusqu'à 2 fois." },
+            { title: "Corruption ciblée", type: "active", uses: 1,
+              desc: "Ciblez un joueur pour le corrompre et révéler son état de corruption." },
+            { title: "Auto Corruption", type: "passive",
+              desc: "Dès le début de la partie, vous êtes automatiquement corrompu." },
+            { title: "Corruption Insight", type: "passive",
+              desc: "Vous connaissez l'état de corruption de chaque joueur dès le début." },
+            { title: "Abattre le portail", type: "passive",
+              desc: "Si vous êtes enchaîné, tentez de deviner tous les rôles restants pour faire triompher les Anomalies." }
+        ]
+    };
+
+    function el(tag, cls) {
+        var e = document.createElement(tag);
+        if (cls) { e.className = cls; }
+        return e;
+    }
+
+    function render(data) {
+        document.getElementById("H2_faction").textContent = data.faction;
+        document.getElementById("H2_name").textContent = data.name;
+        document.getElementById("H2_desc").textContent = data.description;
+        document.getElementById("H2_caption").textContent =
+            "EMBLÈME · " + data.faction.toUpperCase();
+
+        var diff = document.getElementById("H2_difficulty");
+        diff.textContent = "";
+        for (var i = 0; i < data.maxDifficulty; i++) {
+            var pip = el("span", "H2_pip" + (i >= data.difficulty ? " H2_pip_empty" : ""));
+            pip.textContent = "★"; // ★
+            diff.appendChild(pip);
+        }
+
+        var list = document.getElementById("H2_powers");
+        list.textContent = "";
+        data.powers.forEach(function (p) {
+            var isActive = p.type === "active";
+            var row = el("div", "H2_power" + (isActive ? " H2_power_active" : ""));
+
+            var body = el("div", "H2_power_body");
+            var head = el("div", "H2_power_head");
+            var title = el("div", "H2_power_title");
+            title.textContent = p.title;
+            head.appendChild(title);
+            body.appendChild(head);
+
+            var desc = el("div", "H2_power_desc");
+            desc.textContent = p.desc;
+            body.appendChild(desc);
+
+            if (isActive && p.uses) {
+                var uses = el("div", "H2_uses");
+                uses.textContent = p.uses + (p.uses > 1 ? " utilisations" : " utilisation");
+                body.appendChild(uses);
+            }
+
+            var badge = el("div", "H2_badge " + (isActive ? "H2_badge_active" : "H2_badge_passive"));
+            badge.textContent = isActive ? "ACTIF" : "PASSIF";
+
+            row.appendChild(body);
+            row.appendChild(badge);
+            list.appendChild(row);
+        });
+    }
+
+    render(roleData);
+
+    document.getElementById("H2_confirm").addEventListener("click", function () {
+        document.getElementById("H2_root").style.display = "none";
+    });
+})();
+</script>
+</body>
+</html>

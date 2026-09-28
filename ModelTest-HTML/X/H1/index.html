@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corruption du Portail - Vote</title>
+<style>
+/* =====================================================================================
+   Corruption du Portail - écran de vote (maquette HTML/CSS transposable en UXML/USS).
+
+   Bloc 1 "PREVIEW" : règles d'émulation des comportements par défaut de UI Toolkit dans
+   le navigateur (flexbox partout, border-box, bordures pleines, pas de min-content).
+   Ce bloc NE se transpose PAS : il reproduit ce que Yoga/UITK fait déjà nativement.
+
+   Bloc 2 "TOKENS" et bloc 3 "ÉCRAN" : uniquement des propriétés ayant un équivalent USS
+   (px / %, flexbox, var(), :hover / :active / :disabled / :enabled, sélecteurs de classe
+   composés et descendants). Pas de gap, calc, gradient, box-shadow, media query, em/rem.
+   ===================================================================================== */
+
+/* ---------- 1. PREVIEW (émulation des défauts UITK - non transposé) ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background-color: rgb(10, 7, 8); }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; color: rgb(240, 231, 221); }
+div, button {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    border-style: solid;
+    border-width: 0;
+}
+span { display: block; white-space: nowrap; }
+button { font: inherit; color: inherit; background-color: transparent; text-align: inherit; cursor: pointer; }
+button:disabled { cursor: default; }
+
+/* ---------- 2. TOKENS (équivalent :root de variables.uss) ---------- */
+:root {
+    --h1-bg: rgb(10, 7, 8);
+    --h1-panel: rgb(20, 16, 15);
+    --h1-panel-deep: rgb(15, 12, 12);
+    --h1-hairline: rgb(58, 44, 41);
+    --h1-hairline-soft: rgba(58, 44, 41, 0.6);
+    --h1-text: rgb(240, 231, 221);
+    --h1-text-soft: rgb(210, 199, 186);
+    --h1-muted: rgb(164, 147, 138);
+    --h1-dim: rgb(120, 105, 98);
+    --h1-gold: rgb(238, 201, 122);
+    --h1-gold-edge: rgb(191, 154, 82);
+    --h1-gold-tint: rgb(31, 25, 16);
+    --h1-red: rgb(219, 74, 86);
+    --h1-red-tint: rgb(30, 14, 16);
+    --h1-green: rgb(95, 217, 135);
+    --h1-chain: rgb(160, 174, 200);
+    --h1-chain-tint: rgb(38, 43, 54);
+    --h1-chain-edge: rgb(62, 68, 82);
+    --h1-pip-off: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- 3. ÉCRAN ---------- */
+
+/* Racine plein écran (comme .role-card / .journal du projet). */
+.H1_screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--h1-bg);
+    overflow: hidden;
+}
+
+/* Décor : anneaux du portail, très discrets, peints derrière le contenu. */
+.H1_ring {
+    position: absolute;
+    left: 38%;
+    top: 54%;
+    translate: -50% -50%;
+}
+.H1_ring--outer {
+    width: 1500px;
+    height: 1500px;
+    border-radius: 750px;
+    border-width: 1px;
+    border-color: rgba(191, 154, 82, 0.07);
+}
+.H1_ring--mid {
+    width: 1000px;
+    height: 1000px;
+    border-radius: 500px;
+    border-width: 2px;
+    border-color: rgba(219, 74, 86, 0.06);
+}
+.H1_ring--inner {
+    width: 560px;
+    height: 560px;
+    border-radius: 280px;
+    border-width: 1px;
+    border-color: rgba(191, 154, 82, 0.06);
+}
+
+.H1_layout {
+    flex-grow: 1;
+    flex-direction: row;
+    padding: 24px;
+}
+
+.H1_main {
+    flex-grow: 1;
+}
+
+.H1_side {
+    width: 26%;
+    min-width: 320px;
+    flex-shrink: 0;
+    margin-left: 24px;
+}
+
+/* ---- En-tête ---- */
+.H1_header {
+    flex-direction: row;
+    align-items: flex-start;
+    flex-shrink: 0;
+    margin-bottom: 16px;
+}
+
+.H1_header-text {
+    flex-grow: 1;
+    padding-right: 20px;
+}
+
+.H1_kicker {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: var(--h1-gold);
+}
+
+.H1_title {
+    font-size: 38px;
+    font-weight: bold;
+    color: var(--h1-text);
+    margin-top: 4px;
+}
+
+.H1_subtitle {
+    font-size: 17px;
+    color: var(--h1-text-soft);
+    margin-top: 6px;
+    white-space: normal;
+}
+
+/* Libellé de section (petites capitales espacées). Texte déjà en majuscules dans le DOM. */
+.H1_label {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: var(--h1-muted);
+}
+
+.H1_label--gold {
+    color: var(--h1-gold);
+}
+
+/* ---- Participation (en-tête, à droite) ---- */
+.H1_turnout {
+    width: 300px;
+    flex-shrink: 0;
+    padding: 12px 16px 14px 16px;
+    background-color: var(--h1-panel);
+    border-width: 1px;
+    border-color: var(--h1-hairline);
+    border-radius: 12px;
+}
+
+.H1_turnout-row {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: 2px;
+}
+
+.H1_turnout-value {
+    font-size: 30px;
+    font-weight: bold;
+    color: var(--h1-text);
+}
+
+.H1_turnout-unit {
+    font-size: 15px;
+    color: var(--h1-text-soft);
+    margin-left: 8px;
+    margin-bottom: 5px;
+}
+
+.H1_turnout-pips {
+    flex-direction: row;
+    margin: 8px -2px 0 -2px;
+}
+
+.H1_turnout-pip {
+    flex-grow: 1;
+    height: 8px;
+    margin: 0 2px;
+    border-radius: 4px;
+    background-color: var(--h1-pip-off);
+}
+
+.H1_turnout-pip--on {
+    background-color: var(--h1-green);
+}
+
+.H1_turnout-wait {
+    font-size: 14px;
+    color: var(--h1-muted);
+    margin-top: 8px;
+    white-space: normal;
+}
+
+/* ---- Grille des joueurs : 3 colonnes, lignes étirées pour remplir la hauteur ---- */
+.H1_grid {
+    flex-grow: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: stretch;
+    margin: -7px;
+}
+
+/* La gouttière est portée par le padding de la cellule (pas de gap en USS). */
+.H1_cell {
+    width: 33.333%;
+    padding: 7px;
+}
+
+/* Carte joueur (Button en UXML). */
+.H1_card {
+    flex-grow: 1;
+    justify-content: center;
+    padding: 14px 14px;
+    background-color: var(--h1-panel);
+    border-width: 2px;
+    border-color: var(--h1-hairline);
+    border-radius: 12px;
+}
+
+.H1_card--votable:hover {
+    border-color: var(--h1-gold-edge);
+    background-color: rgb(28, 22, 20);
+}
+
+.H1_card-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.H1_avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.14);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.H1_avatar-initials {
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--h1-text);
+}
+
+/* Couleurs d'avatar factices (le portrait réel serait un background-image). */
+.H1_avatar--c1  { background-color: rgb(122, 74, 138); }
+.H1_avatar--c2  { background-color: rgb(58, 110, 140); }
+.H1_avatar--c3  { background-color: rgb(140, 92, 52); }
+.H1_avatar--c4  { background-color: rgb(64, 124, 96); }
+.H1_avatar--c5  { background-color: rgb(150, 70, 86); }
+.H1_avatar--c6  { background-color: rgb(110, 96, 58); }
+.H1_avatar--c7  { background-color: rgb(72, 86, 140); }
+.H1_avatar--c8  { background-color: rgb(136, 112, 62); }
+.H1_avatar--c9  { background-color: rgb(60, 120, 124); }
+.H1_avatar--c10 { background-color: rgb(124, 66, 110); }
+.H1_avatar--c11 { background-color: rgb(84, 92, 104); }
+.H1_avatar--c12 { background-color: rgb(96, 84, 78); }
+
+.H1_card-id {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 12px;
+}
+
+.H1_card-name {
+    font-size: 21px;
+    font-weight: bold;
+    color: var(--h1-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.H1_status {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.H1_status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: var(--h1-muted);
+    margin-right: 7px;
+    flex-shrink: 0;
+}
+
+.H1_status-dot--voted {
+    background-color: var(--h1-green);
+    border-color: var(--h1-green);
+}
+
+.H1_status-dot--out {
+    border-color: var(--h1-dim);
+}
+
+.H1_status-text {
+    font-size: 15px;
+    color: var(--h1-muted);
+}
+
+.H1_status-text--voted {
+    color: var(--h1-green);
+}
+
+.H1_status-text--out {
+    color: var(--h1-dim);
+}
+
+/* Compteur de votes reçus, à droite de la carte. */
+.H1_count {
+    width: 60px;
+    flex-shrink: 0;
+    align-items: center;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left-width: 1px;
+    border-color: var(--h1-hairline);
+}
+
+.H1_count-value {
+    font-size: 38px;
+    font-weight: bold;
+    color: var(--h1-gold);
+}
+
+.H1_count-label {
+    font-size: 14px;
+    color: var(--h1-muted);
+}
+
+/* Piste de bulletins : une case par votant éligible, cases pleines = votes reçus. */
+.H1_card-pips {
+    flex-direction: row;
+    margin: 12px -2px 0 -2px;
+}
+
+.H1_pip {
+    flex-grow: 1;
+    height: 8px;
+    margin: 0 2px;
+    border-radius: 2px;
+    background-color: var(--h1-pip-off);
+}
+
+.H1_pip--on {
+    background-color: var(--h1-gold);
+}
+
+.H1_card-note {
+    font-size: 14px;
+    color: var(--h1-dim);
+    margin-top: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pastilles posées à cheval sur le bord haut de la carte. */
+.H1_card-tags {
+    position: absolute;
+    top: -12px;
+    right: 14px;
+    flex-direction: row;
+}
+
+.H1_tag {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    margin-left: 6px;
+    border-radius: 10px;
+}
+
+.H1_tag--leading    { background-color: var(--h1-red); color: rgb(255, 240, 240); }
+.H1_tag--myvote     { background-color: var(--h1-gold); color: rgb(30, 22, 10); }
+.H1_tag--self       { background-color: var(--h1-hairline); color: var(--h1-text); }
+.H1_tag--chained    { background-color: var(--h1-chain-tint); color: var(--h1-chain); }
+.H1_tag--eliminated { background-color: rgb(40, 32, 30); color: var(--h1-muted); }
+
+/* États de carte. */
+.H1_card--leading {
+    border-color: var(--h1-red);
+    background-color: var(--h1-red-tint);
+}
+.H1_card--leading .H1_count-value { color: var(--h1-red); }
+.H1_card--leading .H1_pip--on { background-color: var(--h1-red); }
+
+.H1_card--myvote {
+    border-color: var(--h1-gold-edge);
+    background-color: var(--h1-gold-tint);
+}
+
+.H1_card--locked {
+    background-color: var(--h1-panel-deep);
+}
+.H1_card--locked .H1_avatar { opacity: 0.45; }
+.H1_card--locked .H1_card-name { color: var(--h1-muted); }
+.H1_card--locked .H1_count-value { color: var(--h1-dim); }
+
+.H1_card--chained {
+    border-color: var(--h1-chain-edge);
+}
+
+.H1_card--eliminated {
+    opacity: 0.5;
+}
+
+/* ---- Colonne latérale ---- */
+.H1_panel {
+    flex-shrink: 0;
+    margin-top: 12px;
+    padding: 16px 18px;
+    background-color: var(--h1-panel);
+    border-width: 1px;
+    border-color: var(--h1-hairline);
+    border-radius: 12px;
+}
+
+.H1_panel-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Compte à rebours */
+.H1_timer {
+    margin-top: 0;
+}
+
+.H1_timer-total {
+    font-size: 14px;
+    color: var(--h1-dim);
+}
+
+.H1_timer-value {
+    font-size: 64px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: var(--h1-text);
+    margin-top: 2px;
+}
+
+.H1_bar {
+    height: 8px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background-color: var(--h1-pip-off);
+    overflow: hidden;
+}
+
+.H1_bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background-color: var(--h1-gold);
+}
+
+/* Variante < 30 s, basculée par le contrôleur. */
+.H1_timer--urgent { border-color: var(--h1-red); }
+.H1_timer--urgent .H1_timer-value { color: var(--h1-red); }
+.H1_timer--urgent .H1_bar-fill { background-color: var(--h1-red); }
+
+.H1_hint {
+    font-size: 14px;
+    color: var(--h1-muted);
+    margin-top: 10px;
+    white-space: normal;
+}
+
+/* Vote du joueur local */
+.H1_panel--myvote {
+    border-width: 2px;
+    border-color: var(--h1-gold-edge);
+    background-color: var(--h1-gold-tint);
+}
+
+.H1_myvote-row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.H1_myvote-id {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-left: 12px;
+}
+
+.H1_myvote-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--h1-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.H1_myvote-sub {
+    font-size: 15px;
+    color: var(--h1-text-soft);
+    margin-top: 2px;
+}
+
+.H1_myvote-note {
+    font-size: 14px;
+    color: var(--h1-muted);
+    margin-top: 10px;
+    white-space: normal;
+}
+
+/* Journal des bulletins (ScrollView en UXML) */
+.H1_feed {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.H1_feed-list {
+    margin-top: 6px;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.H1_feed-item {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 7px 0;
+    border-bottom-width: 1px;
+    border-color: var(--h1-hairline-soft);
+}
+
+.H1_feed-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    background-color: var(--h1-green);
+}
+
+.H1_feed-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--h1-text);
+}
+
+.H1_feed-name--self {
+    color: var(--h1-gold);
+}
+
+.H1_feed-action {
+    flex-grow: 1;
+    font-size: 15px;
+    color: var(--h1-muted);
+    margin-left: 5px;
+}
+
+.H1_feed-time {
+    font-size: 14px;
+    color: var(--h1-dim);
+}
+
+/* Passer son vote */
+.H1_skip-count {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--h1-gold);
+}
+
+.H1_skip-btn {
+    margin-top: 12px;
+    padding: 12px 16px;
+    align-items: center;
+    background-color: rgb(34, 27, 24);
+    border-width: 2px;
+    border-color: var(--h1-gold-edge);
+    border-radius: 10px;
+}
+
+.H1_skip-btn:enabled:hover {
+    background-color: rgb(48, 38, 30);
+    border-color: var(--h1-gold);
+}
+
+.H1_skip-btn:enabled:active {
+    background-color: rgb(60, 46, 32);
+}
+
+.H1_skip-btn:disabled {
+    background-color: rgb(22, 18, 17);
+    border-color: rgb(48, 38, 36);
+}
+
+.H1_skip-main {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: var(--h1-text);
+}
+
+.H1_skip-sub {
+    font-size: 14px;
+    color: var(--h1-muted);
+    margin-top: 3px;
+}
+
+.H1_skip-btn:disabled .H1_skip-main { color: rgb(128, 115, 108); }
+.H1_skip-btn:disabled .H1_skip-sub { color: rgb(110, 97, 90); }
+
+.H1_rule {
+    font-size: 14px;
+    color: var(--h1-muted);
+    margin-top: 10px;
+    white-space: normal;
+}
+</style>
+</head>
+<body>
+<!--
+  Données factices : tour 3, 12 joueurs, 11 votants éligibles (Rémi est éliminé ;
+  Ophélie est enchaînée mais présente, donc elle peut voter sans pouvoir être désignée).
+  8 bulletins sur 11 : Ilyès 3, Balthazar 2, Garance 1, Noémie 1, Passer 1.
+  Le joueur local (Hugo) a voté contre Balthazar : son vote est définitif (VoteState.CanVote
+  refuse un second vote), d'où le bouton "Passer mon vote" affiché à l'état désactivé.
+  Chrono : 02:47 restantes sur 05:00 (voteDuration = 300 s) -> barre à 55,7 %.
+-->
+<div class="H1_screen">
+    <div class="H1_ring H1_ring--outer"></div>
+    <div class="H1_ring H1_ring--mid"></div>
+    <div class="H1_ring H1_ring--inner"></div>
+
+    <div class="H1_layout">
+
+        <!-- ================= Colonne principale ================= -->
+        <div class="H1_main">
+
+            <div class="H1_header">
+                <div class="H1_header-text">
+                    <span class="H1_kicker">TOUR 3 · PHASE DE VOTE</span>
+                    <span class="H1_title">Qui sera enchaîné ?</span>
+                    <span class="H1_subtitle">Désignez le joueur que vous soupçonnez d'être une Anomalie : le plus voté sera enchaîné.</span>
+                </div>
+                <div class="H1_turnout">
+                    <span class="H1_label">BULLETINS</span>
+                    <div class="H1_turnout-row">
+                        <span class="H1_turnout-value">8 / 11</span>
+                        <span class="H1_turnout-unit">joueurs ont voté</span>
+                    </div>
+                    <div class="H1_turnout-pips">
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip H1_turnout-pip--on"></div>
+                        <div class="H1_turnout-pip"></div>
+                        <div class="H1_turnout-pip"></div>
+                        <div class="H1_turnout-pip"></div>
+                    </div>
+                    <span class="H1_turnout-wait">En attente : Corentin, Noémie, Yanis</span>
+                </div>
+            </div>
+
+            <div class="H1_grid">
+
+                <!-- 1. Maëlle - a voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c1"><span class="H1_avatar-initials">MA</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Maëlle</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Ilyès - a voté - 3 votes - EN TÊTE -->
+                <div class="H1_cell">
+                    <div class="H1_card H1_card--leading">
+                        <div class="H1_card-tags"><span class="H1_tag H1_tag--leading">EN TÊTE</span></div>
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c2"><span class="H1_avatar-initials">IL</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Ilyès</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">3</span><span class="H1_count-label">votes</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip H1_pip--on"></div><div class="H1_pip H1_pip--on"></div><div class="H1_pip H1_pip--on"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Corentin - n'a pas voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c3"><span class="H1_avatar-initials">CO</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Corentin</span>
+                                <div class="H1_status"><div class="H1_status-dot"></div><span class="H1_status-text">N'a pas voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Sacha - a voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c4"><span class="H1_avatar-initials">SA</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Sacha</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Noémie - n'a pas voté - 1 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c5"><span class="H1_avatar-initials">NO</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Noémie</span>
+                                <div class="H1_status"><div class="H1_status-dot"></div><span class="H1_status-text">N'a pas voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">1</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip H1_pip--on"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Balthazar - a voté - 2 votes - VOTRE VOTE -->
+                <div class="H1_cell">
+                    <div class="H1_card H1_card--myvote">
+                        <div class="H1_card-tags"><span class="H1_tag H1_tag--myvote">VOTRE VOTE</span></div>
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c6"><span class="H1_avatar-initials">BA</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Balthazar</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">2</span><span class="H1_count-label">votes</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip H1_pip--on"></div><div class="H1_pip H1_pip--on"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Hugo (joueur local) - a voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-tags"><span class="H1_tag H1_tag--self">VOUS</span></div>
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c7"><span class="H1_avatar-initials">HU</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Hugo</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Garance - a voté - 1 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c8"><span class="H1_avatar-initials">GA</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Garance</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">1</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip H1_pip--on"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Yanis - n'a pas voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c9"><span class="H1_avatar-initials">YA</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Yanis</span>
+                                <div class="H1_status"><div class="H1_status-dot"></div><span class="H1_status-text">N'a pas voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. Lina - a voté - 0 vote -->
+                <div class="H1_cell">
+                    <div class="H1_card">
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c10"><span class="H1_avatar-initials">LI</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Lina</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">0</span><span class="H1_count-label">vote</span></div>
+                        </div>
+                        <div class="H1_card-pips">
+                            <div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div><div class="H1_pip"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. Ophélie - enchaînée (vote possible, non désignable) -->
+                <div class="H1_cell">
+                    <div class="H1_card H1_card--locked H1_card--chained">
+                        <div class="H1_card-tags"><span class="H1_tag H1_tag--chained">ENCHAÎNÉE</span></div>
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c11"><span class="H1_avatar-initials">OP</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Ophélie</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--voted"></div><span class="H1_status-text H1_status-text--voted">A voté</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">—</span></div>
+                        </div>
+                        <span class="H1_card-note">Non désignable (enchaînée)</span>
+                    </div>
+                </div>
+
+                <!-- 12. Rémi - éliminé (ni votant ni désignable) -->
+                <div class="H1_cell">
+                    <div class="H1_card H1_card--locked H1_card--eliminated">
+                        <div class="H1_card-tags"><span class="H1_tag H1_tag--eliminated">ÉLIMINÉ</span></div>
+                        <div class="H1_card-row">
+                            <div class="H1_avatar H1_avatar--c12"><span class="H1_avatar-initials">RÉ</span></div>
+                            <div class="H1_card-id">
+                                <span class="H1_card-name">Rémi</span>
+                                <div class="H1_status"><div class="H1_status-dot H1_status-dot--out"></div><span class="H1_status-text H1_status-text--out">Éliminé</span></div>
+                            </div>
+                            <div class="H1_count"><span class="H1_count-value">—</span></div>
+                        </div>
+                        <span class="H1_card-note">Hors jeu : ne vote pas</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= Colonne latérale ================= -->
+        <div class="H1_side">
+
+            <!-- Compte à rebours -->
+            <div class="H1_panel H1_timer">
+                <div class="H1_panel-head">
+                    <span class="H1_label">TEMPS RESTANT</span>
+                    <span class="H1_timer-total">sur 05:00</span>
+                </div>
+                <span class="H1_timer-value">02:47</span>
+                <div class="H1_bar"><div class="H1_bar-fill" style="width: 55.7%;"></div></div>
+                <span class="H1_hint">Clôture 5 s après le dernier bulletin</span>
+            </div>
+
+            <!-- Vote du joueur local -->
+            <div class="H1_panel H1_panel--myvote">
+                <span class="H1_label H1_label--gold">VOTRE VOTE</span>
+                <div class="H1_myvote-row">
+                    <div class="H1_avatar H1_avatar--c6"><span class="H1_avatar-initials">BA</span></div>
+                    <div class="H1_myvote-id">
+                        <span class="H1_myvote-name">Balthazar</span>
+                        <span class="H1_myvote-sub">2 votes · 2e position</span>
+                    </div>
+                </div>
+                <span class="H1_myvote-note">Vote scellé, non modifiable.</span>
+            </div>
+
+            <!-- Derniers bulletins -->
+            <div class="H1_panel H1_feed">
+                <span class="H1_label">DERNIERS BULLETINS</span>
+                <div class="H1_feed-list">
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Lina</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">02:49</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Garance</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">02:58</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name H1_feed-name--self">Vous</span><span class="H1_feed-action">avez voté</span><span class="H1_feed-time">03:05</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Ophélie</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">03:21</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Sacha</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">03:40</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Balthazar</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">04:02</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Ilyès</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">04:15</span></div>
+                    <div class="H1_feed-item"><div class="H1_feed-dot"></div><span class="H1_feed-name">Maëlle</span><span class="H1_feed-action">a voté</span><span class="H1_feed-time">04:31</span></div>
+                </div>
+            </div>
+
+            <!-- Passer son vote -->
+            <div class="H1_panel H1_skip">
+                <div class="H1_panel-head">
+                    <span class="H1_label">VOTES « PASSER »</span>
+                    <span class="H1_skip-count">1</span>
+                </div>
+                <button class="H1_skip-btn" type="button" disabled>
+                    <span class="H1_skip-main">PASSER MON VOTE</span>
+                    <span class="H1_skip-sub">Indisponible : vote déjà scellé</span>
+                </button>
+                <span class="H1_rule">Égalité ou « Passer » en tête : personne n'est enchaîné.</span>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Corruption du Portail — Révélation du rôle (maquette H2)</title>
+<style>
+/* =====================================================================================================
+   PARTIE A — EMULATION HTML UNIQUEMENT (ne pas transposer en USS)
+   Les classes H2_emu-* reproduisent dans le navigateur le PanelSettings du projet
+   (PS_ScreenOverlay : Scale With Screen Size, référence 1920x1080, match = largeur).
+   Toute la maquette est donc écrite en px à la résolution de référence 1920x1080 ; en 1280x720
+   elle est réduite uniformément à 2/3, exactement comme le ferait le PanelSettings en jeu.
+   ===================================================================================================== */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: rgb(10, 7, 6);
+    font-family: "Liberation Sans", Arial, Helvetica, sans-serif;
+}
+.H2_emu-viewport {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+.H2_emu-stage {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1920px;
+    height: 1080px;
+    margin-left: -960px;
+    margin-top: -540px;
+    transform-origin: center;
+}
+@media (max-width: 1919px), (max-height: 1079px) {
+    .H2_emu-stage { scale: 0.666667; }            /* 1280 / 1920 */
+}
+@media (max-width: 1279px), (max-height: 719px) {
+    .H2_emu-stage { scale: 0.5; }                 /* repli pour fenêtres plus petites */
+}
+/* Remise à zéro qui imite les valeurs par défaut d'un VisualElement UITK (Yoga) :
+   flex en colonne, flex-shrink 1, tailles minimales 0, taille = boîte bordure comprise. */
+.H2_screen, .H2_screen * {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    position: relative;          /* UITK : position relative par défaut, ordre de peinture = ordre du DOM */
+    border-style: solid;         /* UITK : bordures toujours pleines, largeur 0 par défaut */
+    border-width: 0;
+    border-color: transparent;
+    font-family: inherit;
+}
+button.H2_confirm { cursor: pointer; font-family: inherit; outline: none; }
+
+/* =====================================================================================================
+   PARTIE B — STYLES TRANSPOSABLES EN USS (Unity 6000.5)
+   Sous-ensemble volontaire : px uniquement, flexbox, couleurs rgb/rgba, bordures pleines, var() non
+   imbriqué, rotate/scale/translate/transform-origin/transition, sélecteurs classe/descendant/:hover/:active.
+   Les propriétés -unity-* sont doublées à côté de leur équivalent CSS (le navigateur les ignore) pour que
+   la copie vers un .uss soit directe : garder -unity-*, retirer font-weight / font-style / text-align.
+   ===================================================================================================== */
+
+/* Jetons : les --cdp-* existent déjà dans Assets/UI/Styles/variables.uss (fournis par theme.tss en jeu,
+   recopiés ici à l'identique pour le navigateur). Les --h2-* sont propres à cet écran. */
+:root {
+    --cdp-color-text: rgb(255, 255, 255);
+    --cdp-color-role-title: rgb(240, 208, 138);
+    --cdp-color-role-faction: rgb(214, 182, 120);
+    --cdp-color-role-panel: rgb(38, 31, 20);
+    --cdp-color-role-panel-deep: rgb(28, 23, 15);
+    --cdp-color-role-border: rgb(191, 154, 82);
+    --cdp-color-role-border-soft: rgba(191, 154, 82, 0.30);
+    --cdp-color-role-passive: rgb(198, 190, 172);
+    --cdp-color-role-surface: rgba(0, 0, 0, 0.25);
+    --cdp-radius-role: 18px;
+    --cdp-radius-role-tight: 12px;
+
+    --h2-color-screen: rgb(14, 10, 9);                 /* fond : plateau flouté + voile, aplati */
+    --h2-color-faction: rgb(255, 49, 49);              /* FactionDatabase : Anomalie (1, 0.192, 0.192) */
+    --h2-color-faction-text: rgb(255, 104, 104);       /* rouge éclairci pour le texte sur fond sombre */
+    --h2-color-faction-frame: rgb(140, 27, 27);        /* cadre de carte : faction assombrie (RoleCardElement.SetAccent) */
+    --h2-color-faction-soft: rgba(255, 49, 49, 0.16);
+    --h2-color-faction-line: rgba(255, 49, 49, 0.45);   /* anneaux / fissures de l'emblème */
+    --h2-color-faction-faint: rgba(255, 49, 49, 0.25);  /* liserés discrets */
+    --h2-color-faction-halo: rgba(255, 49, 49, 0.08);
+    --h2-color-faction-ghost: rgba(255, 49, 49, 0.10);  /* anneaux du décor */
+    --h2-color-faction-glow: rgba(255, 49, 49, 0.045);
+    --h2-color-faction-deep: rgba(90, 10, 12, 0.70);    /* remplissage du losange */
+    --h2-color-matte: rgb(8, 6, 7);                    /* matte de carte (RoleCardElement.Matte) */
+    --h2-color-art: rgb(26, 12, 14);                   /* fond d'illustration (RoleCardElement.Fallback, réchauffé) */
+    --h2-color-text-muted: rgb(176, 164, 146);
+    --h2-color-objective: rgb(22, 16, 13);
+    --h2-color-active-surface: rgba(240, 208, 138, 0.07);
+    --h2-color-active-border: rgba(191, 154, 82, 0.45);
+    --h2-color-active-bevel: rgba(255, 236, 190, 0.30);
+    --h2-color-passive-surface: rgba(0, 0, 0, 0.30);
+    --h2-color-button: rgb(240, 208, 138);
+    --h2-color-button-hover: rgb(255, 226, 164);
+    --h2-color-button-text: rgb(38, 24, 12);
+}
+
+/* ---------- Racine plein écran ---------- */
+.H2_screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    padding: 40px 96px 36px 96px;
+    background-color: var(--h2-color-screen);
+    overflow: hidden;
+    color: var(--cdp-color-text);
+}
+
+/* Variantes de faction (non utilisées par la capture) : le contrôleur ajoute la classe sur la racine.
+   Couleurs = FactionDatabase.asset ; cadre = couleur assombrie comme RoleCardElement.SetAccent. */
+.H2_screen--elu {
+    --h2-color-faction: rgb(126, 217, 87);
+    --h2-color-faction-text: rgb(160, 232, 128);
+    --h2-color-faction-frame: rgb(69, 119, 48);
+    --h2-color-faction-soft: rgba(126, 217, 87, 0.16);
+    --h2-color-faction-line: rgba(126, 217, 87, 0.45);
+    --h2-color-faction-faint: rgba(126, 217, 87, 0.25);
+    --h2-color-faction-halo: rgba(126, 217, 87, 0.08);
+    --h2-color-faction-ghost: rgba(126, 217, 87, 0.10);
+    --h2-color-faction-glow: rgba(126, 217, 87, 0.045);
+    --h2-color-faction-deep: rgba(24, 60, 16, 0.70);
+}
+.H2_screen--marginal {
+    --h2-color-faction: rgb(255, 189, 89);
+    --h2-color-faction-text: rgb(255, 208, 138);
+    --h2-color-faction-frame: rgb(140, 104, 49);
+    --h2-color-faction-soft: rgba(255, 189, 89, 0.16);
+    --h2-color-faction-line: rgba(255, 189, 89, 0.45);
+    --h2-color-faction-faint: rgba(255, 189, 89, 0.25);
+    --h2-color-faction-halo: rgba(255, 189, 89, 0.08);
+    --h2-color-faction-ghost: rgba(255, 189, 89, 0.10);
+    --h2-color-faction-glow: rgba(255, 189, 89, 0.045);
+    --h2-color-faction-deep: rgba(80, 52, 10, 0.70);
+}
+
+/* ---------- Décor : anneaux du Portail (cercles = border-radius égal à la demi-taille) ---------- */
+.H2_backdrop {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+.H2_backdrop-ring {
+    position: absolute;
+    border-width: 2px;
+    border-color: var(--h2-color-faction-ghost);
+}
+.H2_backdrop-ring--xl {
+    left: -260px;
+    top: -170px;
+    width: 1300px;
+    height: 1300px;
+    border-radius: 650px;
+    border-color: rgba(191, 154, 82, 0.07);
+}
+.H2_backdrop-ring--lg {
+    left: -60px;
+    top: 30px;
+    width: 900px;
+    height: 900px;
+    border-radius: 450px;
+    border-width: 3px;
+}
+.H2_backdrop-ring--md {
+    left: 1480px;
+    top: -220px;
+    width: 700px;
+    height: 700px;
+    border-radius: 350px;
+    border-color: rgba(191, 154, 82, 0.06);
+}
+.H2_backdrop-glow {
+    position: absolute;
+    left: 110px;
+    top: 200px;
+    width: 600px;
+    height: 600px;
+    border-radius: 300px;
+    background-color: var(--h2-color-faction-glow);
+}
+
+/* ---------- En-tête ---------- */
+.H2_header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 1728px;
+    height: 34px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+.H2_header-rule {
+    height: 1px;
+    flex-grow: 1;
+    background-color: var(--cdp-color-role-border-soft);
+}
+.H2_header-diamond {
+    width: 10px;
+    height: 10px;
+    rotate: 45deg;
+    margin: 0 18px;
+    background-color: var(--cdp-color-role-border);
+}
+.H2_header-title {
+    font-size: 26px;
+    letter-spacing: 8px;
+    color: var(--cdp-color-role-faction);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---------- Rangée principale ---------- */
+.H2_main {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 1728px;
+    flex-grow: 1;
+}
+
+/* ---------- Colonne gauche : carte + objectif ---------- */
+.H2_side {
+    width: 480px;
+    flex-shrink: 0;
+}
+
+/* Carte 5:7 (même grammaire que RoleCardElement : matte noire, illustration incrustée, nom en or dessous,
+   cadre teinté par la faction). Taille fixe : USS n'a pas d'aspect-ratio. */
+.H2_card {
+    width: 480px;
+    height: 672px;
+    flex-shrink: 0;
+    padding: 12px 12px 10px 12px;
+    background-color: var(--h2-color-matte);
+    border-width: 3px;
+    border-color: var(--h2-color-faction-frame);
+    border-radius: var(--cdp-radius-role);
+    overflow: hidden;
+}
+.H2_card-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+.H2_chip-faction {
+    flex-direction: row;
+    align-items: center;
+    height: 36px;
+    padding: 0 14px;
+    border-width: 2px;
+    border-color: var(--h2-color-faction);
+    border-radius: 18px;
+    background-color: var(--h2-color-faction-soft);
+}
+.H2_chip-faction-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    margin-right: 10px;
+    background-color: var(--h2-color-faction);
+}
+.H2_chip-faction-label {
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--h2-color-faction-text);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+.H2_stars {
+    flex-direction: row;
+    align-items: center;
+}
+.H2_star {
+    font-size: 26px;
+    margin-left: 2px;
+    color: var(--cdp-color-role-title);
+    white-space: nowrap;
+}
+.H2_star--empty {
+    opacity: 0.28;
+}
+
+/* Illustration : emblème du Portail composé de formes (aucune image). En jeu : background-image = portrait
+   du rôle (Role.rolePortrait) avec -unity-background-scale-mode: scale-and-crop ; l'emblème reste en repli. */
+.H2_card-art {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--h2-color-art);
+    border-radius: var(--cdp-radius-role-tight);
+    border-width: 1px;
+    border-color: var(--h2-color-faction-faint);
+    overflow: hidden;
+}
+.H2_emblem {
+    position: relative;
+    width: 340px;
+    height: 340px;
+    flex-shrink: 0;
+}
+.H2_emblem > .H2_emblem-part {
+    position: absolute;
+}
+.H2_emblem-halo {
+    left: 0;
+    top: 0;
+    width: 340px;
+    height: 340px;
+    border-radius: 170px;
+    background-color: var(--h2-color-faction-halo);
+}
+.H2_emblem-crack {
+    left: 169px;
+    top: 0;
+    width: 2px;
+    height: 340px;
+    background-color: var(--h2-color-faction-line);
+}
+.H2_emblem-crack--a {
+    top: 40px;
+    height: 260px;
+    rotate: 58deg;
+    background-color: var(--h2-color-faction-faint);
+}
+.H2_emblem-crack--b {
+    top: 60px;
+    height: 220px;
+    rotate: -34deg;
+    background-color: rgba(240, 208, 138, 0.25);
+}
+.H2_emblem-ring {
+    left: 20px;
+    top: 20px;
+    width: 300px;
+    height: 300px;
+    border-radius: 150px;
+    border-width: 2px;
+    border-color: var(--h2-color-faction-line);
+}
+.H2_emblem-ring--gold {
+    left: 52px;
+    top: 52px;
+    width: 236px;
+    height: 236px;
+    border-radius: 118px;
+    border-width: 3px;
+    border-color: rgba(240, 208, 138, 0.75);
+}
+.H2_emblem-stud {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: var(--cdp-color-role-title);
+}
+.H2_emblem-stud--n { left: 164px; top: 47px; }
+.H2_emblem-stud--s { left: 164px; top: 281px; }
+.H2_emblem-stud--w { left: 47px;  top: 164px; }
+.H2_emblem-stud--e { left: 281px; top: 164px; }
+.H2_emblem-diamond {
+    left: 95px;
+    top: 95px;
+    width: 150px;
+    height: 150px;
+    rotate: 45deg;
+    border-width: 3px;
+    border-color: var(--h2-color-faction);
+    background-color: var(--h2-color-faction-deep);
+}
+.H2_emblem-diamond--inner {
+    left: 122px;
+    top: 122px;
+    width: 96px;
+    height: 96px;
+    border-width: 1px;
+    border-color: rgba(240, 208, 138, 0.85);
+    background-color: rgba(0, 0, 0, 0);
+}
+.H2_emblem-core {
+    left: 142px;
+    top: 142px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--h2-color-faction);
+    align-items: center;
+    justify-content: center;
+}
+.H2_emblem-pupil {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: rgb(24, 6, 6);
+}
+
+.H2_card-name {
+    height: 64px;
+    flex-shrink: 0;
+    margin-top: 8px;
+    font-size: 30px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    justify-content: center;
+    text-align: center;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+/* Bloc objectif (sous la carte) */
+.H2_objective {
+    flex-grow: 1;
+    margin-top: 20px;
+    padding: 18px 22px;
+    background-color: var(--h2-color-objective);
+    border-left-width: 4px;
+    border-left-color: var(--h2-color-faction);
+    border-top-right-radius: var(--cdp-radius-role-tight);
+    border-bottom-right-radius: var(--cdp-radius-role-tight);
+}
+.H2_objective-label {
+    font-size: 20px;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    color: var(--h2-color-faction-text);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+.H2_objective-text {
+    font-size: 24px;
+    color: var(--cdp-color-text);
+    white-space: normal;
+}
+
+/* ---------- Panneau d'information (droite) ---------- */
+.H2_panel {
+    width: 1200px;
+    flex-shrink: 0;
+    padding: 30px 40px 26px 40px;
+    background-color: var(--cdp-color-role-panel);
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border);
+    border-radius: var(--cdp-radius-role);
+}
+.H2_faction-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+}
+.H2_faction-name {
+    font-size: 24px;
+    letter-spacing: 4px;
+    color: var(--h2-color-faction-text);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+.H2_faction-sep {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    margin: 0 14px;
+    background-color: var(--cdp-color-role-border);
+}
+.H2_faction-tagline {
+    font-size: 22px;
+    color: var(--h2-color-text-muted);
+    white-space: nowrap;
+}
+.H2_role-epithet {
+    font-size: 26px;
+    color: var(--cdp-color-role-faction);
+    font-style: italic;
+    -unity-font-style: italic;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.H2_role-name {
+    font-size: 60px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: normal;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+.H2_meta-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+}
+.H2_meta-chip {
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    margin-right: 12px;
+    border-width: 1px;
+    border-color: var(--cdp-color-role-border-soft);
+    border-radius: 20px;
+    background-color: rgba(0, 0, 0, 0.22);
+}
+.H2_meta-key {
+    font-size: 22px;
+    color: var(--h2-color-text-muted);
+    margin-right: 8px;
+    white-space: nowrap;
+}
+.H2_meta-value {
+    font-size: 22px;
+    color: var(--cdp-color-text);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+.H2_meta-stars {
+    font-size: 22px;
+    color: var(--cdp-color-role-title);
+    margin-right: 8px;
+    white-space: nowrap;
+}
+.H2_lore {
+    font-size: 24px;
+    color: var(--cdp-color-text);
+    white-space: normal;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+/* En-tête de la liste des pouvoirs + légende actif / passif */
+.H2_powers-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    margin-bottom: 12px;
+    border-top-width: 1px;
+    border-top-color: var(--cdp-color-role-border-soft);
+    flex-shrink: 0;
+}
+.H2_powers-title-row {
+    flex-direction: row;
+    align-items: center;
+}
+.H2_powers-title {
+    font-size: 24px;
+    letter-spacing: 4px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+}
+.H2_powers-count {
+    min-width: 32px;
+    height: 32px;
+    margin-left: 12px;
+    padding: 0 8px;
+    border-radius: 16px;
+    background-color: var(--cdp-color-role-border-soft);
+    font-size: 20px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    justify-content: center;
+    text-align: center;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+.H2_legend {
+    flex-direction: row;
+    align-items: center;
+}
+.H2_legend-item {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 22px;
+}
+.H2_legend-text {
+    font-size: 20px;
+    color: var(--h2-color-text-muted);
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+/* Zone défilante (en UXML : ui:ScrollView). Tout tient à l'écran avec les données factices ; la
+   ScrollView absorbe un rôle à 6 pouvoirs ou des descriptions longues sans casser la mise en page. */
+.H2_powers {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+.H2_power {
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 10px 18px 10px 14px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.H2_power--last {
+    margin-bottom: 0;
+}
+/* Grammaire reprise de RoleCard.uss : actif = en relief (ce que tu DÉCLENCHES), passif = en creux (ce que tu AS). */
+.H2_power--active {
+    background-color: var(--h2-color-active-surface);
+    border-width: 1px;
+    border-color: var(--h2-color-active-border);
+    border-top-color: var(--h2-color-active-bevel);
+}
+.H2_power--passive {
+    background-color: var(--h2-color-passive-surface);
+    border-left-width: 4px;
+    border-left-color: var(--cdp-color-role-border);
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+.H2_badge {
+    width: 118px;
+    height: 34px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    margin-right: 18px;
+    border-radius: 17px;
+    border-width: 2px;
+    justify-content: center;
+    font-size: 19px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    -unity-font-style: bold;
+    text-align: center;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+.H2_badge--active {
+    background-color: var(--cdp-color-role-title);
+    border-color: var(--cdp-color-role-title);
+    color: var(--cdp-color-role-panel);
+}
+.H2_badge--passive {
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(191, 154, 82, 0.75);
+    color: var(--cdp-color-role-faction);
+}
+.H2_badge--mini {
+    width: 92px;
+    height: 28px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    margin: 0;
+}
+.H2_power-body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.H2_power-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+.H2_power-name {
+    font-size: 26px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+.H2_power--passive .H2_power-name {
+    color: var(--cdp-color-role-faction);
+}
+.H2_power-uses {
+    font-size: 20px;
+    color: var(--h2-color-text-muted);
+    margin-left: 16px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.H2_power-desc {
+    font-size: 22px;
+    color: var(--cdp-color-text);
+    white-space: normal;
+}
+.H2_power--passive .H2_power-desc {
+    color: var(--cdp-color-role-passive);
+}
+
+/* ---------- Pied de page : consigne + minuterie + bouton de confirmation ---------- */
+.H2_footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 1728px;
+    height: 76px;
+    margin-top: 20px;
+    flex-shrink: 0;
+}
+.H2_hint {
+    flex-direction: row;
+    align-items: center;
+}
+.H2_hint-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    border-width: 2px;
+    border-color: var(--cdp-color-role-border);
+    margin-right: 14px;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--cdp-color-role-title);
+    font-weight: 700;
+    -unity-font-style: bold;
+    text-align: center;
+    -unity-text-align: middle-center;
+}
+.H2_hint-text {
+    font-size: 24px;
+    color: var(--h2-color-text-muted);
+    white-space: nowrap;
+}
+.H2_hint-strong {
+    color: var(--cdp-color-text);
+    font-weight: 700;
+    -unity-font-style: bold;
+    margin-right: 8px;
+}
+.H2_actions {
+    flex-direction: row;
+    align-items: center;
+}
+.H2_timer {
+    width: 300px;
+    margin-right: 28px;
+}
+.H2_timer-text {
+    font-size: 20px;
+    color: var(--h2-color-text-muted);
+    margin-bottom: 8px;
+    text-align: right;
+    -unity-text-align: middle-right;
+    white-space: nowrap;
+}
+.H2_timer-track {
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(255, 255, 255, 0.10);
+    align-items: flex-end;
+}
+.H2_timer-fill {
+    width: 64%;                       /* piloté en C# : style.width = Length.Percent(restant) */
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--cdp-color-role-border);
+}
+.H2_confirm {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 380px;
+    height: 72px;
+    padding: 0 28px;
+    border-width: 2px;
+    border-color: rgb(255, 236, 190);
+    border-radius: 36px;
+    background-color: var(--h2-color-button);
+    color: var(--h2-color-button-text);
+    font-size: 28px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    -unity-font-style: bold;
+    text-align: center;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+    transition-property: background-color, scale;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+}
+.H2_confirm:hover {
+    background-color: var(--h2-color-button-hover);
+    scale: 1.03;
+}
+.H2_confirm:active {
+    scale: 0.97;
+}
+.H2_confirm-arrow {
+    width: 14px;
+    height: 14px;
+    margin-left: 18px;
+    rotate: 45deg;
+    border-top-width: 4px;
+    border-right-width: 4px;
+    border-color: var(--h2-color-button-text);
+}
+</style>
+</head>
+<body>
+<!-- Correspondance UXML : chaque <div> = ui:VisualElement, chaque <div> portant du texte seul = ui:Label,
+     <button> = ui:Button, .H2_powers = ui:ScrollView. Les données ci-dessous sont factices mais tirées du
+     projet (Assets/ScriptableObjects/Characters/MageOcculte.asset, Assets/Prefabs/Powers/*.prefab, GDD). -->
+<div class="H2_emu-viewport">
+<div class="H2_emu-stage">
+
+<div class="H2_screen" id="role-reveal">
+
+    <!-- Décor -->
+    <div class="H2_backdrop">
+        <div class="H2_backdrop-glow"></div>
+        <div class="H2_backdrop-ring H2_backdrop-ring--xl"></div>
+        <div class="H2_backdrop-ring H2_backdrop-ring--lg"></div>
+        <div class="H2_backdrop-ring H2_backdrop-ring--md"></div>
+    </div>
+
+    <!-- En-tête -->
+    <div class="H2_header">
+        <div class="H2_header-rule"></div>
+        <div class="H2_header-diamond"></div>
+        <div class="H2_header-title">LE PORTAIL T'A DÉSIGNÉ</div>
+        <div class="H2_header-diamond"></div>
+        <div class="H2_header-rule"></div>
+    </div>
+
+    <div class="H2_main">
+
+        <!-- Colonne gauche : carte du rôle + objectif -->
+        <div class="H2_side">
+            <div class="H2_card" id="role-card">
+                <div class="H2_card-top">
+                    <div class="H2_chip-faction">
+                        <div class="H2_chip-faction-dot"></div>
+                        <div class="H2_chip-faction-label" id="card-faction">ANOMALIE</div>
+                    </div>
+                    <div class="H2_stars" id="card-difficulty">
+                        <div class="H2_star">★</div>
+                        <div class="H2_star">★</div>
+                        <div class="H2_star">★</div>
+                    </div>
+                </div>
+                <div class="H2_card-art" id="card-art">
+                    <div class="H2_emblem">
+                        <div class="H2_emblem-part H2_emblem-halo"></div>
+                        <div class="H2_emblem-part H2_emblem-crack"></div>
+                        <div class="H2_emblem-part H2_emblem-crack H2_emblem-crack--a"></div>
+                        <div class="H2_emblem-part H2_emblem-crack H2_emblem-crack--b"></div>
+                        <div class="H2_emblem-part H2_emblem-ring"></div>
+                        <div class="H2_emblem-part H2_emblem-ring H2_emblem-ring--gold"></div>
+                        <div class="H2_emblem-part H2_emblem-stud H2_emblem-stud--n"></div>
+                        <div class="H2_emblem-part H2_emblem-stud H2_emblem-stud--s"></div>
+                        <div class="H2_emblem-part H2_emblem-stud H2_emblem-stud--w"></div>
+                        <div class="H2_emblem-part H2_emblem-stud H2_emblem-stud--e"></div>
+                        <div class="H2_emblem-part H2_emblem-diamond"></div>
+                        <div class="H2_emblem-part H2_emblem-diamond H2_emblem-diamond--inner"></div>
+                        <div class="H2_emblem-part H2_emblem-core">
+                            <div class="H2_emblem-pupil"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="H2_card-name" id="card-name">Va'ahl, Le Mage Occulte</div>
+            </div>
+
+            <div class="H2_objective">
+                <div class="H2_objective-label">TON OBJECTIF</div>
+                <div class="H2_objective-text" id="objective">Corrompre tous les joueurs avant que les Élus n'enchaînent toutes les Anomalies.</div>
+            </div>
+        </div>
+
+        <!-- Panneau d'information -->
+        <div class="H2_panel">
+            <div class="H2_faction-row">
+                <div class="H2_faction-name" id="faction-name">ANOMALIE</div>
+                <div class="H2_faction-sep"></div>
+                <div class="H2_faction-tagline" id="faction-tagline">Tu joues contre les Élus et les Marginaux</div>
+            </div>
+            <div class="H2_role-epithet" id="role-epithet">Va'ahl,</div>
+            <div class="H2_role-name" id="role-name">Le Mage Occulte</div>
+
+            <div class="H2_meta-row">
+                <div class="H2_meta-chip">
+                    <div class="H2_meta-key">Difficulté</div>
+                    <div class="H2_meta-stars">★★★</div>
+                    <div class="H2_meta-value">Expert</div>
+                </div>
+                <div class="H2_meta-chip">
+                    <div class="H2_meta-key">Archétype</div>
+                    <div class="H2_meta-value">Détective</div>
+                </div>
+                <div class="H2_meta-chip">
+                    <div class="H2_meta-key">Ordre de réveil</div>
+                    <div class="H2_meta-value">6e</div>
+                </div>
+            </div>
+
+            <div class="H2_lore" id="role-description">Ancien gardien du Portail, Va'ahl s'est laissé dévorer par la Corruption. Chaque nuit, il démasque les Élus et répand l'ombre parmi eux. Mais s'il est enchaîné, il jouera le tout pour le tout.</div>
+
+            <div class="H2_powers-head">
+                <div class="H2_powers-title-row">
+                    <div class="H2_powers-title">POUVOIRS</div>
+                    <div class="H2_powers-count" id="powers-count">5</div>
+                </div>
+                <div class="H2_legend">
+                    <div class="H2_legend-item">
+                        <div class="H2_badge H2_badge--active H2_badge--mini">ACTIF</div>
+                        <div class="H2_legend-text">pendant ton réveil</div>
+                    </div>
+                    <div class="H2_legend-item">
+                        <div class="H2_badge H2_badge--passive H2_badge--mini">PASSIF</div>
+                        <div class="H2_legend-text">toujours en effet</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="H2_powers" id="powers">
+                <div class="H2_power H2_power--active">
+                    <div class="H2_badge H2_badge--active">ACTIF</div>
+                    <div class="H2_power-body">
+                        <div class="H2_power-head">
+                            <div class="H2_power-name">Étreintes des ombres</div>
+                            <div class="H2_power-uses">2 utilisations · En chaîne ×2</div>
+                        </div>
+                        <div class="H2_power-desc">Devine le rôle exact d'un joueur pour le corrompre, puis recommence jusqu'à l'échec.</div>
+                    </div>
+                </div>
+                <div class="H2_power H2_power--active">
+                    <div class="H2_badge H2_badge--active">ACTIF</div>
+                    <div class="H2_power-body">
+                        <div class="H2_power-head">
+                            <div class="H2_power-name">Corruption ciblée</div>
+                            <div class="H2_power-uses">1 utilisation par nuit</div>
+                        </div>
+                        <div class="H2_power-desc">Choisis un joueur : il est corrompu et tu découvres son état de corruption.</div>
+                    </div>
+                </div>
+                <div class="H2_power H2_power--passive">
+                    <div class="H2_badge H2_badge--passive">PASSIF</div>
+                    <div class="H2_power-body">
+                        <div class="H2_power-head">
+                            <div class="H2_power-name">Auto Corruption</div>
+                            <div class="H2_power-uses">Début de partie</div>
+                        </div>
+                        <div class="H2_power-desc">Tu commences la partie déjà corrompu.</div>
+                    </div>
+                </div>
+                <div class="H2_power H2_power--passive">
+                    <div class="H2_badge H2_badge--passive">PASSIF</div>
+                    <div class="H2_power-body">
+                        <div class="H2_power-head">
+                            <div class="H2_power-name">Corruption Insight</div>
+                            <div class="H2_power-uses">Permanent</div>
+                        </div>
+                        <div class="H2_power-desc">Tu connais en permanence l'état de corruption de tous les joueurs.</div>
+                    </div>
+                </div>
+                <div class="H2_power H2_power--passive H2_power--last">
+                    <div class="H2_badge H2_badge--passive">PASSIF</div>
+                    <div class="H2_power-body">
+                        <div class="H2_power-head">
+                            <div class="H2_power-name">Abattre le portail</div>
+                            <div class="H2_power-uses">Si tu es enchaîné</div>
+                        </div>
+                        <div class="H2_power-desc">Nomme le rôle de chaque joueur encore caché : trouve-les tous et les Anomalies gagnent.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pied de page -->
+    <div class="H2_footer">
+        <div class="H2_hint">
+            <div class="H2_hint-mark">!</div>
+            <div class="H2_hint-text H2_hint-strong">Garde ton rôle secret.</div>
+            <div class="H2_hint-text">Un rôle révélé est une arme pour le camp adverse.</div>
+        </div>
+        <div class="H2_actions">
+            <div class="H2_timer">
+                <div class="H2_timer-text" id="timer-text">La nuit tombe dans 14 s</div>
+                <div class="H2_timer-track">
+                    <div class="H2_timer-fill"></div>
+                </div>
+            </div>
+            <button class="H2_confirm" id="confirm" type="button">J'AI COMPRIS<div class="H2_confirm-arrow"></div></button>
+        </div>
+    </div>
+
+</div>
+
+</div>
+</div>
+</body>
+</html>

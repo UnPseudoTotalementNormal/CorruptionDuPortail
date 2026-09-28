@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Corruption du Portail — Vote</title>
+<style>
+/* =====================================================================
+   Corruption du Portail — Ecran de VOTE (maquette HTML/CSS)
+   Prefixe de classes : H1_
+   Objectif : transposable en UXML/USS (Unity 6000.5.0f1 / UI Toolkit).
+   Contraintes USS respectees : flexbox uniquement, px/% uniquement,
+   pas de gradient, pas de box-shadow, pas de text-shadow.
+   Voir RAPPORT.md pour les points non transposables.
+   Palette echantillonnee depuis Assets/UI/Styles/variables.uss
+   (lane "Message journal" : near-black warm, off-white, vert lobby,
+   or, rouge corrompus).
+   ===================================================================== */
+
+/* Reset minimal — en USS chaque VisualElement est deja en flex column,
+   marges/paddings a 0. On le reproduit ici pour coller au modele. */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* USS : le modele de boite est toujours border-box. */
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    /* En USS ces couleurs viennent de variables.uss (--cdp-color-journal-*). */
+    background-color: rgb(10, 7, 8);
+    color: rgb(240, 231, 221);
+    /* Pas de ressource externe : pile de polices systeme.
+       En USS la police est un asset defini dans le PanelSettings. */
+    font-family: "Segoe UI", "DejaVu Sans", Arial, sans-serif;
+    /* Alignement du contenu centre horizontalement (equivalent align-items). */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Racine de l'ecran. En USS ce serait le VisualElement racine (width/height 100%). */
+.H1_root {
+    width: 100%;
+    height: 100%;
+    max-width: 1600px;
+    display: flex;
+    flex-direction: column;
+    padding: 34px 48px 30px 48px;
+}
+
+/* ----------------------------------------------------------------- */
+/* En-tete : titre de phase + compte a rebours                       */
+/* ----------------------------------------------------------------- */
+.H1_header {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(58, 44, 41);
+}
+
+.H1_title-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.H1_eyebrow {
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: rgb(164, 147, 138);
+    font-weight: bold;
+}
+
+.H1_title {
+    font-size: 46px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+    margin-top: 4px;
+}
+
+.H1_title-accent {
+    color: rgb(95, 217, 135);
+}
+
+/* Compte a rebours */
+.H1_countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 300px;
+}
+
+.H1_countdown-label {
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: rgb(164, 147, 138);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.H1_countdown-value {
+    font-size: 66px;
+    font-weight: bold;
+    color: rgb(238, 201, 122);
+    /* Chiffre monospace conserve la largeur en USS via -unity-text-align. */
+}
+
+.H1_countdown-value--urgent {
+    color: rgb(219, 74, 86);
+}
+
+/* Barre de temps (equivalent d'un anneau, non transposable → barre). */
+.H1_timebar {
+    width: 300px;
+    height: 8px;
+    margin-top: 8px;
+    background-color: rgb(28, 22, 21);
+    border-radius: 4px;
+    /* flex pour positionner le remplissage */
+    display: flex;
+    flex-direction: row;
+}
+
+.H1_timebar-fill {
+    height: 100%;
+    width: 42%;
+    background-color: rgb(238, 201, 122);
+    border-radius: 4px;
+}
+
+/* ----------------------------------------------------------------- */
+/* Barre d'instruction + statut du vote local                        */
+/* ----------------------------------------------------------------- */
+.H1_subbar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    margin-bottom: 18px;
+}
+
+.H1_instruction {
+    font-size: 24px;
+    color: rgb(210, 199, 186);
+}
+
+.H1_instruction-strong {
+    color: rgb(219, 74, 86);
+    font-weight: bold;
+}
+
+/* Pastille de statut du vote local */
+.H1_myvote {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(95, 217, 135);
+    border-radius: 20px;
+}
+
+.H1_myvote-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background-color: rgb(95, 217, 135);
+    margin-right: 10px;
+}
+
+.H1_myvote-label {
+    font-size: 20px;
+    color: rgb(164, 147, 138);
+    margin-right: 6px;
+}
+
+.H1_myvote-target {
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+}
+
+/* ----------------------------------------------------------------- */
+/* Liste des joueurs votables                                        */
+/* ----------------------------------------------------------------- */
+/* Zone scrollable : en USS ce serait un ScrollView (flex-grow:1). */
+.H1_list {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.H1_row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 14px 20px;
+    margin-bottom: 12px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 12px;
+}
+
+/* Ligne du joueur choisi par le joueur local : liseré vert. */
+.H1_row--myvote {
+    border-color: rgb(95, 217, 135);
+    background-color: rgb(22, 26, 22);
+}
+
+/* Ligne du joueur local lui-meme : non votable. */
+.H1_row--self {
+    border-color: rgb(58, 44, 41);
+    background-color: rgb(16, 12, 12);
+}
+
+/* Avatar (cercle a initiales — aucune image externe). */
+.H1_avatar {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: rgb(10, 7, 8);
+    margin-right: 18px;
+}
+
+/* Couleurs d'avatar (donnees factices, teintes desaturees). */
+.H1_avatar--a { background-color: rgb(196, 168, 120); }
+.H1_avatar--b { background-color: rgb(150, 190, 170); }
+.H1_avatar--c { background-color: rgb(190, 150, 150); }
+.H1_avatar--d { background-color: rgb(160, 168, 200); }
+.H1_avatar--e { background-color: rgb(200, 178, 130); }
+.H1_avatar--f { background-color: rgb(170, 190, 150); }
+.H1_avatar--g { background-color: rgb(190, 160, 190); }
+
+/* Bloc identite */
+.H1_identity {
+    display: flex;
+    flex-direction: column;
+    width: 260px;
+    flex-shrink: 0;
+}
+
+.H1_name {
+    font-size: 27px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+}
+
+.H1_name-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.H1_tag {
+    margin-left: 12px;
+    padding: 2px 10px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-radius: 10px;
+    color: rgb(10, 7, 8);
+    background-color: rgb(95, 217, 135);
+}
+
+.H1_substatus {
+    font-size: 18px;
+    color: rgb(164, 147, 138);
+    margin-top: 3px;
+}
+
+/* Bloc decompte des votes : barre proportionnelle + voteurs. */
+.H1_tally {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 8px;
+    margin-right: 24px;
+}
+
+.H1_tally-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.H1_votebar {
+    flex-grow: 1;
+    height: 14px;
+    background-color: rgb(28, 22, 21);
+    border-radius: 7px;
+    display: flex;
+    flex-direction: row;
+    margin-right: 16px;
+}
+
+.H1_votebar-fill {
+    height: 100%;
+    background-color: rgb(219, 74, 86);
+    border-radius: 7px;
+}
+
+.H1_votebar-fill--low {
+    background-color: rgb(150, 120, 64);
+}
+
+.H1_votecount {
+    flex-shrink: 0;
+    min-width: 92px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.H1_votecount-num {
+    font-size: 34px;
+    font-weight: bold;
+    color: rgb(238, 201, 122);
+}
+
+.H1_votecount-unit {
+    font-size: 18px;
+    color: rgb(164, 147, 138);
+    margin-left: 6px;
+    margin-bottom: 4px;
+}
+
+/* Rangee des mini-avatars des voteurs. */
+.H1_voters {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.H1_voter-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    margin-right: 6px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: rgb(10, 7, 8);
+    background-color: rgb(120, 105, 98);
+}
+
+.H1_voters-none {
+    font-size: 17px;
+    color: rgb(111, 95, 88);
+}
+
+/* Bouton "Voter" par ligne. */
+.H1_vote-btn {
+    flex-shrink: 0;
+    width: 168px;
+    padding: 14px 0;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    color: rgb(240, 231, 221);
+    background-color: rgb(43, 34, 32);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.H1_vote-btn:hover {
+    background-color: rgb(58, 44, 41);
+}
+
+/* Etat : ce joueur est mon vote actuel. */
+.H1_vote-btn--active {
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-color: rgb(95, 217, 135);
+}
+
+/* Etat : non votable (joueur local). */
+.H1_vote-btn--disabled {
+    color: rgb(111, 95, 88);
+    background-color: rgb(24, 19, 18);
+    border-color: rgb(38, 30, 28);
+}
+
+/* ----------------------------------------------------------------- */
+/* Pied : progression du vote + passer son tour                      */
+/* ----------------------------------------------------------------- */
+.H1_footer {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    border-top-color: rgb(58, 44, 41);
+}
+
+.H1_progress {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.H1_progress-text {
+    font-size: 22px;
+    color: rgb(210, 199, 186);
+}
+
+.H1_progress-num {
+    font-weight: bold;
+    color: rgb(238, 201, 122);
+}
+
+.H1_skip-btn {
+    padding: 14px 34px;
+    font-size: 22px;
+    font-weight: bold;
+    color: rgb(164, 147, 138);
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.H1_skip-btn:hover {
+    color: rgb(240, 231, 221);
+    border-color: rgb(120, 105, 98);
+}
+
+.H1_skip-btn--active {
+    color: rgb(240, 231, 221);
+    border-color: rgb(226, 150, 58);
+}
+</style>
+</head>
+<body>
+<div class="H1_root">
+
+    <!-- ============ EN-TETE ============ -->
+    <div class="H1_header">
+        <div class="H1_title-block">
+            <div class="H1_eyebrow">CORRUPTION DU PORTAIL</div>
+            <div class="H1_title">Phase de <span class="H1_title-accent">Vote</span></div>
+        </div>
+        <div class="H1_countdown">
+            <div class="H1_countdown-label">TEMPS RESTANT</div>
+            <div class="H1_countdown-value">0:38</div>
+            <div class="H1_timebar">
+                <div class="H1_timebar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ INSTRUCTION + VOTE LOCAL ============ -->
+    <div class="H1_subbar">
+        <div class="H1_instruction">
+            Désignez le joueur à bannir du <span class="H1_instruction-strong">Portail</span>.
+        </div>
+        <div class="H1_myvote">
+            <div class="H1_myvote-dot"></div>
+            <div class="H1_myvote-label">Votre vote :</div>
+            <div class="H1_myvote-target">Baptiste</div>
+        </div>
+    </div>
+
+    <!-- ============ LISTE DES JOUEURS ============ -->
+    <div class="H1_list">
+
+        <!-- Joueur choisi par le joueur local (liseré vert + bouton actif) -->
+        <div class="H1_row H1_row--myvote">
+            <div class="H1_avatar H1_avatar--b">BM</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Baptiste</div>
+                </div>
+                <div class="H1_substatus">En vie · Gardien du seuil</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill" style="width: 100%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">3</div>
+                        <div class="H1_votecount-unit">votes</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voter-dot" style="background-color: rgb(95,217,135);">L</div>
+                    <div class="H1_voter-dot">C</div>
+                    <div class="H1_voter-dot">F</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn H1_vote-btn--active">Votre vote &#10003;</div>
+        </div>
+
+        <!-- Autre joueur, 2 votes -->
+        <div class="H1_row">
+            <div class="H1_avatar H1_avatar--a">AL</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Amélie</div>
+                </div>
+                <div class="H1_substatus">En vie · Villageoise</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill" style="width: 66%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">2</div>
+                        <div class="H1_votecount-unit">votes</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voter-dot">D</div>
+                    <div class="H1_voter-dot">G</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn">Voter</div>
+        </div>
+
+        <!-- Autre joueur, 1 vote (barre teinte "faible") -->
+        <div class="H1_row">
+            <div class="H1_avatar H1_avatar--g">GT</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Gaspard</div>
+                </div>
+                <div class="H1_substatus">En vie · Villageois</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill H1_votebar-fill--low" style="width: 33%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">1</div>
+                        <div class="H1_votecount-unit">vote</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voter-dot">A</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn">Voter</div>
+        </div>
+
+        <!-- Joueur sans vote -->
+        <div class="H1_row">
+            <div class="H1_avatar H1_avatar--c">CR</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Clément</div>
+                </div>
+                <div class="H1_substatus">En vie · Villageois</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill H1_votebar-fill--low" style="width: 0%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">0</div>
+                        <div class="H1_votecount-unit">vote</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voters-none">Aucun vote</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn">Voter</div>
+        </div>
+
+        <!-- Joueur sans vote -->
+        <div class="H1_row">
+            <div class="H1_avatar H1_avatar--d">DV</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Doriane</div>
+                </div>
+                <div class="H1_substatus">En vie · Villageoise</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill H1_votebar-fill--low" style="width: 0%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">0</div>
+                        <div class="H1_votecount-unit">vote</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voters-none">Aucun vote</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn">Voter</div>
+        </div>
+
+        <!-- Joueur local (non votable) -->
+        <div class="H1_row H1_row--self">
+            <div class="H1_avatar" style="background-color: rgb(95,217,135);">LEA</div>
+            <div class="H1_identity">
+                <div class="H1_name-row">
+                    <div class="H1_name">Léa</div>
+                    <div class="H1_tag">VOUS</div>
+                </div>
+                <div class="H1_substatus">En vie · vous ne pouvez pas vous voter</div>
+            </div>
+            <div class="H1_tally">
+                <div class="H1_tally-top">
+                    <div class="H1_votebar">
+                        <div class="H1_votebar-fill H1_votebar-fill--low" style="width: 0%;"></div>
+                    </div>
+                    <div class="H1_votecount">
+                        <div class="H1_votecount-num">0</div>
+                        <div class="H1_votecount-unit">vote</div>
+                    </div>
+                </div>
+                <div class="H1_voters">
+                    <div class="H1_voters-none">&#8212;</div>
+                </div>
+            </div>
+            <div class="H1_vote-btn H1_vote-btn--disabled">Indisponible</div>
+        </div>
+
+    </div>
+
+    <!-- ============ PIED ============ -->
+    <div class="H1_footer">
+        <div class="H1_progress">
+            <div class="H1_progress-text">
+                <span class="H1_progress-num">6</span> / 8 joueurs ont voté
+            </div>
+        </div>
+        <div class="H1_skip-btn">Passer mon vote</div>
+    </div>
+
+</div>
+</body>
+</html>

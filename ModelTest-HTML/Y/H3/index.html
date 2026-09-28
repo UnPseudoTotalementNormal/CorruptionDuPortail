@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Corruption du Portail — Lobby</title>
+<style>
+/* ============================================================================
+   Corruption du Portail — Écran de lobby (maquette HTML/CSS transposable UXML/USS)
+   Unity 6000.5.0f1 — voir ProjectVersion.txt.
+   Palette échantillonnée depuis Assets/UI/Styles/variables.uss (design-owned, provisoire).
+   Contraintes USS respectées : flexbox seulement, px/% seulement, pas de gradient,
+   pas de box-shadow, pas de grid. Voir RAPPORT.md pour les écarts.
+   ============================================================================ */
+
+/* Réinitialisation minimale — en USS chaque VisualElement a déjà box-sizing:border-box,
+   margin/padding:0 par défaut. Ici on l'impose au modèle boîte HTML pour coller au rendu. */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    /* Police système générique — aucune ressource externe. En Unity, la police est
+       définie via PanelSettings (LiberationSans par défaut). */
+    font-family: Arial, "Liberation Sans", sans-serif;
+    background-color: rgb(10, 7, 8);
+    color: rgb(240, 231, 221);
+    display: flex;
+    /* Le HTML utilise display:flex ; en USS le flex est implicite sur VisualElement. */
+}
+
+/* Racine plein écran, colonne. Occupe le format 16:9 (1920x1080 et 1280x720). */
+.H3_root {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(10, 7, 8);
+    padding: 28px 40px 24px 40px;
+}
+
+/* =========================== En-tête =========================== */
+.H3_header {
+    flex-shrink: 0;
+    flex-direction: row;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(58, 44, 41);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+}
+.H3_header-left {
+    display: flex;
+    flex-direction: column;
+}
+.H3_title {
+    font-size: 40px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: rgb(238, 201, 122); /* or — --cdp-color-journal-number */
+}
+.H3_subtitle {
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: rgb(164, 147, 138);
+    margin-top: 4px;
+}
+.H3_header-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.H3_code-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: 26px;
+}
+.H3_code-label {
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: rgb(111, 95, 88);
+}
+.H3_code-value {
+    font-size: 30px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: rgb(240, 231, 221);
+}
+.H3_count-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 22px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+}
+.H3_count-value {
+    font-size: 26px;
+    font-weight: bold;
+    color: rgb(95, 217, 135); /* accent lobby vert */
+}
+.H3_count-label {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgb(111, 95, 88);
+}
+
+/* =========================== Corps (3 colonnes) =========================== */
+.H3_body {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: row;
+    /* USS n'a pas de 'gap' -> l'espacement inter-colonnes est fait par des margins. */
+    min-height: 0;
+}
+
+/* Panneau générique */
+.H3_panel {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(14, 10, 11);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 12px;
+    padding: 18px 20px;
+    min-height: 0;
+}
+.H3_panel-head {
+    flex-shrink: 0;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: rgb(240, 231, 221);
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+.H3_panel-head-count {
+    font-size: 16px;
+    font-weight: normal;
+    letter-spacing: 1px;
+    color: rgb(164, 147, 138);
+}
+
+/* Colonne gauche : joueurs */
+.H3_col-players {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: 34%;
+    margin-right: 22px;
+}
+/* Colonne centre : composition des rôles */
+.H3_col-roles {
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-right: 22px;
+}
+/* Colonne droite : paramètres */
+.H3_col-settings {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: 25%;
+}
+
+/* -------- Liste des joueurs -------- */
+.H3_player-list {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: column;
+    /* En USS ce conteneur serait un ScrollView si la liste dépasse. */
+    overflow: auto;
+}
+.H3_player {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 8px;
+}
+.H3_player--ready {
+    border-color: rgba(95, 217, 135, 0.5);
+}
+.H3_avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 20px;
+    background-color: rgb(38, 31, 20);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(191, 154, 82);
+    color: rgb(240, 208, 138);
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+.H3_player-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.H3_player-name {
+    font-size: 19px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+}
+.H3_player-sub {
+    font-size: 14px;
+    color: rgb(150, 133, 125);
+    margin-top: 2px;
+}
+.H3_host-tag {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: rgb(238, 201, 122);
+    background-color: rgba(238, 201, 122, 0.14);
+    border-radius: 5px;
+    padding: 2px 7px;
+    margin-left: 8px;
+}
+.H3_bot-tag {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: rgb(226, 150, 58);
+    background-color: rgba(226, 150, 58, 0.12);
+    border-radius: 5px;
+    padding: 2px 7px;
+    margin-left: 8px;
+}
+/* Badge d'état prêt / pas prêt */
+.H3_ready-badge {
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-left: 10px;
+}
+.H3_ready-badge--yes {
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+}
+.H3_ready-badge--no {
+    color: rgb(164, 147, 138);
+    background-color: rgb(28, 22, 21);
+}
+
+/* -------- Composition des rôles -------- */
+.H3_roles-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+}
+.H3_faction {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 18px;
+}
+.H3_faction-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(42, 33, 31);
+}
+.H3_faction-name {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+.H3_faction-name--anomaly { color: rgb(219, 74, 86); }   /* Anomalies — rouge */
+.H3_faction-name--chosen  { color: rgb(95, 217, 135); }  /* Élus — vert */
+.H3_faction-name--marginal{ color: rgb(226, 150, 58); }  /* Marginaux — orange */
+.H3_faction-total {
+    font-size: 15px;
+    color: rgb(164, 147, 138);
+}
+/* Grille de cartes de rôle via flex-wrap (USS supporte flex-wrap, pas display:grid). */
+.H3_role-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+.H3_role-card {
+    /* Largeur fixe : en USS pas d'aspect-ratio, on fixe width et height. */
+    width: 150px;
+    margin-right: 14px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(38, 31, 20); /* --cdp-color-role-panel */
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(191, 154, 82); /* --cdp-color-role-border */
+    border-radius: 10px;
+    padding: 10px;
+}
+.H3_role-card--off {
+    background-color: rgb(20, 16, 15);
+    border-color: rgb(42, 33, 31);
+    opacity: 0.55;
+}
+.H3_role-art {
+    height: 92px;
+    border-radius: 8px;
+    background-color: rgb(28, 23, 15); /* --cdp-color-role-panel-deep */
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgba(191, 154, 82, 0.30);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    color: rgba(240, 208, 138, 0.85);
+    font-weight: bold;
+}
+.H3_role-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: rgb(240, 208, 138);
+    margin-top: 8px;
+    white-space: normal;
+    -unity-text-align: middle-center; /* équiv USS ; en HTML on double avec text-align */
+    text-align: center;
+}
+.H3_role-foot {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+.H3_role-tag {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgb(150, 133, 125);
+}
+.H3_role-count {
+    font-size: 16px;
+    font-weight: bold;
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-radius: 12px;
+    min-width: 30px;
+    padding: 2px 8px;
+    text-align: center;
+    -unity-text-align: middle-center;
+}
+.H3_role-count--off {
+    color: rgb(111, 95, 88);
+    background-color: rgb(28, 22, 21);
+}
+
+/* -------- Paramètres -------- */
+.H3_settings-list {
+    flex-grow: 1;
+    flex-shrink: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+}
+.H3_setting {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(28, 22, 21);
+}
+.H3_setting-label {
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: rgb(111, 95, 88);
+}
+.H3_setting-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+    margin-top: 3px;
+}
+.H3_setting-value--accent { color: rgb(95, 217, 135); }
+
+/* =========================== Pied de page / actions =========================== */
+.H3_footer {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    border-top-color: rgb(58, 44, 41);
+}
+.H3_footer-left {
+    display: flex;
+    flex-direction: column;
+}
+.H3_footer-status {
+    font-size: 18px;
+    color: rgb(224, 151, 58);
+}
+.H3_footer-status--ok {
+    color: rgb(111, 191, 122);
+}
+.H3_footer-hint {
+    font-size: 14px;
+    color: rgb(111, 95, 88);
+    margin-top: 3px;
+}
+.H3_footer-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+.H3_btn-secondary {
+    font-size: 20px;
+    font-weight: bold;
+    color: rgb(240, 231, 221);
+    background-color: rgb(28, 22, 21);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 10px;
+    padding: 14px 32px;
+    margin-right: 14px;
+}
+.H3_btn-primary {
+    font-size: 22px;
+    font-weight: bold;
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-width: 0;
+    border-style: solid;
+    border-radius: 10px;
+    padding: 15px 44px;
+}
+.H3_btn-primary:disabled,
+.H3_btn-primary.H3_is-disabled {
+    color: rgb(111, 95, 88);
+    background-color: rgb(28, 22, 21);
+}
+</style>
+</head>
+<body>
+<div class="H3_root">
+
+    <!-- ===================== En-tête ===================== -->
+    <div class="H3_header">
+        <div class="H3_header-left">
+            <div class="H3_title">CORRUPTION DU PORTAIL</div>
+            <div class="H3_subtitle">SALON D'ATTENTE · PARTIE PRIVÉE</div>
+        </div>
+        <div class="H3_header-right">
+            <div class="H3_code-block">
+                <div class="H3_code-label">CODE DU SALON</div>
+                <div class="H3_code-value">P0RT4L</div>
+            </div>
+            <div class="H3_count-pill">
+                <div class="H3_count-value" id="H3_count">9 / 12</div>
+                <div class="H3_count-label">JOUEURS</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== Corps ===================== -->
+    <div class="H3_body">
+
+        <!-- ---------- Colonne : joueurs ---------- -->
+        <div class="H3_panel H3_col-players">
+            <div class="H3_panel-head">
+                <span>JOUEURS CONNECTÉS</span>
+                <span class="H3_panel-head-count" id="H3_ready-count">7 prêts</span>
+            </div>
+            <div class="H3_player-list" id="H3_players">
+                <!-- injecté par JS ; contenu statique de secours ci-dessous -->
+            </div>
+        </div>
+
+        <!-- ---------- Colonne : composition des rôles ---------- -->
+        <div class="H3_panel H3_col-roles">
+            <div class="H3_panel-head">
+                <span>COMPOSITION DES RÔLES</span>
+                <span class="H3_panel-head-count" id="H3_roles-total">12 rôles pour 12 joueurs</span>
+            </div>
+            <div class="H3_roles-scroll" id="H3_roles">
+                <!-- injecté par JS ; contenu statique de secours ci-dessous -->
+            </div>
+        </div>
+
+        <!-- ---------- Colonne : paramètres ---------- -->
+        <div class="H3_panel H3_col-settings">
+            <div class="H3_panel-head"><span>PARAMÈTRES</span></div>
+            <div class="H3_settings-list" id="H3_settings">
+                <!-- injecté par JS ; contenu statique de secours ci-dessous -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Pied de page ===================== -->
+    <div class="H3_footer">
+        <div class="H3_footer-left">
+            <div class="H3_footer-status H3_footer-status--ok" id="H3_footer-status">
+                Composition valide · en attente de 2 joueurs
+            </div>
+            <div class="H3_footer-hint">Vous êtes l'hôte — vous pouvez lancer dès que tout le monde est prêt.</div>
+        </div>
+        <div class="H3_footer-actions">
+            <button class="H3_btn-secondary">Quitter</button>
+            <!-- Vue HÔTE : bouton lancer (désactivé tant que tout le monde n'est pas prêt) -->
+            <button class="H3_btn-primary H3_is-disabled">Lancer la partie</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* JS FACULTATIF — sert uniquement à injecter des données factices réalistes.
+   Aucune logique de jeu. Le rendu reste valide même sans JS (voir contenu de secours). */
+(function () {
+    // ---- Joueurs ----
+    var players = [
+        { name: "Poyo",        initials: "PO", host: true,  ready: true,  bot: false, sub: "Steam · Niveau 24" },
+        { name: "Lysandre",    initials: "LY", host: false, ready: true,  bot: false, sub: "Steam · Niveau 11" },
+        { name: "Mirka",       initials: "MI", host: false, ready: true,  bot: false, sub: "Steam · Niveau 7"  },
+        { name: "Corvus",      initials: "CO", host: false, ready: false, bot: false, sub: "Steam · Niveau 33" },
+        { name: "Naïa",        initials: "NA", host: false, ready: true,  bot: false, sub: "Steam · Niveau 3"  },
+        { name: "Grelin",      initials: "GR", host: false, ready: true,  bot: false, sub: "Steam · Niveau 18" },
+        { name: "Sombra",      initials: "SO", host: false, ready: false, bot: false, sub: "Steam · Niveau 9"  },
+        { name: "Bot Théo",    initials: "TH", host: false, ready: true,  bot: true,  sub: "Identité simulée"   },
+        { name: "Bot Isaure",  initials: "IS", host: false, ready: true,  bot: true,  sub: "Identité simulée"   }
+    ];
+
+    var playersEl = document.getElementById("H3_players");
+    if (playersEl) {
+        var readyN = 0;
+        players.forEach(function (p) {
+            if (p.ready) readyN++;
+            var row = document.createElement("div");
+            row.className = "H3_player" + (p.ready ? " H3_player--ready" : "");
+
+            var av = document.createElement("div");
+            av.className = "H3_avatar";
+            av.textContent = p.initials;
+
+            var info = document.createElement("div");
+            info.className = "H3_player-info";
+            var nameRow = document.createElement("div");
+            nameRow.className = "H3_player-name";
+            nameRow.textContent = p.name;
+            if (p.host) {
+                var ht = document.createElement("span");
+                ht.className = "H3_host-tag";
+                ht.textContent = "HÔTE";
+                nameRow.appendChild(ht);
+            }
+            if (p.bot) {
+                var bt = document.createElement("span");
+                bt.className = "H3_bot-tag";
+                bt.textContent = "BOT";
+                nameRow.appendChild(bt);
+            }
+            var sub = document.createElement("div");
+            sub.className = "H3_player-sub";
+            sub.textContent = p.sub;
+            info.appendChild(nameRow);
+            info.appendChild(sub);
+
+            var badge = document.createElement("div");
+            badge.className = "H3_ready-badge " + (p.ready ? "H3_ready-badge--yes" : "H3_ready-badge--no");
+            badge.textContent = p.ready ? "PRÊT" : "PAS PRÊT";
+
+            row.appendChild(av);
+            row.appendChild(info);
+            row.appendChild(badge);
+            playersEl.appendChild(row);
+        });
+        var rc = document.getElementById("H3_ready-count");
+        if (rc) rc.textContent = readyN + " prêts";
+        var cnt = document.getElementById("H3_count");
+        if (cnt) cnt.textContent = players.length + " / 12";
+    }
+
+    // ---- Composition des rôles (regroupée par faction) ----
+    var factions = [
+        {
+            key: "chosen", label: "ÉLUS",
+            roles: [
+                { name: "Oracle",     count: 1, on: true },
+                { name: "Gardien",    count: 1, on: true },
+                { name: "Dryade",     count: 1, on: true },
+                { name: "Orpheline",  count: 1, on: true },
+                { name: "Omniscient", count: 1, on: true },
+                { name: "Messager",   count: 1, on: true },
+                { name: "Repenti",    count: 0, on: false }
+            ]
+        },
+        {
+            key: "anomaly", label: "ANOMALIES",
+            roles: [
+                { name: "Robot",       count: 2, on: true },
+                { name: "Mage Occulte",count: 1, on: true },
+                { name: "Abyss",       count: 1, on: true },
+                { name: "Géôlier",     count: 0, on: false }
+            ]
+        },
+        {
+            key: "marginal", label: "MARGINAUX",
+            roles: [
+                { name: "Chasseuse de Prime", count: 1, on: true },
+                { name: "Croupière",          count: 1, on: true },
+                { name: "Dr Gloubi",          count: 0, on: false }
+            ]
+        }
+    ];
+
+    function initialsOf(name) {
+        var parts = name.split(" ");
+        if (parts.length === 1) return name.substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    var rolesEl = document.getElementById("H3_roles");
+    var grandTotal = 0;
+    if (rolesEl) {
+        factions.forEach(function (f) {
+            var factionTotal = 0;
+            f.roles.forEach(function (r) { factionTotal += r.count; });
+            grandTotal += factionTotal;
+
+            var block = document.createElement("div");
+            block.className = "H3_faction";
+
+            var head = document.createElement("div");
+            head.className = "H3_faction-head";
+            var nm = document.createElement("div");
+            nm.className = "H3_faction-name H3_faction-name--" + f.key;
+            nm.textContent = f.label;
+            var tot = document.createElement("div");
+            tot.className = "H3_faction-total";
+            tot.textContent = factionTotal + " en jeu";
+            head.appendChild(nm);
+            head.appendChild(tot);
+
+            var grid = document.createElement("div");
+            grid.className = "H3_role-grid";
+            f.roles.forEach(function (r) {
+                var card = document.createElement("div");
+                card.className = "H3_role-card" + (r.on ? "" : " H3_role-card--off");
+
+                var art = document.createElement("div");
+                art.className = "H3_role-art";
+                art.textContent = initialsOf(r.name);
+
+                var name = document.createElement("div");
+                name.className = "H3_role-name";
+                name.textContent = r.name;
+
+                var foot = document.createElement("div");
+                foot.className = "H3_role-foot";
+                var tag = document.createElement("div");
+                tag.className = "H3_role-tag";
+                tag.textContent = r.on ? "EXEMPLAIRES" : "EXCLU";
+                var count = document.createElement("div");
+                count.className = "H3_role-count" + (r.on ? "" : " H3_role-count--off");
+                count.textContent = "x" + r.count;
+                foot.appendChild(tag);
+                foot.appendChild(count);
+
+                card.appendChild(art);
+                card.appendChild(name);
+                card.appendChild(foot);
+                grid.appendChild(card);
+            });
+
+            block.appendChild(head);
+            block.appendChild(grid);
+            rolesEl.appendChild(block);
+        });
+        var rt = document.getElementById("H3_roles-total");
+        if (rt) rt.textContent = grandTotal + " rôles pour 12 joueurs";
+    }
+
+    // ---- Paramètres de la partie ----
+    var settings = [
+        { label: "NOMBRE DE JOUEURS",      value: "12 max",              accent: false },
+        { label: "DURÉE DES DÉBATS",       value: "3 min / tour",        accent: false },
+        { label: "MODE DE VOTE",           value: "Vote à main levée",   accent: false },
+        { label: "ANONYMAT DES MESSAGES",  value: "Activé",              accent: true  },
+        { label: "RÉVÉLATION À LA MORT",   value: "Rôle caché",          accent: false },
+        { label: "PREMIÈRE NUIT",          value: "Introduction longue", accent: false },
+        { label: "BOTS SIMULÉS",           value: "2 identités",         accent: false },
+        { label: "TRANSPORT",              value: "Steam (Facepunch)",   accent: false }
+    ];
+    var setEl = document.getElementById("H3_settings");
+    if (setEl) {
+        settings.forEach(function (s) {
+            var row = document.createElement("div");
+            row.className = "H3_setting";
+            var l = document.createElement("div");
+            l.className = "H3_setting-label";
+            l.textContent = s.label;
+            var v = document.createElement("div");
+            v.className = "H3_setting-value" + (s.accent ? " H3_setting-value--accent" : "");
+            v.textContent = s.value;
+            row.appendChild(l);
+            row.appendChild(v);
+            setEl.appendChild(row);
+        });
+    }
+})();
+</script>
+</body>
+</html>

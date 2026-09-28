@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corruption du Portail — Salon</title>
+<style>
+/* ==========================================================================
+   Corruption du Portail — Écran de salon (lobby)
+   Maquette HTML/CSS pensée pour une transposition UXML/USS (UI Toolkit).
+   Règles suivies :
+   - flexbox uniquement, unités px et % uniquement (pas de em/rem/vw/vh/calc) ;
+   - aucun gap, grid, box-shadow, dégradé, pseudo-élément, text-transform ;
+   - sélecteurs : classes, descendant, classe composée, :hover, :disabled ;
+   - palette reprise de LobbyRoles.uss / variables.uss (voie « lobby vert »)
+     et couleurs de faction reprises de FactionDatabase.asset.
+   Le bloc « reset HTML » ci-dessous n'a pas besoin d'être transposé : il
+   reproduit dans le navigateur le comportement par défaut de UI Toolkit
+   (VisualElement = flex colonne, taille border-box).
+   ========================================================================== */
+
+/* ---- reset HTML (émule les défauts UITK, non transposé) ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background-color: rgb(10, 7, 8); }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 16px; color: rgb(240, 231, 221); }
+div { display: flex; flex-direction: column; }
+span { display: block; white-space: nowrap; }
+button { font-family: inherit; display: flex; }
+
+/* ==========================================================================
+   Racine
+   ========================================================================== */
+.H3_lobby {
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    padding: 20px 24px 20px 24px;
+    background-color: rgb(10, 7, 8);
+}
+
+/* ==========================================================================
+   En-tête
+   ========================================================================== */
+.H3_header {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(42, 33, 31);
+}
+.H3_brand {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.H3_brand__kicker {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: rgb(238, 201, 122);
+}
+.H3_brand__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+    margin-top: 2px;
+}
+.H3_header__spacer {
+    flex-grow: 1;
+}
+.H3_phase {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 16px 8px 14px;
+    margin-right: 12px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 18px;
+}
+.H3_phase__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin-right: 10px;
+    background-color: rgb(95, 217, 135);
+}
+.H3_phase__text {
+    font-size: 15px;
+    color: rgb(210, 199, 186);
+}
+.H3_chip {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 14px;
+    margin-left: 10px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 8px;
+}
+.H3_chip__key {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgb(164, 147, 138);
+    margin-right: 10px;
+}
+.H3_chip__val {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgb(240, 231, 221);
+}
+.H3_chip__val--gold {
+    color: rgb(238, 201, 122);
+    letter-spacing: 0px;
+}
+
+/* ==========================================================================
+   Corps : 3 colonnes
+   ========================================================================== */
+.H3_body {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0px;
+}
+.H3_col {
+    flex-direction: column;
+    flex-shrink: 1;
+    flex-basis: 0px;
+    min-width: 0px;
+}
+.H3_col--players { flex-grow: 30; margin-right: 16px; }
+.H3_col--roles   { flex-grow: 44; margin-right: 16px; }
+.H3_col--side    { flex-grow: 26; }
+
+/* ---- Panneau générique ---- */
+.H3_panel {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0px;
+    padding: 14px 16px 14px 16px;
+    background-color: rgb(20, 16, 15);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 10px;
+}
+.H3_panel--fit {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+.H3_panel-head {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+.H3_panel-head__title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgb(240, 231, 221);
+}
+.H3_panel-head__count {
+    font-size: 18px;
+    font-weight: 700;
+    color: rgb(238, 201, 122);
+}
+.H3_panel-head__link {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 5px 10px;
+    color: rgb(164, 147, 138);
+    background-color: rgb(28, 22, 21);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+    border-radius: 6px;
+}
+.H3_panel-head__link:hover {
+    color: rgb(240, 231, 221);
+    background-color: rgb(58, 44, 41);
+}
+
+/* ==========================================================================
+   Liste des joueurs
+   ========================================================================== */
+.H3_players {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0px;
+}
+.H3_player {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0px;
+    min-height: 30px;
+    max-height: 54px;
+    padding: 0px 10px 0px 8px;
+    margin-bottom: 3px;
+    background-color: rgb(14, 10, 11);
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: rgba(0, 0, 0, 0);
+    border-radius: 6px;
+}
+.H3_player--local {
+    background-color: rgb(24, 34, 27);
+    border-left-color: rgb(95, 217, 135);
+}
+.H3_player--empty {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(34, 27, 25);
+    border-left-width: 3px;
+    border-left-color: rgba(0, 0, 0, 0);
+}
+.H3_avatar {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    margin-right: 10px;
+    align-items: center;
+    justify-content: center;
+}
+.H3_avatar__initials {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+}
+.H3_avatar--c1 { background-color: rgb(92, 62, 110); }
+.H3_avatar--c2 { background-color: rgb(40, 84, 98); }
+.H3_avatar--c3 { background-color: rgb(110, 70, 44); }
+.H3_avatar--c4 { background-color: rgb(42, 96, 62); }
+.H3_avatar--c5 { background-color: rgb(118, 44, 54); }
+.H3_avatar--c6 { background-color: rgb(72, 72, 108); }
+.H3_avatar--empty {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(58, 44, 41);
+}
+.H3_player__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 16px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+}
+.H3_player__name--empty {
+    font-weight: 400;
+    color: rgb(111, 95, 88);
+}
+.H3_badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 5px;
+    margin-left: 5px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 4px;
+}
+.H3_badge--host {
+    color: rgb(238, 201, 122);
+    border-color: rgb(150, 120, 64);
+    background-color: rgb(40, 32, 18);
+}
+.H3_badge--you {
+    color: rgb(150, 240, 180);
+    border-color: rgb(43, 106, 67);
+    background-color: rgb(20, 40, 28);
+}
+.H3_badge--bot {
+    color: rgb(164, 147, 138);
+    border-color: rgb(58, 44, 41);
+    background-color: rgb(28, 22, 21);
+}
+.H3_status {
+    flex-shrink: 0;
+    width: 76px;
+    margin-left: 8px;
+    padding: 4px 0px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-align: center;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 11px;
+}
+.H3_status--ready {
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-color: rgb(95, 217, 135);
+}
+.H3_status--waiting {
+    color: rgb(224, 151, 58);
+    background-color: rgb(28, 22, 21);
+    border-color: rgb(96, 66, 32);
+}
+
+/* ==========================================================================
+   Composition des rôles
+   ========================================================================== */
+.H3_preset {
+    flex-direction: row;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: rgb(43, 106, 67);
+    border-radius: 6px;
+}
+.H3_preset__name {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgb(234, 255, 240);
+}
+.H3_tally {
+    flex-direction: row;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.H3_tally__cell {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-basis: 0px;
+    min-width: 0px;
+    padding: 7px 12px;
+    background-color: rgb(14, 10, 11);
+    border-right-width: 1px;
+    border-right-style: solid;
+    border-right-color: rgb(42, 33, 31);
+}
+.H3_tally__cell--last {
+    border-right-width: 0px;
+}
+.H3_tally__key {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgb(150, 133, 125);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.H3_tally__val {
+    font-size: 24px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+    margin-top: 1px;
+}
+.H3_tally__val--gold {
+    color: rgb(238, 201, 122);
+}
+
+.H3_section {
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.H3_section__head {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+.H3_section__swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 8px;
+}
+.H3_section__title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+.H3_section__count {
+    font-size: 14px;
+    color: rgb(150, 133, 125);
+    margin-left: 10px;
+}
+.H3_section__rule {
+    flex-grow: 1;
+    height: 1px;
+    margin-left: 12px;
+    background-color: rgb(42, 33, 31);
+}
+.H3_section--anomaly .H3_section__title { color: rgb(255, 49, 49); }
+.H3_section--anomaly .H3_section__swatch { background-color: rgb(255, 49, 49); }
+.H3_section--chosen .H3_section__title { color: rgb(126, 217, 87); }
+.H3_section--chosen .H3_section__swatch { background-color: rgb(126, 217, 87); }
+.H3_section--marginal .H3_section__title { color: rgb(255, 189, 89); }
+.H3_section--marginal .H3_section__swatch { background-color: rgb(255, 189, 89); }
+
+.H3_grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+.H3_role {
+    flex-direction: row;
+    align-items: center;
+    width: 49%;
+    height: 40px;
+    margin-bottom: 5px;
+    padding: 0px 10px 0px 10px;
+    background-color: rgb(14, 10, 11);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-left-width: 3px;
+    border-radius: 6px;
+}
+.H3_section--anomaly .H3_role  { border-left-color: rgb(255, 49, 49); }
+.H3_section--chosen .H3_role   { border-left-color: rgb(126, 217, 87); }
+.H3_section--marginal .H3_role { border-left-color: rgb(255, 189, 89); }
+.H3_role__text {
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0px;
+}
+.H3_role__name {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.H3_role__epithet {
+    font-size: 12px;
+    color: rgb(164, 147, 138);
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.H3_role__forced {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 6px;
+    margin-left: 6px;
+    color: rgb(233, 193, 90);
+    background-color: rgb(40, 32, 18);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(120, 96, 50);
+    border-radius: 4px;
+}
+.H3_role__count {
+    flex-shrink: 0;
+    width: 30px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+    color: rgb(238, 201, 122);
+}
+.H3_role__count--one {
+    color: rgb(111, 95, 88);
+}
+.H3_roles__spacer {
+    flex-grow: 1;
+    min-height: 8px;
+}
+.H3_note {
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 9px 12px;
+    background-color: rgb(14, 10, 11);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 6px;
+}
+.H3_note__text {
+    flex-shrink: 1;
+    min-width: 0px;
+    font-size: 13px;
+    color: rgb(164, 147, 138);
+    white-space: normal;
+}
+
+/* ==========================================================================
+   Paramètres de la partie
+   ========================================================================== */
+.H3_settings {
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0px;
+}
+.H3_setting {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0px;
+    min-height: 26px;
+    max-height: 48px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgb(34, 27, 25);
+}
+.H3_setting--last {
+    border-bottom-width: 0px;
+}
+.H3_setting__key {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    color: rgb(164, 147, 138);
+}
+.H3_setting__val {
+    flex-shrink: 0;
+    margin-left: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+}
+.H3_setting__val--gold {
+    color: rgb(238, 201, 122);
+}
+
+/* ==========================================================================
+   Panneau « prêt / lancer »
+   ========================================================================== */
+.H3_ready {
+    margin-top: 12px;
+}
+.H3_ready__row {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-bottom: 8px;
+}
+.H3_ready__label {
+    flex-grow: 1;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: rgb(240, 231, 221);
+}
+.H3_ready__count {
+    font-size: 26px;
+    font-weight: 700;
+    color: rgb(240, 231, 221);
+}
+.H3_ready__total {
+    font-size: 17px;
+    font-weight: 700;
+    color: rgb(150, 133, 125);
+    margin-left: 4px;
+    margin-bottom: 3px;
+}
+.H3_segments {
+    flex-direction: row;
+    height: 8px;
+    margin-bottom: 10px;
+}
+.H3_segment {
+    flex-grow: 1;
+    flex-basis: 0px;
+    margin-right: 3px;
+    border-radius: 2px;
+    background-color: rgb(42, 33, 31);
+}
+.H3_segment--on {
+    background-color: rgb(95, 217, 135);
+}
+.H3_segment--last {
+    margin-right: 0px;
+}
+.H3_ready__waiting {
+    font-size: 14px;
+    color: rgb(224, 151, 58);
+    white-space: normal;
+}
+.H3_ready__valid {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 6px;
+    margin-bottom: 12px;
+}
+.H3_ready__valid-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    background-color: rgb(111, 191, 122);
+}
+.H3_ready__valid-text {
+    font-size: 14px;
+    color: rgb(111, 191, 122);
+}
+
+/* ---- Boutons ---- */
+.H3_btn {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    margin: 0px;
+    padding: 0px 16px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 10px;
+    transition-property: background-color, color;
+    transition-duration: 0.2s;
+}
+.H3_btn--toggle {
+    color: rgb(150, 240, 180);
+    background-color: rgb(20, 40, 28);
+    border-color: rgb(43, 106, 67);
+}
+.H3_btn--toggle:hover {
+    background-color: rgb(28, 56, 38);
+}
+.H3_btn__box {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: rgb(95, 217, 135);
+    border-radius: 4px;
+    align-items: center;
+    justify-content: center;
+}
+.H3_btn__box-fill {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background-color: rgb(95, 217, 135);
+}
+.H3_btn--primary {
+    margin-top: 8px;
+    height: 56px;
+    font-size: 19px;
+    color: rgb(11, 26, 16);
+    background-color: rgb(95, 217, 135);
+    border-color: rgb(95, 217, 135);
+}
+.H3_btn--primary:hover {
+    background-color: rgb(130, 232, 162);
+    border-color: rgb(130, 232, 162);
+}
+.H3_btn--primary:disabled {
+    color: rgb(150, 133, 125);
+    background-color: rgb(28, 22, 21);
+    border-color: rgb(58, 44, 41);
+}
+.H3_btn__caption {
+    font-size: 13px;
+    color: rgb(150, 133, 125);
+    text-align: center;
+    margin-top: 6px;
+    white-space: normal;
+}
+
+/* ---- Variante joueur invité (non-hôte) : ajouter H3_lobby--guest à la racine ---- */
+.H3_guest-only { display: none; }
+.H3_lobby--guest .H3_host-only { display: none; }
+.H3_lobby--guest .H3_guest-only { display: flex; }
+.H3_guest-wait {
+    margin-top: 8px;
+    padding: 12px;
+    align-items: center;
+    background-color: rgb(14, 10, 11);
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(42, 33, 31);
+    border-radius: 10px;
+}
+.H3_guest-wait__text {
+    font-size: 14px;
+    color: rgb(164, 147, 138);
+    text-align: center;
+    white-space: normal;
+}
+</style>
+</head>
+<body>
+<!-- Données factices. Vue par défaut = hôte (le joueur local « Vesper » est l'hôte).
+     Pour la vue d'un joueur non-hôte : ajouter la classe H3_lobby--guest à la racine. -->
+<div class="H3_lobby">
+
+    <!-- ================= En-tête ================= -->
+    <div class="H3_header">
+        <div class="H3_brand">
+            <span class="H3_brand__kicker">CORRUPTION DU PORTAIL</span>
+            <span class="H3_brand__title">Salon de Vesper</span>
+        </div>
+        <div class="H3_header__spacer"></div>
+        <div class="H3_phase">
+            <div class="H3_phase__dot"></div>
+            <span class="H3_phase__text">Salon — en attente des joueurs</span>
+        </div>
+        <div class="H3_chip">
+            <span class="H3_chip__key">CODE</span>
+            <span class="H3_chip__val">K7QX-M2</span>
+        </div>
+        <div class="H3_chip">
+            <span class="H3_chip__key">JOUEURS</span>
+            <span class="H3_chip__val H3_chip__val--gold">12 / 14</span>
+        </div>
+    </div>
+
+    <!-- ================= Corps ================= -->
+    <div class="H3_body">
+
+        <!-- ---------- Colonne 1 : joueurs ---------- -->
+        <div class="H3_col H3_col--players">
+            <div class="H3_panel">
+                <div class="H3_panel-head">
+                    <span class="H3_panel-head__title">JOUEURS</span>
+                    <span class="H3_panel-head__count">12 / 14</span>
+                </div>
+                <div class="H3_players">
+                    <div class="H3_player H3_player--local">
+                        <div class="H3_avatar H3_avatar--c4"><span class="H3_avatar__initials">VE</span></div>
+                        <span class="H3_player__name">Vesper</span>
+                        <span class="H3_badge H3_badge--host">HÔTE</span>
+                        <span class="H3_badge H3_badge--you">VOUS</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c1"><span class="H3_avatar__initials">KA</span></div>
+                        <span class="H3_player__name">Kaelis</span>
+                        <span class="H3_status H3_status--waiting">PAS PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c2"><span class="H3_avatar__initials">SN</span></div>
+                        <span class="H3_player__name">Samus_Nox</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c5"><span class="H3_avatar__initials">MI</span></div>
+                        <span class="H3_player__name">Mirelle</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c3"><span class="H3_avatar__initials">JO</span></div>
+                        <span class="H3_player__name">Jobb</span>
+                        <span class="H3_status H3_status--waiting">PAS PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c6"><span class="H3_avatar__initials">NY</span></div>
+                        <span class="H3_player__name">Nyx42</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c3"><span class="H3_avatar__initials">TA</span></div>
+                        <span class="H3_player__name">Tartiflette</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c2"><span class="H3_avatar__initials">ER</span></div>
+                        <span class="H3_player__name">Eliott.R</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c5"><span class="H3_avatar__initials">RA</span></div>
+                        <span class="H3_player__name">Ravenne</span>
+                        <span class="H3_status H3_status--waiting">PAS PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c1"><span class="H3_avatar__initials">OK</span></div>
+                        <span class="H3_player__name">Oko</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c6"><span class="H3_avatar__initials">BG</span></div>
+                        <span class="H3_player__name">LeBaron_Gris</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player">
+                        <div class="H3_avatar H3_avatar--c4"><span class="H3_avatar__initials">SÉ</span></div>
+                        <span class="H3_player__name">Sélène</span>
+                        <span class="H3_status H3_status--ready">PRÊT</span>
+                    </div>
+                    <div class="H3_player H3_player--empty">
+                        <div class="H3_avatar H3_avatar--empty"></div>
+                        <span class="H3_player__name H3_player__name--empty">Place libre</span>
+                    </div>
+                    <div class="H3_player H3_player--empty">
+                        <div class="H3_avatar H3_avatar--empty"></div>
+                        <span class="H3_player__name H3_player__name--empty">Place libre</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---------- Colonne 2 : composition des rôles ---------- -->
+        <div class="H3_col H3_col--roles">
+            <div class="H3_panel">
+                <div class="H3_panel-head">
+                    <span class="H3_panel-head__title">COMPOSITION DES RÔLES</span>
+                    <div class="H3_preset"><span class="H3_preset__name">Classique · 12 joueurs</span></div>
+                </div>
+
+                <div class="H3_tally">
+                    <div class="H3_tally__cell">
+                        <span class="H3_tally__key">JOUEURS</span>
+                        <span class="H3_tally__val">12</span>
+                    </div>
+                    <div class="H3_tally__cell">
+                        <span class="H3_tally__key">IMPOSÉS</span>
+                        <span class="H3_tally__val H3_tally__val--gold">4</span>
+                    </div>
+                    <div class="H3_tally__cell">
+                        <span class="H3_tally__key">TIRAGE</span>
+                        <span class="H3_tally__val">8</span>
+                    </div>
+                    <div class="H3_tally__cell H3_tally__cell--last">
+                        <span class="H3_tally__key">POOL MAX</span>
+                        <span class="H3_tally__val">15</span>
+                    </div>
+                </div>
+
+                <!-- Anomalies -->
+                <div class="H3_section H3_section--anomaly">
+                    <div class="H3_section__head">
+                        <div class="H3_section__swatch"></div>
+                        <span class="H3_section__title">ANOMALIES</span>
+                        <span class="H3_section__count">3 max</span>
+                        <div class="H3_section__rule"></div>
+                    </div>
+                    <div class="H3_grid">
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Va'ahl</span>
+                                <span class="H3_role__epithet">Le Mage Occulte</span>
+                            </div>
+                            <span class="H3_role__forced">IMPOSÉ</span>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Abyss</span>
+                                <span class="H3_role__epithet">L'Extension du Néant</span>
+                            </div>
+                            <span class="H3_role__forced">IMPOSÉ</span>
+                            <span class="H3_role__count">×2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Élus -->
+                <div class="H3_section H3_section--chosen">
+                    <div class="H3_section__head">
+                        <div class="H3_section__swatch"></div>
+                        <span class="H3_section__title">ÉLUS</span>
+                        <span class="H3_section__count">11 max</span>
+                        <div class="H3_section__rule"></div>
+                    </div>
+                    <div class="H3_grid">
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">La Chasseuse de Prime</span>
+                                <span class="H3_role__epithet">Élue</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Le Repenti</span>
+                                <span class="H3_role__epithet">Élu</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">La Dryade</span>
+                                <span class="H3_role__epithet">Élue</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Dr Gloubi</span>
+                                <span class="H3_role__epithet">Élu</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Le Technomancien</span>
+                                <span class="H3_role__epithet">Élu</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Luma</span>
+                                <span class="H3_role__epithet">La Croupière</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Le Messager</span>
+                                <span class="H3_role__epithet">Élu</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">L'Orpheline</span>
+                                <span class="H3_role__epithet">Élue</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Ugës</span>
+                                <span class="H3_role__epithet">L'Imposteur</span>
+                            </div>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">L'Incomplet</span>
+                                <span class="H3_role__epithet">Élu</span>
+                            </div>
+                            <span class="H3_role__count">×2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marginaux -->
+                <div class="H3_section H3_section--marginal">
+                    <div class="H3_section__head">
+                        <div class="H3_section__swatch"></div>
+                        <span class="H3_section__title">MARGINAUX</span>
+                        <span class="H3_section__count">1 max</span>
+                        <div class="H3_section__rule"></div>
+                    </div>
+                    <div class="H3_grid">
+                        <div class="H3_role">
+                            <div class="H3_role__text">
+                                <span class="H3_role__name">Le Robot</span>
+                                <span class="H3_role__epithet">Marginal</span>
+                            </div>
+                            <span class="H3_role__forced">IMPOSÉ</span>
+                            <span class="H3_role__count H3_role__count--one">×1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="H3_roles__spacer"></div>
+                <div class="H3_note">
+                    <span class="H3_note__text">Au lancement : <b>4 rôles imposés</b>, puis <b>8</b> tirés au hasard dans le reste du pool.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---------- Colonne 3 : paramètres + prêt / lancer ---------- -->
+        <div class="H3_col H3_col--side">
+            <div class="H3_panel">
+                <div class="H3_panel-head">
+                    <span class="H3_panel-head__title">PARAMÈTRES</span>
+                    <button class="H3_panel-head__link H3_host-only" type="button">MODIFIER</button>
+                </div>
+                <div class="H3_settings">
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Preset de rôles</span>
+                        <span class="H3_setting__val H3_setting__val--gold">Classique</span>
+                    </div>
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Joueurs maximum</span>
+                        <span class="H3_setting__val">14</span>
+                    </div>
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Durée du vote</span>
+                        <span class="H3_setting__val">5 min</span>
+                    </div>
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Récapitulatif du vote</span>
+                        <span class="H3_setting__val">10 s</span>
+                    </div>
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Réveil par rôle</span>
+                        <span class="H3_setting__val">20 s</span>
+                    </div>
+                    <div class="H3_setting">
+                        <span class="H3_setting__key">Visibilité du salon</span>
+                        <span class="H3_setting__val">Privé (code)</span>
+                    </div>
+                    <div class="H3_setting H3_setting--last">
+                        <span class="H3_setting__key">Langue</span>
+                        <span class="H3_setting__val">Français</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="H3_panel H3_panel--fit H3_ready">
+                <div class="H3_ready__row">
+                    <span class="H3_ready__label">PRÊTS</span>
+                    <span class="H3_ready__count">9</span>
+                    <span class="H3_ready__total">/ 12</span>
+                </div>
+                <div class="H3_segments">
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment H3_segment--on"></div>
+                    <div class="H3_segment"></div>
+                    <div class="H3_segment"></div>
+                    <div class="H3_segment H3_segment--last"></div>
+                </div>
+                <span class="H3_ready__waiting">En attente de : Kaelis, Jobb, Ravenne</span>
+                <div class="H3_ready__valid">
+                    <div class="H3_ready__valid-dot"></div>
+                    <span class="H3_ready__valid-text">Composition valide</span>
+                </div>
+
+                <button class="H3_btn H3_btn--toggle" type="button">
+                    <div class="H3_btn__box"><div class="H3_btn__box-fill"></div></div>
+                    <span>JE SUIS PRÊT</span>
+                </button>
+
+                <button class="H3_btn H3_btn--primary H3_host-only" type="button" disabled>LANCER LA PARTIE</button>
+                <span class="H3_btn__caption H3_host-only">Disponible quand les 12 joueurs sont prêts</span>
+
+                <div class="H3_guest-wait H3_guest-only">
+                    <span class="H3_guest-wait__text">L'hôte lancera la partie dès que tout le monde sera prêt.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

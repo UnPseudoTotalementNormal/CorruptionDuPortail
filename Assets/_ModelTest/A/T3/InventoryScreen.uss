@@ -1,0 +1,232 @@
+/* Inventory screen styles.
+   All class names are prefixed with the output folder name ("A_") as required.
+   No USS media queries exist in UI Toolkit, so the narrow-screen reflow is driven
+   by a class toggled from C# (A_inventory__body--narrow). */
+
+/* ------------------------------------------------------------------ Root */
+
+.A_inventory {
+    flex-grow: 1;
+    padding-top: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    background-color: rgb(22, 25, 31);
+}
+
+.A_inventory__title {
+    color: rgb(240, 242, 245);
+    font-size: 24px;
+    -unity-font-style: bold;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ Body layout */
+
+.A_inventory__body {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+/* Narrow: stack the detail panel below the grid. */
+.A_inventory__body--narrow {
+    flex-direction: column;
+}
+
+/* ------------------------------------------------------------------ Grid */
+
+.A_inventory__grid-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.A_inventory__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+/* ------------------------------------------------------------------ Slot */
+
+.A_inventory-slot {
+    width: 96px;
+    height: 112px;
+    margin-top: 6px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    margin-left: 6px;
+    padding-top: 8px;
+    padding-right: 6px;
+    padding-bottom: 8px;
+    padding-left: 6px;
+    align-items: center;
+    background-color: rgb(34, 38, 47);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-top-width: 2px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+    border-top-color: rgb(52, 58, 70);
+    border-right-color: rgb(52, 58, 70);
+    border-bottom-color: rgb(52, 58, 70);
+    border-left-color: rgb(52, 58, 70);
+    scale: 1 1;
+    transition-property: scale, background-color, border-color;
+    transition-duration: 0.12s, 0.12s, 0.12s;
+    transition-timing-function: ease-out, ease-out, ease-out;
+}
+
+/* Hover: pure USS, works at runtime. */
+.A_inventory-slot:hover {
+    background-color: rgb(44, 50, 62);
+    border-top-color: rgb(90, 100, 120);
+    border-right-color: rgb(90, 100, 120);
+    border-bottom-color: rgb(90, 100, 120);
+    border-left-color: rgb(90, 100, 120);
+    scale: 1.05 1.05;
+}
+
+/* Selection: class toggled from C#, animated via the transition above. */
+.A_inventory-slot--selected {
+    background-color: rgb(40, 52, 72);
+    border-top-color: rgb(96, 170, 255);
+    border-right-color: rgb(96, 170, 255);
+    border-bottom-color: rgb(96, 170, 255);
+    border-left-color: rgb(96, 170, 255);
+    scale: 1.06 1.06;
+}
+
+.A_inventory-slot__icon {
+    width: 56px;
+    height: 56px;
+    background-color: rgb(26, 29, 36);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    -unity-background-scale-mode: scale-to-fit;
+    flex-shrink: 0;
+}
+
+.A_inventory-slot__count {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    min-width: 20px;
+    color: rgb(240, 242, 245);
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.A_inventory-slot__name {
+    margin-top: 8px;
+    color: rgb(205, 210, 218);
+    font-size: 11px;
+    -unity-text-align: upper-center;
+    white-space: normal;
+    flex-shrink: 1;
+}
+
+/* ------------------------------------------------------------------ Detail panel */
+
+.A_inventory__detail {
+    width: 280px;
+    flex-shrink: 0;
+    margin-left: 16px;
+    padding-top: 18px;
+    padding-right: 18px;
+    padding-bottom: 18px;
+    padding-left: 18px;
+    background-color: rgb(30, 34, 42);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: rgb(60, 66, 78);
+    border-right-color: rgb(60, 66, 78);
+    border-bottom-color: rgb(60, 66, 78);
+    border-left-color: rgb(60, 66, 78);
+}
+
+/* Narrow: detail sits below the grid and spans the full width. */
+.A_inventory__body--narrow .A_inventory__detail {
+    width: auto;
+    flex-shrink: 1;
+    margin-left: 0;
+    margin-top: 16px;
+}
+
+.A_inventory__detail-empty {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.A_inventory__detail-empty-label {
+    color: rgb(120, 128, 140);
+    font-size: 14px;
+    -unity-font-style: italic;
+}
+
+.A_inventory__detail-content {
+    display: none;
+    align-items: center;
+}
+
+.A_inventory__detail-icon {
+    width: 96px;
+    height: 96px;
+    background-color: rgb(26, 29, 36);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    -unity-background-scale-mode: scale-to-fit;
+    margin-bottom: 14px;
+}
+
+.A_inventory__detail-name {
+    color: rgb(240, 242, 245);
+    font-size: 18px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.A_inventory__detail-count {
+    color: rgb(150, 200, 255);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.A_inventory__detail-separator {
+    height: 1px;
+    width: 100%;
+    background-color: rgb(60, 66, 78);
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.A_inventory__detail-description {
+    color: rgb(200, 205, 212);
+    font-size: 13px;
+    white-space: normal;
+    -unity-text-align: upper-left;
+    width: 100%;
+}

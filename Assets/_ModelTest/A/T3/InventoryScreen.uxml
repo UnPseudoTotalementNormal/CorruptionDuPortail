@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:ui="UnityEngine.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance"
+    engine="UnityEngine.UIElements"
+    editor="UnityEditor.UIElements"
+    noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+    editor-extension-mode="False">
+
+    <Style src="InventoryScreen.uss" />
+
+    <ui:VisualElement name="root" class="A_inventory">
+
+        <ui:Label text="Inventaire" class="A_inventory__title" />
+
+        <!-- Body: grid (left) + detail (right). Switches to column on narrow screens
+             via the A_inventory__body--narrow class toggled from C#. -->
+        <ui:VisualElement name="body" class="A_inventory__body">
+
+            <!-- Scrollable, wrapping grid of slots. Slots are cloned from
+                 InventorySlot.uxml at runtime and appended to #grid. -->
+            <ui:ScrollView name="grid-scroll" class="A_inventory__grid-scroll">
+                <ui:VisualElement name="grid" class="A_inventory__grid" />
+            </ui:ScrollView>
+
+            <!-- Detail panel. -->
+            <ui:VisualElement name="detail" class="A_inventory__detail">
+
+                <ui:VisualElement name="detail-empty" class="A_inventory__detail-empty">
+                    <ui:Label text="Sélectionne un objet" class="A_inventory__detail-empty-label" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="detail-content" class="A_inventory__detail-content">
+                    <ui:VisualElement name="detail-icon" class="A_inventory__detail-icon" />
+                    <ui:Label name="detail-name" text="" class="A_inventory__detail-name" />
+                    <ui:Label name="detail-count" text="" class="A_inventory__detail-count" />
+                    <ui:VisualElement class="A_inventory__detail-separator" />
+                    <ui:Label name="detail-description" text="" class="A_inventory__detail-description" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

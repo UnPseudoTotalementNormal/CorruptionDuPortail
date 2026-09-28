@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:ui="UnityEngine.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance"
+    engine="UnityEngine.UIElements"
+    editor="UnityEditor.UIElements"
+    noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+    editor-extension-mode="False">
+
+    <Style src="InventoryScreen.uss" />
+
+    <!-- One inventory slot. The C# reparents this element into #grid and
+         reads its named children (icon, count, name). -->
+    <ui:VisualElement name="slot" class="A_inventory-slot" focusable="true">
+        <ui:VisualElement name="slot-icon" class="A_inventory-slot__icon" />
+        <ui:Label name="slot-count" text="" class="A_inventory-slot__count" />
+        <ui:Label name="slot-name" text="" class="A_inventory-slot__name" />
+    </ui:VisualElement>
+</ui:UXML>

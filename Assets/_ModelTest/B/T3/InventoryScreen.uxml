@@ -1,0 +1,31 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="InventoryScreen.uss" />
+    <!--
+        Screen root. InventoryScreen.cs toggles B_inventory--narrow on this element
+        when its width drops under the breakpoint (USS has no media queries).
+    -->
+    <ui:VisualElement name="inventory" class="B_inventory">
+        <ui:VisualElement class="B_inventory__main">
+            <ui:Label text="Inventaire" class="B_inventory__title" />
+            <!-- Slots are created by InventoryScreen.cs; the content container wraps them (see USS). -->
+            <ui:ScrollView name="inventory-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" class="B_inventory__grid" />
+        </ui:VisualElement>
+
+        <ui:VisualElement name="inventory-detail" class="B_detail B_detail--empty">
+            <ui:Label text="Détail" class="B_detail__title" />
+            <ui:VisualElement class="B_detail__body">
+                <ui:VisualElement class="B_detail__content">
+                    <ui:VisualElement name="detail-icon" class="B_detail__icon">
+                        <ui:Label name="detail-glyph" picking-mode="Ignore" class="B_detail__glyph" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="B_detail__text">
+                        <ui:Label name="detail-name" class="B_detail__name" />
+                        <ui:Label name="detail-quantity" class="B_detail__quantity" />
+                        <ui:Label name="detail-description" class="B_detail__description" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label text="Sélectionnez un objet pour afficher son détail." picking-mode="Ignore" class="B_detail__placeholder" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

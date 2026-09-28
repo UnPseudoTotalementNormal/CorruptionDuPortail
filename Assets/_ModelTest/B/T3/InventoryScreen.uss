@@ -1,0 +1,277 @@
+/* ==========================================================================
+   Inventory screen (T3). All classes are prefixed with B_.
+   Responsive behaviour:
+   - Grid: fixed-size slots in a wrapping row -> column count follows the width.
+   - Detail panel: right column by default, moved below the grid when
+     InventoryScreen.cs adds .B_inventory--narrow on the root.
+   ========================================================================== */
+
+/* ---------- Layout ---------- */
+
+.B_inventory {
+    flex-grow: 1;
+    flex-direction: row;
+    padding: 24px;
+    background-color: rgb(17, 19, 26);
+}
+
+.B_inventory--narrow {
+    flex-direction: column;
+    padding: 12px;
+}
+
+.B_inventory__main {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+}
+
+.B_inventory__title {
+    margin: 0 0 12px 4px;
+    padding: 0;
+    font-size: 22px;
+    -unity-font-style: bold;
+    color: rgb(235, 236, 242);
+}
+
+/* ---------- Grid ---------- */
+
+.B_inventory__grid {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+/* Wrap slots inside the ScrollView content container. */
+.B_inventory__grid .unity-scroll-view__content-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    padding: 4px;
+}
+
+/* ---------- Slot ---------- */
+
+.B_slot {
+    width: 72px;
+    height: 72px;
+    margin: 4px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    /* Lists have the same length on purpose (one entry per property). */
+    transition-property: scale, background-color, border-top-color, border-right-color, border-bottom-color, border-left-color;
+    transition-duration: 0.18s, 0.15s, 0.15s, 0.15s, 0.15s, 0.15s;
+    transition-timing-function: ease-out-back, ease-out-cubic, ease-out-cubic, ease-out-cubic, ease-out-cubic, ease-out-cubic;
+}
+
+.B_slot__icon {
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* Fallback when the item has no sprite: first letter of its name. */
+.B_slot__glyph {
+    margin: 0;
+    padding: 0;
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(214, 218, 230);
+}
+
+.B_slot__quantity {
+    position: absolute;
+    right: 5px;
+    bottom: 2px;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: rgb(235, 236, 242);
+}
+
+/* Order matters: equal specificity -> the later rule wins. */
+
+.B_slot:hover {
+    scale: 1.06 1.06;
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.B_slot.B_slot--empty {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.B_slot.B_slot--empty:hover {
+    scale: 1.02 1.02;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Keyboard / gamepad focus. */
+.B_slot:focus {
+    border-color: rgba(120, 180, 255, 0.85);
+}
+
+.B_slot.B_slot--selected {
+    scale: 1.1 1.1;
+    background-color: rgba(255, 196, 64, 0.18);
+    border-color: rgb(255, 196, 64);
+}
+
+.B_slot.B_slot--selected:hover {
+    scale: 1.12 1.12;
+    background-color: rgba(255, 196, 64, 0.26);
+}
+
+/* ---------- Detail panel ---------- */
+
+.B_detail {
+    width: 300px;
+    flex-shrink: 0;
+    margin-left: 16px;
+    padding: 16px;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+}
+
+.B_inventory--narrow .B_detail {
+    width: auto;
+    max-height: 45%;
+    margin-left: 0;
+    margin-top: 12px;
+}
+
+.B_detail__title {
+    margin: 0 0 12px 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: rgb(160, 166, 184);
+}
+
+.B_detail__body {
+    flex-grow: 1;
+}
+
+.B_detail__content {
+    align-items: center;
+    opacity: 1;
+    translate: 0px 0px;
+    transition-property: opacity, translate;
+    transition-duration: 0.2s, 0.2s;
+    transition-timing-function: ease-out-cubic, ease-out-cubic;
+}
+
+.B_detail--empty .B_detail__content {
+    opacity: 0;
+    translate: 0px 8px;
+}
+
+.B_detail__placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 24px;
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    color: rgb(130, 136, 154);
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out-cubic;
+}
+
+.B_detail--empty .B_detail__placeholder {
+    opacity: 1;
+}
+
+.B_detail__icon {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    margin-bottom: 12px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.B_detail__glyph {
+    margin: 0;
+    padding: 0;
+    font-size: 40px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(214, 218, 230);
+}
+
+.B_detail__text {
+    align-self: stretch;
+}
+
+.B_detail__name {
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+    -unity-font-style: bold;
+    -unity-text-align: upper-center;
+    white-space: normal;
+    color: rgb(235, 236, 242);
+}
+
+.B_detail__quantity {
+    margin: 4px 0 0 0;
+    padding: 0;
+    font-size: 13px;
+    -unity-text-align: upper-center;
+    color: rgb(255, 196, 64);
+}
+
+.B_detail__description {
+    margin: 10px 0 0 0;
+    padding: 0;
+    font-size: 14px;
+    white-space: normal;
+    color: rgb(196, 200, 214);
+}
+
+/* Narrow: icon on the left, text on the right to save height. */
+.B_inventory--narrow .B_detail__content {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.B_inventory--narrow .B_detail__icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0;
+    margin-right: 12px;
+}
+
+.B_inventory--narrow .B_detail__glyph {
+    font-size: 28px;
+}
+
+.B_inventory--narrow .B_detail__text {
+    align-self: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.B_inventory--narrow .B_detail__name,
+.B_inventory--narrow .B_detail__quantity {
+    -unity-text-align: upper-left;
+}

@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="PlayerStatsScreen.uss" />
+    <!-- Texts below are placeholders: runtime data bindings (set in PlayerStatsScreen.cs) replace them. -->
+    <ui:VisualElement name="player-stats" class="B_player-stats">
+        <ui:VisualElement class="B_player-stats__header">
+            <ui:Label name="player-name" text="Player" class="B_player-stats__name" />
+            <ui:Label name="player-level" text="Niveau 1" class="B_player-stats__level" />
+        </ui:VisualElement>
+        <ui:VisualElement class="B_player-stats__health">
+            <ui:ProgressBar name="player-health-bar" low-value="0" high-value="1" value="1" class="B_player-stats__health-bar" />
+            <ui:Label name="player-health-label" text="100 / 100 PV" class="B_player-stats__health-label" />
+        </ui:VisualElement>
+        <ui:VisualElement class="B_player-stats__actions">
+            <ui:Button name="damage-button" text="-PV" class="B_player-stats__button" />
+            <ui:Button name="heal-button" text="+PV" class="B_player-stats__button" />
+            <ui:Button name="level-up-button" text="Niveau +1" class="B_player-stats__button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

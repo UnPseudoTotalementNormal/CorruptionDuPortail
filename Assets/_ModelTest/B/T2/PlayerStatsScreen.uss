@@ -1,0 +1,60 @@
+.B_player-stats {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 320px;
+    padding: 12px;
+    background-color: rgba(20, 20, 28, 0.85);
+    border-width: 1px;
+    border-color: rgb(80, 80, 100);
+    border-radius: 8px;
+}
+
+.B_player-stats__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.B_player-stats__name {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(240, 240, 240);
+}
+
+.B_player-stats__level {
+    font-size: 14px;
+    color: rgb(255, 210, 90);
+}
+
+.B_player-stats__health {
+    margin-bottom: 8px;
+}
+
+.B_player-stats__health-bar {
+    margin: 0;
+}
+
+.B_player-stats__health-bar .unity-progress-bar__background {
+    background-color: rgb(60, 25, 25);
+}
+
+.B_player-stats__health-bar .unity-progress-bar__progress {
+    background-color: rgb(200, 50, 50);
+}
+
+.B_player-stats__health-label {
+    -unity-text-align: middle-right;
+    font-size: 12px;
+    color: rgb(220, 220, 220);
+}
+
+.B_player-stats__actions {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.B_player-stats__button {
+    flex-grow: 1;
+}

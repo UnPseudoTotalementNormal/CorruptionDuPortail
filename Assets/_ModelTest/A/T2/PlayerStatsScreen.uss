@@ -1,0 +1,82 @@
+/* All classes prefixed with the output folder name ("A_") as required. */
+
+.A_stats-screen {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.A_stats-card {
+    min-width: 340px;
+    padding: 20px;
+    background-color: rgb(30, 34, 42);
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(60, 66, 78);
+    border-right-color: rgb(60, 66, 78);
+    border-top-color: rgb(60, 66, 78);
+    border-bottom-color: rgb(60, 66, 78);
+}
+
+.A_stats-card__name {
+    color: rgb(240, 242, 245);
+    font-size: 22px;
+    -unity-font-style: bold;
+}
+
+.A_stats-card__level {
+    color: rgb(150, 200, 255);
+    font-size: 13px;
+    margin-top: 2px;
+    margin-bottom: 14px;
+}
+
+.A_stats-card__hp-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.A_stats-card__hp-label {
+    color: rgb(200, 205, 212);
+    font-size: 13px;
+    -unity-font-style: bold;
+    width: 34px;
+    flex-shrink: 0;
+}
+
+.A_stats-card__hp-track {
+    flex-grow: 1;
+    height: 14px;
+    background-color: rgb(52, 58, 68);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    overflow: hidden;
+}
+
+.A_stats-card__hp-fill {
+    height: 100%;
+    width: 0;
+    background-color: rgb(74, 168, 89);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.A_stats-card__hp-text {
+    color: rgb(220, 224, 230);
+    font-size: 13px;
+    -unity-text-align: middle-right;
+    width: 72px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}

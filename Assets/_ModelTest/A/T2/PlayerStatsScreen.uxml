@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:ui="UnityEngine.UIElements"
+    xsi="http://www.w3.org/2001/XMLSchema-instance"
+    engine="UnityEngine.UIElements"
+    editor="UnityEditor.UIElements"
+    noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+    editor-extension-mode="False">
+
+    <Style src="PlayerStatsScreen.uss" />
+
+    <ui:VisualElement class="A_stats-screen">
+        <ui:VisualElement class="A_stats-card">
+
+            <ui:Label name="player-name" text="Player" class="A_stats-card__name" />
+            <ui:Label name="player-level" text="Level 1" class="A_stats-card__level" />
+
+            <ui:VisualElement class="A_stats-card__hp-row">
+                <ui:Label text="HP" class="A_stats-card__hp-label" />
+                <ui:VisualElement class="A_stats-card__hp-track">
+                    <ui:VisualElement name="hp-fill" class="A_stats-card__hp-fill" />
+                </ui:VisualElement>
+                <ui:Label name="hp-text" text="0 / 0" class="A_stats-card__hp-text" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

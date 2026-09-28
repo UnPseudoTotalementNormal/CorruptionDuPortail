@@ -1,0 +1,614 @@
+diff --git a/Assets/Scripts/Domain/VoteRules.cs b/Assets/Scripts/Domain/VoteRules.cs
+new file mode 100644
+index 0000000..aa759a9
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoteRules.cs
+@@ -0,0 +1,102 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++
++namespace CorruptionDuPortail.Domain
++{
++    /// <summary>
++    /// Pure, decision-only vote rules extracted from <c>VoteState</c> (continues the VoteTally / PowerUsability
++    /// extractions). Holds the two rule sets the vote adapter used to inline:
++    /// <list type="bullet">
++    ///   <item>the vote-eligibility rule chain (the former body of <c>VoteState.CanVote</c>), in the SAME order
++    ///   and with the SAME short-circuits;</item>
++    ///   <item>the early-close condition (the former inline "every eligible voter has voted" check shared by
++    ///   <c>OnPlayerVotedRpc</c> and <c>OnPlayerLeftServer</c>) and the timer value it collapses to.</item>
++    /// </list>
++    /// No engine types: the adapter reads the Character / GameManager state and passes plain values. The
++    /// engine-coupled lookups (voter Character, "this real client has left") are supplied as LAZY delegates so
++    /// they run exactly where the original <c>&amp;&amp;</c> / <c>||</c> chain evaluated them — never earlier.
++    /// Decision-only (NFR4): returns verdicts / values; the adapter owns the server assert, the warning log,
++    /// the vote recording, the RPCs and the <c>voteTimer</c> write.
++    /// </summary>
++    public sealed class VoteRules
++    {
++        /// <summary>
++        /// Remaining time (seconds) the vote timer is collapsed to once the early-close condition is met.
++        /// The timer is only ever lowered to this value, never raised (see <see cref="ClampTimerForEarlyClose"/>).
++        /// </summary>
++        public const float EarlyCloseTimerSeconds = 5f;
++
++        /// <summary>
++        /// True iff <paramref name="voterId"/> already appears in any candidate's voter list — i.e. has already
++        /// cast a ballot (the skip bucket included).
++        /// </summary>
++        public bool HasAlreadyVoted(IEnumerable<ICollection<ulong>> votersPerCandidate, ulong voterId)
++        {
++            return votersPerCandidate.Any(voters => voters.Contains(voterId));
++        }
++
++        /// <summary>
++        /// Evaluates the vote-eligibility rule chain in the SAME order as the original <c>VoteState.CanVote</c>:
++        /// <list type="number">
++        ///   <item>already voted (skipped when <paramref name="ignoreAlreadyVoted"/>) → false;</item>
++        ///   <item>voter missing, eliminated or fake → false (<paramref name="readVoterStatus"/> is invoked only
++        ///   if rule 1 passed);</item>
++        ///   <item>voter has departed the session → false (<paramref name="hasVoterDeparted"/> is invoked only if
++        ///   rules 1 and 2 passed);</item>
++        ///   <item>otherwise → true.</item>
++        /// </list>
++        /// </summary>
++        public bool CanVote(
++            ulong voterId,
++            bool ignoreAlreadyVoted,
++            IEnumerable<ICollection<ulong>> votersPerCandidate,
++            Func<ulong, VoterStatus> readVoterStatus,
++            Func<ulong, bool> hasVoterDeparted)
++        {
++            if (!ignoreAlreadyVoted && HasAlreadyVoted(votersPerCandidate, voterId))
++            {
++                return false; // Player has already voted
++            }
++
++            VoterStatus voter = readVoterStatus(voterId);
++            if (!voter.Exists || voter.IsEliminated || voter.IsFake)
++            {
++                return false; // Player is eliminated or does not exist or is a fake character
++            }
++
++            if (hasVoterDeparted(voterId))
++            {
++                return false; // A departed real client no longer votes
++            }
++
++            return true;
++        }
++
++        /// <summary>Total number of ballots cast, summed over every candidate bucket (skip included).</summary>
++        public int CountCastVotes(IEnumerable<ICollection<ulong>> votersPerCandidate)
++        {
++            return votersPerCandidate.Sum(voters => voters.Count);
++        }
++
++        /// <summary>
++        /// Early-close condition: the vote may close ahead of its timer once the cast ballots reach the
++        /// eligible-voter denominator (<c>&gt;=</c>, so zero eligible voters also closes).
++        /// </summary>
++        public bool ShouldCloseEarly(int castVotes, int eligibleVoters)
++        {
++            return castVotes >= eligibleVoters;
++        }
++
++        /// <summary>
++        /// The timer value to apply once <see cref="ShouldCloseEarly"/> holds: the smaller of the current timer
++        /// and <see cref="EarlyCloseTimerSeconds"/>. Written as <c>a &lt; b ? a : b</c> on purpose — the exact
++        /// semantics of the <c>Mathf.Min(float, float)</c> it replaces (incl. NaN → returns the constant), which
++        /// <see cref="Math.Min(float, float)"/> would NOT reproduce.
++        /// </summary>
++        public float ClampTimerForEarlyClose(float currentTimer)
++        {
++            return currentTimer < EarlyCloseTimerSeconds ? currentTimer : EarlyCloseTimerSeconds;
++        }
++    }
++}
+diff --git a/Assets/Scripts/Domain/VoteRules.cs.meta b/Assets/Scripts/Domain/VoteRules.cs.meta
+new file mode 100644
+index 0000000..ab841c1
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoteRules.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 2c68df4a8996445ab67b75c171918690
+\ No newline at end of file
+diff --git a/Assets/Scripts/Domain/VoterStatus.cs b/Assets/Scripts/Domain/VoterStatus.cs
+new file mode 100644
+index 0000000..ffbb2d4
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoterStatus.cs
+@@ -0,0 +1,27 @@
++namespace CorruptionDuPortail.Domain
++{
++    /// <summary>
++    /// Plain-value snapshot of the voter state that the vote-eligibility rule chain reads (see
++    /// <see cref="VoteRules.CanVote"/>). Built by the adapter (<c>VoteState</c>) from the voter's Character:
++    /// the adapter performs the engine-side lookup and its Unity-overloaded null check, then copies the
++    /// NetworkVariable / computed flags here. <c>default</c> means "no such voter" (<see cref="Exists"/> false).
++    /// </summary>
++    public readonly struct VoterStatus
++    {
++        /// <summary>False when the adapter found no live Character for the voter id.</summary>
++        public readonly bool Exists;
++
++        /// <summary>The voter's Character is eliminated.</summary>
++        public readonly bool IsEliminated;
++
++        /// <summary>The voter's Character is a fake (AI filler) character.</summary>
++        public readonly bool IsFake;
++
++        public VoterStatus(bool exists, bool isEliminated, bool isFake)
++        {
++            Exists = exists;
++            IsEliminated = isEliminated;
++            IsFake = isFake;
++        }
++    }
++}
+diff --git a/Assets/Scripts/Domain/VoterStatus.cs.meta b/Assets/Scripts/Domain/VoterStatus.cs.meta
+new file mode 100644
+index 0000000..42f5ccd
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoterStatus.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: c8495e5ff4064251918752891be212e7
+\ No newline at end of file
+diff --git a/Assets/Scripts/GameLogic/GameStates/VoteState.cs b/Assets/Scripts/GameLogic/GameStates/VoteState.cs
+index e7bbf93..8de5806 100644
+--- a/Assets/Scripts/GameLogic/GameStates/VoteState.cs
++++ b/Assets/Scripts/GameLogic/GameStates/VoteState.cs
+@@ -35,6 +35,11 @@ namespace GameLogic.GameStates
+         public const ulong SKIP_VOTE_ID = GameValues.FAKE_CLIENT_ID;
+         
+         public static ulong mostVotedPlayer;
++
++        // Vote-eligibility rule chain + early-close condition extracted to a pure, EditMode-tested Domain POCO
++        // (VoteRules). This adapter keeps the server asserts, the engine lookups (voter Character, departed-set)
++        // passed as lazy delegates to preserve the exact short-circuit, the RPCs and the voteTimer write.
++        private readonly VoteRules _voteRules = new();
+         
+         private void OnVoteButtonClicked(Card _card)
+         {
+@@ -77,39 +82,56 @@ namespace GameLogic.GameStates
+                 }, 
+                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+             
+-            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
+-                CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
++            if (IsEarlyCloseConditionMet(out _, out _))
+             {
+-                voteTimer = Mathf.Min(voteTimer, 5);
++                voteTimer = _voteRules.ClampTimerForEarlyClose(voteTimer);
+             }
+         }
+         
+         public bool CanVote(ulong _playerId, bool _ignoreAlreadyVoted = false)
+         {
+             Assert.IsTrue(gameManager.IsServer, "CanVote can only be called on server");
+-            
+-            if (!_ignoreAlreadyVoted && votesForPlayer.Values.Any(_voteList => _voteList.Contains(_playerId)))
+-            {
+-                return false; // Player has already voted
+-            }
+ 
++            // Rule order (already voted -> missing/eliminated/fake -> departed) and short-circuits live in VoteRules;
++            // the two engine lookups (ReadVoterStatus, HasVoterDeparted) are only invoked once every earlier rule passed.
++            return _voteRules.CanVote(_playerId, _ignoreAlreadyVoted, votesForPlayer.Values, ReadVoterStatus, HasVoterDeparted);
++        }
++
++        /// <summary>
++        /// Engine-side voter lookup for <see cref="VoteRules.CanVote"/>. The <c>== null</c> test stays here on
++        /// purpose: it is Unity's overloaded null check (a destroyed Character compares equal to null).
++        /// </summary>
++        private VoterStatus ReadVoterStatus(ulong _playerId)
++        {
+             Character _character = CharacterQuery.GetCharacter(_playerId, false);
+-            if (_character == null || _character.isEliminated.Value || _character.isFake)
++            if (_character == null)
+             {
+-                return false; // Player is eliminated or does not exist or is a fake character
++                return default; // Player does not exist
+             }
+ 
++            return new VoterStatus(true, _character.isEliminated.Value, _character.isFake);
++        }
++
++        private bool HasVoterDeparted(ulong _playerId)
++        {
+             // [LEAVE] Phase 2 — re-exclude a DEPARTED real client (owner ruling: a merely-chained-but-PRESENT
+             // player stays eligible, so we do NOT key on isChained). The original game excluded a disconnected
+             // player because the old handler fakified them and this method already drops isFake; Phase 1 replaced
+             // fakify with chaining, losing that. Re-key it on the true "this real client has left" discriminator
+             // (GameManager's departed-set). Bots (id >= 100) are host-simulated and always present — never excluded.
+-            if (_playerId < 100 && gameManager.HasClientLeft(_playerId))
+-            {
+-                return false;
+-            }
++            return _playerId < 100 && gameManager.HasClientLeft(_playerId);
++        }
+ 
+-            return true;
++        /// <summary>
++        /// Early-close check shared by <see cref="OnPlayerVotedRpc"/> and <see cref="OnPlayerLeftServer"/>: counts the
++        /// cast ballots, THEN the eligible voters (<see cref="CanVote"/> with already-voted ignored, over every
++        /// character), and asks <see cref="VoteRules.ShouldCloseEarly"/>. Evaluation order matches the former inline code.
++        /// </summary>
++        private bool IsEarlyCloseConditionMet(out int _castVotes, out int _eligibleVoters)
++        {
++            _castVotes = _voteRules.CountCastVotes(votesForPlayer.Values);
++            _eligibleVoters = CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true));
++            return _voteRules.ShouldCloseEarly(_castVotes, _eligibleVoters);
+         }
+ 
+         /// <summary>
+@@ -125,13 +147,10 @@ namespace GameLogic.GameStates
+         {
+             Assert.IsTrue(gameManager.IsServer, "OnPlayerLeftServer can only be called on server");
+ 
+-            int _castVotes = votesForPlayer.Values.Sum(_voteList => _voteList.Count);
+-            int _eligibleVoters = CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true));
+-
+-            if (_castVotes >= _eligibleVoters)
++            if (IsEarlyCloseConditionMet(out int _castVotes, out int _eligibleVoters))
+             {
+                 Debug.Log($"[LEAVE] VoteState: after {_ownerId} left, {_castVotes} vote(s) meet the reduced denominator ({_eligibleVoters}) — collapsing the timer to auto-close.");
+-                voteTimer = Mathf.Min(voteTimer, 5);
++                voteTimer = _voteRules.ClampTimerForEarlyClose(voteTimer);
+             }
+         }
+         
+diff --git a/Assets/Scripts/Tests/Editor/LeafPocoNoFacadeGuardTests.cs b/Assets/Scripts/Tests/Editor/LeafPocoNoFacadeGuardTests.cs
+index 1f5f62c..66301e7 100644
+--- a/Assets/Scripts/Tests/Editor/LeafPocoNoFacadeGuardTests.cs
++++ b/Assets/Scripts/Tests/Editor/LeafPocoNoFacadeGuardTests.cs
+@@ -29,6 +29,7 @@ namespace Tests.Editor
+             typeof(VoteTally),
+             typeof(ChainingResolver),
+             typeof(RoleDistributor),
++            typeof(VoteRules),
+         };
+ 
+         [Test]
+diff --git a/Assets/Scripts/Tests/Editor/VoteRulesTests.cs b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs
+new file mode 100644
+index 0000000..db9b37b
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs
+@@ -0,0 +1,312 @@
++using System;
++using System.Collections.Generic;
++using CorruptionDuPortail.Domain;
++using NUnit.Framework;
++
++namespace Tests.Editor
++{
++    /// <summary>
++    /// EditMode characterization of <see cref="VoteRules"/>, the pure extraction of the vote-eligibility rule chain
++    /// (former body of <c>VoteState.CanVote</c>) and of the early-close condition (former inline check shared by
++    /// <c>VoteState.OnPlayerVotedRpc</c> / <c>OnPlayerLeftServer</c>). Pins every disqualifier, the ignore-already-voted
++    /// override, the ordered short-circuit of the two lazy engine lookups, the <c>&gt;=</c> boundary of the early-close
++    /// condition and the exact <c>Mathf.Min</c> semantics of the timer collapse. Ballots are fed as the adapter does:
++    /// the <c>Values</c> of a <c>Dictionary&lt;ulong, List&lt;ulong&gt;&gt;</c> (candidate → voter ids).
++    /// </summary>
++    [Category("VoteRules")]
++    public class VoteRulesTests
++    {
++        private const ulong Skip = 99999; // stand-in for VoteState.SKIP_VOTE_ID
++
++        private readonly VoteRules _rules = new();
++
++        private static readonly VoterStatus LiveVoter = new(exists: true, isEliminated: false, isFake: false);
++        private static readonly Func<ulong, VoterStatus> AlwaysLive = _ => LiveVoter;
++        private static readonly Func<ulong, bool> NeverDeparted = _ => false;
++        private static readonly Func<ulong, VoterStatus> StatusLookupMustNotRun =
++            _ => throw new InvalidOperationException("the voter lookup must not be evaluated here");
++        private static readonly Func<ulong, bool> DepartedCheckMustNotRun =
++            _ => throw new InvalidOperationException("the departed check must not be evaluated here");
++
++        private static Dictionary<ulong, List<ulong>> NoBallots() => new()
++        {
++            { 1, new List<ulong>() },
++            { 2, new List<ulong>() },
++            { Skip, new List<ulong>() },
++        };
++
++        // ───────────────────────────── HasAlreadyVoted ─────────────────────────────
++
++        [Test]
++        public void HasAlreadyVoted_VoterInACandidateList_ReturnsTrue()
++        {
++            var ballots = NoBallots();
++            ballots[2].Add(1);
++
++            Assert.IsTrue(_rules.HasAlreadyVoted(ballots.Values, 1));
++        }
++
++        [Test]
++        public void HasAlreadyVoted_VoterInSkipBucket_ReturnsTrue()
++        {
++            var ballots = NoBallots();
++            ballots[Skip].Add(1);
++
++            Assert.IsTrue(_rules.HasAlreadyVoted(ballots.Values, 1), "A skip ballot counts as having voted.");
++        }
++
++        [Test]
++        public void HasAlreadyVoted_VoterAbsent_ReturnsFalse()
++        {
++            var ballots = NoBallots();
++            ballots[2].Add(3);
++
++            Assert.IsFalse(_rules.HasAlreadyVoted(ballots.Values, 1));
++        }
++
++        [Test]
++        public void HasAlreadyVoted_BeingVotedForIsNotVoting_ReturnsFalse()
++        {
++            // Player 1 is a candidate key with a ballot from 3 — being a candidate is not having voted.
++            var ballots = NoBallots();
++            ballots[1].Add(3);
++
++            Assert.IsFalse(_rules.HasAlreadyVoted(ballots.Values, 1));
++        }
++
++        [Test]
++        public void HasAlreadyVoted_NoBuckets_ReturnsFalse()
++        {
++            Assert.IsFalse(_rules.HasAlreadyVoted(new Dictionary<ulong, List<ulong>>().Values, 1));
++        }
++
++        // ───────────────────────────── CanVote ─────────────────────────────
++
++        [Test]
++        public void CanVote_LivePresentVoterNotYetVoted_ReturnsTrue()
++        {
++            Assert.IsTrue(_rules.CanVote(1, false, NoBallots().Values, AlwaysLive, NeverDeparted));
++        }
++
++        [Test]
++        public void CanVote_AlreadyVoted_ReturnsFalse_WithoutAnyEngineLookup()
++        {
++            var ballots = NoBallots();
++            ballots[2].Add(1);
++
++            Assert.IsFalse(_rules.CanVote(1, false, ballots.Values, StatusLookupMustNotRun, DepartedCheckMustNotRun),
++                "Rule 1 (already voted) must short-circuit before the voter lookup and the departed check.");
++        }
++
++        [Test]
++        public void CanVote_AlreadyVoted_IgnoreFlagBypassesTheGuard()
++        {
++            var ballots = NoBallots();
++            ballots[2].Add(1);
++
++            Assert.IsTrue(_rules.CanVote(1, true, ballots.Values, AlwaysLive, NeverDeparted),
++                "ignoreAlreadyVoted skips the already-voted guard for an otherwise-valid voter.");
++        }
++
++        [Test]
++        public void CanVote_IgnoreFlag_DoesNotBypassOtherRules()
++        {
++            var eliminated = new VoterStatus(exists: true, isEliminated: true, isFake: false);
++
++            Assert.IsFalse(_rules.CanVote(1, true, NoBallots().Values, _ => eliminated, DepartedCheckMustNotRun));
++        }
++
++        [Test]
++        public void CanVote_UnknownVoter_ReturnsFalse_WithoutDepartedCheck()
++        {
++            Assert.IsFalse(_rules.CanVote(999, false, NoBallots().Values, _ => default, DepartedCheckMustNotRun));
++        }
++
++        [Test]
++        public void CanVote_EliminatedVoter_ReturnsFalse_WithoutDepartedCheck()
++        {
++            var eliminated = new VoterStatus(exists: true, isEliminated: true, isFake: false);
++
++            Assert.IsFalse(_rules.CanVote(1, false, NoBallots().Values, _ => eliminated, DepartedCheckMustNotRun));
++        }
++
++        [Test]
++        public void CanVote_FakeVoter_ReturnsFalse_WithoutDepartedCheck()
++        {
++            var fake = new VoterStatus(exists: true, isEliminated: false, isFake: true);
++
++            Assert.IsFalse(_rules.CanVote(1, false, NoBallots().Values, _ => fake, DepartedCheckMustNotRun));
++        }
++
++        [Test]
++        public void CanVote_DepartedVoter_ReturnsFalse()
++        {
++            Assert.IsFalse(_rules.CanVote(2, true, NoBallots().Values, AlwaysLive, _ => true),
++                "A departed real client is excluded even with the already-voted guard ignored.");
++        }
++
++        [Test]
++        public void CanVote_PassesTheVoterIdToBothLookups()
++        {
++            ulong statusAskedFor = 0;
++            ulong departedAskedFor = 0;
++
++            bool result = _rules.CanVote(7, false, NoBallots().Values,
++                id => { statusAskedFor = id; return LiveVoter; },
++                id => { departedAskedFor = id; return false; });
++
++            Assert.IsTrue(result);
++            Assert.AreEqual(7UL, statusAskedFor);
++            Assert.AreEqual(7UL, departedAskedFor);
++        }
++
++        [Test]
++        public void CanVote_EvaluatesLookupsInOrder_StatusThenDeparted()
++        {
++            var calls = new List<string>();
++
++            _rules.CanVote(1, false, NoBallots().Values,
++                _ => { calls.Add("status"); return LiveVoter; },
++                _ => { calls.Add("departed"); return false; });
++
++            CollectionAssert.AreEqual(new[] { "status", "departed" }, calls);
++        }
++
++        [Test]
++        public void VoterStatus_Default_IsAMissingVoter()
++        {
++            VoterStatus missing = default;
++
++            Assert.IsFalse(missing.Exists);
++            Assert.IsFalse(missing.IsEliminated);
++            Assert.IsFalse(missing.IsFake);
++        }
++
++        // ───────────────────────────── CountCastVotes ─────────────────────────────
++
++        [Test]
++        public void CountCastVotes_SumsEveryBucket_SkipIncluded()
++        {
++            var ballots = NoBallots();
++            ballots[1].Add(2);
++            ballots[2].Add(1);
++            ballots[2].Add(3);
++            ballots[Skip].Add(4);
++
++            Assert.AreEqual(4, _rules.CountCastVotes(ballots.Values));
++        }
++
++        [Test]
++        public void CountCastVotes_NoBallots_ReturnsZero()
++        {
++            Assert.AreEqual(0, _rules.CountCastVotes(NoBallots().Values));
++            Assert.AreEqual(0, _rules.CountCastVotes(new Dictionary<ulong, List<ulong>>().Values));
++        }
++
++        // ───────────────────────────── ShouldCloseEarly ─────────────────────────────
++
++        [Test]
++        public void ShouldCloseEarly_FewerVotesThanEligible_ReturnsFalse()
++        {
++            Assert.IsFalse(_rules.ShouldCloseEarly(2, 3));
++        }
++
++        [Test]
++        public void ShouldCloseEarly_VotesEqualEligible_ReturnsTrue()
++        {
++            Assert.IsTrue(_rules.ShouldCloseEarly(3, 3));
++        }
++
++        [Test]
++        public void ShouldCloseEarly_MoreVotesThanEligible_ReturnsTrue()
++        {
++            // e.g. a voter who already voted then became ineligible (departed) still has a ballot counted.
++            Assert.IsTrue(_rules.ShouldCloseEarly(3, 2));
++        }
++
++        [Test]
++        public void ShouldCloseEarly_NoEligibleVoters_ReturnsTrue()
++        {
++            Assert.IsTrue(_rules.ShouldCloseEarly(0, 0), "0 >= 0 — the legacy >= check closes an empty electorate.");
++        }
++
++        // ───────────────────────────── ClampTimerForEarlyClose ─────────────────────────────
++
++        [Test]
++        public void EarlyCloseTimerSeconds_IsFive()
++        {
++            Assert.AreEqual(5f, VoteRules.EarlyCloseTimerSeconds);
++        }
++
++        [Test]
++        public void ClampTimer_AboveFive_CollapsesToFive()
++        {
++            Assert.AreEqual(5f, _rules.ClampTimerForEarlyClose(100f));
++        }
++
++        [Test]
++        public void ClampTimer_BelowFive_IsKept()
++        {
++            Assert.AreEqual(2.5f, _rules.ClampTimerForEarlyClose(2.5f), "The collapse never raises the timer.");
++        }
++
++        [Test]
++        public void ClampTimer_ExactlyFive_IsFive()
++        {
++            Assert.AreEqual(5f, _rules.ClampTimerForEarlyClose(5f));
++        }
++
++        [Test]
++        public void ClampTimer_Negative_IsKept()
++        {
++            Assert.AreEqual(-0.25f, _rules.ClampTimerForEarlyClose(-0.25f));
++        }
++
++        [Test]
++        public void ClampTimer_NaN_ReturnsFive_LikeMathfMin()
++        {
++            // Mathf.Min(a, b) is `a < b ? a : b` → Mathf.Min(NaN, 5) == 5 (System.Math.Min would return NaN).
++            Assert.AreEqual(5f, _rules.ClampTimerForEarlyClose(float.NaN));
++        }
++
++        [Test]
++        public void ClampTimer_PositiveInfinity_CollapsesToFive()
++        {
++            Assert.AreEqual(5f, _rules.ClampTimerForEarlyClose(float.PositiveInfinity));
++        }
++
++        // ───────────────────────────── Scenario (adapter composition) ─────────────────────────────
++
++        [Test]
++        public void Scenario_DepartedNonVoterShrinksDenominator_ClosesEarly()
++        {
++            // Mirrors the PlayMode LeaveUnblockSeam AC4 case at the POCO level: voters 1 and 3 voted for 2; player 2
++            // then departs. The adapter counts eligible voters with the already-voted guard ignored.
++            var ballots = NoBallots();
++            ballots[2].Add(1);
++            ballots[2].Add(3);
++            var departed = new HashSet<ulong>();
++            ulong[] characters = { 1, 2, 3 };
++
++            int EligibleVoters()
++            {
++                int count = 0;
++                foreach (ulong id in characters)
++                {
++                    if (_rules.CanVote(id, true, ballots.Values, AlwaysLive, departed.Contains))
++                    {
++                        count++;
++                    }
++                }
++                return count;
++            }
++
++            int cast = _rules.CountCastVotes(ballots.Values);
++            Assert.IsFalse(_rules.ShouldCloseEarly(cast, EligibleVoters()), "2 ballots < 3 eligible — stays open.");
++
++            departed.Add(2);
++            Assert.IsTrue(_rules.ShouldCloseEarly(cast, EligibleVoters()), "2 ballots >= 2 eligible — closes early.");
++            Assert.AreEqual(5f, _rules.ClampTimerForEarlyClose(100f));
++        }
++    }
++}
+diff --git a/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta
+new file mode 100644
+index 0000000..90f111a
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 4cf702c6022c424cbf0816b1a541a6db
+\ No newline at end of file
+diff --git a/_bmad-output/refactor-architecture-poco.md b/_bmad-output/refactor-architecture-poco.md
+index 8135c24..d27f44b 100644
+--- a/_bmad-output/refactor-architecture-poco.md
++++ b/_bmad-output/refactor-architecture-poco.md
+@@ -59,6 +59,7 @@ Create a new asmdef `CorruptionDuPortail.Domain` with `noEngineReferences: true`
+ | `RoleDistributor` | `CharacterManager` role assignment + `UnityEngine.Random` | assign roles from settings + player list, **deterministic via `IRandomProvider`** AND a fixed, explicit ordering of the role pool (see §3b) |
+ | `VictoryEvaluator` | `VictoryConditionCheckState.cs:24-45` loop (NOT the conditions themselves) | `Evaluate(IReadOnlyList<CharacterSnapshot>) → Dictionary<WinningTeam, HashSet<ulong>>`; calls `IWinningCondition.CheckCondition(snapshot)` |
+ | `VoteTally` | `VoteState` / `VoteRecapState` | count votes → outcome |
++| `VoteRules` (+ `VoterStatus`) | `VoteState.CanVote` + early-close check of `OnPlayerVotedRpc` / `OnPlayerLeftServer` | vote-eligibility rule chain (lazy engine lookups keep the short-circuit), `castVotes >= eligibleVoters` early-close condition, timer collapse value (`Mathf.Min` semantics) |
+ | `ChainingResolver` | `ChainingManager` | accusation/chain resolution |
+ | `PowerResolver` | `Power` / `PowerManager` effect arithmetic only | returns `EffectDescriptor` value objects; **all** FMOD/Focus/RPC side-effects (`Power.StartUse/StopUse`, `Power.cs:120,183-196`) stay in the adapter |
+ 

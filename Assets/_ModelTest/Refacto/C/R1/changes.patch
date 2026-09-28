@@ -1,0 +1,313 @@
+diff --git a/Assets/Scripts/Domain/VoteRules.cs b/Assets/Scripts/Domain/VoteRules.cs
+new file mode 100644
+index 0000000..32784e0
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoteRules.cs
+@@ -0,0 +1,84 @@
++namespace CorruptionDuPortail.Domain
++{
++    /// <summary>
++    /// The Unity-free facts the vote-eligibility rule needs about a single candidate voter. The adapter
++    /// (<c>VoteState</c>) resolves each field from the live game state (character lookup, departed-set, vote
++    /// buckets) and hands the primitives in — the rule itself never touches NGO/UnityEngine.
++    /// </summary>
++    public readonly struct VoterFacts
++    {
++        /// <summary>This voter already appears in one of the vote buckets.</summary>
++        public bool HasAlreadyVoted { get; }
++
++        /// <summary>A live character exists for this voter (the adapter's <c>character != null</c>).</summary>
++        public bool CharacterExists { get; }
++
++        /// <summary>The voter's character is eliminated.</summary>
++        public bool IsEliminated { get; }
++
++        /// <summary>The voter's character is a fake (placeholder) character.</summary>
++        public bool IsFake { get; }
++
++        /// <summary>
++        /// This is a DEPARTED real client. The adapter computes it as <c>playerId &lt; 100 &amp;&amp;
++        /// HasClientLeft(playerId)</c> — the bot-id discriminator (<c>clientId &gt;= 100</c>) stays verbatim in the
++        /// network adapter per NFR5; bots are host-simulated and always present, so they are never departed.
++        /// </summary>
++        public bool HasDeparted { get; }
++
++        public VoterFacts(bool hasAlreadyVoted, bool characterExists, bool isEliminated, bool isFake, bool hasDeparted)
++        {
++            HasAlreadyVoted = hasAlreadyVoted;
++            CharacterExists = characterExists;
++            IsEliminated = isEliminated;
++            IsFake = isFake;
++            HasDeparted = hasDeparted;
++        }
++    }
++
++    /// <summary>
++    /// Pure vote-eligibility + early-close rules extracted from <c>VoteState</c> (Assets/Scripts/GameLogic/
++    /// GameStates/VoteState.cs). Decision-only (NFR4): the methods return a verdict; the adapter reads live state,
++    /// applies the timer collapse and sends the RPCs. Behaviour is mirrored bit-for-bit from the original
++    /// <c>CanVote</c> / auto-close checks — same predicate order, same short-circuits.
++    /// </summary>
++    public sealed class VoteRules
++    {
++        /// <summary>
++        /// Whether a candidate may vote. Mirrors the original <c>VoteState.CanVote</c> exactly:
++        /// <list type="number">
++        /// <item>unless <paramref name="ignoreAlreadyVoted"/>, a voter who already voted is rejected;</item>
++        /// <item>a missing / eliminated / fake character is rejected;</item>
++        /// <item>a departed real client is rejected.</item>
++        /// </list>
++        /// <paramref name="ignoreAlreadyVoted"/> is the denominator flag: pass <c>true</c> to count the pool of
++        /// eligible voters regardless of who has already cast a ballot.
++        /// </summary>
++        public bool CanVote(in VoterFacts voter, bool ignoreAlreadyVoted = false)
++        {
++            if (!ignoreAlreadyVoted && voter.HasAlreadyVoted)
++            {
++                return false; // Player has already voted
++            }
++
++            if (!voter.CharacterExists || voter.IsEliminated || voter.IsFake)
++            {
++                return false; // Player is eliminated or does not exist or is a fake character
++            }
++
++            if (voter.HasDeparted)
++            {
++                return false; // Real client has left the game
++            }
++
++            return true;
++        }
++
++        /// <summary>
++        /// Whether an open vote should close now instead of waiting out the timer: it does once every eligible
++        /// voter has cast a ballot. Mirrors the <c>castVotes &gt;= eligibleVoters</c> auto-close threshold shared by
++        /// <c>OnPlayerVotedRpc</c> and <c>OnPlayerLeftServer</c>.
++        /// </summary>
++        public bool ShouldCloseVoteEarly(int castVotes, int eligibleVoters) => castVotes >= eligibleVoters;
++    }
++}
+diff --git a/Assets/Scripts/Domain/VoteRules.cs.meta b/Assets/Scripts/Domain/VoteRules.cs.meta
+new file mode 100644
+index 0000000..d622053
+--- /dev/null
++++ b/Assets/Scripts/Domain/VoteRules.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 4a8879a1235e41078654915d1eadd42e
+\ No newline at end of file
+diff --git a/Assets/Scripts/GameLogic/GameStates/VoteState.cs b/Assets/Scripts/GameLogic/GameStates/VoteState.cs
+index e7bbf93..f461793 100644
+--- a/Assets/Scripts/GameLogic/GameStates/VoteState.cs
++++ b/Assets/Scripts/GameLogic/GameStates/VoteState.cs
+@@ -31,7 +31,11 @@ namespace GameLogic.GameStates
+         public event Action<Dictionary<ulong, List<ulong>>> onVoteRefresh;
+         
+         private Coroutine updateVoteTimerCoroutine;
+-        
++
++        // Story R1 — eligibility + early-close rules live in a pure Domain POCO (VoteRules). This adapter reads the
++        // live game state, hands the primitives to the rule and applies the returned verdict (NFR4).
++        private readonly VoteRules _voteRules = new();
++
+         public const ulong SKIP_VOTE_ID = GameValues.FAKE_CLIENT_ID;
+         
+         public static ulong mostVotedPlayer;
+@@ -77,8 +81,9 @@ namespace GameLogic.GameStates
+                 }, 
+                 new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
+             
+-            if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
+-                CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
++            int _castVotes = votesForPlayer.Values.Sum(_voteList => _voteList.Count);
++            int _eligibleVoters = CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true));
++            if (_voteRules.ShouldCloseVoteEarly(_castVotes, _eligibleVoters))
+             {
+                 voteTimer = Mathf.Min(voteTimer, 5);
+             }
+@@ -87,29 +92,27 @@ namespace GameLogic.GameStates
+         public bool CanVote(ulong _playerId, bool _ignoreAlreadyVoted = false)
+         {
+             Assert.IsTrue(gameManager.IsServer, "CanVote can only be called on server");
+-            
+-            if (!_ignoreAlreadyVoted && votesForPlayer.Values.Any(_voteList => _voteList.Contains(_playerId)))
+-            {
+-                return false; // Player has already voted
+-            }
++
++            // Resolve the live facts the pure rule needs. All reads are side-effect-free: GetCharacter is called
++            // with _triggerUpdate = false (a plain FirstOrDefault) and HasClientLeft is a set Contains — so
++            // evaluating them eagerly here matches the original short-circuited behaviour exactly.
++            bool _hasAlreadyVoted = votesForPlayer.Values.Any(_voteList => _voteList.Contains(_playerId));
+ 
+             Character _character = CharacterQuery.GetCharacter(_playerId, false);
+-            if (_character == null || _character.isEliminated.Value || _character.isFake)
+-            {
+-                return false; // Player is eliminated or does not exist or is a fake character
+-            }
++            bool _characterExists = _character != null;
++            bool _isEliminated = _characterExists && _character.isEliminated.Value;
++            bool _isFake = _characterExists && _character.isFake;
+ 
+             // [LEAVE] Phase 2 — re-exclude a DEPARTED real client (owner ruling: a merely-chained-but-PRESENT
+             // player stays eligible, so we do NOT key on isChained). The original game excluded a disconnected
+             // player because the old handler fakified them and this method already drops isFake; Phase 1 replaced
+             // fakify with chaining, losing that. Re-key it on the true "this real client has left" discriminator
+             // (GameManager's departed-set). Bots (id >= 100) are host-simulated and always present — never excluded.
+-            if (_playerId < 100 && gameManager.HasClientLeft(_playerId))
+-            {
+-                return false;
+-            }
++            bool _hasDeparted = _playerId < 100 && gameManager.HasClientLeft(_playerId);
+ 
+-            return true;
++            return _voteRules.CanVote(
++                new VoterFacts(_hasAlreadyVoted, _characterExists, _isEliminated, _isFake, _hasDeparted),
++                _ignoreAlreadyVoted);
+         }
+ 
+         /// <summary>
+@@ -128,7 +131,7 @@ namespace GameLogic.GameStates
+             int _castVotes = votesForPlayer.Values.Sum(_voteList => _voteList.Count);
+             int _eligibleVoters = CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true));
+ 
+-            if (_castVotes >= _eligibleVoters)
++            if (_voteRules.ShouldCloseVoteEarly(_castVotes, _eligibleVoters))
+             {
+                 Debug.Log($"[LEAVE] VoteState: after {_ownerId} left, {_castVotes} vote(s) meet the reduced denominator ({_eligibleVoters}) — collapsing the timer to auto-close.");
+                 voteTimer = Mathf.Min(voteTimer, 5);
+diff --git a/Assets/Scripts/Tests/Editor/VoteRulesTests.cs b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs
+new file mode 100644
+index 0000000..10d1b67
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs
+@@ -0,0 +1,119 @@
++using CorruptionDuPortail.Domain;
++using NUnit.Framework;
++
++namespace Tests.Editor
++{
++    /// <summary>
++    /// Story R1 — fast EditMode tests for the VoteRules POCO extracted from VoteState (eligibility rules +
++    /// early-close condition). Covers every branch/short-circuit of CanVote and the auto-close threshold, so the
++    /// pure decision logic is pinned without booting an NGO host.
++    /// </summary>
++    [Category("VoteRules")]
++    public class VoteRulesTests
++    {
++        private static readonly VoteRules Rules = new();
++
++        // A voter that clears every gate: not voted yet, character present, alive, real, still connected.
++        private static VoterFacts Eligible(
++            bool hasAlreadyVoted = false,
++            bool characterExists = true,
++            bool isEliminated = false,
++            bool isFake = false,
++            bool hasDeparted = false) =>
++            new VoterFacts(hasAlreadyVoted, characterExists, isEliminated, isFake, hasDeparted);
++
++        // ───────────────────────────── CanVote — happy path ─────────────────────────────
++
++        [Test]
++        public void CanVote_FreshEligibleVoter_ReturnsTrue()
++        {
++            Assert.IsTrue(Rules.CanVote(Eligible()));
++        }
++
++        // ───────────────────────────── CanVote — already voted / denominator flag ─────────────────────────────
++
++        [Test]
++        public void CanVote_AlreadyVoted_ReturnsFalse_ByDefault()
++        {
++            Assert.IsFalse(Rules.CanVote(Eligible(hasAlreadyVoted: true)));
++        }
++
++        [Test]
++        public void CanVote_AlreadyVoted_IgnoredWhenCountingDenominator_ReturnsTrue()
++        {
++            // ignoreAlreadyVoted = true is how the auto-close code counts the eligible-voter pool.
++            Assert.IsTrue(Rules.CanVote(Eligible(hasAlreadyVoted: true), ignoreAlreadyVoted: true));
++        }
++
++        [Test]
++        public void CanVote_IgnoreAlreadyVoted_StillRejectsIneligibleForOtherReasons()
++        {
++            // The denominator flag only waives the already-voted gate — an eliminated voter is still excluded.
++            Assert.IsFalse(Rules.CanVote(Eligible(hasAlreadyVoted: true, isEliminated: true), ignoreAlreadyVoted: true));
++        }
++
++        // ───────────────────────────── CanVote — character state gates ─────────────────────────────
++
++        [Test]
++        public void CanVote_NoCharacter_ReturnsFalse()
++        {
++            Assert.IsFalse(Rules.CanVote(Eligible(characterExists: false)));
++        }
++
++        [Test]
++        public void CanVote_Eliminated_ReturnsFalse()
++        {
++            Assert.IsFalse(Rules.CanVote(Eligible(isEliminated: true)));
++        }
++
++        [Test]
++        public void CanVote_Fake_ReturnsFalse()
++        {
++            Assert.IsFalse(Rules.CanVote(Eligible(isFake: true)));
++        }
++
++        // ───────────────────────────── CanVote — departed real client ─────────────────────────────
++
++        [Test]
++        public void CanVote_DepartedClient_ReturnsFalse()
++        {
++            Assert.IsFalse(Rules.CanVote(Eligible(hasDeparted: true)));
++        }
++
++        [Test]
++        public void CanVote_PresentClient_IsNotExcludedByDepartureGate()
++        {
++            // A merely-chained-but-PRESENT player (hasDeparted = false) stays eligible — owner ruling.
++            Assert.IsTrue(Rules.CanVote(Eligible(hasDeparted: false)));
++        }
++
++        // ───────────────────────────── ShouldCloseVoteEarly ─────────────────────────────
++
++        [Test]
++        public void ShouldCloseVoteEarly_AllEligibleHaveVoted_ReturnsTrue()
++        {
++            Assert.IsTrue(Rules.ShouldCloseVoteEarly(castVotes: 4, eligibleVoters: 4));
++        }
++
++        [Test]
++        public void ShouldCloseVoteEarly_MoreVotesThanEligible_ReturnsTrue()
++        {
++            // Defensive: the >= threshold also fires if the denominator shrinks below the ballots already cast
++            // (e.g. a voter departs after voting).
++            Assert.IsTrue(Rules.ShouldCloseVoteEarly(castVotes: 5, eligibleVoters: 4));
++        }
++
++        [Test]
++        public void ShouldCloseVoteEarly_VotesStillOutstanding_ReturnsFalse()
++        {
++            Assert.IsFalse(Rules.ShouldCloseVoteEarly(castVotes: 3, eligibleVoters: 4));
++        }
++
++        [Test]
++        public void ShouldCloseVoteEarly_NoEligibleVoters_ReturnsTrue()
++        {
++            // 0 >= 0 — a degenerate empty pool is considered already closed.
++            Assert.IsTrue(Rules.ShouldCloseVoteEarly(castVotes: 0, eligibleVoters: 0));
++        }
++    }
++}
+diff --git a/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta
+new file mode 100644
+index 0000000..796938b
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/VoteRulesTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 6ca23bc47cf8487681a36aa626d914cc
+\ No newline at end of file

@@ -1,0 +1,72 @@
+diff --git a/Assets/Scripts/GameLogic/GameInfoRevealer.cs b/Assets/Scripts/GameLogic/GameInfoRevealer.cs
+index 4c76b64..2791bf8 100644
+--- a/Assets/Scripts/GameLogic/GameInfoRevealer.cs
++++ b/Assets/Scripts/GameLogic/GameInfoRevealer.cs
+@@ -190,7 +190,10 @@ namespace GameLogic
+             if (!IsServer) return;
+ 
+             var _target = RpcTarget.Single(_toObserverId, RpcTargetUse.Persistent);
+-            if (_toObserverId > 100)
++            // Simulated bots own clientIds >= 100 (the first one, "Simulated 1", IS 100): same boundary as
++            // GetSafeRpcTarget / SendClearHackedRpc. A strict "> 100" sent bot 100's personal reveals to a
++            // non-existent transport client instead of redirecting them to the Host, so they were lost.
++            if (_toObserverId >= 100)
+             {
+                 _target = RpcTarget.Single(0, RpcTargetUse.Persistent); // Redirect to Host
+                 SetRevealLevelSimulatedRpc(_clientId, _revealVariableName, _revealLevel, _toObserverId, _showInfo, _target);
+diff --git a/Assets/Scripts/Tests/PlayMode/Desingleton/RevealAsymmetryReplicationTests.cs b/Assets/Scripts/Tests/PlayMode/Desingleton/RevealAsymmetryReplicationTests.cs
+index 055b324..7ce4f74 100644
+--- a/Assets/Scripts/Tests/PlayMode/Desingleton/RevealAsymmetryReplicationTests.cs
++++ b/Assets/Scripts/Tests/PlayMode/Desingleton/RevealAsymmetryReplicationTests.cs
+@@ -191,5 +191,51 @@ namespace Tests.PlayMode.Desingleton
+                 5f,
+                 "The targeted hack-clear never round-tripped to the remote observer's replica.");
+         }
++
++        // --- 5. Regression (QA: "Simulated 1" never receives personal reveals). The FIRST simulated bot
++        // owns clientId 100 exactly (CharacterManager: 100 + botCount). SendRevealLevelRpc used a strict
++        // "> 100" test, so bot 100 fell into the real-client branch: RpcTarget.Single(100) toward a
++        // transport client that does not exist -> the reveal was lost, while bots 101+ were redirected to
++        // the Host. The reveal must land in the Host's simulated brain for bot 100, and nowhere else. ---
++        [UnityTest]
++        public IEnumerator PersonalReveal_ToFirstSimulatedBot_LandsInHostSimulatedBrain()
++        {
++            yield return PersonalReveal_ToSimulatedBot_LandsInHostSimulatedBrainOnly(SimulatedBotClientId, SimulatedBotClientId + 1);
++        }
++
++        // --- 6. Boundary mirror: bot 101 (already routed correctly before the fix) keeps working. ---
++        [UnityTest]
++        public IEnumerator PersonalReveal_ToSecondSimulatedBot_LandsInHostSimulatedBrain()
++        {
++            yield return PersonalReveal_ToSimulatedBot_LandsInHostSimulatedBrainOnly(SimulatedBotClientId + 1, SimulatedBotClientId);
++        }
++
++        private IEnumerator PersonalReveal_ToSimulatedBot_LandsInHostSimulatedBrainOnly(ulong _botObserver, ulong _otherBot)
++        {
++            yield return SpawnRevealerWorld();
++
++            Assert.AreEqual(RevealLevel.False,
++                _hostRevealer.GetCharacterInfo(SubjectSeat, _botObserver).isRoleRevealed,
++                $"Precondition: bot {_botObserver}'s simulated brain starts with no role reveal.");
++            Assert.AreEqual(RevealLevel.False,
++                _hostRevealer.GetCharacterInfo(SubjectSeat, _otherBot).isRoleRevealed,
++                $"Precondition: bot {_otherBot}'s simulated brain starts with no role reveal.");
++
++            _hostRevealer.SendRevealLevelRpc(SubjectSeat,
++                nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, _botObserver, false);
++
++            yield return NetworkTestHelper.WaitUntilOrTimeout(
++                () => _hostRevealer.GetCharacterInfo(SubjectSeat, _botObserver).isRoleRevealed == RevealLevel.Personal,
++                5f,
++                $"The Personal reveal targeted at simulated bot {_botObserver} never reached its brain on the Host " +
++                "(the >= 100 redirect to the Host did not happen).");
++
++            Assert.AreEqual(RevealLevel.False,
++                _hostRevealer.GetCharacterInfo(SubjectSeat, HostNm.LocalClientId).isRoleRevealed,
++                "A reveal targeted at a simulated bot must NOT land in the host player's own store.");
++            Assert.AreEqual(RevealLevel.False,
++                _hostRevealer.GetCharacterInfo(SubjectSeat, _otherBot).isRoleRevealed,
++                $"A reveal targeted at bot {_botObserver} must NOT land in bot {_otherBot}'s simulated brain.");
++        }
+     }
+ }

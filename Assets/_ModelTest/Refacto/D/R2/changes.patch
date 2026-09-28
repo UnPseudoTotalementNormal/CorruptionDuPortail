@@ -1,0 +1,735 @@
+diff --git a/Assets/Scripts/Domain/RoleSettingValues.cs b/Assets/Scripts/Domain/RoleSettingValues.cs
+new file mode 100644
+index 0000000..f70f7d1
+--- /dev/null
++++ b/Assets/Scripts/Domain/RoleSettingValues.cs
+@@ -0,0 +1,97 @@
++using System;
++
++namespace CorruptionDuPortail.Domain
++{
++    /// <summary>
++    /// One role's lobby attribution setting — <c>max</c> (pool cap: how many copies may appear, the random
++    /// draw fills up to it) and <c>forced</c> (guaranteed minimum reals, forced ≤ max) — plus the server-side
++    /// edit invariants, extracted from <c>GameSettingsManager</c> so they are EditMode-testable (NFR4).
++    ///
++    /// Decision-only: an edit RETURNS the new values; the adapter compares them with the current ones
++    /// (no-op ⇒ no replication) and writes the replicated entry itself. No NGO, no Mathf — the clamps below
++    /// reproduce <c>Mathf.Clamp(int, int, int)</c> / <c>Mathf.Min(int, int)</c> exactly (including their
++    /// behaviour when <c>min &gt; max</c>), so the adapter's observable behaviour is unchanged.
++    ///
++    /// The constructor does NOT clamp: authored values are seeded verbatim (the pre-refactor seed never
++    /// clamped), only edits are clamped.
++    /// </summary>
++    public readonly struct RoleSettingValues : IEquatable<RoleSettingValues>
++    {
++        /// <summary>
++        /// Server clamp upper bound for <see cref="Max"/>. Mirrors the authored slider's max
++        /// (RoleAttributionRoleSettingObject prefab <c>m_MaxValue: 15</c>) so the clamp is a no-op for legitimate
++        /// slider input. NOTE: disagrees with the <c>[Range(0,10)]</c> on <c>RoleAttributionSetting.max</c> —
++        /// pending a design decision (align this const + the prefab slider).
++        /// </summary>
++        public const int MaxRoleCount = 15;
++
++        /// <summary>Pool cap — how many copies of the role may appear.</summary>
++        public int Max { get; }
++
++        /// <summary>Guaranteed minimum reals for the role (0 ⇒ the whole pool is fakeable).</summary>
++        public int Forced { get; }
++
++        public RoleSettingValues(int max, int forced)
++        {
++            Max = max;
++            Forced = forced;
++        }
++
++        /// <summary>
++        /// Derived fake eligibility (C1 shim — keeps the RoleDistributor bool-canBeFake path unchanged): the
++        /// non-guaranteed copies (max − forced) are fakeable. forced ≥ max ⇒ not fakeable.
++        /// </summary>
++        public bool CanBeFake => Forced < Max;
++
++        /// <summary>
++        /// Sets the pool cap: clamps the request to [0, <see cref="MaxRoleCount"/>] and re-clamps
++        /// <see cref="Forced"/> down so the forced ≤ max invariant holds (forced is never raised).
++        /// </summary>
++        public RoleSettingValues WithMax(int requestedMax)
++        {
++            int clampedMax = Clamp(requestedMax, 0, MaxRoleCount);
++            int clampedForced = Min(Forced, clampedMax);
++            return new RoleSettingValues(clampedMax, clampedForced);
++        }
++
++        /// <summary>
++        /// Sets the guaranteed minimum: clamps the request to [0, <see cref="Max"/>] so the forced ≤ max
++        /// invariant holds. <see cref="Max"/> is left untouched.
++        /// </summary>
++        public RoleSettingValues WithForced(int requestedForced)
++        {
++            return new RoleSettingValues(Max, Clamp(requestedForced, 0, Max));
++        }
++
++        public bool Equals(RoleSettingValues other) => Max == other.Max && Forced == other.Forced;
++
++        public override bool Equals(object obj) => obj is RoleSettingValues other && Equals(other);
++
++        public override int GetHashCode() => HashCode.Combine(Max, Forced);
++
++        public static bool operator ==(RoleSettingValues left, RoleSettingValues right) => left.Equals(right);
++
++        public static bool operator !=(RoleSettingValues left, RoleSettingValues right) => !left.Equals(right);
++
++        public override string ToString() => $"(max {Max}, forced {Forced})";
++
++        // Same semantics as UnityEngine.Mathf.Clamp(int, int, int): the lower bound is tested first, so when
++        // min > max a value below min yields min and any other value yields max.
++        private static int Clamp(int value, int min, int max)
++        {
++            if (value < min)
++            {
++                value = min;
++            }
++            else if (value > max)
++            {
++                value = max;
++            }
++
++            return value;
++        }
++
++        // Same semantics as UnityEngine.Mathf.Min(int, int).
++        private static int Min(int a, int b) => a < b ? a : b;
++    }
++}
+diff --git a/Assets/Scripts/Domain/RoleSettingValues.cs.meta b/Assets/Scripts/Domain/RoleSettingValues.cs.meta
+new file mode 100644
+index 0000000..e5dd8c0
+--- /dev/null
++++ b/Assets/Scripts/Domain/RoleSettingValues.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 21030f99df41473db5786ab79dbd974c
+\ No newline at end of file
+diff --git a/Assets/Scripts/GameLogic/GameSettings/GameSettingsManager.cs b/Assets/Scripts/GameLogic/GameSettings/GameSettingsManager.cs
+index 29e2ccf..936e8db 100644
+--- a/Assets/Scripts/GameLogic/GameSettings/GameSettingsManager.cs
++++ b/Assets/Scripts/GameLogic/GameSettings/GameSettingsManager.cs
+@@ -3,6 +3,7 @@
+ using System;
+ using System.Collections.Generic;
+ using Characters;
++using CorruptionDuPortail.Domain;
+ using GameLogic.GameStates;
+ using Unity.Netcode;
+ using UnityEngine;
+@@ -35,12 +36,9 @@ namespace GameLogic.GameSettings
+         // every client propose changes through SubmitRoleCountServerRpc.
+         [SerializeField] private bool _allowClientEditing;
+ 
+-        // Server clamp upper bound. Mirrors the authored slider's max (RoleAttributionRoleSettingObject
+-        // prefab `m_MaxValue: 15`) so the clamp is a no-op for legitimate slider input and the achievable
+-        // range stays exactly what it was before this refactor (behaviour-preserving — the old code had NO
+-        // server clamp). NOTE for Poyo: the slider max (15) disagrees with the [Range(0,10)] on
+-        // RoleAttributionSetting.roleToAttribute — pick one and align them (this const + the prefab slider).
+-        private const int MaxRoleCount = 15;
++        // Server clamp upper bound for max: RoleSettingValues.MaxRoleCount (Domain, 15 — mirrors the authored
++        // slider's `m_MaxValue: 15`). NOTE for Poyo: the slider max (15) disagrees with the [Range(0,10)] on
++        // RoleAttributionSetting.max — pick one and align them (that const + the prefab slider).
+ 
+         // Server-authoritative, replicated. Keyed by RoleID for lookups; seeded in the authored role-pool
+         // order so a positional consumer stays stable. Field initializer per the NetworkList convention
+@@ -96,7 +94,7 @@ namespace GameLogic.GameSettings
+                 // The lookups (GetRoleCount/GetCanBeFake) key by RoleID and return the FIRST match while the
+                 // total sums every entry — so a duplicate (or unset → default) RoleID would shadow a role and
+                 // double-count. Fail loud on that authoring mistake instead of mis-distributing silently.
+-                if (ContainsRole(_roleId))
++                if (IndexOf(_roleId) >= 0)
+                 {
+                     Debug.LogError($"GameSettingsManager: duplicate RoleID '{_roleId}' in the authored settings — skipping it. Every RoleDataObject must carry a unique RoleID.");
+                     continue;
+@@ -111,59 +109,44 @@ namespace GameLogic.GameSettings
+             }
+         }
+ 
+-        private bool ContainsRole(RoleID _roleId)
++        // Index of the FIRST entry carrying this RoleID, or -1. Single lookup shared by the seed duplicate check,
++        // the read API and the server edit path — first-match semantics preserved (a duplicate RoleID is rejected
++        // at seed time, so there is at most one match anyway).
++        private int IndexOf(RoleID _roleId)
+         {
+             for (int i = 0; i < _settings.Count; i++)
+             {
+                 if (_settings[i].roleId == _roleId)
+                 {
+-                    return true;
++                    return i;
+                 }
+             }
+-            return false;
++            return -1;
+         }
+ 
+         // ----- read API (distribution + views) -----
+ 
+         // Pool cap (max) for a role — how many copies may appear (random draw fills up to it). Name kept as
+-        // GetRoleCount for the existing uGUI widget; returns the new `max` field.
++        // GetRoleCount for the existing uGUI widget; returns the new `max` field. 0 when the role is absent.
+         public int GetRoleCount(RoleID _roleId)
+         {
+-            for (int i = 0; i < _settings.Count; i++)
+-            {
+-                if (_settings[i].roleId == _roleId)
+-                {
+-                    return _settings[i].max;
+-                }
+-            }
+-            return 0;
++            int _index = IndexOf(_roleId);
++            return _index >= 0 ? _settings[_index].max : 0;
+         }
+ 
+-        // Guaranteed minimum reals for a role (forced ≤ max). 0 ⇒ the whole pool is fakeable.
++        // Guaranteed minimum reals for a role (forced ≤ max). 0 ⇒ the whole pool is fakeable. 0 when absent.
+         public int GetForced(RoleID _roleId)
+         {
+-            for (int i = 0; i < _settings.Count; i++)
+-            {
+-                if (_settings[i].roleId == _roleId)
+-                {
+-                    return _settings[i].forced;
+-                }
+-            }
+-            return 0;
++            int _index = IndexOf(_roleId);
++            return _index >= 0 ? _settings[_index].forced : 0;
+         }
+ 
+         // Derived fake eligibility (C1 shim — keeps the RoleDistributor bool-canBeFake path unchanged):
+-        // a role's non-guaranteed copies (max − forced) are fakeable. forced == max ⇒ not fakeable.
++        // a role's non-guaranteed copies (max − forced) are fakeable. forced == max ⇒ not fakeable. false when absent.
+         public bool GetCanBeFake(RoleID _roleId)
+         {
+-            for (int i = 0; i < _settings.Count; i++)
+-            {
+-                if (_settings[i].roleId == _roleId)
+-                {
+-                    return _settings[i].forced < _settings[i].max;
+-                }
+-            }
+-            return false;
++            int _index = IndexOf(_roleId);
++            return _index >= 0 && _settings[_index].Values.CanBeFake;
+         }
+ 
+         public int GetTotalRolesToAttribute()
+@@ -200,68 +183,40 @@ namespace GameLogic.GameSettings
+         /// </summary>
+         public void RequestSetRoleCount(RoleID _roleId, int _max)
+         {
+-            if (IsServer)
+-            {
+-                ApplyRoleCountServer(_roleId, _max);
+-                return;
+-            }
++            RequestEdit(RoleSettingField.Max, _roleId, _max);
++        }
+ 
+-            if (!_allowClientEditing)
+-            {
+-                return;
+-            }
+-            SubmitRoleCountServerRpc(_roleId, _max);
++        /// <summary>
++        /// Propose a new guaranteed minimum (forced) for a role. Host-only by default (mirrors
++        /// <see cref="RequestSetRoleCount"/>); clamped to [0, that role's max] so the forced ≤ max invariant holds.
++        /// </summary>
++        public void RequestSetForced(RoleID _roleId, int _forced)
++        {
++            RequestEdit(RoleSettingField.Forced, _roleId, _forced);
+         }
+ 
++        // The two RPCs are kept as-is (names, signatures, SendTo.Server) — NGO derives the RPC message hash from
++        // the method, so merging them into one parameterised RPC would change the wire protocol. Their bodies
++        // funnel into the shared server gate below.
+         [Rpc(SendTo.Server)]
+         private void SubmitRoleCountServerRpc(RoleID _roleId, int _max)
+         {
+-            // Server-side gate (defence in depth): ignore client proposals unless editing is opened up.
+-            if (!_allowClientEditing)
+-            {
+-                return;
+-            }
+-            ApplyRoleCountServer(_roleId, _max);
++            OnClientEditReceived(RoleSettingField.Max, _roleId, _max);
+         }
+ 
+-        // Sets a role's pool cap (max) and re-clamps its `forced` down so the forced ≤ max invariant holds.
+-        private void ApplyRoleCountServer(RoleID _roleId, int _max)
++        [Rpc(SendTo.Server)]
++        private void SubmitForcedServerRpc(RoleID _roleId, int _forced)
+         {
+-            if (!IsServer)
+-            {
+-                return;
+-            }
+-
+-            int _clampedMax = Mathf.Clamp(_max, 0, MaxRoleCount);
+-            for (int i = 0; i < _settings.Count; i++)
+-            {
+-                if (_settings[i].roleId != _roleId)
+-                {
+-                    continue;
+-                }
+-                int _clampedForced = Mathf.Min(_settings[i].forced, _clampedMax);
+-                if (_settings[i].max == _clampedMax && _settings[i].forced == _clampedForced)
+-                {
+-                    return; // idempotent — skip no-op replication
+-                }
+-
+-                RoleSettingEntry _entry = _settings[i];
+-                _entry.max = _clampedMax;
+-                _entry.forced = _clampedForced;
+-                _settings[i] = _entry;
+-                return;
+-            }
++            OnClientEditReceived(RoleSettingField.Forced, _roleId, _forced);
+         }
+ 
+-        /// <summary>
+-        /// Propose a new guaranteed minimum (forced) for a role. Host-only by default (mirrors
+-        /// <see cref="RequestSetRoleCount"/>); clamped to [0, that role's max] so the forced ≤ max invariant holds.
+-        /// </summary>
+-        public void RequestSetForced(RoleID _roleId, int _forced)
++        // Shared Request path: the server applies directly; a client forwards through the field's RPC only when
++        // client editing is opened up (host-only by default).
++        private void RequestEdit(RoleSettingField _field, RoleID _roleId, int _value)
+         {
+             if (IsServer)
+             {
+-                ApplyForcedServer(_roleId, _forced);
++                ApplyEditServer(_field, _roleId, _value);
+                 return;
+             }
+ 
+@@ -269,43 +224,67 @@ namespace GameLogic.GameSettings
+             {
+                 return;
+             }
+-            SubmitForcedServerRpc(_roleId, _forced);
++
++            switch (_field)
++            {
++                case RoleSettingField.Max:
++                    SubmitRoleCountServerRpc(_roleId, _value);
++                    break;
++                case RoleSettingField.Forced:
++                    SubmitForcedServerRpc(_roleId, _value);
++                    break;
++            }
+         }
+ 
+-        [Rpc(SendTo.Server)]
+-        private void SubmitForcedServerRpc(RoleID _roleId, int _forced)
++        // Shared Submit path (server side of both RPCs).
++        private void OnClientEditReceived(RoleSettingField _field, RoleID _roleId, int _value)
+         {
++            // Server-side gate (defence in depth): ignore client proposals unless editing is opened up.
+             if (!_allowClientEditing)
+             {
+                 return;
+             }
+-            ApplyForcedServer(_roleId, _forced);
++            ApplyEditServer(_field, _roleId, _value);
+         }
+ 
+-        private void ApplyForcedServer(RoleID _roleId, int _forced)
++        // Shared Apply path. The max/forced invariants (clamps, forced ≤ max) are decided by the Domain
++        // RoleSettingValues POCO; this adapter only locates the entry, skips no-op edits (no replication, no
++        // OnSettingsChanged) and writes the replicated list. Unknown RoleID ⇒ no-op.
++        private void ApplyEditServer(RoleSettingField _field, RoleID _roleId, int _value)
+         {
+             if (!IsServer)
+             {
+                 return;
+             }
+ 
+-            for (int i = 0; i < _settings.Count; i++)
++            int _index = IndexOf(_roleId);
++            if (_index < 0)
+             {
+-                if (_settings[i].roleId != _roleId)
+-                {
+-                    continue;
+-                }
+-                int _clamped = Mathf.Clamp(_forced, 0, _settings[i].max);
+-                if (_settings[i].forced == _clamped)
+-                {
+-                    return; // idempotent — skip no-op replication
+-                }
+-
+-                RoleSettingEntry _entry = _settings[i];
+-                _entry.forced = _clamped;
+-                _settings[i] = _entry;
+                 return;
+             }
++
++            RoleSettingEntry _entry = _settings[_index];
++            RoleSettingValues _current = _entry.Values;
++            RoleSettingValues _next = _field == RoleSettingField.Max
++                ? _current.WithMax(_value)
++                : _current.WithForced(_value);
++
++            if (_next == _current)
++            {
++                return; // idempotent — skip no-op replication
++            }
++
++            _entry.max = _next.Max;
++            _entry.forced = _next.Forced;
++            _settings[_index] = _entry;
++        }
++
++        // Which half of a role setting an edit targets (routes Request → the matching RPC, Apply → the matching
++        // RoleSettingValues rule). Internal plumbing only — never serialized nor sent over the wire.
++        private enum RoleSettingField
++        {
++            Max,
++            Forced
+         }
+ 
+         // Replicated DTO: an unmanaged, IEquatable value type — the NetworkList<T> constraint (unmanaged +
+@@ -317,6 +296,10 @@ namespace GameLogic.GameSettings
+             public int max;    // pool cap — how many copies may appear (random draw fills up to it)
+             public int forced; // guaranteed minimum reals (forced ≤ max); replaces the old canBeFake bool
+ 
++            // Domain view of the (max, forced) pair — read-only helper, NOT serialized (NetworkSerialize below
++            // is the only wire format and is unchanged).
++            public RoleSettingValues Values => new(max, forced);
++
+             public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
+             {
+                 _serializer.SerializeValue(ref roleId);
+diff --git a/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs b/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs
+new file mode 100644
+index 0000000..7f47cbb
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs
+@@ -0,0 +1,236 @@
++using CorruptionDuPortail.Domain;
++using NUnit.Framework;
++using UnityEngine;
++
++namespace Tests.Editor
++{
++    /// <summary>
++    /// Fast EditMode tests for the pure <see cref="RoleSettingValues"/> — the max/forced invariants extracted
++    /// from GameSettingsManager (server clamp of max to [0, 15], forced re-clamped down on a max edit, forced
++    /// clamped to [0, max], derived canBeFake, value equality used by the adapter's no-op check).
++    ///
++    /// The LegacyParity tests replay the exact pre-refactor adapter formulas (UnityEngine.Mathf.Clamp /
++    /// Mathf.Min — available here, not in the Domain) over a grid that includes out-of-range authored values,
++    /// so any drift between the POCO and the old behaviour reddens.
++    /// </summary>
++    [Category("RoleSettingValues")]
++    public class RoleSettingValuesTests
++    {
++        // ───────────────── construction / derived state ─────────────────
++
++        [Test]
++        public void MaxRoleCount_Is15_MirrorsSliderMax()
++        {
++            Assert.AreEqual(15, RoleSettingValues.MaxRoleCount);
++        }
++
++        [Test]
++        public void Ctor_KeepsAuthoredValuesVerbatim_NoClamp()
++        {
++            // The seed path never clamped: an out-of-range authored pair must survive construction untouched.
++            var values = new RoleSettingValues(20, 30);
++
++            Assert.AreEqual(20, values.Max);
++            Assert.AreEqual(30, values.Forced);
++        }
++
++        [TestCase(2, 0, true, TestName = "CanBeFake_True_WhenForcedBelowMax")]
++        [TestCase(3, 2, true, TestName = "CanBeFake_True_WhenOneCopyIsFakeable")]
++        [TestCase(2, 2, false, TestName = "CanBeFake_False_WhenForcedEqualsMax")]
++        [TestCase(1, 3, false, TestName = "CanBeFake_False_WhenForcedAboveMax")]
++        [TestCase(0, 0, false, TestName = "CanBeFake_False_WhenEmptyPool")]
++        public void CanBeFake_IsForcedStrictlyBelowMax(int max, int forced, bool expected)
++        {
++            Assert.AreEqual(expected, new RoleSettingValues(max, forced).CanBeFake);
++        }
++
++        // ───────────────── WithMax ─────────────────
++
++        [Test]
++        public void WithMax_InRange_SetsMax_KeepsForced()
++        {
++            RoleSettingValues next = new RoleSettingValues(2, 1).WithMax(5);
++
++            Assert.AreEqual(new RoleSettingValues(5, 1), next, "raising max never raises forced");
++        }
++
++        [Test]
++        public void WithMax_AboveCap_ClampsToMaxRoleCount()
++        {
++            Assert.AreEqual(RoleSettingValues.MaxRoleCount, new RoleSettingValues(1, 0).WithMax(999).Max);
++        }
++
++        [Test]
++        public void WithMax_AtCap_IsAccepted()
++        {
++            Assert.AreEqual(15, new RoleSettingValues(1, 0).WithMax(15).Max);
++        }
++
++        [Test]
++        public void WithMax_Negative_ClampsToZero_AndPullsForcedToZero()
++        {
++            RoleSettingValues next = new RoleSettingValues(3, 2).WithMax(-4);
++
++            Assert.AreEqual(new RoleSettingValues(0, 0), next);
++        }
++
++        [Test]
++        public void WithMax_BelowForced_ReclampsForcedDown()
++        {
++            RoleSettingValues next = new RoleSettingValues(5, 4).WithMax(2);
++
++            Assert.AreEqual(new RoleSettingValues(2, 2), next, "forced ≤ max must hold after lowering max");
++        }
++
++        [Test]
++        public void WithMax_SameValue_EqualsCurrent_SoAdapterSkipsReplication()
++        {
++            var current = new RoleSettingValues(4, 1);
++
++            Assert.IsTrue(current.WithMax(4) == current);
++        }
++
++        [Test]
++        public void WithMax_OutOfRangeAuthoredMax_IsClampedOnFirstEdit_NotNoOp()
++        {
++            // Authored max 20 (> cap) seeded verbatim; re-sending 20 clamps to 15 ⇒ a real change for the adapter.
++            var current = new RoleSettingValues(20, 3);
++
++            RoleSettingValues next = current.WithMax(20);
++
++            Assert.AreEqual(new RoleSettingValues(15, 3), next);
++            Assert.IsTrue(next != current);
++        }
++
++        [Test]
++        public void WithMax_DoesNotMutateReceiver()
++        {
++            var current = new RoleSettingValues(5, 4);
++
++            current.WithMax(1);
++
++            Assert.AreEqual(new RoleSettingValues(5, 4), current);
++        }
++
++        // ───────────────── WithForced ─────────────────
++
++        [Test]
++        public void WithForced_InRange_SetsForced_KeepsMax()
++        {
++            Assert.AreEqual(new RoleSettingValues(3, 2), new RoleSettingValues(3, 0).WithForced(2));
++        }
++
++        [Test]
++        public void WithForced_AboveMax_ClampsToMax()
++        {
++            Assert.AreEqual(new RoleSettingValues(3, 3), new RoleSettingValues(3, 0).WithForced(10));
++        }
++
++        [Test]
++        public void WithForced_Negative_ClampsToZero()
++        {
++            Assert.AreEqual(new RoleSettingValues(3, 0), new RoleSettingValues(3, 2).WithForced(-1));
++        }
++
++        [Test]
++        public void WithForced_EmptyPool_StaysZero()
++        {
++            Assert.AreEqual(new RoleSettingValues(0, 0), new RoleSettingValues(0, 0).WithForced(4));
++        }
++
++        [Test]
++        public void WithForced_BoundedByOwnMax_NotByMaxRoleCount()
++        {
++            // An authored max above the cap bounds forced by that max (the old code clamped to the entry's max only).
++            Assert.AreEqual(18, new RoleSettingValues(20, 0).WithForced(18).Forced);
++        }
++
++        [Test]
++        public void WithForced_SameValue_EqualsCurrent_SoAdapterSkipsReplication()
++        {
++            var current = new RoleSettingValues(3, 1);
++
++            Assert.IsTrue(current.WithForced(1) == current);
++        }
++
++        // ───────────────── equality ─────────────────
++
++        [Test]
++        public void Equality_IsByValue()
++        {
++            var a = new RoleSettingValues(3, 1);
++            var b = new RoleSettingValues(3, 1);
++            var c = new RoleSettingValues(3, 2);
++
++            Assert.IsTrue(a.Equals(b));
++            Assert.IsTrue(a.Equals((object)b));
++            Assert.IsTrue(a == b);
++            Assert.IsFalse(a != b);
++            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
++            Assert.IsFalse(a == c);
++            Assert.IsTrue(a != c);
++            Assert.IsFalse(a.Equals(null));
++        }
++
++        // ───────────────── legacy parity (pre-refactor GameSettingsManager formulas) ─────────────────
++
++        private const int GridMin = -3;
++        private const int GridMax = 20;
++
++        [Test]
++        public void LegacyParity_WithMax_MatchesOldApplyRoleCountServer()
++        {
++            for (int max = GridMin; max <= GridMax; max++)
++            {
++                for (int forced = GridMin; forced <= GridMax; forced++)
++                {
++                    for (int requested = GridMin; requested <= GridMax; requested++)
++                    {
++                        // Old: _clampedMax = Mathf.Clamp(_max, 0, MaxRoleCount); _clampedForced = Mathf.Min(forced, _clampedMax).
++                        int legacyMax = Mathf.Clamp(requested, 0, 15);
++                        int legacyForced = Mathf.Min(forced, legacyMax);
++
++                        RoleSettingValues next = new RoleSettingValues(max, forced).WithMax(requested);
++
++                        Assert.AreEqual(legacyMax, next.Max, $"max: ({max},{forced}).WithMax({requested})");
++                        Assert.AreEqual(legacyForced, next.Forced, $"forced: ({max},{forced}).WithMax({requested})");
++                    }
++                }
++            }
++        }
++
++        [Test]
++        public void LegacyParity_WithForced_MatchesOldApplyForcedServer()
++        {
++            for (int max = GridMin; max <= GridMax; max++)
++            {
++                for (int forced = GridMin; forced <= GridMax; forced++)
++                {
++                    for (int requested = GridMin; requested <= GridMax; requested++)
++                    {
++                        // Old: _clamped = Mathf.Clamp(_forced, 0, entry.max); max untouched.
++                        int legacyForced = Mathf.Clamp(requested, 0, max);
++
++                        RoleSettingValues next = new RoleSettingValues(max, forced).WithForced(requested);
++
++                        Assert.AreEqual(max, next.Max, $"max: ({max},{forced}).WithForced({requested})");
++                        Assert.AreEqual(legacyForced, next.Forced, $"forced: ({max},{forced}).WithForced({requested})");
++                    }
++                }
++            }
++        }
++
++        [Test]
++        public void LegacyParity_CanBeFake_MatchesOldGetCanBeFake()
++        {
++            for (int max = GridMin; max <= GridMax; max++)
++            {
++                for (int forced = GridMin; forced <= GridMax; forced++)
++                {
++                    // Old: return _settings[i].forced < _settings[i].max;
++                    Assert.AreEqual(forced < max, new RoleSettingValues(max, forced).CanBeFake, $"({max},{forced})");
++                }
++            }
++        }
++    }
++}
+diff --git a/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs.meta b/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs.meta
+new file mode 100644
+index 0000000..4018b60
+--- /dev/null
++++ b/Assets/Scripts/Tests/Editor/RoleSettingValuesTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 2873903800104f7f9f589707b2b34c33
+\ No newline at end of file
+diff --git a/Assets/Scripts/Tests/PlayMode/GameSettings/GameSettingsManagerTests.cs b/Assets/Scripts/Tests/PlayMode/GameSettings/GameSettingsManagerTests.cs
+index 1dc8e50..7b7ed69 100644
+--- a/Assets/Scripts/Tests/PlayMode/GameSettings/GameSettingsManagerTests.cs
++++ b/Assets/Scripts/Tests/PlayMode/GameSettings/GameSettingsManagerTests.cs
+@@ -178,7 +178,7 @@ namespace Tests.PlayMode
+         [UnityTest]
+         public IEnumerator HostEdit_RoleIdNotInSettings_NoOps()
+         {
+-            // RoleID.Gardien is NOT among the seeded roles (Robot/Abyss/Oracle). ApplyRoleCountServer scans the
++            // RoleID.Gardien is NOT among the seeded roles (Robot/Abyss/Oracle). ApplyEditServer searches the
+             // list, finds no match, and returns without mutating any entry or raising the change event — pins the
+             // role-not-found no-op (existing tests cover the clamp and the same-VALUE no-op, not the missing ROLE).
+             int _changedCount = 0;
+@@ -195,5 +195,59 @@ namespace Tests.PlayMode
+ 
+             _manager.OnSettingsChanged -= Handler;
+         }
++
++        // ───── forced edit path (R2 refactor: shared Request/Apply funnel + RoleSettingValues invariants) ─────
++
++        [UnityTest]
++        public IEnumerator HostEditForced_ClampsToRoleMax_AndDrivesCanBeFake()
++        {
++            // Robot seeded (max 2, forced 0). forced is clamped to [0, that role's max].
++            _manager.RequestSetForced(RoleID.Robot, 10);
++            yield return null;
++            Assert.AreEqual(2, _manager.GetForced(RoleID.Robot), "forced clamps to the role's own max (2).");
++            Assert.AreEqual(2, _manager.GetRoleCount(RoleID.Robot), "a forced edit never touches max.");
++            Assert.IsFalse(_manager.GetCanBeFake(RoleID.Robot), "forced == max ⇒ not fakeable.");
++
++            _manager.RequestSetForced(RoleID.Robot, -3);
++            yield return null;
++            Assert.AreEqual(0, _manager.GetForced(RoleID.Robot), "forced clamps to 0 (no negatives).");
++            Assert.IsTrue(_manager.GetCanBeFake(RoleID.Robot), "forced < max ⇒ fakeable again.");
++        }
++
++        [UnityTest]
++        public IEnumerator HostEditMax_BelowForced_ReclampsForcedDown()
++        {
++            // Oracle seeded (max 3, forced 0) → forced 3, then lower max to 1: forced must follow (forced ≤ max).
++            _manager.RequestSetForced(RoleID.Oracle, 3);
++            yield return null;
++            Assert.AreEqual(3, _manager.GetForced(RoleID.Oracle));
++
++            _manager.RequestSetRoleCount(RoleID.Oracle, 1);
++            yield return null;
++            Assert.AreEqual(1, _manager.GetRoleCount(RoleID.Oracle), "max lowered to 1.");
++            Assert.AreEqual(1, _manager.GetForced(RoleID.Oracle), "forced re-clamped down to the new max.");
++            Assert.AreEqual(2, _manager.GetTotalForced(), "Σforced = Abyss 1 + Oracle 1.");
++        }
++
++        [UnityTest]
++        public IEnumerator HostEditForced_NoOpValueOrUnknownRole_DoesNotRaiseEvent()
++        {
++            int _changedCount = 0;
++            void Handler() => _changedCount++;
++            _manager.OnSettingsChanged += Handler;
++
++            _manager.RequestSetForced(RoleID.Abyss, 1);   // Abyss already forced 1 — same value
++            _manager.RequestSetForced(RoleID.Abyss, 5);   // clamps to max 1 — still the same value
++            _manager.RequestSetForced(RoleID.Gardien, 2); // not among the seeded roles
++            yield return null;
++            yield return null;
++
++            Assert.AreEqual(0, _changedCount, "No-op / unknown-role forced edits must not replicate / raise OnSettingsChanged.");
++            Assert.AreEqual(1, _manager.GetForced(RoleID.Abyss));
++            Assert.AreEqual(0, _manager.GetForced(RoleID.Gardien), "The unknown role stays absent (forced 0).");
++            Assert.IsFalse(_manager.GetCanBeFake(RoleID.Gardien), "An absent role is never fakeable.");
++
++            _manager.OnSettingsChanged -= Handler;
++        }
+     }
+ }

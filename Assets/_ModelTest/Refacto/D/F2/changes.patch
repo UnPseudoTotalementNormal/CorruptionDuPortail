@@ -1,0 +1,55 @@
+diff --git a/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs b/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
+index c61fc0a..fbb9e1e 100644
+--- a/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
++++ b/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
+@@ -52,8 +52,11 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
+             {
+                 return false;
+             }
++            // Both exclusions are required: Slots still lists eliminated characters (CharacterManagerRoster reads
++            // GetCharacters, never filtered), so without the IsEliminated check an eliminated second anomaly kept
++            // counting as "in play" and the bonus never fired.
+             return roster.Slots.Count(s =>
+-                roster.FactionOf(s) == FactionType.anomaly && !roster.IsChained(s)) == 1;
++                roster.FactionOf(s) == FactionType.anomaly && !roster.IsChained(s) && !roster.IsEliminated(s)) == 1;
+         }
+     }
+ }
+diff --git a/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs b/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
+index e04b0f2..098ee64 100644
+--- a/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
++++ b/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
+@@ -260,6 +260,33 @@ namespace Tests.Editor
+             }, outcome.Effects);
+         }
+ 
++        // Regression (player report): the other anomaly was eliminated (isEliminated, NOT chained) — the owner is
++        // then the last anomaly in play and a correct guess must grant the extra use. The decision used to count
++        // only non-chained anomalies, so the eliminated one still counted and the bonus never fired.
++        [Test]
++        public void ChainedByShadows_OtherAnomalyEliminated_CountsAsSole_GrantsExtraUse()
++        {
++            var roster = new FakeRoster { Slots = new[] { 0, 1, 2, 3 } };
++            roster.Factions[0] = Characters.FactionType.anomaly;   // owner
++            roster.Factions[1] = Characters.FactionType.marginal;  // target: non-chosen so the chain stays out
++            roster.Factions[2] = Characters.FactionType.chosen;    // picked-role owner
++            roster.Factions[3] = Characters.FactionType.anomaly;   // the other anomaly...
++            roster.Eliminated.Add(3);                               // ...eliminated, still listed in Slots, not chained
++            roster.Roles[1] = 7; roster.Roles[2] = 7;              // guessed right
++            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
++
++            var outcome = new ChainedByShadowsDecision().Decide(
++                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
++
++            CollectionAssert.AreEqual(new EffectDescriptor[]
++            {
++                new NewTargeting(0, 1),
++                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
++                new CorruptPlayer(1),
++                new GrantExtraUse(0),
++            }, outcome.Effects);
++        }
++
+         [Test]
+         public void ChainedByShadows_SoleAnomaly_WrongGuess_NoExtraUse()
+         {

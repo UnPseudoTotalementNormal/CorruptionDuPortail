@@ -1,0 +1,87 @@
+diff --git a/Assets/Scripts/Domain/RevealVisibilityRules.cs b/Assets/Scripts/Domain/RevealVisibilityRules.cs
+index 4284071..46a5c2a 100644
+--- a/Assets/Scripts/Domain/RevealVisibilityRules.cs
++++ b/Assets/Scripts/Domain/RevealVisibilityRules.cs
+@@ -18,5 +18,23 @@ namespace CorruptionDuPortail.Domain
+         /// </remarks>
+         public static bool ShouldRefreshLocalUi(ulong viewerId, ulong localClientId)
+             => viewerId == localClientId;
++
++        /// <summary>
++        /// Lowest client id assigned to a host-simulated bot. Real network clients stay below it.
++        /// </summary>
++        public const ulong SimulatedBotClientIdFloor = 100;
++
++        /// <summary>
++        /// True when a reveal targeted at <paramref name="observerId"/> must be redirected to the
++        /// host instead of being sent over the wire, i.e. when the observer is a simulated bot.
++        /// </summary>
++        /// <remarks>
++        /// Simulated bots use ids &gt;= <see cref="SimulatedBotClientIdFloor"/> and never open a
++        /// transport connection, so a direct single-target RPC to them lands nowhere. The very
++        /// first bot ("Simulated 1") owns the floor id itself, so the comparison must be inclusive
++        /// (&gt;=) — a strict &gt; comparison silently drops every personal reveal for that first bot.
++        /// </remarks>
++        public static bool RequiresSimulatedRedirect(ulong observerId)
++            => observerId >= SimulatedBotClientIdFloor;
+     }
+ }
+diff --git a/Assets/Scripts/GameLogic/GameInfoRevealer.cs b/Assets/Scripts/GameLogic/GameInfoRevealer.cs
+index 4c76b64..45b263f 100644
+--- a/Assets/Scripts/GameLogic/GameInfoRevealer.cs
++++ b/Assets/Scripts/GameLogic/GameInfoRevealer.cs
+@@ -190,7 +190,7 @@ namespace GameLogic
+             if (!IsServer) return;
+ 
+             var _target = RpcTarget.Single(_toObserverId, RpcTargetUse.Persistent);
+-            if (_toObserverId > 100)
++            if (RevealVisibilityRules.RequiresSimulatedRedirect(_toObserverId))
+             {
+                 _target = RpcTarget.Single(0, RpcTargetUse.Persistent); // Redirect to Host
+                 SetRevealLevelSimulatedRpc(_clientId, _revealVariableName, _revealLevel, _toObserverId, _showInfo, _target);
+@@ -249,7 +249,7 @@ namespace GameLogic
+             if (!IsServer) return;
+ 
+             var _target = RpcTarget.Single(_toObserverId, RpcTargetUse.Persistent);
+-            if (_toObserverId >= 100)
++            if (RevealVisibilityRules.RequiresSimulatedRedirect(_toObserverId))
+             {
+                 _target = RpcTarget.Single(0, RpcTargetUse.Persistent); // Redirect to Host
+                 ClearHackedSimulatedRpc(_clientId, _toObserverId, _target);
+diff --git a/Assets/Scripts/Tests/Editor/RevealVisibilityRulesTests.cs b/Assets/Scripts/Tests/Editor/RevealVisibilityRulesTests.cs
+index 7c01c2c..cc5d574 100644
+--- a/Assets/Scripts/Tests/Editor/RevealVisibilityRulesTests.cs
++++ b/Assets/Scripts/Tests/Editor/RevealVisibilityRulesTests.cs
+@@ -31,5 +31,32 @@ namespace Tests.Editor
+             // Simulated bot brains use ids >= 100 and must never flip the local human's card.
+             Assert.IsFalse(RevealVisibilityRules.ShouldRefreshLocalUi(101, 1));
+         }
++
++        [Test]
++        public void RealClient_DoesNotRedirect()
++        {
++            // Real network clients (ids below the bot floor) receive reveals directly over the wire.
++            Assert.IsFalse(RevealVisibilityRules.RequiresSimulatedRedirect(0));
++            Assert.IsFalse(RevealVisibilityRules.RequiresSimulatedRedirect(1));
++            Assert.IsFalse(RevealVisibilityRules.RequiresSimulatedRedirect(99));
++        }
++
++        [Test]
++        public void FirstSimulatedBot_RedirectsToHost()
++        {
++            // Regression: the shipped bug used a strict '> 100' guard, so "Simulated 1" (id == 100,
++            // the floor) fell through to a direct single-target RPC that lands nowhere — the first
++            // bot never received its personal reveals. The redirect must include the floor id.
++            Assert.IsTrue(RevealVisibilityRules.RequiresSimulatedRedirect(
++                RevealVisibilityRules.SimulatedBotClientIdFloor));
++            Assert.IsTrue(RevealVisibilityRules.RequiresSimulatedRedirect(100));
++        }
++
++        [Test]
++        public void LaterSimulatedBots_RedirectToHost()
++        {
++            Assert.IsTrue(RevealVisibilityRules.RequiresSimulatedRedirect(101));
++            Assert.IsTrue(RevealVisibilityRules.RequiresSimulatedRedirect(102));
++        }
+     }
+ }

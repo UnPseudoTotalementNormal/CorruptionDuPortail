@@ -1,0 +1,49 @@
+diff --git a/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs b/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
+index c61fc0a..1962fd5 100644
+--- a/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
++++ b/Assets/Scripts/Domain/Powers/Decisions/ChainedByShadowsDecision.cs
+@@ -53,7 +53,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
+                 return false;
+             }
+             return roster.Slots.Count(s =>
+-                roster.FactionOf(s) == FactionType.anomaly && !roster.IsChained(s)) == 1;
++                roster.FactionOf(s) == FactionType.anomaly && !roster.IsChained(s) && !roster.IsEliminated(s)) == 1;
+         }
+     }
+ }
+diff --git a/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs b/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
+index e04b0f2..55fca22 100644
+--- a/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
++++ b/Assets/Scripts/Tests/Editor/PowerDecisionTests.cs
+@@ -260,6 +260,31 @@ namespace Tests.Editor
+             }, outcome.Effects);
+         }
+ 
++        [Test]
++        public void ChainedByShadows_OtherAnomalyEliminated_CountsAsSole_GrantsExtraUse()
++        {
++            var roster = new FakeRoster { Slots = new[] { 0, 1, 2 } };
++            roster.Factions[0] = Characters.FactionType.anomaly;
++            roster.Factions[1] = Characters.FactionType.anomaly;
++            roster.Eliminated.Add(1);                               // the other anomaly was eliminated at the vote
++            roster.Factions[2] = Characters.FactionType.chosen;
++            roster.Roles[1] = 7; roster.Roles[2] = 7;
++            var state = new FakeState().With<IExtraUseState>(new FakeExtraUse { BonusConsumedThisNight = false });
++
++            var outcome = new ChainedByShadowsDecision().Decide(
++                new PowerContext(ownerSlot: 0, targetSlot: 1, secondaryTargetSlot: 2, roster: roster, state: state));
++
++            // An eliminated anomaly is out of play, so the owner is the sole anomaly still in play => the
++            // correct guess corrupts the target AND the bonus fires.
++            CollectionAssert.AreEqual(new EffectDescriptor[]
++            {
++                new NewTargeting(0, 1),
++                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
++                new CorruptPlayer(1),
++                new GrantExtraUse(0),
++            }, outcome.Effects);
++        }
++
+         [Test]
+         public void ChainedByShadows_SoleAnomaly_WrongGuess_NoExtraUse()
+         {

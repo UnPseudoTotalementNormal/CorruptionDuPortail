@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:b="ModelTest.B.T1" editor-extension-mode="False">
+    <Style src="StatBar.uss" />
+    <ui:VisualElement name="stats-panel" style="padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px; width: 360px; background-color: rgba(20, 20, 30, 0.9);">
+        <!-- Default USS color (bar-color not set) -->
+        <b:StatBar name="health" label="Health" max-value="100" value="72" />
+        <!-- Custom color via attribute -->
+        <b:StatBar name="mana" label="Mana" max-value="250" value="180" bar-color="#3C78DCFF" />
+        <!-- Custom format: {0} = value, {1} = max -->
+        <b:StatBar name="stamina" label="Stamina" max-value="1" value="0.35" bar-color="#E6B432FF" value-format="{0:P0}" />
+        <!-- Empty bar: B_stat-bar--empty modifier applies -->
+        <b:StatBar name="corruption" label="Corruption" max-value="10" value="0" bar-color="#A03CC8FF" />
+    </ui:VisualElement>
+</ui:UXML>

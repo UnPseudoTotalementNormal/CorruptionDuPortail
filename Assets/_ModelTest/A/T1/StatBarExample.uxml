@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:mt="ModelTest.A.T1"
+    xsi="http://www.w3.org/2001/XMLSchema-instance"
+    engine="UnityEngine.UIElements"
+    editor="UnityEditor.UIElements"
+    noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd"
+    editor-extension-mode="False">
+
+    <ui:VisualElement style="padding: 12px; min-width: 320px;">
+        <Style src="StatBar.uss" />
+
+        <ui:Label text="Player Stats" style="-unity-font-style: bold; font-size: 16px; margin-bottom: 8px;" />
+
+        <mt:StatBar label="Health" max-value="100" value="72" fill-color="#4AA859" />
+        <mt:StatBar label="Suspicion" max-value="100" value="35" fill-color="#C0392B" />
+        <mt:StatBar label="Stamina" max-value="50" value="18" fill-color="#2980B9" />
+        <mt:StatBar label="XP" max-value="1000" value="640" fill-color="#F1C40F" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,47 @@
+/* StatBar styles. Class names are prefixed with the folder name "A_". */
+
+.A_stat-bar {
+    flex-direction: row;
+    align-items: center;
+    height: 24px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
+
+.A_stat-bar__label {
+    width: 90px;
+    -unity-text-align: middle-left;
+    color: rgb(230, 230, 230);
+    -unity-font-style: bold;
+    flex-shrink: 0;
+}
+
+.A_stat-bar__track {
+    flex-grow: 1;
+    height: 14px;
+    background-color: rgb(45, 45, 45);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+    overflow: hidden;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+.A_stat-bar__fill {
+    height: 100%;
+    width: 0;
+    background-color: rgb(74, 168, 89);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.A_stat-bar__value {
+    width: 70px;
+    -unity-text-align: middle-right;
+    color: rgb(200, 200, 200);
+    flex-shrink: 0;
+}

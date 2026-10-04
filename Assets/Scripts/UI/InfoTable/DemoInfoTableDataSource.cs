@@ -120,5 +120,11 @@ namespace UI.InfoTable
 
         public string GetRevealedRoleName(ulong clientId)
             => _revealed.TryGetValue(clientId, out string role) ? role : null;
+
+        // Harness names never change after a rebuild.
+        public event Action OnNamesChanged { add { } remove { } }
+
+        public string GetPseudo(ulong clientId)
+            => clientId < (ulong)_players.Count ? _players[(int)clientId] : string.Empty;
     }
 }

@@ -55,7 +55,8 @@ namespace Network
                 yield return string.Concat(
                     _info.playerClientId.ToString(CultureInfo.InvariantCulture), "|",
                     _info.playerName.ToString(), "|",
-                    _info.isReady ? "1" : "0");
+                    _info.isReady ? "1" : "0", "|",
+                    _info.hasLeft ? "1" : "0");
             }
         }
 

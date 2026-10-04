@@ -58,6 +58,7 @@ namespace Network.Player
             if (_index >= 0)
             {
                 _info.isReady = _entries[_index].isReady;
+                _info.hasLeft = _entries[_index].hasLeft;
                 return _entries[_index].Equals(_info) ? this : Replace(_index, _info);
             }
 
@@ -82,6 +83,7 @@ namespace Network.Player
                 return this;
             }
             _info.isReady = _entries[_index].isReady;
+            _info.hasLeft = _entries[_index].hasLeft;
             return _entries[_index].Equals(_info) ? this : Replace(_index, _info);
         }
 
@@ -95,6 +97,19 @@ namespace Network.Player
             }
             PlayerInfo _info = _entries[_index];
             _info.isReady = _ready;
+            return Replace(_index, _info);
+        }
+
+        /// <summary>NET-03: flags a row as "left mid-game" without removing it. Unknown clientId = same snapshot.</summary>
+        public PlayerRosterSnapshot WithLeft(ulong _clientId)
+        {
+            int _index = IndexOf(_clientId);
+            if (_index < 0 || _entries[_index].hasLeft)
+            {
+                return this;
+            }
+            PlayerInfo _info = _entries[_index];
+            _info.hasLeft = true;
             return Replace(_index, _info);
         }
 

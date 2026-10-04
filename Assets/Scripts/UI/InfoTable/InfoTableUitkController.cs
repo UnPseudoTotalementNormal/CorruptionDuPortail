@@ -129,9 +129,24 @@ namespace UI.InfoTable
             {
                 _data.OnRebuildRequested += Rebuild;
                 _data.OnRevealChanged += ScanReveals;
+                _data.OnNamesChanged += RefreshNames;
             }
             _model.OnChanged += Render;
             TryInitialize();
+        }
+
+        // NET-03: a pseudo changed (late arrival, rename, player left) — update the name labels in place. A rebuild
+        // would wipe the player's notes, so it is never used for a name change.
+        private void RefreshNames()
+        {
+            if (_nameEls == null || _data == null) return;
+            for (int pi = 0; pi < _nameEls.Length && pi < _model.PlayerCount; pi++)
+            {
+                if (_nameEls[pi] is Label label)
+                {
+                    label.text = _data.GetPseudo(_model.Players[pi].ClientId);
+                }
+            }
         }
 
         // UIDocument builds its tree in its OWN OnEnable; order vs this component is not guaranteed, so retry at
@@ -148,6 +163,7 @@ namespace UI.InfoTable
             {
                 _data.OnRebuildRequested -= Rebuild;
                 _data.OnRevealChanged -= ScanReveals;
+                _data.OnNamesChanged -= RefreshNames;
             }
             _model.OnChanged -= Render;
         }

@@ -43,6 +43,10 @@ namespace Network
         // GetSafeRpcTarget call stays verbatim on the concrete CharacterManager.
         private CharacterManager characterManager;
 
+        // NET-03 lane A (scene-wired in GameScene): read only to know whether a disconnect happens in the lobby
+        // (row removed) or mid-game (row kept, flagged hasLeft). Never resolved in OnNetworkSpawn (spawn-order race).
+        [SerializeField] private GameManager gameManager;
+
         private void Awake()
         {
             if (instance != null && instance != this)
@@ -109,7 +113,12 @@ namespace Network
         {
             ConnectionApprovalGate.DiscardPendingProfile(clientId);
             if (!IsSpawned) return;
-            SetRosterServer(_roster.Value.WithRemoved(clientId));
+
+            // NET-03: mid-game, the leaver's character stays on the board (chained), so its row is KEPT and flagged —
+            // removing it made every client lose that player's name. Lobby leaves still remove the row. An unwired /
+            // unspawned GameManager reads as lobby (= the previous always-remove behaviour).
+            bool _inLobby = gameManager == null || !gameManager.IsSpawned || gameManager.IsInLobbyPhase;
+            SetRosterServer(_inLobby ? _roster.Value.WithRemoved(clientId) : _roster.Value.WithLeft(clientId));
         }
 
         private void OnClientConnected(ulong clientId)
@@ -175,9 +184,19 @@ namespace Network
         }
 
         /// <summary>True when the replicated roster holds a row for that clientId.</summary>
-        public bool HasPlayerInfo(ulong _clientId)
+        public bool HasPlayerInfo(ulong _clientId) => TryGetPlayerInfo(_clientId, out _);
+
+        public bool TryGetPlayerInfo(ulong _clientId, out PlayerInfo _info)
         {
-            return IsSpawned && _roster.Value != null && _roster.Value.TryGet(_clientId, out _);
+            _info = default;
+            return IsSpawned && _roster.Value != null && _roster.Value.TryGet(_clientId, out _info);
+        }
+
+        /// <summary>NET-03: the pseudo as every name surface must show it (fallback + "left" marker).</summary>
+        public string GetDisplayPseudo(ulong _clientId)
+        {
+            bool _hasEntry = TryGetPlayerInfo(_clientId, out PlayerInfo _info);
+            return PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
         }
 
         // Story 13.0 (Epic 13): runtime update seam (additive — no current caller). Today playerInfos only

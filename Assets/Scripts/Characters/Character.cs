@@ -31,6 +31,10 @@ namespace Characters
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
+        // NET-03: raised on this peer when the replicated roster changes (a pseudo arrived, was renamed, or its
+        // owner left) so name surfaces can re-apply the text without replaying any animation.
+        public event Action onOwnerPseudoChanged;
+        private LobbyPlayerInfoHolder _rosterSubscription;
 
         // Story 7.2 lane C: CharacterManager resolved once in OnNetworkSpawn via the composition root.
         // Kept null-tolerant (no Assert) — this consumer already guards on a null CharacterManager,
@@ -63,7 +67,32 @@ namespace Characters
             }
 
             isBlessed.OnValueChanged += OnBlessed;
+            EnsureRosterSubscription();
         }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_rosterSubscription != null)
+            {
+                _rosterSubscription.onRosterChanged -= RaiseOwnerPseudoChanged;
+                _rosterSubscription = null;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        // Lane C: the holder is resolved in OnNetworkSpawn only. It is a scene-placed object, so it is spawned before
+        // any (dynamically spawned) Character on every peer; called again from GetOwnerPseudo as a cheap no-op guard.
+        private void EnsureRosterSubscription()
+        {
+            if (_rosterSubscription != null || lobbyPlayerInfoHolder == null)
+            {
+                return;
+            }
+            _rosterSubscription = lobbyPlayerInfoHolder;
+            _rosterSubscription.onRosterChanged += RaiseOwnerPseudoChanged;
+        }
+
+        private void RaiseOwnerPseudoChanged() => onOwnerPseudoChanged?.Invoke();
 
         private void OnIdentityChanged(ulong previousValue, ulong newValue)
         {
@@ -171,10 +200,24 @@ namespace Characters
             return role;
         }
 
+        /// <summary>
+        /// NET-03: never an empty string for a real player — a missing roster row reads "Joueur ?" and a player who
+        /// left mid-game reads "&lt;name&gt; (parti)" (CorruptionDuPortail.Domain.PseudoDisplay). Fake characters
+        /// have no player behind them and keep an empty pseudo.
+        /// </summary>
         public string GetOwnerPseudo()
         {
-            if (lobbyPlayerInfoHolder == null) return "Unknown";
-            return lobbyPlayerInfoHolder.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
+            if (isFake)
+            {
+                return string.Empty;
+            }
+            EnsureRosterSubscription();
+            if (lobbyPlayerInfoHolder == null)
+            {
+                return CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
+            }
+            bool _hasEntry = lobbyPlayerInfoHolder.TryGetPlayerInfo(ownerClientId.Value, out Network.Player.PlayerInfo _info);
+            return CorruptionDuPortail.Domain.PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
         }
 
         

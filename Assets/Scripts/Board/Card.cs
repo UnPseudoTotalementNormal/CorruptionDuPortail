@@ -276,15 +276,17 @@ namespace Board
         public async UniTask ShowRoleWithRevealedInfo()
         {
             visualUpdater.SetPseudo("");
-            
+            _pseudoVisible = false;
+
             bool _isRevealed = (int)gameInfoRevealer
                 .GetCharacterInfo(characterInfo.ownerClientId.Value).isRoleRevealed > 0;
-            
+
             if (_isRevealed)
             {
                 visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
+                _pseudoVisible = true;
             }
-            
+
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             await visualUpdater.SetRolePortrait(roleInfo);
         }
@@ -292,6 +294,7 @@ namespace Board
         public async UniTask ShowRoleOnly()
         {
             visualUpdater.SetPseudo("");
+            _pseudoVisible = false;
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             await visualUpdater.SetRolePortrait(roleInfo);
         }
@@ -299,6 +302,7 @@ namespace Board
         public async UniTask ShowPseudoWithRole()
         {
             visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
+            _pseudoVisible = true;
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             await visualUpdater.SetRolePortrait(roleInfo);
         }
@@ -306,11 +310,26 @@ namespace Board
         public void ShowPseudoOnly()
         {
             visualUpdater.SetUnknownWithPseudo(characterInfo.GetOwnerPseudo());
+            _pseudoVisible = true;
         }
 
         public void SetUnknownCard()
         {
             visualUpdater.SetUnknown();
+            _pseudoVisible = false;
+        }
+
+        // NET-03: whether the card currently displays its owner's pseudo. A roster change (pseudo arrived late,
+        // rename, owner left) re-applies ONLY the text in that case — no flip, no tween, no sound.
+        private bool _pseudoVisible;
+
+        private void OnOwnerPseudoChanged()
+        {
+            if (!_pseudoVisible || characterInfo == null || visualUpdater == null)
+            {
+                return;
+            }
+            visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
         }
 
         #endregion
@@ -381,6 +400,7 @@ namespace Board
             
             characterInfo.onRoleUpdated += OnRoleUpdated;
             characterInfo.isChained.OnValueChanged += OnChainedChanged;
+            characterInfo.onOwnerPseudoChanged += OnOwnerPseudoChanged;
             isSubscribedToCharacter = true;
         }
 
@@ -390,6 +410,7 @@ namespace Board
             
             characterInfo.onRoleUpdated -= OnRoleUpdated;
             characterInfo.isChained.OnValueChanged -= OnChainedChanged;
+            characterInfo.onOwnerPseudoChanged -= OnOwnerPseudoChanged;
             isSubscribedToCharacter = false;
         }
 
@@ -433,6 +454,7 @@ namespace Board
             }
             
             visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
+            _pseudoVisible = true;
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             visualUpdater.SetFaction(roleInfo.factionType);
             await visualUpdater.SetRolePortrait(roleInfo).AttachExternalCancellation(_cancellationToken);
@@ -451,6 +473,7 @@ namespace Board
             }
             
             visualUpdater.SetUnknownWithPseudo(characterInfo.GetOwnerPseudo());
+            _pseudoVisible = true;
             visualUpdater.SetRoleText("");
             
             if (_turnCard)

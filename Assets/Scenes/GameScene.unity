@@ -7824,6 +7824,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  gameManager: {fileID: 704980999}
 --- !u!114 &892093033
 MonoBehaviour:
   m_ObjectHideFlags: 0

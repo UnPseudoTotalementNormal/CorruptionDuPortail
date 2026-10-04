@@ -100,7 +100,7 @@ namespace Characters.Powers
                 {
                     foreach (var _targetClientId in currentTargets)
                     {
-                        chatManager.UndiscoverChatRpc(powerChatId.Value, characterManager.GetSafeRpcTarget(_targetClientId));
+                        chatManager.RevokeChannelServer(powerChatId.Value, _targetClientId); // NET-11: server membership
                     }
                     
                     currentTargets.Clear();
@@ -130,7 +130,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            chatManager.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), characterManager.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.GrantChannelServer(_chatId, "Lié par l'encre", ownerClientId.Value); // NET-11: server membership
         }
 
         protected override void StopUse()

@@ -35,6 +35,10 @@ namespace ChatSystem
         // the clientId>=100 bot interception — it only delegates the *decisions*.
         private readonly CorruptionDuPortail.Domain.ChatChannelPolicy _policy = new();
 
+        // NET-11: server-side channel membership (general + server channels are implicit for everyone).
+        private readonly CorruptionDuPortail.Domain.ChatMembership _membership =
+            new((int)ChatWindowIDs.General, (int)ChatWindowIDs.Server);
+
         private List<ChatWindow> chatWindows = new();
         public HashSet<int> discoveredChatIds = new();
         
@@ -174,13 +178,101 @@ namespace ChatSystem
             return _policy.ResolveWindowName(_chatId, _hasOverride, _overrideName, _enumName);
         }
         
+        // NET-11: the server decides who reads a private channel. The sender id is the transport's, never the one
+        // written in the message (only the host may speak for a simulated bot or the server sentinel), the sender
+        // must be a member, and the message goes ONLY to the members known right now. A member's discovery was sent
+        // on this same object before, so reliable ordered delivery guarantees its client knows the channel first.
         [Rpc(SendTo.Server)]
-        public void SendChatMessageServerRpc(ChatMessage _chatMessage)
+        public void SendChatMessageServerRpc(ChatMessage _chatMessage, RpcParams _params = default)
         {
-            ReceiveChatMessageRpc(_chatMessage);
-            OnMessageSentRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_chatMessage.senderClientId));
+            if (_chatMessage == null)
+            {
+                return;
+            }
+
+            ulong _transportSender = _params.Receive.SenderClientId;
+            bool _fromServer = _transportSender == NetworkManager.ServerClientId;
+            if (!_fromServer)
+            {
+                _chatMessage.senderClientId = _transportSender;
+                if (_chatMessage.chatId == (int)ChatWindowIDs.Server)
+                {
+                    Debug.LogWarning($"[CHAT] Client {_transportSender} tried to write in the read-only server channel.");
+                    return;
+                }
+            }
+
+            bool _isSentinel = _fromServer && _chatMessage.senderClientId == SERVER_CLIENT_ID;
+            if (!_isSentinel && !_membership.IsMember(_chatMessage.chatId, _chatMessage.senderClientId))
+            {
+                Debug.LogWarning($"[CHAT] {_chatMessage.senderClientId} is not a member of channel {_chatMessage.chatId}; message dropped.");
+                return;
+            }
+
+            if (_membership.IsPublic(_chatMessage.chatId))
+            {
+                ReceiveChatMessageRpc(_chatMessage);
+            }
+            else
+            {
+                foreach (ulong _recipient in RoutedRecipients(_chatMessage.chatId))
+                {
+                    ReceiveRoutedChatMessageRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_recipient));
+                }
+            }
+
+            if (_chatMessage.senderClientId != SERVER_CLIENT_ID)
+            {
+                OnMessageSentRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_chatMessage.senderClientId));
+            }
         }
-        
+
+        // One delivery per real connection: simulated bots (>= 100) are all served by the host, which must receive a
+        // message once even when itself and several of its bots are members. Departed clients are skipped.
+        private List<ulong> RoutedRecipients(int _chatId)
+        {
+            var _recipients = new List<ulong>();
+            foreach (ulong _member in _membership.MembersOf(_chatId))
+            {
+                ulong _connection = _member >= 100 ? NetworkManager.ServerClientId : _member;
+                if (_recipients.Contains(_connection))
+                {
+                    continue;
+                }
+                if (_connection != NetworkManager.ServerClientId && !NetworkManager.ConnectedClients.ContainsKey(_connection))
+                {
+                    continue;
+                }
+                _recipients.Add(_connection);
+            }
+            return _recipients;
+        }
+
+        /// <summary>NET-11: server-only. Makes <paramref name="_member"/> a member of a private channel and tells its client.</summary>
+        public void GrantChannelServer(int _chatId, string _overrideName, ulong _member)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError($"[CHAT] GrantChannelServer({_chatId}, {_member}) called on a client; ignored.");
+                return;
+            }
+            _membership.Grant(_chatId, _member);
+            DiscoverChatRpc(_chatId, new FixedString64Bytes(_overrideName ?? string.Empty),
+                CharacterManager.instance.GetSafeRpcTarget(_member));
+        }
+
+        /// <summary>NET-11: server-only. Removes <paramref name="_member"/> from a private channel and tells its client.</summary>
+        public void RevokeChannelServer(int _chatId, ulong _member)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError($"[CHAT] RevokeChannelServer({_chatId}, {_member}) called on a client; ignored.");
+                return;
+            }
+            _membership.Revoke(_chatId, _member);
+            UndiscoverChatRpc(_chatId, CharacterManager.instance.GetSafeRpcTarget(_member));
+        }
+
         [Rpc(SendTo.SpecifiedInParams)]
         public void OnMessageSentRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
         {
@@ -195,6 +287,16 @@ namespace ChatSystem
                 return;
             }
             
+            ChatWindow _window = GetChatWindow(_chatMessage.chatId);
+            _window?.AddChatMessage(_chatMessage);
+            onChatMessageReceived?.Invoke(_chatMessage);
+        }
+
+        // NET-11: a private message the server routed to this client because it is a member. Never filtered on the
+        // local channel list: the server's membership is the truth (the discovery always arrives first anyway).
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void ReceiveRoutedChatMessageRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
+        {
             ChatWindow _window = GetChatWindow(_chatMessage.chatId);
             _window?.AddChatMessage(_chatMessage);
             onChatMessageReceived?.Invoke(_chatMessage);

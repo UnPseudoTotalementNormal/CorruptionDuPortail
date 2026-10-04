@@ -79,8 +79,9 @@ namespace Characters.Powers
         }
         
         [Rpc(SendTo.Server)]
-        private void OnCharacterClickedRpc(ulong _characterClickedId)
+        private void OnCharacterClickedRpc(ulong _characterClickedId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _characterClickedId)) return; // NET-09: server-side use authorization
             roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);

@@ -134,8 +134,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnVisionGuessServerRpc(ulong[] _guessedCharacterIds, Role[] _guessedRoles)
+        private void OnVisionGuessServerRpc(ulong[] _guessedCharacterIds, Role[] _guessedRoles, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _guessedCharacterIds)) return; // NET-09: server-side use authorization
             Assert.IsTrue(NetworkManager.IsServer, "OnVisionGuessServerRpc should only be called on server");
             _pendingGuessedCharacterIds = _guessedCharacterIds;
             _pendingGuessedRoles = _guessedRoles;

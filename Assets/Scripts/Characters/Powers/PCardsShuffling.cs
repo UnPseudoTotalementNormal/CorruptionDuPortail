@@ -77,8 +77,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked)
+        private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _clientIdClicked)) return; // NET-09: server-side use authorization
             // Re-validation autoritaire serveur : les règles d'OnRolePicked ont tourné côté client seulement,
             // mais cette branche ACCORDE désormais un pouvoir — un client trafiqué ne doit pas contourner les
             // règles (cible valide, non déjà découverte, faction élue). Rejette aussi les RPC en double (la 2e
@@ -109,8 +110,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void GuessRoleRpc(ulong _clickedId)
+        private void GuessRoleRpc(ulong _clickedId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _clickedId)) return; // NET-09: server-side use authorization
             _lastGuessClickedId = _clickedId;
             // State feeds BOTH the context (the decision READS ctx.State<ICardsShufflingGuess>()) and the
             // runtime (DiscoveredAdd WRITES the discovered list) — both resolve to this carrier via SelfState.

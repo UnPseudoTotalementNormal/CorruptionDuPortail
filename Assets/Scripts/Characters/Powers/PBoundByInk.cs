@@ -74,8 +74,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _characterId)
+        private void OnCardClickedRpc(ulong _characterId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _characterId)) return; // NET-09: server-side use authorization
             if (alreadyTargetedClients.Contains(_characterId) || currentTargets.Contains(_characterId))
             {
                 return;

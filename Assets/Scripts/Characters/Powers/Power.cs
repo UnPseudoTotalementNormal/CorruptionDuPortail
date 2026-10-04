@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using Board;
 using ChatSystem;
 using Cysharp.Threading.Tasks;
 using RoleTarget;
@@ -30,7 +31,7 @@ using static Characters.Powers.Target.TargetUtils;
 namespace Characters.Powers
 {
     [Serializable]
-    public class Power : NetworkBehaviour
+    public class Power : NetworkBehaviour, IViewerEffectRelay
     {
         public NetworkVariable<ulong> ownerClientId = new();
 
@@ -274,38 +275,142 @@ namespace Characters.Powers
         // Returns the outcome's verdict (None when it did not run or the power has no notion of correctness)
         // so an adapter that still owns engine-coupled bookkeeping can key off the same grade instead of
         // re-deriving it — see PDroolyHealing's per-night healed roster.
+        // NET-09 (epic-network-sync-hardening): every decision runs HERE, on the server, from server state. A decision
+        // whose effects are local to ONE player (owner-local reveal, local chat line, card effect — Embrace, Cursed
+        // Vision, Lack of Affection) passes that player as localViewer: the executors deliver those effects to that
+        // player instead of applying them on the host. The former client-side variant (RunClientDecisionEffects)
+        // decided outcomes from a client replica and is gone.
         protected PowerVerdict RunDecisionEffects(IPowerDecision decision, in PowerContext context,
-            IPowerStateResolver state = null)
+            IPowerStateResolver state = null, ulong? localViewer = null)
         {
             if (!IsServer) return PowerVerdict.None;
             PowerOutcome outcome = decision.Decide(context);
             if (!outcome.Accepted) return PowerVerdict.None;
-            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state, localViewer, this));
             EmitVerdictServer(outcome.Verdict);
             return outcome.Verdict;
         }
 
-        // Client-runtime variant of RunDecisionEffects for the handful of powers whose effect runs on a
-        // SPECIFIC client rather than the server (LackOfAffection — the decision resolves on the contacted
-        // target's own client, keyed by PowerContext.IsTrueLocalTarget). No IsServer guard: the caller is
-        // already inside a client-scoped RPC body and has done its own locality check. The dispatch + state
-        // threading are otherwise identical.
-        protected PowerVerdict RunClientDecisionEffects(IPowerDecision decision, in PowerContext context,
-            IPowerStateResolver state = null)
+        // ---- NET-09: viewer-local effect relay ---------------------------------------------------------
+
+        void IViewerEffectRelay.AddCardEffectForViewer(ulong _viewer, int _cardEffectId, ulong _targetSlot, bool _flag)
         {
-            PowerOutcome outcome = decision.Decide(context);
-            if (!outcome.Accepted) return PowerVerdict.None;
-            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
-            EmitVerdictFromClient(outcome.Verdict);
-            return outcome.Verdict;
+            AddCardEffectForViewerRpc(_cardEffectId, _targetSlot, _flag, characterManager.GetSafeRpcTarget(_viewer));
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void AddCardEffectForViewerRpc(int _cardEffectId, ulong _targetSlot, bool _flag, RpcParams _params = default)
+        {
+            if (CardEffectManager.instance != null)
+            {
+                CardEffectManager.instance.AddCardEffect((CardEffectID)_cardEffectId, _targetSlot, _flag);
+            }
+        }
+
+        // ---- NET-09: server-side use authorization -------------------------------------------------------
+        // A use is a pair (effect RPC, consume). Most powers send the effect then OnUsed(); a few (Vision of the
+        // Impossible, Lack of Affection) consume first. The server accepts at most ONE effect per consumed use, from
+        // the owner (or the host acting for a simulated identity), while the owner can still act — so a double click,
+        // a forged sender, or a click that lands after the owner was put to sleep cannot apply an effect twice or late,
+        // and powerUseLeft never goes negative. Target RULES are not re-evaluated here: they depend on what the VIEWER
+        // knows (reveals), which the server only tracks once knowledge moves to a server ledger (NET-10).
+
+        private int _serverPreConsumedUses;
+        private bool _serverEffectAwaitingConsume;
+
+        private bool IsAllowedSender(ulong _sender) =>
+            _sender == ownerClientId.Value || _sender == NetworkManager.ServerClientId;
+
+        private bool ServerOwnerCanAct(bool _requireAwake)
+        {
+            Character _owner = ownerCharacter;
+            if (!_owner || _owner.isChained.Value || _owner.isEliminated.Value)
+            {
+                return false;
+            }
+            return !_requireAwake || !hasToBeAwakened || _owner.isAwakened.Value;
+        }
+
+        private bool RejectUse(string _reason)
+        {
+            Debug.LogWarning($"[POWER] rejected '{powerName}' of {ownerClientId.Value}: {_reason}");
+            return false;
+        }
+
+        /// <summary>
+        /// NET-09, server: call at the top of every player-initiated effect RPC. Returns false (and the effect must
+        /// not run) when the sender is not the owner/host, the owner cannot act, a target does not exist, or no use
+        /// is available for this effect.
+        /// </summary>
+        protected bool ServerAuthorizeEffect(RpcParams _params, params ulong[] _targetSlots)
+        {
+            if (!IsServer)
+            {
+                return false;
+            }
+            ulong _sender = _params.Receive.SenderClientId;
+            // The host's own requests (its player, or a simulated identity it drives) run in the same frame on the
+            // authoritative state its UI just validated (CanUse): no latency, so no race to guard against.
+            if (_sender == NetworkManager.ServerClientId)
+            {
+                return true;
+            }
+            if (!IsAllowedSender(_sender))
+            {
+                return RejectUse($"sender {_sender} is not the owner");
+            }
+
+            bool _preConsumed = _serverPreConsumedUses > 0;
+            // A use consumed before its effect was authorized at consume time (the owner may since have been put to
+            // sleep by the awakening flow reacting to that consume), so only the "not out of the game" part applies.
+            if (!ServerOwnerCanAct(_requireAwake: !_preConsumed))
+            {
+                return RejectUse("owner cannot act (asleep, chained or eliminated)");
+            }
+            foreach (ulong _slot in _targetSlots)
+            {
+                if (characterManager.GetCharacter(_slot, false) == null)
+                {
+                    return RejectUse($"unknown target {_slot}");
+                }
+            }
+
+            if (_preConsumed)
+            {
+                _serverPreConsumedUses--;
+                return true;
+            }
+            if (powerUseLeft.Value <= 0)
+            {
+                return RejectUse("no use left");
+            }
+            _serverEffectAwaitingConsume = true;
+            return true;
+        }
+
+        // Server: one use is consumed. Pairs with the effect that preceded it, or pre-authorizes the effect that follows.
+        private bool ServerTryConsumeUse()
+        {
+            if (powerUseLeft.Value <= 0)
+            {
+                return RejectUse("consume with no use left");
+            }
+            if (_serverEffectAwaitingConsume)
+            {
+                _serverEffectAwaitingConsume = false;
+                return true;
+            }
+            if (!ServerOwnerCanAct(_requireAwake: true))
+            {
+                return RejectUse("consume while the owner cannot act");
+            }
+            _serverPreConsumedUses++;
+            return true;
         }
 
         // ---- Caster-facing verdict channel ------------------------------------------------------------
-        // Owner-only, one hop. Server path: raise locally when the owner IS the server (host / simulated
-        // bot), else one targeted RPC. Client path: a client-runtime decision (RunClientDecisionEffects)
-        // may resolve on the OWNER's client (CursedVision, EmbraceOfShadows) — raise straight away — or on
-        // the CONTACTED TARGET's client (LackOfAffection) — bounce through the server so the grade still
-        // lands on the caster. PowerVerdict.None never travels.
+        // Owner-only, one hop: raise locally when the owner IS the server, else one targeted RPC (GetSafeRpcTarget
+        // sends a simulated bot's grade to the host). PowerVerdict.None never travels.
 
         /// <summary>Server-side entry: route an outcome's verdict to the caster. No-op for None.</summary>
         protected void EmitVerdictServer(PowerVerdict verdict)
@@ -322,21 +427,6 @@ namespace Characters.Powers
             OnPowerVerdictClientRpc(verdict, characterManager.GetSafeRpcTarget(_owner));
         }
 
-        /// <summary>Client-side entry for the client-runtime decision path. No-op for None.</summary>
-        protected void EmitVerdictFromClient(PowerVerdict verdict)
-        {
-            if (verdict == PowerVerdict.None) return;
-
-            if (characterManager.IsLocalOrSimulated(ownerClientId.Value))
-            {
-                onPowerVerdict?.Invoke(verdict);
-                return;
-            }
-            ReportVerdictServerRpc(verdict);
-        }
-
-        [Rpc(SendTo.Server)]
-        private void ReportVerdictServerRpc(PowerVerdict _verdict) => EmitVerdictServer(_verdict);
 
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnPowerVerdictClientRpc(PowerVerdict _verdict, RpcParams _params)
@@ -397,8 +487,19 @@ namespace Characters.Powers
         }
         
         [Rpc(SendTo.Server)]
-        public void OnUsedServerRpc()
+        public void OnUsedServerRpc(RpcParams _params = default)
         {
+            // NET-09: a REMOTE consume is validated (owner only, a use left, paired with its effect); the host's own
+            // consumes call OnUsed directly on the server and never come through here.
+            if (!IsAllowedSender(_params.Receive.SenderClientId))
+            {
+                RejectUse($"consume from non-owner {_params.Receive.SenderClientId}");
+                return;
+            }
+            if (!ServerTryConsumeUse())
+            {
+                return;
+            }
             OnUsed(false);
         }
 
@@ -425,7 +526,7 @@ namespace Characters.Powers
                 }
                 return;
             }
-            
+
             OnUsedServer();
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client

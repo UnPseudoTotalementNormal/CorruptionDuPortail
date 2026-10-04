@@ -66,8 +66,9 @@ namespace Characters.Powers
             OnUsed();
         }
         [Rpc(SendTo.Server)]
-        private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole)
+        private void TryCorruptCharacterServerRpc(ulong _corruptingCharacterId, Role _compareRole, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _corruptingCharacterId)) return; // NET-09: server-side use authorization
             // SelfState feeds BOTH the context (the decision reads IExtraUseState) and the runtime (the
             // GrantExtraUse executor resolves IExtraUseGrant back to this power).
             var _selfState = SelfState;

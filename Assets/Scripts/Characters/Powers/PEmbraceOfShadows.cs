@@ -30,11 +30,9 @@ namespace Characters.Powers
         // branch, EditMode-tested). The success/failure EVENTS are power-local (IFailablePower), reached by
         // the CorruptionSucceeded/Failed executors through SelfState via ICorruptionEvents. The faction-
         // independent success/failure SOUNDS stay adapter-side and LOCAL to the picker.
-        // The corruption reveals (RevealInfo Broadcast:false → SetRevealLevel) are OWNER-LOCAL writes; the
-        // authoritative mutations self-RPC to the server (CorruptPlayerServerRpc, NewTargetingRpc) and the
-        // success/failure events fan out via SendTo.Everyone RPCs. The whole decision therefore runs on the
-        // owner's client — exactly as v1 did. An earlier v2 pass forwarded the picks through a SendTo.Server
-        // RPC, which made the reveals land on the host instead of a remote caster's board.
+        // NET-09: the decision runs on the SERVER from server state (it used to run on the caster's client from
+        // that client's replica, so a stale replica produced a real, wrong corruption). Its owner-local reveals
+        // are delivered to the caster through RunDecisionEffects' localViewer, never applied on the host.
         private readonly EmbraceOfShadowsDecision _decision = new();
 
         void ICorruptionEvents.RaiseSucceeded(int _slot) => InvokeOnCharacterCorruptedRpc((ulong)_slot);
@@ -55,15 +53,9 @@ namespace Characters.Powers
                 return;
             }
 
-            // Runs on the owner's client (selection callback). Owner-local reveals apply here directly;
-            // the authoritative corrupt/targeting effects self-RPC to the server. See the class-level note.
-            RunClientDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)ownerClientId.Value,
-                targetSlot: (int)_character.ownerClientId.Value,
-                secondaryTargetSlot: (int)_role.ownerClientId,
-                roster: Roster), SelfState);
+            EmbraceServerRpc(_character.ownerClientId.Value, _role.ownerClientId);
 
-            // Local audio cue for the picker — computed client-side from the two picks, unchanged from v1.
+            // Local audio cue for the picker (cosmetic) — computed from the two picks, unchanged from v1.
             if (_character.role.IsTheSameRole(_role))
             {
                 onCorruptionSuccessfulSound.TryPlayOneShot();
@@ -73,6 +65,18 @@ namespace Characters.Powers
                 onCorruptionFailedSound.TryPlayOneShot();
             }
             OnUsed();
+        }
+
+        [Rpc(SendTo.Server)]
+        private void EmbraceServerRpc(ulong _targetCharacterId, ulong _pickedRoleOwnerId, RpcParams _params = default)
+        {
+            if (!ServerAuthorizeEffect(_params, _targetCharacterId, _pickedRoleOwnerId)) return; // NET-09
+
+            RunDecisionEffects(_decision, new PowerContext(
+                ownerSlot: (int)ownerClientId.Value,
+                targetSlot: (int)_targetCharacterId,
+                secondaryTargetSlot: (int)_pickedRoleOwnerId,
+                roster: Roster), SelfState, localViewer: ownerClientId.Value);
         }
 
         [Rpc(SendTo.Everyone)]

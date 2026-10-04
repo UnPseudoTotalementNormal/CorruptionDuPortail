@@ -53,8 +53,9 @@ namespace Characters.Powers
             OnUsed();
         }
         [Rpc(SendTo.Server)]
-        private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole)
+        private void TryHealServerRpc(ulong _healingCharacterId, Role _compareRole, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _healingCharacterId)) return; // NET-09: server-side use authorization
             // Snapshot the target's corruption state BEFORE the decision runs: its heal effect clears
             // isCorrupted / sets isHealed, so reading them afterwards would always report "not healable".
             var _choosedCharacter = characterManager.GetCharacter(_healingCharacterId, false);

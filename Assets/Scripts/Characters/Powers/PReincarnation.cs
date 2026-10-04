@@ -105,8 +105,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void ReincarnatePlayerRpc(ulong _characterClickedId)
+        private void ReincarnatePlayerRpc(ulong _characterClickedId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _characterClickedId)) return; // NET-09: server-side use authorization
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_characterClickedId), SelfState);
         }

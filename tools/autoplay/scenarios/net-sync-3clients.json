@@ -1,0 +1,16 @@
+{
+  "name": "net-sync-3clients",
+  "goal": "Zero-desync baseline (NET-00..11): host + 3 real clients + 4 bots play 3 days; every phase's public state (roster and pseudos, characters, flags, game state, roles, power lists) hashes the same on every process, and no process logs a desync tripwire or any unexpected error.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 41,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": ["-autoplay-max-days", "3", "-autoplay-fast-fakes"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "state.hash", "process": "every-client", "min": 3},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]}
+  ]
+}

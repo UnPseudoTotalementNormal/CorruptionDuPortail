@@ -1,0 +1,18 @@
+{
+  "name": "client-owner-local-powers",
+  "goal": "NET-09/NET-10: the Repenti (Cursed Vision) and the Orpheline (Lack of Affection) are held by REAL clients. Their powers are decided on the server and the personal reveal they produce reaches the client that owns them (knowledge with a Personal level journaled on a client), with no desync and no error.",
+  "mode": "net",
+  "clients": 7,
+  "seed": 51,
+  "seedRetries": 8,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": ["-autoplay-force-roles", "Repenti,Orpheline", "-autoplay-role-holder", "client", "-autoplay-max-days", "3", "-autoplay-fast-fakes"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "power.start", "detail": "Repenti", "process": "clients", "min": 1},
+    {"type": "event", "kind": "knowledge", "detail": "(role|corrupt)=10", "process": "clients", "min": 1},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]}
+  ]
+}

@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Corruption du Portail** — Asymmetric multiplayer social deduction game (Werewolf/Mafia style), Unity **6000.5.0f1**.
 
-Stack: Unity + Netcode for GameObjects (NGO) + FMOD + UniTask + DOTween + Facepunch (Steam) transport. Main branch: `Dev` (target for PRs).
+Stack: Unity + Netcode for GameObjects (NGO) + UTP/Unity Relay + Facepunch (Steam) transport + FMOD + UniTask + DOTween + uGUI/UI Toolkit. Main branch: `Dev` (target for PRs).
 
-## Documentation source of truth
+## Documentation
 
-`_bmad-output/` holds the generated project documentation maintained by the BMad / GDS workflows. Entry point: `_bmad-output/index.md`. Read the relevant doc before non-trivial work on a system. Refresh with `/gds-document-project`.
+Entry point: `_bmad-output/index.md`. **Before writing game code, read `_bmad-output/project-context.md`**: the project-specific rules whose violation compiles clean and fails silently (DI lanes, NGO/UITK gotchas, test harness traps). It is hand-maintained, so add a rule when you hit a new silent trap and keep it short.
 
-**For AI agents implementing code**: also read `_bmad-output/project-context.md` — 270 load-bearing rules (Unity / NGO / FMOD / UniTask / asmdef / testing / performance / anti-patterns). Refresh with `/gds-generate-project-context`.
+Workflow skills kept: `gds-quick-dev` (spec + implement), `gds-investigate` (forensic bug case), `gds-code-review` (adversarial review; required before merging stories tagged `# REVIEW-REQUIRED`). Shipped specs move to `_bmad-output/archive/specs/`. Archive, never delete.
 
 ## Commits
 
@@ -78,4 +78,4 @@ Common ops (all authed with the Bot header):
 
 **Always confirm with Poyo before any write** (PATCH/POST) to the board — same rule as commits.
 
-Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8.
+Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8. The bot lacks the MESSAGE_CONTENT intent: message `content` always comes back `""`. Titles and tags are readable, bodies are not, so ask Poyo to paste the text.

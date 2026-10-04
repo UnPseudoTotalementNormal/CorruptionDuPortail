@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Corruption du Portail** — Asymmetric multiplayer social deduction game (Werewolf/Mafia style), Unity **6000.2.6f2**.
+**Corruption du Portail** — Asymmetric multiplayer social deduction game (Werewolf/Mafia style), Unity **6000.5.0f1**.
 
 Stack: Unity + Netcode for GameObjects (NGO) + FMOD + UniTask + DOTween + Facepunch (Steam) transport. Main branch: `Dev` (target for PRs).
 
@@ -39,18 +39,23 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 - **Async = UniTask** (`UniTask`, `UniTaskVoid`), never `System.Threading.Tasks.Task`.
 - **Audio = FMOD** via `AudioSystem/GameAudioManager`. Never `AudioSource` for gameplay sounds.
 
-## Build / Test / Run — use Unity MCP
+## Build / Test / Run — use the official Unity CLI (MCP = fallback only)
 
-| Action | Tool |
-|---|---|
-| Run tests (EditMode + PlayMode) | `mcp__UnityMCP__run_tests` |
-| Read compile errors after a change | `mcp__UnityMCP__read_console` |
-| Inspect / mutate scene | `mcp__UnityMCP__manage_scene`, `manage_gameobject` |
-| Edit scripts | Prefer `Edit` tool; `mcp__UnityMCP__manage_script` for create/delete |
-| Build player | `mcp__UnityMCP__manage_build` |
-| Enter play mode | `mcp__UnityMCP__manage_editor` |
+**Priority: the official Unity CLI** (`unity`, installed via winget) driving the open Editor through the `com.unity.pipeline` package. Use it by default and keep learning it — lean on the `unity-cli` skill and `unity command --query <term>` to discover commands. The CoplayDev Unity MCP (`mcp__UnityMCP__*`) stays installed **only as a fallback** when the CLI can't do something or is broken.
 
-After any code change: poll `read_console` for compile errors before assuming anything works. After a feature completes: run `mcp__UnityMCP__run_tests` (filter by category/assembly when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
+Run from Git Bash at repo root with `UNITY_NO_BANNER=1`; add `--result-only` for compact JSON.
+
+| Action | Unity CLI (default) | MCP fallback |
+|---|---|---|
+| Editor ready / compiling? | `unity command editor_status` | `editor_state` resource |
+| Compile errors after a change | `unity command console_status` (`groundTruth.compilationFailed`) then `unity command console --level error --tail 20` | `read_console` |
+| Run tests | `unity command run_tests --mode EditMode\|PlayMode --filter <name> --timeout 600` (pipe JSON to a file — it lists every test) | `run_tests` + `get_test_job` |
+| Run C# in the Editor (read SO/prefab data, inspect state) | `unity command eval --code '...; return x;'` (statement body — needs `return`) or `run_script` | `execute_code` is **broken** here |
+| Inspect / mutate scene, GameObjects, components | `get_scene_hierarchy`, `find_gameobjects`, `get_component_properties`, `set_serialized_field`, `batch` (transactional, one Undo) | `manage_scene`, `manage_gameobject` |
+| Edit scripts | Prefer the `Edit` tool; `unity command create_script` for new `.cs` (Unity-side create avoids silent compile exclusion) | `manage_script` |
+| Build player | `unity command build` / headless `unity build <path>` | `manage_build` |
+
+After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
 
 ## Discord task board
 

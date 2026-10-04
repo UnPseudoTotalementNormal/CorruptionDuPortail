@@ -134,6 +134,14 @@ namespace Network
                 return;
             }
 
+            // NET-05: a joiner that finished loading after the game started is disconnected by ConnectionApprovalGate;
+            // it must not get a roster row (it would show up as a phantom "(parti)" player).
+            if (gameManager != null && gameManager.IsSpawned && !gameManager.IsInLobbyPhase)
+            {
+                ConnectionApprovalGate.DiscardPendingProfile(clientId);
+                return;
+            }
+
             // NET-02: a joiner's profile arrived WITH its connection request (atomic with approval) — upsert it now,
             // keyed on the transport's clientId. The ask/answer RPC below is only the fallback for a client that sent
             // no (or a malformed) payload.

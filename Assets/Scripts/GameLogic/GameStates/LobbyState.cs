@@ -85,7 +85,9 @@ namespace GameLogic.GameStates
                 }
             }
 
-            if (!AllParticipantsReady() || !TryResolveValidComposition(out _))
+            // NET-05: an approved joiner still loading has no Character yet, so AllParticipantsReady cannot see it —
+            // starting now would turn it into a character-less ghost. Wait until it finishes, leaves, or is kicked.
+            if (ConnectionApprovalGate.HasSynchronizingClients || !AllParticipantsReady() || !TryResolveValidComposition(out _))
             {
                 return;
             }
@@ -129,6 +131,13 @@ namespace GameLogic.GameStates
         {
             if (_started || !gameManager.NetworkManager.IsServer)
             {
+                return;
+            }
+
+            // NET-05: even a forced start must not strand a joiner that is still loading.
+            if (ConnectionApprovalGate.HasSynchronizingClients)
+            {
+                Debug.LogWarning("Cannot force-start: a player is still loading into the lobby.");
                 return;
             }
 
@@ -218,6 +227,8 @@ namespace GameLogic.GameStates
             // feat/lobby-ready-system: poll the auto-start each server tick (latched to fire once).
             if (gameManager.NetworkManager.IsServer)
             {
+                // NET-05: a loader stuck past the sync cap is disconnected so it cannot block the start forever.
+                ConnectionApprovalGate.KickExpiredLoaders(gameManager.NetworkManager);
                 TryAutoStart();
             }
         }

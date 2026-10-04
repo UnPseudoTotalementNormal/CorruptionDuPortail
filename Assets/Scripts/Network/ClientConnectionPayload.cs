@@ -29,6 +29,7 @@ namespace Network
                 PlayerName = _local.playerName.ToString(),
                 PlayerFullName = _local.playerFullName.ToString(),
                 SteamId = _local.playerSteamId,
+                IsEditor = Application.isEditor,
             };
             _networkManager.NetworkConfig.ConnectionData = _payload.ToBytes();
         }

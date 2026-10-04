@@ -21,6 +21,8 @@ namespace CorruptionDuPortail.Domain
         public string PlayerName = string.Empty;
         public string PlayerFullName = string.Empty;
         public ulong SteamId;
+        /// <summary>NET-05: the sender runs in the Unity Editor (version strings are meaningless there).</summary>
+        public bool IsEditor;
 
         public byte[] ToBytes()
         {
@@ -32,6 +34,7 @@ namespace CorruptionDuPortail.Domain
                 WriteString(_writer, PlayerName);
                 WriteString(_writer, PlayerFullName);
                 _writer.Write(SteamId);
+                _writer.Write(IsEditor);
             }
             return _stream.ToArray();
         }
@@ -59,6 +62,7 @@ namespace CorruptionDuPortail.Domain
                     PlayerName = ReadString(_reader),
                     PlayerFullName = ReadString(_reader),
                     SteamId = _reader.ReadUInt64(),
+                    IsEditor = _reader.ReadBoolean(),
                 };
                 payload = _result;
                 return true;

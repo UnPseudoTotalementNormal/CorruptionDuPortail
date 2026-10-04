@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using CorruptionDuPortail.Domain;
 using Network.Player;
 using Unity.Netcode;
 using Characters;
@@ -106,12 +107,39 @@ namespace Network
 
         private void OnClientDisconnected(ulong clientId)
         {
+            ConnectionApprovalGate.DiscardPendingProfile(clientId);
             if (!IsSpawned) return;
             SetRosterServer(_roster.Value.WithRemoved(clientId));
         }
 
         private void OnClientConnected(ulong clientId)
         {
+            if (!IsServer || !IsSpawned) return;
+
+            // NET-02: the host's own profile is local — no RPC to itself.
+            if (clientId == NetworkManager.LocalClientId)
+            {
+                PlayerInfo _host = LocalPlayerInfoHolder.playerInfo;
+                _host.playerClientId = clientId;
+                SetRosterServer(_roster.Value.WithUpsert(_host));
+                return;
+            }
+
+            // NET-02: a joiner's profile arrived WITH its connection request (atomic with approval) — upsert it now,
+            // keyed on the transport's clientId. The ask/answer RPC below is only the fallback for a client that sent
+            // no (or a malformed) payload.
+            if (ConnectionApprovalGate.TryTakePendingProfile(clientId, out ConnectionPayload _payload))
+            {
+                SetRosterServer(_roster.Value.WithUpsert(new PlayerInfo
+                {
+                    playerClientId = clientId,
+                    playerName = PlayerNameSanitizer.Sanitize(_payload.PlayerName, false, $"Player{clientId}"),
+                    playerFullName = PlayerNameSanitizer.TruncateUtf8(_payload.PlayerFullName, PlayerNameSanitizer.MaxUtf8Bytes),
+                    playerSteamId = _payload.SteamId,
+                }));
+                return;
+            }
+
             AskForPlayerInfo(clientId);
         }
 

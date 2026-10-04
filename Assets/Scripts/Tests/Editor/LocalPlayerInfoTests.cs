@@ -30,10 +30,11 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void CreateNewClientData_Empty_HandlesGracefully()
+        public void CreateNewClientData_Empty_FallsBackToDefaultPseudo()
         {
+            // NET-02: an empty name no longer replicates an empty pseudo; it falls back to the "Player####" default.
             LocalPlayerInfoHolder.CreateNewClientData("");
-            Assert.AreEqual("", LocalPlayerInfoHolder.playerInfo.playerName.ToString());
+            StringAssert.IsMatch(@"^Player\d+$", LocalPlayerInfoHolder.playerInfo.playerName.ToString());
         }
 
         // Story 13.0 — the domain-reload-disabled reset restores a fresh "Player####" default so a name set

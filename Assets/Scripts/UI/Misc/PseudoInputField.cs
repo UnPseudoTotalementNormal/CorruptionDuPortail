@@ -1,5 +1,7 @@
 #region
 
+using CorruptionDuPortail.Domain;
+using Network;
 using Network.Player;
 using TMPro;
 using UnityEngine;
@@ -16,14 +18,22 @@ public class PseudoInputField : MonoBehaviour
 
     private void OnSubmitPseudo(string pseudo)
     {
-        if (string.IsNullOrEmpty(pseudo))
+        if (string.IsNullOrWhiteSpace(pseudo))
         {
             Debug.LogWarning("Pseudo is empty");
             return;
         }
 
         var _info = LocalPlayerInfoHolder.playerInfo;
-        _info.playerName = pseudo;
+        // NET-02: typed by the player, so no UGS discriminator to strip; sanitized + UTF-8-safe truncation.
+        _info.playerName = PlayerNameSanitizer.Sanitize(pseudo, false, _info.playerName.ToString());
         LocalPlayerInfoHolder.playerInfo = _info;
+
+        // NET-02: a rename while connected must replicate (it used to stay local-only).
+        LobbyPlayerInfoHolder _holder = LobbyPlayerInfoHolder.instance;
+        if (_holder != null && _holder.IsSpawned)
+        {
+            _holder.UpdateLocalPlayerInfo();
+        }
     }
 }

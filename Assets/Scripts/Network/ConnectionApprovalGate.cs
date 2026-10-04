@@ -1,5 +1,7 @@
 #region
 
+using System.Collections.Generic;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -72,7 +74,47 @@ namespace Network
             {
                 _response.Reason = GameInProgressReason;
                 Debug.Log($"[JOIN-GATE] Rejected connection {_request.ClientNetworkId} — game already started.");
+                return;
+            }
+
+            // NET-02: keep the joiner's profile until it finishes synchronizing; LobbyPlayerInfoHolder takes it on
+            // OnClientConnected and upserts the roster row itself (no follow-up RPC round-trip to lose).
+            if (ConnectionPayload.TryParse(_request.Payload, out ConnectionPayload _payload))
+            {
+                s_pendingProfiles[_request.ClientNetworkId] = _payload;
+            }
+            else if (_request.ClientNetworkId != NetworkManager.ServerClientId)
+            {
+                Debug.LogWarning($"[ROSTER] missing or malformed connection payload from {_request.ClientNetworkId}; " +
+                                 "falling back to the profile RPC.");
             }
         }
+
+        // ---- NET-02: profiles received with the connection request, waiting for sync completion ----
+
+        private static readonly Dictionary<ulong, ConnectionPayload> s_pendingProfiles = new();
+
+        /// <summary>Server-side: hands over (and forgets) the profile a client sent with its connection request.</summary>
+        public static bool TryTakePendingProfile(ulong _clientId, out ConnectionPayload _payload)
+        {
+            if (s_pendingProfiles.TryGetValue(_clientId, out _payload))
+            {
+                s_pendingProfiles.Remove(_clientId);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Server-side: drops the profile of a client that left before finishing its synchronization.</summary>
+        public static void DiscardPendingProfile(ulong _clientId) => s_pendingProfiles.Remove(_clientId);
+
+        /// <summary>Per-session reset (called from CompositionRoot.ResetSessionStatics).</summary>
+        public static void ResetSessionStatics() => s_pendingProfiles.Clear();
+
+#if UNITY_EDITOR
+        // Domain reload is disabled in this project: drop any profile left by a previous Play session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticsForDomainReloadDisabled() => s_pendingProfiles.Clear();
+#endif
     }
 }

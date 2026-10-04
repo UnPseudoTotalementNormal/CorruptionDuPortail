@@ -42,6 +42,10 @@ namespace Autoplay
         public float[] pickerCaptureDelays = { 0f, 0.1f, 0.25f, 0.5f, 1f };
         [Tooltip("Game seconds the chosen card stays hovered (captured) before the click.")]
         public float pickerHoverDwell = 0.6f;
+
+        [Tooltip("Scenario lever: when set, every bot votes for the living player whose role name contains this text " +
+                 "(forces a situation to happen, e.g. chain the Mage to exercise the portal). Empty = random legal votes.")]
+        public string voteFocusRole;
     }
 
     /// <summary>
@@ -388,7 +392,9 @@ namespace Autoplay
                     continue;
                 }
 
-                ulong _targetId = policy.Choose(_targets, "vote").ownerClientId.Value;
+                Character _focus = string.IsNullOrEmpty(options.voteFocusRole) ? null : _targets.FirstOrDefault(_t =>
+                    _t.role != null && _t.role.roleName.ToString().IndexOf(options.voteFocusRole, StringComparison.OrdinalIgnoreCase) >= 0);
+                ulong _targetId = (_focus != null ? _focus : policy.Choose(_targets, "vote")).ownerClientId.Value;
                 if (networkManager.IsServer)
                 {
                     // Same server method VoteState.OnPlayerVoted reaches, with the bot's id as the sender.
@@ -409,7 +415,10 @@ namespace Autoplay
         private void UpdatePortal(GameManager _gameManager, TakeDownThePortalState _portal)
         {
             ulong _mageId = _portal.mageCharacterOwnerId;
-            if (!_portal.shouldActivate || !controlledIds.Contains(_mageId))
+            // shouldActivate is only set on the SERVER's state instance (ChainingManager); a client only receives the
+            // Mage id (SetMageCharacterRpc to all). A client Mage therefore acts on the id and lets the server decide.
+            bool _activated = networkManager.IsServer ? _portal.shouldActivate : _mageId == networkManager.LocalClientId;
+            if (!_activated || !controlledIds.Contains(_mageId))
             {
                 return;
             }

@@ -23,6 +23,12 @@ Moments captured out of the box: every phase change, every power verdict (burst 
 `visual-picker` mode every picker opening (burst 0/0.1/0.25/0.5/1 s + hover). Need another moment or value? Add a
 `capture.Request(...)` / `RequestBurst(...)` call or an `AddProbe(...)` in the driver — small, then rebuild.
 
+**Force the situation from the start.** A random game does not guarantee the case under test: before launching, ask
+"what must happen for this run to prove something, and what guarantees it?" If nothing does, add the scenario lever
+first (`-autoplay-vote-focus <role text>` = every bot votes that role, `-autoplay-clients/players/bots`, seed, or a
+new forced-composition option), then run. Afterwards, check in the logs that the situation really happened (e.g.
+`portal.click` logged by a client) — otherwise report "not covered", never "OK".
+
 ## 2. Environment (once per session)
 
 - Drive **your own headless editor on your checkout**, never the user's editor. Recipe + traps:
@@ -43,6 +49,12 @@ Moments captured out of the box: every phase change, every power verdict (burst 
 Coverage = several seeds (roles are drawn from the designer's classic preset). Report which powers/roles a run covered;
 if the goal needs a specific power, loop seeds until it appears (events `power.start`), or add a forced-composition
 option before claiming coverage.
+
+**Changing the bot brain (new role, state, action)?** Validate it with `play-net` too, not only `play-build`: host +
+simulated bots runs everything on the server, which hides client-side bot bugs. On a real client, never gate an
+action on a field only the server writes (GameState objects are cloned per process; e.g. `TakeDownThePortalState.
+shouldActivate` is server-only, the client only gets the Mage id by RPC) — react to what the server actually sends the
+client, like the UI does. (Memory: `reference_autoplay_client_vs_server_state`.)
 
 Players are launched **without focus**, muted, never cursor-locked (`launch-background.ps1` + `AutoplayWindowGuard`):
 the user keeps working. Never minimize a player (black captures). Ports 7850–7899 only.

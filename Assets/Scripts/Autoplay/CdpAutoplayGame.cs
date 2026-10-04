@@ -28,7 +28,7 @@ namespace Autoplay
     /// host is not up yet) and plays only its own seat through the client code paths.
     /// </para>
     /// Game options (<c>-autoplay-&lt;key&gt;</c>): <c>role</c> (host|client), <c>clients</c>, <c>players</c>, <c>bots</c>,
-    /// <c>connect</c>, <c>visual-picker</c>.
+    /// <c>connect</c>, <c>visual-picker</c>, <c>vote-focus &lt;role text&gt;</c> (all bots vote that role: forces a situation).
     /// </summary>
     public sealed class CdpAutoplayGame : IAutoplayGame
     {
@@ -119,7 +119,12 @@ namespace Autoplay
             {
                 // A real client plays its own seat only, through the client code paths (no possession, no bots).
                 ulong _self = networkManager.LocalClientId;
-                var _clientOptions = new AutoplayOptions { visualPicker = _context.Config.Flag("visual-picker"), possessActor = false };
+                var _clientOptions = new AutoplayOptions
+                {
+                    visualPicker = _context.Config.Flag("visual-picker"),
+                    possessActor = false,
+                    voteFocusRole = _context.Config.Option("vote-focus"),
+                };
                 driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
                 driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
                     _clientOptions, _context.Journal, _context.Capture);
@@ -154,7 +159,11 @@ namespace Autoplay
                 .Select(_c => _c.ownerClientId.Value)
                 .ToArray();
 
-            var _options = new AutoplayOptions { visualPicker = _context.Config.Flag("visual-picker") };
+            var _options = new AutoplayOptions
+            {
+                visualPicker = _context.Config.Flag("visual-picker"),
+                voteFocusRole = _context.Config.Option("vote-focus"),
+            };
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, _controlled, new RandomValidPolicy(_context.Config.seed), _options, _context.Journal, _context.Capture);
             yield return null;

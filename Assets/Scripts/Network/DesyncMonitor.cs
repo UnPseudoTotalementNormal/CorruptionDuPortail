@@ -20,8 +20,9 @@ namespace Network
     /// <summary>
     /// NET-00 (epic-network-sync-hardening): detection-only desync tripwire. At quiet points (shortly after each
     /// game-state change, and periodically) the server sends every remote client the per-component hashes of its
-    /// PUBLIC replicated state. Each client waits a few network ticks (NGO delivers RPCs before NetworkVariable
-    /// deltas), compares its own projection, re-checks against a fresh server digest on a mismatch, and only a
+    /// PUBLIC replicated state, after flushing its pending NetworkVariable deltas so they arrive first. Each client
+    /// compares its own projection on receipt (the same logical moment as the server's), re-checks against a fresh
+    /// server digest on a mismatch, and only a
     /// mismatch that persists across both checks is logged as <c>[DESYNC]</c> — on the client AND on the host (via
     /// a report RPC), each with both projections. Never alters gameplay.
     ///
@@ -32,7 +33,6 @@ namespace Network
     public class DesyncMonitor : NetworkBehaviour
     {
         private const string LogTag = "[DESYNC]";
-        private const int ClientSettleTicks = 3;
         private const float SettleDelaySeconds = 1f;
         private const float PeriodicCheckSeconds = 15f;
 
@@ -114,7 +114,30 @@ namespace Network
                 return;
             }
             RunTripwires();
-            ReceiveDigestRpc(BuildPayload());
+            SendDigest(null);
+        }
+
+        // The digest is compared by the client at the exact moment it is received. Pending NetworkVariable deltas
+        // are flushed first, so they travel BEFORE the digest in the reliable ordered stream: on receipt, every
+        // replicated value the client holds is the server's value at the moment the digest was built, even while the
+        // state keeps moving (an awakening with players acting). Comparing a few ticks later instead let later
+        // changes in, and a state in motion could look like a persistent mismatch.
+        private void SendDigest(ulong? _onlyTo)
+        {
+            NetworkVariableFlush.TryFlush(NetworkManager);
+            DigestPayload _payload = BuildPayload();
+            if (!_onlyTo.HasValue)
+            {
+                ReceiveDigestRpc(_payload);
+            }
+            else if (characterManager != null)
+            {
+                ReceiveRecheckRpc(_payload, characterManager.GetSafeRpcTarget(_onlyTo.Value));
+            }
+            else
+            {
+                ReceiveRecheckRpc(_payload, RpcTarget.Single(_onlyTo.Value, RpcTargetUse.Temp));
+            }
         }
 
         private DigestPayload BuildPayload()
@@ -155,23 +178,18 @@ namespace Network
         [Rpc(SendTo.NotServer)]
         private void ReceiveDigestRpc(DigestPayload _payload)
         {
-            CompareAfterSettleAsync(_payload, false).Forget();
+            CompareOnReceipt(_payload, false);
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
         private void ReceiveRecheckRpc(DigestPayload _payload, RpcParams _params = default)
         {
-            CompareAfterSettleAsync(_payload, true).Forget();
+            CompareOnReceipt(_payload, true);
         }
 
-        private async UniTaskVoid CompareAfterSettleAsync(DigestPayload _payload, bool _isRecheck)
+        private void CompareOnReceipt(DigestPayload _payload, bool _isRecheck)
         {
-            int _targetTick = NetworkManager.LocalTime.Tick + ClientSettleTicks;
-            bool _canceled = await UniTask.WaitUntil(
-                    () => this == null || !IsSpawned || NetworkManager.LocalTime.Tick >= _targetTick,
-                    cancellationToken: this.GetCancellationTokenOnDestroy())
-                .SuppressCancellationThrow();
-            if (_canceled || this == null || !IsSpawned)
+            if (!IsSpawned)
             {
                 return;
             }
@@ -205,15 +223,7 @@ namespace Network
         [Rpc(SendTo.Server)]
         private void RequestRecheckServerRpc(RpcParams _params = default)
         {
-            ulong _sender = _params.Receive.SenderClientId;
-            if (characterManager != null)
-            {
-                ReceiveRecheckRpc(BuildPayload(), characterManager.GetSafeRpcTarget(_sender));
-            }
-            else
-            {
-                ReceiveRecheckRpc(BuildPayload(), RpcTarget.Single(_sender, RpcTargetUse.Temp));
-            }
+            SendDigest(_params.Receive.SenderClientId);
         }
 
         [Rpc(SendTo.Server)]

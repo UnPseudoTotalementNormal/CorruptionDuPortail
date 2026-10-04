@@ -26,7 +26,8 @@
         "DOTween.Runtime",
         "DOTween.Modules",
         "Booleans",
-        "CorruptionDuPortail.Domain"
+        "CorruptionDuPortail.Domain",
+        "Unpseudo.Autoplay"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

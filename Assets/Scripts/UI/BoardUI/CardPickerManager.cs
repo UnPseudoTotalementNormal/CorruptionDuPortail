@@ -76,6 +76,13 @@ namespace UI.BoardUI
         private bool isPickerActive;
         private Card currentPinnedCardInstance;
 
+        // Read-only view of the live picker for autoplay captures / diagnostics — no behaviour change.
+        public bool IsPickerActive => isPickerActive;
+        public bool IsRolePicker => isPickerActive && spawnedRoleCards.Count > 0;
+        public IReadOnlyCollection<Card> PickableCards => cardClickHandlers.Keys;
+        public IReadOnlyList<Card> LiftedCharacterCards => liftedCharacterCards;
+        public float FrostAlpha => frostCanvasGroup ? frostCanvasGroup.alpha : -1f;
+
         private void Awake()
         {
             if (instance != null && instance != this)

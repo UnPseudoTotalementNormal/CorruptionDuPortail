@@ -30,9 +30,21 @@ namespace UI.BoardUI.Selection
         {
         }
 
+        /// <summary>
+        /// Autoplay seam (see <see cref="ISelectionAutopilot"/>): when set, selections are answered by the autopilot
+        /// instead of the CardPickerManager UI. Set only by the dev-only autoplay driver; null in normal play.
+        /// </summary>
+        public ISelectionAutopilot Autopilot { get; set; }
+
         public void StartRoleSelection(Validator<(ulong targetId, TargetType targetType)> _validator, Action<Role> _onRoleSelected,
             SelectionFlowOptions _options = null)
         {
+            if (Autopilot != null)
+            {
+                Autopilot.PickRole(_validator, _onRoleSelected, _options?.onCanceled);
+                return;
+            }
+
             if (!CanUsePicker())
             {
                 return;
@@ -54,6 +66,12 @@ namespace UI.BoardUI.Selection
         public void StartCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
             Action<Character> _onCharacterSelected, SelectionFlowOptions _options = null)
         {
+            if (Autopilot != null)
+            {
+                Autopilot.PickCharacter(_validator, Array.Empty<ulong>(), _onCharacterSelected, _options?.onCanceled);
+                return;
+            }
+
             if (!CanUsePicker())
             {
                 return;
@@ -77,6 +95,16 @@ namespace UI.BoardUI.Selection
             Validator<(ulong targetId, TargetType targetType)> _validator, Action<Character, Role> _onComplete,
             SelectionFlowOptions _options = null)
         {
+            if (Autopilot != null)
+            {
+                ISelectionAutopilot _pilot = Autopilot;
+                Action _onCanceled = _options?.onCanceled;
+                _pilot.PickCharacter(_validator, Array.Empty<ulong>(),
+                    _character => _pilot.PickRole(_validator, _role => _onComplete?.Invoke(_character, _role), _onCanceled),
+                    _onCanceled);
+                return;
+            }
+
             if (!CanUsePicker())
             {
                 return;
@@ -116,6 +144,18 @@ namespace UI.BoardUI.Selection
         public void StartMultiCharacterSelection(Validator<(ulong targetId, TargetType targetType)> _validator,
             int _count, Action<List<Character>> _onAllSelected, SelectionFlowOptions _options = null)
         {
+            if (Autopilot != null)
+            {
+                if (_count <= 0)
+                {
+                    _onAllSelected?.Invoke(new List<Character>());
+                    return;
+                }
+
+                AutopilotPickNextCharacter(Autopilot, _validator, _count, new List<Character>(), _onAllSelected, _options?.onCanceled);
+                return;
+            }
+
             if (!CanUsePicker())
             {
                 return;
@@ -161,8 +201,29 @@ namespace UI.BoardUI.Selection
             }, _options.GetStepDescription(_picked.Count), _options);
         }
 
+        // Autopilot twin of PickNextCharacter: one distinct pick per step, the already-picked players excluded.
+        private static void AutopilotPickNextCharacter(ISelectionAutopilot _pilot,
+            Validator<(ulong targetId, TargetType targetType)> _validator, int _count, List<Character> _picked,
+            Action<List<Character>> _onAllSelected, Action _onCanceled)
+        {
+            List<ulong> _excluded = _picked.Where(_c => _c != null).Select(_c => _c.ownerClientId.Value).ToList();
+            _pilot.PickCharacter(_validator, _excluded, _character =>
+            {
+                _picked.Add(_character);
+                if (_picked.Count >= _count)
+                {
+                    _onAllSelected?.Invoke(_picked);
+                }
+                else
+                {
+                    AutopilotPickNextCharacter(_pilot, _validator, _count, _picked, _onAllSelected, _onCanceled);
+                }
+            }, _onCanceled);
+        }
+
         public void CancelSelection(bool _invokeCanceled = false)
         {
+            Autopilot?.Cancel();
             ResetCurrentSelection(_invokeCanceled, _clearFocus: true);
         }
 

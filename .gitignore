@@ -124,3 +124,6 @@ fmod_editor.log
 /Assets/InitTestScene*.unity
 /Assets/InitTestScene*.unity.meta
 BackupToolkit/
+
+# Autoplay test runs (reports, traces, screenshots)
+/AutoplayRuns/

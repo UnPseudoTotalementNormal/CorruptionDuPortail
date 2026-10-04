@@ -55,6 +55,15 @@ Run from Git Bash at repo root with `UNITY_NO_BANNER=1`; add `--result-only` for
 | Edit scripts | Prefer the `Edit` tool; `unity command create_script` for new `.cs` (Unity-side create avoids silent compile exclusion) | `manage_script` |
 | Build player | `unity command build` / headless `unity build <path>` | `manage_build` |
 
+**Agents: by default, drive your OWN headless editor.** Work in the user's open (visual) editor only when the user
+asks for it; when it is unclear which editor to use, ask — do not guess. Launch a headless one per checkout with
+`Unity.exe -batchmode -automated -projectPath <checkout> -logFile <checkout>/Logs/batch-editor.log` (background task)
+and always pass `--project-path` to `unity command`. Batchmode auto-cancels every modal dialog, so nothing can block
+the session and nothing shows on the user's screen. It cannot finish a game or take screenshots (the end of frame
+never comes): complete games run in a windowed dev build via autoplay. Full recipe, CLI commands, traps and ports:
+`tools/HEADLESS_UNITY.md`. Wrapper: `tools/autoplay/unityctl.sh` (`compile`, `editmode`, `playmode`, `build`,
+`play-build`, `play-net`, `last-run`). In-game checks with bots: the `autoplay` skill.
+
 After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
 
 ## Discord task board

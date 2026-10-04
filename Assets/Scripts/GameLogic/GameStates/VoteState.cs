@@ -35,6 +35,10 @@ namespace GameLogic.GameStates
         public const ulong SKIP_VOTE_ID = GameValues.FAKE_CLIENT_ID;
         
         public static ulong mostVotedPlayer;
+
+        // NET-06: server-side "votes are accepted" window, open from OnStartStateServer until the tally in
+        // OnEndStateServer. A vote RPC landing outside it (latency at the end of the timer) is ignored.
+        private bool _isVoteOpenServer;
         
         private void OnVoteButtonClicked(Card _card)
         {
@@ -55,6 +59,23 @@ namespace GameLogic.GameStates
         private void OnPlayerVotedRpc(ulong _senderId, ulong _votedPlayerId)
         {
             Assert.IsTrue(gameManager.IsServer, "OnPlayerVotedRpc can only be called on server");
+
+            // NET-06: a vote that arrives after the tally (RPC latency at the end of the timer) must not be recorded
+            // nor broadcast — the outcome is already decided (deferred-work: late/stale vote race).
+            if (!_isVoteOpenServer)
+            {
+                Debug.LogWarning($"[VOTE] Late vote from {_senderId} for {_votedPlayerId} ignored: the vote is closed.");
+                return;
+            }
+
+            // NET-06: the voter is the RPC SENDER. Only the host may vote on behalf of another identity (simulated bots
+            // >= 100 and the dev possession flow both run on the host).
+            ulong _rpcSender = gameManager.CurrentStateRpcSenderId;
+            if (_rpcSender != Unity.Netcode.NetworkManager.ServerClientId && _senderId != _rpcSender)
+            {
+                Debug.LogWarning($"[VOTE] Client {_rpcSender} tried to vote as {_senderId}; recording it as its own vote.");
+                _senderId = _rpcSender;
+            }
 
             if (!CanVote(_senderId))
             {
@@ -185,6 +206,7 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            _isVoteOpenServer = true;
             votesForPlayer.Clear();
             foreach (var _character in CharacterQuery.GetCharacters().Where(_c => !_c.isFake))
             {
@@ -208,6 +230,7 @@ namespace GameLogic.GameStates
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
+            _isVoteOpenServer = false;
             gameManager.StopCoroutine(updateVoteTimerCoroutine);
             
             // Story 2.9 — vote-count → outcome is a pure Domain POCO (VoteTally). The adapter maps the vote buckets

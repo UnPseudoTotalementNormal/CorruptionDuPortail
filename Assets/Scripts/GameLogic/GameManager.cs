@@ -371,13 +371,19 @@ namespace GameLogic
             Assert.IsTrue(IsServer, "SwitchGameState can only be called on the server");
             Assert.IsTrue(newGameStateIndex >= 0 && newGameStateIndex < gameStates.Count, "Invalid game state index");
 
+            // NET-06 (epic-network-sync-hardening): flush the NetworkVariable deltas written by the server callbacks
+            // BEFORE each client lifecycle RPC. NGO sends RPCs immediately but deltas on the next tick, so without the
+            // barrier OnEnd/OnStartStateClient ran on remote clients with stale NetworkVariables (including
+            // currentGameStateIndex, which drives StateUpdateClient).
             var _oldGameState = GetGameState(currentGameStateIndex.Value);
             _oldGameState.OnEndStateServer();
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             DoStateMethodRpc(_oldGameState.GetType().FullName, nameof(_oldGameState.OnEndStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
-        
+
             currentGameStateIndex.Value = newGameStateIndex;
             var _newGameState = GetGameState(currentGameStateIndex.Value);
             _newGameState.OnStartStateServer();
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             DoStateMethodRpc(_newGameState.GetType().FullName, nameof(_newGameState.OnStartStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
         }
 
@@ -500,9 +506,24 @@ namespace GameLogic
         {
             GameState _gameState = gameStates.Keys.FirstOrDefault(state => state.GetType().FullName == stateTypeName.ToString());
             Assert.IsNotNull(_gameState, $"GameState {stateTypeName} not found");
-        
-            CallMethodAfterRpc(_gameState, methodName, arguments);
+
+            // NET-06: expose the REAL sender to server-side state methods (they used to trust ids in the payload).
+            CurrentStateRpcSenderId = rpcParams.Receive.SenderClientId;
+            try
+            {
+                CallMethodAfterRpc(_gameState, methodName, arguments);
+            }
+            finally
+            {
+                CurrentStateRpcSenderId = NetworkManager.ServerClientId;
+            }
         }
+
+        /// <summary>
+        /// NET-06: on the server, the clientId that sent the state-method RPC currently being executed
+        /// (<see cref="NetworkManager.ServerClientId"/> outside such a call or for the host itself).
+        /// </summary>
+        public ulong CurrentStateRpcSenderId { get; private set; }
 
         #endregion
 

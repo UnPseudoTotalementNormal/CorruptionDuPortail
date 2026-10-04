@@ -80,31 +80,6 @@ namespace Characters
         }
 #endif
 
-        private Dictionary<ulong, UniTaskCompletionSource<Character>> _spawnPromises = new();
-
-        public async UniTask<Character> GetCharacterAsync(ulong _clientId)
-        {
-            var _character = GetCharacter(_clientId, false);
-            if (_character != null) return _character;
-
-            if (!_spawnPromises.ContainsKey(_clientId))
-            {
-                _spawnPromises[_clientId] = new UniTaskCompletionSource<Character>();
-            }
-
-            return await _spawnPromises[_clientId].Task;
-        }
-
-        public void RegisterSpawnedCharacter(Character _character)
-        {
-            ulong _id = _character.ownerClientId.Value;
-            if (_spawnPromises.TryGetValue(_id, out var _promise))
-            {
-                _promise.TrySetResult(_character);
-                _spawnPromises.Remove(_id);
-            }
-        }
-        
         public RpcParams GetSafeRpcTarget(ulong _clientId)
         {
             var _target = _clientId >= 100 
@@ -360,24 +335,11 @@ namespace Characters
             return new List<Character>(_characters);
         }
         
-        [Rpc(SendTo.Everyone, RequireOwnership = true)]
-        public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
-        {
-            _ = GiveRoleToCharacterAsync(_characterId, _role);
-        }
-
-        private async UniTaskVoid GiveRoleToCharacterAsync(ulong _characterId, Role _role)
-        {
-            Character _character = await GetCharacterAsync(_characterId);
-
-            _character.role = _role;
-            _character.UpdateRoleRpc(_role);
-            _character.CheckForPowersRpc();
-            _character.role.ownerClientId = _characterId;
-        }
-        
         #region Characters Updates
 
+        // NET-07: this refresh no longer re-sends every role (roles are replicated state now — Character.roleId).
+        // It keeps the side effects the old role fan-out had on each peer: re-scan the power lists and raise
+        // onRoleUpdated, then onCharactersListUpdated on clients.
         [Rpc(SendTo.Server)]
         public void AskForUpdateAllCharactersRpc()
         {
@@ -385,18 +347,24 @@ namespace Characters
             {
                 return;
             }
-     
+
             foreach (var _character in _characters)
             {
-                _character.AskForRoleUpdateRpc();
+                _character.CheckForPowersLocal();
             }
-            
+
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             UpdateAllCharactersRpc();
         }
-    
+
         [Rpc(SendTo.NotServer)]
         private void UpdateAllCharactersRpc()
         {
+            foreach (var _character in _characters)
+            {
+                _character.RefreshLocalRoleViews();
+            }
+
             onCharactersListUpdated?.Invoke(this._characters);
         }
         

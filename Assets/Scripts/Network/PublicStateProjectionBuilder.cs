@@ -23,6 +23,7 @@ namespace Network
         public const string Characters = "Characters";
         public const string CharacterFlags = "CharacterFlags";
         public const string GameState = "GameState";
+        public const string Roles = "Roles";
 
         public static PublicStateProjection Build(LobbyPlayerInfoHolder _roster, CharacterManager _characters, GameManager _gameManager)
         {
@@ -34,6 +35,7 @@ namespace Network
                 : new List<Character>();
             _projection.SetComponent(Characters, CharacterLines(_list), ordered: true);
             _projection.SetComponent(CharacterFlags, FlagLines(_list), ordered: false);
+            _projection.SetComponent(Roles, RoleLines(_list), ordered: false);
 
             var _state = new List<string>();
             if (_gameManager != null && _gameManager.IsSpawned)
@@ -82,6 +84,20 @@ namespace Network
                     "|aw", Bit(_character.isAwakened.Value),
                     "|bl", Bit(_character.isBlessed.Value),
                     "|he", Bit(_character.isHealed.Value));
+            }
+        }
+
+        // NET-07: the replicated role identity AND the role object this peer actually built from it (a peer that
+        // failed to rebuild shows a different roleName even with the right id).
+        private static IEnumerable<string> RoleLines(List<Character> _list)
+        {
+            foreach (Character _character in _list)
+            {
+                if (_character == null) continue;
+                yield return string.Concat(
+                    _character.ownerClientId.Value.ToString(CultureInfo.InvariantCulture), "|",
+                    ((int)_character.roleId.Value).ToString(CultureInfo.InvariantCulture), "|",
+                    _character.role != null ? _character.role.roleName.ToString() : string.Empty);
             }
         }
 

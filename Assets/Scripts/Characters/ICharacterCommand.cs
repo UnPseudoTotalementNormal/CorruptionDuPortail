@@ -29,9 +29,6 @@ namespace Characters
         /// <summary>Despawns + removes a power from the given character (server).</summary>
         void RemovePowerFromCharacter(ulong _characterId, Power _power);
 
-        /// <summary>Replicates a role onto the given character (owner RPC).</summary>
-        void GiveRoleToCharacterRpc(ulong _characterId, Role _role);
-
         /// <summary>Asks the server to push a full character-list refresh (server RPC).</summary>
         void AskForUpdateAllCharactersRpc();
 
@@ -40,8 +37,5 @@ namespace Characters
 
         /// <summary>Sets / clears the debug-possessed local identity.</summary>
         void SetPossessedIdentity(ulong? _id);
-
-        /// <summary>Resolves the spawn promise for a freshly spawned character.</summary>
-        void RegisterSpawnedCharacter(Character _character);
     }
 }

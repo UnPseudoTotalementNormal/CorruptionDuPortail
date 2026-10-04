@@ -53,31 +53,92 @@ namespace Characters
             characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
             lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
 
-            if (characterManager != null)
-            {
-                // Verify if identity is already set, otherwise listen for it
-                if (!ownerClientId.Value.IsFakeClientId())
-                {
-                    characterManager.RegisterSpawnedCharacter(this);
-                }
-                else
-                {
-                    ownerClientId.OnValueChanged += OnIdentityChanged;
-                }
-            }
-
             isBlessed.OnValueChanged += OnBlessed;
             EnsureRosterSubscription();
+
+            // NET-07: the role is replicated as state. A late or reordered value can no longer be lost: build it now
+            // if it already arrived in the spawn payload, and on every later change.
+            roleId.OnValueChanged += OnRoleIdChanged;
+            if (!IsServer && HasRoleId)
+            {
+                ApplyReplicatedRole();
+            }
         }
 
         public override void OnNetworkDespawn()
         {
+            roleId.OnValueChanged -= OnRoleIdChanged;
             if (_rosterSubscription != null)
             {
                 _rosterSubscription.onRosterChanged -= RaiseOwnerPseudoChanged;
                 _rosterSubscription = null;
             }
             base.OnNetworkDespawn();
+        }
+
+        // ---- NET-07: role replication --------------------------------------------------------------------------
+
+        /// <summary>
+        /// NET-07 (epic-network-sync-hardening): the authoritative identity of this character's role. Server-write;
+        /// every peer rebuilds <see cref="role"/> from <see cref="RoleRegistry"/>. 0 = no role yet (lobby).
+        /// Replaces GiveRoleToCharacterRpc, whose per-peer await on a spawn promise could be orphaned forever
+        /// (the role then stayed the serialized default: empty name, red faction, white portrait).
+        /// </summary>
+        public NetworkVariable<RoleID> roleId = new((RoleID)0);
+
+        public bool HasRoleId => (int)roleId.Value != 0;
+
+        /// <summary>Server: commits the role already assigned to <see cref="role"/> so every peer rebuilds it.</summary>
+        public void CommitRoleServer()
+        {
+            if (!IsServer || role == null)
+            {
+                return;
+            }
+            role.ownerClientId = ownerClientId.Value;
+            roleId.Value = role.roleID;
+            onRoleUpdated?.Invoke();
+        }
+
+        private void OnRoleIdChanged(RoleID _previous, RoleID _current)
+        {
+            if (IsServer)
+            {
+                return; // the server owns the authoritative Role object already
+            }
+            ApplyReplicatedRole();
+        }
+
+        private void ApplyReplicatedRole()
+        {
+            Role _rebuilt = RoleRegistry.CreateRole(roleId.Value);
+            if (_rebuilt == null)
+            {
+                Debug.LogError($"[ROLE] unknown roleId={roleId.Value} for character {ownerClientId.Value} on peer {NetworkManager.LocalClientId}.");
+                return;
+            }
+
+            _rebuilt.ownerClientId = ownerClientId.Value;
+            foreach (var _condition in _rebuilt.winningConditions)
+            {
+                if (_condition != null)
+                {
+                    _condition.ownerClientId = _rebuilt.ownerClientId;
+                }
+            }
+            role = _rebuilt;
+            CheckForPowersLocal();
+            onRoleUpdated?.Invoke();
+        }
+
+        /// <summary>
+        /// NET-07: re-runs, on THIS peer, what a role refresh used to trigger through the role RPC fan-out: the power
+        /// list scan and the onRoleUpdated notification. Called by CharacterManager's refresh broadcast.
+        /// </summary>
+        public void RefreshLocalRoleViews()
+        {
+            CheckForPowersLocal();
+            onRoleUpdated?.Invoke();
         }
 
         // Lane C: the holder is resolved in OnNetworkSpawn only. It is a scene-placed object, so it is spawned before
@@ -93,15 +154,6 @@ namespace Characters
         }
 
         private void RaiseOwnerPseudoChanged() => onOwnerPseudoChanged?.Invoke();
-
-        private void OnIdentityChanged(ulong previousValue, ulong newValue)
-        {
-            if (!newValue.IsFakeClientId())
-            {
-                ownerClientId.OnValueChanged -= OnIdentityChanged;
-                characterManager.RegisterSpawnedCharacter(this);
-            }
-        }
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
@@ -126,24 +178,19 @@ namespace Characters
             }
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = false)]
-        public void AskForRoleUpdateRpc()
-        {
-            Assert.IsTrue(IsServer, "AskForRoleUpdateRpc can only be called on server");
-            UpdateRoleRpc(role);
-        }
-        
-        [Rpc(SendTo.NotServer)]
-        public void UpdateRoleRpc(Role _role)
-        {
-            role.UpdateRole(_role);
-            CheckForPowersRpc();
-            onRoleUpdated?.Invoke();
-        }
-
         [Rpc(SendTo.Everyone)]
         public void CheckForPowersRpc()
         {
+            CheckForPowersLocal();
+        }
+
+        /// <summary>Adds the Power components parented under this character to <see cref="role"/>.powers (this peer).</summary>
+        public void CheckForPowersLocal()
+        {
+            if (role == null)
+            {
+                return;
+            }
             var _foundPowers = GetComponentsInChildren<Power>();
             bool _newPowersFound = false;
             foreach (var _power in _foundPowers)

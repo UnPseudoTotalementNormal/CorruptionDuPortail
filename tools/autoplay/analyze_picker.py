@@ -51,6 +51,7 @@ def main():
             bursts.setdefault(int(m.group(1)), []).append((float(m.group(2)), path))
 
     failures = 0
+    incomplete = 0
     print(f"run: {run}")
     print(f"{'#':>4} {'kind':5} {'pickable':>8} {'lifted@settle':>13} {'frost@settle':>12}  verdict  power")
     for n in sorted(bursts):
@@ -62,7 +63,14 @@ def main():
         else:  # older runs: guess from the card labels
             kinds = {c.split(":")[0] for _, s, _ in states for c in s.get("pickableCards", [])}
             kind = "role" if kinds == {"role"} else "char" if kinds == {"char"} else "mixed" if kinds else "?"
-        settled = [(t, s, p) for t, s, p in states if t >= SETTLE_S] or states[-1:]
+        settled = [(t, s, p) for t, s, p in states if t >= SETTLE_S]
+        if not settled:
+            # The run ended (game over / max-days) before the burst reached the settle time: nothing to judge.
+            incomplete += 1
+            t0, s0, _ = states[-1]
+            print(f"{n:>4} {kind:5} {s0['pickableCount']:>8} {'-':>13} {'-':>12}  INCOMPL  {opener.get(n, '?')}  "
+                  f"(burst stopped at t+{t0:.2f}s: run ended)")
+            continue
         t_set, s_set, p_set = settled[0]
 
         problems = []
@@ -81,7 +89,7 @@ def main():
             png = os.path.splitext(p_set)[0] + ".png"
             print(f"       - {problem}  (look: {os.path.basename(png) if os.path.exists(png) else 'no png'})")
 
-    print(f"{len(bursts)} openings, {failures} failing")
+    print(f"{len(bursts)} openings, {failures} failing, {incomplete} incomplete (not judged)")
     sys.exit(1 if failures else 0)
 
 

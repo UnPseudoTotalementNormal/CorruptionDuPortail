@@ -46,6 +46,12 @@ namespace Autoplay
         [Tooltip("Scenario lever: when set, every bot votes for the living player whose role name contains this text " +
                  "(forces a situation to happen, e.g. chain the Mage to exercise the portal). Empty = random legal votes.")]
         public string voteFocusRole;
+
+        [Tooltip("Test-only speed lever: put fake roles (seats with no player) back to sleep shortly after they wake, " +
+                 "instead of the game's frame-random fake skip that often waits for the whole layer timer.")]
+        public bool fastFakes;
+        [Tooltip("Game seconds a fake role stays awake when fastFakes is on.")]
+        public float fakeSleepDelay = 1f;
     }
 
     /// <summary>
@@ -87,6 +93,10 @@ namespace Autoplay
         private readonly Dictionary<Power, Action<PowerVerdict>> verdictHandlers = new();
         private float stateEnterGameTime;
         private float lastPortalClick;
+        private int awakeningLayer = -1;
+        private float layerStartGame;
+        private float layerStartReal;
+        private readonly Dictionary<Character, float> fakeAwakeSince = new();
         private bool pickerHandling;
         private int pickerOpenCount;
 
@@ -198,9 +208,69 @@ namespace Autoplay
             }
         }
 
+        // One event per awakening layer (who woke, real seat or fake role) and its duration: where the night's time goes.
+        private void TrackAwakeningLayer(AwakeningState _awakening)
+        {
+            if (_awakening.currentAwakeningIndex == awakeningLayer)
+            {
+                return;
+            }
+
+            EndAwakeningLayer();
+            awakeningLayer = _awakening.currentAwakeningIndex;
+            layerStartGame = Time.time;
+            layerStartReal = Time.realtimeSinceStartup;
+            string _who = string.Join(",", _awakening.currentlyAwakenedCharacters.Where(_c => _c)
+                .Select(_c => $"{(_c.isFake ? "fake" : _c.ownerClientId.Value.ToString())}:{_c.role?.roleName}"));
+            Journal.Record("awake.layer", $"#{awakeningLayer} [{_who}]");
+        }
+
+        private void EndAwakeningLayer()
+        {
+            if (awakeningLayer < 0)
+            {
+                return;
+            }
+
+            Journal.Record("awake.layer.end", string.Format(CultureInfo.InvariantCulture, "#{0} game={1:0.0}s real={2:0.0}s",
+                awakeningLayer, Time.time - layerStartGame, Time.realtimeSinceStartup - layerStartReal));
+            awakeningLayer = -1;
+        }
+
+        private void SleepFakesEarly()
+        {
+            foreach (Character _fake in characterManager.GetCharacters(false))
+            {
+                if (!_fake || !_fake.isFake)
+                {
+                    continue;
+                }
+
+                if (!_fake.isAwakened.Value)
+                {
+                    fakeAwakeSince.Remove(_fake);
+                    continue;
+                }
+
+                if (!fakeAwakeSince.TryGetValue(_fake, out float _since))
+                {
+                    fakeAwakeSince[_fake] = Time.time;
+                    continue;
+                }
+
+                if (Time.time - _since >= options.fakeSleepDelay)
+                {
+                    fakeAwakeSince.Remove(_fake);
+                    Journal.Record("fake.sleep", string.Format(CultureInfo.InvariantCulture, "{0} after {1:0.0}s", _fake.role?.roleName, Time.time - _since));
+                    _fake.SleepCharacterServerRpc(); // what the game's own fake skip calls, just earlier
+                }
+            }
+        }
+
         // Per-phase bookkeeping only: the runner records the phase change and captures it.
         private void OnStateEntered(GameState _state)
         {
+            EndAwakeningLayer();
             CurrentState = _state;
             CurrentStateRealSince = Time.realtimeSinceStartup;
             stateEnterGameTime = Time.time;
@@ -251,6 +321,15 @@ namespace Autoplay
 
         private void UpdateAwakening()
         {
+            if (networkManager.IsServer && CurrentState is AwakeningState _awakening)
+            {
+                TrackAwakeningLayer(_awakening);
+                if (options.fastFakes)
+                {
+                    SleepFakesEarly();
+                }
+            }
+
             bool _someoneActing = turns.Values.Any(_t => _t.active != null);
 
             foreach (Character _character in characterManager.GetCharacters(false))

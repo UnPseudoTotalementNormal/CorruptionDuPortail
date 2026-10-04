@@ -1,0 +1,18 @@
+{
+  "name": "lag-150ms",
+  "goal": "Under 150 ms latency, 40 ms jitter and 2 % packet loss on every client (Multiplayer Tools Network Simulator), a game with 3 real clients still completes without desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 32,
+  "timescale": 3,
+  "timeout": 1500,
+  "args": ["-autoplay-max-days", "3"],
+  "clientArgs": ["-autoplay-netsim", "150,40,2"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "netsim", "process": "clients", "min": 1},
+    {"type": "event", "kind": "net.rtt", "detail": "^(1[5-9]\\d|[2-9]\\d\\d|\\d{4,})ms$", "process": "clients", "min": 1},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]}
+  ]
+}

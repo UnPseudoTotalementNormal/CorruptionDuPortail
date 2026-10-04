@@ -15,6 +15,7 @@
 #   AUTOPLAY_PROJECT        project root (default: current directory)
 #   AUTOPLAY_GUARDED_FILES  files that must match git before a build (default: ProjectSettings + GraphicsSettings)
 #   AUTOPLAY_ARGS           extra player args, e.g. "-autoplay-visual-picker" (game options)
+#   AUTOPLAY_CLIENT_ARGS / AUTOPLAY_CLIENT1_ARGS   play-net only: args for every client / for client1 only
 #   AUTOPLAY_TIMESCALE (4)  AUTOPLAY_TIMEOUT (900 s)  AUTOPLAY_SCENARIO (build)
 #
 # Long commands block until done: run them in the background from an agent session.
@@ -117,7 +118,7 @@ for p in range($port, 7900):
     except OSError: pass
     finally: s.close()")
     out="$ROOT/AutoplayRuns/net-$(date +%Y%m%d-%H%M%S)-c$clients-seed$seed"
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-net.ps1" -Exe "$EXE" -Clients "$clients"       -Seed "$seed" -Port "$port" -OutRoot "$out" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}"       -CommonArgs "-autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}" || true
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-net.ps1" -Exe "$EXE" -Clients "$clients"       -Seed "$seed" -Port "$port" -OutRoot "$out" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}"       -CommonArgs "-autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"       -ClientArgs "${AUTOPLAY_CLIENT_ARGS:-}" -FirstClientArgs "${AUTOPLAY_CLIENT1_ARGS:-}" || true
     $PY "$HERE/compare_runs.py" "$out" || true
     ;;
   last-run)

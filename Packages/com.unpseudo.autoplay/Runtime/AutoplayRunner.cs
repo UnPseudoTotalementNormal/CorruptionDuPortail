@@ -34,6 +34,15 @@ namespace Unpseudo.Autoplay
             var _context = new AutoplayContext(_config, _journal, _capture);
 
             _capture.Begin(_journal, () => _game.Phase, _game.ExportStateJson, !_config.Flag("no-png"));
+
+            // Optional animation recorder: "-autoplay-record kindRegex:seconds[,…]" (+ record-fps, record-width).
+            string _recordSpec = _config.Option("record");
+            if (!string.IsNullOrEmpty(_recordSpec))
+            {
+                var _recorder = _host.AddComponent<AutoplayRecorder>();
+                _recorder.Begin(_journal, _recordSpec, _config.OptionInt("record-fps", 20), _config.OptionInt("record-width", 480),
+                    _game is IAutoplayAnimationSource _source ? _source.TracksFor : null);
+            }
             Application.logMessageReceived += _journal.OnLog;
             _journal.Record("run.begin", $"game={_game.Name} scenario={_config.scenario} seed={_config.seed} out={_config.outputDirectory}");
 
@@ -103,9 +112,21 @@ namespace Unpseudo.Autoplay
             float _phaseSince = _startedAt;
             string _lastPhase = null;
 
+            // Optional per-phase speed-up (test only): phases matching "fast-phases" (e.g. pure animation / recap
+            // phases where no bot acts) run at "fast-timescale"; the others keep the run's time scale.
+            string _fastPattern = _config.Option("fast-phases");
+            var _fastPhases = string.IsNullOrEmpty(_fastPattern) ? null
+                : new System.Text.RegularExpressions.Regex(_fastPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            float _fastScale = float.TryParse(_config.Option("fast-timescale"), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float _fs) ? _fs : _config.timeScale * 3f;
+
             while (true)
             {
                 string _phase = _game.Phase;
+                if (_fastPhases != null && !AutoplayRecorder.IsRecording)
+                {
+                    Time.timeScale = _fastPhases.IsMatch(_phase ?? string.Empty) ? _fastScale : _config.timeScale;
+                }
                 if (_phase != _lastPhase)
                 {
                     _lastPhase = _phase;

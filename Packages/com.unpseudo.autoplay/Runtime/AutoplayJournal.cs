@@ -61,6 +61,9 @@ namespace Unpseudo.Autoplay
         private readonly StreamWriter eventStream;
 
         public string OutputDirectory { get; }
+
+        /// <summary>Raised for every recorded event (e.g. the animation recorder starts on matching events).</summary>
+        public event Action<Entry> Recorded;
         public IReadOnlyList<Entry> Entries => entries;
         public IReadOnlyList<string> Errors => errors;
 
@@ -98,6 +101,15 @@ namespace Unpseudo.Autoplay
             }
 
             Debug.Log($"{LogTag} {_kind} {_detail}");
+
+            try
+            {
+                Recorded?.Invoke(_entry);
+            }
+            catch (Exception _exception)
+            {
+                Debug.LogWarning($"{LogTag} journal listener failed: {_exception.Message}");
+            }
         }
 
         /// <summary>Hook for <see cref="Application.logMessageReceived"/>: keeps every error the game logs.</summary>

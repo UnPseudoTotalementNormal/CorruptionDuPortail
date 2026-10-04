@@ -38,6 +38,8 @@ namespace Unpseudo.Autoplay
     /// <item><c>-autoplay-timescale</c> · <c>-autoplay-port</c> · <c>-autoplay-out</c> (runs root) · <c>-autoplay-timeout</c></item>
     /// <item>window/audio: <c>-autoplay-restore-hwnd H</c> · <c>-autoplay-sound</c> · <c>-autoplay-no-png</c></item>
     /// <item>multi-process: <c>-autoplay-port-strict</c> (never move the agreed port)</item>
+    /// <item>speed (tests only): <c>-autoplay-fast-phases &lt;regex&gt;</c> + <c>-autoplay-fast-timescale X</c></item>
+    /// <item>animations: <c>-autoplay-record "kindRegex:seconds,…"</c> · <c>-autoplay-record-fps 20</c> · <c>-autoplay-record-width 480</c></item>
     /// </list>
     /// </summary>
     public static class AutoplayCommandLine

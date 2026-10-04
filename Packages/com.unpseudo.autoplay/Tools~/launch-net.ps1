@@ -4,6 +4,7 @@
 
 .DESCRIPTION
   - The host gets a normal window (screenshots on); clients get small windows and -autoplay-no-png (state files only).
+  - -ClientArgs go to every client, -FirstClientArgs to client1 only (e.g. one client that leaves mid-game).
   - Everyone shares the agreed port (-autoplay-port-strict) and one parent run folder (one sub-folder per process),
     so tools can compare their traces (compare_runs.py: desync detector).
   - Waits for the host (bounded), gives clients a short grace period, then kills every process it started.
@@ -20,6 +21,8 @@ param(
     [Parameter(Mandatory = $true)][string]$OutRoot,
     [int]$TimeoutSeconds = 900,
     [string]$CommonArgs = "",
+    [string]$ClientArgs = "",
+    [string]$FirstClientArgs = "",
     [string]$LogDir = ""
 )
 
@@ -82,8 +85,10 @@ Write-Output "host pid=$hostPid port=$Port"
 
 Start-Sleep -Seconds 3
 for ($i = 1; $i -le $Clients; $i++) {
-    $clientArgs = "$shared -autoplay-role client -autoplay-connect 127.0.0.1 -autoplay-scenario client$i -autoplay-no-png -screen-fullscreen 0 -screen-width 640 -screen-height 360 -logFile `"$LogDir\client$i.log`""
-    $clientPid = [NoActivateLauncherNet]::Start($exePath, $clientArgs, $exeDir)
+    $extra = $ClientArgs
+    if ($i -eq 1) { $extra = "$extra $FirstClientArgs" }
+    $cmdLine = "$shared $extra -autoplay-role client -autoplay-connect 127.0.0.1 -autoplay-scenario client$i -autoplay-no-png -screen-fullscreen 0 -screen-width 640 -screen-height 360 -logFile `"$LogDir\client$i.log`""
+    $clientPid = [NoActivateLauncherNet]::Start($exePath, $cmdLine, $exeDir)
     $p = Get-Process -Id $clientPid; $null = $p.Handle
     $procs += $p
     Write-Output "client$i pid=$clientPid"

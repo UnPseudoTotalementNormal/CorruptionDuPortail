@@ -1,0 +1,93 @@
+{
+  "name": "picker-animation",
+  "goal": "Picker opening animation, frame by frame from BEFORE the opening (recording starts at power.start; checks judge the first 1.4 s, before the bot hovers and clicks): the blur veil rises from clear to full within 0.4 s and never goes back down; on character pickers the valid cards are lifted (about +2 world units on y, measured reference 20261004-231903) and settle. A card still finishing its own placement/flip when the picker opens is reported as a warning (design polish, not a failure).",
+  "mode": "build",
+  "seed": 4242,
+  "timescale": 3,
+  "timeout": 900,
+  "visualPicker": true,
+  "args": [
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes",
+    "-autoplay-record",
+    "power.start:1.8",
+    "-autoplay-record-fps",
+    "20"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed"
+    },
+    {
+      "type": "event",
+      "kind": "record",
+      "min": 4
+    },
+    {
+      "type": "animation",
+      "recording": "power.start",
+      "track": "frost",
+      "onlyIf": {
+        "track": "frost",
+        "at": "end",
+        "op": ">=",
+        "value": 0.5
+      },
+      "start": {
+        "op": "<",
+        "value": 0.1
+      },
+      "end": {
+        "op": ">=",
+        "value": 0.99
+      },
+      "monotonic": "up",
+      "minRecordings": 3,
+      "window": {
+        "from": 0,
+        "to": 1.4
+      }
+    },
+    {
+      "type": "animation",
+      "recording": "power.start",
+      "track": "card1.y",
+      "onlyIf": {
+        "track": "lifted",
+        "at": "end",
+        "op": ">=",
+        "value": 1
+      },
+      "change": {
+        "op": ">",
+        "value": 1.5
+      },
+      "minRecordings": 2,
+      "window": {
+        "from": 0,
+        "to": 1.4
+      }
+    },
+    {
+      "type": "animation",
+      "recording": "power.start",
+      "track": "card0.y",
+      "onlyIf": {
+        "track": "lifted",
+        "at": "end",
+        "op": ">=",
+        "value": 1
+      },
+      "monotonic": "up",
+      "tolerance": 0.001,
+      "minRecordings": 2,
+      "severity": "warn",
+      "window": {
+        "from": 0,
+        "to": 1.4
+      }
+    }
+  ]
+}

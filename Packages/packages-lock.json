@@ -483,6 +483,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unpseudo.autoplay": {
+      "version": "file:com.unpseudo.autoplay",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "dev.ameye.linework-lite": {
       "version": "file:dev.ameye.linework-lite",
       "depth": 0,

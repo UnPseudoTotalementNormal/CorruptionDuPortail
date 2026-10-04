@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Corruption du Portail** — Asymmetric multiplayer social deduction game (Werewolf/Mafia style), Unity **6000.5.0f1**.
 
-Stack: Unity + Netcode for GameObjects (NGO) + FMOD + UniTask + DOTween + Facepunch (Steam) transport. Main branch: `Dev` (target for PRs).
+Stack: Unity + Netcode for GameObjects (NGO) + UTP/Unity Relay + Facepunch (Steam) transport + FMOD + UniTask + DOTween + uGUI/UI Toolkit. Main branch: `Dev` (target for PRs).
 
-## Documentation source of truth
+## Documentation
 
-`_bmad-output/` holds the generated project documentation maintained by the BMad / GDS workflows. Entry point: `_bmad-output/index.md`. Read the relevant doc before non-trivial work on a system. Refresh with `/gds-document-project`.
+Entry point: `_bmad-output/index.md`. **Before writing game code, read `_bmad-output/project-context.md`**: the project-specific rules whose violation compiles clean and fails silently (DI lanes, NGO/UITK gotchas, test harness traps). It is hand-maintained, so add a rule when you hit a new silent trap and keep it short.
 
-**For AI agents implementing code**: also read `_bmad-output/project-context.md` — 270 load-bearing rules (Unity / NGO / FMOD / UniTask / asmdef / testing / performance / anti-patterns). Refresh with `/gds-generate-project-context`.
+Workflow skills kept: `gds-quick-dev` (spec + implement), `gds-investigate` (forensic bug case), `gds-code-review` (adversarial review; required before merging stories tagged `# REVIEW-REQUIRED`). Shipped specs move to `_bmad-output/archive/specs/`. Archive, never delete.
 
 ## Commits
 
@@ -55,6 +55,15 @@ Run from Git Bash at repo root with `UNITY_NO_BANNER=1`; add `--result-only` for
 | Edit scripts | Prefer the `Edit` tool; `unity command create_script` for new `.cs` (Unity-side create avoids silent compile exclusion) | `manage_script` |
 | Build player | `unity command build` / headless `unity build <path>` | `manage_build` |
 
+**Agents: by default, drive your OWN headless editor.** Work in the user's open (visual) editor only when the user
+asks for it; when it is unclear which editor to use, ask — do not guess. Launch a headless one per checkout with
+`Unity.exe -batchmode -automated -projectPath <checkout> -logFile <checkout>/Logs/batch-editor.log` (background task)
+and always pass `--project-path` to `unity command`. Batchmode auto-cancels every modal dialog, so nothing can block
+the session and nothing shows on the user's screen. It cannot finish a game or take screenshots (the end of frame
+never comes): complete games run in a windowed dev build via autoplay. Full recipe, CLI commands, traps and ports:
+`tools/HEADLESS_UNITY.md`. Wrapper: `tools/autoplay/unityctl.sh` (`compile`, `editmode`, `playmode`, `build`,
+`play-build`, `play-net`, `last-run`). In-game checks with bots: the `autoplay` skill.
+
 After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
 
 ## Discord task board
@@ -78,4 +87,4 @@ Common ops (all authed with the Bot header):
 
 **Always confirm with Poyo before any write** (PATCH/POST) to the board — same rule as commits.
 
-Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8.
+Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8. The bot lacks the MESSAGE_CONTENT intent: message `content` always comes back `""`. Titles and tags are readable, bodies are not, so ask Poyo to paste the text.

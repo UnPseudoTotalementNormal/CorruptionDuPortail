@@ -16,7 +16,8 @@
         "TNRD.NSubstitute",
         "Unity.TextMeshPro",
         "Unity.Cinemachine",
-        "Unity.Services.Multiplayer"
+        "Unity.Services.Multiplayer",
+        "Unpseudo.Autoplay"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

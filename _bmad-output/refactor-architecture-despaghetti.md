@@ -352,4 +352,4 @@ No God Object remains a grab-bag; consumers depend on narrow injected interfaces
 
 ---
 
-**Source of truth for execution:** this doc + `planning-artifacts/epics.md` + `sprint-status.yaml`. Relates to [[project-despaghetti-plan]], [[project-poco-loop-progress]], [[project-desingleton-plan]], [[project-refactor-branch]], [[feedback-refactor-workflow]], [[feedback-serialized-field-rewiring]].
+**Source of truth for execution:** this doc + `archive/planning/epics.md` + `archive/stories/sprint-status.yaml` (track complete, archived 2026-10-04). Relates to [[project-despaghetti-plan]], [[project-poco-loop-progress]], [[project-desingleton-plan]], [[project-refactor-branch]], [[feedback-refactor-workflow]], [[feedback-serialized-field-rewiring]].

@@ -1,0 +1,16 @@
+{
+  "name": "picker-visual",
+  "goal": "Every card-picker opening shows the blur veil, and for character pickers every valid card is lifted (host + bots, real picker on screen, capture bursts).",
+  "mode": "build",
+  "seed": 4242,
+  "timescale": 3,
+  "timeout": 900,
+  "visualPicker": true,
+  "args": ["-autoplay-max-days", "2"],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "picker.open", "min": 8},
+    {"type": "state", "label": "picker\\d+-open-0\\.50s\\.json$", "path": "game.frostAlpha", "op": ">=", "value": 0.9, "quantifier": "all"},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_picker.py {run}"}
+  ]
+}

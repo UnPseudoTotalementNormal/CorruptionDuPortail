@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Autoplay
+namespace Unpseudo.Autoplay
 {
     /// <summary>
     /// Keeps an autoplay player out of the user's way so they can keep working while games play:
@@ -16,9 +16,9 @@ namespace Autoplay
     /// (<c>-autoplay-restore-hwnd</c>, passed by tools/autoplay/launch-background.ps1) and sends the player window to
     /// the bottom of the z-order — never minimized, since a minimized player stops rendering (no screenshots);</item>
     /// <item>never locks or hides the mouse cursor;</item>
-    /// <item>mutes FMOD unless <c>-autoplay-sound</c> is passed.</item>
+    /// <item>mutes the game (adapter callback) unless <c>-autoplay-sound</c> is passed.</item>
     /// </list>
-    /// Added by <see cref="AutoplayBootstrap"/> only when the player runs with <c>-autoplay</c>.
+    /// Added by <see cref="AutoplayPlayerBootstrap"/> only when the player runs with <c>-autoplay</c>.
     /// </summary>
     public sealed class AutoplayWindowGuard : MonoBehaviour
     {
@@ -26,13 +26,15 @@ namespace Autoplay
         private const float WatchInterval = 0.25f;
 
         private IntPtr restoreTo = IntPtr.Zero;
-        private bool muteSound = true;
-        private bool muted;
+        private Action muteAudio;
+        private float nextMute;
 
-        public void Configure(long _restoreHwnd, bool _muteSound)
+        /// <param name="_restoreHwnd">Window to hand the focus back to (0 = none).</param>
+        /// <param name="_muteAudio">Idempotent mute call, repeated every second (audio middleware may start late); null keeps sound.</param>
+        public void Configure(long _restoreHwnd, Action _muteAudio)
         {
             restoreTo = new IntPtr(_restoreHwnd);
-            muteSound = _muteSound;
+            muteAudio = _muteAudio;
         }
 
         private void Awake() => Application.runInBackground = true;
@@ -68,10 +70,17 @@ namespace Autoplay
                 Cursor.visible = true;
             }
 
-            if (muteSound && !muted && FMODUnity.RuntimeManager.IsInitialized)
+            if (muteAudio != null && Time.realtimeSinceStartup >= nextMute)
             {
-                FMODUnity.RuntimeManager.MuteAllEvents(true);
-                muted = true;
+                nextMute = Time.realtimeSinceStartup + 1f;
+                try
+                {
+                    muteAudio();
+                }
+                catch (Exception _exception)
+                {
+                    Debug.LogWarning($"{AutoplayJournal.LogTag} mute failed: {_exception.Message}");
+                }
             }
         }
 

@@ -2,19 +2,25 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Autoplay
+namespace Unpseudo.Autoplay
 {
     /// <summary>
-    /// Everything an autoplay run observed: ordered events, errors/exceptions logged by the game, screenshots taken.
-    /// Every event is also mirrored to the console with the filterable <c>[AUTOPLAY]</c> tag. Written to disk as
-    /// <c>events.ndjson</c> (full trace) + <c>report.json</c> (compact summary meant to be read first).
+    /// Everything an autoplay run observed: ordered events, errors/exceptions the game logged, capture files written.
+    /// Every event is mirrored to the console with the filterable <c>[AUTOPLAY]</c> tag and appended live to
+    /// <c>events.ndjson</c> (one flushed line per event), so a run that hangs or crashes still leaves its full trace.
+    /// <c>report.json</c> is the compact summary meant to be read first.
     /// </summary>
-    public sealed class AutoplayJournal
+    public sealed class AutoplayJournal : IDisposable
     {
         public const string LogTag = "[AUTOPLAY]";
+
+        /// <summary>Event kind the runner records on every phase change; feeds <see cref="Report.stateTrace"/>.</summary>
+        public const string PhaseEvent = "state.enter";
+        public const string CaptureEvent = "capture";
 
         [Serializable]
         public sealed class Entry
@@ -29,16 +35,18 @@ namespace Autoplay
         [Serializable]
         public sealed class Report
         {
+            public string game;
             public string scenario;
             public int seed;
             public string outcome;
             public string failureReason;
             public float realSeconds;
-            public int days;
-            public int powersUsed;
-            public int votesCast;
             public int errorCount;
             public string[] stateTrace;
+            /// <summary>Game-specific facts ("days=3"), from <see cref="IAutoplayGame.DescribeOutcome"/>.</summary>
+            public string[] facts;
+            /// <summary>How many times each event kind was recorded ("power.start=19").</summary>
+            public string[] counters;
             public string[] finalRoster;
             public string[] errors;
             public string[] captures;
@@ -48,19 +56,13 @@ namespace Autoplay
         private readonly List<string> errors = new();
         private readonly List<string> captures = new();
         private readonly List<string> stateTrace = new();
+        private readonly Dictionary<string, int> counters = new();
         private readonly float startRealTime = Time.realtimeSinceStartup;
+        private readonly StreamWriter eventStream;
 
         public string OutputDirectory { get; }
         public IReadOnlyList<Entry> Entries => entries;
         public IReadOnlyList<string> Errors => errors;
-        public IReadOnlyList<string> Captures => captures;
-        public IReadOnlyList<string> StateTrace => stateTrace;
-        public int PowersUsed { get; private set; }
-        public int VotesCast { get; private set; }
-
-        // events.ndjson is appended live (one flushed line per event), so a run that hangs or crashes still leaves
-        // its full trace on disk and can be analysed while it plays.
-        private readonly StreamWriter eventStream;
 
         public AutoplayJournal(string _outputDirectory)
         {
@@ -68,6 +70,8 @@ namespace Autoplay
             Directory.CreateDirectory(_outputDirectory);
             eventStream = new StreamWriter(Path.Combine(_outputDirectory, "events.ndjson"), false, new UTF8Encoding(false)) { AutoFlush = true };
         }
+
+        public int Count(string _kind) => counters.TryGetValue(_kind, out int _n) ? _n : 0;
 
         public void Record(string _kind, string _detail)
         {
@@ -80,6 +84,10 @@ namespace Autoplay
                 detail = _detail,
             };
             entries.Add(_entry);
+            counters[_kind] = Count(_kind) + 1;
+            if (_kind == PhaseEvent) stateTrace.Add(_detail);
+            if (_kind == CaptureEvent) captures.Add(_detail);
+
             try
             {
                 eventStream.WriteLine(JsonUtility.ToJson(_entry));
@@ -87,22 +95,6 @@ namespace Autoplay
             catch (ObjectDisposedException)
             {
                 // journal already closed (late event after the report) — kept in memory only
-            }
-
-            switch (_kind)
-            {
-                case "state.enter":
-                    stateTrace.Add(_detail);
-                    break;
-                case "power.start":
-                    PowersUsed++;
-                    break;
-                case "vote":
-                    VotesCast++;
-                    break;
-                case "capture":
-                    captures.Add(_detail);
-                    break;
             }
 
             Debug.Log($"{LogTag} {_kind} {_detail}");
@@ -125,22 +117,22 @@ namespace Autoplay
             errors.Add($"{_type}: {_condition} @ {_firstFrame}".Trim());
         }
 
-        public Report BuildReport(string _scenario, int _seed, string _outcome, string _failureReason, int _days,
-            IEnumerable<string> _finalRoster)
+        public Report BuildReport(string _game, string _scenario, int _seed, string _failureReason,
+            IEnumerable<string> _facts, IEnumerable<string> _finalRoster)
         {
             return new Report
             {
+                game = _game,
                 scenario = _scenario,
                 seed = _seed,
-                outcome = _outcome,
+                outcome = _failureReason == null ? "Completed" : "Failed",
                 failureReason = _failureReason,
                 realSeconds = Time.realtimeSinceStartup - startRealTime,
-                days = _days,
-                powersUsed = PowersUsed,
-                votesCast = VotesCast,
                 errorCount = errors.Count,
                 stateTrace = stateTrace.ToArray(),
-                finalRoster = new List<string>(_finalRoster).ToArray(),
+                facts = (_facts ?? Array.Empty<string>()).ToArray(),
+                counters = counters.OrderBy(_c => _c.Key, StringComparer.Ordinal).Select(_c => $"{_c.Key}={_c.Value}").ToArray(),
+                finalRoster = (_finalRoster ?? Array.Empty<string>()).ToArray(),
                 errors = errors.ToArray(),
                 captures = captures.ToArray(),
             };
@@ -149,8 +141,9 @@ namespace Autoplay
         public void Write(Report _report)
         {
             File.WriteAllText(Path.Combine(OutputDirectory, "report.json"), JsonUtility.ToJson(_report, true));
-            eventStream.Dispose();
         }
+
+        public void Dispose() => eventStream.Dispose();
     }
 }
 #endif

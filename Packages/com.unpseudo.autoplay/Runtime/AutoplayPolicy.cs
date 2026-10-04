@@ -2,11 +2,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Autoplay
+namespace Unpseudo.Autoplay
 {
     /// <summary>
     /// How an autoplay bot makes its choices. A policy only ever picks among options the game itself already declared
-    /// legal (validators, CanUse, CanVote) — it never encodes game design, it just plays legal moves.
+    /// legal (validators, usability checks) — it plays legal moves, it never encodes game design.
     /// </summary>
     public interface IAutoplayPolicy
     {

@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using Characters;
 using Characters.Powers;
@@ -17,7 +16,7 @@ using UI.BoardUI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Board;
-using UnityEngine.Rendering;
+using Unpseudo.Autoplay;
 
 namespace Autoplay
 {
@@ -32,8 +31,6 @@ namespace Autoplay
         public double voteProbability = 1.0;
         [Tooltip("Possess the acting bot's identity so the host screen shows what that player sees (local-only feedback).")]
         public bool possessActor = true;
-        public bool captureOnStateEnter = true;
-        public float stateCaptureDelay = 0.6f;
         public bool captureOnVerdict = true;
         [Tooltip("Game seconds after a power verdict at which a screenshot is taken (a burst catches the feedback animation).")]
         public float[] verdictCaptureDelays = { 0.15f, 0.5f, 1.2f };
@@ -48,11 +45,12 @@ namespace Autoplay
     }
 
     /// <summary>
-    /// Server-side autoplay brain (dev builds / editor only). Plays every controlled identity — the host's own id and
-    /// simulated bots (id &gt;= 100) — through the same code paths a human uses: <see cref="Power.CanUse"/> +
+    /// Autoplay brain (dev builds / editor only). On the host it plays the host's own id and the simulated bots
+    /// (id &gt;= 100); on a real network client it plays that client's own seat only — both through the same code
+    /// paths a human uses: <see cref="Power.CanUse"/> +
     /// <see cref="Power.StartUse"/> (targets answered by <see cref="AutoplaySelectionAutopilot"/>), the vote state
-    /// method, sleep, and the Mage's portal click. Records everything in an <see cref="AutoplayJournal"/> and takes
-    /// screenshots at state entries and power verdicts.
+    /// method, sleep, and the Mage's portal click. Records its decisions in the run's <see cref="AutoplayJournal"/> and
+    /// requests captures at power verdicts and picker openings; phase tracking / phase captures are the runner's job.
     /// </summary>
     public sealed class AutoplayDriver : MonoBehaviour
     {
@@ -75,22 +73,21 @@ namespace Autoplay
         private IAutoplayPolicy policy;
         private AutoplayOptions options;
         private AutoplaySelectionAutopilot autopilot;
+        private AutoplayCapture capture;
         private bool running;
-        private int captureIndex;
         private ulong? possessedId;
 
         private readonly Dictionary<ulong, BotTurn> turns = new();
         private readonly HashSet<ulong> votedThisState = new();
         private readonly HashSet<ulong> portalTried = new();
         private readonly Dictionary<Power, Action<PowerVerdict>> verdictHandlers = new();
-        private readonly Dictionary<string, Func<object>> probes = new();
         private float stateEnterGameTime;
         private float lastPortalClick;
         private bool pickerHandling;
         private int pickerOpenCount;
 
         public void Begin(NetworkManager _networkManager, IEnumerable<ulong> _controlledIds, IAutoplayPolicy _policy,
-            AutoplayOptions _options, AutoplayJournal _journal)
+            AutoplayOptions _options, AutoplayJournal _journal, AutoplayCapture _capture)
         {
             networkManager = _networkManager;
             characterManager = CompositionRoot.For(_networkManager).CharacterManager;
@@ -98,6 +95,7 @@ namespace Autoplay
             policy = _policy;
             options = _options ?? new AutoplayOptions();
             Journal = _journal;
+            capture = _capture;
 
             autopilot = new AutoplaySelectionAutopilot(characterManager, policy, Journal);
             if (!options.visualPicker)
@@ -159,7 +157,7 @@ namespace Autoplay
 
         private void Update()
         {
-            if (!running || networkManager == null || !networkManager.IsServer)
+            if (!running || networkManager == null || !(networkManager.IsServer || networkManager.IsConnectedClient))
             {
                 return;
             }
@@ -179,7 +177,7 @@ namespace Autoplay
             GameState _state = _gameManager.GetGameState(_gameManager.currentGameStateIndex.Value);
             if (_state != CurrentState)
             {
-                OnStateEntered(_gameManager, _state);
+                OnStateEntered(_state);
             }
 
             switch (_state)
@@ -196,7 +194,8 @@ namespace Autoplay
             }
         }
 
-        private void OnStateEntered(GameManager _gameManager, GameState _state)
+        // Per-phase bookkeeping only: the runner records the phase change and captures it.
+        private void OnStateEntered(GameState _state)
         {
             CurrentState = _state;
             CurrentStateRealSince = Time.realtimeSinceStartup;
@@ -205,13 +204,44 @@ namespace Autoplay
             votedThisState.Clear();
             portalTried.Clear();
             lastPortalClick = float.NegativeInfinity;
+            StartCoroutine(RecordStateHash(_state));
+        }
 
-            string _name = _state != null ? _state.GetType().Name : "null";
-            Journal.Record("state.enter", $"{_gameManager.currentGameStateIndex.Value}:{_name} day={_gameManager.currentDay}");
-
-            if (options.captureOnStateEnter)
+        // Desync detector: once the phase has settled, every process (host and each real client) journals a hash of
+        // the same canonical view of the replicated state. tools compare them phase by phase across processes.
+        private IEnumerator RecordStateHash(GameState _state)
+        {
+            yield return new WaitForSecondsRealtime(1.5f);
+            if (!running || _state != CurrentState)
             {
-                RequestCapture($"day{_gameManager.currentDay}-{_name}", options.stateCaptureDelay);
+                yield break;
+            }
+
+            GameManager _gameManager = CompositionRoot.For(networkManager).GameManager;
+            if (_gameManager == null)
+            {
+                yield break;
+            }
+
+            string _canonical = string.Join(";", characterManager.GetCharacters(false)
+                .Where(_c => _c && !_c.isFake)
+                .OrderBy(_c => _c.ownerClientId.Value)
+                .Select(_c => $"{_c.ownerClientId.Value}:{_c.role?.roleName}:{(_c.isChained.Value ? 1 : 0)}{(_c.isCorrupted.Value ? 1 : 0)}" +
+                              $"{(_c.isHealed.Value ? 1 : 0)}{(_c.isBlessed.Value ? 1 : 0)}{(_c.isEliminated.Value ? 1 : 0)}"));
+            string _phase = $"{_gameManager.currentGameStateIndex.Value}:{_state.GetType().Name} day={_gameManager.currentDay}";
+            Journal.Record("state.hash", $"{_phase} | {StableHash(_canonical)} | {_canonical}");
+        }
+
+        private static string StableHash(string _text)
+        {
+            unchecked
+            {
+                ulong _hash = 14695981039346656037UL; // FNV-1a 64
+                foreach (char _ch in _text)
+                {
+                    _hash = (_hash ^ _ch) * 1099511628211UL;
+                }
+                return _hash.ToString("x16");
             }
         }
 
@@ -359,10 +389,18 @@ namespace Autoplay
                 }
 
                 ulong _targetId = policy.Choose(_targets, "vote").ownerClientId.Value;
-                // Same server method VoteState.OnPlayerVoted reaches, with the bot's id as the sender.
-                _gameManager.DoStateMethodRpc(typeof(VoteState).FullName, "OnPlayerVotedRpc",
-                    new[] { new NetworkSerializableObject(_id), new NetworkSerializableObject(_targetId) },
-                    new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                if (networkManager.IsServer)
+                {
+                    // Same server method VoteState.OnPlayerVoted reaches, with the bot's id as the sender.
+                    _gameManager.DoStateMethodRpc(typeof(VoteState).FullName, "OnPlayerVotedRpc",
+                        new[] { new NetworkSerializableObject(_id), new NetworkSerializableObject(_targetId) },
+                        new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                }
+                else if (CurrentState is VoteState _voteState)
+                {
+                    // A real client votes exactly like its vote button does.
+                    _voteState.OnPlayerVoted(_targetId);
+                }
                 Journal.Record("vote", $"{_id} -> {_targetId}");
                 return; // one vote per frame
             }
@@ -425,12 +463,8 @@ namespace Autoplay
         private IEnumerator HandlePickerOpening(CardPickerManager _picker, int _opening)
         {
             Journal.Record("picker.open", $"#{_opening} {DescribePicker(_picker)}");
-            float _maxDelay = 0f;
-            foreach (float _delay in options.pickerCaptureDelays)
-            {
-                RequestCapture($"picker{_opening:000}-open-{_delay.ToString("0.00", CultureInfo.InvariantCulture)}s", _delay);
-                _maxDelay = Mathf.Max(_maxDelay, _delay);
-            }
+            capture.RequestBurst($"picker{_opening:000}-open", options.pickerCaptureDelays);
+            float _maxDelay = options.pickerCaptureDelays.DefaultIfEmpty(0f).Max();
             yield return new WaitForSeconds(_maxDelay + 0.05f);
 
             List<Card> _cards = _picker.IsPickerActive
@@ -447,7 +481,7 @@ namespace Autoplay
             var _pointer = new PointerEventData(EventSystem.current);
             _card.OnPointerEnter(_pointer);
             Journal.Record("picker.hover", $"#{_opening} {DescribeCard(_card)}");
-            RequestCapture($"picker{_opening:000}-hover-{Sanitize(DescribeCard(_card))}", options.pickerHoverDwell * 0.8f);
+            capture.Request($"picker{_opening:000}-hover-{DescribeCard(_card)}", options.pickerHoverDwell * 0.8f);
             yield return new WaitForSeconds(options.pickerHoverDwell);
 
             if (_card && _picker.IsPickerActive)
@@ -476,6 +510,11 @@ namespace Autoplay
 
         private void Possess(ulong _id)
         {
+            if (!networkManager.IsServer)
+            {
+                return; // possession is the host's debug identity switch; a real client is already itself
+            }
+
             ulong? _target = _id == networkManager.LocalClientId ? null : _id;
             if (possessedId == _target)
             {
@@ -507,76 +546,7 @@ namespace Autoplay
                 return;
             }
 
-            foreach (float _delay in options.verdictCaptureDelays)
-            {
-                RequestCapture($"verdict-{_power.powerName}-{_verdict}-{_delay.ToString("0.00", CultureInfo.InvariantCulture)}s", _delay);
-            }
-        }
-
-        /// <summary>Screenshot of what the host screen shows, <paramref name="_delayGameSeconds"/> from now.</summary>
-        public void RequestCapture(string _label, float _delayGameSeconds = 0f)
-        {
-            if (running)
-            {
-                StartCoroutine(CaptureRoutine(_label, _delayGameSeconds));
-            }
-        }
-
-        /// <summary>
-        /// Registers a named value exported with every capture's state file (e.g. a power's private NV, a UI flag a
-        /// scenario wants to assert on). The reader runs at capture time; an exception is exported as its message.
-        /// </summary>
-        public void AddProbe(string _name, Func<object> _read) => probes[_name] = _read;
-
-        private IEnumerator CaptureRoutine(string _label, float _delayGameSeconds)
-        {
-            if (_delayGameSeconds > 0f)
-            {
-                yield return new WaitForSeconds(_delayGameSeconds);
-            }
-
-            if (!running)
-            {
-                yield break;
-            }
-
-            // The state file is written in every mode — it is the variable export, PNG or not.
-            string _baseName = $"{++captureIndex:000}-{Sanitize(_label)}";
-            WriteStateSnapshot(_baseName, _label);
-
-            // WaitForEndOfFrame never resumes in batchmode (no player loop render), and there is nothing to grab
-            // without a graphics device: screenshots need a windowed run (editor GUI or a dev build).
-            if (Application.isBatchMode || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
-            {
-                Journal.Record("capture.state", $"{_baseName}.json (no screenshot: batchmode/no graphics)");
-                yield break;
-            }
-
-            yield return new WaitForEndOfFrame();
-            if (!running)
-            {
-                yield break;
-            }
-
-            Texture2D _texture = null;
-            try
-            {
-                _texture = ScreenCapture.CaptureScreenshotAsTexture();
-                string _file = $"{_baseName}.png";
-                File.WriteAllBytes(Path.Combine(Journal.OutputDirectory, _file), _texture.EncodeToPNG());
-                Journal.Record("capture", _file);
-            }
-            catch (Exception _exception)
-            {
-                Journal.Record("capture.error", $"{_label}: {_exception.Message}");
-            }
-            finally
-            {
-                if (_texture)
-                {
-                    Destroy(_texture);
-                }
-            }
+            capture.RequestBurst($"verdict-{_power.powerName}-{_verdict}", options.verdictCaptureDelays);
         }
 
         [Serializable]
@@ -595,23 +565,11 @@ namespace Autoplay
         }
 
         [Serializable]
-        private sealed class ProbeValue
-        {
-            public string name;
-            public string value;
-        }
-
-        [Serializable]
         private sealed class StateSnapshot
         {
-            public string label;
-            public float realTime;
-            public float gameTime;
-            public int frame;
             public string state;
             public int day;
             public string viewAs;
-            public float timeScale;
             public bool pickerActive;
             public string pickerKind;
             public int pickableCount;
@@ -619,72 +577,47 @@ namespace Autoplay
             public float frostAlpha;
             public string[] pickableCards;
             public CharacterState[] characters;
-            public ProbeValue[] probes;
         }
 
-        private void WriteStateSnapshot(string _baseName, string _label)
+        /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
+        public string ExportStateJson()
         {
-            try
+            GameManager _gameManager = CompositionRoot.For(networkManager).GameManager;
+            var _snapshot = new StateSnapshot
             {
-                GameManager _gameManager = CompositionRoot.For(networkManager).GameManager;
-                var _snapshot = new StateSnapshot
-                {
-                    label = _label,
-                    realTime = Time.realtimeSinceStartup,
-                    gameTime = Time.time,
-                    frame = Time.frameCount,
-                    state = CurrentState != null ? CurrentState.GetType().Name : "null",
-                    day = _gameManager != null ? _gameManager.currentDay : -1,
-                    viewAs = possessedId.HasValue ? possessedId.Value.ToString() : "host",
-                    timeScale = Time.timeScale,
-                    pickerActive = CardPickerManager.instance != null && CardPickerManager.instance.IsPickerActive,
-                    pickerKind = CardPickerManager.instance == null || !CardPickerManager.instance.IsPickerActive ? "none"
-                        : CardPickerManager.instance.IsRolePicker ? "role" : "character",
-                    pickableCount = CardPickerManager.instance != null ? CardPickerManager.instance.PickableCards.Count : 0,
-                    liftedCount = CardPickerManager.instance != null ? CardPickerManager.instance.LiftedCharacterCards.Count : 0,
-                    frostAlpha = CardPickerManager.instance != null ? CardPickerManager.instance.FrostAlpha : -1f,
-                    pickableCards = CardPickerManager.instance != null
-                        ? CardPickerManager.instance.PickableCards.Where(_c => _c).Select(DescribeCard).ToArray()
-                        : Array.Empty<string>(),
-                    characters = characterManager.GetCharacters(false)
-                        .Where(_c => _c && !_c.isFake)
-                        .OrderBy(_c => _c.ownerClientId.Value)
-                        .Select(_c => new CharacterState
-                        {
-                            id = _c.ownerClientId.Value,
-                            role = _c.role?.roleName.ToString(),
-                            faction = _c.role?.factionType.ToString(),
-                            awakened = _c.isAwakened.Value,
-                            chained = _c.isChained.Value,
-                            corrupted = _c.isCorrupted.Value,
-                            healed = _c.isHealed.Value,
-                            blessed = _c.isBlessed.Value,
-                            eliminated = _c.isEliminated.Value,
-                            powersInUse = _c.role?.powers.Where(_p => _p && _p.isCurrentlyUsed).Select(_p => _p.powerName.ToString()).ToArray()
-                                          ?? Array.Empty<string>(),
-                        })
-                        .ToArray(),
-                    probes = probes.Select(_probe => new ProbeValue { name = _probe.Key, value = ReadProbe(_probe.Value) }).ToArray(),
-                };
+                state = CurrentState != null ? CurrentState.GetType().Name : "null",
+                day = _gameManager != null ? _gameManager.currentDay : -1,
+                viewAs = possessedId.HasValue ? possessedId.Value.ToString() : "host",
+                pickerActive = CardPickerManager.instance != null && CardPickerManager.instance.IsPickerActive,
+                pickerKind = CardPickerManager.instance == null || !CardPickerManager.instance.IsPickerActive ? "none"
+                    : CardPickerManager.instance.IsRolePicker ? "role" : "character",
+                pickableCount = CardPickerManager.instance != null ? CardPickerManager.instance.PickableCards.Count : 0,
+                liftedCount = CardPickerManager.instance != null ? CardPickerManager.instance.LiftedCharacterCards.Count : 0,
+                frostAlpha = CardPickerManager.instance != null ? CardPickerManager.instance.FrostAlpha : -1f,
+                pickableCards = CardPickerManager.instance != null
+                    ? CardPickerManager.instance.PickableCards.Where(_c => _c).Select(DescribeCard).ToArray()
+                    : Array.Empty<string>(),
+                characters = characterManager.GetCharacters(false)
+                    .Where(_c => _c && !_c.isFake)
+                    .OrderBy(_c => _c.ownerClientId.Value)
+                    .Select(_c => new CharacterState
+                    {
+                        id = _c.ownerClientId.Value,
+                        role = _c.role?.roleName.ToString(),
+                        faction = _c.role?.factionType.ToString(),
+                        awakened = _c.isAwakened.Value,
+                        chained = _c.isChained.Value,
+                        corrupted = _c.isCorrupted.Value,
+                        healed = _c.isHealed.Value,
+                        blessed = _c.isBlessed.Value,
+                        eliminated = _c.isEliminated.Value,
+                        powersInUse = _c.role?.powers.Where(_p => _p && _p.isCurrentlyUsed).Select(_p => _p.powerName.ToString()).ToArray()
+                                      ?? Array.Empty<string>(),
+                    })
+                    .ToArray(),
+            };
 
-                File.WriteAllText(Path.Combine(Journal.OutputDirectory, $"{_baseName}.json"), JsonUtility.ToJson(_snapshot, true));
-            }
-            catch (Exception _exception)
-            {
-                Journal.Record("capture.state.error", $"{_label}: {_exception.Message}");
-            }
-        }
-
-        private static string ReadProbe(Func<object> _read)
-        {
-            try
-            {
-                return _read()?.ToString() ?? "null";
-            }
-            catch (Exception _exception)
-            {
-                return $"<{_exception.GetType().Name}: {_exception.Message}>";
-            }
+            return JsonUtility.ToJson(_snapshot);
         }
 
         private static bool SafeCanUse(Power _power)
@@ -702,8 +635,6 @@ namespace Autoplay
         private static string Describe(Character _character)
             => $"{_character.ownerClientId.Value} {_character.role?.roleName}";
 
-        private static string Sanitize(string _label)
-            => new string(_label.Select(_ch => char.IsLetterOrDigit(_ch) || _ch == '-' || _ch == '.' ? _ch : '_').ToArray());
     }
 }
 #endif

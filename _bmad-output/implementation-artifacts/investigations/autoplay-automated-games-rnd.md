@@ -59,6 +59,24 @@ Extraction après stabilisation du spike (API connue), pas avant.
 (`Loop.NextGameState()`) à l'intérieur de son animation **cliente** async ; si l'animation lève, le `catch` logue et la
 partie reste bloquée pour toujours. Une erreur de présentation peut donc figer une partie entière.
 
+## Vague 2 — package, vrais clients réseau, skill (2026-10-04)
+
+- **Package `Packages/com.unpseudo.autoplay`** (réutilisable) : `IAutoplayGame` (contrat d'adaptation), `AutoplayRunner`
+  (boot → host sur port libre → setup → start → phases / blocage / timeout → rapport), `AutoplayCapture` (état JSON
+  + PNG, rafales, sondes), `AutoplayJournal` (`report.json` générique : faits, compteurs, trace live), policy seedée,
+  ligne de commande + registre, bootstrap de build dev, garde de fenêtre ; `Tools~/` : `unityctl.sh`,
+  `launch-background.ps1`, `launch-net.ps1`, `compare_runs.py`. Adaptateur jeu : `CdpAutoplayGame`.
+- **Vrais clients réseau** : `unityctl.sh play-net <clients> <seed>` = 1 host + N clients (process séparés du même
+  build, UDP loopback, port convenu), bots pour compléter à 8. Chaque client joue SA place par les chemins client.
+  Désync : chaque process journalise un hash canonique (rôles + flags) après stabilisation de chaque phase ;
+  `compare_runs.py` compare host/clients phase par phase.
+  **Premier run (seed 31, 3 clients) : 10 jours, 4/4 process terminés, 57 phases × 3 clients, 0 désync.**
+- **Skill `/autoplay`** (`.claude/skills/autoplay/SKILL.md`) : but → mode → run en arrière-plan → analyse → réponse
+  avec preuves, en séparant bugs du jeu / problèmes d'outil / observations design.
+- Observé en réseau : le bug des effets de carte frappe surtout le client propriétaire de la balise (40 erreurs) ;
+  1 NRE NGO `NetworkSceneManager.ClientLoadedSynchronization` par client, après une nouvelle tentative de connexion
+  (host pas encore prêt) — probablement un artefact du réessai, non prouvé.
+
 ## TL;DR
 
 **Faisable, et moins cher que prévu : la moitié des briques existe déjà.** La pièce manquante est un **cerveau de bot**

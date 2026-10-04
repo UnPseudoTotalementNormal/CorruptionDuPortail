@@ -5,6 +5,7 @@ using System.Linq;
 using Characters;
 using GameLogic.Validation;
 using UI.BoardUI.Selection;
+using Unpseudo.Autoplay;
 using static Characters.Powers.Target.TargetUtils;
 
 namespace Autoplay

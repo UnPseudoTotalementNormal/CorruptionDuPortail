@@ -1,4 +1,4 @@
-"""Picker visual check over one autoplay run (built with -autoplay-visual-picker).
+"""Picker visual check over one autoplay run (Corruption du Portail, built with -autoplay-visual-picker).
 
 For every picker opening it reads the capture burst's state files (NNN-pickerXXX-open-T.json) and checks:
   * the blur veil comes up   : frostAlpha >= FROST_MIN once T >= SETTLE_S
@@ -20,8 +20,10 @@ SETTLE_S = 0.5
 
 
 def load(path):
+    """Capture state file; the game's own state sits under "game" (package format), or at the top (older runs)."""
     with open(path, encoding="utf-8-sig") as f:
-        return json.load(f)
+        data = json.load(f)
+    return data.get("game", data)
 
 
 def main():

@@ -6,11 +6,11 @@
   - CreateProcess with SW_SHOWNOACTIVATE: the window appears without taking the foreground.
   - The currently focused window handle is passed to the player (-autoplay-restore-hwnd) so that, if Unity
     activates itself anyway, the player hands focus straight back and sends its window to the bottom
-    (see AutoplayWindowGuard). The user keeps working while games play.
+    (see AutoplayWindowGuard in this package). The user keeps working while games play.
   - Exit code = the player's exit code (0 = GameEnding), 124 = timeout (player killed).
 
 .EXAMPLE
-  powershell -File tools/autoplay/launch-background.ps1 -Exe Builds/Autoplay/CorruptionDuPortail.exe -TimeoutSeconds 900 -PlayerArgs '-autoplay -autoplay-seed 4'
+  powershell -File Tools~/launch-background.ps1 -Exe Builds/Autoplay/Game.exe -TimeoutSeconds 900 -PlayerArgs '-autoplay -autoplay-seed 4'
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Exe,

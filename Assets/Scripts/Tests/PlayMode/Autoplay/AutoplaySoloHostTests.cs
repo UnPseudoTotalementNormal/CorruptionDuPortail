@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Autoplay;
+using Unpseudo.Autoplay;
 using GameLogic;
 using NUnit.Framework;
 using UnityEngine;
@@ -15,9 +16,13 @@ namespace Tests.PlayMode.Autoplay
 {
     /// <summary>
     /// Autoplay T1 — plays a WHOLE game on the real GameScene in one process: the host (client 0) plus 7 simulated bots
-    /// (ids &gt;= 100), all driven by <see cref="AutoplayDriver"/> through the same code paths a human uses (see
-    /// <see cref="AutoplaySession"/>, shared with the dev-build bootstrap). Accelerated with Time.timeScale; NGO ticks
-    /// stay real-time.
+    /// (ids &gt;= 100), all driven by <see cref="AutoplayDriver"/> through the same code paths a human uses, run by the
+    /// package's <see cref="AutoplayRunner"/> with the <see cref="CdpAutoplayGame"/> adapter (the same pair a dev build
+    /// runs with <c>-autoplay</c>). Accelerated with Time.timeScale; NGO ticks stay real-time.
+    /// <para>
+    /// NOTE: a full game cannot finish in a batchmode editor (the end of frame never comes and the game waits on it);
+    /// complete games run in the windowed dev build (tools/autoplay/unityctl.sh build + play-build).
+    /// </para>
     /// <para>
     /// Output under <c>&lt;project&gt;/AutoplayRuns/&lt;stamp&gt;-&lt;scenario&gt;-seed&lt;n&gt;/</c>: <c>report.json</c>
     /// (read first), <c>events.ndjson</c> (full trace) and one state file per capture point (+ a PNG when rendering).
@@ -31,7 +36,8 @@ namespace Tests.PlayMode.Autoplay
     [Category("Autoplay")]
     public class AutoplaySoloHostTests
     {
-        private AutoplaySessionResult _result;
+        private AutoplayResult _result;
+        private CdpAutoplayGame _game;
         private bool _previousIgnoreFailingMessages;
 
         [UnityTest]
@@ -46,16 +52,18 @@ namespace Tests.PlayMode.Autoplay
 
             int _seed = Environment.TickCount & 0x7FFFFFFF;
             const string Scenario = "solohost-8p-randomvalid";
-            var _config = new AutoplaySessionConfig
+            var _config = new AutoplayConfig
             {
                 scenario = Scenario,
                 seed = _seed,
-                outputDirectory = AutoplaySession.NewRunDirectory(
+                timeScale = 10f,
+                outputDirectory = AutoplayRunner.NewRunDirectory(
                     Path.Combine(Application.dataPath, "..", "AutoplayRuns"), Scenario, _seed),
             };
 
-            _result = new AutoplaySessionResult();
-            yield return AutoplaySession.RunSoloHost(_config, _result);
+            _game = new CdpAutoplayGame();
+            _result = new AutoplayResult();
+            yield return AutoplayRunner.Run(_game, _config, _result);
 
             Assert.IsNull(_result.failure, $"Autoplay game did not finish: {_result.failure}. Report: {_config.outputDirectory}");
         }
@@ -65,13 +73,12 @@ namespace Tests.PlayMode.Autoplay
         {
             Time.timeScale = 1f;
 
-            if (_result?.driver != null)
+            if (_result?.host != null)
             {
-                _result.driver.End();
-                Object.Destroy(_result.driver.gameObject);
+                Object.Destroy(_result.host);
             }
 
-            var _networkManager = _result?.networkManager;
+            var _networkManager = _game?.NetworkManager;
             if (_networkManager != null && _networkManager.IsListening)
             {
                 _networkManager.Shutdown();
@@ -88,6 +95,7 @@ namespace Tests.PlayMode.Autoplay
                 Object.Destroy(_networkManager.gameObject);
             }
             _result = null;
+            _game = null;
             yield return null;
 
             FieldInfo _existingIds = typeof(DontDestroyOnLoadComponent).GetField("existingIds", BindingFlags.NonPublic | BindingFlags.Static);

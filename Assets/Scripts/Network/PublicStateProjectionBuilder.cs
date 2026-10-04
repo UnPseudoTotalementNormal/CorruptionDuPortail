@@ -24,6 +24,7 @@ namespace Network
         public const string CharacterFlags = "CharacterFlags";
         public const string GameState = "GameState";
         public const string Roles = "Roles";
+        public const string Powers = "Powers";
 
         public static PublicStateProjection Build(LobbyPlayerInfoHolder _roster, CharacterManager _characters, GameManager _gameManager)
         {
@@ -36,6 +37,7 @@ namespace Network
             _projection.SetComponent(Characters, CharacterLines(_list), ordered: true);
             _projection.SetComponent(CharacterFlags, FlagLines(_list), ordered: false);
             _projection.SetComponent(Roles, RoleLines(_list), ordered: false);
+            _projection.SetComponent(Powers, PowerLines(_list), ordered: false);
 
             var _state = new List<string>();
             if (_gameManager != null && _gameManager.IsSpawned)
@@ -98,6 +100,25 @@ namespace Network
                     _character.ownerClientId.Value.ToString(CultureInfo.InvariantCulture), "|",
                     ((int)_character.roleId.Value).ToString(CultureInfo.InvariantCulture), "|",
                     _character.role != null ? _character.role.roleName.ToString() : string.Empty);
+            }
+        }
+
+        // NET-08: each character's power list as this peer sees it (order kept inside the line: it is replicated state).
+        private static IEnumerable<string> PowerLines(List<Character> _list)
+        {
+            foreach (Character _character in _list)
+            {
+                if (_character == null || _character.role == null) continue;
+                var _parts = new List<string>();
+                foreach (var _power in _character.role.powers)
+                {
+                    if (!_power) continue;
+                    _parts.Add(string.Concat(
+                        _power.powerName.ToString(), ":",
+                        _power.powerUseLeft.Value.ToString(CultureInfo.InvariantCulture), ":",
+                        Bit(_power.isCopiedPower.Value), Bit(_power.IsPassive)));
+                }
+                yield return _character.ownerClientId.Value.ToString(CultureInfo.InvariantCulture) + "|" + string.Join(",", _parts);
             }
         }
 

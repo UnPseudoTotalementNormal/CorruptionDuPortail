@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Board;
 using Characters.Powers;
 using Extensions;
@@ -178,33 +179,33 @@ namespace Characters
             }
         }
 
-        [Rpc(SendTo.Everyone)]
-        public void CheckForPowersRpc()
-        {
-            CheckForPowersLocal();
-        }
-
-        /// <summary>Adds the Power components parented under this character to <see cref="role"/>.powers (this peer).</summary>
+        /// <summary>
+        /// NET-08 (epic-network-sync-hardening): rebuilds <see cref="role"/>.powers on THIS peer as the projection of
+        /// every spawned Power whose replicated ownerClientId is this character, in replicated grant order. The list
+        /// is identical on every peer by construction and never edited by an RPC (it used to be patched by three event
+        /// RPCs plus a hierarchy scan that never removed stale entries). Raises onPowersUpdated only on a real change.
+        /// </summary>
         public void CheckForPowersLocal()
         {
-            if (role == null)
+            if (role == null || NetworkManager == null)
             {
                 return;
             }
-            var _foundPowers = GetComponentsInChildren<Power>();
-            bool _newPowersFound = false;
-            foreach (var _power in _foundPowers)
+
+            List<Power> _owned = Characters.Powers.Runtime.PowerRegistry.OwnedBy(NetworkManager, ownerClientId.Value);
+            bool _changed = _owned.Count != role.powers.Count;
+            for (int _i = 0; !_changed && _i < _owned.Count; _i++)
             {
-                if (!role.powers.Contains(_power))
-                {
-                    role.powers.Add(_power);
-                    _newPowersFound = true;
-                }
+                _changed = role.powers[_i] != _owned[_i];
             }
-            if (_newPowersFound)
+            if (!_changed)
             {
-                onPowersUpdated?.Invoke();
+                return;
             }
+
+            role.powers.Clear();
+            role.powers.AddRange(_owned);
+            onPowersUpdated?.Invoke();
         }
         
         public void InvokeOnPowersUpdated()

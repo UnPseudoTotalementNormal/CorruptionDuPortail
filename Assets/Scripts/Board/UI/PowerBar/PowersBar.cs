@@ -157,7 +157,7 @@ namespace Board.UI.PowerBar
             
             foreach (var _power in _powers)
             {
-                if (_power.isPassive)
+                if (_power.IsPassive)
                 {
                     continue;
                 }
@@ -180,7 +180,7 @@ namespace Board.UI.PowerBar
 
             foreach (Power _currentPower in _powers)
             {
-                if (_currentPower.isPassive)
+                if (_currentPower.IsPassive)
                 {
                     continue;
                 }

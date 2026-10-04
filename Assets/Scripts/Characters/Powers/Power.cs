@@ -70,7 +70,7 @@ namespace Characters.Powers
         [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
         /// <summary>
-        /// A generic validator for target selection. Add your rules here in Awake/Start/OnNetworkSpawn().
+        /// A generic validator for target selection. Add your rules here in Awake, Start or OnNetworkSpawn.
         /// Example: targetValidator.AddRule(ctx => ctx.targetId != ownerClientId.Value);
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
@@ -147,6 +147,33 @@ namespace Characters.Powers
         /// <summary>The private-marker sprite for this power (null when the power places no icon).</summary>
         public Sprite BarIcon => barIcon;
 
+        // APPENDED (NET-08, epic-network-sync-hardening) — never reorder/rename the fields above it.
+        // Server-stamped grant order: the replicated sort key of the owner's power list (role.powers is a projection
+        // of PowerRegistry by ownerClientId, identical on every peer).
+        public NetworkVariable<int> grantOrder = new();
+
+        // Runtime passive state (PReincarnation turns itself passive after use). 0 = authored value (isPassive),
+        // 1 = forced passive, 2 = forced active. Replicated state, replacing the ChangeIsPassiveRpc event.
+        public NetworkVariable<byte> passiveOverride = new();
+
+        /// <summary>NET-08: the LIVE passive state on every peer (authored value unless overridden at runtime).</summary>
+        public bool IsPassive => passiveOverride.Value switch
+        {
+            1 => true,
+            2 => false,
+            _ => isPassive,
+        };
+
+        /// <summary>NET-08, server: overrides the live passive state (replicates to every peer).</summary>
+        public void SetPassiveServer(bool _passive)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+            passiveOverride.Value = _passive ? (byte)1 : (byte)2;
+        }
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;
@@ -195,9 +222,43 @@ namespace Characters.Powers
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
+                grantOrder.Value = Runtime.PowerRegistry.NextGrantOrder();
                 onPowerUsed = new NetworkAction("OnPowerUsed_" + powerName, this);
             }
+
+            // NET-08: the owner's power list is a projection of the registry — rebuild it now and on every owner change.
+            Runtime.PowerRegistry.Register(this);
+            ownerClientId.OnValueChanged += OnOwnerChanged;
+            RebuildOwnerPowerList(ownerClientId.Value);
+
             onPowerSpawned?.Invoke(this);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            ownerClientId.OnValueChanged -= OnOwnerChanged;
+            Runtime.PowerRegistry.Unregister(this);
+            RebuildOwnerPowerList(ownerClientId.Value);
+            base.OnNetworkDespawn();
+        }
+
+        private void OnOwnerChanged(ulong _previousOwner, ulong _newOwner)
+        {
+            RebuildOwnerPowerList(_previousOwner);
+            RebuildOwnerPowerList(_newOwner);
+        }
+
+        private void RebuildOwnerPowerList(ulong _owner)
+        {
+            if (characterManager == null)
+            {
+                return;
+            }
+            Character _character = characterManager.GetCharacter(_owner, false);
+            if (_character != null)
+            {
+                _character.CheckForPowersLocal();
+            }
         }
         
         public bool IsTheSamePower(Power _isTheSamePower)
@@ -313,7 +374,7 @@ namespace Characters.Powers
 
             var _context = new CorruptionDuPortail.Domain.PowerUsabilityContext(
                 allComponentsAllowUse: !powerComponents.Any(_pc => !_pc.CanUsePower()),
-                isPassive: isPassive,
+                isPassive: IsPassive,
                 isCurrentlyUsed: isCurrentlyUsed,
                 ignoreCurrentlyUsed: _ignoreCurrentlyUsed,
                 isChained: _powerCharacter.isChained.Value,
@@ -441,7 +502,7 @@ namespace Characters.Powers
 
         public virtual void Cancel()
         {
-            if (!isCurrentlyUsed && !isPassive)
+            if (!isCurrentlyUsed && !IsPassive)
             {
                 return;
             }
@@ -490,37 +551,19 @@ namespace Characters.Powers
             }
             ulong _oldOwnerId = ownerClientId.Value;
             ownerClientId.Value = GetComponentInParent<Character>().ownerClientId.Value;
+            // NET-06/08: the new owner id must reach clients BEFORE the reparent notification.
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             OnReparentedClientRpc(_oldOwnerId, ownerClientId.Value);
         }
 
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
-            // SendTo.Everyone + fire-and-forget: this runs on every peer the instant the server
-            // reparents, but a target Character may not be in a remote client's roster yet. At game
-            // start the fake-client / bot owner (ownerClientId == GameValues.FAKE_CLIENT_ID =
-            // ulong.MaxValue) lags replication, so GetCharacter returns null there while the host
-            // (which simulates the bot synchronously) resolves it. Skipping the powers-list edit on
-            // null is safe: Character.CheckForPowersRpc rebuilds role.powers from the reparented
-            // Power children once the character syncs, so the client still converges. Mirrors the
-            // null-guard in the sibling SendTo.Everyone RPC PowerManager.RemovePowerFromCharacterPowerListRpc.
-            var _oldParentCharacter = characterManager.GetCharacter(_oldParentId, false);
-            var _newParentCharacter = characterManager.GetCharacter(_newParentId, false);
-
-            if (_oldParentCharacter && _oldParentCharacter.role != null)
-            {
-                _oldParentCharacter.role.powers.Remove(this);
-                _oldParentCharacter.InvokeOnPowersUpdated();
-            }
-
-            if (_newParentCharacter && _newParentCharacter.role != null)
-            {
-                if (!_newParentCharacter.role.powers.Contains(this))
-                {
-                    _newParentCharacter.role.powers.Add(this);
-                }
-                _newParentCharacter.InvokeOnPowersUpdated();
-            }
+            // NET-08: notification only. The power lists are projections of PowerRegistry by the replicated
+            // ownerClientId (already applied thanks to the flush in OnReparentedServer), so this never edits them by
+            // hand — it just makes sure both owners' projections are current, then raises the cosmetic event.
+            RebuildOwnerPowerList(_oldParentId);
+            RebuildOwnerPowerList(_newParentId);
 
             onPowerReparented?.Invoke();
         }

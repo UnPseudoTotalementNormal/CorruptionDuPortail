@@ -500,7 +500,8 @@ namespace Characters
                 return;
             }
             
-            PowerManager.instance.RemovePowerFromCharacterPowerListRpc(_characterId, new(_power));
+            // NET-08: despawning unregisters the power; Power.OnNetworkDespawn rebuilds the owner's list on every peer.
+            // (The previous list-removal "RPC" lived on a MonoBehaviour, so it never left the host.)
             NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
             if (_powerNetworkObject != null)
             {

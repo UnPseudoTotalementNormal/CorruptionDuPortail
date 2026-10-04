@@ -165,7 +165,6 @@ namespace GameLogic.GameStates
                 RoleRegistry.Register(_randomRole);
                 _character.CheckForPowersLocal();
                 _character.CommitRoleServer();
-                _character.CheckForPowersRpc();
             }
         }
 

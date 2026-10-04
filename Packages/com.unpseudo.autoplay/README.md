@@ -41,6 +41,27 @@ Every run writes `<out>/<stamp>-<scenario>-seed<N>/`:
 - `NNN-<label>.json` — at each capture point: time, phase, probes, and the game's state under `"game"`.
 - `NNN-<label>.png` — the same moment as rendered (windowed runs only).
 
+## Verify an animation
+
+`-autoplay-record "kindRegex:seconds[,…]"` (+ `-autoplay-record-fps 20`, `-autoplay-record-width 480`): when a journal
+event matches, the next N game seconds are recorded frame by frame into `rec-NNN-<label>/` — one downscaled PNG per
+frame, `tracks.csv` (time + every measured track per frame) and `manifest.json`. During the window game time advances by
+a fixed step per rendered frame (`Time.captureFramerate`, time scale 1), so the sequence does not depend on the machine.
+Tracks come from the game (`IAutoplayAnimationSource.TracksFor(kind, detail)`; helpers `AutoplayTrack.Value`,
+`AutoplayTrack.TransformOf`). Trigger on an event that happens **before** the animation (e.g. the action that starts it)
+to capture it from its first frame.
+
+- `Tools~/contact_sheet.py <rec-dir|run-dir> [--every N] [--track name …] [--gif]` → one labelled grid image
+  (`contact.png`, + `anim.gif`): the whole animation in one look.
+- Scenario check `"type": "animation"`: start / end / reach-within / change / monotonic on a track, per recording,
+  filtered with `onlyIf`; add `"severity": "warn"` for observations that should be reported without failing.
+
+## Speed (tests only, all opt-in)
+
+- `-autoplay-fast-phases <regex>` + `-autoplay-fast-timescale X`: phases matching the regex (pure animation / recap
+  phases where no bot acts) run faster; the others keep the run's time scale. Paused while a recording runs.
+- Game-specific levers live in the adapter (Corruption du Portail: `-autoplay-fast-fakes`).
+
 ## Tools (`Tools~/`, ignored by the Unity importer)
 
 - `unityctl.sh` — around the official Unity CLI (`unity`): `compile`, `playmode <filter>`, `editmode`, `build`
@@ -49,6 +70,11 @@ Every run writes `<out>/<stamp>-<scenario>-seed<N>/`:
   build, loopback UDP, agreed port), then `compare_runs.py` on their traces.
 - `compare_runs.py` — desync detector: every process journals `state.hash` (a hash of a canonical view of the
   replicated state, once each phase has settled); the host's hashes are compared phase by phase with each client's.
+- `run_scenario.py <scenario.json>` — **declarative scenarios**: goal, mode (build / net), levers (player args, per
+  client args), seed retries, and expectations (outcome, events, facts, roster, state values at capture points,
+  desync, no unexpected errors, external analyzers) → `verdict.json` + PASS/FAIL. Format in the file's docstring.
+- `campaign.py` — every scenario of a folder + N random build / network games → `summary.md` / `summary.json`
+  (verdicts, failing checks, most frequent error signatures).
 - `launch-net.ps1` — the multi-process launcher behind `play-net` (host window with screenshots, small client windows
   with `-autoplay-no-png`, all without focus, everything killed at the end).
 - `launch-background.ps1` — starts a player **without focus** (`SW_SHOWNOACTIVATE`), passes the focused window to the

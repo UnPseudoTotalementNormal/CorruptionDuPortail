@@ -59,6 +59,37 @@ client, like the UI does. (Memory: `reference_autoplay_client_vs_server_state`.)
 Players are launched **without focus**, muted, never cursor-locked (`launch-background.ps1` + `AutoplayWindowGuard`):
 the user keeps working. Never minimize a player (black captures). Ports 7850–7899 only.
 
+### Scenario levers (player args, `-autoplay-<key>`)
+
+`force-roles A,B` (role-name fragments guaranteed in the composition) · `role-holder host|client|bot` (who must hold
+them; mismatch fails fast and the scenario runner retries the next seed) · `vote-focus <role text>` · `max-days N` ·
+`netsim delay,jitter,loss` (Multiplayer Tools Network Simulator; put it in `clientArgs`) · `quit-at <phase text>`
+(a client leaves mid-game; put it in `client1Args`) · `visual-picker` · `clients/players/bots`.
+
+### Declarative scenarios — prefer them for anything worth re-running
+
+Write `tools/autoplay/scenarios/<name>.json` (goal, mode, levers, expectations — format in
+`Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`) and run
+`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/run_scenario.py tools/autoplay/scenarios/<name>.json`.
+A passing scenario stays as a regression test; `tools/autoplay/campaign.sh` replays them all + random games.
+Coverage of targeted powers: `python -X utf8 tools/autoplay/sweep_powers.py` (one forced-role visual run per role →
+`coverage.md`, OK / FAIL / NOT COVERED per power).
+
+### Animations
+
+To check that an animation plays right, record it: `-autoplay-record "power.start:1.8"` (trigger on an event BEFORE the
+animation, not on its own start, or the first frames are lost) → `rec-NNN-*/` frames + `tracks.csv`. Look at ONE contact
+sheet (`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/contact_sheet.py <rec-dir> --every 2 --track <name>`), and
+assert on the numbers with an `animation` check (thresholds measured on a reference run, never invented). Reference:
+`tools/autoplay/scenarios/picker-animation.json`. A late-started recording or a run stopped mid-burst is an artefact,
+not a game bug — check before concluding.
+
+### Speed
+
+`-autoplay-fast-fakes` (fake roles sleep after ~1 s: night time 77 s → 12 s on 3 days, seed 777) and
+`-autoplay-fast-phases "Recap|Intro|Chaining" -autoplay-fast-timescale 12` cut a game ~3× (118 s → 39.5 s). Use them by
+default for flow / coverage runs; leave them OFF when the goal is the real timing of fake roles or of those phases.
+
 ## 4. Read the evidence — cheaply
 
 1. `tools/autoplay/unityctl.sh last-run` (outcome, trace, counters, deduplicated errors).

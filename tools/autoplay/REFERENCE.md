@@ -10,9 +10,9 @@ Keep this file exact: a lever, event or check that is added, renamed or removed 
 
 | Layer | Where | Owns |
 |---|---|---|
-| Package (game-agnostic) | `Packages/com.unpseudo.autoplay/Runtime` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard |
+| Package (game-agnostic) | `Packages/com.unpseudo.autoplay/Runtime` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard, virtual mouse / keyboard (`AutoplayVirtualInput`) |
 | Package tools | `Packages/com.unpseudo.autoplay/Tools~` | `unityctl.sh`, launchers, `run_scenario.py`, `campaign.py`, `compare_runs.py`, `contact_sheet.py` |
-| Game adapter | `Assets/Scripts/Autoplay` | `CdpAutoplayGame` (levers, host/client roles), `AutoplayDriver` (bot brain), `AutoplaySelectionAutopilot`, `AutoplayComposition` |
+| Game adapter | `Assets/Scripts/Autoplay` | `CdpAutoplayGame` (levers, host/client roles), `AutoplayDriver` (bot brain; real-input partials `AutoplayDriverRealInput`, `AutoplayDriverTour`, `AutoplayDriverLobby`), `AutoplayUiLocator`, `AutoplayMenuTour`, `AutoplayInputMask`, `AutoplaySelectionAutopilot`, `AutoplayComposition` |
 | Game tools | `tools/autoplay` | `unityctl.sh` wrapper (FMOD guarded files), analyzers, sweep, campaign, `scenarios/*.json` |
 | Prod seams (dev use only) | `SelectionFlowService.Autopilot` (`ISelectionAutopilot`), read-only `CardPickerManager` accessors | |
 
@@ -50,6 +50,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `png` | screenshots on even with `no-png` (the net launcher gives every client `no-png`) |
 | `sound` | do not mute |
 | `restore-hwnd <hwnd>` | window to hand focus back to (set by the launcher) |
+| `real-input` | the window guard lets the game lock the cursor while the player is unfocused (an unfocused lock never captures the OS cursor, measured); the game adapter drives the UI by virtual devices (below) |
 | `fast-phases <regex>` + `fast-timescale X` | phases matching the regex run at X (paused while recording) |
 | `record "kindRegex:seconds[,…]"` | record N game seconds frame by frame after each matching journal event |
 | `record-fps N` / `record-width W` | recording rate (default 20) and frame width |
@@ -74,6 +75,14 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `build-version <v>` | this client sends another build version (client 1 args; builds only) |
 | `stall-load <seconds>` | this client's scene loads are held that long after synchronization starts (client 1 args) |
 | `expect-clients N` | host: real clients that must join (when some are meant to be refused) |
+| `real-input` | every seat with a screen acts through the real UI: virtual Input System mouse + keyboard (real ones disabled, settings cloned with `IgnoreFocus`); the pointer glides to the target or, cursor locked (seated vote), the camera turns until the target is under the reticle; each click must produce its effect, else `input.miss` + direct fallback. Implies `lobby-ui` and `visual-picker` |
+| `lobby-ui` | lobby through the tablet by mouse (UI Toolkit in a RenderTexture): "★ Preset classique", wheel + Imposé "+" per `force-roles`, each seat's "Prêt", start by `LobbyState.TryAutoStart` (no `ForceStart`) |
+| `real-input-tour` | once per process: tooltip, pause menu (button, audio slider on the host only: PlayerPrefs are shared by the processes and always put back, close), tablet (Tab, arrow, chat tab + field, Tab) at night while idle; emote wheel (hold T, mouse, release) at the vote recap. With `quit-at`, a real-input client leaves through the pause menu's Leave button |
+| `menu-ui` | main menu tour (first screen captured, Host / Join panels, audio slider); with `real-input`, a refused join checks the disconnect notification is on top and closes on Dismiss |
+| `real-input-mask <GameObject name>` | breakage test (needs `real-input`, else the run fails): a transparent click-eating overlay covers that object; its clicks must end in `input.miss … hit=…AutoplayMask` |
+| `real-input-control` | diagnostic: virtual devices without disabling the real ones (counts the user's own input events, `realEvents=`) |
+| `power-use-probability <0..1>` | chance a bot uses each usable power (0 = every seat sleeps through the sleep button) |
+| `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the vote's Skip button) |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
@@ -87,7 +96,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Phases | `state.enter` (every phase change), `awake`, `sleep`, `awake.layer`, `awake.layer.end`, `fake.sleep` |
 | Powers | `power.start`, `power.end`, `power.skip`, `power.timeout`, `power.error`, `power.verdict` |
 | Selection | `select.character`, `select.role`, `select.error`, `picker.open`, `picker.hover`, `picker.click`, `picker.closed` |
-| Vote / portal | `vote`, `vote.skip`, `portal.click` |
+| Vote / portal | `vote`, `vote.skip`, `vote.skip.click`, `portal.click` (`via=click\|direct` in real-input mode) |
+| Real input | `input.install`, `input.uninstall` (devices disabled, `realEvents=` meaningful with `real-input-control` only), `input.click` (`<action> target= pos= hit= mode=pointer\|reticle\|key`), `input.miss` (same + `reason=`: target `not-found`, `inactive`, `zero-size`, `disabled`, `no-canvas`, `no-camera`, `behind-camera`, `off-screen`, `occluded` (with `uitk=` when a UI Toolkit panel took the click), `no-effect`, `lock-changed`; reticle `screen-fixed`, `look-clamped`, `out-of-reach`, `no-raycast-target`; UI Toolkit `hidden`, `not-laid-out`, `app-closed`, `picked-other`, `no-render-texture`, `no-convergence`, `degenerate`; lobby `not-open`, `scroll-stuck`), `input.skip` (effect already there: no click), `input.reaim` (reticle target moved off before the click: aimed again once), `input.error` (exception in an input flow, then direct path), `input.scroll`, `input.mask`, `power.direct`, `vote.late`, `sleep … via=`, `picker.click … via=click\|direct\|none`, `vote … via=click\|click-late` |
+| Lobby / tour / menu | `lobby.preset`, `lobby.force`, `lobby.ready` (`via=click\|already\|direct`), `lobby.role-card` (`open\|close ok\|miss`), `lobby.autostart`, `lobby.status`, `composition … via=`, `tour.<step>` (`ok\|miss`, `tour.aborted` when a seat wakes), `menu.<step>`, `menu.notification-top`, `menu.notification-dismiss`, `leave … via=` |
 | Knowledge | `knowledge` (`viewer>target role= corrupt= force= hacked=` levels, on every change) |
 | Captures | `capture`, `capture.state`, `capture.error`, `capture.state.error`, `record`, `record.start`, `record.skip`, `record.tracks.error` |
 
@@ -128,6 +139,11 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `join-version-mismatch` | a client with another build version is refused with the version wording (join error report) |
 | `join-stuck-load-kick` | a joiner whose load never ends is kicked by the host at the 90 s cap; the lobby then starts without it |
 | `join-slow-load-honest` | a load held 30 s is not kicked: the client joins and plays |
+| `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; only two exempted, warned design findings: role-picker cards off screen, Skip vote button out of the seated reticle's reach |
+| `real-input-mask` | breakage test: a covered sleep button fails as `input.miss hit=…AutoplayMask` |
+| `real-input-tour` | tooltip, pause menu + audio slider, tablet + chat app, emote wheel by real input on every screen; a client leaves through the pause menu and is chained |
+| `real-input-lobby` | lobby by mouse on the tablet: preset, role card overlay (screen-space UI Toolkit) opened and closed, wheel + Imposé "+", every "Prêt", start by `TryAutoStart` |
+| `real-input-menu` | first screen captured; a refused join's notification is above the login screen and closes on Dismiss |
 
 Other tools: `campaign.sh` (all scenarios + random seeds → `summary.md`), `sweep_powers.py` (one forced-role run per
 role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_contact.py`
@@ -138,7 +154,12 @@ role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat de
 
 | Gap | Why autoplay misses it | Extension |
 |---|---|---|
-| *(none listed)* | | |
+| Typing / sending in the chat | `TMP_InputField` reads keystrokes from IMGUI events and `ChatPanel.cs:56` sends on legacy `Input.GetKeyDown(Return)`: virtual Input System keys reach neither (real input focuses the field; sending stays direct with `chat`) | an Input System send action, or IMGUI `Event` injection |
+| Nested tooltip links | `TooltipWindow.cs:35` hit-tests `<link>` with legacy `Input.mousePosition` (the real OS cursor) | read the pointer from the Input System |
+| Notes ribbon | `NoteRibbon` and its prefab are placed in no scene: nothing to click | place it, then add a tour step |
+| Main menu panels (Host / Join, audio) | the login screen (`LoginCanvas`, order 1000) covers the menu while autoplay does not log in; UGS (Authentication, Lobby, Relay) and Steam are out of scope (`real-input-menu` warns) | a login-free dev path, or an authenticated run |
+| F1-F4 dev keys, `DevIdentityController` | dev tools, not player paths | none planned |
+| Pause by keyboard | Escape is never wired (`InputManager.OnEscapePressed`): only the HUD pause button exists (the tour clicks it) | design decision |
 
 Add a row whenever a goal turns out not to be covered, with the extension that would cover it.
 
@@ -191,8 +212,30 @@ How the four gaps reported after the network-hardening runs were covered; copy t
   the host's). A refusal with a server reason (`RelayFallbackPolicy.HasServerReason`) records `connect.rejected`,
   reports the wording through `LobbyManager.ReportError` (what the join menu does, shown by the notification panel),
   captures `join-rejected` (`-autoplay-png` on that client) and ends the run completed with a `rejected=` fact.
-  Limit: autoplay clients skip the menu login, so the capture shows the login screen, whose canvas (sorting order
-  1000) covers the notification panel (999): the message reaching the report is proven, its visibility to a
-  logged-in player is not.
+  The notification panel sorts above the login screen (`ClientDisconnectHandler`, order 32000): with
+  `-autoplay-real-input` on that client, `menu.notification-top` proves it is the first thing under the pointer and
+  `menu.notification-dismiss` that a click closes it (`real-input-menu`).
 - Host: `expect-clients N` waits for the N clients meant to join; before starting it waits for joiners still loading
   (`lobby.wait-loaders` / `lobby.loaders-done`), as a forced start is refused while one loads.
+
+#### Real-input mode (2026-10-05, spec `spec-autoplay-real-input.md`)
+
+- `AutoplayVirtualInput` (package) adds a virtual mouse + keyboard, installs a runtime clone of the input settings
+  with `IgnoreFocus` (the project asset is untouched) and disables every real mouse / keyboard while installed (also
+  ones added later). Trap: `InputSystem.onDeviceChange` fires inside `AddDevice`, before the returned device is
+  stored: guard your own devices or the hook disables them.
+- `AutoplayUiLocator` aims at a point where the real `EventSystem.RaycastAll` reaches the target (a button's
+  RectTransform centre can lie on no graphic): uGUI graphics or collider bounds sampled on a 3x3 grid; any UI Toolkit
+  element, on a screen-space panel or drawn into a RenderTexture (`TryLocateUitkElement`), by inverting the panel's own
+  screen-to-panel function numerically (no assumption on scale or axes), validated by `panel.Pick`. A covered target
+  is waited for 1.5 s (animations) before it counts as a miss.
+- Driver building blocks: `ClickTarget` / `HoverTarget` (GameObject), `ClickUitk` / `HoverUitk` (UI Toolkit element
+  found by a lambda, re-run before and after the glide: panels rebuild their trees), `PressKeyFor`, `ClickAt`. Each
+  checks the effect, clicks once (never twice: a late effect must not be toggled back) and skips the click when the
+  effect already holds (`input.skip`).
+- Cursor locked (seated vote): `AimAt` turns the camera with mouse deltas, steered in angles (the camera's measured
+  rotation per delta unit; a hovered card moves by itself and would fool a pixel ratio), one step then a wait for the
+  damped camera; a screen-overlay element cannot be aimed (`reason=screen-fixed`).
+- Host: the acting seat is possessed before every UI action, one action at a time (`inputBusy`; flows not started by
+  the driver's Update wait for it). `End()` cancels every in-flight click and releases held keys / buttons.
+- Without `real-input` / `lobby-ui` / `menu-ui` nothing is installed and no `input.*` event is journaled.

@@ -18,6 +18,8 @@ using UI.BoardUI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Board;
+using Board.UI;
+using Cysharp.Threading.Tasks;
 using Unpseudo.Autoplay;
 
 namespace Autoplay
@@ -64,6 +66,29 @@ namespace Autoplay
         public bool fastFakes;
         [Tooltip("Game seconds a fake role stays awake when fastFakes is on.")]
         public float fakeSleepDelay = 1f;
+
+        [Tooltip("Real-input mode (-autoplay-real-input): virtual mouse / keyboard driving the real UI. Null = direct calls.")]
+        [NonSerialized] public AutoplayVirtualInput realInput;
+        [Tooltip("Lobby-only real input (-autoplay-lobby-ui without real-input): the tablet is driven by mouse, the game directly.")]
+        [NonSerialized] public AutoplayVirtualInput lobbyInput;
+        [Tooltip("Real-input tour (-autoplay-real-input-tour): tooltip, pause menu, tablet, chat app, emote wheel, once per game.")]
+        public bool realInputTour;
+        [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]
+        public bool tourAudioSlider;
+        [Tooltip("Real seconds the pointer takes to glide to a target.")]
+        public float pointerMoveSeconds = 0.25f;
+        [Tooltip("Mouse wheel amount per scroll step (Input System units; one OS notch reads as 1 after normalization).")]
+        public float wheelNotch = 1f;
+        [Tooltip("Real seconds a covered target is waited for (an animation settling) before the click counts as an input.miss.")]
+        public float occludedWaitSeconds = 1.5f;
+        [Tooltip("Real seconds a click has to produce its game effect before it counts as an input.miss.")]
+        public float clickEffectTimeout = 2f;
+        [Tooltip("Reticle aiming (locked cursor): look corrections allowed to bring the target under the reticle.")]
+        public int aimMaxSteps = 16;
+        [Tooltip("Reticle aiming: frames waited for the damped camera to settle after a correction.")]
+        public int aimSettleFrames = 40;
+        [Tooltip("Reticle aiming: real seconds the reticle rests on the target before the click (hover dwell).")]
+        public float aimSettleSeconds = 0.25f;
     }
 
     /// <summary>
@@ -74,7 +99,7 @@ namespace Autoplay
     /// method, sleep, and the Mage's portal click. Records its decisions in the run's <see cref="AutoplayJournal"/> and
     /// requests captures at power verdicts and picker openings; phase tracking / phase captures are the runner's job.
     /// </summary>
-    public sealed class AutoplayDriver : MonoBehaviour
+    public sealed partial class AutoplayDriver : MonoBehaviour
     {
         private sealed class BotTurn
         {
@@ -83,6 +108,10 @@ namespace Autoplay
             public float activeSince;
             public bool done;
             public readonly HashSet<Power> tried = new();
+            // Real-input mode: the power's click is in flight (not started yet), and whether it fell back to a
+            // direct StartUse (then nothing else drives UsingPowerUpdate: PowerUsageManager only tracks clicked powers).
+            public bool clicking;
+            public bool direct;
         }
 
         public AutoplayJournal Journal { get; private set; }
@@ -140,6 +169,7 @@ namespace Autoplay
                 SelectionFlowService.instance.Autopilot = autopilot;
             }
             running = true;
+            BeginInput();
 
             // What each controlled player knows about the others (server ledger slices since NET-10): journaled on
             // every change so a scenario can prove that a reveal reached the right screen (e.g. a client-cast power).
@@ -166,6 +196,8 @@ namespace Autoplay
             {
                 return;
             }
+
+            EndInput(); // in-flight clicks stop here, before the session goes away
 
             running = false;
             if (revealer != null)
@@ -244,6 +276,8 @@ namespace Autoplay
             {
                 UpdateChat(_gameManager, _state);
             }
+
+            UpdateTour(_state);
 
             switch (_state)
             {
@@ -349,22 +383,32 @@ namespace Autoplay
                 yield break;
             }
 
+            // During the awakening players act while the processes sample, and each process samples 1.5 s after ITS
+            // phase start (a client starts later by the latency): flags set in between differ by timing only. With an
+            // input lever (slower, less regular actions) they are left out of the one-shot hash there; the in-game
+            // tripwire re-checks once settled. Without a lever the hash is unchanged.
+            bool _volatilePhase = _state is AwakeningState;
+            bool _inputLever = options.realInput != null || options.lobbyInput != null;
             string _canonical = string.Join(";", characterManager.GetCharacters(false)
                 .Where(_c => _c && !_c.isFake)
                 .OrderBy(_c => _c.ownerClientId.Value)
-                .Select(_c => $"{_c.ownerClientId.Value}:{_c.role?.roleName}:{(_c.isChained.Value ? 1 : 0)}{(_c.isCorrupted.Value ? 1 : 0)}" +
-                              $"{(_c.isHealed.Value ? 1 : 0)}{(_c.isBlessed.Value ? 1 : 0)}{(_c.isEliminated.Value ? 1 : 0)}"));
+                .Select(_c => _volatilePhase && _inputLever ? $"{_c.ownerClientId.Value}:{_c.role?.roleName}" :
+                    $"{_c.ownerClientId.Value}:{_c.role?.roleName}:{(_c.isChained.Value ? 1 : 0)}{(_c.isCorrupted.Value ? 1 : 0)}" +
+                    $"{(_c.isHealed.Value ? 1 : 0)}{(_c.isBlessed.Value ? 1 : 0)}{(_c.isEliminated.Value ? 1 : 0)}"));
             // Plus the in-game desync tripwire's public projection (roster + pseudos, characters, flags, game state,
             // roles, power lists): one hash per component, so a mismatch names the system that diverged. During the
             // awakening, players act while the processes sample (awake flags, uses left, power effects move), so a
             // one-shot sample cannot be compared there: those components are left to the in-game tripwire, which
             // re-checks after the state settles and logs [DESYNC] (an error, failing noErrors) only if it persists.
-            bool _volatilePhase = _state is AwakeningState;
+            // Lobby played through the tablet: seats toggle "Prêt" while the processes sample, so the roster (ready
+            // flags) differs by timing only there.
+            bool _lobbyInFlux = _state is LobbyState && options.lobbyInput != null;
             var _projection = PublicStateProjectionBuilder.Build(
                 CompositionRoot.For(networkManager).LobbyPlayerInfoHolder, characterManager, _gameManager);
             _canonical += " # " + string.Join(";", DesyncDigest.ComputeComponentHashes(_projection)
                 .Where(_kv => !_volatilePhase || (_kv.Key != PublicStateProjectionBuilder.CharacterFlags &&
                                                   _kv.Key != PublicStateProjectionBuilder.Powers))
+                .Where(_kv => !_lobbyInFlux || _kv.Key != PublicStateProjectionBuilder.Roster)
                 .OrderBy(_kv => _kv.Key, StringComparer.Ordinal)
                 .Select(_kv => $"{_kv.Key}={_kv.Value:x16}"));
             string _phase = $"{_gameManager.currentGameStateIndex.Value}:{_state.GetType().Name} day={_gameManager.currentDay}";
@@ -395,7 +439,7 @@ namespace Autoplay
                 }
             }
 
-            bool _someoneActing = turns.Values.Any(_t => _t.active != null);
+            bool _someoneActing = turns.Values.Any(_t => _t.active != null) || inputBusy;
 
             foreach (Character _character in characterManager.GetCharacters(false))
             {
@@ -423,7 +467,7 @@ namespace Autoplay
                     Journal.Record("awake", Describe(_character));
                 }
 
-                if (_turn.done)
+                if (_turn.done || _turn.clicking)
                 {
                     continue;
                 }
@@ -434,7 +478,11 @@ namespace Autoplay
                     {
                         if (Time.time - _turn.activeSince < options.powerTimeout)
                         {
-                            _turn.active.UsingPowerUpdate();
+                            // Real input: PowerUsageManager.Update already drives the clicked power.
+                            if (options.realInput == null || _turn.direct)
+                            {
+                                _turn.active.UsingPowerUpdate();
+                            }
                             continue;
                         }
 
@@ -449,7 +497,8 @@ namespace Autoplay
                 }
 
                 // One power in flight at a time when possessing, so the screen (and its screenshots) shows one actor.
-                if (options.possessActor && _someoneActing)
+                // Real input: one UI action at a time on any process (the pointer is shared).
+                if ((options.possessActor && _someoneActing) || inputBusy)
                 {
                     continue;
                 }
@@ -464,6 +513,13 @@ namespace Autoplay
                 if (_next == null)
                 {
                     _turn.done = true;
+                    if (options.realInput != null)
+                    {
+                        _someoneActing = true;
+                        inputBusy = true;
+                        SleepByClick(_character).Forget();
+                        continue;
+                    }
                     Journal.Record("sleep", $"{_id}");
                     _character.SleepCharacterServerRpc();
                     continue;
@@ -488,6 +544,14 @@ namespace Autoplay
                 _someoneActing = true;
                 // Kept until the next power starts: visual-picker picks happen after StartUse returns.
                 autopilot.CurrentPowerName = _next.powerName.ToString();
+                if (options.realInput != null)
+                {
+                    _turn.clicking = true;
+                    _turn.direct = false;
+                    inputBusy = true;
+                    PowerByClick(_character, _turn, _next).Forget();
+                    continue;
+                }
                 try
                 {
                     _next.StartUse();
@@ -504,7 +568,7 @@ namespace Autoplay
 
         private void UpdateVote(GameManager _gameManager)
         {
-            if (Time.time - stateEnterGameTime < options.thinkDelay)
+            if (Time.time - stateEnterGameTime < options.thinkDelay || inputBusy)
             {
                 return;
             }
@@ -526,6 +590,12 @@ namespace Autoplay
                 if (_voter.isEliminated.Value || !policy.Roll(options.voteProbability, "vote"))
                 {
                     Journal.Record("vote.skip", $"{_id}");
+                    if (options.realInput != null && !_voter.isEliminated.Value)
+                    {
+                        inputBusy = true;
+                        SkipVoteByClick(_voter).Forget();
+                        return;
+                    }
                     continue;
                 }
 
@@ -541,21 +611,34 @@ namespace Autoplay
                 Character _focus = string.IsNullOrEmpty(options.voteFocusRole) ? null : _targets.FirstOrDefault(_t =>
                     _t.role != null && _t.role.roleName.ToString().IndexOf(options.voteFocusRole, StringComparison.OrdinalIgnoreCase) >= 0);
                 ulong _targetId = (_focus != null ? _focus : policy.Choose(_targets, "vote")).ownerClientId.Value;
-                if (networkManager.IsServer)
+                if (options.realInput != null)
                 {
-                    // Same server method VoteState.OnPlayerVoted reaches, with the bot's id as the sender.
-                    _gameManager.DoStateMethodRpc(typeof(VoteState).FullName, "OnPlayerVotedRpc",
-                        new[] { new NetworkSerializableObject(_id), new NetworkSerializableObject(_targetId) },
-                        new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+                    inputBusy = true;
+                    VoteByInput(_gameManager, _voter, _targetId).Forget();
+                    return; // one vote at a time, the pointer is shared
                 }
-                else if (CurrentState is VoteState _voteState)
-                {
-                    // A real client votes exactly like its vote button does.
-                    _voteState.OnPlayerVoted(_targetId);
-                }
-                Journal.Record("vote", $"{_id} -> {_targetId}");
+                VoteDirect(_gameManager, _id, _targetId);
                 return; // one vote per frame
             }
+        }
+
+        // Same server method VoteState.OnPlayerVoted reaches (host: with the bot's id as the sender), or the client's
+        // own vote button path.
+        private void VoteDirect(GameManager _gameManager, ulong _id, ulong _targetId)
+        {
+            if (networkManager.IsServer)
+            {
+                // Same server method VoteState.OnPlayerVoted reaches, with the bot's id as the sender.
+                _gameManager.DoStateMethodRpc(typeof(VoteState).FullName, "OnPlayerVotedRpc",
+                    new[] { new NetworkSerializableObject(_id), new NetworkSerializableObject(_targetId) },
+                    new CustomRpcParams(CustomRpcParams.RpcTargetType.server));
+            }
+            else if (CurrentState is VoteState _voteState)
+            {
+                // A real client votes exactly like its vote button does.
+                _voteState.OnPlayerVoted(_targetId);
+            }
+            Journal.Record("vote", $"{_id} -> {_targetId}");
         }
 
         private void UpdatePortal(GameManager _gameManager, TakeDownThePortalState _portal)
@@ -584,10 +667,25 @@ namespace Autoplay
                 portalTried.Clear();
                 return;
             }
+            if (inputBusy)
+            {
+                return; // the pointer is taken: pick and throttle only when the click can happen
+            }
 
             ulong _targetId = policy.Choose(_candidates, "portal.character").ownerClientId.Value;
             portalTried.Add(_targetId);
             lastPortalClick = Time.time;
+            if (options.realInput != null)
+            {
+                inputBusy = true;
+                PortalByClick(_gameManager, _mageId, _targetId).Forget();
+                return;
+            }
+            PortalDirect(_gameManager, _mageId, _targetId);
+        }
+
+        private void PortalDirect(GameManager _gameManager, ulong _mageId, ulong _targetId)
+        {
             if (options.possessActor)
             {
                 Possess(_mageId);
@@ -633,6 +731,18 @@ namespace Autoplay
             }
 
             Card _card = policy.Choose(autopilot.Focus(_cards, _c => _c.characterInfo), "picker.card");
+            if (options.realInput != null)
+            {
+                try
+                {
+                    yield return PickCardByInput(_picker, _card, _opening).ToCoroutine(_e => InputError($"picker #{_opening}", _e));
+                }
+                finally
+                {
+                    pickerHandling = false; // never left stuck: a stuck flag would stop every later pick
+                }
+                yield break;
+            }
             var _pointer = new PointerEventData(EventSystem.current);
             _card.OnPointerEnter(_pointer);
             Journal.Record("picker.hover", $"#{_opening} {DescribeCard(_card)}");

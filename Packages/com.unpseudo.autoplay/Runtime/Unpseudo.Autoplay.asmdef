@@ -1,7 +1,9 @@
 {
     "name": "Unpseudo.Autoplay",
     "rootNamespace": "Unpseudo.Autoplay",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

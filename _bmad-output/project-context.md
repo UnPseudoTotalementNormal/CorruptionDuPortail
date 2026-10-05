@@ -71,6 +71,11 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **`ConnectionApproval` must be set identically on host and client**, else NGO rejects every join. Host-only playtests hide it (BootScene serialized `true` + guard test).
 - **Join handshake:** after `WaitForConnectedOrTimeout`, NGO has already loaded GameScene and unloaded the menu. Never raw `LoadScene` (destroys NetworkObjects), no UI in the continuation, no `Shutdown` in a generic `catch`.
 - **`NetworkList` late-joiner duplicate:** a same-tick entry can arrive twice, permanently. `CharacterManager` dedups by reference (`[CHARLIST]`). Never dedup by `ownerClientId`.
+- **A long GameScene sync loses NetworkVariable deltas** unless `NetworkConfig.SpawnTimeout` covers it: NGO defers a
+  synchronizing client's object creations (no limit) but purges the deltas / parent syncs for those objects after
+  SpawnTimeout (10 s in BootScene) → ghost Character (`ownerClientId = FAKE_CLIENT_ID`), missing player, for the whole
+  game. `ClientConnectionPayload.Apply` (every client start path) raises it to `JoinHandshake.DeferredMessageWindowSeconds`;
+  a new client start path must call it. Repro: autoplay `join-spawn-during-load`.
 - **`DisconnectReason` non-empty ≠ server reason:** every client transport drop yields a `"[Disconnect Event]…"` placeholder. Use `HasServerReason`.
 - **`CharacterManager.GetCharacters()` defaults `triggerUpdate: true`** and re-raises `onCharactersListUpdated` at end of frame. Calling it from that event's handler = per-frame loop. Passive readers: `GetCharacters(false)`.
 - `Character.isEliminated` is quasi-deprecated: build "player out" on chaining.

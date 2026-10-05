@@ -121,6 +121,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `join-version-mismatch` | une autre version du jeu est refusée avec le message de version | réseau, 3 clients | PASS 2026-10-05 |
 | `join-stuck-load-kick` | un chargement bloqué est éjecté à 90 s, le lobby démarre sans lui | réseau, 3 clients | PASS 2026-10-05 |
 | `join-slow-load-honest` | un chargement lent (30 s) n'est pas éjecté, le client joue | réseau, 3 clients | PASS 2026-10-05 |
+| `join-spawn-during-load` | un joueur assis pendant un chargement > 10 s est vu par tous (propriétaire + liste complète), 0 désync | réseau, 3 clients | PASS 2026-10-05 (FAIL 2/2 avant le correctif) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
 | `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |

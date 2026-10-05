@@ -194,6 +194,11 @@ namespace Autoplay
             // Real clients first (multi-process run): the lobby adds their characters as they connect. A scenario where
             // some clients are meant to be refused (version gate, stuck load) waits for the others only.
             int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
+            float _spawnDuringLoad = ParseSeconds(_context.Config.Option("spawn-during-load"));
+            if (_spawnDuringLoad > 0f)
+            {
+                _context.Capture.StartCoroutine(SpawnDuringLoad(_context, _spawnDuringLoad));
+            }
             if (_clients > 0)
             {
                 yield return _context.WaitFor(() => networkManager.ConnectedClientsIds.Count >= _clients + 1 && CountPlayers() >= _clients + 1,
@@ -203,14 +208,15 @@ namespace Autoplay
             }
 
             // Simulated players (ids 100..) fill the table, one per frame so each spawn settles.
-            int _bots = _context.Config.OptionInt("bots", _context.Config.OptionInt("players", 8) - 1 - _clients);
+            int _bots = Math.Max(0, _context.Config.OptionInt("bots", _context.Config.OptionInt("players", 8) - 1 - _clients) - earlyBots);
             for (int _i = 0; _i < _bots; _i++)
             {
                 characterManager.SpawnSimulatedPlayer();
                 yield return null;
             }
-            yield return _context.WaitFor(() => CountPlayers() == _bots + _clients + 1, 10f,
-                $"expected {_bots + _clients + 1} players, got {CountPlayers()}");
+            int _expected = _bots + earlyBots + _clients + 1;
+            yield return _context.WaitFor(() => CountPlayers() == _expected, 10f,
+                $"expected {_expected} players, got {CountPlayers()}");
             if (_context.Failed) yield break;
 
             // The host plays its own seat and the simulated bots; real clients play themselves.
@@ -290,6 +296,28 @@ namespace Autoplay
                 }
             }
             yield return null;
+        }
+
+        // Bots already seated by the spawn-during-load lever (counted in the table fill).
+        private int earlyBots;
+
+        // Scenario lever "spawn-during-load S": S real seconds after a joiner starts synchronizing (and while it still
+        // is), the host seats a simulated player: a Character is spawned, then gets its owner / parent / roster entry,
+        // while that joiner is still loading (late-joiner Characters desync, investigation late-joiner-character-desync).
+        private IEnumerator SpawnDuringLoad(AutoplayContext _context, float _seconds)
+        {
+            yield return _context.WaitFor(() => ConnectionApprovalGate.HasSynchronizingClients, 120f, "spawn-during-load: no joiner ever synchronized");
+            if (_context.Failed) yield break;
+            yield return new WaitForSecondsRealtime(_seconds);
+            if (!ConnectionApprovalGate.HasSynchronizingClients)
+            {
+                _context.Journal.Record("join.spawn-during-load", "skipped: the joiner finished loading first");
+                yield break;
+            }
+            characterManager.SpawnSimulatedPlayer();
+            earlyBots++;
+            _context.Journal.Record("join.spawn-during-load", string.Format(CultureInfo.InvariantCulture,
+                "bot seated {0:0.0}s after a joiner started loading, joiner still loading", _seconds));
         }
 
         private static void InputError(AutoplayContext _context, string _action, Exception _exception)
@@ -477,6 +505,16 @@ namespace Autoplay
                 _blocker = SceneManager.LoadSceneAsync(MainMenuSceneIndex, LoadSceneMode.Additive);
                 _blocker.allowSceneActivation = false;
                 _context.Journal.Record("join.stall", string.Format(CultureInfo.InvariantCulture, "scene loads held for {0:0}s after synchronization starts", _stall));
+            }
+
+            // Scenario lever "connect-delay S": this client waits S real seconds before its first connect attempt, so it
+            // joins while another client is still synchronizing (e.g. one held by stall-load): the host then spawns
+            // this client's Character during the other client's load.
+            float _connectDelay = ParseSeconds(_context.Config.Option("connect-delay"));
+            if (_connectDelay > 0f)
+            {
+                _context.Journal.Record("join.delay", string.Format(CultureInfo.InvariantCulture, "{0:0.0}s", _connectDelay));
+                yield return new WaitForSecondsRealtime(_connectDelay);
             }
 
             // The host may not be listening yet: retry for a while (each attempt bounded).

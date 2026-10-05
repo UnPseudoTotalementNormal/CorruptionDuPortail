@@ -1,0 +1,55 @@
+{
+  "name": "join-spawn-during-load",
+  "goal": "A client whose GameScene load outlasts NGO's SpawnTimeout (10 s; held 25 s by stall-load) while the host seats a player during that load (spawn-during-load 5: a Character is spawned, then gets owner / parent / roster entry) must end with every Character's owner and the full roster, without desync (late-joiner Characters desync, investigation late-joiner-character-desync, 2026-10-05).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 94,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes",
+    "-autoplay-spawn-during-load",
+    "5"
+  ],
+  "clientArgs": [],
+  "client1Args": [
+    "-autoplay-stall-load",
+    "25"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "join.stall.released",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "join.spawn-during-load",
+      "detail": "still loading",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

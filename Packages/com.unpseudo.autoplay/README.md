@@ -91,3 +91,8 @@ to capture it from its first frame.
   un-focused and at the bottom of the z-order instead, never locks the cursor, and mutes the game.
 - A run killed mid-game can leave its UDP socket bound in the process: the runner probes for a free port.
 - Never recompile while a PlayMode run is in flight (domain reload = run killed without a report).
+
+## Extend it
+
+A goal autoplay does not cover yet? Add a lever, an event or a check rather than handing it back to a human playtest:
+`EXTENDING.md` (where code goes, building blocks, rules, definition of done).

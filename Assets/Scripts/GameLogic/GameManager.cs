@@ -246,6 +246,7 @@ namespace GameLogic
             }
         
             GetGameState(currentGameStateIndex.Value).StateUpdateServer();
+            ExpireReservedSeats(Time.realtimeSinceStartupAsDouble);
         }
 
         #region GameState Methods
@@ -644,8 +645,8 @@ namespace GameLogic
         // HandlePlayerLeft). Read by VoteState.CanVote (through HasClientLeft) so a departed player is dropped from
         // the eligible-voter denominator — the behavior the old fakify-on-disconnect gave for free (isFake), lost
         // when Phase 1 switched to chaining. Keyed on the true "this real client has left" discriminator, NOT on
-        // isChained (chained-but-present players stay eligible — owner ruling). Never cleared; reconnection is out
-        // of scope. Bots (id >= 100) are never added (they never fire the disconnect callback).
+        // isChained (chained-but-present players stay eligible — owner ruling). A rejoin (feat/player-rejoin) will
+        // clear its entry. Bots (id >= 100) are never added (they never fire the disconnect callback).
         private readonly HashSet<ulong> _departedClientIds = new();
 
         /// <summary>
@@ -654,6 +655,49 @@ namespace GameLogic
         /// excluding chained-but-present players.
         /// </summary>
         public bool HasClientLeft(ulong _clientId) => _departedClientIds.Contains(_clientId);
+
+        // Rejoin step 1 (feat/player-rejoin): a real player who disconnects MID-GAME keeps his seat for a grace delay
+        // instead of being chained at once (owner decision 2026-10-05). While reserved he is "departed" (shown as
+        // left, skipped at night, excluded from the vote denominator) but NOT chained; when the delay expires the
+        // ratified leave rule applies (instant chain + victory re-check). Server-only.
+        private readonly SeatReservations _reservedSeats = new();
+
+        /// <summary>Real seconds a mid-game leaver's seat stays reserved (dev / test runs may shorten it).</summary>
+        public double RejoinGraceSeconds { get; internal set; } = GameValues.REJOIN_GRACE_SECONDS;
+
+        /// <summary>Server: true while this real client's seat is reserved after a mid-game disconnect.</summary>
+        public bool IsSeatReserved(ulong _clientId) => _reservedSeats.IsReserved(_clientId);
+
+        /// <summary>Server: seats currently reserved (read-only view, e.g. for tooling).</summary>
+        public IEnumerable<ulong> ReservedSeatIds => _reservedSeats.ReservedIds;
+
+        // Settles every reserved seat whose grace delay is over at _now: the leave rule applies to each, once.
+        internal void ExpireReservedSeats(double _now)
+        {
+            if (!IsServer || _reservedSeats.Count == 0)
+            {
+                return;
+            }
+
+            foreach (ulong _clientId in _reservedSeats.TakeExpired(_now))
+            {
+                Character _leaver = characterManager.GetCharacters(false)
+                    .FirstOrDefault(_c => _c && _c.ownerClientId.Value == _clientId);
+                if (_leaver == null || _leaver.isChained.Value)
+                {
+                    Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired — nothing to chain (no live seat or already chained).");
+                    continue;
+                }
+
+                Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired after {RejoinGraceSeconds:0} s — chaining instantly (no animation).");
+                ChainLeaverInstant(_leaver);
+                if (TryResolveVictoryAfterLeave())
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
+                    return;
+                }
+            }
+        }
 
         // [LEAVE] Phase 1 (epic-player-leave-stability) — THE ONE authoritative server-side reaction to
         // a player disconnect. Replaces the four independent, order-undefined callback reactions (the old
@@ -708,32 +752,28 @@ namespace GameLogic
             }
             else
             {
-                // Mid-game leave: chain the leaver instantly (isChained, role revealed, portal/Mage special
-                // case) via the ratified ChainingManager primitive. NOT fakify (the old fakify path is deleted).
+                // Mid-game leave (rejoin step 1): RESERVE the seat for the grace delay instead of chaining at once.
+                // The player shows as left and is skipped; ExpireReservedSeats applies the ratified rule (instant
+                // chain -> victory re-check) once the delay is over, unless he came back.
                 Character _leaver = characterManager.GetCharacters()
                     .FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
-                if (_leaver != null)
+                if (_leaver != null && !_leaver.isChained.Value)
                 {
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — chaining instantly (no animation).");
-                    ChainLeaverInstant(_leaver);
+                    _reservedSeats.Reserve(_clientId, Time.realtimeSinceStartupAsDouble, RejoinGraceSeconds);
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — seat reserved for {RejoinGraceSeconds:0} s (not chained yet).");
 
-                    // [LEAVE][PHASE 2] Order is load-bearing: chain -> victory -> unblock.
-                    // 1) Re-run the victory evaluation off the fresh chain. If the leaver was the last un-chained
-                    //    anomaly, WChosenChainedAllAnomaly now holds and the chosen (élus) win INSTANTLY — the
-                    //    resolver jumps straight to GameEndingState and there is nothing left to unblock.
-                    if (TryResolveVictoryAfterLeave())
-                    {
-                        Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
-                        return;
-                    }
-
-                    // 2) No winner yet: unblock whatever state was waiting on this specific player so the
-                    //    night/vote/portal cannot hang on a seat that will never act again.
+                    // Unblock whatever state was waiting on this specific player so the night/vote/portal cannot
+                    // hang on a seat that is away.
+                    UnblockCurrentStateAfterLeave(_clientId);
+                }
+                else if (_leaver != null)
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game, already chained — nothing to reserve.");
                     UnblockCurrentStateAfterLeave(_clientId);
                 }
                 else
                 {
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game but owned no live character — nothing to chain.");
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game but owned no live character — nothing to reserve.");
                 }
             }
 

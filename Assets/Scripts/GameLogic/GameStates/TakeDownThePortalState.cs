@@ -286,6 +286,15 @@ namespace GameLogic.GameStates
                 return;
             }
 
+            // Rejoin step 1: a Mage chained while away (seat reserved, or chained when his grace expired) cannot
+            // click: skip the step instead of waiting forever on him.
+            if (gameManager.HasClientLeft(mageCharacterOwnerId))
+            {
+                Debug.Log($"[LEAVE] TakeDownThePortal: the Mage {mageCharacterOwnerId} is away — step skipped.");
+                _ = Loop.WaitAFrameAndNextGameState();
+                return;
+            }
+
             GameAudioManager.instance.PlayMusicRpc(takeDownThePortalMusic.GetPath(), 
                 gameManager.NetworkManager.RpcTarget.ClientsAndHost);
 

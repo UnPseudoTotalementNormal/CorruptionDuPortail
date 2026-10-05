@@ -41,7 +41,7 @@ namespace Tests.PlayMode.Desingleton
         private const string BenignUtpSocketNoise = "socket receive requests were marked as failed";
 
         [UnityTest]
-        public IEnumerator RealClient_DropsMidGame_IsChainedByUnifiedPipeline()
+        public IEnumerator RealClient_DropsMidGame_SeatReserved_ThenChainedWhenGraceExpires()
         {
             // --- Arrange: past-lobby, roles exist. -----------------------------------------
             ulong _leaverClientId = ClientNm.LocalClientId;
@@ -106,11 +106,11 @@ namespace Tests.PlayMode.Desingleton
                     5f,
                     "Server never received OnClientDisconnectCallback for the leaver within the frame budget.");
 
-                // Phase 1 side effect: the seat is CHAINED (not fakified). Bounded wait for it to land.
+                // Rejoin step 1: the seat is RESERVED (departed, not chained). Bounded wait for it to land.
                 yield return NetworkTestHelper.WaitUntilOrTimeout(
-                    () => _leaver == null || _leaver.isChained.Value,
+                    () => HostGm.IsSeatReserved(_leaverClientId),
                     5f,
-                    "Server did not chain the leaver within the frame budget (Phase 1 unified pipeline).");
+                    "Server did not reserve the leaver's seat within the frame budget (rejoin step 1).");
 
                 // The BoardManager NRE rides a deferred (next-tick) SendTo.Everyone RPC, so it
                 // surfaces a few frames after the callback. Bounded wait for it to appear so it is
@@ -132,12 +132,20 @@ namespace Tests.PlayMode.Desingleton
 
             // --- Phase-1 assertions (unified pipeline behavior) ---
 
-            // (a) Phase 1: the leaver seat is CHAINED, not fakified. The Character is server-owned, so a
-            //     mid-game leave chains it in place (it is not removed/destroyed like a lobby leave).
+            // (a) Rejoin step 1: the leaver's seat is kept (server-owned Character, not removed like a lobby leave),
+            //     departed and RESERVED, NOT chained yet.
             Assert.IsNotNull(_leaver,
-                "Leaver Character was destroyed by the disconnect (unexpected — mid-game it is chained in place, not removed).");
+                "Leaver Character was destroyed by the disconnect (unexpected — mid-game the seat stays, not removed).");
+            Assert.IsFalse(_leaver.isChained.Value,
+                "Rejoin step 1: a mid-game leave reserves the seat, it must NOT chain the leaver before the grace delay.");
+            Assert.IsTrue(HostGm.HasClientLeft(_leaverClientId), "The leaver must be recorded as departed (skipped, no vote).");
+
+            // When the grace delay is over, the ratified leave rule applies: instant chain.
+            HostGm.ExpireReservedSeats(Time.realtimeSinceStartupAsDouble + HostGm.RejoinGraceSeconds + 1.0);
+            yield return null;
             Assert.IsTrue(_leaver.isChained.Value,
-                "Phase 1: a mid-game leave must CHAIN the leaver (isChained == true) via GameManager.HandlePlayerLeft.");
+                "Once the grace delay expires the leaver must be CHAINED (the July leave rule) via ExpireReservedSeats.");
+            Assert.IsFalse(HostGm.IsSeatReserved(_leaverClientId), "An expired seat is no longer reserved.");
             Assert.AreEqual(_leaverClientId, _leaver.ownerClientId.Value,
                 "Phase 1: chaining must NOT fakify — ownerClientId stays the real leaver id.");
             Assert.AreNotEqual(GameValues.FAKE_CLIENT_ID, _leaver.ownerClientId.Value,

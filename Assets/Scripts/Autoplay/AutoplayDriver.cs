@@ -277,6 +277,11 @@ namespace Autoplay
                 UpdateChat(_gameManager, _state);
             }
 
+            if (networkManager.IsServer)
+            {
+                TrackReservedSeats(_gameManager);
+            }
+
             UpdateTour(_state);
 
             switch (_state)
@@ -349,6 +354,28 @@ namespace Autoplay
                     Journal.Record("fake.sleep", string.Format(CultureInfo.InvariantCulture, "{0} after {1:0.0}s", _fake.role?.roleName, Time.time - _since));
                     _fake.SleepCharacterServerRpc(); // what the game's own fake skip calls, just earlier
                 }
+            }
+        }
+
+        // Rejoin: seats the server keeps for mid-game leavers (seat.reserved when one appears, seat.released when it goes:
+        // expired then chained, or taken back by a rejoin).
+        private readonly HashSet<ulong> reservedSeatsSeen = new();
+
+        private void TrackReservedSeats(GameManager _gameManager)
+        {
+            var _now = new HashSet<ulong>(_gameManager.ReservedSeatIds);
+            foreach (ulong _id in _now)
+            {
+                if (reservedSeatsSeen.Add(_id))
+                {
+                    Journal.Record("seat.reserved", $"{_id} phase={CurrentState?.GetType().Name}");
+                }
+            }
+            foreach (ulong _id in reservedSeatsSeen.Where(_id => !_now.Contains(_id)).ToList())
+            {
+                reservedSeatsSeen.Remove(_id);
+                Character _seat = characterManager.GetCharacters(false).FirstOrDefault(_c => _c && _c.ownerClientId.Value == _id);
+                Journal.Record("seat.released", $"{_id} chained={(_seat != null && _seat.isChained.Value)} left={_gameManager.HasClientLeft(_id)}");
             }
         }
 

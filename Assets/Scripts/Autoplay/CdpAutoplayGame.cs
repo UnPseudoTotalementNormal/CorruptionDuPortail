@@ -120,6 +120,7 @@ namespace Autoplay
         {
             isClient = string.Equals(_context.Config.Option("role", "host"), "client", StringComparison.OrdinalIgnoreCase);
             maxDays = _context.Config.OptionInt("max-days", 0);
+            rejoinGraceSeconds = ParseSeconds(_context.Config.Option("rejoin-grace"));
             if (isClient)
             {
                 yield return Connect(_context, _port);
@@ -141,6 +142,10 @@ namespace Autoplay
                 yield break;
             }
             networkManager.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
+            if (rejoinGraceSeconds > 0f)
+            {
+                _context.Journal.Record("seat.grace", string.Format(CultureInfo.InvariantCulture, "{0:0.0}s", rejoinGraceSeconds));
+            }
 
             yield return _context.WaitFor(() =>
             {
@@ -193,6 +198,10 @@ namespace Autoplay
 
             // Real clients first (multi-process run): the lobby adds their characters as they connect. A scenario where
             // some clients are meant to be refused (version gate, stuck load) waits for the others only.
+            if (rejoinGraceSeconds > 0f)
+            {
+                gameManager.RejoinGraceSeconds = rejoinGraceSeconds;
+            }
             int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             float _spawnDuringLoad = ParseSeconds(_context.Config.Option("spawn-during-load"));
             if (_spawnDuringLoad > 0f)
@@ -297,6 +306,10 @@ namespace Autoplay
             }
             yield return null;
         }
+
+        // Scenario lever "rejoin-grace S" (host): a mid-game leaver's seat stays reserved S real seconds instead of
+        // GameValues.REJOIN_GRACE_SECONDS, so a test run sees the expiry (chain) without waiting two minutes.
+        private float rejoinGraceSeconds;
 
         // Bots already seated by the spawn-during-load lever (counted in the table fill).
         private int earlyBots;

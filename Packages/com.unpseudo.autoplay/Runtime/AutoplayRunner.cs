@@ -33,7 +33,8 @@ namespace Unpseudo.Autoplay
             var _capture = _host.AddComponent<AutoplayCapture>();
             var _context = new AutoplayContext(_config, _journal, _capture);
 
-            _capture.Begin(_journal, () => _game.Phase, _game.ExportStateJson, !_config.Flag("no-png"));
+            // "png" wins over "no-png" (launchers pass no-png to every client; a scenario may need one client's screenshots).
+            _capture.Begin(_journal, () => _game.Phase, _game.ExportStateJson, !_config.Flag("no-png") || _config.Flag("png"));
 
             // Optional animation recorder: "-autoplay-record kindRegex:seconds[,…]" (+ record-fps, record-width).
             string _recordSpec = _config.Option("record");
@@ -57,6 +58,13 @@ namespace Unpseudo.Autoplay
                     _journal.Record("port", $"UDP {_config.port} busy, using {_port}");
                 }
                 yield return _game.Host(_context, _port);
+                if (!_context.Failed)
+                {
+                    // The session is up (host: listening with the game scene loaded; client: joined or refused). The
+                    // multi-process launcher starts the clients only after the host's one: a client joining while the
+                    // host still loads its scene gets a broken scene synchronization.
+                    _journal.Record(AutoplayJournal.SessionReadyEvent, _game.Phase);
+                }
             }
 
             if (!_context.Failed)

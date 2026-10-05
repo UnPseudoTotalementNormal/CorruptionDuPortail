@@ -21,6 +21,8 @@ namespace Unpseudo.Autoplay
         /// <summary>Event kind the runner records on every phase change; feeds <see cref="Report.stateTrace"/>.</summary>
         public const string PhaseEvent = "state.enter";
         public const string CaptureEvent = "capture";
+        /// <summary>Recorded once the game's Host step succeeded (multi-process launchers wait for the host's).</summary>
+        public const string SessionReadyEvent = "session.ready";
 
         [Serializable]
         public sealed class Entry

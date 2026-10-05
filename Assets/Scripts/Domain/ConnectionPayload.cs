@@ -13,7 +13,9 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public sealed class ConnectionPayload
     {
-        public const byte CurrentFormat = 1;
+        public const byte CurrentFormat = 2;
+        // Format 1 (before rejoin) is still read: same fields, no rejoin token.
+        private const byte Format1 = 1;
         private const int MaxStringBytes = 256;
         private const int MaxPayloadBytes = 2048;
 
@@ -23,6 +25,9 @@ namespace CorruptionDuPortail.Domain
         public ulong SteamId;
         /// <summary>NET-05: the sender runs in the Unity Editor (version strings are meaningless there).</summary>
         public bool IsEditor;
+        /// <summary>Rejoin 02: secret session token proving the sender owns a seat in the running game (empty on a
+        /// first join). Checked by the host's connection approval when the game has already started.</summary>
+        public string RejoinToken = string.Empty;
 
         public byte[] ToBytes()
         {
@@ -35,6 +40,7 @@ namespace CorruptionDuPortail.Domain
                 WriteString(_writer, PlayerFullName);
                 _writer.Write(SteamId);
                 _writer.Write(IsEditor);
+                WriteString(_writer, RejoinToken);
             }
             return _stream.ToArray();
         }
@@ -51,7 +57,8 @@ namespace CorruptionDuPortail.Domain
             {
                 using var _stream = new MemoryStream(bytes, writable: false);
                 using var _reader = new BinaryReader(_stream, Encoding.UTF8);
-                if (_reader.ReadByte() != CurrentFormat)
+                byte _format = _reader.ReadByte();
+                if (_format != CurrentFormat && _format != Format1)
                 {
                     return false;
                 }
@@ -64,6 +71,10 @@ namespace CorruptionDuPortail.Domain
                     SteamId = _reader.ReadUInt64(),
                     IsEditor = _reader.ReadBoolean(),
                 };
+                if (_format == CurrentFormat)
+                {
+                    _result.RejoinToken = ReadString(_reader);
+                }
                 payload = _result;
                 return true;
             }

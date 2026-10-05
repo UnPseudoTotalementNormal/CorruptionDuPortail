@@ -91,6 +91,8 @@ namespace GameLogic.GameStates
         public override void OnStartStateClient()
         {
             base.OnStartStateClient();
+            // Rejoin 02: the game is over, the session token has nothing left to open.
+            Network.RejoinSessionStore.Clear();
         }
         
         public override void OnEndStateClient()

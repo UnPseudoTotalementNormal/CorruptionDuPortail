@@ -229,8 +229,13 @@ namespace GameLogic.GameStates
         {
             focusManager.SetFocusOnType(FocusType.Roles);
 
-            focusManager.FocusObject(boardManager.visibleCards
-                .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
+            // A peer that rejoined during this step has no board cards yet (they are dealt at the next state entry).
+            var _card = boardManager.visibleCards
+                .FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId);
+            if (_card != null)
+            {
+                focusManager.FocusObject(_card.gameObject);
+            }
         }
         
         private void SetIgnoreCharactersRpc(ulong[] _ignoreCharacters)
@@ -282,6 +287,15 @@ namespace GameLogic.GameStates
             if (!shouldActivate)
             {
                 Debug.Log("TakeDownThePortalState is not activated");
+                _ = Loop.WaitAFrameAndNextGameState();
+                return;
+            }
+
+            // Rejoin step 1: a Mage chained while away (seat reserved, or chained when his grace expired) cannot
+            // click: skip the step instead of waiting forever on him.
+            if (gameManager.HasClientLeft(mageCharacterOwnerId))
+            {
+                Debug.Log($"[LEAVE] TakeDownThePortal: the Mage {mageCharacterOwnerId} is away — step skipped.");
                 _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }

@@ -55,6 +55,7 @@ namespace UI
 
         private void Start()
         {
+            CreateRejoinButton();
             closeHostMenu.onClick.AddListener(OnCloseHostButtonClicked);
             openHostMenu.onClick.AddListener(OnOpenHostButtonClicked);
         
@@ -96,6 +97,118 @@ namespace UI
         private void OnLobbyNameValueChange(string _text)
         {
             lobbyCreatingName = _text;
+        }
+
+        // ---- Rejoin (feat/player-rejoin): back into the game this player dropped from ----
+
+        private Button _rejoinButton;
+
+        // Shown only when this PC holds a fresh session of a game it was seated in (token + how to reach the host).
+        // Built from the join button at runtime: same look, no scene edit (visuals are placeholders, design-owned).
+        private void CreateRejoinButton()
+        {
+            if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session) ||
+                (_session.hostKind != "relay" && _session.hostKind != "steam") || openJoinMenu == null)
+            {
+                return;
+            }
+
+            GameObject _copy = Instantiate(openJoinMenu.gameObject, openJoinMenu.transform.parent);
+            _copy.name = "RejoinButton";
+            var _rect = (RectTransform)_copy.transform;
+            var _source = (RectTransform)openJoinMenu.transform;
+            _rect.anchoredPosition = _source.anchoredPosition - new Vector2(0f, _source.rect.height * 1.25f);
+            foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
+            {
+                _label.text = "Rejoindre la partie en cours";
+            }
+            _rejoinButton = _copy.GetComponent<Button>();
+            _rejoinButton.onClick.RemoveAllListeners();
+            _rejoinButton.onClick.AddListener(OnRejoinButtonClicked);
+        }
+
+        public void OnRejoinButtonClicked()
+        {
+            if (_isBusy)
+            {
+                return;
+            }
+            _isBusy = true;
+            OnRejoinButtonClickedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnRejoinButtonClickedAsync()
+        {
+            loadingCanvasGroup.DoShowGroup();
+            bool _ok = false;
+            try
+            {
+                if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session))
+                {
+                    throw new System.Exception("No game to rejoin");
+                }
+                GameCode.gameCode = _session.lobbyCode;
+                // The cloud lobby is locked once the game started: go straight to the host.
+                Network.RejoinSessionStore.SetConnectionTarget(_session.hostKind, _session.hostAddress, _session.lobbyCode);
+                if (_session.hostKind == "relay")
+                {
+                    RelayConnectResult _result = await RelayConnector.ConnectClientAsync(_session.hostAddress);
+                    _ok = _result.Success;
+                    if (!_ok && !string.IsNullOrEmpty(_result.FailureMessage))
+                    {
+                        LobbyManager.instance?.ReportError(_result.FailureMessage);
+                    }
+                }
+                else if (_session.hostKind == "steam" && ulong.TryParse(_session.hostAddress, out ulong _hostSteamId))
+                {
+                    var _transport = NetworkManager.Singleton.GetComponent<FacepunchTransport>();
+                    if (_transport == null)
+                    {
+                        throw new System.Exception("FacepunchTransport not found on NetworkManager!");
+                    }
+                    _transport.targetSteamId = _hostSteamId;
+                    Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
+                    if (!NetworkManager.Singleton.StartClient())
+                    {
+                        throw new System.Exception("Failed to start client");
+                    }
+                    ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+                    _ok = _fail == ConnectFailReason.None;
+                    if (!_ok)
+                    {
+                        LobbyManager.instance?.ReportError(JoinHandshake.BuildFailureMessage(_fail));
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[REJOIN] Error rejoining the game: {e}");
+            }
+            finally
+            {
+                if (!_ok)
+                {
+                    // Read BEFORE the shutdown (it may clear the reason).
+                    bool _refused = NetworkManager.Singleton != null &&
+                                    CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(NetworkManager.Singleton.DisconnectReason);
+                    if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                    {
+                        NetworkManager.Singleton.Shutdown();
+                    }
+                    // Refused by the host (seat no longer reserved, game over): nothing left to rejoin. A connection
+                    // that merely failed keeps the session, so the player can try again while his seat is reserved.
+                    if (_refused)
+                    {
+                        Network.RejoinSessionStore.Clear();
+                        if (_rejoinButton != null)
+                        {
+                            _rejoinButton.gameObject.SetActive(false);
+                        }
+                    }
+                    loadingCanvasGroup.DoHideGroup();
+                }
+                _isBusy = false;
+            }
         }
 
         public void OnJoinButtonClicked()
@@ -239,6 +352,8 @@ namespace UI
             }
 
             _transport.targetSteamId = _hostSteamId;
+            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
+            Network.RejoinSessionStore.SetConnectionTarget("steam", _hostSteamId.ToString(), lobby.LobbyCode);
             
             // NET-02: the profile + build version travel inside the connection request.
             Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
@@ -261,6 +376,8 @@ namespace UI
                 return RelayConnectResult.Failed(null);
             }
 
+            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
+            Network.RejoinSessionStore.SetConnectionTarget("relay", _value.Value, lobby.LobbyCode);
             // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
             // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
             return await RelayConnector.ConnectClientAsync(_value.Value);

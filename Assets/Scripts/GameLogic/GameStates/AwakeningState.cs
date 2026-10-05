@@ -92,6 +92,13 @@ namespace GameLogic.GameStates
                     {
                         continue;
                     }
+
+                    // Rejoin step 1: a real player away (seat reserved after a disconnect) sleeps through his turn.
+                    if (gameManager.HasClientLeft(_currentCharacter.ownerClientId.Value))
+                    {
+                        Debug.Log($"[LEAVE] Awakening: {_currentCharacter.ownerClientId.Value} is away (seat reserved) — skipped.");
+                        continue;
+                    }
                     
                     currentlyAwakenedCharacters.Add(_currentCharacter);
 

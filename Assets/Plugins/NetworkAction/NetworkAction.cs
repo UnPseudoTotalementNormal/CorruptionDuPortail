@@ -73,6 +73,17 @@ namespace Network.Action
             }
         }
         
+        /// <summary>Server only: raises the action on ONE client (e.g. a player who reconnected and missed it).</summary>
+        public void InvokeFor(ulong _clientId)
+        {
+            if (!Manager.IsServer)
+            {
+                return;
+            }
+            using FastBufferWriter _writer = new(1, Unity.Collections.Allocator.Temp);
+            Manager.CustomMessagingManager.SendNamedMessage(messageID, _clientId, _writer);
+        }
+
         private void OnReceiveMessage(ulong _senderClientId, FastBufferReader _messagePayload)
         {
             if (Manager.IsServer && _senderClientId != NetworkManager.ServerClientId)

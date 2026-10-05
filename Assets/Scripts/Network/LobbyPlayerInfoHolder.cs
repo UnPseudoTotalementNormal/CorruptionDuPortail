@@ -60,6 +60,10 @@ namespace Network
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            if (IsServer && gameManager != null)
+            {
+                gameManager.onPlayerRejoinedServer += OnPlayerRejoinedServer; // Rejoin 02
+            }
 
             characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
             _roster.OnValueChanged += OnRosterValueChanged;
@@ -78,6 +82,10 @@ namespace Network
 
         public override void OnNetworkDespawn()
         {
+            if (gameManager != null)
+            {
+                gameManager.onPlayerRejoinedServer -= OnPlayerRejoinedServer;
+            }
             _roster.OnValueChanged -= OnRosterValueChanged;
 
             if (IsServer && NetworkManager != null)
@@ -109,6 +117,16 @@ namespace Network
             _roster.Value = _next;
         }
 
+
+        // Rejoin 02: the player of that seat is back — his row is no longer "left".
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection)
+        {
+            if (IsSpawned)
+            {
+                SetRosterServer(_roster.Value.WithBack(_seat));
+            }
+        }
+
         private void OnClientDisconnected(ulong clientId)
         {
             ConnectionApprovalGate.DiscardPendingProfile(clientId);
@@ -118,7 +136,9 @@ namespace Network
             // removing it made every client lose that player's name. Lobby leaves still remove the row. An unwired /
             // unspawned GameManager reads as lobby (= the previous always-remove behaviour).
             bool _inLobby = gameManager == null || !gameManager.IsSpawned || gameManager.IsInLobbyPhase;
-            SetRosterServer(_inLobby ? _roster.Value.WithRemoved(clientId) : _roster.Value.WithLeft(clientId));
+            // Rejoin 02: a rejoined player's connection id stands for his seat's row.
+            ulong _seat = characterManager != null ? characterManager.SeatOfTransport(clientId) : clientId;
+            SetRosterServer(_inLobby ? _roster.Value.WithRemoved(_seat) : _roster.Value.WithLeft(_seat));
         }
 
         private void OnClientConnected(ulong clientId)

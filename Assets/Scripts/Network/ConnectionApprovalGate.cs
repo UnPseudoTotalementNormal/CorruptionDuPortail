@@ -66,6 +66,18 @@ namespace Network
                 _gameManager != null,
                 _gameManager != null && _gameManager.IsInLobbyPhase);
 
+            // Rejoin 02: mid-game, a connection carrying the token of a RESERVED seat takes that seat back.
+            bool _rejoin = false;
+            if (!_approve && _gameManager != null
+                && ConnectionPayload.TryParse(_request.Payload, out ConnectionPayload _rejoinPayload)
+                && BuildVersionGate.Evaluate(Application.version, Application.isEditor, _rejoinPayload) != BuildVersionGate.Verdict.Rejected
+                && _gameManager.TryClaimReservedSeat(_rejoinPayload.RejoinToken, _request.ClientNetworkId, out ulong _claimedSeat))
+            {
+                _approve = true;
+                _rejoin = true;
+                Debug.Log($"[JOIN-GATE] Connection {_request.ClientNetworkId} approved as a rejoin of seat {_claimedSeat}.");
+            }
+
             _response.Approved = _approve;
             // Characters are spawned manually by LobbyState.OnClientConnected, never via an auto player
             // prefab (none is wired) — so approval must NOT create a player object.
@@ -108,6 +120,10 @@ namespace Network
 
             // NET-02: keep the joiner's profile until it finishes synchronizing; LobbyPlayerInfoHolder takes it on
             // OnClientConnected and upserts the roster row itself (no follow-up RPC round-trip to lose).
+            if (_rejoin)
+            {
+                return; // the seat's roster row already exists (kept "left" mid-game)
+            }
             if (_hasPayload)
             {
                 s_pendingProfiles[_clientId] = _payload;
@@ -169,6 +185,11 @@ namespace Network
             // NET-05: approved in the lobby but finished loading after the game started — nothing can seat it (no
             // character, no role). Send it back to the menu with the server's reason instead of leaving a ghost.
             GameManager _gameManager = GameManager.instance;
+            if (_gameManager != null && _gameManager.IsRejoining(_clientId))
+            {
+                _gameManager.CompleteRejoin(_clientId); // Rejoin 02: the seat is his again
+                return;
+            }
             if (_clientId != NetworkManager.ServerClientId && _gameManager != null && _gameManager.IsSpawned
                 && !_gameManager.IsInLobbyPhase)
             {

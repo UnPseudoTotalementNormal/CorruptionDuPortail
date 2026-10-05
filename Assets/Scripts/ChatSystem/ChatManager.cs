@@ -1,5 +1,6 @@
 #region
 
+using GameLogic;
 using System;
 using System.Collections.Generic;
 using AudioSystem;
@@ -83,8 +84,28 @@ namespace ChatSystem
             };
         }
 
+        // Rejoin 02: a player who reconnects starts with no channel list; announce his channels again. The game
+        // manager may spawn after this one, so the server hooks it on the first frame it exists.
+        private GameManager _rejoinSource;
+
+        private void Update()
+        {
+            if (_rejoinSource == null && IsServer && GameManager.instance != null)
+            {
+                _rejoinSource = GameManager.instance;
+                _rejoinSource.onPlayerRejoinedServer += OnPlayerRejoinedServer;
+            }
+        }
+
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection) => ResendChannelsServer(_seat);
+
         public override void OnNetworkDespawn()
         {
+            if (_rejoinSource != null)
+            {
+                _rejoinSource.onPlayerRejoinedServer -= OnPlayerRejoinedServer;
+                _rejoinSource = null;
+            }
             if (instance == this)
             {
                 instance = null;
@@ -200,7 +221,10 @@ namespace ChatSystem
             bool _fromServer = _transportSender == NetworkManager.ServerClientId;
             if (!_fromServer)
             {
-                _chatMessage.senderClientId = _transportSender;
+                // Rejoin 02: a rejoined player's new connection writes as his seat.
+                _chatMessage.senderClientId = CharacterManager.instance != null
+                    ? CharacterManager.instance.SeatOfTransport(_transportSender)
+                    : _transportSender;
                 if (_chatMessage.chatId == (int)ChatWindowIDs.Server)
                 {
                     Debug.LogWarning($"[CHAT] Client {_transportSender} tried to write in the read-only server channel.");
@@ -240,7 +264,9 @@ namespace ChatSystem
             var _recipients = new List<ulong>();
             foreach (ulong _member in _membership.MembersOf(_chatId))
             {
-                ulong _connection = _member >= 100 ? NetworkManager.ServerClientId : _member;
+                ulong _connection = _member >= 100
+                    ? NetworkManager.ServerClientId
+                    : (CharacterManager.instance != null ? CharacterManager.instance.TransportOfSeat(_member) : _member);
                 if (_recipients.Contains(_connection))
                 {
                     continue;
@@ -252,6 +278,20 @@ namespace ChatSystem
                 _recipients.Add(_connection);
             }
             return _recipients;
+        }
+
+        /// <summary>Rejoin 02, server-only: announces again every channel <paramref name="_member"/> belongs to (his client
+        /// reconnected and starts with no channel list).</summary>
+        public void ResendChannelsServer(ulong _member)
+        {
+            if (!IsServer || CharacterManager.instance == null)
+            {
+                return;
+            }
+            foreach (int _chatId in _membership.ChannelsOf(_member))
+            {
+                DiscoverChatRpc(_chatId, default, CharacterManager.instance.GetSafeRpcTarget(_member));
+            }
         }
 
         /// <summary>NET-11: server-only. Makes <paramref name="_member"/> a member of a private channel and tells its client.</summary>

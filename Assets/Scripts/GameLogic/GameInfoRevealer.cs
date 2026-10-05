@@ -262,7 +262,8 @@ namespace GameLogic
             }
 
             // A real viewer that is not connected (left) has nobody to receive it.
-            if (_viewer < 100 && _viewer != NetworkManager.ServerClientId && !NetworkManager.ConnectedClientsIds.Contains(_viewer))
+            ulong _connection = characterManager != null ? characterManager.TransportOfSeat(_viewer) : _viewer;
+            if (_viewer < 100 && _connection != NetworkManager.ServerClientId && !NetworkManager.ConnectedClientsIds.Contains(_connection))
             {
                 return;
             }
@@ -276,7 +277,9 @@ namespace GameLogic
         [Rpc(SendTo.Server)]
         private void RequestKnowledgeSliceServerRpc(RpcParams _params = default)
         {
-            PushSlice(_params.Receive.SenderClientId, ulong.MaxValue, false);
+            // Rejoin 02: a rejoined player's new connection pulls his seat's slice.
+            ulong _sender = _params.Receive.SenderClientId;
+            PushSlice(characterManager != null ? characterManager.SeatOfTransport(_sender) : _sender, ulong.MaxValue, false);
         }
 
         // ---- slice application (every peer) ------------------------------------------------------------------

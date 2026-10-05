@@ -318,8 +318,10 @@ namespace Characters.Powers
         private int _serverPreConsumedUses;
         private bool _serverEffectAwaitingConsume;
 
+        // Rejoin 02: a rejoined owner's new connection acts for his seat.
         private bool IsAllowedSender(ulong _sender) =>
-            _sender == ownerClientId.Value || _sender == NetworkManager.ServerClientId;
+            (characterManager != null ? characterManager.SeatOfTransport(_sender) : _sender) == ownerClientId.Value
+            || _sender == NetworkManager.ServerClientId;
 
         private bool ServerOwnerCanAct(bool _requireAwake)
         {

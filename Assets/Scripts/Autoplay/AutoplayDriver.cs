@@ -73,6 +73,8 @@ namespace Autoplay
         [NonSerialized] public AutoplayVirtualInput lobbyInput;
         [Tooltip("Real-input tour (-autoplay-real-input-tour): tooltip, pause menu, tablet, chat app, emote wheel, once per game.")]
         public bool realInputTour;
+        [Tooltip("This peer starts in the middle of a phase (a rejoin): no state hash for that first phase, the host sampled it before the peer was back.")]
+        public bool joinedMidPhase;
         [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]
         public bool tourAudioSlider;
         [Tooltip("Real seconds the pointer takes to glide to a target.")]
@@ -277,6 +279,11 @@ namespace Autoplay
                 UpdateChat(_gameManager, _state);
             }
 
+            if (networkManager.IsServer)
+            {
+                TrackReservedSeats(_gameManager);
+            }
+
             UpdateTour(_state);
 
             switch (_state)
@@ -352,6 +359,28 @@ namespace Autoplay
             }
         }
 
+        // Rejoin: seats the server keeps for mid-game leavers (seat.reserved when one appears, seat.released when it goes:
+        // expired then chained, or taken back by a rejoin).
+        private readonly HashSet<ulong> reservedSeatsSeen = new();
+
+        private void TrackReservedSeats(GameManager _gameManager)
+        {
+            var _now = new HashSet<ulong>(_gameManager.ReservedSeatIds);
+            foreach (ulong _id in _now)
+            {
+                if (reservedSeatsSeen.Add(_id))
+                {
+                    Journal.Record("seat.reserved", $"{_id} phase={CurrentState?.GetType().Name}");
+                }
+            }
+            foreach (ulong _id in reservedSeatsSeen.Where(_id => !_now.Contains(_id)).ToList())
+            {
+                reservedSeatsSeen.Remove(_id);
+                Character _seat = characterManager.GetCharacters(false).FirstOrDefault(_c => _c && _c.ownerClientId.Value == _id);
+                Journal.Record("seat.released", $"{_id} chained={(_seat != null && _seat.isChained.Value)} left={_gameManager.HasClientLeft(_id)}");
+            }
+        }
+
         // Per-phase bookkeeping only: the runner records the phase change and captures it.
         private void OnStateEntered(GameState _state)
         {
@@ -364,6 +393,11 @@ namespace Autoplay
             chatSentThisState.Clear();
             portalTried.Clear();
             lastPortalClick = float.NegativeInfinity;
+            if (options.joinedMidPhase)
+            {
+                options.joinedMidPhase = false; // the next phases start with everyone: compared as usual
+                return;
+            }
             StartCoroutine(RecordStateHash(_state));
         }
 
@@ -969,6 +1003,14 @@ namespace Autoplay
             public string[] pickableCards;
             public CharacterState[] characters;
             public string[] knowledge;
+            // Rejoin: what this peer's player sees as himself (compared before a drop and after the rejoin).
+            public ulong localSeat;
+            public ulong connectionId;
+            public string localRole;
+            public string[] localPowers;
+            public int[] chatChannels;
+            public string[] icons;
+            public ulong[] leftPlayers;
         }
 
         /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
@@ -1008,10 +1050,37 @@ namespace Autoplay
                     })
                     .ToArray(),
                 knowledge = DescribeKnowledge().ToArray(),
+                localSeat = characterManager.GetLocalClientId(),
+                connectionId = networkManager.LocalClientId,
+                localRole = characterManager.GetLocalCharacter(false)?.role?.roleName.ToString() ?? "none",
+                localPowers = characterManager.GetLocalCharacter(false)?.role?.powers.Where(_p => _p)
+                                  .Select(_p => $"{_p.powerName}:{_p.powerUseLeft.Value}").ToArray() ?? Array.Empty<string>(),
+                chatChannels = chatManager != null ? chatManager.discoveredChatIds.OrderBy(_c => _c).ToArray() : Array.Empty<int>(),
+                icons = DescribeLocalIcons().ToArray(),
+                leftPlayers = CompositionRoot.For(networkManager).LobbyPlayerInfoHolder is Network.LobbyPlayerInfoHolder _roster && _roster != null
+                    ? characterManager.GetCharacters(false).Where(_c => _c && !_c.isFake && _roster.TryGetPlayerInfo(_c.ownerClientId.Value, out var _info) && _info.hasLeft)
+                        .Select(_c => _c.ownerClientId.Value).OrderBy(_id => _id).ToArray()
+                    : Array.Empty<ulong>(),
             };
 
             return JsonUtility.ToJson(_snapshot);
         }
+
+        private IEnumerable<string> DescribeLocalIcons()
+        {
+            PlayerIconManager _icons = FindAnyObjectByType<PlayerIconManager>();
+            if (_icons == null)
+            {
+                yield break;
+            }
+            foreach (var _entry in _icons.GetLocalIcons().OrderBy(_e => _e.MarkedClientId).ThenBy(_e => _e.IconId))
+            {
+                yield return $"{_entry.MarkedClientId}:{_entry.IconId}";
+            }
+        }
+
+        /// <summary>The seat this peer plays (its own clientId, or the original seat after a rejoin).</summary>
+        public ulong LocalSeat => characterManager != null ? characterManager.GetLocalClientId() : networkManager.LocalClientId;
 
         private static bool SafeCanUse(Power _power)
         {

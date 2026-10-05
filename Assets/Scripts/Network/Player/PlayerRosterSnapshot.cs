@@ -113,6 +113,19 @@ namespace Network.Player
             return Replace(_index, _info);
         }
 
+        /// <summary>Rejoin 02: the player of that seat is back (row no longer flagged "left").</summary>
+        public PlayerRosterSnapshot WithBack(ulong _clientId)
+        {
+            int _index = IndexOf(_clientId);
+            if (_index < 0 || !_entries[_index].hasLeft)
+            {
+                return this;
+            }
+            PlayerInfo _info = _entries[_index];
+            _info.hasLeft = false;
+            return Replace(_index, _info);
+        }
+
         /// <summary>Removes the row of that clientId (every row, should a corrupt source ever hold two).</summary>
         public PlayerRosterSnapshot WithRemoved(ulong _clientId)
         {

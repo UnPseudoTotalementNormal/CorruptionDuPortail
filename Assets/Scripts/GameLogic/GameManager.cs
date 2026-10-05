@@ -180,9 +180,19 @@ namespace GameLogic
                 GetGameState(currentGameStateIndex.Value).OnStartStateServer();
                 NetworkManager.OnClientDisconnectCallback += HandlePlayerLeft;
             }
-        
+
+            // Rejoin 02: mid-game, the host only lets a rejoiner in. Until the host tells this peer which seat it plays,
+            // its local identity is the new connection id and the state's client start would find no local character:
+            // the start waits for RejoinCatchUpRpc (sent right after the seat assignment).
+            if (!IsServer && !(GetGameState(currentGameStateIndex.Value) is LobbyState))
+            {
+                _clientStartDeferredForRejoin = true;
+                return;
+            }
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();
         }
+
+        private bool _clientStartDeferredForRejoin;
 
         public override void OnNetworkDespawn()
         {
@@ -246,6 +256,7 @@ namespace GameLogic
             }
         
             GetGameState(currentGameStateIndex.Value).StateUpdateServer();
+            ExpireReservedSeats(Time.realtimeSinceStartupAsDouble);
         }
 
         #region GameState Methods
@@ -508,7 +519,10 @@ namespace GameLogic
             Assert.IsNotNull(_gameState, $"GameState {stateTypeName} not found");
 
             // NET-06: expose the REAL sender to server-side state methods (they used to trust ids in the payload).
-            CurrentStateRpcSenderId = rpcParams.Receive.SenderClientId;
+            // Rejoin 02: a rejoined player's new connection acts for his original seat.
+            CurrentStateRpcSenderId = characterManager != null
+                ? characterManager.SeatOfTransport(rpcParams.Receive.SenderClientId)
+                : rpcParams.Receive.SenderClientId;
             try
             {
                 CallMethodAfterRpc(_gameState, methodName, arguments);
@@ -644,8 +658,8 @@ namespace GameLogic
         // HandlePlayerLeft). Read by VoteState.CanVote (through HasClientLeft) so a departed player is dropped from
         // the eligible-voter denominator — the behavior the old fakify-on-disconnect gave for free (isFake), lost
         // when Phase 1 switched to chaining. Keyed on the true "this real client has left" discriminator, NOT on
-        // isChained (chained-but-present players stay eligible — owner ruling). Never cleared; reconnection is out
-        // of scope. Bots (id >= 100) are never added (they never fire the disconnect callback).
+        // isChained (chained-but-present players stay eligible — owner ruling). A rejoin (feat/player-rejoin) will
+        // clear its entry. Bots (id >= 100) are never added (they never fire the disconnect callback).
         private readonly HashSet<ulong> _departedClientIds = new();
 
         /// <summary>
@@ -654,6 +668,127 @@ namespace GameLogic
         /// excluding chained-but-present players.
         /// </summary>
         public bool HasClientLeft(ulong _clientId) => _departedClientIds.Contains(_clientId);
+
+        // Rejoin step 1 (feat/player-rejoin): a real player who disconnects MID-GAME keeps his seat for a grace delay
+        // instead of being chained at once (owner decision 2026-10-05). While reserved he is "departed" (shown as
+        // left, skipped at night, excluded from the vote denominator) but NOT chained; when the delay expires the
+        // ratified leave rule applies (instant chain + victory re-check). Server-only.
+        private readonly SeatReservations _reservedSeats = new();
+
+        /// <summary>Real seconds a mid-game leaver's seat stays reserved (dev / test runs may shorten it).</summary>
+        public double RejoinGraceSeconds { get; internal set; } = GameValues.REJOIN_GRACE_SECONDS;
+
+        /// <summary>Server: true while this real client's seat is reserved after a mid-game disconnect.</summary>
+        public bool IsSeatReserved(ulong _clientId) => _reservedSeats.IsReserved(_clientId);
+
+        /// <summary>Server: seats currently reserved (read-only view, e.g. for tooling).</summary>
+        public IEnumerable<ulong> ReservedSeatIds => _reservedSeats.ReservedIds;
+
+        // Rejoin 02: approved reconnections waiting for their sync to complete (connection id -> seat).
+        private readonly Dictionary<ulong, ulong> _rejoiningSeats = new();
+
+        /// <summary>
+        /// Server, connection approval (game already started): true when <paramref name="_token"/> proves ownership of
+        /// a RESERVED seat. The new connection is bound to that seat at once so everything it sends during its sync
+        /// already acts for the seat; <see cref="CompleteRejoin"/> finishes when the sync completes.
+        /// </summary>
+        public bool TryClaimReservedSeat(string _token, ulong _connectionId, out ulong _seat)
+        {
+            _seat = 0;
+            if (!IsServer || characterManager == null || !characterManager.Seats.TryGetSeatOfToken(_token, out _seat))
+            {
+                return false;
+            }
+            if (!_reservedSeats.IsReserved(_seat))
+            {
+                Debug.Log($"[REJOIN] Connection {_connectionId} holds the token of seat {_seat}, which is not reserved (grace over or seat in use) — refused.");
+                return false;
+            }
+            characterManager.Seats.Bind(_connectionId, _seat);
+            _rejoiningSeats[_connectionId] = _seat;
+            Debug.Log($"[REJOIN] Connection {_connectionId} claims reserved seat {_seat}.");
+            return true;
+        }
+
+        /// <summary>Server: true when this connection was approved as a rejoin (its sync must not be refused).</summary>
+        public bool IsRejoining(ulong _connectionId) => _rejoiningSeats.ContainsKey(_connectionId);
+
+        /// <summary>
+        /// Server, end of a rejoiner's sync: the seat is his again — reservation released, "left" cleared, his peer
+        /// told which seat it plays, and what a fresh client misses re-sent (day, game start, chat channels).
+        /// </summary>
+        public void CompleteRejoin(ulong _connectionId)
+        {
+            if (!IsServer || !_rejoiningSeats.TryGetValue(_connectionId, out ulong _seat))
+            {
+                return;
+            }
+            _rejoiningSeats.Remove(_connectionId);
+            _reservedSeats.Release(_seat);
+            _departedClientIds.Remove(_seat);
+            Debug.Log($"[REJOIN] Seat {_seat} taken back by connection {_connectionId}.");
+
+            var _toNewConnection = new RpcParams
+            {
+                Send = new RpcSendParams { Target = RpcTarget.Single(_connectionId, RpcTargetUse.Temp) },
+            };
+            characterManager.AssignLocalSeatRpc(_seat, _toNewConnection);
+            RejoinCatchUpRpc(gameLoopCount, _toNewConnection);
+            onGameStarted.InvokeFor(_connectionId);
+            onPlayerRejoinedServer?.Invoke(_seat, _connectionId);
+        }
+
+        /// <summary>Server: a seat was taken back (seat id, new connection id) — subsystems re-send their slice.</summary>
+        public event Action<ulong, ulong> onPlayerRejoinedServer;
+
+        // A rejoined peer missed every day-passed signal: set its day counter directly.
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void RejoinCatchUpRpc(int _gameLoopCount, RpcParams _params = default)
+        {
+            gameLoopCount = _gameLoopCount;
+            Debug.Log($"[REJOIN] Caught up: day {currentDay}.");
+            if (_clientStartDeferredForRejoin)
+            {
+                _clientStartDeferredForRejoin = false;
+                // Past the introduction, the table it dealt (cards, role shelf) is rebuilt for this peer.
+                if (!(GetGameState(currentGameStateIndex.Value) is GameIntroductionState))
+                {
+                    foreach (GameIntroductionState _intro in GetGameStates(typeof(GameIntroductionState)).OfType<GameIntroductionState>())
+                    {
+                        _intro.DealBoard();
+                    }
+                }
+                GetGameState(currentGameStateIndex.Value).OnStartStateClient();
+            }
+        }
+
+        // Settles every reserved seat whose grace delay is over at _now: the leave rule applies to each, once.
+        internal void ExpireReservedSeats(double _now)
+        {
+            if (!IsServer || _reservedSeats.Count == 0)
+            {
+                return;
+            }
+
+            foreach (ulong _clientId in _reservedSeats.TakeExpired(_now))
+            {
+                Character _leaver = characterManager.GetCharacters(false)
+                    .FirstOrDefault(_c => _c && _c.ownerClientId.Value == _clientId);
+                if (_leaver == null || _leaver.isChained.Value)
+                {
+                    Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired — nothing to chain (no live seat or already chained).");
+                    continue;
+                }
+
+                Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired after {RejoinGraceSeconds:0} s — chaining instantly (no animation).");
+                ChainLeaverInstant(_leaver);
+                if (TryResolveVictoryAfterLeave())
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
+                    return;
+                }
+            }
+        }
 
         // [LEAVE] Phase 1 (epic-player-leave-stability) — THE ONE authoritative server-side reaction to
         // a player disconnect. Replaces the four independent, order-undefined callback reactions (the old
@@ -677,6 +812,15 @@ namespace GameLogic
             if (_clientId >= 100)
             {
                 return;
+            }
+
+            // Rejoin 02: the callback carries the CONNECTION id; a rejoined player's new connection stands for his
+            // original seat, which is what every game system keys on.
+            _rejoiningSeats.Remove(_clientId); // a rejoin that dropped during its sync is simply over
+            if (characterManager != null && characterManager.Seats.Unbind(_clientId, out ulong _seat))
+            {
+                Debug.Log($"[LEAVE] Connection {_clientId} played seat {_seat} (rejoined) — handling the seat.");
+                _clientId = _seat;
             }
 
             // [LEAVE][PHASE 2] Record this REAL client's departure. Phase 1 replaced the old fakify-on-disconnect
@@ -708,32 +852,28 @@ namespace GameLogic
             }
             else
             {
-                // Mid-game leave: chain the leaver instantly (isChained, role revealed, portal/Mage special
-                // case) via the ratified ChainingManager primitive. NOT fakify (the old fakify path is deleted).
+                // Mid-game leave (rejoin step 1): RESERVE the seat for the grace delay instead of chaining at once.
+                // The player shows as left and is skipped; ExpireReservedSeats applies the ratified rule (instant
+                // chain -> victory re-check) once the delay is over, unless he came back.
                 Character _leaver = characterManager.GetCharacters()
                     .FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
-                if (_leaver != null)
+                if (_leaver != null && !_leaver.isChained.Value)
                 {
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — chaining instantly (no animation).");
-                    ChainLeaverInstant(_leaver);
+                    _reservedSeats.Reserve(_clientId, Time.realtimeSinceStartupAsDouble, RejoinGraceSeconds);
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — seat reserved for {RejoinGraceSeconds:0} s (not chained yet).");
 
-                    // [LEAVE][PHASE 2] Order is load-bearing: chain -> victory -> unblock.
-                    // 1) Re-run the victory evaluation off the fresh chain. If the leaver was the last un-chained
-                    //    anomaly, WChosenChainedAllAnomaly now holds and the chosen (élus) win INSTANTLY — the
-                    //    resolver jumps straight to GameEndingState and there is nothing left to unblock.
-                    if (TryResolveVictoryAfterLeave())
-                    {
-                        Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
-                        return;
-                    }
-
-                    // 2) No winner yet: unblock whatever state was waiting on this specific player so the
-                    //    night/vote/portal cannot hang on a seat that will never act again.
+                    // Unblock whatever state was waiting on this specific player so the night/vote/portal cannot
+                    // hang on a seat that is away.
+                    UnblockCurrentStateAfterLeave(_clientId);
+                }
+                else if (_leaver != null)
+                {
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game, already chained — nothing to reserve.");
                     UnblockCurrentStateAfterLeave(_clientId);
                 }
                 else
                 {
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game but owned no live character — nothing to chain.");
+                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game but owned no live character — nothing to reserve.");
                 }
             }
 

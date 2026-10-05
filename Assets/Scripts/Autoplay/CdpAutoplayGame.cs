@@ -59,6 +59,9 @@ namespace Autoplay
         private string leftAt;
         // Server reason that ended this client's join on purpose (version gate, stuck-load kick): an expected outcome.
         private string rejected;
+        // Rejoin lever: the client is between its drop and its seat coming back (the session is not dead).
+        private bool rejoinInProgress;
+        private ushort connectPort;
         // Real-input mode (-autoplay-real-input): virtual mouse / keyboard, real devices disabled while installed.
         private AutoplayVirtualInput realInput;
         private AutoplayInputMask inputMask;
@@ -86,7 +89,7 @@ namespace Autoplay
         private bool stoppedAtDay => maxDays > 0 && gameManager != null && gameManager.IsSpawned && gameManager.currentDay > maxDays;
         private int maxDays;
 
-        public bool IsAlive => rejected != null || leftAt != null ||
+        public bool IsAlive => rejected != null || leftAt != null || rejoinInProgress ||
                                (networkManager != null && (isClient ? networkManager.IsConnectedClient : networkManager.IsListening));
 
         public IEnumerator Boot(AutoplayContext _context)
@@ -102,6 +105,14 @@ namespace Autoplay
             yield return _context.WaitFor(() => SceneManager.GetActiveScene().buildIndex == MainMenuSceneIndex, 30f,
                 "never reached the main menu");
             networkManager = NetworkManager.Singleton;
+            // Scenario lever "net-log": NGO's own developer log (approvals, disconnect events and their side) in this
+            // process's player log.
+            if (_context.Config.Flag("net-log"))
+            {
+                networkManager.LogLevel = LogLevel.Developer;
+            }
+            // Several player processes share PlayerPrefs on one machine: each keeps its rejoin token under its own key.
+            RejoinSessionStore.KeySuffix = "-autoplay-" + System.Diagnostics.Process.GetCurrentProcess().Id;
 
             // Virtual devices from the main menu on (a refused join is seen there), and the menu tour when asked.
             InstallRealInput(_context);
@@ -120,8 +131,10 @@ namespace Autoplay
         {
             isClient = string.Equals(_context.Config.Option("role", "host"), "client", StringComparison.OrdinalIgnoreCase);
             maxDays = _context.Config.OptionInt("max-days", 0);
+            rejoinGraceSeconds = ParseSeconds(_context.Config.Option("rejoin-grace"));
             if (isClient)
             {
+                connectPort = _port;
                 yield return Connect(_context, _port);
                 yield break;
             }
@@ -141,6 +154,10 @@ namespace Autoplay
                 yield break;
             }
             networkManager.SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
+            if (rejoinGraceSeconds > 0f)
+            {
+                _context.Journal.Record("seat.grace", string.Format(CultureInfo.InvariantCulture, "{0:0.0}s", rejoinGraceSeconds));
+            }
 
             yield return _context.WaitFor(() =>
             {
@@ -163,25 +180,7 @@ namespace Autoplay
                 }
 
                 // A real client plays its own seat only, through the client code paths (no possession, no bots).
-                ulong _self = networkManager.LocalClientId;
-                var _clientOptions = new AutoplayOptions
-                {
-                    visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
-                    possessActor = false,
-                    voteFocusRole = _context.Config.Option("vote-focus"),
-                    targetFocus = _context.Config.Option("target-focus"),
-                    targetFocusPower = _context.Config.Option("target-focus-power"),
-                    chat = _context.Config.Flag("chat"),
-                    realInput = GameRealInput(_context),
-                    lobbyInput = LobbyUi(_context) ? realInput : null,
-                    powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
-                    voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
-                    realInputTour = _context.Config.Flag("real-input-tour"),
-                    tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
-                };
-                driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
-                driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
-                    _clientOptions, _context.Journal, _context.Capture);
+                StartClientDriver(_context, networkManager.LocalClientId);
                 _context.Capture.StartCoroutine(RecordRtt(_context));
                 string _quitAt = _context.Config.Option("quit-at");
                 if (!string.IsNullOrEmpty(_quitAt))
@@ -193,6 +192,10 @@ namespace Autoplay
 
             // Real clients first (multi-process run): the lobby adds their characters as they connect. A scenario where
             // some clients are meant to be refused (version gate, stuck load) waits for the others only.
+            if (rejoinGraceSeconds > 0f)
+            {
+                gameManager.RejoinGraceSeconds = rejoinGraceSeconds;
+            }
             int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             float _spawnDuringLoad = ParseSeconds(_context.Config.Option("spawn-during-load"));
             if (_spawnDuringLoad > 0f)
@@ -297,6 +300,10 @@ namespace Autoplay
             }
             yield return null;
         }
+
+        // Scenario lever "rejoin-grace S" (host): a mid-game leaver's seat stays reserved S real seconds instead of
+        // GameValues.REJOIN_GRACE_SECONDS, so a test run sees the expiry (chain) without waiting two minutes.
+        private float rejoinGraceSeconds;
 
         // Bots already seated by the spawn-during-load lever (counted in the table fill).
         private int earlyBots;
@@ -510,6 +517,7 @@ namespace Autoplay
             // Scenario lever "connect-delay S": this client waits S real seconds before its first connect attempt, so it
             // joins while another client is still synchronizing (e.g. one held by stall-load): the host then spawns
             // this client's Character during the other client's load.
+            RejoinSessionStore.SetConnectionTarget("direct", $"{_address}:{_port}", string.Empty);
             float _connectDelay = ParseSeconds(_context.Config.Option("connect-delay"));
             if (_connectDelay > 0f)
             {
@@ -575,7 +583,7 @@ namespace Autoplay
                 }
                 ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
 
-                _context.Journal.Record("connect.retry", $"attempt {_attempt} to {_address}:{_port}");
+                _context.Journal.Record("connect.retry", $"attempt {_attempt} to {_address}:{_port} reason='{_reason}' synchronizing={_synchronizing}");
                 networkManager.Shutdown();
                 while (networkManager.ShutdownInProgress)
                 {
@@ -599,8 +607,10 @@ namespace Autoplay
             {
                 gameManager = CompositionRoot.For(networkManager).GameManager;
                 characterManager = CompositionRoot.For(networkManager).CharacterManager;
+                // Own character = the seat this peer plays (its clientId, or its original seat once a rejoin is done).
                 return gameManager != null && gameManager.IsSpawned && characterManager != null &&
-                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
+                       (characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId) ||
+                        rejoinInProgress);
             }, 90f, "the client never received GameScene with its own character");
         }
 
@@ -684,6 +694,94 @@ namespace Autoplay
 
         // A client that leaves on purpose mid-game (disconnect policy tests): the run then ends "completed" with a
         // left=<phase> fact instead of failing on the dead session.
+        // Scenario lever "rejoin-after S" (with quit-at, client): this client drops at that phase (as a crash or a network
+        // loss would, no Leave button), lands back in the main menu like a real player, waits S real seconds, reconnects
+        // with its session token and must get its seat back, then plays on. Captures "rejoin-before" (just before the drop) and "rejoin-after" (bursts after the
+        // rejoin) export what this player sees, for the before/after comparison (tools/autoplay/analyze_rejoin.py).
+        private IEnumerator DropAndRejoin(AutoplayContext _context, float _after, string _phase)
+        {
+            ulong _seat = driver != null ? driver.LocalSeat : networkManager.LocalClientId;
+            _context.Capture.Request("rejoin-before", 0f);
+            yield return new WaitForSecondsRealtime(0.8f);
+
+            rejoinInProgress = true;
+            _context.Journal.Record("rejoin.drop", $"seat {_seat} connection {networkManager.LocalClientId} at {_phase}");
+            if (driver != null)
+            {
+                driver.End();
+                UnityEngine.Object.Destroy(driver);
+                driver = null;
+            }
+            // An unannounced drop, as a crash of the connection: the real client path runs (ClientDisconnectHandler: "connection
+            // lost" notification, back to the main menu, session statics reset). The player then rejoins from the menu
+            // (a relaunch after a crash also starts from the menu): never reconnect inside the old game scene.
+            networkManager.Shutdown();
+            while (networkManager.ShutdownInProgress)
+            {
+                yield return null;
+            }
+            yield return _context.WaitFor(() => SceneManager.GetActiveScene().buildIndex == MainMenuSceneIndex, 30f,
+                "rejoin: the dropped client never got back to the main menu");
+            if (_context.Failed)
+            {
+                rejoinInProgress = false;
+                yield break;
+            }
+            _context.Journal.Record("rejoin.menu", "back in the main menu after the drop");
+            _context.Capture.Request("rejoin-menu", 0.5f);
+
+            yield return new WaitForSecondsRealtime(_after);
+            _context.Journal.Record("rejoin.reconnect", string.Format(CultureInfo.InvariantCulture, "after {0:0.0}s, token {1}",
+                _after, string.IsNullOrEmpty(RejoinSessionStore.TokenForConnection()) ? "missing" : "present"));
+            networkManager.LogLevel = LogLevel.Developer; // [REJOIN] NGO's own account of the reconnect, in the player log
+            yield return Connect(_context, connectPort);
+            if (!_context.Config.Flag("net-log"))
+            {
+                networkManager.LogLevel = LogLevel.Normal;
+            }
+            if (_context.Failed || rejected != null)
+            {
+                rejoinInProgress = false;
+                yield break;
+            }
+
+            yield return _context.WaitFor(() => characterManager != null && characterManager.GetLocalClientId() == _seat, 15f,
+                $"rejoin: the host never gave seat {_seat} back");
+            if (_context.Failed)
+            {
+                rejoinInProgress = false;
+                yield break;
+            }
+            _context.Journal.Record("rejoin.seat", $"seat {_seat} connection {networkManager.LocalClientId}");
+            StartClientDriver(_context, _seat, _joinedMidPhase: true);
+            rejoinInProgress = false;
+            _context.Capture.RequestBurst("rejoin-after", new[] { 1f, 3f, 6f });
+        }
+
+        // A real client's bot brain, playing seat _self (its own clientId, or its original seat after a rejoin).
+        private void StartClientDriver(AutoplayContext _context, ulong _self, bool _joinedMidPhase = false)
+        {
+            var _clientOptions = new AutoplayOptions
+            {
+                visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
+                possessActor = false,
+                voteFocusRole = _context.Config.Option("vote-focus"),
+                targetFocus = _context.Config.Option("target-focus"),
+                targetFocusPower = _context.Config.Option("target-focus-power"),
+                chat = _context.Config.Flag("chat"),
+                realInput = GameRealInput(_context),
+                lobbyInput = LobbyUi(_context) ? realInput : null,
+                powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
+                voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
+                realInputTour = _context.Config.Flag("real-input-tour"),
+                tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
+                joinedMidPhase = _joinedMidPhase,
+            };
+            driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
+            driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
+                _clientOptions, _context.Journal, _context.Capture);
+        }
+
         private IEnumerator LeaveAt(AutoplayContext _context, string _phaseText)
         {
             while (Phase.IndexOf(_phaseText, StringComparison.OrdinalIgnoreCase) < 0)
@@ -694,6 +792,12 @@ namespace Autoplay
             yield return new WaitForSecondsRealtime(1f);
             string _phase = Phase;
             ulong _self = networkManager.LocalClientId; // read before leaving: a shut-down NetworkManager reports 0
+            float _rejoinAfter = ParseSeconds(_context.Config.Option("rejoin-after"));
+            if (_rejoinAfter > 0f)
+            {
+                yield return DropAndRejoin(_context, _rejoinAfter, _phase);
+                yield break;
+            }
             // Real input: leave as a player does (pause button, then Leave); direct shutdown if that path fails.
             bool _viaUi = false;
             if (GameRealInput(_context) != null && driver != null)

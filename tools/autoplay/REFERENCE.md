@@ -77,6 +77,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `expect-clients N` | host: real clients that must join (when some are meant to be refused) |
 | `spawn-during-load <seconds>` | host: that long after a joiner starts synchronizing (and while it still is), seat a simulated player (a Character spawned, then its owner / parent / roster entry written) — the late-joiner desync trigger |
 | `connect-delay <seconds>` | this client waits that long before its first connect attempt (stagger joins; put it in client args) |
+| `net-log` | NGO's own developer log (approvals, disconnect events and which side closed) in this process's player log |
+| `rejoin-after <seconds>` | with `quit-at` (client): the client drops instead of leaving (no Leave button, like a crash or a lost connection), goes back to the main menu by the real client path, waits that long, reconnects with its session token and must get its seat back, then plays on. Captures `rejoin-before` / `rejoin-menu` / `rejoin-after` (burst 1/3/6 s) for `analyze_rejoin.py` |
+| `rejoin-grace <seconds>` | host: a mid-game leaver's seat stays reserved that long instead of `GameValues.REJOIN_GRACE_SECONDS` (120 s), so a run sees the expiry |
 | `real-input` | every seat with a screen acts through the real UI: virtual Input System mouse + keyboard (real ones disabled, settings cloned with `IgnoreFocus`); the pointer glides to the target or, cursor locked (seated vote), the camera turns until the target is under the reticle; each click must produce its effect, else `input.miss` + direct fallback. Implies `lobby-ui` and `visual-picker` |
 | `lobby-ui` | lobby through the tablet by mouse (UI Toolkit in a RenderTexture): "★ Preset classique", wheel + Imposé "+" per `force-roles`, each seat's "Prêt", start by `LobbyState.TryAutoStart` (no `ForceStart`) |
 | `real-input-tour` | once per process: tooltip, pause menu (button, audio slider on the host only: PlayerPrefs are shared by the processes and always put back, close), tablet (Tab, arrow, chat tab + field, Tab) at night while idle; emote wheel (hold T, mouse, release) at the vote recap. With `quit-at`, a real-input client leaves through the pause menu's Leave button |
@@ -91,7 +94,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Area | Kinds |
 |---|---|
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
-| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), client `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
 | Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
 | Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
@@ -131,7 +134,9 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
-| `client-leaves-at-vote` | a client leaving at the vote is chained, the game goes on |
+| `client-leaves-at-vote` | a client leaving at the vote gets a reserved seat, chained when the (10 s) grace expires; the game goes on |
+| `client-rejoin` | a client drops at the first awakening recap, rejoins 8 s later from the menu with its token: same seat, role, powers, chat channels, icons and knowledge (`analyze_rejoin.py`), no longer reserved nor left, votes again; no desync |
+| `client-disconnect-reserved` | a client leaving at night: seat reserved (skipped, no vote), chained only when the 30 s grace expires; no hang, no desync |
 | `lag-150ms` | a full game under 150 ms simulated latency |
 | `net-sync-3clients` | zero desync on every public-state component |
 | `client-owner-local-powers` | client-held Repenti / Orpheline reveals reach the owning client |
@@ -149,7 +154,7 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `real-input-menu` | first screen captured; a refused join's notification is above the login screen and closes on Dismiss |
 
 Other tools: `campaign.sh` (all scenarios + random seeds → `summary.md`), `sweep_powers.py` (one forced-role run per
-role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_contact.py`
+role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_rejoin.py` (what a rejoined player sees, before the drop vs after the rejoin), `analyze_contact.py`
 (Lack of Affection per target faction), `compare_runs.py`, `contact_sheet.py`. Shared run loading for analyzers:
 `autoplay_runs.py`.
 

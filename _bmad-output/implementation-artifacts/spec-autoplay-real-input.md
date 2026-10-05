@@ -2,7 +2,7 @@
 title: 'Autoplay — mode « vraies entrées » : les sièges à écran jouent par l''interface'
 type: 'feature'
 created: '2026-10-05'
-status: 'draft'
+status: 'ready-for-dev'
 context:
   - '{project-root}/tools/autoplay/REFERENCE.md'
   - '{project-root}/Packages/com.unpseudo.autoplay/EXTENDING.md'

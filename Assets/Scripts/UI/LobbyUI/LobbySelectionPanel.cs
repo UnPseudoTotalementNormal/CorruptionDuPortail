@@ -443,6 +443,8 @@ namespace UI.Lobby
 
             _transport.targetSteamId = _hostSteamId;
             
+            // NET-02: the profile + build version travel inside the connection request.
+            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
             bool ok = NetworkManager.Singleton.StartClient();
             if (!ok)
             {

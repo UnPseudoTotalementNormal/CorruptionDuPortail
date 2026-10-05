@@ -17,7 +17,8 @@ namespace Characters.Powers
         // engine power grants are power-local, reached via SelfState. Behaviour-identical to the old inline.
         private readonly ReincarnationDecision _decision = new();
 
-        void ISetPassiveState.SetPassive(bool _value) => ChangeIsPassiveRpc(_value);
+        // NET-08: the live passive flag is replicated state (Power.passiveOverride), not an Everyone-RPC event.
+        void ISetPassiveState.SetPassive(bool _value) => SetPassiveServer(_value);
 
         void IGrantRolePowers.GrantRolePowers(int _ownerSlot, int _fromRoleSlot)
         {
@@ -104,16 +105,11 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void ReincarnatePlayerRpc(ulong _characterClickedId)
+        private void ReincarnatePlayerRpc(ulong _characterClickedId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _characterClickedId)) return; // NET-09: server-side use authorization
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_characterClickedId), SelfState);
-        }
-
-        [Rpc(SendTo.Everyone)]
-        private void ChangeIsPassiveRpc(bool _isPassive)
-        {
-            isPassive = _isPassive;
         }
 
         protected override void StopUse()

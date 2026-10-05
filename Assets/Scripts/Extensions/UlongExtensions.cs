@@ -22,9 +22,9 @@ namespace Extensions
                 return $"AI {_fakeIdIndex}";
             }
 
-            PlayerInfo _playerInfo = LobbyPlayerInfoHolder.instance.GetPlayerInfo(_clientId);
-            
-            return _playerInfo.playerName.ToString();
+            // NET-03: same display rule as every name surface ("Joueur ?" when missing, "(parti)" marker after a leave).
+            LobbyPlayerInfoHolder _holder = LobbyPlayerInfoHolder.instance;
+            return _holder != null ? _holder.GetDisplayPseudo(_clientId) : CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
         }
     }
 }

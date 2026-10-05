@@ -122,13 +122,10 @@ namespace GameLogic
                 return;
             }
 
-            if (_power.ownerCharacter != null)
-            {
-                RemovePowerFromCharacterPowerListRpc(_power.ownerClientId.Value, new(_power));
-            }
-
+            // NET-08: no list edit here — both owners' power lists are projections of the replicated ownerClientId
+            // (Power.OnOwnerChanged rebuilds them on every peer).
             _power.GetComponent<NetworkObject>().TrySetParent(_newOwner.GetComponent<NetworkObject>());
-            
+
             _power.ownerClientId.Value = _newOwner.ownerClientId.Value;
             OnPowerReparentedServer(_power);
         }
@@ -140,38 +137,6 @@ namespace GameLogic
             _power.OnReparentedServer();
         }
         
-        [Rpc(SendTo.Everyone)]
-        public void RemovePowerFromCharacterPowerListRpc(ulong _characterId, NetworkBehaviourReference _powerNetworkRef)
-        {
-            Character _character = characterManager.GetCharacter(_characterId);
-            if (_character == null || _character.role == null)
-            {
-                return;
-            }
-
-            // Tolerate an already-despawned reference. This RPC (SendTo.Everyone) races the NetworkObject.Despawn
-            // that follows it in RemovePowerFromCharacter: the HOST processes its own copy AFTER the synchronous
-            // despawn, so TryGet fails there; a remote client that handled the despawn message first is in the same
-            // boat. In that case drop any dead entries so no fake-null husk lingers in role.powers.
-            bool _changed;
-            if (_powerNetworkRef.TryGet(out Power _power) && _power != null)
-            {
-                _changed = _character.role.powers.Remove(_power);
-            }
-            else
-            {
-                _changed = _character.role.powers.RemoveAll(_p => !_p) > 0;
-            }
-
-            // Symmetric with the add path (Character populates role.powers then fires onPowersUpdated): the power
-            // bar subscribes to this event, so a removal (spent one-shot copy, reparent) refreshes it. Only fire
-            // when the list actually changed to avoid a redundant rebuild.
-            if (_changed)
-            {
-                _character.InvokeOnPowersUpdated();
-            }
-        }
-
         private void OnDestroy()
         {
             Power.onPowerSpawned -= OnPowerSpawned;

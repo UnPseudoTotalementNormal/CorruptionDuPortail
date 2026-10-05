@@ -63,5 +63,12 @@ namespace UI.InfoTable
 
         /// <summary>The revealed role name for a client, or <c>null</c> when not revealed. Locks a row when set.</summary>
         string GetRevealedRoleName(ulong clientId);
+
+        /// <summary>NET-03: raised when player pseudos changed (late arrival, rename, a player left). The grid
+        /// re-reads <see cref="GetPseudo"/> for its existing rows — never a rebuild (that would wipe the notes).</summary>
+        event Action OnNamesChanged;
+
+        /// <summary>NET-03: the pseudo currently shown for a client.</summary>
+        string GetPseudo(ulong clientId);
     }
 }

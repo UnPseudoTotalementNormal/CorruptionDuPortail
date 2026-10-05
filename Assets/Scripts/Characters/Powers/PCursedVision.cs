@@ -7,6 +7,7 @@ using CorruptionDuPortail.Domain.Powers.Decisions;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
+using Unity.Netcode;
 
 namespace Characters.Powers
 {
@@ -16,12 +17,10 @@ namespace Characters.Powers
         // Powers-POCO v2 in-place wiring (Phase 3): logic lives in CursedVisionDecision (pure, EditMode-
         // tested). The card-effect id is a prefab-time constant fed to the decision (the Domain cannot see
         // the Game-side CardEffectID enum).
-        // The decision's effects are OWNER-LOCAL presentation (corruption reveal via SetRevealLevel, the
-        // card marker via AddCardEffect, the "élu" verdict via AddMessageLocal) plus self-RPC authoritative
-        // mutations (CorruptPlayerServerRpc, NewTargetingRpc). They MUST run on the owner's client — exactly
-        // as v1 did in the selection callback. An earlier v2 pass forwarded the pick through a SendTo.Server
-        // RPC, which made the local writes land on the host instead of the caster (invisible to any non-host
-        // player). Kept client-side; see spec-powers-poco-v2-architecture.md.
+        // NET-09: the decision runs on the SERVER from server state. Its OWNER-LOCAL presentation (corruption
+        // reveal, card marker, the "élu" verdict chat line) is delivered to the caster through RunDecisionEffects'
+        // localViewer — the routing problem that once made a server-side version land on the host is solved in the
+        // executors instead of by deciding on a client replica.
         private readonly CursedVisionDecision _decision = new();
 
         public override void OnNetworkSpawn()
@@ -38,11 +37,18 @@ namespace Characters.Powers
                 return;
             }
 
-            // Runs on the owner's client (selection callback). The decision's owner-local effects apply here
-            // directly; its authoritative effects self-RPC to the server. See the class-level note.
-            RunClientDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_character.ownerClientId.Value, roster: Roster));
+            CursedVisionServerRpc(_character.ownerClientId.Value);
             OnUsed();
+        }
+
+        [Rpc(SendTo.Server)]
+        private void CursedVisionServerRpc(ulong _targetCharacterId, RpcParams _params = default)
+        {
+            if (!ServerAuthorizeEffect(_params, _targetCharacterId)) return; // NET-09
+
+            RunDecisionEffects(_decision, new PowerContext(
+                    ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetCharacterId, roster: Roster),
+                localViewer: ownerClientId.Value);
         }
 
         public override bool CanUse(bool _ignoreCurrentlyUsed = false)

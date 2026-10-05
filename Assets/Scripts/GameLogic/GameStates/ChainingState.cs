@@ -52,7 +52,13 @@ namespace GameLogic.GameStates
 
         private async Task HandleChainingStateClientAsync()
         {
-            var _chainingCharactersId = chainingManager.chainingPlayers;
+            // NET-06: snapshot the ids now. The host clears the replicated list when ITS animation ends; enumerating the
+            // live NetworkList across awaits truncated the loop on any slower client (chain animations skipped).
+            var _chainingCharactersId = new System.Collections.Generic.List<ulong>();
+            foreach (var _id in chainingManager.chainingPlayers)
+            {
+                _chainingCharactersId.Add(_id);
+            }
             foreach (var _chainingCharacterId in _chainingCharactersId)
             {
                 var _chainingCharacter = CharacterQuery.GetCharacter(_chainingCharacterId);

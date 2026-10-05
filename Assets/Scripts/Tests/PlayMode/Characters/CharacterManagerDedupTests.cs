@@ -83,11 +83,13 @@ namespace Tests.PlayMode
         // The replica duplicate cannot be produced through AddNewCharacter (clientId
         // guard) — it only ever appears when NGO delivers the same list entry twice
         // to a client. Reproduce that exact end state on the private list.
-        private NetworkList<NetworkBehaviourReference> GetNetworkedCharacters()
+        // NET-04: the list is now a full-value NetworkVariable<NetworkObjectIdList> (unique ids by construction), so
+        // the corrupt source is reproduced by assigning a raw id list that holds the same id twice.
+        private NetworkVariable<Network.NetworkObjectIdList> GetNetworkedCharacters()
         {
             var _field = typeof(CharacterManager).GetField("networkedCharacters", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.IsNotNull(_field, "CharacterManager.networkedCharacters field not found — fix the test if it was renamed.");
-            return (NetworkList<NetworkBehaviourReference>)_field.GetValue(_characterManager);
+            return (NetworkVariable<Network.NetworkObjectIdList>)_field.GetValue(_characterManager);
         }
 
         [UnityTest]
@@ -99,7 +101,8 @@ namespace Tests.PlayMode
             LogAssert.Expect(LogType.Error, new Regex(@"\[CHARLIST\]"));
 
             // Simulate the NGO replica divergence: the same entry present twice.
-            GetNetworkedCharacters().Add(new NetworkBehaviourReference(_character));
+            GetNetworkedCharacters().Value =
+                Network.NetworkObjectIdList.FromRawForTests(_character.NetworkObjectId, _character.NetworkObjectId);
             ReflectionHelper.SetPrivateField(_characterManager, "_cacheDirty", true);
 
             var _characters = _characterManager.GetCharacters(false);

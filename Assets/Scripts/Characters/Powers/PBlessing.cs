@@ -40,8 +40,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole)
+        private void TryBlessCharacterServerRpc(ulong _blessingCharacterId, Role _compareRole, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _blessingCharacterId)) return; // NET-09: server-side use authorization
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value,
                 targetSlot: (int)_blessingCharacterId,

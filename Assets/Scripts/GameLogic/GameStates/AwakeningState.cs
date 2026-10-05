@@ -381,7 +381,7 @@ namespace GameLogic.GameStates
             bool _canPlay = false;
             foreach (var _power in _character.role.powers)
             {
-                if (_power.isPassive)
+                if (_power.IsPassive)
                 {
                     continue;
                 }

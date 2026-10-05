@@ -170,7 +170,9 @@ namespace ChatSystem
             
             string _senderName = _chatMessage.senderClientId == GameValues.CHAT_SERVER_CLIENT_ID 
                 ? "Server" 
-                : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_chatMessage.senderClientId).playerName.ToString();
+                : LobbyPlayerInfoHolder.instance != null
+                    ? LobbyPlayerInfoHolder.instance.GetDisplayPseudo(_chatMessage.senderClientId)
+                    : CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
             
             TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
 

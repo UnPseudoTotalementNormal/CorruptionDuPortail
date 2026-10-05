@@ -34,6 +34,10 @@ namespace Network.Player
         // Lobby ready-to-start flag (feat/lobby-ready-system). Server-written only (LobbyPlayerInfoHolder
         // .SetReadyServerRpc mutates just this field of the sender's entry; simulated bots are auto-ready).
         public bool isReady;
+        // NET-03 (epic-network-sync-hardening): set by the server when this player disconnects MID-GAME. The row is
+        // kept (their character stays on the board, chained) so every peer can still show "<name> (parti)".
+        // Lobby leaves still remove the row.
+        public bool hasLeft;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -42,6 +46,7 @@ namespace Network.Player
             serializer.SerializeValue(ref playerFullName);
             serializer.SerializeValue(ref playerSteamId);
             serializer.SerializeValue(ref isReady);
+            serializer.SerializeValue(ref hasLeft);
         }
 
         public bool Equals(PlayerInfo _other)
@@ -50,11 +55,12 @@ namespace Network.Player
                    && playerFullName.Equals(_other.playerFullName)
                    && playerClientId == _other.playerClientId
                    && playerSteamId == _other.playerSteamId
-                   && isReady == _other.isReady;
+                   && isReady == _other.isReady
+                   && hasLeft == _other.hasLeft;
         }
 
         public override bool Equals(object _obj) => _obj is PlayerInfo _other && Equals(_other);
 
-        public override int GetHashCode() => HashCode.Combine(playerName, playerFullName, playerClientId, playerSteamId, isReady);
+        public override int GetHashCode() => HashCode.Combine(playerName, playerFullName, playerClientId, playerSteamId, isReady, hasLeft);
     }
 }

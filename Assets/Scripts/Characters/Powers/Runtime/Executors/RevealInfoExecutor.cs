@@ -16,7 +16,9 @@ namespace Characters.Powers.Runtime.Executors
         {
             var e = (RevealInfo)effect;
             var revealer = CompositionRoot.For(runtime.NetworkManager).GameInfoRevealer;
-            if (e.Broadcast)
+            // NET-09: a viewer-local reveal produced by a decision that runs on the SERVER is sent to that viewer —
+            // applying it "locally" would write it into the HOST's knowledge instead of the caster's.
+            if (e.Broadcast || runtime.RoutesToViewer)
             {
                 revealer.SendRevealLevelRpc((ulong)e.TargetSlot, FieldName(e.Field), ToLevel(e.Level), (ulong)e.ViewerSlot, true);
             }

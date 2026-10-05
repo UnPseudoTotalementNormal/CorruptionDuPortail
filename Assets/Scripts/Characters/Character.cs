@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Board;
 using Characters.Powers;
 using Extensions;
@@ -31,6 +32,10 @@ namespace Characters
         public event Action onCharacterAwakened;
         public event Action onCharacterSleep;
         public event Action onRoleUpdated;
+        // NET-03: raised on this peer when the replicated roster changes (a pseudo arrived, was renamed, or its
+        // owner left) so name surfaces can re-apply the text without replaying any animation.
+        public event Action onOwnerPseudoChanged;
+        private LobbyPlayerInfoHolder _rosterSubscription;
 
         // Story 7.2 lane C: CharacterManager resolved once in OnNetworkSpawn via the composition root.
         // Kept null-tolerant (no Assert) — this consumer already guards on a null CharacterManager,
@@ -49,30 +54,107 @@ namespace Characters
             characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
             lobbyPlayerInfoHolder = CompositionRoot.For(NetworkManager).LobbyPlayerInfoHolder;
 
-            if (characterManager != null)
-            {
-                // Verify if identity is already set, otherwise listen for it
-                if (!ownerClientId.Value.IsFakeClientId())
-                {
-                    characterManager.RegisterSpawnedCharacter(this);
-                }
-                else
-                {
-                    ownerClientId.OnValueChanged += OnIdentityChanged;
-                }
-            }
-
             isBlessed.OnValueChanged += OnBlessed;
-        }
+            EnsureRosterSubscription();
 
-        private void OnIdentityChanged(ulong previousValue, ulong newValue)
-        {
-            if (!newValue.IsFakeClientId())
+            // NET-07: the role is replicated as state. A late or reordered value can no longer be lost: build it now
+            // if it already arrived in the spawn payload, and on every later change.
+            roleId.OnValueChanged += OnRoleIdChanged;
+            if (!IsServer && HasRoleId)
             {
-                ownerClientId.OnValueChanged -= OnIdentityChanged;
-                characterManager.RegisterSpawnedCharacter(this);
+                ApplyReplicatedRole();
             }
         }
+
+        public override void OnNetworkDespawn()
+        {
+            roleId.OnValueChanged -= OnRoleIdChanged;
+            if (_rosterSubscription != null)
+            {
+                _rosterSubscription.onRosterChanged -= RaiseOwnerPseudoChanged;
+                _rosterSubscription = null;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        // ---- NET-07: role replication --------------------------------------------------------------------------
+
+        /// <summary>
+        /// NET-07 (epic-network-sync-hardening): the authoritative identity of this character's role. Server-write;
+        /// every peer rebuilds <see cref="role"/> from <see cref="RoleRegistry"/>. 0 = no role yet (lobby).
+        /// Replaces GiveRoleToCharacterRpc, whose per-peer await on a spawn promise could be orphaned forever
+        /// (the role then stayed the serialized default: empty name, red faction, white portrait).
+        /// </summary>
+        public NetworkVariable<RoleID> roleId = new((RoleID)0);
+
+        public bool HasRoleId => (int)roleId.Value != 0;
+
+        /// <summary>Server: commits the role already assigned to <see cref="role"/> so every peer rebuilds it.</summary>
+        public void CommitRoleServer()
+        {
+            if (!IsServer || role == null)
+            {
+                return;
+            }
+            role.ownerClientId = ownerClientId.Value;
+            roleId.Value = role.roleID;
+            onRoleUpdated?.Invoke();
+        }
+
+        private void OnRoleIdChanged(RoleID _previous, RoleID _current)
+        {
+            if (IsServer)
+            {
+                return; // the server owns the authoritative Role object already
+            }
+            ApplyReplicatedRole();
+        }
+
+        private void ApplyReplicatedRole()
+        {
+            Role _rebuilt = RoleRegistry.CreateRole(roleId.Value);
+            if (_rebuilt == null)
+            {
+                Debug.LogError($"[ROLE] unknown roleId={roleId.Value} for character {ownerClientId.Value} on peer {NetworkManager.LocalClientId}.");
+                return;
+            }
+
+            _rebuilt.ownerClientId = ownerClientId.Value;
+            foreach (var _condition in _rebuilt.winningConditions)
+            {
+                if (_condition != null)
+                {
+                    _condition.ownerClientId = _rebuilt.ownerClientId;
+                }
+            }
+            role = _rebuilt;
+            CheckForPowersLocal();
+            onRoleUpdated?.Invoke();
+        }
+
+        /// <summary>
+        /// NET-07: re-runs, on THIS peer, what a role refresh used to trigger through the role RPC fan-out: the power
+        /// list scan and the onRoleUpdated notification. Called by CharacterManager's refresh broadcast.
+        /// </summary>
+        public void RefreshLocalRoleViews()
+        {
+            CheckForPowersLocal();
+            onRoleUpdated?.Invoke();
+        }
+
+        // Lane C: the holder is resolved in OnNetworkSpawn only. It is a scene-placed object, so it is spawned before
+        // any (dynamically spawned) Character on every peer; called again from GetOwnerPseudo as a cheap no-op guard.
+        private void EnsureRosterSubscription()
+        {
+            if (_rosterSubscription != null || lobbyPlayerInfoHolder == null)
+            {
+                return;
+            }
+            _rosterSubscription = lobbyPlayerInfoHolder;
+            _rosterSubscription.onRosterChanged += RaiseOwnerPseudoChanged;
+        }
+
+        private void RaiseOwnerPseudoChanged() => onOwnerPseudoChanged?.Invoke();
 
         private void OnBlessed(bool _previousValue, bool _newValue)
         {
@@ -97,38 +179,33 @@ namespace Characters
             }
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = false)]
-        public void AskForRoleUpdateRpc()
+        /// <summary>
+        /// NET-08 (epic-network-sync-hardening): rebuilds <see cref="role"/>.powers on THIS peer as the projection of
+        /// every spawned Power whose replicated ownerClientId is this character, in replicated grant order. The list
+        /// is identical on every peer by construction and never edited by an RPC (it used to be patched by three event
+        /// RPCs plus a hierarchy scan that never removed stale entries). Raises onPowersUpdated only on a real change.
+        /// </summary>
+        public void CheckForPowersLocal()
         {
-            Assert.IsTrue(IsServer, "AskForRoleUpdateRpc can only be called on server");
-            UpdateRoleRpc(role);
-        }
-        
-        [Rpc(SendTo.NotServer)]
-        public void UpdateRoleRpc(Role _role)
-        {
-            role.UpdateRole(_role);
-            CheckForPowersRpc();
-            onRoleUpdated?.Invoke();
-        }
+            if (role == null || NetworkManager == null)
+            {
+                return;
+            }
 
-        [Rpc(SendTo.Everyone)]
-        public void CheckForPowersRpc()
-        {
-            var _foundPowers = GetComponentsInChildren<Power>();
-            bool _newPowersFound = false;
-            foreach (var _power in _foundPowers)
+            List<Power> _owned = Characters.Powers.Runtime.PowerRegistry.OwnedBy(NetworkManager, ownerClientId.Value);
+            bool _changed = _owned.Count != role.powers.Count;
+            for (int _i = 0; !_changed && _i < _owned.Count; _i++)
             {
-                if (!role.powers.Contains(_power))
-                {
-                    role.powers.Add(_power);
-                    _newPowersFound = true;
-                }
+                _changed = role.powers[_i] != _owned[_i];
             }
-            if (_newPowersFound)
+            if (!_changed)
             {
-                onPowersUpdated?.Invoke();
+                return;
             }
+
+            role.powers.Clear();
+            role.powers.AddRange(_owned);
+            onPowersUpdated?.Invoke();
         }
         
         public void InvokeOnPowersUpdated()
@@ -171,10 +248,24 @@ namespace Characters
             return role;
         }
 
+        /// <summary>
+        /// NET-03: never an empty string for a real player — a missing roster row reads "Joueur ?" and a player who
+        /// left mid-game reads "&lt;name&gt; (parti)" (CorruptionDuPortail.Domain.PseudoDisplay). Fake characters
+        /// have no player behind them and keep an empty pseudo.
+        /// </summary>
         public string GetOwnerPseudo()
         {
-            if (lobbyPlayerInfoHolder == null) return "Unknown";
-            return lobbyPlayerInfoHolder.GetPlayerInfo(ownerClientId.Value).playerName.ToString();
+            if (isFake)
+            {
+                return string.Empty;
+            }
+            EnsureRosterSubscription();
+            if (lobbyPlayerInfoHolder == null)
+            {
+                return CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
+            }
+            bool _hasEntry = lobbyPlayerInfoHolder.TryGetPlayerInfo(ownerClientId.Value, out Network.Player.PlayerInfo _info);
+            return CorruptionDuPortail.Domain.PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
         }
 
         

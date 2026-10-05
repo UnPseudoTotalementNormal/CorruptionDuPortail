@@ -308,6 +308,9 @@ namespace Autoplay
             {
                 _attempt++;
                 _transport.SetConnectionData(_address, _port);
+                // Same start path as a real client: profile + build version in the connection request (the host's
+                // join gate rejects a request without them).
+                ClientConnectionPayload.Apply(networkManager);
                 if (!networkManager.StartClient())
                 {
                     _context.Fail("StartClient refused");

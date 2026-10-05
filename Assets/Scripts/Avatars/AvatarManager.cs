@@ -83,9 +83,11 @@ namespace Avatars
         // Authoritative, replicated set of spawned avatars (mirror CharacterManager.networkedCharacters):
         // late joiners receive it pre-populated WITHOUT OnListChanged, so OnNetworkSpawn force-rebuilds.
         // Field initializer (NOT Awake): NGO collects NetworkList fields via reflection at init time.
-        private NetworkList<NetworkBehaviourReference> _avatars = new();
+        // NET-04 (epic-network-sync-hardening): full-value snapshot of avatar NetworkObject ids (never a NetworkList:
+        // index RemoveAt on a #3280-diverged replica removed the wrong avatar, and list order is the seat index).
+        private readonly NetworkVariable<Network.NetworkObjectIdList> _avatars = new(new Network.NetworkObjectIdList());
 
-        // Backing cache rebuilt only when _avatars changes (OnListChanged) or on spawn, so reads
+        // Backing cache rebuilt only when _avatars changes (OnValueChanged) or on spawn, so reads
         // allocate nothing in steady state (mirror CharacterManager._charactersCache).
         private readonly List<PlayerAvatar> _avatarsCache = new();
         private bool _cacheDirty = true;
@@ -117,7 +119,7 @@ namespace Avatars
 
             // Authoritative list -> cache invalidation (mirror CharacterManager.cs:230). Late joiners get
             // the list pre-populated without OnListChanged, so force a rebuild here.
-            _avatars.OnListChanged += OnAvatarsChanged;
+            _avatars.OnValueChanged += OnAvatarsChanged;
             _cacheDirty = true;
 
             // Server-only spawn driver (mirror LobbyState.cs:57–69): spawn for already-connected real
@@ -145,7 +147,7 @@ namespace Avatars
             }
             if (_avatars != null)
             {
-                _avatars.OnListChanged -= OnAvatarsChanged;
+                _avatars.OnValueChanged -= OnAvatarsChanged;
             }
             UnregisterFromRegistry();
             base.OnNetworkDespawn();
@@ -163,7 +165,7 @@ namespace Avatars
             }
             if (_avatars != null)
             {
-                _avatars.OnListChanged -= OnAvatarsChanged;
+                _avatars.OnValueChanged -= OnAvatarsChanged;
             }
             UnregisterFromRegistry();
         }
@@ -242,10 +244,8 @@ namespace Avatars
             PlayerAvatar _avatar = _avatarObject.GetComponent<PlayerAvatar>();
             _avatar.ownerClientId.Value = _clientId;
 
-            // Authoritative source: adding here raises OnListChanged on the server and replicates the new
-            // avatar to late joiners (mirror CharacterManager.cs:424). Implicit Character/PlayerAvatar ->
-            // NetworkBehaviourReference conversion.
-            _avatars.Add(_avatar);
+            // Authoritative source (NET-04: assign a NEW id list — full-value replication, late-joiner safe).
+            _avatars.Value = _avatars.Value.WithAdded(_avatarObject.NetworkObjectId);
             _cacheDirty = true;
             return _avatar;
         }
@@ -265,13 +265,8 @@ namespace Avatars
                 return;
             }
 
-            for (int _i = _avatars.Count - 1; _i >= 0; _i--)
-            {
-                if (_avatars[_i].TryGet(out PlayerAvatar _a) && _a == _avatar)
-                {
-                    _avatars.RemoveAt(_i);
-                }
-            }
+            // NET-04: by id, never by index.
+            _avatars.Value = _avatars.Value.WithRemoved(_avatar.NetworkObjectId);
 
             var _no = _avatar.GetComponent<NetworkObject>();
             if (_no != null && _no.IsSpawned)
@@ -375,11 +370,21 @@ namespace Avatars
         {
             _avatarsCache.Clear();
             bool _allResolved = true;
-            foreach (var _reference in _avatars)
+            // NET-04: resolve ids through THIS manager's own NetworkManager.
+            var _spawned = NetworkManager != null && NetworkManager.SpawnManager != null
+                ? NetworkManager.SpawnManager.SpawnedObjects
+                : null;
+            foreach (ulong _objectId in _avatars.Value != null ? _avatars.Value.Ids : System.Array.Empty<ulong>())
             {
-                if (_reference.TryGet(out PlayerAvatar _avatar))
+                if (_spawned != null
+                    && _spawned.TryGetValue(_objectId, out NetworkObject _networkObject)
+                    && _networkObject != null
+                    && _networkObject.TryGetComponent(out PlayerAvatar _avatar))
                 {
-                    _avatarsCache.Add(_avatar);
+                    if (!_avatarsCache.Contains(_avatar))
+                    {
+                        _avatarsCache.Add(_avatar);
+                    }
                 }
                 else
                 {
@@ -391,7 +396,7 @@ namespace Avatars
             _cacheDirty = !_allResolved;
         }
 
-        private void OnAvatarsChanged(NetworkListEvent<NetworkBehaviourReference> _changeEvent) => _cacheDirty = true;
+        private void OnAvatarsChanged(Network.NetworkObjectIdList _previous, Network.NetworkObjectIdList _current) => _cacheDirty = true;
 
         private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent)
         {

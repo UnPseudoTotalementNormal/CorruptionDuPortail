@@ -280,10 +280,16 @@ namespace Network
 
             _localWasPureClient = false;
 
+            // NET-05: the server may have disconnected us ON PURPOSE with a reason (finished loading after the game
+            // started, loading too long). Show that reason instead of a misleading "host lost". Read BEFORE
+            // ReturnToMenu shuts NGO down.
+            string _reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
+            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? _reason : HostLostMessage;
+
             // Best-effort: drop the cloud lobby so we don't linger as a ghost member.
             TryLeaveLobby();
 
-            ShowNotification(HostLostMessage);
+            ShowNotification(_message);
             ReturnToMenu();
         }
 

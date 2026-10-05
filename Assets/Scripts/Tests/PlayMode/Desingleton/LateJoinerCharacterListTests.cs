@@ -142,13 +142,15 @@ namespace Tests.PlayMode.Desingleton
             // entry against the CLIENT NM explicitly — GetCharacters/RebuildCache uses TryGet WITHOUT a NM, which
             // resolves against Singleton=host (reference_char_replica_resolution_multi_nm). A #3280 duplicate entry
             // resolves to the same client replica, so the seat set still dedups to exactly {1,2,3}.
-            var rawList = (NetworkList<NetworkBehaviourReference>)ReflectionHelper.GetPrivateField(clientCm, "networkedCharacters");
-            Assert.IsNotNull(rawList, "Could not read the client CM's networkedCharacters NetworkList.");
+            // NET-04: the replicated list is now a full-value snapshot of NetworkObject ids.
+            IReadOnlyList<ulong> rawList = clientCm.ReplicatedCharacterObjectIds;
+            Assert.IsNotNull(rawList, "Could not read the client CM's replicated character ids.");
             var seats = new HashSet<ulong>();
-            foreach (NetworkBehaviourReference reference in rawList)
+            foreach (ulong objectId in rawList)
             {
-                Assert.IsTrue(reference.TryGet(out Character c, _clientNm),
+                Assert.IsTrue(_clientNm.SpawnManager.SpawnedObjects.TryGetValue(objectId, out NetworkObject no),
                     "A client list entry did not resolve against the CLIENT NetworkManager.");
+                Character c = no.GetComponent<Character>();
                 Assert.AreSame(_clientNm, c.NetworkManager,
                     "A resolved roster entry is not a client-side replica — the projection leaked a host object.");
                 seats.Add(c.ownerClientId.Value);

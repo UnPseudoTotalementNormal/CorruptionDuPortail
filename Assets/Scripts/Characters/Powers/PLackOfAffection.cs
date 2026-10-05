@@ -25,12 +25,11 @@ namespace Characters.Powers
         public EventReference onContactedAsAnomalySound;
 
         // Powers-POCO v2 in-place wiring (Phase 3): the reveal + local-chat logic lives in
-        // LackOfAffectionDecision (pure, EditMode-tested). This power is special — its effect runs on the
-        // CONTACTED TARGET's client, so the decision is dispatched there via RunClientDecisionEffects (no
-        // server guard), keyed by PowerContext.IsTrueLocalTarget. The faction-keyed contact SOUND stays
-        // adapter-side and local. NewTargeting stays exactly where v1 had it (the picker's callback).
-        // PLAYTEST-REQUIRED before merge: needs a real second client to exercise the target-client path
-        // (held-5 — see spec-powers-poco-v2-architecture.md).
+        // LackOfAffectionDecision (pure, EditMode-tested). Its effects are local to the CONTACTED TARGET.
+        // NET-09: the decision runs on the SERVER (it used to run on the target's client, from that client's
+        // replica) with the target as localViewer, so the reveal and the chat line are delivered to the target.
+        // The faction-keyed contact SOUND stays cosmetic and local to the target (OnPlayerContactedRpc).
+        // NewTargeting stays exactly where v1 had it (the picker's callback).
         private readonly LackOfAffectionDecision _decision = new();
 
         public override void OnNetworkSpawn()
@@ -48,23 +47,34 @@ namespace Characters.Powers
 
             roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);
             OnUsed();
-            OnPlayerContactedRpc(_character.ownerClientId.Value, ownerClientId.Value, characterManager.GetSafeRpcTarget(_character.ownerClientId.Value));
+            ContactServerRpc(_character.ownerClientId.Value);
         }
 
+        [Rpc(SendTo.Server)]
+        private void ContactServerRpc(ulong _targetClientId, RpcParams _params = default)
+        {
+            if (!ServerAuthorizeEffect(_params, _targetClientId)) return; // NET-09
+
+            // A real player (incl. the host) gets the contact line; a simulated bot has nobody to read it — the same
+            // split the old target-client check made (local id == target).
+            bool _isRealTarget = _targetClientId < 100;
+            RunDecisionEffects(_decision, new PowerContext(
+                    ownerSlot: (int)ownerClientId.Value,
+                    targetSlot: (int)_targetClientId,
+                    isTrueLocalTarget: _isRealTarget,
+                    roster: Roster),
+                localViewer: _targetClientId);
+
+            OnPlayerContactedRpc(_targetClientId, characterManager.GetSafeRpcTarget(_targetClientId));
+        }
+
+        // Cosmetic only: the contacted target hears the faction-keyed contact sound.
         [Rpc(SendTo.SpecifiedInParams)]
-        private void OnPlayerContactedRpc(ulong targetClientId, ulong senderClientId, RpcParams rpcParams = default)
+        private void OnPlayerContactedRpc(ulong targetClientId, RpcParams rpcParams = default)
         {
             if (!characterManager.IsLocalOrSimulated(targetClientId)) return;
 
             bool _isTrueLocalTarget = characterManager.GetLocalClientId() == targetClientId;
-
-            // The decision resolves on THIS (the contacted target's) client: reveal the sender's role when
-            // the target is a "chosen", and post the local contact line only for the true-local target.
-            RunClientDecisionEffects(_decision, new PowerContext(
-                ownerSlot: (int)senderClientId,
-                targetSlot: (int)targetClientId,
-                isTrueLocalTarget: _isTrueLocalTarget,
-                roster: Roster));
 
             if (_isTrueLocalTarget)
             {

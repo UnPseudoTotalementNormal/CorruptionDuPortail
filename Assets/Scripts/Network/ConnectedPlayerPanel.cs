@@ -17,13 +17,16 @@ public class ConnectedPlayerPanel : MonoBehaviour
     [SerializeField] private TMP_Text playerCountText;
     private void Start()
     {
-        LobbyPlayerInfoHolder.instance.playerInfos.OnListChanged += OnPlayerInfoListChanged;
+        LobbyPlayerInfoHolder.instance.onRosterChanged += UpdatePanel;
         UpdatePanel();
     }
 
-    private void OnPlayerInfoListChanged(NetworkListEvent<PlayerInfo> changeevent)
+    private void OnDestroy()
     {
-        UpdatePanel();
+        if (LobbyPlayerInfoHolder.instance != null)
+        {
+            LobbyPlayerInfoHolder.instance.onRosterChanged -= UpdatePanel;
+        }
     }
 
     private void UpdatePanel()

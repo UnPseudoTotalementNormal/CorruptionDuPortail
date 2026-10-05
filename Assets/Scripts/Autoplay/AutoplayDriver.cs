@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using Characters;
 using Characters.Powers;
+using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using GameLogic;
 using GameLogic.GameStates;
@@ -99,6 +100,8 @@ namespace Autoplay
         private readonly Dictionary<Character, float> fakeAwakeSince = new();
         private bool pickerHandling;
         private int pickerOpenCount;
+        private GameInfoRevealer revealer;
+        private readonly Dictionary<string, string> knownLevels = new();
 
         public void Begin(NetworkManager _networkManager, IEnumerable<ulong> _controlledIds, IAutoplayPolicy _policy,
             AutoplayOptions _options, AutoplayJournal _journal, AutoplayCapture _capture)
@@ -119,6 +122,14 @@ namespace Autoplay
             }
             running = true;
 
+            // What each controlled player knows about the others (server ledger slices since NET-10): journaled on
+            // every change so a scenario can prove that a reveal reached the right screen (e.g. a client-cast power).
+            revealer = CompositionRoot.For(_networkManager).GameInfoRevealer;
+            if (revealer != null)
+            {
+                revealer.onCharacterInfoRevealedChanged += OnKnowledgeChanged;
+            }
+
             Journal.Record("autoplay.begin", $"controlled=[{string.Join(",", controlledIds.OrderBy(_id => _id))}]");
         }
 
@@ -130,6 +141,10 @@ namespace Autoplay
             }
 
             running = false;
+            if (revealer != null)
+            {
+                revealer.onCharacterInfoRevealedChanged -= OnKnowledgeChanged;
+            }
             if (SelectionFlowService.instance.Autopilot == autopilot)
             {
                 SelectionFlowService.instance.Autopilot = null;
@@ -302,6 +317,19 @@ namespace Autoplay
                 .OrderBy(_c => _c.ownerClientId.Value)
                 .Select(_c => $"{_c.ownerClientId.Value}:{_c.role?.roleName}:{(_c.isChained.Value ? 1 : 0)}{(_c.isCorrupted.Value ? 1 : 0)}" +
                               $"{(_c.isHealed.Value ? 1 : 0)}{(_c.isBlessed.Value ? 1 : 0)}{(_c.isEliminated.Value ? 1 : 0)}"));
+            // Plus the in-game desync tripwire's public projection (roster + pseudos, characters, flags, game state,
+            // roles, power lists): one hash per component, so a mismatch names the system that diverged. During the
+            // awakening, players act while the processes sample (awake flags, uses left, power effects move), so a
+            // one-shot sample cannot be compared there: those components are left to the in-game tripwire, which
+            // re-checks after the state settles and logs [DESYNC] (an error, failing noErrors) only if it persists.
+            bool _volatilePhase = _state is AwakeningState;
+            var _projection = PublicStateProjectionBuilder.Build(
+                CompositionRoot.For(networkManager).LobbyPlayerInfoHolder, characterManager, _gameManager);
+            _canonical += " # " + string.Join(";", DesyncDigest.ComputeComponentHashes(_projection)
+                .Where(_kv => !_volatilePhase || (_kv.Key != PublicStateProjectionBuilder.CharacterFlags &&
+                                                  _kv.Key != PublicStateProjectionBuilder.Powers))
+                .OrderBy(_kv => _kv.Key, StringComparer.Ordinal)
+                .Select(_kv => $"{_kv.Key}={_kv.Value:x16}"));
             string _phase = $"{_gameManager.currentGameStateIndex.Value}:{_state.GetType().Name} day={_gameManager.currentDay}";
             Journal.Record("state.hash", $"{_phase} | {StableHash(_canonical)} | {_canonical}");
         }
@@ -395,7 +423,7 @@ namespace Autoplay
                 }
 
                 Power _next = _character.role?.powers.FirstOrDefault(_p =>
-                    _p && !_turn.tried.Contains(_p) && !_p.isPassive && SafeCanUse(_p));
+                    _p && !_turn.tried.Contains(_p) && !_p.IsPassive && SafeCanUse(_p));
                 if (_next == null)
                 {
                     _turn.done = true;
@@ -637,6 +665,49 @@ namespace Autoplay
             capture.RequestBurst($"verdict-{_power.powerName}-{_verdict}", options.verdictCaptureDelays);
         }
 
+        private IEnumerable<string> DescribeKnowledge()
+        {
+            if (revealer == null || !characterManager)
+            {
+                yield break;
+            }
+
+            List<ulong> _targets = characterManager.GetCharacters(false)
+                .Where(_c => _c && !_c.isFake).Select(_c => _c.ownerClientId.Value).OrderBy(_id => _id).ToList();
+            foreach (ulong _viewer in controlledIds.OrderBy(_id => _id))
+            {
+                foreach (ulong _target in _targets.Where(_t => _t != _viewer))
+                {
+                    CharacterInfoReveal _info = revealer.GetCharacterInfo(_target, _viewer);
+                    if (_info.isRoleRevealed == RevealLevel.False && _info.isCorruptRevealed == RevealLevel.False &&
+                        _info.forceCorruptOnRoleRevealed == RevealLevel.False && _info.isHacked == RevealLevel.False)
+                    {
+                        continue;
+                    }
+                    yield return $"{_viewer}>{_target} role={(int)_info.isRoleRevealed} corrupt={(int)_info.isCorruptRevealed} " +
+                                 $"force={(int)_info.forceCorruptOnRoleRevealed} hacked={(int)_info.isHacked}";
+                }
+            }
+        }
+
+        private void OnKnowledgeChanged()
+        {
+            if (!running)
+            {
+                return;
+            }
+
+            foreach (string _line in DescribeKnowledge())
+            {
+                string _key = _line.Substring(0, _line.IndexOf(' '));
+                if (!knownLevels.TryGetValue(_key, out string _previous) || _previous != _line)
+                {
+                    knownLevels[_key] = _line;
+                    Journal.Record("knowledge", _line);
+                }
+            }
+        }
+
         [Serializable]
         private sealed class CharacterState
         {
@@ -665,6 +736,7 @@ namespace Autoplay
             public float frostAlpha;
             public string[] pickableCards;
             public CharacterState[] characters;
+            public string[] knowledge;
         }
 
         /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
@@ -703,6 +775,7 @@ namespace Autoplay
                                       ?? Array.Empty<string>(),
                     })
                     .ToArray(),
+                knowledge = DescribeKnowledge().ToArray(),
             };
 
             return JsonUtility.ToJson(_snapshot);

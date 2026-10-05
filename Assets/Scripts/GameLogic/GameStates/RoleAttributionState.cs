@@ -29,8 +29,15 @@ namespace GameLogic.GameStates
         private CompositionRuleSet _compositionRules;
 
         public override void OnStateCreated()
-        { 
+        {
             base.OnStateCreated();
+
+            // NET-07: every peer creates this state, so every peer learns the role pool (RoleID → RoleDataObject)
+            // and can rebuild a replicated role locally from its id.
+            foreach (RoleDataObject _role in roleAttributionDictionary.Keys)
+            {
+                RoleRegistry.Register(_role);
+            }
         }
 
         public override void OnStartStateServer()
@@ -139,7 +146,8 @@ namespace GameLogic.GameStates
 
         // Applies a decided role (RoleDistributor output) to a character: clone, set, give powers, replicate.
         // Side effects only — the selection + count depletion are owned by the POCO (Story 3.3). The order
-        // (Clone → role set → ownerClientId → GivePowerToCharacter loop → GiveRoleToCharacterRpc) is preserved.
+        // (Clone → role set → ownerClientId → GivePowerToCharacter loop → replicate) is preserved; NET-07 replaced
+        // the replicate step (GiveRoleToCharacterRpc) with the Character.roleId NetworkVariable.
         private void ApplyRole(RoleDataObject _randomRole, Character _character)
         {
             if (_character)
@@ -153,7 +161,10 @@ namespace GameLogic.GameStates
                     Command.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
                 }
 
-                Command.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
+                // NET-07: the role replicates as state (Character.roleId); each peer rebuilds it from RoleRegistry.
+                RoleRegistry.Register(_randomRole);
+                _character.CheckForPowersLocal();
+                _character.CommitRoleServer();
             }
         }
 

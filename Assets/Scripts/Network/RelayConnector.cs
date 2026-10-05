@@ -93,6 +93,8 @@ namespace Network
                         continue;
                     }
 
+                    // NET-02: the profile + build version travel inside the connection request.
+                    ClientConnectionPayload.Apply(NetworkManager.Singleton);
                     if (!NetworkManager.Singleton.StartClient())
                     {
                         Debug.LogError($"{LogTag} StartClient refused ('{_connectionType}')");

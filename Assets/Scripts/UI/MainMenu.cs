@@ -240,6 +240,8 @@ namespace UI
 
             _transport.targetSteamId = _hostSteamId;
             
+            // NET-02: the profile + build version travel inside the connection request.
+            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
             bool _connected = NetworkManager.Singleton.StartClient();
             if (!_connected)
             {

@@ -279,6 +279,10 @@ namespace GameLogic
             // [LIVENESS B2] Clear the beat carrier's static registries too, so an abrupt teardown cannot strand
             // a stale bridge/sink entry into the next session (domain reload is disabled). Idempotent + null-safe.
             LivenessNetworkBridge.ResetSessionStatics();
+            // NET-02: profiles received with connection requests must not leak into the next session.
+            Network.ConnectionApprovalGate.ResetSessionStatics();
+            // NET-08: the per-NM power registry behind every character's power list.
+            Characters.Powers.Runtime.PowerRegistry.ResetSessionStatics();
         }
 
 #if UNITY_EDITOR

@@ -1,6 +1,6 @@
 ---
 name: autoplay
-description: Play Corruption du Portail automatically with bots (host + 7 simulated players, real GameScene, real power / vote / picker code paths) to check a precise goal, with screenshots and exported state at the right moments, then answer with evidence. Use when the user asks to test / check / verify / playtest / reproduce something in-game automatically ("check que tous les pouvoirs…", "vérifie que le flou…", "lance une partie auto", "fais jouer des bots", "autoplay", "teste en jeu", "est-ce que ce feedback s'affiche quand…", "simule une partie"). PREFER this over manual play mode, MCP play-mode driving or ad-hoc scripts for any in-game behaviour or visual check.
+description: Play Corruption du Portail automatically with bots (host + simulated players or up to 7 real network clients, real GameScene, real power / vote / picker / network code paths) to check a precise goal, with screenshots, recordings and exported state at the right moments, then answer with evidence; and extend the autoplay framework (new lever, event, check, scenario) when a goal is not covered yet. Use when the user asks to test / check / verify / playtest / reproduce something in-game automatically ("check que tous les pouvoirs…", "vérifie que le flou…", "lance une partie auto", "fais jouer des bots", "autoplay", "teste en jeu", "teste en réseau", "est-ce que ce feedback s'affiche quand…", "simule une partie"), or to add / improve an autoplay feature ("ajoute à l'autoplay", "l'autoplay ne couvre pas…", "nouveau scénario", "extend autoplay"). PREFER this over manual play mode, MCP play-mode driving or ad-hoc scripts for any in-game behaviour or visual check.
 ---
 
 # Autoplay — goal → bots play → evidence → answer
@@ -8,8 +8,12 @@ description: Play Corruption du Portail automatically with bots (host + 7 simula
 Framework: package `Packages/com.unpseudo.autoplay` (generic: runner, journal, captures + state export, dev-build
 bootstrap, window guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGame`,
 `AutoplayDriver` bot brain, `AutoplaySelectionAutopilot`). R&D + findings:
-`_bmad-output/implementation-artifacts/investigations/autoplay-automated-games-rnd.md`. Read the package README
-once if you have not.
+`_bmad-output/implementation-artifacts/investigations/autoplay-automated-games-rnd.md`.
+
+- **Every lever, event, capture, check and scenario that exists:** `tools/autoplay/REFERENCE.md`. Look there first.
+- **Adding to the framework:** `Packages/com.unpseudo.autoplay/EXTENDING.md` (generic method, rules, definition of
+  done) + `tools/autoplay/REFERENCE.md` § Extending in this game (where it goes here, backlog recipes).
+- Package README (layout, outputs, hard-won lessons): read once.
 
 ## 1. Turn the request into a goal you can check
 
@@ -31,8 +35,9 @@ new forced-composition option), then run. Afterwards, check in the logs that the
 
 ## 2. Environment (once per session)
 
-- Drive **your own headless editor on your checkout**, never the user's editor. Recipe + traps:
-  memory `reference_own_unity_instance_batchmode` (batchmode → modal dialogs auto-cancelled, nothing on screen).
+- By default drive **your own headless editor on your checkout** (batchmode → modal dialogs auto-cancelled, nothing
+  on screen). Use the user's open editor only when they ask for it; when unclear, ask. Recipe + traps:
+  `tools/HEADLESS_UNITY.md`.
 - Everything long runs **in the background** (`run_in_background` / Monitor), never in a foreground loop.
 - Use `tools/autoplay/unityctl.sh` (wrapper of the package CLI): `compile`, `editmode`, `build`, `play-build`,
   `last-run`. Never recompile while a PlayMode run is in flight.
@@ -61,10 +66,12 @@ the user keeps working. Never minimize a player (black captures). Ports 7850–7
 
 ### Scenario levers (player args, `-autoplay-<key>`)
 
+Complete list with every package option: `tools/autoplay/REFERENCE.md`. Most used:
 `force-roles A,B` (role-name fragments guaranteed in the composition) · `role-holder host|client|bot` (who must hold
 them; mismatch fails fast and the scenario runner retries the next seed) · `vote-focus <role text>` · `max-days N` ·
 `netsim delay,jitter,loss` (Multiplayer Tools Network Simulator; put it in `clientArgs`) · `quit-at <phase text>`
-(a client leaves mid-game; put it in `client1Args`) · `visual-picker` · `clients/players/bots`.
+(a client leaves mid-game; put it in `client1Args`) · `target-focus <client|host|bot|role>` (+ `target-focus-power`)
+· `chat` · `build-version` / `stall-load` (+ host `expect-clients`) · `visual-picker` · `clients/players/bots`.
 
 ### Declarative scenarios — prefer them for anything worth re-running
 
@@ -90,6 +97,38 @@ not a game bug — check before concluding.
 `-autoplay-fast-phases "Recap|Intro|Chaining" -autoplay-fast-timescale 12` cut a game ~3× (118 s → 39.5 s). Use them by
 default for flow / coverage runs; leave them OFF when the goal is the real timing of fake roles or of those phases.
 
+### Tests réalisés
+
+Tenir ce tableau à jour : chaque exécution d'un scénario met à jour sa ligne (date + résultat), chaque nouveau
+scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/REFERENCE.md` § Scenarios.
+
+| Test | Ce qu'il prouve | Mode | Dernier résultat |
+|---|---|---|---|
+| `mage-portal-client` | un Mage tenu par un vrai client abat le portail | réseau, 7 clients | PASS 2026-10-04 |
+| `picker-visual` | chaque ouverture du sélecteur : voile flou + cartes valides levées | build | PASS 2026-10-04 |
+| `picker-animation` | flou 0→1 en ~0,3 s, cartes +2 en y stabilisées à ~0,45 s | build (enregistrement) | PASS 2026-10-04 |
+| `client-leaves-at-vote` | un client qui part au vote est enchaîné, la partie continue | réseau, 3 clients | PASS 2026-10-04 |
+| `lag-150ms` | partie complète sous 150 ms de latence | réseau, 3 clients | PASS 2026-10-04 |
+| `net-sync-3clients` | zéro désync sur chaque composant de l'état public | réseau, 3 clients | PASS 2026-10-05 |
+| `client-owner-local-powers` | les révélations du Repenti / de l'Orpheline atteignent le client qui les tient | réseau, 7 clients | PASS 2026-10-05 |
+| `orpheline-contact-chosen` | Manque d'affection sur un élu : ligne de contact + rôle révélé | réseau, 7 clients | PASS 2026-10-05 |
+| `orpheline-contact-anomaly` | Manque d'affection sur une anomalie : ligne de contact, pas de révélation | réseau, 7 clients | PASS 2026-10-05 |
+| `chat-private` | les messages privés atteignent chaque membre réel, jamais un non-membre | réseau, 7 clients | PASS 2026-10-05 |
+| `join-version-mismatch` | une autre version du jeu est refusée avec le message de version | réseau, 3 clients | PASS 2026-10-05 |
+| `join-stuck-load-kick` | un chargement bloqué est éjecté à 90 s, le lobby démarre sans lui | réseau, 3 clients | PASS 2026-10-05 |
+| `join-slow-load-honest` | un chargement lent (30 s) n'est pas éjecté, le client joue | réseau, 3 clients | PASS 2026-10-05 |
+| balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
+| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
+
+### Not covered? Extend, do not hand it back
+
+When the goal needs something autoplay cannot do yet (bots never chat, nothing stalls a join, targets are random…),
+the default is to **add the lever / event / check**, then prove the goal with a scenario: follow
+`Packages/com.unpseudo.autoplay/EXTENDING.md` (definition of done: compile, scenario PASS on `play-net` if a client is
+involved, shown able to fail, `REFERENCE.md` updated). Start from the backlog recipes in `tools/autoplay/REFERENCE.md`
+when the gap is listed there. Hand a point to human playtest only when the extension is out of scope for the task,
+and then say which extension would cover it (and add it to the backlog table).
+
 ## 4. Read the evidence — cheaply
 
 1. `tools/autoplay/unityctl.sh last-run` (outcome, trace, counters, deduplicated errors).
@@ -99,7 +138,8 @@ default for flow / coverage runs; leave them OFF when the goal is the real timin
 
 ## 5. Answer
 
-- Verdict per goal (pass / fail / not covered), with the run folder, the key capture paths and numbers.
+- Verdict per goal (pass / fail / not covered), with the run folder, the key capture paths and numbers. A "not
+  covered" names the extension that would cover it.
 - Separate: **game bugs** (with root cause if proven — instrument with a tagged log before theorising),
   **tool problems** (fix them), and **design observations** (overlaps, layout — report only, design is owned by the
   game designer).

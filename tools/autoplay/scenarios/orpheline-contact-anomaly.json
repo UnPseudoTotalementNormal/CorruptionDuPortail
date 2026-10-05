@@ -1,0 +1,53 @@
+{
+  "name": "orpheline-contact-anomaly",
+  "goal": "Lack of Affection on an anomaly: the Orpheline (real client) contacts Abyss (real client, anomaly). Abyss's screen gets the contact line but does NOT learn the Orpheline's role (the reveal is for chosen targets only).",
+  "mode": "net",
+  "clients": 7,
+  "seed": 71,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-force-roles",
+    "Orpheline,Abyss",
+    "-autoplay-role-holder",
+    "client",
+    "-autoplay-target-focus",
+    "Abyss",
+    "-autoplay-target-focus-power",
+    "affection",
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "select.character",
+      "detail": "focus=Abyss",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_contact.py {run} --expect-faction anomaly"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

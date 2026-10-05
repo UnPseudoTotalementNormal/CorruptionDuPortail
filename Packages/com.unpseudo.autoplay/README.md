@@ -91,3 +91,14 @@ to capture it from its first frame.
   un-focused and at the bottom of the z-order instead, never locks the cursor, and mutes the game.
 - A run killed mid-game can leave its UDP socket bound in the process: the runner probes for a free port.
 - Never recompile while a PlayMode run is in flight (domain reload = run killed without a report).
+- **The splash screen comes first**: the window shows (and Unity activates it) before any scene script runs. An
+  autoplay player stops the splash at `BeforeSplashScreen` and a native thread hands the focus back from there on;
+  the guard component takes over once scripts run.
+- **Start clients only once the host is ready**: a client that joins while the host is still loading its game scene
+  gets a broken scene synchronization and hangs. The runner records `session.ready` after the Host step and
+  `launch-net.ps1` waits for the host's before starting any client.
+
+## Extend it
+
+A goal autoplay does not cover yet? Add a lever, an event or a check rather than handing it back to a human playtest:
+`EXTENDING.md` (where code goes, building blocks, rules, definition of done).

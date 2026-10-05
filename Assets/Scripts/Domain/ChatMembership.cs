@@ -55,6 +55,21 @@ namespace CorruptionDuPortail.Domain
             return _result;
         }
 
+        /// <summary>Private channels the member belongs to, in a stable order (read-only view for tooling and tests).</summary>
+        public IReadOnlyList<int> ChannelsOf(ulong member)
+        {
+            var _result = new List<int>();
+            foreach (var _channel in _members)
+            {
+                if (_channel.Value.Contains(member))
+                {
+                    _result.Add(_channel.Key);
+                }
+            }
+            _result.Sort();
+            return _result;
+        }
+
         public void Clear() => _members.Clear();
     }
 }

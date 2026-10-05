@@ -79,13 +79,14 @@ def compare(parent):
             continue
         name = os.path.basename(run)
         rep = load_report(run) or {}
-        left = any(f.startswith("left=") for f in rep.get("facts", []))
+        # A process that left, or was refused at join, on purpose has no phases to compare after that point.
+        left = any(f.startswith(("left=", "rejected=")) for f in rep.get("facts", []))
         theirs = _keyed(load_hashes(run))
         common = [k for k in host_hashes if k in theirs]
         diffs = [k for k in common if host_hashes[k][0] != theirs[k][0]]
         missing = 0 if left else len(set(host_hashes) - set(theirs))
         lines.append(f"  {name}: {len(common)} phases compared, {len(diffs)} desync, {missing} phases missing"
-                     f"{' (left on purpose)' if left else ''}")
+                     f"{' (left / refused on purpose)' if left else ''}")
         for k in diffs[:3]:
             lines.append(f"    DESYNC at {k[0]} (#{k[1]})")
             for a, b in zip(host_hashes[k][1].split(";"), theirs[k][1].split(";")):

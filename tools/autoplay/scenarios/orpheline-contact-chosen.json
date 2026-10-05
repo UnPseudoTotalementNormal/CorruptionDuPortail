@@ -1,0 +1,53 @@
+{
+  "name": "orpheline-contact-chosen",
+  "goal": "Lack of Affection on a chosen: the Orpheline (real client) contacts Le Messager (real client, chosen). The Messager's screen gets the contact line in the server channel and learns the Orpheline's role (Personal level). Forced: both roles on real clients, the Orpheline's power always targets the Messager when valid.",
+  "mode": "net",
+  "clients": 7,
+  "seed": 61,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-force-roles",
+    "Orpheline,Messager",
+    "-autoplay-role-holder",
+    "client",
+    "-autoplay-target-focus",
+    "Messager",
+    "-autoplay-target-focus-power",
+    "affection",
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "select.character",
+      "detail": "focus=Messager",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_contact.py {run} --expect-faction chosen"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

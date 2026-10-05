@@ -83,7 +83,21 @@ $hostProc = Get-Process -Id $hostPid; $null = $hostProc.Handle
 $procs += $hostProc
 Write-Output "host pid=$hostPid port=$Port"
 
-Start-Sleep -Seconds 3
+# Clients start once the host session is ready (game scene loaded): a client that joins while the host is still
+# loading gets a broken scene synchronization ("Server Scene Handle already exist") and hangs.
+$readyDeadline = (Get-Date).AddSeconds(120)
+$hostReady = $false
+while (-not $hostReady -and (Get-Date) -lt $readyDeadline -and -not $hostProc.HasExited) {
+    $hostDir = Get-ChildItem -Path $out -Directory -Filter "*-host-*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($hostDir) {
+        $events = Join-Path $hostDir.FullName "events.ndjson"
+        if ((Test-Path $events) -and (Select-String -Path $events -Pattern '"kind":"session.ready"' -SimpleMatch -Quiet)) {
+            $hostReady = $true
+        }
+    }
+    if (-not $hostReady) { Start-Sleep -Milliseconds 500 }
+}
+Write-Output ("host ready=" + $hostReady)
 for ($i = 1; $i -le $Clients; $i++) {
     $extra = $ClientArgs
     if ($i -eq 1) { $extra = "$extra $FirstClientArgs" }

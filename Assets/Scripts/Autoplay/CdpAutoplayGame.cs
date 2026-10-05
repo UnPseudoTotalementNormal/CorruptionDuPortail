@@ -2,12 +2,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using GameLogic.GameSettings;
 using GameLogic.GameStates;
 using Network;
+using Network.Services;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
@@ -32,8 +35,12 @@ namespace Autoplay
     /// <para>Scenario levers: <c>force-roles A,B</c> (role-name fragments guaranteed in the composition),
     /// <c>fast-fakes</c> (fake roles go back to sleep after ~1 s — test speed only), <c>max-days N</c> (stop after day N), <c>role-holder host|client|bot</c> (who must hold the forced roles — otherwise the run fails fast with
     /// "composition mismatch" so the launcher retries another seed), <c>netsim delay,jitter,loss</c> (Multiplayer Tools
-    /// Network Simulator on this process), <c>quit-at &lt;phase text&gt;</c> (a client leaves mid-game on purpose).
-    /// Every host run writes <c>roles.json</c> (role pool + powers) for coverage tools.</para>
+    /// Network Simulator on this process), <c>quit-at &lt;phase text&gt;</c> (a client leaves mid-game on purpose),
+    /// <c>target-focus</c> / <c>target-focus-power</c> (deterministic power targets), <c>chat</c> (bots write in their
+    /// private channels), <c>build-version &lt;v&gt;</c> and <c>stall-load &lt;seconds&gt;</c> (a client joins with
+    /// another version / a load that does not finish: the join is expected to be refused, the run then ends with a
+    /// <c>rejected=</c> fact), <c>expect-clients N</c> (host: real clients that must join, when some are expected to be
+    /// refused). Every host run writes <c>roles.json</c> (role pool + powers) for coverage tools.</para>
     /// </summary>
     public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource
     {
@@ -49,6 +56,8 @@ namespace Autoplay
         private AutoplayDriver driver;
         private bool isClient;
         private string leftAt;
+        // Server reason that ended this client's join on purpose (version gate, stuck-load kick): an expected outcome.
+        private string rejected;
 
         public string Name => "cdp";
 
@@ -65,14 +74,14 @@ namespace Autoplay
             }
         }
 
-        public bool IsOver => leftAt != null || stoppedAtDay || (gameManager != null && gameManager.IsSpawned &&
+        public bool IsOver => rejected != null || leftAt != null || stoppedAtDay || (gameManager != null && gameManager.IsSpawned &&
                               gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is GameEndingState);
 
         // Scenario lever "max-days N": end the run (completed) once day N+1 starts — enough for coverage runs.
         private bool stoppedAtDay => maxDays > 0 && gameManager != null && gameManager.IsSpawned && gameManager.currentDay > maxDays;
         private int maxDays;
 
-        public bool IsAlive => leftAt != null ||
+        public bool IsAlive => rejected != null || leftAt != null ||
                                (networkManager != null && (isClient ? networkManager.IsConnectedClient : networkManager.IsListening));
 
         public IEnumerator Boot(AutoplayContext _context)
@@ -130,6 +139,11 @@ namespace Autoplay
         {
             if (isClient)
             {
+                if (rejected != null)
+                {
+                    yield break;
+                }
+
                 // A real client plays its own seat only, through the client code paths (no possession, no bots).
                 ulong _self = networkManager.LocalClientId;
                 var _clientOptions = new AutoplayOptions
@@ -137,6 +151,9 @@ namespace Autoplay
                     visualPicker = _context.Config.Flag("visual-picker"),
                     possessActor = false,
                     voteFocusRole = _context.Config.Option("vote-focus"),
+                    targetFocus = _context.Config.Option("target-focus"),
+                    targetFocusPower = _context.Config.Option("target-focus-power"),
+                    chat = _context.Config.Flag("chat"),
                 };
                 driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
                 driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
@@ -150,8 +167,9 @@ namespace Autoplay
                 yield break;
             }
 
-            // Real clients first (multi-process run): the lobby adds their characters as they connect.
-            int _clients = _context.Config.OptionInt("clients", 0);
+            // Real clients first (multi-process run): the lobby adds their characters as they connect. A scenario where
+            // some clients are meant to be refused (version gate, stuck load) waits for the others only.
+            int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             if (_clients > 0)
             {
                 yield return _context.WaitFor(() => networkManager.ConnectedClientsIds.Count >= _clients + 1 && CountPlayers() >= _clients + 1,
@@ -183,6 +201,9 @@ namespace Autoplay
                 visualPicker = _context.Config.Flag("visual-picker"),
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 fastFakes = _context.Config.Flag("fast-fakes"),
+                targetFocus = _context.Config.Option("target-focus"),
+                targetFocusPower = _context.Config.Option("target-focus-power"),
+                chat = _context.Config.Flag("chat"),
             };
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, _controlled, new RandomValidPolicy(_context.Config.seed), _options, _context.Journal, _context.Capture);
@@ -219,6 +240,11 @@ namespace Autoplay
         {
             if (isClient)
             {
+                if (rejected != null)
+                {
+                    yield break;
+                }
+
                 // The host starts the game; a client just waits for the loop to leave the lobby.
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),
                     240f, "the host never started the game");
@@ -227,6 +253,16 @@ namespace Autoplay
 
             // Role distribution draws from UnityEngine.Random: seed it so a scenario seed reproduces the same seats.
             UnityEngine.Random.InitState(_context.Config.seed);
+
+            // A joiner still loading blocks any start (NET-05), forced or not: wait for it to finish or be kicked.
+            if (ConnectionApprovalGate.HasSynchronizingClients)
+            {
+                _context.Journal.Record("lobby.wait-loaders", "a joiner is still loading");
+                yield return _context.WaitFor(() => !ConnectionApprovalGate.HasSynchronizingClients,
+                    JoinHandshake.SyncTotalTimeoutSeconds + 60f, "a joiner was still loading long after the join cap");
+                if (_context.Failed) yield break;
+                _context.Journal.Record("lobby.loaders-done", string.Join(",", networkManager.ConnectedClientsIds));
+            }
 
             // Bots have no ready button: skip the ready census; the composition gate still applies.
             ((LobbyState)gameManager.GetGameState(gameManager.currentGameStateIndex.Value)).ForceStart();
@@ -266,6 +302,7 @@ namespace Autoplay
 
         public IEnumerable<string> DescribeOutcome()
         {
+            if (rejected != null) yield return $"rejected={rejected}";
             if (leftAt != null) yield return $"left={leftAt}";
             if (stoppedAtDay) yield return $"stopped-after-day={maxDays}";
             if (gameManager == null) yield break;
@@ -301,9 +338,25 @@ namespace Autoplay
             networkManager.NetworkConfig.NetworkTransport = _transport;
             ApplyNetworkSimulator(_context);
 
+            // Scenario lever "stall-load S": this client's scene load does not finish for S seconds once the host has
+            // started synchronizing it (the stuck-load kick). Unity queues scene loads: a load parked with
+            // allowSceneActivation = false holds every later one, NGO's GameScene load included, while the transport
+            // and the main thread keep running (a frozen or suspended process would be dropped by the transport
+            // timeout instead, another path).
+            float _stall = ParseSeconds(_context.Config.Option("stall-load"));
+            AsyncOperation _blocker = null;
+            if (_stall > 0f)
+            {
+                _blocker = SceneManager.LoadSceneAsync(MainMenuSceneIndex, LoadSceneMode.Additive);
+                _blocker.allowSceneActivation = false;
+                _context.Journal.Record("join.stall", string.Format(CultureInfo.InvariantCulture, "scene loads held for {0:0}s after synchronization starts", _stall));
+            }
+
             // The host may not be listening yet: retry for a while (each attempt bounded).
             float _deadline = Time.realtimeSinceStartup + 120f;
             int _attempt = 0;
+            bool _synchronizing = false;
+            float _syncStart = 0f;
             while (!networkManager.IsConnectedClient)
             {
                 _attempt++;
@@ -311,15 +364,35 @@ namespace Autoplay
                 // Same start path as a real client: profile + build version in the connection request (the host's
                 // join gate rejects a request without them).
                 ClientConnectionPayload.Apply(networkManager);
+                ApplyForcedBuildVersion(_context);
+                // Like the menu's join: the join wait owns a refusal (its reason is shown), not the "host lost" popup.
+                ClientDisconnectHandler.SetJoinHandshakeInProgress(true);
                 if (!networkManager.StartClient())
                 {
+                    ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
                     _context.Fail("StartClient refused");
                     yield break;
                 }
 
-                float _until = Time.realtimeSinceStartup + 10f;
-                while (Time.realtimeSinceStartup < _until && !networkManager.IsConnectedClient && networkManager.IsListening)
+                networkManager.SceneManager.OnSynchronize += _ =>
                 {
+                    if (_synchronizing) return;
+                    _synchronizing = true;
+                    _syncStart = Time.realtimeSinceStartup;
+                    _context.Journal.Record("join.synchronizing", $"attempt {_attempt}");
+                };
+
+                // Before synchronization: 10 s per attempt (host not up yet). Once the host synchronizes us, wait for
+                // the load itself, however long: a stuck load is the host's to end (join cap).
+                float _until = Time.realtimeSinceStartup + 10f;
+                while ((Time.realtimeSinceStartup < _until || _synchronizing) && !networkManager.IsConnectedClient && networkManager.IsListening)
+                {
+                    if (_blocker != null && _synchronizing && Time.realtimeSinceStartup - _syncStart >= _stall)
+                    {
+                        _blocker.allowSceneActivation = true; // an honest slow load: let it finish
+                        _context.Journal.Record("join.stall.released", string.Format(CultureInfo.InvariantCulture, "after {0:0.0}s", Time.realtimeSinceStartup - _syncStart));
+                        _blocker = null;
+                    }
                     yield return null;
                 }
 
@@ -327,6 +400,15 @@ namespace Autoplay
                 {
                     break;
                 }
+
+                // Read BEFORE any shutdown: the server's own reason, if it refused or kicked us on purpose.
+                string _reason = networkManager.DisconnectReason;
+                if (RelayFallbackPolicy.HasServerReason(_reason))
+                {
+                    yield return Rejected(_context, _reason, _synchronizing ? Time.realtimeSinceStartup - _syncStart : 0f);
+                    yield break;
+                }
+                ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
 
                 _context.Journal.Record("connect.retry", $"attempt {_attempt} to {_address}:{_port}");
                 networkManager.Shutdown();
@@ -341,7 +423,11 @@ namespace Autoplay
                     yield break;
                 }
             }
-            _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} to {_address}:{_port}");
+            ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
+            _context.Journal.Record("connected", string.Format(CultureInfo.InvariantCulture, "as client {0} to {1}:{2}{3}",
+                networkManager.LocalClientId, _address, _port, _synchronizing
+                    ? string.Format(CultureInfo.InvariantCulture, " load={0:0.0}s", Time.realtimeSinceStartup - _syncStart)
+                    : string.Empty));
 
             // NGO scene sync loads GameScene on the client: wait for the replicated managers and our own character.
             yield return _context.WaitFor(() =>
@@ -352,6 +438,41 @@ namespace Autoplay
                        characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
             }, 90f, "the client never received GameScene with its own character");
         }
+
+        // The host refused or kicked this client on purpose: show the reason the way the join menu does (same wording
+        // builder, same error report the notification panel listens to), capture it, and end the run as completed.
+        private IEnumerator Rejected(AutoplayContext _context, string _reason, float _afterSyncSeconds)
+        {
+            string _message = JoinHandshake.BuildFailureMessage(ConnectFailReason.SessionEnded);
+            _context.Journal.Record("connect.rejected", string.Format(CultureInfo.InvariantCulture,
+                "reason={0} | after-sync={1:0.0}s", _reason, _afterSyncSeconds));
+            if (LobbyManager.instance != null)
+            {
+                LobbyManager.instance.ReportError(_message);
+            }
+            ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
+            _context.Capture.Request("join-rejected", 0.5f);
+            yield return new WaitForSecondsRealtime(1.5f);
+            rejected = _reason;
+        }
+
+        // Scenario lever "build-version <v>": the connection request carries another build version (version gate).
+        private void ApplyForcedBuildVersion(AutoplayContext _context)
+        {
+            string _version = _context.Config.Option("build-version");
+            if (string.IsNullOrEmpty(_version) ||
+                !ConnectionPayload.TryParse(networkManager.NetworkConfig.ConnectionData, out ConnectionPayload _payload))
+            {
+                return;
+            }
+
+            _payload.BuildVersion = _version;
+            networkManager.NetworkConfig.ConnectionData = _payload.ToBytes();
+            _context.Journal.Record("join.version", $"sending {_version} (this build: {Application.version})");
+        }
+
+        private static float ParseSeconds(string _text)
+            => float.TryParse(_text, NumberStyles.Float, CultureInfo.InvariantCulture, out float _value) ? _value : 0f;
 
         private string HolderKind(ulong _id)
             => _id == networkManager.LocalClientId ? "host" : _id >= 100 ? "bot" : "client";

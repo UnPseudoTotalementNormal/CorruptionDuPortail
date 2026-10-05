@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -18,7 +19,8 @@ namespace Unpseudo.Autoplay
     /// <item>never locks or hides the mouse cursor;</item>
     /// <item>mutes the game (adapter callback) unless <c>-autoplay-sound</c> is passed.</item>
     /// </list>
-    /// Added by <see cref="AutoplayPlayerBootstrap"/> only when the player runs with <c>-autoplay</c>.
+    /// Added by <see cref="AutoplayPlayerBootstrap"/> only when the player runs with <c>-autoplay</c>. Before that (splash
+    /// screen, first scene load: no script runs yet), <see cref="EarlyGuard"/> does the same from a native thread.
     /// </summary>
     public sealed class AutoplayWindowGuard : MonoBehaviour
     {
@@ -84,7 +86,9 @@ namespace Unpseudo.Autoplay
             }
         }
 
-        private void StepOutOfTheWay()
+        private void StepOutOfTheWay() => StepOutOfTheWay(restoreTo);
+
+        private static void StepOutOfTheWay(IntPtr _restoreTo)
         {
 #if UNITY_STANDALONE_WIN
             IntPtr _own = FindOwnWindow();
@@ -93,14 +97,65 @@ namespace Unpseudo.Autoplay
                 return;
             }
 
-            if (GetForegroundWindow() == _own && restoreTo != IntPtr.Zero && IsWindow(restoreTo))
+            if (GetForegroundWindow() == _own && _restoreTo != IntPtr.Zero && IsWindow(_restoreTo))
             {
                 // Allowed: the foreground process may hand the foreground to another window.
-                SetForegroundWindow(restoreTo);
+                SetForegroundWindow(_restoreTo);
             }
 
             SetWindowPos(_own, HwndBottom, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
 #endif
+        }
+
+        /// <summary>
+        /// The window exists, and Unity brings it to the front, before any scene script runs (splash screen, first
+        /// scene load). As early as the engine allows, an autoplay player skips the splash and starts a background
+        /// thread that keeps handing the focus back and the window to the bottom until the guard component has long
+        /// taken over (plain Win32 calls, no Unity API on that thread).
+        /// </summary>
+        private static class EarlyGuard
+        {
+            private const int WatchMilliseconds = 30000;
+            private const int IntervalMilliseconds = 100;
+
+            [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+            private static void Begin()
+            {
+                string[] _args = Environment.GetCommandLineArgs();
+                if (!AutoplayCommandLine.IsRequested(_args))
+                {
+                    return;
+                }
+
+                UnityEngine.Rendering.SplashScreen.Stop(UnityEngine.Rendering.SplashScreen.StopBehavior.StopImmediate);
+
+                int _at = Array.IndexOf(_args, "-autoplay-restore-hwnd");
+                long _restore = 0;
+                if (_at >= 0 && _at + 1 < _args.Length)
+                {
+                    long.TryParse(_args[_at + 1], out _restore);
+                }
+
+                var _thread = new Thread(() => Watch(new IntPtr(_restore))) { IsBackground = true, Name = "AutoplayEarlyGuard" };
+                _thread.Start();
+            }
+
+            private static void Watch(IntPtr _restoreTo)
+            {
+                var _clock = Stopwatch.StartNew();
+                while (_clock.ElapsedMilliseconds < WatchMilliseconds)
+                {
+                    try
+                    {
+                        StepOutOfTheWay(_restoreTo);
+                    }
+                    catch (Exception)
+                    {
+                        // best effort: a failed Win32 call must never take the player down
+                    }
+                    Thread.Sleep(IntervalMilliseconds);
+                }
+            }
         }
 
 #if UNITY_STANDALONE_WIN
@@ -109,9 +164,9 @@ namespace Unpseudo.Autoplay
         private const uint SwpNoMove = 0x0002;
         private const uint SwpNoActivate = 0x0010;
 
-        private IntPtr ownWindow = IntPtr.Zero;
+        private static IntPtr ownWindow = IntPtr.Zero;
 
-        private IntPtr FindOwnWindow()
+        private static IntPtr FindOwnWindow()
         {
             if (ownWindow != IntPtr.Zero && IsWindow(ownWindow))
             {

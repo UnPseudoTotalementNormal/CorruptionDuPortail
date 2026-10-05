@@ -47,6 +47,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `port N` / `port-strict` | UDP port (next free one is taken unless strict); use 7850–7899 |
 | `out <dir>` | runs root (default `persistentDataPath/AutoplayRuns`, the wrapper points it at `AutoplayRuns/`) |
 | `no-png` | captures write the state JSON only |
+| `png` | screenshots on even with `no-png` (the net launcher gives every client `no-png`) |
 | `sound` | do not mute |
 | `restore-hwnd <hwnd>` | window to hand focus back to (set by the launcher) |
 | `fast-phases <regex>` + `fast-timescale X` | phases matching the regex run at X (paused while recording) |
@@ -67,13 +68,21 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `quit-at <phase text>` | this process leaves when that phase starts (client 1 args) |
 | `visual-picker` | bots hover and click the real picker cards (captures every opening) |
 | `fast-fakes` | fake roles go back to sleep after ~1 s |
+| `target-focus client\|host\|bot\|fake\|<role text>` | power targets: pick among the valid candidates matching it when any does |
+| `target-focus-power <power text>` | limit `target-focus` to picks made while that power is used |
+| `chat` | every player writes one tokenized line per phase in each private channel it belongs to |
+| `build-version <v>` | this client sends another build version (client 1 args; builds only) |
+| `stall-load <seconds>` | this client's scene loads are held that long after synchronization starts (client 1 args) |
+| `expect-clients N` | host: real clients that must join (when some are meant to be refused) |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
 | Area | Kinds |
 |---|---|
-| Run | `run.begin`, `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
-| Network | `connected`, `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
+| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done` |
+| Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
 | Phases | `state.enter` (every phase change), `awake`, `sleep`, `awake.layer`, `awake.layer.end`, `fake.sleep` |
 | Powers | `power.start`, `power.end`, `power.skip`, `power.timeout`, `power.error`, `power.verdict` |
@@ -113,18 +122,25 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `lag-150ms` | a full game under 150 ms simulated latency |
 | `net-sync-3clients` | zero desync on every public-state component |
 | `client-owner-local-powers` | client-held Repenti / Orpheline reveals reach the owning client |
+| `orpheline-contact-chosen` | Lack of Affection on a chosen real client: contact line + the Orpheline's role revealed to the target |
+| `orpheline-contact-anomaly` | Lack of Affection on an anomaly real client: contact line, no reveal |
+| `chat-private` | private channels (ink, anomaly): every line reaches every real member, never a real non-member |
+| `join-version-mismatch` | a client with another build version is refused with the version wording (join error report) |
+| `join-stuck-load-kick` | a joiner whose load never ends is kicked by the host at the 90 s cap; the lobby then starts without it |
+| `join-slow-load-honest` | a load held 30 s is not kicked: the client joins and plays |
 
 Other tools: `campaign.sh` (all scenarios + random seeds → `summary.md`), `sweep_powers.py` (one forced-role run per
-role → `coverage.md`), `analyze_picker.py`, `compare_runs.py`, `contact_sheet.py`.
+role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_contact.py`
+(Lack of Affection per target faction), `compare_runs.py`, `contact_sheet.py`. Shared run loading for analyzers:
+`autoplay_runs.py`.
 
-## Not covered yet → playtest, or extend (recipes below)
+## Not covered yet → playtest, or extend
 
 | Gap | Why autoplay misses it | Extension |
 |---|---|---|
-| Private chat | bots never write | `-autoplay-chat` lever + `chat.sent` / `chat.recv` events |
-| Build-version mismatch message | every process runs the same build | `-autoplay-build-version` override on client 1 + `connect.rejected` event |
-| Kick of a joiner stuck loading > 90 s | nothing stalls a join | dev-only hold of the client's synchronization (not a frozen process) |
-| Lack of Affection reveal, per target faction | the Orpheline's contact is a random pick (fake characters included), so which reveal fires, if any, is luck | `-autoplay-target-focus` lever (deterministic targets) |
+| *(none listed)* | | |
+
+Add a row whenever a goal turns out not to be covered, with the extension that would cover it.
 
 ## Extending in this game
 
@@ -137,57 +153,46 @@ Generic method, rules and definition of done: `Packages/com.unpseudo.autoplay/EX
   `GetSafeRpcTarget`, ownership checks through `IsLocalOrSimulated` (CLAUDE.md critical patterns).
 - Known trap: `TakeDownThePortalState.shouldActivate` is server-only; the client learns the Mage id by RPC.
 
-### Backlog recipes
+### Worked examples (gaps closed on 2026-10-05)
 
-Sketches, not specs: read the code they name before writing anything.
+How the four gaps reported after the network-hardening runs were covered; copy the pattern for the next one.
 
-#### Private chat (lever `chat`)
+#### Deterministic targets (`target-focus`, `target-focus-power`)
 
-- Driver: on each day phase, each controlled player writes one line in every channel it has (`ChatManager.discoveredChatIds`).
-  Real client: `ChatManager.instance.ChangeActiveChat(id)` + `TrySendChatMessage(text)` (the UI path). Simulated bot:
-  the host calls `SendChatMessageServerRpc(new ChatMessage(botId, text, id))`; a server-sent message keeps its sender,
-  the server still checks channel membership.
-- Events: `chat.sent chat=<id> from=<id>`; `chat.recv chat=<id> from=<id>` on every process, from
-  `onChatMessageReceived`.
-- Situation: force the role that opens the private channel (`force-roles` + `role-holder client`).
-- Checks: `chat.recv` with that channel on the member clients (`min: 1`, `every-client` where relevant) and `max: 0` on
-  non-members; `noErrors` (catches `[CHAT] … not a member` warnings only if promoted to errors, so also assert on
-  `chat.sent` count).
+- `AutoplaySelectionAutopilot.Focus` keeps the valid candidates matching `client`, `host`, `bot`, `fake` or a role
+  text (`AutoplayFocus.Matches`), and falls back to every valid one when none matches. `target-focus-power` limits it
+  to picks made while a power whose name contains the text is used (`CurrentPowerName`, set by the driver around
+  `StartUse`). Works in visual-picker mode too.
+- Journal: `select.character … focus=<spec>` when the focus decided the pick.
+- Lack of Affection (`PLackOfAffection`): the server runs the decision with the target as viewer; a chosen target
+  learns the Orpheline's role (Personal), any real target gets the line "… est venu(e) vous voir..." in the server
+  channel. `analyze_contact.py` checks both per contact, by the target's faction from the host's final roster.
 
-#### Build-version mismatch message (lever `build-version`)
+#### Private chat (`chat`)
 
-- Adapter: in the client connect path, right after `ClientConnectionPayload.Apply(networkManager)`, rewrite the payload
-  with the forced `BuildVersion` (`ConnectionPayload.ToBytes()` into `NetworkConfig.ConnectionData`). Put it in
-  `client1Args` only.
-- Must run in **builds**: an Editor on either side is allowed through (`BuildVersionGate`, `AllowedEditorMismatch`).
-- Connect loop: stop retrying when the server gave a reason (`DisconnectReason` with a server reason, see the NGO
-  placeholder trap) and record `connect.rejected reason=<text>`; capture the menu at that moment for the visual.
-- Expected outcome for that client is a rejection, not "Completed": add an outcome value or assert with `event` +
-  `process` and keep `outcome Completed` on the host.
-- Checks: `connect.rejected` detail matching `BuildVersionGate.MismatchReason` on client 1, host completes with the
-  other clients, no desync.
+- Server side (host seat + simulated bots), the driver reads the server's membership (`ChatManager.ServerChannelsOf`,
+  read-only seam over `ChatMembership.ChannelsOf`) and writes through `SendChatMessageServerRpc` with the player as
+  sender, which keeps the server's membership check. A real client writes like its chat panel
+  (`ChangeActiveChat` + `TrySendChatMessage`).
+- Every line carries a token `[ap:<sender>:<n>]`. Journal: `chat.sent` (sender process), `chat.recv` (every process,
+  always on, with the text: power feedback lines arrive through the chat too), `chat.members` (host, on change).
+- `analyze_chat.py`: delivery to every real client that was a member all day, no real non-member ever receives a
+  line, at least one delivery proven (else NOT COVERED).
 
-#### Joiner stuck loading > 90 s (lever `stall-load`)
+#### Join refused or kicked (`build-version`, `stall-load`, `expect-clients`)
 
-- The kick lives server-side in the lobby (`ConnectionApprovalGate.KickExpiredLoaders`, cap
-  `JoinHandshake.SyncTotalTimeoutSeconds`). Its timing logic is pure and belongs in EditMode tests; autoplay adds the
-  end-to-end proof only.
-- Do **not** freeze or suspend the client process: the transport drops it on its own disconnect timeout first, which
-  tests another path. Hold the client's scene synchronization instead (dev-only seam around NGO scene loading on the
-  client), so the transport stays alive while the load never completes.
-- A dev-only override of the 90 s cap keeps the run short; one run at the real value before calling it done.
-- Checks: host journal / log `[JOIN-GATE] Disconnecting <id>: still loading`, client `connect.rejected` with the
-  stuck-load message, lobby goes on without it.
-
-#### Lack of Affection reveal, per target faction (lever `target-focus`)
-
-- `PLackOfAffection` (the Orpheline's contact): the server runs `LackOfAffectionDecision` with the target as viewer;
-  what is revealed depends on the target's faction (chosen / marginal / anomaly), and the reveal + chat line are only
-  delivered to a real player (`_targetClientId < 100`).
-- Today the target is a random valid pick, fake characters included (net seed 51: first contact on a fake character,
-  second on Luma). Nothing guarantees each faction case.
-- Selection autopilot: like `vote-focus`, prefer a valid target matching a role text (or `client` / `host`).
-- Situation: `force-roles Orpheline,<target role>` + `role-holder client` + `target-focus <target role>`; one scenario
-  per faction case.
-- Checks: `power.end` Orpheline (`min: 1`), the expected `knowledge` line on the target's process (viewer = target),
-  `max: 0` of it on the others, no errors.
+- `build-version <v>` rewrites the connection payload after `ClientConnectionPayload.Apply`. Builds only: an Editor
+  on either side is let through by `BuildVersionGate`.
+- `stall-load <s>` parks an additive `LoadSceneAsync` with `allowSceneActivation = false` before connecting: Unity
+  queues scene loads, so NGO's GameScene load waits behind it while the transport and the main thread keep running
+  (a frozen or suspended process would be dropped by the transport timeout instead, another path). The hold is
+  released `s` seconds after synchronization starts; past the 90 s cap the host's `KickExpiredLoaders` ends it.
+- Client join wait: 10 s per attempt until the host synchronizes it, then no client deadline (so the kick tested is
+  the host's). A refusal with a server reason (`RelayFallbackPolicy.HasServerReason`) records `connect.rejected`,
+  reports the wording through `LobbyManager.ReportError` (what the join menu does, shown by the notification panel),
+  captures `join-rejected` (`-autoplay-png` on that client) and ends the run completed with a `rejected=` fact.
+  Limit: autoplay clients skip the menu login, so the capture shows the login screen, whose canvas (sorting order
+  1000) covers the notification panel (999): the message reaching the report is proven, its visibility to a
+  logged-in player is not.
+- Host: `expect-clients N` waits for the N clients meant to join; before starting it waits for joiners still loading
+  (`lobby.wait-loaders` / `lobby.loaders-done`), as a forced start is refused while one loads.

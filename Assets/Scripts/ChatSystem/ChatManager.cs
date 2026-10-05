@@ -93,6 +93,12 @@ namespace ChatSystem
             base.OnNetworkDespawn();
         }
 
+        /// <summary>Server-side, read-only: private channels the player belongs to (autoplay bots, tests).</summary>
+        public IReadOnlyList<int> ServerChannelsOf(ulong _member) => _membership.ChannelsOf(_member);
+
+        /// <summary>Server-side, read-only: members of a private channel (autoplay checks, tests).</summary>
+        public IReadOnlyList<ulong> ServerMembersOf(int _chatId) => _membership.MembersOf(_chatId);
+
         public void ChangeActiveChat(int _chatId)
         {
             if (_policy.CanActivateChannel(_chatId, discoveredChatIds))

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using Characters;
 using Characters.Powers;
+using ChatSystem;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using GameLogic;
@@ -47,6 +48,16 @@ namespace Autoplay
         [Tooltip("Scenario lever: when set, every bot votes for the living player whose role name contains this text " +
                  "(forces a situation to happen, e.g. chain the Mage to exercise the portal). Empty = random legal votes.")]
         public string voteFocusRole;
+
+        [Tooltip("Scenario lever: target picks prefer a valid candidate matching this (client | host | bot | fake | " +
+                 "role-name fragment); random among all valid ones when none matches. Empty = random legal targets.")]
+        public string targetFocus;
+        [Tooltip("Restricts targetFocus to picks made while a power whose name contains this text is used.")]
+        public string targetFocusPower;
+
+        [Tooltip("Scenario lever: every controlled player writes one tokenized line per phase in each private chat " +
+                 "channel it belongs to; every process journals what it receives (chat.sent / chat.recv / chat.members).")]
+        public bool chat;
 
         [Tooltip("Test-only speed lever: put fake roles (seats with no player) back to sleep shortly after they wake, " +
                  "instead of the game's frame-random fake skip that often waits for the whole layer timer.")]
@@ -102,6 +113,10 @@ namespace Autoplay
         private int pickerOpenCount;
         private GameInfoRevealer revealer;
         private readonly Dictionary<string, string> knownLevels = new();
+        private ChatManager chatManager;
+        private int chatSequence;
+        private readonly HashSet<string> chatSentThisState = new();
+        private readonly Dictionary<int, string> chatMembersRecorded = new();
 
         public void Begin(NetworkManager _networkManager, IEnumerable<ulong> _controlledIds, IAutoplayPolicy _policy,
             AutoplayOptions _options, AutoplayJournal _journal, AutoplayCapture _capture)
@@ -114,7 +129,11 @@ namespace Autoplay
             Journal = _journal;
             capture = _capture;
 
-            autopilot = new AutoplaySelectionAutopilot(characterManager, policy, Journal);
+            autopilot = new AutoplaySelectionAutopilot(characterManager, policy, Journal)
+            {
+                TargetFocus = options.targetFocus,
+                TargetFocusPower = options.targetFocusPower,
+            };
             if (!options.visualPicker)
             {
                 // Visual runs keep the real picker on screen; the driver clicks its cards instead (UpdateVisualPicker).
@@ -128,6 +147,14 @@ namespace Autoplay
             if (revealer != null)
             {
                 revealer.onCharacterInfoRevealedChanged += OnKnowledgeChanged;
+            }
+
+            // Every chat line this process receives is journaled (chat.recv), lever or not: power feedback such as
+            // the Orpheline's contact line arrives through the chat. Writing is the "chat" lever (UpdateChat).
+            chatManager = ChatManager.instance;
+            if (chatManager != null)
+            {
+                chatManager.onChatMessageReceived += OnChatReceived;
             }
 
             Journal.Record("autoplay.begin", $"controlled=[{string.Join(",", controlledIds.OrderBy(_id => _id))}]");
@@ -144,6 +171,10 @@ namespace Autoplay
             if (revealer != null)
             {
                 revealer.onCharacterInfoRevealedChanged -= OnKnowledgeChanged;
+            }
+            if (chatManager != null)
+            {
+                chatManager.onChatMessageReceived -= OnChatReceived;
             }
             if (SelectionFlowService.instance.Autopilot == autopilot)
             {
@@ -207,6 +238,11 @@ namespace Autoplay
             if (_state != CurrentState)
             {
                 OnStateEntered(_state);
+            }
+
+            if (options.chat)
+            {
+                UpdateChat(_gameManager, _state);
             }
 
             switch (_state)
@@ -291,6 +327,7 @@ namespace Autoplay
             stateEnterGameTime = Time.time;
             turns.Clear();
             votedThisState.Clear();
+            chatSentThisState.Clear();
             portalTried.Clear();
             lastPortalClick = float.NegativeInfinity;
             StartCoroutine(RecordStateHash(_state));
@@ -449,6 +486,8 @@ namespace Autoplay
                 _turn.active = _next;
                 _turn.activeSince = Time.time;
                 _someoneActing = true;
+                // Kept until the next power starts: visual-picker picks happen after StartUse returns.
+                autopilot.CurrentPowerName = _next.powerName.ToString();
                 try
                 {
                     _next.StartUse();
@@ -593,7 +632,7 @@ namespace Autoplay
                 yield break;
             }
 
-            Card _card = policy.Choose(_cards, "picker.card");
+            Card _card = policy.Choose(autopilot.Focus(_cards, _c => _c.characterInfo), "picker.card");
             var _pointer = new PointerEventData(EventSystem.current);
             _card.OnPointerEnter(_pointer);
             Journal.Record("picker.hover", $"#{_opening} {DescribeCard(_card)}");
@@ -663,6 +702,89 @@ namespace Autoplay
             }
 
             capture.RequestBurst($"verdict-{_power.powerName}-{_verdict}", options.verdictCaptureDelays);
+        }
+
+        // Chat lever: once per phase (after the think delay), each controlled player writes one line in every private
+        // channel it belongs to. Server side (host seat + simulated bots) the membership is the server's own record and
+        // the line goes through the server entry point with the player as sender (as an intercepted bot send does);
+        // a real client writes like its chat panel does (active channel + TrySendChatMessage). The host also journals
+        // each private channel's members whenever they change, so a tool can tell who should have received what.
+        private void UpdateChat(GameManager _gameManager, GameState _state)
+        {
+            if (chatManager == null || _state is LobbyState || Time.time - stateEnterGameTime < options.thinkDelay)
+            {
+                return;
+            }
+
+            string _phase = $"{_gameManager.currentGameStateIndex.Value}/{_gameManager.currentDay}";
+            if (networkManager.IsServer)
+            {
+                RecordChatMembers(_gameManager.currentDay);
+            }
+
+            foreach (ulong _id in controlledIds.OrderBy(_id => _id))
+            {
+                IEnumerable<int> _channels = networkManager.IsServer
+                    ? chatManager.ServerChannelsOf(_id)
+                    : chatManager.discoveredChatIds.Where(_c => _c != (int)ChatWindowIDs.General && _c != (int)ChatWindowIDs.Server)
+                        .OrderBy(_c => _c).ToList();
+                foreach (int _chatId in _channels)
+                {
+                    if (!chatSentThisState.Add($"{_id}:{_chatId}"))
+                    {
+                        continue;
+                    }
+
+                    string _token = $"ap:{_id}:{++chatSequence}";
+                    string _text = $"[{_token}] autoplay {_phase}";
+                    if (networkManager.IsServer)
+                    {
+                        chatManager.SendChatMessageServerRpc(new ChatMessage(_id, new Unity.Collections.FixedString512Bytes(_text), _chatId));
+                    }
+                    else
+                    {
+                        chatManager.ChangeActiveChat(_chatId);
+                        chatManager.TrySendChatMessage(_text);
+                    }
+                    Journal.Record("chat.sent", $"chat={_chatId} from={_id} token={_token} phase={_phase}");
+                }
+            }
+        }
+
+        private void RecordChatMembers(int _day)
+        {
+            var _channels = new SortedSet<int>();
+            foreach (Character _character in characterManager.GetCharacters(false))
+            {
+                if (_character && !_character.isFake)
+                {
+                    _channels.UnionWith(chatManager.ServerChannelsOf(_character.ownerClientId.Value));
+                }
+            }
+
+            foreach (int _chatId in _channels)
+            {
+                string _line = $"chat={_chatId} day={_day} members={string.Join(",", chatManager.ServerMembersOf(_chatId))}";
+                if (!chatMembersRecorded.TryGetValue(_chatId, out string _previous) || _previous != _line)
+                {
+                    chatMembersRecorded[_chatId] = _line;
+                    Journal.Record("chat.members", _line);
+                }
+            }
+        }
+
+        private void OnChatReceived(ChatMessage _message)
+        {
+            if (!running || _message == null)
+            {
+                return;
+            }
+
+            string _text = _message.message.ToString();
+            int _start = _text.IndexOf("[ap:", StringComparison.Ordinal);
+            int _end = _start >= 0 ? _text.IndexOf(']', _start) : -1;
+            string _token = _end > _start ? _text.Substring(_start + 1, _end - _start - 1) : "-";
+            Journal.Record("chat.recv", $"chat={_message.chatId} from={_message.senderClientId} token={_token} text={_text}");
         }
 
         private IEnumerable<string> DescribeKnowledge()

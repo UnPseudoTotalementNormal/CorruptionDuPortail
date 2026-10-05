@@ -70,7 +70,8 @@ Complete list with every package option: `tools/autoplay/REFERENCE.md`. Most use
 `force-roles A,B` (role-name fragments guaranteed in the composition) · `role-holder host|client|bot` (who must hold
 them; mismatch fails fast and the scenario runner retries the next seed) · `vote-focus <role text>` · `max-days N` ·
 `netsim delay,jitter,loss` (Multiplayer Tools Network Simulator; put it in `clientArgs`) · `quit-at <phase text>`
-(a client leaves mid-game; put it in `client1Args`) · `visual-picker` · `clients/players/bots`.
+(a client leaves mid-game; put it in `client1Args`) · `target-focus <client|host|bot|role>` (+ `target-focus-power`)
+· `chat` · `build-version` / `stall-load` (+ host `expect-clients`) · `visual-picker` · `clients/players/bots`.
 
 ### Declarative scenarios — prefer them for anything worth re-running
 
@@ -95,6 +96,29 @@ not a game bug — check before concluding.
 `-autoplay-fast-fakes` (fake roles sleep after ~1 s: night time 77 s → 12 s on 3 days, seed 777) and
 `-autoplay-fast-phases "Recap|Intro|Chaining" -autoplay-fast-timescale 12` cut a game ~3× (118 s → 39.5 s). Use them by
 default for flow / coverage runs; leave them OFF when the goal is the real timing of fake roles or of those phases.
+
+### Tests réalisés
+
+Tenir ce tableau à jour : chaque exécution d'un scénario met à jour sa ligne (date + résultat), chaque nouveau
+scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/REFERENCE.md` § Scenarios.
+
+| Test | Ce qu'il prouve | Mode | Dernier résultat |
+|---|---|---|---|
+| `mage-portal-client` | un Mage tenu par un vrai client abat le portail | réseau, 7 clients | PASS 2026-10-04 |
+| `picker-visual` | chaque ouverture du sélecteur : voile flou + cartes valides levées | build | PASS 2026-10-04 |
+| `picker-animation` | flou 0→1 en ~0,3 s, cartes +2 en y stabilisées à ~0,45 s | build (enregistrement) | PASS 2026-10-04 |
+| `client-leaves-at-vote` | un client qui part au vote est enchaîné, la partie continue | réseau, 3 clients | PASS 2026-10-04 |
+| `lag-150ms` | partie complète sous 150 ms de latence | réseau, 3 clients | PASS 2026-10-04 |
+| `net-sync-3clients` | zéro désync sur chaque composant de l'état public | réseau, 3 clients | PASS 2026-10-05 |
+| `client-owner-local-powers` | les révélations du Repenti / de l'Orpheline atteignent le client qui les tient | réseau, 7 clients | PASS 2026-10-05 |
+| `orpheline-contact-chosen` | Manque d'affection sur un élu : ligne de contact + rôle révélé | réseau, 7 clients | PASS 2026-10-05 |
+| `orpheline-contact-anomaly` | Manque d'affection sur une anomalie : ligne de contact, pas de révélation | réseau, 7 clients | PASS 2026-10-05 |
+| `chat-private` | les messages privés atteignent chaque membre réel, jamais un non-membre | réseau, 7 clients | PASS 2026-10-05 |
+| `join-version-mismatch` | une autre version du jeu est refusée avec le message de version | réseau, 3 clients | PASS 2026-10-05 |
+| `join-stuck-load-kick` | un chargement bloqué est éjecté à 90 s, le lobby démarre sans lui | réseau, 3 clients | PASS 2026-10-05 |
+| `join-slow-load-honest` | un chargement lent (30 s) n'est pas éjecté, le client joue | réseau, 3 clients | PASS 2026-10-05 |
+| balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
+| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
 
 ### Not covered? Extend, do not hand it back
 

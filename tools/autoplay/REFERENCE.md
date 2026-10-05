@@ -75,6 +75,8 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `build-version <v>` | this client sends another build version (client 1 args; builds only) |
 | `stall-load <seconds>` | this client's scene loads are held that long after synchronization starts (client 1 args) |
 | `expect-clients N` | host: real clients that must join (when some are meant to be refused) |
+| `spawn-during-load <seconds>` | host: that long after a joiner starts synchronizing (and while it still is), seat a simulated player (a Character spawned, then its owner / parent / roster entry written) — the late-joiner desync trigger |
+| `connect-delay <seconds>` | this client waits that long before its first connect attempt (stagger joins; put it in client args) |
 | `real-input` | every seat with a screen acts through the real UI: virtual Input System mouse + keyboard (real ones disabled, settings cloned with `IgnoreFocus`); the pointer glides to the target or, cursor locked (seated vote), the camera turns until the target is under the reticle; each click must produce its effect, else `input.miss` + direct fallback. Implies `lobby-ui` and `visual-picker` |
 | `lobby-ui` | lobby through the tablet by mouse (UI Toolkit in a RenderTexture): "★ Preset classique", wheel + Imposé "+" per `force-roles`, each seat's "Prêt", start by `LobbyState.TryAutoStart` (no `ForceStart`) |
 | `real-input-tour` | once per process: tooltip, pause menu (button, audio slider on the host only: PlayerPrefs are shared by the processes and always put back, close), tablet (Tab, arrow, chat tab + field, Tab) at night while idle; emote wheel (hold T, mouse, release) at the vote recap. With `quit-at`, a real-input client leaves through the pause menu's Leave button |
@@ -90,7 +92,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 |---|---|
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
 | Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
-| Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done` |
+| Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
 | Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
 | Phases | `state.enter` (every phase change), `awake`, `sleep`, `awake.layer`, `awake.layer.end`, `fake.sleep` |
@@ -139,6 +141,7 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `join-version-mismatch` | a client with another build version is refused with the version wording (join error report) |
 | `join-stuck-load-kick` | a joiner whose load never ends is kicked by the host at the 90 s cap; the lobby then starts without it |
 | `join-slow-load-honest` | a load held 30 s is not kicked: the client joins and plays |
+| `join-spawn-during-load` | a player seated while a joiner's load outlasts NGO's SpawnTimeout: every client still sees every owner and the full roster (late-joiner Characters desync, 2026-10-05) |
 | `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; only two exempted, warned design findings: role-picker cards off screen, Skip vote button out of the seated reticle's reach |
 | `real-input-mask` | breakage test: a covered sleep button fails as `input.miss hit=…AutoplayMask` |
 | `real-input-tour` | tooltip, pause menu + audio slider, tablet + chat app, emote wheel by real input on every screen; a client leaves through the pause menu and is chained |

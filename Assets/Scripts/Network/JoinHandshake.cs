@@ -35,6 +35,14 @@ namespace Network
         public const float ApprovalTimeoutSeconds = 30f;
         public const float SyncTotalTimeoutSeconds = 90f;
 
+        // How long a joining client keeps NetworkVariable / parent deltas for objects it has not spawned yet
+        // (NetworkConfig.SpawnTimeout). NGO defers object creation until the GameScene synchronization ends, with no
+        // time limit, but purges those deltas after SpawnTimeout (10 s in BootScene): a player seated during a longer
+        // load became a ghost Character (ownerClientId = FAKE_CLIENT_ID) and another player went missing, for the
+        // whole game (investigation late-joiner-character-desync). The window covers the longest load the host
+        // tolerates (SyncTotalTimeoutSeconds, then the joiner is kicked) plus a margin.
+        public const float DeferredMessageWindowSeconds = SyncTotalTimeoutSeconds + 30f;
+
         /// <summary>
         /// Bounded two-phase wait for the local client to ACTUALLY connect. Polls each frame (UniTask — never
         /// System.Threading.Tasks.Task) and defers the decision to the pure ConnectHandshakePolicy. The approval

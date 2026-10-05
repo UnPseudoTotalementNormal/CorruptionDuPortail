@@ -12,6 +12,7 @@ namespace Network
     /// <summary>
     /// NET-02 (epic-network-sync-hardening): stamps this client's profile + build version into the NGO connection
     /// request. Call on EVERY client start path right before <c>StartClient()</c> (lobby list, join by code, Relay).
+    /// Also keeps NGO's deferred-message window open for the whole join (<see cref="JoinHandshake.DeferredMessageWindowSeconds"/>).
     /// </summary>
     public static class ClientConnectionPayload
     {
@@ -32,6 +33,13 @@ namespace Network
                 IsEditor = Application.isEditor,
             };
             _networkManager.NetworkConfig.ConnectionData = _payload.ToBytes();
+
+            // Deltas received for objects spawned while this client still loads GameScene must survive until the
+            // load ends (see JoinHandshake.DeferredMessageWindowSeconds); never shorten a longer configured window.
+            if (_networkManager.NetworkConfig.SpawnTimeout < JoinHandshake.DeferredMessageWindowSeconds)
+            {
+                _networkManager.NetworkConfig.SpawnTimeout = JoinHandshake.DeferredMessageWindowSeconds;
+            }
         }
     }
 }

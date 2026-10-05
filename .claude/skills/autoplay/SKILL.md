@@ -50,6 +50,7 @@ new forced-composition option), then run. Afterwards, check in the logs that the
 | Picker visuals (blur veil, lifted cards, hover) | same, with `AUTOPLAY_VISUAL_PICKER=1` |
 | Real network: replication / desync between host and clients | `tools/autoplay/unityctl.sh play-net <clients> <seed>` (host + N real clients, bots fill to 8) → `compare_runs.py` verdict |
 | Quick logic check of the first night only | `tools/autoplay/unityctl.sh playmode AutoplaySoloHostTests` (batchmode editor cannot finish a game: end of frame never comes) |
+| Does the UI really let a player do it? (hidden / covered button, screen never shown, element out of reach) | add `-autoplay-real-input` (every seat clicks through the real EventSystem with a virtual mouse; `input.miss` names what took the click) — slower, for thorough checks; `-autoplay-lobby-ui`, `-autoplay-real-input-tour`, `-autoplay-menu-ui` for the lobby tablet, in-game interfaces and main menu |
 
 Coverage = several seeds (roles are drawn from the designer's classic preset). Report which powers/roles a run covered;
 if the goal needs a specific power, loop seeds until it appears (events `power.start`), or add a forced-composition
@@ -71,7 +72,10 @@ Complete list with every package option: `tools/autoplay/REFERENCE.md`. Most use
 them; mismatch fails fast and the scenario runner retries the next seed) · `vote-focus <role text>` · `max-days N` ·
 `netsim delay,jitter,loss` (Multiplayer Tools Network Simulator; put it in `clientArgs`) · `quit-at <phase text>`
 (a client leaves mid-game; put it in `client1Args`) · `target-focus <client|host|bot|role>` (+ `target-focus-power`)
-· `chat` · `build-version` / `stall-load` (+ host `expect-clients`) · `visual-picker` · `clients/players/bots`.
+· `chat` · `build-version` / `stall-load` (+ host `expect-clients`) · `visual-picker` · `clients/players/bots` · `real-input`
+(+ `lobby-ui`, `real-input-tour`, `menu-ui`, `real-input-mask <name>` breakage test) · `power-use-probability` /
+`vote-probability`. Real input never touches the user's own mouse or keyboard: the player's real devices are disabled
+and the user's cursor is never captured; never drive the real cursor from a script.
 
 ### Declarative scenarios — prefer them for anything worth re-running
 
@@ -119,6 +123,11 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `join-slow-load-honest` | un chargement lent (30 s) n'est pas éjecté, le client joue | réseau, 3 clients | PASS 2026-10-05 |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
+| `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |
+| `real-input-mask` | un bouton de sommeil masqué fait échouer le scénario (`input.miss hit=AutoplayMask`) | build | PASS 2026-10-05 |
+| `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
+| `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | PASS 2026-10-05 |
+| `real-input-menu` | premier écran capturé ; la notification de refus passe au-dessus de l'écran de connexion et se ferme au clic | réseau, 3 clients | PASS 2026-10-05 |
 
 ### Not covered? Extend, do not hand it back
 

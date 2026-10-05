@@ -29,14 +29,19 @@ namespace Unpseudo.Autoplay
 
         private IntPtr restoreTo = IntPtr.Zero;
         private Action muteAudio;
+        private bool allowUnfocusedLock;
         private float nextMute;
 
         /// <param name="_restoreHwnd">Window to hand the focus back to (0 = none).</param>
         /// <param name="_muteAudio">Idempotent mute call, repeated every second (audio middleware may start late); null keeps sound.</param>
-        public void Configure(long _restoreHwnd, Action _muteAudio)
+        /// <param name="_allowUnfocusedLock">Real-input mode: let the game lock the cursor while the player has no
+        /// focus (a lock never captures the OS cursor then, measured), so first-person paths run as for a player.
+        /// The cursor is still freed as soon as the user focuses the window.</param>
+        public void Configure(long _restoreHwnd, Action _muteAudio, bool _allowUnfocusedLock = false)
         {
             restoreTo = new IntPtr(_restoreHwnd);
             muteAudio = _muteAudio;
+            allowUnfocusedLock = _allowUnfocusedLock;
         }
 
         private void Awake() => Application.runInBackground = true;
@@ -63,11 +68,12 @@ namespace Unpseudo.Autoplay
 
         private void LateUpdate()
         {
-            if (Cursor.lockState != CursorLockMode.None)
+            bool _gameMayLock = allowUnfocusedLock && !Application.isFocused;
+            if (!_gameMayLock && Cursor.lockState != CursorLockMode.None)
             {
                 Cursor.lockState = CursorLockMode.None;
             }
-            if (!Cursor.visible)
+            if (!_gameMayLock && !Cursor.visible)
             {
                 Cursor.visible = true;
             }

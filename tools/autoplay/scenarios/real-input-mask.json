@@ -1,0 +1,17 @@
+{
+  "name": "real-input-mask",
+  "goal": "Breakage test of the real-input mode: the sleep button is covered by a transparent click-eating overlay (-autoplay-real-input-mask SkipButton). Every sleep click must be caught as input.miss naming the overlay, then the bot falls back to the direct call and the game goes on. Proves a hidden or covered button fails a real-input scenario.",
+  "mode": "build",
+  "seed": 777,
+  "timescale": 4,
+  "timeout": 600,
+  "args": ["-autoplay-real-input", "-autoplay-real-input-mask", "SkipButton", "-autoplay-power-use-probability", "0", "-autoplay-fast-fakes", "-autoplay-max-days", "1"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "host"},
+    {"type": "event", "kind": "input.mask", "detail": "SkipButton", "process": "host", "min": 1},
+    {"type": "event", "kind": "input.miss", "detail": "^sleep .*hit=.*AutoplayMask", "process": "host", "min": 1},
+    {"type": "event", "kind": "input.click", "detail": "^sleep ", "process": "host", "min": 0, "max": 0},
+    {"type": "event", "kind": "sleep", "detail": "via=direct", "process": "host", "min": 1},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData"]}
+  ]
+}

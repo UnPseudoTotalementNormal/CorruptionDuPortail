@@ -1,0 +1,23 @@
+{
+  "name": "real-input-menu",
+  "goal": "Main menu by real input, outside UGS/Steam: a client with another build version (real input + menu tour) sees the main menu first (captured), is refused at join, and the disconnect notification is the first thing under the pointer above the login screen and closes on a click of Dismiss. The Host/Join panels and audio slider are behind the login screen while autoplay does not log in (UGS out of scope): those steps are warned, not failed.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 91,
+  "timescale": 3,
+  "timeout": 900,
+  "args": ["-autoplay-expect-clients", "2", "-autoplay-max-days", "1", "-autoplay-fast-fakes"],
+  "client1Args": ["-autoplay-build-version", "0.0.0-autoplay", "-autoplay-png", "-autoplay-real-input", "-autoplay-menu-ui"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "capture", "detail": "menu-first-screen", "process": "clients", "min": 1},
+    {"type": "event", "kind": "connect.rejected", "detail": "Version différente de l'hôte", "process": "clients", "min": 1, "max": 1},
+    {"type": "event", "kind": "menu.notification-top", "detail": "^ok", "process": "clients", "min": 1},
+    {"type": "event", "kind": "menu.notification-dismiss", "detail": "^ok", "process": "clients", "min": 1},
+    {"type": "event", "kind": "menu.host-open", "detail": "^ok", "process": "clients", "min": 1, "severity": "warn"},
+    {"type": "event", "kind": "menu.slider", "detail": "^ok", "process": "clients", "min": 1, "severity": "warn"},
+    {"type": "event", "kind": "clients.joined", "process": "host", "min": 1},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]}
+  ]
+}

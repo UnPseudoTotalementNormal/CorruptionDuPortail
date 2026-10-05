@@ -35,6 +35,9 @@ an optional interface the adapter implements (pattern: `IAutoplayAnimationSource
   checks (`event` with `detail` regex and `min` / `max`) before adding a type.
 - **Scenario** = a JSON file in the game's scenarios folder: goal sentence, levers, expectations. It is the deliverable:
   a passing scenario stays as a regression test.
+- **Real input** = `AutoplayVirtualInput`: a virtual Input System mouse + keyboard (`MoveTo`, `Click`, `Look`,
+  `Scroll`, `PressKey`, `KeyDown` / `KeyUp`) for "can a player actually do it" checks. Install it only behind a lever;
+  verify every click by its game effect and journal what the raycast hit when it fails.
 
 ## Rules that bite
 
@@ -50,7 +53,16 @@ an optional interface the adapter implements (pattern: `IAutoplayAnimationSource
 4. **Dev-only.** Every file and seam is under `#if UNITY_EDITOR || DEVELOPMENT_BUILD`; a lever must do nothing unless
    its argument is present (release players and normal dev runs behave exactly as before).
 5. **No foreground, no focus, no cursor lock.** Players run through the launchers; never minimize one (black captures).
+   Only exception: with `-autoplay-real-input` the window guard lets the game lock the cursor while the player is
+   unfocused (an unfocused lock never captures the OS cursor, measured 2026-10-05); it is freed as soon as the window
+   gets focus.
 6. **Measure thresholds, never invent them.** A numeric expectation comes from a reference run, cited in the goal.
+7. **Never drive the user's real mouse or keyboard** (SendInput, SetCursorPos…), not even to measure: real input works
+   on virtual devices only, the real ones are disabled while it runs.
+8. **Input System traps:** `InputSystem.onDeviceChange` fires inside `AddDevice`, before the returned device is
+   stored (guard your own devices); events of a disabled device are dropped before `InputSystem.onEvent`; a
+   `RectTransform`'s centre may lie on no raycastable graphic (aim at what the raycast reaches); code reading legacy
+   `UnityEngine.Input` or IMGUI events (`TMP_InputField` typing) is out of reach of virtual devices.
 
 ## Definition of done
 

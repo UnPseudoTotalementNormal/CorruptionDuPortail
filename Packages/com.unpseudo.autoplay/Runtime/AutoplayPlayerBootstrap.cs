@@ -38,7 +38,8 @@ namespace Unpseudo.Autoplay
             DontDestroyOnLoad(_go);
             long.TryParse(_config.Option("restore-hwnd", "0"), out long _restoreHwnd);
             bool _mute = !_config.Flag("sound");
-            _go.AddComponent<AutoplayWindowGuard>().Configure(_restoreHwnd, _mute ? () => _game.SetAudioMuted(true) : null);
+            _go.AddComponent<AutoplayWindowGuard>().Configure(_restoreHwnd, _mute ? () => _game.SetAudioMuted(true) : null,
+                _config.Flag("real-input"));
             var _bootstrap = _go.AddComponent<AutoplayPlayerBootstrap>();
             _bootstrap.game = _game;
             _bootstrap.config = _config;

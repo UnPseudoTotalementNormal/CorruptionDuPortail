@@ -487,7 +487,9 @@
       "version": "file:com.unpseudo.autoplay",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.inputsystem": "1.7.0"
+      }
     },
     "dev.ameye.linework-lite": {
       "version": "file:dev.ameye.linework-lite",

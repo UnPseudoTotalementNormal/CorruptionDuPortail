@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Characters;
+using Cysharp.Threading.Tasks;
 using CorruptionDuPortail.Domain;
 using GameLogic;
 using GameLogic.GameSettings;
@@ -58,6 +59,10 @@ namespace Autoplay
         private string leftAt;
         // Server reason that ended this client's join on purpose (version gate, stuck-load kick): an expected outcome.
         private string rejected;
+        // Real-input mode (-autoplay-real-input): virtual mouse / keyboard, real devices disabled while installed.
+        private AutoplayVirtualInput realInput;
+        private AutoplayInputMask inputMask;
+        private AutoplayJournal journal;
 
         public string Name => "cdp";
 
@@ -97,6 +102,18 @@ namespace Autoplay
             yield return _context.WaitFor(() => SceneManager.GetActiveScene().buildIndex == MainMenuSceneIndex, 30f,
                 "never reached the main menu");
             networkManager = NetworkManager.Singleton;
+
+            // Virtual devices from the main menu on (a refused join is seen there), and the menu tour when asked.
+            InstallRealInput(_context);
+            if (realInput == null && !string.IsNullOrEmpty(_context.Config.Option("real-input-mask")))
+            {
+                _context.Fail("real-input-mask needs -autoplay-real-input (nothing would click the masked object)");
+                yield break;
+            }
+            if (realInput != null && _context.Config.Flag("menu-ui"))
+            {
+                yield return AutoplayMenuTour.Run(realInput, _context.Journal, _context.Capture);
+            }
         }
 
         public IEnumerator Host(AutoplayContext _context, ushort _port)
@@ -137,6 +154,7 @@ namespace Autoplay
 
         public IEnumerator SetUp(AutoplayContext _context)
         {
+            InstallRealInput(_context);
             if (isClient)
             {
                 if (rejected != null)
@@ -148,12 +166,18 @@ namespace Autoplay
                 ulong _self = networkManager.LocalClientId;
                 var _clientOptions = new AutoplayOptions
                 {
-                    visualPicker = _context.Config.Flag("visual-picker"),
+                    visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
                     possessActor = false,
                     voteFocusRole = _context.Config.Option("vote-focus"),
                     targetFocus = _context.Config.Option("target-focus"),
                     targetFocusPower = _context.Config.Option("target-focus-power"),
                     chat = _context.Config.Flag("chat"),
+                    realInput = GameRealInput(_context),
+                    lobbyInput = LobbyUi(_context) ? realInput : null,
+                    powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
+                    voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
+                    realInputTour = _context.Config.Flag("real-input-tour"),
+                    tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 };
                 driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
                 driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
@@ -198,12 +222,18 @@ namespace Autoplay
 
             var _options = new AutoplayOptions
             {
-                visualPicker = _context.Config.Flag("visual-picker"),
+                visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 fastFakes = _context.Config.Flag("fast-fakes"),
                 targetFocus = _context.Config.Option("target-focus"),
                 targetFocusPower = _context.Config.Option("target-focus-power"),
                 chat = _context.Config.Flag("chat"),
+                realInput = GameRealInput(_context),
+                lobbyInput = LobbyUi(_context) ? realInput : null,
+                powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
+                voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
+                realInputTour = _context.Config.Flag("real-input-tour"),
+                tourAudioSlider = true,
             };
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, _controlled, new RandomValidPolicy(_context.Config.seed), _options, _context.Journal, _context.Capture);
@@ -220,21 +250,59 @@ namespace Autoplay
             }
 
             var _rolePool = (RoleAttributionState)gameManager.GetGameStates(typeof(RoleAttributionState)).First();
-            AutoplayComposition.ApplyPreset(CompositionRoot.For(networkManager).GameSettingsManager, _rolePool, _preset);
-            _context.Journal.Record("composition", $"preset {_preset.name} ({_preset.displayName})");
+            bool _presetClicked = false;
+            if (LobbyUi(_context))
+            {
+                yield return driver.LobbyApplyClassicPreset().ToCoroutine(_ok => _presetClicked = _ok, _e => InputError(_context, "lobby-preset", _e));
+            }
+            if (!_presetClicked)
+            {
+                AutoplayComposition.ApplyPreset(CompositionRoot.For(networkManager).GameSettingsManager, _rolePool, _preset);
+            }
+            _context.Journal.Record("composition", $"preset {_preset.name} ({_preset.displayName}) via={(_presetClicked ? "click" : "direct")}");
+            if (_presetClicked)
+            {
+                // A role card face on the tablet opens the role detail overlay (screen-space UI Toolkit), then close it.
+                yield return driver.LobbyPeekRoleCard().ToCoroutine(null, _e => InputError(_context, "lobby-role-card", _e));
+            }
             AutoplayComposition.WriteRolePool(_rolePool, System.IO.Path.Combine(_context.Journal.OutputDirectory, "roles.json"));
 
             string _forced = _context.Config.Option("force-roles");
             if (!string.IsNullOrEmpty(_forced))
             {
-                foreach (string _missing in AutoplayComposition.ForceRoles(CompositionRoot.For(networkManager).GameSettingsManager, _rolePool,
-                             _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0), _context.Journal))
+                foreach (string _fragment in _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0))
                 {
-                    _context.Fail($"force-roles: no role matches '{_missing}'");
+                    bool _forcedClicked = false;
+                    if (LobbyUi(_context))
+                    {
+                        yield return driver.LobbyForceRole(_fragment).ToCoroutine(_ok => _forcedClicked = _ok, _e => InputError(_context, $"lobby-force {_fragment}", _e));
+                    }
+                    if (_forcedClicked)
+                    {
+                        _context.Journal.Record("composition.force", $"{_fragment} via=click");
+                        continue;
+                    }
+                    foreach (string _missing in AutoplayComposition.ForceRoles(CompositionRoot.For(networkManager).GameSettingsManager, _rolePool,
+                                 new[] { _fragment }, _context.Journal))
+                    {
+                        _context.Fail($"force-roles: no role matches '{_missing}'");
+                    }
                 }
             }
             yield return null;
         }
+
+        private static void InputError(AutoplayContext _context, string _action, Exception _exception)
+        {
+            _context.Journal.Record("input.error", $"{_action} {_exception.GetType().Name}: {_exception.Message}");
+            Debug.LogException(_exception);
+        }
+
+        // Lobby through the tablet with the mouse: its own lever, implied by real-input.
+        private static bool LobbyUi(AutoplayContext _context) => _context.Config.Flag("lobby-ui") || _context.Config.Flag("real-input");
+
+        // Game actions by real input only with -autoplay-real-input (lobby-ui alone keeps them direct).
+        private AutoplayVirtualInput GameRealInput(AutoplayContext _context) => _context.Config.Flag("real-input") ? realInput : null;
 
         public IEnumerator StartGame(AutoplayContext _context)
         {
@@ -245,7 +313,12 @@ namespace Autoplay
                     yield break;
                 }
 
-                // The host starts the game; a client just waits for the loop to leave the lobby.
+                // The host starts the game; a client waits for the loop to leave the lobby (clicking its ready button
+                // first when the lobby is played through the tablet).
+                if (LobbyUi(_context))
+                {
+                    yield return driver.LobbyReady().ToCoroutine(null, _e => InputError(_context, "lobby-ready", _e));
+                }
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),
                     240f, "the host never started the game");
                 yield break;
@@ -264,13 +337,31 @@ namespace Autoplay
                 _context.Journal.Record("lobby.loaders-done", string.Join(",", networkManager.ConnectedClientsIds));
             }
 
-            // Bots have no ready button: skip the ready census; the composition gate still applies.
-            ((LobbyState)gameManager.GetGameState(gameManager.currentGameStateIndex.Value)).ForceStart();
-            yield return null;
-            if (gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState)
+            if (LobbyUi(_context))
             {
-                _context.Fail("ForceStart refused: invalid composition (see the console warning)");
-                yield break;
+                // As players do: the host clicks its ready button last (bots are ready by themselves, real clients
+                // clicked theirs), then LobbyState.TryAutoStart starts the game once all are ready and the
+                // composition is valid.
+                yield return driver.LobbyReady().ToCoroutine(null, _e => InputError(_context, "lobby-ready", _e));
+                yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),
+                    60f, "TryAutoStart never started the game");
+                if (_context.Failed)
+                {
+                    _context.Journal.Record("lobby.status", driver.LobbyStatus());
+                    yield break;
+                }
+                _context.Journal.Record("lobby.autostart", driver.LobbyStatus());
+            }
+            else
+            {
+                // Bots have no ready button: skip the ready census; the composition gate still applies.
+                ((LobbyState)gameManager.GetGameState(gameManager.currentGameStateIndex.Value)).ForceStart();
+                yield return null;
+                if (gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState)
+                {
+                    _context.Fail("ForceStart refused: invalid composition (see the console warning)");
+                    yield break;
+                }
             }
 
             yield return _context.WaitFor(() => characterManager.GetCharacters(false).Where(_c => _c && !_c.isFake).All(_c => _c.role != null),
@@ -324,6 +415,42 @@ namespace Autoplay
             if (driver != null)
             {
                 driver.End();
+            }
+            if (inputMask != null)
+            {
+                UnityEngine.Object.Destroy(inputMask.gameObject);
+                inputMask = null;
+            }
+            if (realInput != null)
+            {
+                journal?.Record("input.uninstall", realInput.Describe());
+                realInput.Dispose();
+                realInput = null;
+            }
+        }
+
+        private static double ParseProbability(string _text, double _fallback)
+            => double.TryParse(_text, NumberStyles.Float, CultureInfo.InvariantCulture, out double _value) ? Math.Clamp(_value, 0.0, 1.0) : _fallback;
+
+        // Without the lever nothing is installed: no virtual device, no input.* event (real-input spec, AC 1).
+        private void InstallRealInput(AutoplayContext _context)
+        {
+            bool _control = _context.Config.Flag("real-input-control");
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui")) || realInput != null)
+            {
+                return;
+            }
+
+            journal = _context.Journal;
+            realInput = AutoplayVirtualInput.Install(_control);
+            _context.Journal.Record("input.install", realInput.Describe());
+
+            // Breakage test: cover that object with a click-eating overlay; its clicks must end in input.miss.
+            string _mask = _context.Config.Option("real-input-mask");
+            if (!string.IsNullOrEmpty(_mask))
+            {
+                inputMask = AutoplayInputMask.Create(_mask);
+                _context.Journal.Record("input.mask", _mask);
             }
         }
 
@@ -453,6 +580,11 @@ namespace Autoplay
             ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
             _context.Capture.Request("join-rejected", 0.5f);
             yield return new WaitForSecondsRealtime(1.5f);
+            if (realInput != null)
+            {
+                // Real input: the notification must be on top (above the login screen) and dismissable by a click.
+                yield return AutoplayMenuTour.CheckRejectedNotification(realInput, _context.Journal);
+            }
             rejected = _reason;
         }
 
@@ -522,10 +654,21 @@ namespace Autoplay
             }
 
             yield return new WaitForSecondsRealtime(1f);
-            leftAt = Phase;
-            _context.Journal.Record("leave", $"client {networkManager.LocalClientId} leaves at {leftAt}");
+            string _phase = Phase;
+            ulong _self = networkManager.LocalClientId; // read before leaving: a shut-down NetworkManager reports 0
+            // Real input: leave as a player does (pause button, then Leave); direct shutdown if that path fails.
+            bool _viaUi = false;
+            if (GameRealInput(_context) != null && driver != null)
+            {
+                yield return driver.LeaveThroughPauseMenu().ToCoroutine(_left => _viaUi = _left, _e => InputError(_context, "leave", _e));
+            }
+            leftAt = _phase;
+            _context.Journal.Record("leave", $"client {_self} leaves at {leftAt} via={(_viaUi ? "click" : "direct")}");
             driver.End();
-            networkManager.Shutdown();
+            if (networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+            }
         }
 
         /// <summary>

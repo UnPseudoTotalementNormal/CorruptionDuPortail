@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -82,11 +83,55 @@ namespace Characters
 
         public RpcParams GetSafeRpcTarget(ulong _clientId)
         {
-            var _target = _clientId >= 100 
-                ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent) 
-                : NetworkManager.RpcTarget.Single(_clientId, RpcTargetUse.Persistent);
-                
+            // Rejoin 02: a seat whose player reconnected is reached through its current connection (seat alias).
+            var _target = _clientId >= 100
+                ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent)
+                : NetworkManager.RpcTarget.Single(TransportOfSeat(_clientId), RpcTargetUse.Persistent);
+
             return new RpcParams { Send = new RpcSendParams { Target = _target } };
+        }
+
+        // ---- Rejoin 02 (feat/player-rejoin): seat <-> connection aliases and session tokens ----
+        // A seat keeps the clientId its player had when seated (the key of his character, votes, chat, knowledge…);
+        // after a reconnect NGO gives him a new clientId, bound here to that seat. Server-side bookkeeping only.
+        public SeatDirectory Seats { get; } = new SeatDirectory();
+
+        /// <summary>Server: the seat a connection plays (itself unless it is a rejoined player's new connection).</summary>
+        public ulong SeatOfTransport(ulong _transportId) => _transportId >= 100 ? _transportId : Seats.SeatOf(_transportId);
+
+        /// <summary>Server: the connection currently playing a seat (itself unless its player rejoined).</summary>
+        public ulong TransportOfSeat(ulong _seatId) => _seatId >= 100 ? _seatId : Seats.TransportOf(_seatId);
+
+        // Client: the seat this peer plays when it is a rejoined player (null = its own clientId).
+        private ulong? _localSeatId;
+
+        /// <summary>Server: hands a seated real player his secret rejoin token (kept on his PC).</summary>
+        public void IssueRejoinToken(ulong _seatId)
+        {
+            if (!IsServer || _seatId >= 100 || _seatId == NetworkManager.ServerClientId)
+            {
+                return;
+            }
+            string _token = Guid.NewGuid().ToString("N");
+            Seats.IssueToken(_seatId, _token);
+            ReceiveRejoinTokenRpc(_token, GetSafeRpcTarget(_seatId));
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void ReceiveRejoinTokenRpc(string _token, RpcParams _params = default)
+        {
+            Network.RejoinSessionStore.Remember(_token);
+        }
+
+        /// <summary>Server -> a rejoined player's new connection: from now on this peer plays <paramref name="_seatId"/>.</summary>
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void AssignLocalSeatRpc(ulong _seatId, RpcParams _params = default)
+        {
+            _localSeatId = _seatId == NetworkManager.LocalClientId ? null : _seatId;
+            Debug.Log($"[REJOIN] This peer plays seat {_seatId} (connection {NetworkManager.LocalClientId}).");
+            onLocalIdentityChanged?.Invoke();
+            _cacheDirty = true;
+            onCharactersListUpdated?.Invoke(_characters);
         }
 
         [SerializeField] private Transform _charactersParent;
@@ -297,7 +342,7 @@ namespace Characters
             }
         }
 
-        public ulong GetLocalClientId() => _debugPossessedId ?? NetworkManager.LocalClientId;
+        public ulong GetLocalClientId() => _debugPossessedId ?? _localSeatId ?? NetworkManager.LocalClientId;
         
         public bool IsLocalOrSimulated(ulong _clientId)
         {
@@ -421,6 +466,8 @@ namespace Characters
             
             Character _newCharacter = _newCharacterObject.GetComponent<Character>();
             _newCharacter.ownerClientId.Value = _clientId;
+            // Rejoin 02: a seated real player gets the token that lets him take this seat back after a drop.
+            IssueRejoinToken(_clientId);
 
             // Authoritative source (NET-04: assign a NEW id list — full-value replication).
             networkedCharacters.Value = networkedCharacters.Value.WithAdded(_newCharacterObject.NetworkObjectId);

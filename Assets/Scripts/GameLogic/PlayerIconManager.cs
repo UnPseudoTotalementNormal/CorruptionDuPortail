@@ -406,9 +406,25 @@ namespace GameLogic
         public IReadOnlyList<Marker> GetServerMarkersFor(ulong _viewerClientId) =>
             _byViewer.TryGetValue(_viewerClientId, out var _markers) ? _markers : Array.Empty<Marker>();
 
-        private void OnClientConnected(ulong _clientId) => PushSliceTo(_clientId);
+        // Rejoin 02: a rejoined player's new connection views as his seat.
+        private void OnClientConnected(ulong _clientId) => PushSliceTo(SeatOf(_clientId));
 
-        private void OnClientDisconnected(ulong _clientId) => _byViewer.Remove(_clientId);
+        private void OnClientDisconnected(ulong _clientId)
+        {
+            // Rejoin 01/02: mid-game the leaver's seat is reserved and he may come back: keep his markers.
+            GameManager _game = GameManager.instance;
+            if (_game != null && _game.IsSpawned && !_game.IsInLobbyPhase)
+            {
+                return;
+            }
+            _byViewer.Remove(SeatOf(_clientId));
+        }
+
+        private ulong SeatOf(ulong _clientId)
+        {
+            CharacterManager _resolved = _characterManager != null ? _characterManager : null;
+            return _resolved != null ? _resolved.SeatOfTransport(_clientId) : _clientId;
+        }
 
         // ---- targeted delivery ------------------------------------------------------------------
 
@@ -493,7 +509,10 @@ namespace GameLogic
         // This peer's own identity. On the host that is ServerClientId; a simulated bot's slice lives
         // under its own key and is never mistaken for the host's.
         // 0 is ServerClientId — the honest fallback when the NetworkManager is already gone (teardown).
-        private ulong LocalViewerId => NetworkManager != null ? NetworkManager.LocalClientId : 0UL;
+        // Rejoin 02: a rejoined peer views as the seat it plays (CharacterManager.GetLocalClientId).
+        private ulong LocalViewerId => _characterManager != null
+            ? _characterManager.GetLocalClientId()
+            : NetworkManager != null ? NetworkManager.LocalClientId : 0UL;
 
         /// <summary>Every icon THIS peer may see AS ITSELF, in registration order.</summary>
         public IReadOnlyList<IconEntry> GetLocalIcons() => GetLocalIconsForViewer(LocalViewerId);

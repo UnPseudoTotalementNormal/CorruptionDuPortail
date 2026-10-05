@@ -42,6 +42,8 @@ namespace UI
             // Non-host client: leave on our own; the host keeps the game. Flag the shutdown as EXPECTED so the
             // client-side ClientDisconnectHandler does not mistake it for an abrupt host loss.
             ClientDisconnectHandler.NotifyExpectedShutdown();
+            // Leaving on purpose: nothing to rejoin (rejoin is for drops and crashes).
+            RejoinSessionStore.Clear();
 
             if (_nm != null && _nm.IsListening)
             {

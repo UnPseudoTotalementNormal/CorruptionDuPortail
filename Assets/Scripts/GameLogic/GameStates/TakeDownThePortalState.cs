@@ -229,8 +229,13 @@ namespace GameLogic.GameStates
         {
             focusManager.SetFocusOnType(FocusType.Roles);
 
-            focusManager.FocusObject(boardManager.visibleCards
-                .First(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId).gameObject);
+            // A peer that rejoined during this step has no board cards yet (they are dealt at the next state entry).
+            var _card = boardManager.visibleCards
+                .FirstOrDefault(_c => _c.characterInfo.ownerClientId.Value == _clickedCharacterOwnerId);
+            if (_card != null)
+            {
+                focusManager.FocusObject(_card.gameObject);
+            }
         }
         
         private void SetIgnoreCharactersRpc(ulong[] _ignoreCharacters)

@@ -79,7 +79,12 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **`DisconnectReason` non-empty ≠ server reason:** every client transport drop yields a `"[Disconnect Event]…"` placeholder. Use `HasServerReason`.
 - **`CharacterManager.GetCharacters()` defaults `triggerUpdate: true`** and re-raises `onCharactersListUpdated` at end of frame. Calling it from that event's handler = per-frame loop. Passive readers: `GetCharacters(false)`.
 - `Character.isEliminated` is quasi-deprecated: build "player out" on chaining.
-- Quit mid-game = seat RESERVED for `GameValues.REJOIN_GRACE_SECONDS` (shown left, skipped at night, no vote; never wait on him), then chained instantly when the delay expires; last anomaly chained → élus win. Rejoin chantier in progress (`feat/player-rejoin`).
+- Quit mid-game = seat RESERVED for `GameValues.REJOIN_GRACE_SECONDS` (shown left, skipped at night, no vote; never wait on him), then chained instantly when the delay expires; last anomaly chained → élus win.
+- **Rejoin = seat alias.** A rejoined player keeps his ORIGINAL clientId (the seat) everywhere in game state; only the
+  transport id is new. Server: `CharacterManager.SeatOfTransport(sender)` for every inbound sender id,
+  `TransportOfSeat(seat)` / `GetSafeRpcTarget` for every outbound target (a raw `RpcTarget.Single(seat)` misses him).
+  Client: `GetLocalClientId()` (the seat), never `NetworkManager.LocalClientId`. Per-player data pushed once
+  (chat channels, icon slices, knowledge) must also be re-sent on `GameManager.onPlayerRejoinedServer`.
 - `GameSnapshotBuilder.FromLiveState` runs synchronously before any `await` (NV tearing moves goldens). A moved `[Category("GoldenMaster")]` = real behaviour change: find the cause, never re-bless.
 
 ## UI Toolkit gotchas

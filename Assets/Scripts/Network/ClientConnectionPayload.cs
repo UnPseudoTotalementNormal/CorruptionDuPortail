@@ -31,6 +31,8 @@ namespace Network
                 PlayerFullName = _local.playerFullName.ToString(),
                 SteamId = _local.playerSteamId,
                 IsEditor = Application.isEditor,
+                // Rejoin 02: proves this player owns a seat if he reconnects to a game already started.
+                RejoinToken = RejoinSessionStore.TokenForConnection(),
             };
             _networkManager.NetworkConfig.ConnectionData = _payload.ToBytes();
 

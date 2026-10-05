@@ -52,7 +52,7 @@ namespace Characters.Powers.PowerComponents
                     new ChatMessage(ChatManager.SERVER_CLIENT_ID,
                         $"Aucun personnage n'est éligible pour hériter du pouvoir {power.powerName}.",
                         (int)ChatWindowIDs.Server),
-                    RpcTarget.Single(ownerClientId, RpcTargetUse.Persistent)
+                    characterManager.GetSafeRpcTarget(ownerClientId)
                     );
                 return;
             }

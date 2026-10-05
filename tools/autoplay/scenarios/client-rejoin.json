@@ -1,0 +1,90 @@
+{
+  "name": "client-rejoin",
+  "goal": "Rejoin 02/03: a real client drops at the first awakening recap (no Leave button, like a crash), comes back 8 s later with its session token and gets its seat back: same seat, role, powers and uses, knowledge, chat channels and icons as before the drop (analyze_rejoin compares the exported views), its seat is no longer reserved nor shown as left (it may have been voted out while away, never chained by the grace expiry), and it plays on (votes) until the end; no desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 33,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "4",
+    "-autoplay-rejoin-grace",
+    "60",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "AwakeningRecapState day=1",
+    "-autoplay-rejoin-after",
+    "8",
+    "-autoplay-png"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.drop",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.reconnect",
+      "detail": "token present",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.seat",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "left=False",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "process": "clients",
+      "min": 3
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

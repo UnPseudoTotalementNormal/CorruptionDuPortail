@@ -51,10 +51,23 @@ namespace Unpseudo.Autoplay
                 _video = _host.AddComponent<AutoplayVideo>();
                 _video.Begin(_journal, _config.OptionInt("video-fps", 10));
             }
+            // "-autoplay-fps N": cap this process's frame rate (the net launcher caps the small client windows nobody
+            // watches, which frees CPU / GPU for the host and for a second run). Game time is unaffected.
+            int _fps = _config.OptionInt("fps", 0);
+            if (_fps > 0)
+            {
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = _fps;
+            }
             Application.logMessageReceived += _journal.OnLog;
             _journal.Record("run.begin", $"game={_game.Name} scenario={_config.scenario} seed={_config.seed} out={_config.outputDirectory}");
 
-            yield return _game.Boot(_context);
+            // Every step and phase runs under the watchdog: a stall is reported (alerts, then a failed run with a
+            // report) instead of hanging until the global timeout or the launcher's kill.
+            var _watchdog = new AutoplayWatchdog(_context, _game);
+            _capture.StartCoroutine(_watchdog.Run());
+
+            yield return RunStep(_capture, _watchdog, "boot", _game.Boot(_context), _context);
 
             if (!_context.Failed)
             {
@@ -64,7 +77,7 @@ namespace Unpseudo.Autoplay
                 {
                     _journal.Record("port", $"UDP {_config.port} busy, using {_port}");
                 }
-                yield return _game.Host(_context, _port);
+                yield return RunStep(_capture, _watchdog, "host", _game.Host(_context, _port), _context);
                 if (!_context.Failed)
                 {
                     // The session is up (host: listening with the game scene loaded; client: joined or refused). The
@@ -76,24 +89,25 @@ namespace Unpseudo.Autoplay
 
             if (!_context.Failed)
             {
-                yield return _game.SetUp(_context);
+                yield return RunStep(_capture, _watchdog, "setup", _game.SetUp(_context), _context);
             }
 
             if (!_context.Failed)
             {
-                yield return _game.StartGame(_context);
+                yield return RunStep(_capture, _watchdog, "start", _game.StartGame(_context), _context);
             }
 
             if (!_context.Failed)
             {
                 Time.timeScale = _config.timeScale;
-                yield return Watch(_game, _context);
+                yield return Watch(_game, _context, _watchdog);
 
                 yield return new WaitForSecondsRealtime(_context.Failed ? 0.2f : 1.5f);
                 _capture.Request(_context.Failed ? "failure" : "final");
                 yield return new WaitForSecondsRealtime(0.8f);
             }
 
+            _watchdog.Stop();
             try
             {
                 _game.TearDown();
@@ -124,7 +138,31 @@ namespace Unpseudo.Autoplay
         public static string NewRunDirectory(string _root, string _scenario, int _seed)
             => Path.GetFullPath(Path.Combine(_root, $"{DateTime.Now:yyyyMMdd-HHmmss}-{_scenario}-seed{_seed}"));
 
-        private static IEnumerator Watch(IAutoplayGame _game, AutoplayContext _context)
+        // Runs one game step as its own coroutine so the watchdog can end it: a failed run (watchdog, operator abort,
+        // or the step itself) stops waiting on it at once.
+        private static IEnumerator RunStep(MonoBehaviour _owner, AutoplayWatchdog _watchdog, string _name, IEnumerator _step,
+            AutoplayContext _context)
+        {
+            _watchdog.Enter(_name);
+            bool _done = false;
+            Coroutine _running = _owner.StartCoroutine(Track(_step, () => _done = true));
+            while (!_done && !_context.Failed)
+            {
+                yield return null;
+            }
+            if (!_done && _running != null)
+            {
+                _owner.StopCoroutine(_running);
+            }
+        }
+
+        private static IEnumerator Track(IEnumerator _step, Action _onDone)
+        {
+            yield return _step;
+            _onDone();
+        }
+
+        private static IEnumerator Watch(IAutoplayGame _game, AutoplayContext _context, AutoplayWatchdog _watchdog)
         {
             AutoplayConfig _config = _context.Config;
             float _startedAt = Time.realtimeSinceStartup;
@@ -146,10 +184,15 @@ namespace Unpseudo.Autoplay
                 {
                     Time.timeScale = _fastPhases.IsMatch(_phase ?? string.Empty) ? _fastScale : _config.timeScale;
                 }
+                if (_context.Failed)
+                {
+                    yield break; // the watchdog (or an operator abort) failed the run
+                }
                 if (_phase != _lastPhase)
                 {
                     _lastPhase = _phase;
                     _phaseSince = Time.realtimeSinceStartup;
+                    _watchdog.Enter("phase " + _phase);
                     _context.Journal.Record(AutoplayJournal.PhaseEvent, _phase);
                     if (_config.captureOnPhaseChange)
                     {

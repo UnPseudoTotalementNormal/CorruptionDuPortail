@@ -484,6 +484,12 @@ namespace Autoplay
                 .Select(_kv => $"{_kv.Key}={_kv.Value:x16}"));
             string _phase = $"{_gameManager.currentGameStateIndex.Value}:{_state.GetType().Name} day={_gameManager.currentDay}";
             Journal.Record("state.hash", $"{_phase} | {StableHash(_canonical)} | {_canonical}");
+            // Every replicated value, outside the awakening (players act while the processes sample): compared by
+            // compare_replication.py, it catches what the projection above does not cover.
+            if (!_volatilePhase && !_lobbyInFlux)
+            {
+                RecordReplicatedState(_phase, _volatilePhase);
+            }
         }
 
         private static string StableHash(string _text)
@@ -1049,6 +1055,8 @@ namespace Autoplay
             public int[] chatChannels;
             public string[] icons;
             public ulong[] leftPlayers;
+            // Avatars this peer sees: "owner=<id> mine=<IsOwner> name=<nameplate text> pos=<x,z>".
+            public string[] avatars;
         }
 
         /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
@@ -1099,6 +1107,14 @@ namespace Autoplay
                     ? characterManager.GetCharacters(false).Where(_c => _c && !_c.isFake && _roster.TryGetPlayerInfo(_c.ownerClientId.Value, out var _info) && _info.hasLeft)
                         .Select(_c => _c.ownerClientId.Value).OrderBy(_id => _id).ToArray()
                     : Array.Empty<ulong>(),
+                avatars = FindObjectsByType<Avatars.PlayerAvatar>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                    .Where(_a => _a && _a.IsSpawned)
+                    .OrderBy(_a => _a.ownerClientId.Value)
+                    .Select(_a => string.Format(CultureInfo.InvariantCulture, "owner={0} mine={1} name={2} pos={3:0.0},{4:0.0}",
+                        _a.ownerClientId.Value, _a.IsOwner,
+                        _a.GetComponentInChildren<TMPro.TextMeshPro>(true)?.text ?? "-",
+                        _a.transform.position.x, _a.transform.position.z))
+                    .ToArray(),
             };
 
             return JsonUtility.ToJson(_snapshot);

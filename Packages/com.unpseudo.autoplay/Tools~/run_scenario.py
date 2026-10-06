@@ -280,6 +280,7 @@ def main():
     ap.add_argument("scenario")
     ap.add_argument("--ctl", default=os.environ.get("AUTOPLAY_CTL", "tools/autoplay/unityctl.sh"))
     ap.add_argument("--seed", type=int)
+    ap.add_argument("--port", type=int, help="UDP port of this run (parallel lanes: AUTOPLAY_MAX_PARALLEL + one port each)")
     ap.add_argument("--project", default=os.getcwd())
     ap.add_argument("--evaluate", help="re-check an existing run folder against the scenario, without playing")
     ap.add_argument("--video", nargs="?", const="all", choices=["all", "client1"],
@@ -287,6 +288,8 @@ def main():
     a = ap.parse_args()
 
     scenario = json.load(open(a.scenario, encoding="utf-8-sig"))
+    if a.port:
+        scenario["port"] = a.port
     if a.video:
         scenario["video"] = a.video
     seed = a.seed if a.seed is not None else scenario.get("seed", 1)

@@ -89,10 +89,14 @@ def main(run):
         b_at = next((i for i, e in enumerate(b_events) if e["kind"] in ("capture", "capture.state")
                      and os.path.splitext(e["detail"])[0] == os.path.splitext(before_file)[0]), None)
         used_late = {}
+        awoke_late = False  # the player's own awakening refills his uses (Role.AwakenRole)
         if b_at is not None:
             for e in b_events[b_at:]:
                 if e["kind"] in ("rejoin.drop", "crash"):
                     break
+                if e["kind"] == "awake" and e["detail"].split()[0] == str(b.get("localSeat")):
+                    awoke_late = True
+                    used_late.clear()  # uses spent before the refill no longer count
                 if e["kind"] == "power.end" and e["detail"].split()[0] == str(b.get("localSeat")):
                     power = e["detail"].split(" ", 1)[1]
                     used_late[power] = used_late.get(power, 0) + 1
@@ -101,13 +105,13 @@ def main(run):
             return dict(x.rsplit(":", 1) for x in entries or [])
         pb, pa = uses(b.get("localPowers")), uses(powers_after.get("localPowers"))
         bad = [k for k in set(pb) | set(pa) if k not in pb or k not in pa
-               or not (int(pb[k]) - used_late.get(k, 0) <= int(pa[k]) <= int(pb[k]))]
+               or not (int(pb[k]) - used_late.get(k, 0) <= int(pa[k]) <= int(pb[k]) + (99 if awoke_late else 0))]
         if bad:
             failures.append(f"{name}: localPowers changed: {b.get('localPowers')!r} -> {powers_after.get('localPowers')!r}"
                             + (f" (used after the before capture: {used_late})" if used_late else ""))
         elif pb != pa:
             print(f"  OK localPowers {b.get('localPowers')!r} -> {powers_after.get('localPowers')!r}: "
-                  f"used before the drop, after the before capture ({used_late})")
+                  f"{'awakened (uses refilled) and ' if awoke_late else ''}used before the drop, after the before capture ({used_late})")
         else:
             print(f"  OK localPowers = {powers_after.get('localPowers')!r}")
         if a.get("connectionId") == b.get("connectionId"):

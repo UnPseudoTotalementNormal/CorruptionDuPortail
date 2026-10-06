@@ -1,0 +1,30 @@
+{
+  "name": "watchdog-died",
+  "goal": "Breakage test of the launcher's death detection: every client's game is killed at the first awakening recap (crash-at); client1's crash is an expected one, client2's is not: the launcher reports DIED client2 and aborts the run within seconds (exit 125) instead of waiting for the host's timeout.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 62,
+  "timescale": 3,
+  "timeout": 600,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-fast-fakes"
+  ],
+  "clientArgs": [
+    "-autoplay-crash-at",
+    "AwakeningRecapState day=1"
+  ],
+  "expect": [
+    {
+      "type": "event",
+      "kind": "crash",
+      "process": "clients",
+      "min": 2
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 Packages/com.unpseudo.autoplay/Tools~/check_alerts.py {run} \"DIED client2 exit=\" \"ABORT a process died\""
+    }
+  ]
+}

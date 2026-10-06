@@ -47,7 +47,7 @@ namespace Autoplay
     /// drops or crashes, then takes its seat back; see the methods). Every host run writes <c>roles.json</c> (role pool +
     /// powers) for coverage tools.</para>
     /// </summary>
-    public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource
+    public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource, IAutoplayWatchdogSource
     {
         private const int BootSceneIndex = 0;
         private const int MainMenuSceneIndex = 1;
@@ -105,8 +105,13 @@ namespace Autoplay
         public bool IsAlive => rejected != null || leftAt != null || rejoinInProgress ||
                                (networkManager != null && (isClient ? networkManager.IsConnectedClient : networkManager.IsListening));
 
+        private AutoplayConfig config;
+        private int expectedClients;
+
         public IEnumerator Boot(AutoplayContext _context)
         {
+            config = _context.Config;
+            expectedClients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             // BootScene owns the NetworkManager (DontDestroyOnLoad) and then switches to the main menu.
             if (NetworkManager.Singleton == null && SceneManager.GetActiveScene().buildIndex != BootSceneIndex)
             {
@@ -334,6 +339,7 @@ namespace Autoplay
             AutoplayComposition.WriteRolePool(_rolePool, System.IO.Path.Combine(_context.Journal.OutputDirectory, "roles.json"));
 
             string _forced = _context.Config.Option("force-roles");
+            InstallSeatOrder(_context, _forced, _context.Config.Option("role-holder"));
             if (!string.IsNullOrEmpty(_forced))
             {
                 foreach (string _fragment in _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0))
@@ -502,8 +508,67 @@ namespace Autoplay
             }
         }
 
+        // Lever "role-holder host|client|bot" with "force-roles": the forced roles are SEATED on that kind of player
+        // (RoleAttributionState.DevSeatOrder reorders who receives the drawn roles; the draw itself is untouched), so a
+        // run never has to be thrown away and re-rolled with another seed because the role landed elsewhere. The
+        // post-attribution check (composition mismatch) stays as the proof.
+        private static void InstallSeatOrder(AutoplayContext _context, string _forced, string _holder)
+        {
+            RoleAttributionState.DevSeatOrder = null;
+            if (string.IsNullOrEmpty(_forced) || string.IsNullOrEmpty(_holder))
+            {
+                return;
+            }
+            string[] _fragments = _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0).ToArray();
+            RoleAttributionState.DevSeatOrder = (_roles, _characters) =>
+            {
+                var _order = new List<Character>(_characters);
+                var _placed = new HashSet<int>();
+                foreach (string _fragment in _fragments)
+                {
+                    int _roleIndex = IndexWhere(Math.Min(_roles.Count, _order.Count), _i =>
+                        _roles[_i].role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (_roleIndex < 0)
+                    {
+                        continue; // not drawn: the composition check reports it
+                    }
+                    if (KindOf(_order[_roleIndex]) == _holder.ToLowerInvariant())
+                    {
+                        _placed.Add(_roleIndex);
+                        continue;
+                    }
+                    int _seat = IndexWhere(_order.Count, _i => !_placed.Contains(_i) && _i != _roleIndex &&
+                        KindOf(_order[_i]) == _holder.ToLowerInvariant());
+                    if (_seat < 0)
+                    {
+                        continue;
+                    }
+                    (_order[_roleIndex], _order[_seat]) = (_order[_seat], _order[_roleIndex]);
+                    _placed.Add(_roleIndex);
+                    _context.Journal.Record("composition.seat", $"{_fragment} -> {_holder} {_order[_roleIndex].ownerClientId.Value}");
+                }
+                return _order;
+            };
+
+            static int IndexWhere(int _count, Func<int, bool> _match)
+            {
+                for (int _i = 0; _i < _count; _i++)
+                {
+                    if (_match(_i)) return _i;
+                }
+                return -1;
+            }
+
+            static string KindOf(Character _c)
+            {
+                ulong _id = _c.ownerClientId.Value;
+                return _id == NetworkManager.ServerClientId ? "host" : _id >= 100 ? "bot" : "client";
+            }
+        }
+
         public void TearDown()
         {
+            RoleAttributionState.DevSeatOrder = null;
             if (driver != null)
             {
                 driver.End();
@@ -1232,6 +1297,44 @@ namespace Autoplay
         }
 
         private int CountPlayers() => characterManager.GetCharacters(false).Count(_c => _c && !_c.isFake);
+
+        // ---- Watchdog (package AutoplayWatchdog): budgets in REAL seconds, "it never takes longer when all is well" ----
+
+        public float BudgetFor(string _step)
+        {
+            int _clients = Math.Max(0, expectedClients);
+            switch (_step)
+            {
+                case "boot": return 120f;
+                case "host": return isClient ? 150f + RejoinBudget() : 150f;      // a client's "host" = join + scene load
+                case "setup": return isClient ? 120f : 120f + 30f * _clients;   // the host waits for every client to load
+                case "start": return 180f;                                        // lobby: ready flags, start gate
+            }
+            // Phases: the game's own timers (game seconds) at the current time scale, plus a margin for the network.
+            float _scale = Mathf.Max(0.1f, Time.timeScale);
+            if (_step.Contains("VoteState"))
+            {
+                float _vote = gameManager != null ? gameManager.GetGameStates(typeof(VoteState)).OfType<VoteState>().Select(_v => _v.voteDuration).DefaultIfEmpty(300f).Max() : 300f;
+                return _vote / _scale + 30f;
+            }
+            if (_step.Contains("AwakeningState"))
+            {
+                return 360f / _scale + 30f; // every role layer at its longest timer
+            }
+            if (_step.Contains("LobbyState"))
+            {
+                return 240f;
+            }
+            return 120f / _scale + 30f;     // recaps, chaining, portal, intro: animations
+        }
+
+        private float RejoinBudget() => ParseSeconds(config?.Option("rejoin-after")) + ParseSeconds(config?.Option("stall-load"));
+
+        public string DescribeWait()
+        {
+            string _game = driver != null ? driver.DescribeWait() : "no driver";
+            return $"{Phase} {_game}{(rejoinInProgress ? " rejoin-in-progress" : string.Empty)}";
+        }
     }
 }
 #endif

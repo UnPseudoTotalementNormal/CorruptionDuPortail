@@ -108,13 +108,19 @@ namespace ChatSystem
             {
                 ChatManager.instance.ChangeActiveChat(_chatId);
             };
-            ChatManager.instance.onChatUndiscovered += (int _undiscoveredId) =>
+            void OnUndiscovered(int _undiscoveredId)
             {
-                if (_undiscoveredId == _chatId && _newButton != null)
+                if (_undiscoveredId != _chatId)
+                {
+                    return;
+                }
+                ChatManager.instance.onChatUndiscovered -= OnUndiscovered; // one button, one subscription
+                if (_newButton != null)
                 {
                     Destroy(_newButton.gameObject);
                 }
-            };
+            }
+            ChatManager.instance.onChatUndiscovered += OnUndiscovered;
             _newButton.GetComponentInChildren<ChatNotificationComponent>().chatId = _chatId;
         }
 

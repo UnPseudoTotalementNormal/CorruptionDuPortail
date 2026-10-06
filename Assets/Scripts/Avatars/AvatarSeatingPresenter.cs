@@ -103,7 +103,7 @@ namespace Avatars
             // The ring is computed in the LOCAL client's frame (local avatar = front spot). Until the local
             // owned avatar is listed, SeatIndexForClient(localId) returns the not-found sentinel and every
             // seat would resolve to a wrong/colliding angle — so place nobody this frame.
-            if (_networkManager == null || _manager.GetAvatar(_networkManager.LocalClientId) == null)
+            if (_networkManager == null || _manager.GetLocalAvatar() == null)
             {
                 return;
             }

@@ -37,6 +37,32 @@ public class ChatNotificationComponent : MonoBehaviour
         chatPanel.onPanelOpened += OnChatPanelOpened;
     }
 
+    // A private channel's button (and this component) is destroyed when the channel is revoked: without this, the
+    // dead component kept receiving chat events and threw inside the chat RPC handler, skipping the listeners after
+    // it (receive sound, the other badges).
+    private void OnDestroy()
+    {
+        if (canvasGroup != null)
+        {
+            canvasGroup.DOKill();
+        }
+        if (notificationIcon != null)
+        {
+            notificationIcon.transform.DOKill();
+        }
+        if (ChatManager.instance != null)
+        {
+            ChatManager.instance.onChatMessageReceived -= OnChatMessageReceived;
+            ChatManager.instance.onActiveChatChanged -= OnActiveChatChanged;
+        }
+        if (chatPanel != null)
+        {
+            chatPanel.onScrollbarBottomReached -= OnScrollbarBottomReached;
+            chatPanel.onPanelClosed -= OnChatPanelClosed;
+            chatPanel.onPanelOpened -= OnChatPanelOpened;
+        }
+    }
+
     private void OnChatPanelClosed()
     {
         if (notificationMode == ChatNotificationComponentMode.HiddenChatPanel)

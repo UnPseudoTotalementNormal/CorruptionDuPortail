@@ -356,6 +356,9 @@ namespace Characters
         }
 
         public ulong GetLocalClientId() => _debugPossessedId ?? _localSeatId ?? NetworkManager.LocalClientId;
+
+        /// <summary>The seat this peer really plays (a rejoined peer's original clientId), debug possession ignored.</summary>
+        public ulong LocalSeatId => _localSeatId ?? NetworkManager.LocalClientId;
         
         public bool IsLocalOrSimulated(ulong _clientId)
         {

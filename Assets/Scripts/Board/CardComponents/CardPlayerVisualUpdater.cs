@@ -92,7 +92,8 @@ namespace Board.CardComponents
                 return;
             }
             
-            _visualComponents.chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime);
+            _visualComponents.chainedOverlay.DOFade(_isChained ? 1 : 0, _instant ? 0 : chainFadeTime)
+                .SetLink(_visualComponents.chainedOverlay.gameObject); // cards are destroyed / re-created (chaining)
             lastIsChainedStatus = _isChained;
         }
 
@@ -130,7 +131,7 @@ namespace Board.CardComponents
             foreach (CanvasGroup _canvasGroup in _canvasGroups)
             {
                 _canvasGroup.DOKill();
-                _canvasGroup.DOFade(_targetAlpha, FADE_DURATION);
+                _canvasGroup.DOFade(_targetAlpha, FADE_DURATION).SetLink(_canvasGroup.gameObject);
             }
         }
     }

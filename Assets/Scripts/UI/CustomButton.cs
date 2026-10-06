@@ -46,7 +46,7 @@ namespace UI
         public void OnPointerClick(PointerEventData _eventData)
         {
             transform.DOKill(true);
-            transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f);
+            transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f).SetLink(gameObject);
             onButtonClicked?.Invoke();
             onButtonClickedUnityEvent?.Invoke();
             clickSound.TryPlayOneShot();
@@ -54,14 +54,14 @@ namespace UI
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            panelImage?.DOColor(hoverColor, 0.2f);
+            if (panelImage != null) panelImage.DOColor(hoverColor, 0.2f).SetLink(gameObject);
             onButtonHovered?.Invoke();
             hoverSound.TryPlayOneShot();
         }
 
         public void OnPointerExit(PointerEventData _eventData)
         {
-            panelImage.DOColor(baseColor, 0.2f);
+            if (panelImage != null) panelImage.DOColor(baseColor, 0.2f).SetLink(gameObject);
             onButtonUnhovered?.Invoke();
             unHoverSound.TryPlayOneShot();
         }
@@ -70,13 +70,14 @@ namespace UI
         {
             if (panelImage != null)
             {
-                panelImage?.DOColor(disabledColor, 0.2f);
+                // Linked: a button disabled on its way to Destroy must not leave a tween on a dead Image.
+                panelImage.DOColor(disabledColor, 0.2f).SetLink(gameObject);
             }
         }
         
         private void OnEnable()
         {
-            panelImage?.DOColor(baseColor, 0.2f);
+            if (panelImage != null) panelImage.DOColor(baseColor, 0.2f).SetLink(gameObject);
         }
     }
 }

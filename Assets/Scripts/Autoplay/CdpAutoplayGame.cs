@@ -911,8 +911,25 @@ namespace Autoplay
                 }
                 if (!networkManager.IsConnectedClient)
                 {
-                    _context.Journal.Record("rejoin.retry", $"attempt {_attempt} failed reason='{networkManager.DisconnectReason}'");
+                    string _reason = networkManager.DisconnectReason;
+                    _context.Journal.Record("rejoin.retry", $"attempt {_attempt} failed reason='{_reason}'");
                     yield return new WaitForSecondsRealtime(1f);
+                    if (RelayFallbackPolicy.HasServerReason(_reason))
+                    {
+                        // Refused by the host (seat no longer reserved): the menu drops the saved session, so the
+                        // button must be gone and the notification shown; the run ends completed with rejected=.
+                        yield return new WaitForSecondsRealtime(1f);
+                        _context.Journal.Record("rejoin.refused", $"reason='{_reason}' button={(FindRejoinButton() != null ? "shown" : "hidden")}");
+                        _context.Journal.Record("connect.rejected", $"reason={_reason} | after-sync=0.0s");
+                        _context.Capture.Request("join-rejected", 0f);
+                        yield return new WaitForSecondsRealtime(0.5f);
+                        if (realInput != null && IsDisconnectNotificationShown())
+                        {
+                            yield return AutoplayMenuTour.CheckRejectedNotification(realInput, _context.Journal);
+                        }
+                        rejected = _reason;
+                        yield break;
+                    }
                 }
             }
             if (!networkManager.IsConnectedClient)

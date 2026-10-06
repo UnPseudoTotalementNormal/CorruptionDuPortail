@@ -100,7 +100,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Area | Kinds |
 |---|---|
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
-| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `rejoin.refused` (`reason= button=shown|hidden`: the host refused the rejoin, the run ends completed with `rejected=`), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
 | Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
 | Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
@@ -149,6 +149,13 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `client-rejoin` | a client drops at the first awakening recap, clicks the menu's rejoin button 8 s later: same seat, role, powers, chat channels, icons and knowledge (`analyze_rejoin.py`), no longer reserved nor left, votes again; no desync |
 | `client-disconnect-reserved` | a client leaving at night: seat reserved (skipped, no vote), chained only when the 30 s grace expires; no hang, no desync |
 | `lag-150ms` | a full game under 150 ms simulated latency |
+| `heavy-loss` | a full game with 3 chatting clients under 250 ms latency, 80 ms jitter and 5 % loss; no desync |
+| `net-sync-7clients-chat` | a full table of real players (host + 7 clients, no bot) chatting in private channels: zero desync on 8 processes, private lines delivered, no leak |
+| `rejoin-at-vote` | a client drops in the middle of the day-1 vote and rejoins: the vote resolves, seat intact, votes again |
+| `rejoin-at-night` | a client drops during a night (powers in use) and rejoins: no hang, seat intact (a use spent just before the drop is accounted for) |
+| `rejoin-under-lag` | the menu rejoin with 150 ms latency, 40 ms jitter, 2 % loss on every client |
+| `mass-rejoin` | every real client drops at once and rejoins: three seats reserved and claimed concurrently, all intact |
+| `rejoin-after-expiry` | a rejoin after the grace delay is refused with the game-in-progress wording, the saved session is dropped (button hidden), the game goes on |
 | `net-sync-3clients` | zero desync on every public-state component |
 | `client-owner-local-powers` | client-held Repenti / Orpheline reveals reach the owning client |
 | `orpheline-contact-chosen` | Lack of Affection on a chosen real client: contact line + the Orpheline's role revealed to the target |

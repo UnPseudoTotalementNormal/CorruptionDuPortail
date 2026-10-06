@@ -1,0 +1,45 @@
+{
+  "name": "net-sync-7clients-chat",
+  "goal": "Full table of real players: host + 7 real clients (no bot), every player chats in its private channels each phase, 3 days; every phase's public state hashes the same on all 8 processes, private lines reach every real member and no non-member, no error anywhere.",
+  "mode": "net",
+  "clients": 7,
+  "seed": 51,
+  "timescale": 3,
+  "timeout": 1500,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-fast-fakes",
+    "-autoplay-chat"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "state.hash",
+      "process": "every-client",
+      "min": 3
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_chat.py {run}",
+      "severity": "warn"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

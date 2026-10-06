@@ -1,0 +1,100 @@
+{
+  "name": "rejoin-at-night",
+  "goal": "Drop during the first night (awakening, while powers are used) and rejoin 5 s later while the night may still run: no hang, the seat comes back intact (analyze_rejoin, a use spent just before the drop accounted for), the player plays the following nights, no desync. Bots never vote (vote-probability 0) so no early victory ends the game during the rejoin load.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 55,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "4",
+    "-autoplay-rejoin-grace",
+    "60",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log",
+    "-autoplay-vote-probability",
+    "0"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "AwakeningState day=1",
+    "-autoplay-rejoin-after",
+    "5",
+    "-autoplay-rejoin-via",
+    "menu"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.drop",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.reconnect",
+      "detail": "token present",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.seat",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "left=False",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "AwakeningRecapState day=1",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "power.start",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

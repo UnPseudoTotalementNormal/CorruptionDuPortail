@@ -1,0 +1,98 @@
+{
+  "name": "rejoin-at-vote",
+  "goal": "Drop in the middle of the day-1 vote and rejoin 5 s later, still during the vote or its recap: the vote resolves (no hang), the seat comes back with everything it had (analyze_rejoin), the player votes on day 2 and after, no desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 54,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-rejoin-grace",
+    "60",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "VoteState day=1",
+    "-autoplay-rejoin-after",
+    "5",
+    "-autoplay-rejoin-via",
+    "menu"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.drop",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.reconnect",
+      "detail": "token present",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.seat",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "left=False",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "VoteRecapState day=1",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "process": "clients",
+      "min": 3
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

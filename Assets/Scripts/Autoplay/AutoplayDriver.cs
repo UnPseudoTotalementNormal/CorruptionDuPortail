@@ -282,6 +282,7 @@ namespace Autoplay
             if (networkManager.IsServer)
             {
                 TrackReservedSeats(_gameManager);
+                TrackChatMembership();
             }
 
             UpdateTour(_state);
@@ -362,6 +363,42 @@ namespace Autoplay
         // Rejoin: seats the server keeps for mid-game leavers (seat.reserved when one appears, seat.released when it goes:
         // expired then chained, or taken back by a rejoin).
         private readonly HashSet<ulong> reservedSeatsSeen = new();
+
+        // Host: who belongs to which private chat channel, journaled on every change ("chat.grant" / "chat.revoke
+        // <chatId> <seat>"): a channel a rejoined player no longer has must have been revoked while he was away.
+        private readonly Dictionary<ulong, HashSet<int>> chatMembershipSeen = new();
+
+        private void TrackChatMembership()
+        {
+            if (chatManager == null)
+            {
+                return;
+            }
+            foreach (Character _character in characterManager.GetCharacters(false))
+            {
+                if (!_character || _character.isFake)
+                {
+                    continue;
+                }
+                ulong _seat = _character.ownerClientId.Value;
+                var _now = new HashSet<int>(chatManager.ServerChannelsOf(_seat));
+                if (!chatMembershipSeen.TryGetValue(_seat, out HashSet<int> _before))
+                {
+                    _before = new HashSet<int>();
+                    chatMembershipSeen[_seat] = _before;
+                }
+                foreach (int _chat in _now.Where(_c => !_before.Contains(_c)).ToList())
+                {
+                    Journal.Record("chat.grant", $"{_chat} {_seat}");
+                    _before.Add(_chat);
+                }
+                foreach (int _chat in _before.Where(_c => !_now.Contains(_c)).ToList())
+                {
+                    Journal.Record("chat.revoke", $"{_chat} {_seat}");
+                    _before.Remove(_chat);
+                }
+            }
+        }
 
         private void TrackReservedSeats(GameManager _gameManager)
         {
@@ -680,7 +717,8 @@ namespace Autoplay
             ulong _mageId = _portal.mageCharacterOwnerId;
             // shouldActivate is only set on the SERVER's state instance (ChainingManager); a client only receives the
             // Mage id (SetMageCharacterRpc to all). A client Mage therefore acts on the id and lets the server decide.
-            bool _activated = networkManager.IsServer ? _portal.shouldActivate : _mageId == networkManager.LocalClientId;
+            // The Mage's seat, not this peer's connection id (they differ after a rejoin).
+            bool _activated = networkManager.IsServer ? _portal.shouldActivate : _mageId == LocalSeat;
             if (!_activated || !controlledIds.Contains(_mageId))
             {
                 return;

@@ -77,8 +77,14 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `expect-clients N` | host: real clients that must join (when some are meant to be refused) |
 | `spawn-during-load <seconds>` | host: that long after a joiner starts synchronizing (and while it still is), seat a simulated player (a Character spawned, then its owner / parent / roster entry written) — the late-joiner desync trigger |
 | `connect-delay <seconds>` | this client waits that long before its first connect attempt (stagger joins; put it in client args) |
+| `relay` | every process: the session goes through Unity Gaming Services as players do: real login screen (anonymous UGS sign-in, one profile per process), the host clicks Host (Relay allocation + UGS lobby, journals `relay.lobby <code>`), the launcher passes the code to the clients (`join-code`), which type it and click Join; the rejoin button reconnects through Relay. Needs internet; creates anonymous UGS players and a short-lived public lobby. Text fields get key events through `TMP_InputField.ProcessEvent` (`input.type mode=events`; TMP reads IMGUI events, not Input System devices) |
+| `join-code <code>` | client, set by the launcher in relay runs |
+| `video` | film this process: the screen at `video-fps` (10) real-time frames, turned into `video.mp4` in its run folder by `Tools~/make_videos.py` (run by `play-build` / `play-net`; needs ffmpeg). `run_scenario.py --video [all\|client1]` or scenario key `"video"` adds it. Windowed players only |
 | `net-log` | NGO's own developer log (approvals, disconnect events and which side closed) in this process's player log |
 | `rejoin-after <seconds>` | with `quit-at` (client): the client drops instead of leaving (no Leave button, like a crash or a lost connection), goes back to the main menu by the real client path, waits that long, reconnects with its session token and must get its seat back, then plays on. Captures `rejoin-before` / `rejoin-menu` / `rejoin-after` (burst 1/3/6 s) for `analyze_rejoin.py` |
+| `rejoin-via menu` | with `rejoin-after`: the rejoin goes through the main menu's "Rejoindre la partie en cours" button, clicked with the virtual pointer (the disconnect notification dismissed first; the UGS login screen lifted, the autoplay never signs in to the cloud); a failed attempt is clicked again, up to 3 times |
+| `crash-at <phase text>` | client, player build only: the game process is killed at that phase (journal `crash` first: no Leave, no disconnect message, nothing run on the way out). Captures `rejoin-before`. With scenario `client1Relaunch` the launcher starts the game again |
+| `relaunched` | added by the launcher to the relaunched game (scenario `client1Relaunch` args): it keeps the session saved on the PC, rejoins through the menu button, journals `rejoin.relaunch` / `rejoin.seat`, plays its original seat |
 | `rejoin-grace <seconds>` | host: a mid-game leaver's seat stays reserved that long instead of `GameValues.REJOIN_GRACE_SECONDS` (120 s), so a run sees the expiry |
 | `real-input` | every seat with a screen acts through the real UI: virtual Input System mouse + keyboard (real ones disabled, settings cloned with `IgnoreFocus`); the pointer glides to the target or, cursor locked (seated vote), the camera turns until the target is under the reticle; each click must produce its effect, else `input.miss` + direct fallback. Implies `lobby-ui` and `visual-picker` |
 | `lobby-ui` | lobby through the tablet by mouse (UI Toolkit in a RenderTexture): "★ Preset classique", wheel + Imposé "+" per `force-roles`, each seat's "Prêt", start by `LobbyState.TryAutoStart` (no `ForceStart`) |
@@ -94,7 +100,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Area | Kinds |
 |---|---|
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
-| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), client `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
 | Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
 | Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
@@ -125,7 +131,9 @@ monotonic, `onlyIf`, `window`). Any check takes `"severity": "warn"`. Full synta
 `Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`.
 
 Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetries`, `timescale`, `timeout`,
-`visualPicker`, `args`, `clientArgs`, `client1Args`, `expect`.
+`visualPicker`, `args`, `clientArgs`, `client1Args`, `client1Relaunch` (`{"after": s, "args": [...]}`: the launcher
+relaunches client1 once if its game crashes or dies first), `video` (`true` / `"client1"`), `expect`. `outcome` takes `"alsoAccept": ["Crashed"]` (a process killed by
+`crash-at` writes no report; its journal ends with `crash`).
 
 ## Scenarios (regression set, `tools/autoplay/scenarios/`)
 
@@ -135,7 +143,10 @@ Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetri
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
 | `client-leaves-at-vote` | a client leaving at the vote gets a reserved seat, chained when the (10 s) grace expires; the game goes on |
-| `client-rejoin` | a client drops at the first awakening recap, rejoins 8 s later from the menu with its token: same seat, role, powers, chat channels, icons and knowledge (`analyze_rejoin.py`), no longer reserved nor left, votes again; no desync |
+| `relay-game` | a game over Unity Relay set up through the real menus (login, Host, Join by code), played to the day limit; no desync |
+| `relay-crash-relaunch` | the crash + relaunch rejoin over Relay: the relaunched game signs in again, clicks the rejoin button, reconnects through Relay |
+| `client-crash-relaunch` | a client's game is killed at the first awakening recap, the launcher relaunches it 3 s later; it finds its session, clicks the menu's rejoin button and takes its seat back (reserved, or taken over from the dead connection when the host has not noticed yet); `analyze_rejoin.py` pairs the crashed and the relaunched process |
+| `client-rejoin` | a client drops at the first awakening recap, clicks the menu's rejoin button 8 s later: same seat, role, powers, chat channels, icons and knowledge (`analyze_rejoin.py`), no longer reserved nor left, votes again; no desync |
 | `client-disconnect-reserved` | a client leaving at night: seat reserved (skipped, no vote), chained only when the 30 s grace expires; no hang, no desync |
 | `lag-150ms` | a full game under 150 ms simulated latency |
 | `net-sync-3clients` | zero desync on every public-state component |

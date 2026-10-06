@@ -1,0 +1,62 @@
+{
+  "name": "relay-game",
+  "goal": "A game over Unity Relay, set up through the real menus: every process signs in to Unity Gaming Services through the login screen, the host clicks Host (Relay allocation + UGS lobby), the clients type the lobby code and click Join; the game is played to the day limit with no desync.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 35,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "login.ok",
+      "process": "all",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "relay.lobby",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "relay.join",
+      "process": "every-client",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "process": "clients",
+      "min": 2
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

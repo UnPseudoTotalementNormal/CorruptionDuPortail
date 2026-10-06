@@ -69,6 +69,7 @@ namespace Characters
         public override void OnNetworkDespawn()
         {
             roleId.OnValueChanged -= OnRoleIdChanged;
+            RoleRegistry.onRegistered -= OnRoleRegistered;
             if (_rosterSubscription != null)
             {
                 _rosterSubscription.onRosterChanged -= RaiseOwnerPseudoChanged;
@@ -110,14 +111,28 @@ namespace Characters
             ApplyReplicatedRole();
         }
 
+        private void OnRoleRegistered(RoleID _id)
+        {
+            if (this == null || !IsSpawned || IsServer || _id != roleId.Value)
+            {
+                return;
+            }
+            ApplyReplicatedRole();
+        }
+
         private void ApplyReplicatedRole()
         {
             Role _rebuilt = RoleRegistry.CreateRole(roleId.Value);
             if (_rebuilt == null)
             {
-                Debug.LogError($"[ROLE] unknown roleId={roleId.Value} for character {ownerClientId.Value} on peer {NetworkManager.LocalClientId}.");
+                // A game that joins mid-game can spawn characters before the role pool is loaded (it is loaded with the
+                // game states): build the role as soon as its id is known on this peer.
+                Debug.Log($"[ROLE] roleId={roleId.Value} of character {ownerClientId.Value} not known yet on peer {NetworkManager.LocalClientId}: built once the role pool is loaded.");
+                RoleRegistry.onRegistered -= OnRoleRegistered;
+                RoleRegistry.onRegistered += OnRoleRegistered;
                 return;
             }
+            RoleRegistry.onRegistered -= OnRoleRegistered;
 
             _rebuilt.ownerClientId = ownerClientId.Value;
             foreach (var _condition in _rebuilt.winningConditions)

@@ -76,7 +76,7 @@ namespace Autoplay
             try
             {
                 // The host shows its own seat (no possessed bot) for the tour.
-                await PrepareSeat(networkManager.LocalClientId);
+                await PrepareSeat(LocalSeat);
                 await TourTooltip();
                 if (TourInterrupted())
                 {

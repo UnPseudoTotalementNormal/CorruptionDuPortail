@@ -2,7 +2,8 @@
 
     python -X utf8 tools/autoplay/analyze_rejoin.py <net run folder>
 
-Finds the client process that journaled `rejoin.seat`, loads its `rejoin-before` capture (just before the drop) and its
+Finds the client process that journaled `rejoin.seat`, loads its `rejoin-before` capture (just before the drop; for a
+game relaunched after a crash, the crashed process's one) and its
 last `rejoin-after` capture (a few seconds after the seat came back), and compares what that player sees as himself:
 the seat he plays, his role, his powers and their uses, his chat channels, the icons he sees, what he knows about the
 others, the day; and checks that he is no longer listed as left. Things that can legitimately grow while he was away
@@ -29,9 +30,20 @@ def main(run):
         print("NOT COVERED: no client journaled rejoin.seat")
         return 2
 
+    def seat_name(proc):  # "<stamp>-client1-seed33" -> "client1-seed33": the same player across a relaunch
+        return proc.name.split("-", 2)[-1]
+
     failures = []
     for proc in rejoiners:
         before = sorted(glob.glob(os.path.join(proc.folder, "*rejoin-before*.json")))
+        if not before:
+            # A relaunched game: what he saw before is in the process that crashed (same player, lever crash-at).
+            crashed = [p for p in procs if p is not proc and p.of("crash") and seat_name(p) == seat_name(proc)]
+            for p in crashed:
+                before = sorted(glob.glob(os.path.join(p.folder, "*rejoin-before*.json")))
+                if before:
+                    print(f"{proc.name}: relaunched after the crash of {p.name}")
+                    break
         after = sorted(glob.glob(os.path.join(proc.folder, "*rejoin-after*.json")))
         if not before or not after:
             print(f"NOT COVERED: {proc.name} has no rejoin-before / rejoin-after capture")
@@ -56,11 +68,42 @@ def main(run):
 
         same("localSeat")
         same("localRole")
-        # Power uses may only go down while he was away if he used them; he could not: identical.
-        same("localPowers")
+        # Power uses: identical (he could not use them while away), but his own awakening regenerates them
+        # (Role.AwakenRole): compare on the last "rejoin-after" capture taken before he was awakened again.
+        events = proc.events
+        seat_at = next((i for i, e in enumerate(events) if e["kind"] == "rejoin.seat"), 0)
+        awake_t = next((e["realTime"] for e in events[seat_at:] if e["kind"] == "awake" and e["detail"].split()[0] == str(a.get("localSeat"))), None)
+        shots = [(e["realTime"], e["detail"]) for e in events[seat_at:] if e["kind"] == "capture" and "rejoin-after" in e["detail"]]
+        usable = [d for t, d in shots if awake_t is None or t < awake_t]
+        powers_after = a
+        if usable and awake_t is not None:
+            powers_after = load_capture(os.path.join(proc.folder, usable[-1].replace(".png", ".json")))
+            print(f"  (powers compared on {usable[-1]}: he was awakened again at {awake_t:.1f}s)")
+        if b.get("localPowers") != powers_after.get("localPowers"):
+            failures.append(f"{name}: localPowers changed: {b.get('localPowers')!r} -> {powers_after.get('localPowers')!r}")
+        else:
+            print(f"  OK localPowers = {powers_after.get('localPowers')!r}")
         if a.get("connectionId") == b.get("connectionId"):
             failures.append(f"{name}: the rejoin did not get a new connection id ({a.get('connectionId')})")
-        kept("chatChannels")
+        # A private channel may be gone only if the host revoked it for this seat after his drop (host journal).
+        missing = sorted(set(b.get("chatChannels") or []) - set(a.get("chatChannels") or []))
+        if missing:
+            host = next((p for p in procs if p.is_host), None)
+            seat = a.get("localSeat")
+            revoked = set()
+            if host is not None:
+                events = host.events
+                start = next((i for i, e in enumerate(events) if e["kind"] == "seat.reserved" and e["detail"].split()[0] == str(seat)), 0)
+                for e in events[start:]:
+                    if e["kind"] == "chat.revoke" and e["detail"].split()[1] == str(seat):
+                        revoked.add(int(e["detail"].split()[0]))
+            unexplained = [c for c in missing if c not in revoked]
+            if unexplained:
+                failures.append(f"{name}: chatChannels lost after the rejoin: {unexplained}")
+            else:
+                print(f"  OK chatChannels: {missing} revoked by the host while he was away (chat.revoke), the rest kept")
+        else:
+            print(f"  OK chatChannels: all {len(b.get('chatChannels') or [])} kept ({len(a.get('chatChannels') or [])} now)")
         kept("icons")
         # Knowledge only grows ("viewer>target role=… corrupt=… force=… hacked=…", levels may rise while he was away).
         def levels(entries):

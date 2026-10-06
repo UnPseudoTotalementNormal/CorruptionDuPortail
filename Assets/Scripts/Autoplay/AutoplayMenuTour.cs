@@ -144,7 +144,9 @@ namespace Autoplay
             _journal.Record("menu.notification-dismiss", _hidden ? "ok" : "miss");
         }
 
-        private static IEnumerator Click(AutoplayVirtualInput _input, AutoplayJournal _journal, string _action, GameObject _target,
+        /// <summary>Clicks a uGUI object with the virtual pointer when it is the first thing under it, then waits (2 s) for
+        /// the effect. Journals input.click / input.miss.</summary>
+        public static IEnumerator Click(AutoplayVirtualInput _input, AutoplayJournal _journal, string _action, GameObject _target,
             Func<bool> _effect, Action<bool> _result)
         {
             AutoplayUiLocator.Probe _probe = AutoplayUiLocator.Locate(_target);

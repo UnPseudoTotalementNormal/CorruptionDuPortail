@@ -16,6 +16,8 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using Extensions;
 using Unpseudo.Autoplay;
 
 namespace Autoplay
@@ -41,7 +43,9 @@ namespace Autoplay
     /// private channels), <c>build-version &lt;v&gt;</c> and <c>stall-load &lt;seconds&gt;</c> (a client joins with
     /// another version / a load that does not finish: the join is expected to be refused, the run then ends with a
     /// <c>rejected=</c> fact), <c>expect-clients N</c> (host: real clients that must join, when some are expected to be
-    /// refused). Every host run writes <c>roles.json</c> (role pool + powers) for coverage tools.</para>
+    /// refused), <c>rejoin-after S</c> / <c>rejoin-via menu</c> / <c>crash-at &lt;phase&gt;</c> / <c>relaunched</c> (a client
+    /// drops or crashes, then takes its seat back; see the methods). Every host run writes <c>roles.json</c> (role pool +
+    /// powers) for coverage tools.</para>
     /// </summary>
     public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource
     {
@@ -61,6 +65,15 @@ namespace Autoplay
         private string rejected;
         // Rejoin lever: the client is between its drop and its seat coming back (the session is not dead).
         private bool rejoinInProgress;
+        // Lever "relaunched": this process is the game a player relaunched after a crash (launch-net RelaunchArgs).
+        private bool relaunched;
+
+        private static bool isClientRole(AutoplayContext _context) =>
+            string.Equals(_context.Config.Option("role", "host"), "client", StringComparison.OrdinalIgnoreCase);
+
+        private static bool RejoinViaMenu(AutoplayContext _context) =>
+            string.Equals(_context.Config.Option("rejoin-via"), "menu", StringComparison.OrdinalIgnoreCase) ||
+            _context.Config.Flag("relaunched");
         private ushort connectPort;
         // Real-input mode (-autoplay-real-input): virtual mouse / keyboard, real devices disabled while installed.
         private AutoplayVirtualInput realInput;
@@ -111,8 +124,17 @@ namespace Autoplay
             {
                 networkManager.LogLevel = LogLevel.Developer;
             }
-            // Several player processes share PlayerPrefs on one machine: each keeps its rejoin token under its own key.
-            RejoinSessionStore.KeySuffix = "-autoplay-" + System.Diagnostics.Process.GetCurrentProcess().Id;
+            // Several player processes share PlayerPrefs on one machine: each seat keeps its rejoin session under its own
+            // key (scenario name + agreed port), the same for a relaunched process, which must find it as a player's
+            // relaunched game does. Any other process starts with no session.
+            relaunched = isClientRole(_context) && _context.Config.Flag("relaunched");
+            RejoinSessionStore.KeySuffix = $"-autoplay-{_context.Config.scenario}-{_context.Config.port}";
+            if (!relaunched)
+            {
+                RejoinSessionStore.Clear();
+            }
+            // The menu read the session before this key was set: let it look again (a player's game has one key only).
+            UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>()?.RefreshRejoinButton();
 
             // Virtual devices from the main menu on (a refused join is seen there), and the menu tour when asked.
             InstallRealInput(_context);
@@ -132,10 +154,32 @@ namespace Autoplay
             isClient = string.Equals(_context.Config.Option("role", "host"), "client", StringComparison.OrdinalIgnoreCase);
             maxDays = _context.Config.OptionInt("max-days", 0);
             rejoinGraceSeconds = ParseSeconds(_context.Config.Option("rejoin-grace"));
+            if (Relay(_context))
+            {
+                yield return LoginThroughMenu(_context);
+                if (_context.Failed) yield break;
+            }
             if (isClient)
             {
                 connectPort = _port;
+                if (relaunched)
+                {
+                    _context.Journal.Record("rejoin.relaunch", "token " + (string.IsNullOrEmpty(RejoinSessionStore.TokenForConnection()) ? "missing" : "present"));
+                    yield return RejoinThroughMenu(_context);
+                    yield break;
+                }
+                if (Relay(_context))
+                {
+                    yield return JoinThroughMenuByCode(_context);
+                    yield break;
+                }
                 yield return Connect(_context, _port);
+                yield break;
+            }
+
+            if (Relay(_context))
+            {
+                yield return HostThroughMenu(_context);
                 yield break;
             }
 
@@ -179,13 +223,26 @@ namespace Autoplay
                     yield break;
                 }
 
-                // A real client plays its own seat only, through the client code paths (no possession, no bots).
-                StartClientDriver(_context, networkManager.LocalClientId);
+                // A real client plays its own seat only, through the client code paths (no possession, no bots). Its seat is
+                // its clientId, or its original one when it rejoined after a relaunch.
+                ulong _seat = characterManager.GetLocalClientId();
+                StartClientDriver(_context, _seat, _joinedMidPhase: relaunched);
                 _context.Capture.StartCoroutine(RecordRtt(_context));
+                if (relaunched)
+                {
+                    _context.Journal.Record("rejoin.seat", $"seat {_seat} connection {networkManager.LocalClientId}");
+                    _context.Capture.RequestBurst("rejoin-after", new[] { 1f, 3f, 6f });
+                    yield break; // the relaunched game plays on: no second leave / crash
+                }
                 string _quitAt = _context.Config.Option("quit-at");
                 if (!string.IsNullOrEmpty(_quitAt))
                 {
                     _context.Capture.StartCoroutine(LeaveAt(_context, _quitAt));
+                }
+                string _crashAt = _context.Config.Option("crash-at");
+                if (!string.IsNullOrEmpty(_crashAt))
+                {
+                    _context.Capture.StartCoroutine(CrashAt(_context, _crashAt));
                 }
                 yield break;
             }
@@ -471,7 +528,8 @@ namespace Autoplay
         private void InstallRealInput(AutoplayContext _context)
         {
             bool _control = _context.Config.Flag("real-input-control");
-            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui")) || realInput != null)
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") ||
+                  RejoinViaMenu(_context) || Relay(_context)) || realInput != null)
             {
                 return;
             }
@@ -696,7 +754,8 @@ namespace Autoplay
         // left=<phase> fact instead of failing on the dead session.
         // Scenario lever "rejoin-after S" (with quit-at, client): this client drops at that phase (as a crash or a network
         // loss would, no Leave button), lands back in the main menu like a real player, waits S real seconds, reconnects
-        // with its session token and must get its seat back, then plays on. Captures "rejoin-before" (just before the drop) and "rejoin-after" (bursts after the
+        // with its session token (directly, or with "rejoin-via menu" through the menu's rejoin button) and must get its
+        // seat back, then plays on. Captures "rejoin-before" (just before the drop) and "rejoin-after" (bursts after the
         // rejoin) export what this player sees, for the before/after comparison (tools/autoplay/analyze_rejoin.py).
         private IEnumerator DropAndRejoin(AutoplayContext _context, float _after, string _phase)
         {
@@ -734,7 +793,14 @@ namespace Autoplay
             _context.Journal.Record("rejoin.reconnect", string.Format(CultureInfo.InvariantCulture, "after {0:0.0}s, token {1}",
                 _after, string.IsNullOrEmpty(RejoinSessionStore.TokenForConnection()) ? "missing" : "present"));
             networkManager.LogLevel = LogLevel.Developer; // [REJOIN] NGO's own account of the reconnect, in the player log
-            yield return Connect(_context, connectPort);
+            if (RejoinViaMenu(_context))
+            {
+                yield return RejoinThroughMenu(_context);
+            }
+            else
+            {
+                yield return Connect(_context, connectPort);
+            }
             if (!_context.Config.Flag("net-log"))
             {
                 networkManager.LogLevel = LogLevel.Normal;
@@ -756,6 +822,307 @@ namespace Autoplay
             StartClientDriver(_context, _seat, _joinedMidPhase: true);
             rejoinInProgress = false;
             _context.Capture.RequestBurst("rejoin-after", new[] { 1f, 3f, 6f });
+        }
+
+        // Scenario lever "crash-at <phase>" (client): the game process is killed at that phase, as in a crash: no Leave, no
+        // disconnect message, nothing run on the way out. The launcher relaunches the game for that player
+        // (scenario "client1Relaunch", launch-net -RelaunchArgs) with "relaunched": it finds its session on the PC and
+        // rejoins through the main menu (RejoinThroughMenu). "rejoin-before" captures what he saw before the crash.
+        private IEnumerator CrashAt(AutoplayContext _context, string _phaseText)
+        {
+            while (Phase.IndexOf(_phaseText, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(1f);
+            if (Application.isEditor)
+            {
+                _context.Fail("crash-at kills the process: player builds only");
+                yield break;
+            }
+
+            ulong _seat = driver != null ? driver.LocalSeat : networkManager.LocalClientId;
+            _context.Capture.Request("rejoin-before", 0f);
+            yield return new WaitForSecondsRealtime(0.8f);
+            _context.Journal.Record("crash", $"seat {_seat} connection {networkManager.LocalClientId} at {Phase} token " +
+                                             (string.IsNullOrEmpty(RejoinSessionStore.TokenForConnection()) ? "missing" : "present"));
+            // A real crash: the process dies on the spot (no Leave, no disconnect message, nothing run on the way out).
+            System.Diagnostics.Process.GetCurrentProcess().Kill();
+        }
+
+        // The rejoin a player does: in the main menu, the "Rejoindre la partie en cours" button, clicked with the virtual
+        // pointer (the disconnect notification dismissed first when it covers the menu). The login screen only signs in
+        // to Unity Gaming Services, which the autoplay never contacts: it is lifted as a signed-in player's would be. A
+        // failed attempt (the menu keeps the session) is retried like a player would, up to 3 clicks. Ends with this peer
+        // connected and its own character known (the host told it its seat).
+        private IEnumerator RejoinThroughMenu(AutoplayContext _context)
+        {
+            for (int _attempt = 1; _attempt <= 3 && !networkManager.IsConnectedClient; _attempt++)
+            {
+                Button _button = null;
+                yield return _context.WaitFor(() => (_button = FindRejoinButton()) != null, 30f,
+                    "rejoin: the main menu never showed the \"Rejoindre la partie en cours\" button");
+                if (_context.Failed) yield break;
+                if (!Relay(_context))
+                {
+                    LiftLoginScreen(_context);
+                }
+                yield return new WaitForSecondsRealtime(0.6f); // menu fades
+                if (realInput != null && IsDisconnectNotificationShown())
+                {
+                    yield return AutoplayMenuTour.CheckRejectedNotification(realInput, _context.Journal);
+                }
+                _context.Capture.Request("rejoin-menu-button", 0f);
+                yield return new WaitForSecondsRealtime(0.4f);
+
+                float _clickAt = Time.realtimeSinceStartup;
+                bool _clicked = false;
+                if (realInput != null)
+                {
+                    yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-rejoin", _button.gameObject,
+                        () => networkManager.IsListening || networkManager.IsConnectedClient, _ok => _clicked = _ok);
+                }
+                else
+                {
+                    _button.onClick.Invoke();
+                    _clicked = true;
+                    _context.Journal.Record("input.click", "menu-rejoin mode=invoke");
+                }
+                if (!_clicked)
+                {
+                    _context.Fail("rejoin: the rejoin button could not be clicked (see input.miss)");
+                    yield break;
+                }
+                _context.Journal.Record("rejoin.click", $"attempt {_attempt}");
+
+                bool _started = false;
+                float _deadline = Time.realtimeSinceStartup + JoinHandshake.SyncTotalTimeoutSeconds + 30f;
+                while (!networkManager.IsConnectedClient && Time.realtimeSinceStartup < _deadline)
+                {
+                    if (networkManager.IsListening)
+                    {
+                        _started = true;
+                    }
+                    else if ((_started || Time.realtimeSinceStartup - _clickAt > 5f) && !networkManager.ShutdownInProgress)
+                    {
+                        break; // this attempt failed, the menu is back
+                    }
+                    yield return null;
+                }
+                if (!networkManager.IsConnectedClient)
+                {
+                    _context.Journal.Record("rejoin.retry", $"attempt {_attempt} failed reason='{networkManager.DisconnectReason}'");
+                    yield return new WaitForSecondsRealtime(1f);
+                }
+            }
+            if (!networkManager.IsConnectedClient)
+            {
+                _context.Fail("rejoin: never reconnected through the menu");
+                yield break;
+            }
+            _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through the rejoin button");
+
+            yield return _context.WaitFor(() =>
+            {
+                gameManager = CompositionRoot.For(networkManager).GameManager;
+                characterManager = CompositionRoot.For(networkManager).CharacterManager;
+                return gameManager != null && gameManager.IsSpawned && characterManager != null &&
+                       characterManager.GetLocalCharacter(false) != null;
+            }, 30f, "rejoin: the host never gave this player his seat back");
+        }
+
+        // Scenario lever "relay": the session goes through Unity Gaming Services as players do: real login (anonymous
+        // UGS sign-in, a distinct profile per process), the host clicks Host (Relay allocation + UGS lobby), the clients
+        // join by the lobby code the launcher reads from the host's journal ("relay.lobby", passed as join-code), the
+        // rejoin button reconnects through Relay. Everything is clicked / typed with the virtual devices. Needs internet
+        // and the project's UGS services; creates anonymous UGS players and a short-lived public lobby.
+        private static bool Relay(AutoplayContext _context) => _context.Config.Flag("relay");
+
+        private IEnumerator LoginThroughMenu(AutoplayContext _context)
+        {
+            UnityTransport _utp = networkManager.GetComponent<UnityTransport>();
+            if (_utp == null)
+            {
+                _context.Fail("relay: the NetworkManager has no UnityTransport");
+                yield break;
+            }
+            networkManager.NetworkConfig.NetworkTransport = _utp; // the menu picks Relay when the transport is UTP
+
+            LoginMenu _login = null;
+            CanvasGroup _overlay = null;
+            yield return _context.WaitFor(() =>
+            {
+                _login = UnityEngine.Object.FindAnyObjectByType<LoginMenu>();
+                _overlay = _login != null ? PrivateField<CanvasGroup>(_login, "menuCanvasGroup") : null;
+                return _overlay != null;
+            }, 30f, "relay: no login screen in the main menu");
+            if (_context.Failed) yield break;
+            if (!_overlay.blocksRaycasts)
+            {
+                _context.Journal.Record("login.ok", "already signed in");
+                yield break;
+            }
+
+            CanvasGroup _loginGroup = PrivateField<CanvasGroup>(_login, "loginCanvasGroup");
+            yield return _context.WaitFor(() => _loginGroup != null && _loginGroup.alpha > 0.9f && _loginGroup.interactable, 60f,
+                "relay: the login form never showed (Unity Services initialisation)");
+            if (_context.Failed) yield break;
+
+            string _name = $"Autoplay{_context.Config.scenario}".Replace("-", string.Empty);
+            yield return TypeInto(_context, PrivateField<TMPro.TMP_InputField>(_login, "usernameInputField"), _name, "login-name");
+            bool _clicked = false;
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "login", PrivateField<Button>(_login, "loginButton").gameObject,
+                () => true, _ok => _clicked = _ok);
+            if (!_clicked)
+            {
+                _context.Fail("relay: the login button could not be clicked (see input.miss)");
+                yield break;
+            }
+            yield return _context.WaitFor(() => !_overlay.blocksRaycasts, 60f, "relay: the UGS sign-in never completed");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("login.ok", $"signed in to Unity Gaming Services as {_name}");
+            yield return new WaitForSecondsRealtime(0.6f);
+        }
+
+        private IEnumerator HostThroughMenu(AutoplayContext _context)
+        {
+            global::UI.MainMenu _menu = UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>();
+            if (_menu == null)
+            {
+                _context.Fail("relay: no main menu");
+                yield break;
+            }
+            CanvasGroup _hostPanel = UnityEngine.Object.FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FirstOrDefault(_g => _g.name == "HostPanel");
+            bool _ok = false;
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-host-open", PrivateField<Button>(_menu, "openHostMenu").gameObject,
+                () => _hostPanel == null || (_hostPanel.blocksRaycasts && _hostPanel.alpha > 0.5f), _r => _ok = _r);
+            if (!_ok) { _context.Fail("relay: the Host panel did not open"); yield break; }
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return TypeInto(_context, PrivateField<TMPro.TMP_InputField>(_menu, "lobbyNameInputField"), $"Autoplay {_context.Config.seed}", "lobby-name");
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-host", PrivateField<Button>(_menu, "_hostButton").gameObject,
+                () => networkManager.IsListening, _r => _ok = _r);
+            if (!_ok) { _context.Fail("relay: Host did not start the session"); yield break; }
+
+            yield return _context.WaitFor(() =>
+            {
+                gameManager = CompositionRoot.For(networkManager).GameManager;
+                characterManager = CompositionRoot.For(networkManager).CharacterManager;
+                return gameManager != null && gameManager.IsSpawned && characterManager != null &&
+                       gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState &&
+                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
+            }, 120f, "relay: GameScene never reached LobbyState with the host's character spawned");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("relay.lobby", GameCode.gameCode);
+            if (rejoinGraceSeconds > 0f)
+            {
+                _context.Journal.Record("seat.grace", string.Format(CultureInfo.InvariantCulture, "{0:0.0}s", rejoinGraceSeconds));
+            }
+        }
+
+        private IEnumerator JoinThroughMenuByCode(AutoplayContext _context)
+        {
+            string _code = _context.Config.Option("join-code");
+            global::UI.MainMenu _menu = UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>();
+            if (string.IsNullOrEmpty(_code) || _menu == null)
+            {
+                _context.Fail($"relay: no lobby code to join (join-code='{_code}') or no main menu");
+                yield break;
+            }
+            CanvasGroup _joinPanel = UnityEngine.Object.FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FirstOrDefault(_g => _g.name == "JoinPanel");
+            bool _ok = false;
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-join-open", PrivateField<Button>(_menu, "openJoinMenu").gameObject,
+                () => _joinPanel == null || (_joinPanel.blocksRaycasts && _joinPanel.alpha > 0.5f), _r => _ok = _r);
+            if (!_ok) { _context.Fail("relay: the Join panel did not open"); yield break; }
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return TypeInto(_context, PrivateField<TMPro.TMP_InputField>(_menu, "joinCodeInputField"), _code, "join-code");
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-join", PrivateField<Button>(_menu, "_joinWithCodeButton").gameObject,
+                () => true, _r => _ok = _r);
+            if (!_ok) { _context.Fail("relay: the Join button could not be clicked"); yield break; }
+            _context.Journal.Record("relay.join", _code);
+
+            yield return _context.WaitFor(() =>
+            {
+                gameManager = CompositionRoot.For(networkManager).GameManager;
+                characterManager = CompositionRoot.For(networkManager).CharacterManager;
+                return networkManager.IsConnectedClient && gameManager != null && gameManager.IsSpawned && characterManager != null &&
+                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
+            }, 150f, "relay: the client never joined the lobby's game through Relay");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through Relay (lobby {_code})");
+        }
+
+        // Clicks the field, types the text with the virtual keyboard; a TMP field (IMGUI key events) gets the same key
+        // events through its ProcessEvent (input.type mode=events). Only if that fails too is the text set directly,
+        // journaled as such (mode=set), never hidden.
+        private IEnumerator TypeInto(AutoplayContext _context, TMPro.TMP_InputField _field, string _text, string _action)
+        {
+            if (_field == null)
+            {
+                _context.Journal.Record("input.miss", $"{_action} reason=no-field");
+                yield break;
+            }
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, _action, _field.gameObject, () => _field.isFocused, _ => { });
+            _field.text = string.Empty;
+            yield return realInput.TypeText(_text);
+            yield return null;
+            if (_field.text == _text)
+            {
+                _context.Journal.Record("input.type", $"{_action} mode=keyboard");
+                yield break;
+            }
+            // TMP fields read IMGUI key events (fed by the OS, not by Input System devices): hand them the same
+            // key events, one per character, through the field's own handling (validation, limits, onValueChanged).
+            _field.text = string.Empty;
+            foreach (char _character in _text)
+            {
+                _field.ProcessEvent(new Event { type = EventType.KeyDown, character = _character });
+                yield return null;
+            }
+            _field.ForceLabelUpdate();
+            if (_field.text == _text)
+            {
+                _context.Journal.Record("input.type", $"{_action} mode=events");
+            }
+            else
+            {
+                _context.Journal.Record("input.type", $"{_action} mode=set (key events not taken: '{_field.text}')");
+                _field.text = _text;
+            }
+        }
+
+        private static T PrivateField<T>(object _owner, string _name) where T : class
+        {
+            var _field = _owner?.GetType().GetField(_name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return _field?.GetValue(_owner) as T;
+        }
+
+        private static Button FindRejoinButton()
+        {
+            GameObject _go = GameObject.Find("RejoinButton");
+            Button _button = _go != null ? _go.GetComponent<Button>() : null;
+            return _button != null && _button.isActiveAndEnabled && _button.interactable ? _button : null;
+        }
+
+        private static bool IsDisconnectNotificationShown()
+        {
+            GameObject _handler = GameObject.Find("ClientDisconnectHandler");
+            Transform _notification = _handler != null ? _handler.transform.Find("ClientDisconnectCanvas/Notification") : null;
+            return _notification != null && _notification.gameObject.activeInHierarchy;
+        }
+
+        // LoginMenu's overlay group (login / loading screens over the menu), hidden the way a successful sign-in hides it.
+        private static void LiftLoginScreen(AutoplayContext _context)
+        {
+            LoginMenu _login = UnityEngine.Object.FindAnyObjectByType<LoginMenu>();
+            var _field = typeof(LoginMenu).GetField("menuCanvasGroup", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (_login == null || _field == null || !(_field.GetValue(_login) is CanvasGroup _group) || !_group.blocksRaycasts)
+            {
+                return;
+            }
+            _group.DoHideGroup(0.2f);
+            _context.Journal.Record("login.skip", "UGS sign-in screen lifted (the autoplay never signs in to the cloud)");
         }
 
         // A real client's bot brain, playing seat _self (its own clientId, or its original seat after a rejoin).

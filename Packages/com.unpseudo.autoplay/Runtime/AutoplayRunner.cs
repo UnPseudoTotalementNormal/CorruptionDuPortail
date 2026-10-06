@@ -44,6 +44,13 @@ namespace Unpseudo.Autoplay
                 _recorder.Begin(_journal, _recordSpec, _config.OptionInt("record-fps", 20), _config.OptionInt("record-width", 480),
                     _game is IAutoplayAnimationSource _source ? _source.TracksFor : null);
             }
+            // Optional film of the whole run: "-autoplay-video" (+ video-fps); Tools~/make_videos.py makes the mp4.
+            AutoplayVideo _video = null;
+            if (_config.Flag("video"))
+            {
+                _video = _host.AddComponent<AutoplayVideo>();
+                _video.Begin(_journal, _config.OptionInt("video-fps", 10));
+            }
             Application.logMessageReceived += _journal.OnLog;
             _journal.Record("run.begin", $"game={_game.Name} scenario={_config.scenario} seed={_config.seed} out={_config.outputDirectory}");
 
@@ -99,6 +106,10 @@ namespace Unpseudo.Autoplay
             Time.timeScale = 1f;
             Application.logMessageReceived -= _journal.OnLog;
             _capture.End();
+            if (_video != null)
+            {
+                _video.End();
+            }
 
             _result.failure = _context.FailureReason;
             _result.report = _journal.BuildReport(_game.Name, _config.scenario, _config.seed, _context.FailureReason,

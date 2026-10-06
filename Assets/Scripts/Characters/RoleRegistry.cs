@@ -40,8 +40,17 @@ namespace Characters
                                $"'{_roleDataObject.role.roleName}') — roles cannot replicate correctly. Fix the RoleDataObject assets.");
                 return;
             }
+            bool _isNew = !s_byId.ContainsKey(_id);
             s_byId[_id] = _roleDataObject;
+            if (_isNew)
+            {
+                onRegistered?.Invoke(_id);
+            }
         }
+
+        /// <summary>A role id became known on this peer. A character replicated before the role pool was loaded (a game
+        /// that joins mid-game, fresh after a relaunch) rebuilds its role then.</summary>
+        public static event System.Action<RoleID> onRegistered;
 
         public static bool TryGet(RoleID _id, out RoleDataObject _roleDataObject)
         {

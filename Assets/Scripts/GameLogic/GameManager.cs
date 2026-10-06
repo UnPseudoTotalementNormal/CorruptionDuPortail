@@ -181,10 +181,12 @@ namespace GameLogic
                 NetworkManager.OnClientDisconnectCallback += HandlePlayerLeft;
             }
 
-            // Rejoin 02: mid-game, the host only lets a rejoiner in. Until the host tells this peer which seat it plays,
+            // Rejoin 02: mid-game, the host only lets a rejoiner in (this peer sent a session token). Until the host tells
+            // this peer which seat it plays,
             // its local identity is the new connection id and the state's client start would find no local character:
             // the start waits for RejoinCatchUpRpc (sent right after the seat assignment).
-            if (!IsServer && !(GetGameState(currentGameStateIndex.Value) is LobbyState))
+            if (!IsServer && !(GetGameState(currentGameStateIndex.Value) is LobbyState) &&
+                !string.IsNullOrEmpty(Network.RejoinSessionStore.TokenForConnection()))
             {
                 _clientStartDeferredForRejoin = true;
                 return;
@@ -518,6 +520,14 @@ namespace GameLogic
             GameState _gameState = gameStates.Keys.FirstOrDefault(state => state.GetType().FullName == stateTypeName.ToString());
             Assert.IsNotNull(_gameState, $"GameState {stateTypeName} not found");
 
+            // Rejoin 02: a rejoining peer starts the state current at its catch-up (RejoinCatchUpRpc). State transitions
+            // broadcast while it is still loading would run a state's client side before it has its seat and cards.
+            if (_clientStartDeferredForRejoin &&
+                (methodName == nameof(GameState.OnStartStateClient) || methodName == nameof(GameState.OnEndStateClient)))
+            {
+                return;
+            }
+
             // NET-06: expose the REAL sender to server-side state methods (they used to trust ids in the payload).
             // Rejoin 02: a rejoined player's new connection acts for his original seat.
             CurrentStateRpcSenderId = characterManager != null
@@ -699,6 +709,22 @@ namespace GameLogic
             {
                 return false;
             }
+            // A player who relaunches quickly after a crash comes back before the host noticed he was gone (liveness
+            // ~15 s, transport ~30 s): his old connection still holds the seat. The token proves it is him: that dead
+            // connection is dropped now (the seat gets reserved by the leave pipeline) and the new one takes the seat.
+            // Likewise when the seat is already reserved (liveness noticed the silence) but the dead connection has not
+            // timed out at the transport level yet (~30 s): it is closed now, before the new connection is bound, so its
+            // late disconnect can never pass for the player leaving again once he is back.
+            ulong _holder = characterManager.TransportOfSeat(_seat);
+            if (_holder != _connectionId && _holder != NetworkManager.ServerClientId && NetworkManager.ConnectedClientsIds.Contains(_holder))
+            {
+                Debug.Log($"[REJOIN] Seat {_seat} is still held by connection {_holder}: its game is gone, connection {_connectionId} takes over.");
+                NetworkManager.DisconnectClient(_holder); // the leave pipeline runs from the disconnect callback
+                if (!_reservedSeats.IsReserved(_seat) && !HasClientLeft(_seat))
+                {
+                    HandlePlayerLeft(_holder);
+                }
+            }
             if (!_reservedSeats.IsReserved(_seat))
             {
                 Debug.Log($"[REJOIN] Connection {_connectionId} holds the token of seat {_seat}, which is not reserved (grace over or seat in use) — refused.");
@@ -733,6 +759,16 @@ namespace GameLogic
                 Send = new RpcSendParams { Target = RpcTarget.Single(_connectionId, RpcTargetUse.Temp) },
             };
             characterManager.AssignLocalSeatRpc(_seat, _toNewConnection);
+            // The Mage id was broadcast once, when the Mage got chained: a player who was away missed it.
+            foreach (TakeDownThePortalState _portal in GetGameStates(typeof(TakeDownThePortalState)).OfType<TakeDownThePortalState>())
+            {
+                if (_portal.shouldActivate)
+                {
+                    DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
+                        new NetworkSerializableObject[] { new(_portal.mageCharacterOwnerId) },
+                        new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new[] { _seat }));
+                }
+            }
             RejoinCatchUpRpc(gameLoopCount, _toNewConnection);
             onGameStarted.InvokeFor(_connectionId);
             onPlayerRejoinedServer?.Invoke(_seat, _connectionId);
@@ -817,6 +853,13 @@ namespace GameLogic
             // Rejoin 02: the callback carries the CONNECTION id; a rejoined player's new connection stands for his
             // original seat, which is what every game system keys on.
             _rejoiningSeats.Remove(_clientId); // a rejoin that dropped during its sync is simply over
+            if (characterManager != null && !characterManager.Seats.IsAlias(_clientId) &&
+                characterManager.TransportOfSeat(_clientId) != _clientId)
+            {
+                // A dead connection of a seat whose player already plays again through another connection: stale.
+                Debug.Log($"[REJOIN] Late disconnect of connection {_clientId}: seat {_clientId} is played through connection {characterManager.TransportOfSeat(_clientId)} now — ignored.");
+                return;
+            }
             if (characterManager != null && characterManager.Seats.Unbind(_clientId, out ulong _seat))
             {
                 Debug.Log($"[LEAVE] Connection {_clientId} played seat {_seat} (rejoined) — handling the seat.");

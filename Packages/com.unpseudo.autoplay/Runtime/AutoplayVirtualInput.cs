@@ -247,6 +247,20 @@ namespace Unpseudo.Autoplay
             InputSystem.QueueStateEvent(Keyboard, new KeyboardState(_keys));
         }
 
+        /// <summary>Types <paramref name="_text"/> as text input of the virtual keyboard (one character per frame), what a
+        /// focused text field receives from a real keyboard.</summary>
+        public IEnumerator TypeText(string _text)
+        {
+            foreach (char _character in _text ?? string.Empty)
+            {
+                if (CanQueue(Keyboard))
+                {
+                    InputSystem.QueueTextEvent(Keyboard, _character);
+                }
+                yield return null;
+            }
+        }
+
         /// <summary>Press then release <paramref name="_key"/> one frame later (other held keys stay down).</summary>
         public IEnumerator PressKey(Key _key)
         {

@@ -1,6 +1,6 @@
 {
   "name": "client-rejoin",
-  "goal": "Rejoin 02/03: a real client drops at the first awakening recap (no Leave button, like a crash), comes back 8 s later with its session token and gets its seat back: same seat, role, powers and uses, knowledge, chat channels and icons as before the drop (analyze_rejoin compares the exported views), its seat is no longer reserved nor shown as left (it may have been voted out while away, never chained by the grace expiry), and it plays on (votes) until the end; no desync.",
+  "goal": "Rejoin after a disconnection: a real client drops at the first awakening recap (no Leave button), lands in the main menu, and 8 s later clicks \"Rejoindre la partie en cours\" with the virtual pointer: it gets its seat back with the same seat, role, powers and uses, knowledge, chat channels and icons as before the drop (analyze_rejoin compares the exported views), is no longer reserved nor shown as left (it may have been voted out while away, never chained by the grace expiry), and plays on (votes) until the end; no desync.",
   "mode": "net",
   "clients": 3,
   "seed": 33,
@@ -19,6 +19,8 @@
     "AwakeningRecapState day=1",
     "-autoplay-rejoin-after",
     "8",
+    "-autoplay-rejoin-via",
+    "menu",
     "-autoplay-png"
   ],
   "expect": [
@@ -41,6 +43,14 @@
       "process": "clients",
       "min": 1,
       "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "menu-rejoin",
+      "process": "clients",
+      "min": 1,
+      "max": 3
     },
     {
       "type": "event",

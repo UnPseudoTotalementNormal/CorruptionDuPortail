@@ -16,6 +16,8 @@
 #   AUTOPLAY_GUARDED_FILES  files that must match git before a build (default: ProjectSettings + GraphicsSettings)
 #   AUTOPLAY_ARGS           extra player args, e.g. "-autoplay-visual-picker" (game options)
 #   AUTOPLAY_CLIENT_ARGS / AUTOPLAY_CLIENT1_ARGS   play-net only: args for every client / for client1 only
+#   -autoplay-video in AUTOPLAY_ARGS / AUTOPLAY_CLIENT1_ARGS: film those processes (video.mp4 in each run folder)
+#   AUTOPLAY_CLIENT1_RELAUNCH_ARGS / _DELAY (5 s)  play-net only: relaunch client1 once if its game dies first (crash-at)
 #   AUTOPLAY_TIMESCALE (4)  AUTOPLAY_TIMEOUT (900 s)  AUTOPLAY_SCENARIO (build)
 #
 # Long commands block until done: run them in the background from an agent session.
@@ -105,6 +107,7 @@ print('result=',s.get('result'),'errors=',s.get('totalErrors'))"
     args="$args -screen-fullscreen 0 -screen-width 1600 -screen-height 900 -logFile $ROOT/Logs/autoplay-player-$seed.log"
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-background.ps1" \
       -Exe "$EXE" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}" -PlayerArgs "$args" || true
+    $PY "$HERE/make_videos.py" "$(ls -td "$ROOT"/AutoplayRuns/*/ | head -1)" || true
     "$0" last-run
     ;;
   play-net)
@@ -118,7 +121,8 @@ for p in range($port, 7900):
     except OSError: pass
     finally: s.close()")
     out="$ROOT/AutoplayRuns/net-$(date +%Y%m%d-%H%M%S)-c$clients-seed$seed"
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-net.ps1" -Exe "$EXE" -Clients "$clients"       -Seed "$seed" -Port "$port" -OutRoot "$out" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}"       -CommonArgs "-autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"       -ClientArgs "${AUTOPLAY_CLIENT_ARGS:-}" -FirstClientArgs "${AUTOPLAY_CLIENT1_ARGS:-}" || true
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-net.ps1" -Exe "$EXE" -Clients "$clients"       -Seed "$seed" -Port "$port" -OutRoot "$out" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}"       -CommonArgs "-autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"       -ClientArgs "${AUTOPLAY_CLIENT_ARGS:-}" -FirstClientArgs "${AUTOPLAY_CLIENT1_ARGS:-}"       -RelaunchArgs "${AUTOPLAY_CLIENT1_RELAUNCH_ARGS:-}" -RelaunchDelaySeconds "${AUTOPLAY_CLIENT1_RELAUNCH_DELAY:-5}" || true
+    $PY "$HERE/make_videos.py" "$out" || true
     $PY "$HERE/compare_runs.py" "$out" || true
     ;;
   last-run)

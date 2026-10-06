@@ -224,7 +224,9 @@ namespace GameLogic
             var _viewers = new SortedSet<ulong> { NetworkManager.ServerClientId };
             foreach (ulong _id in NetworkManager.ConnectedClientsIds)
             {
-                _viewers.Add(_id);
+                // Rejoin 02: a rejoined player's connection id is not a viewer, his seat is. A slice pushed for the
+                // connection id would land in the same local store and wipe what the seat knows.
+                _viewers.Add(characterManager != null ? characterManager.SeatOfTransport(_id) : _id);
             }
             if (characterManager != null)
             {

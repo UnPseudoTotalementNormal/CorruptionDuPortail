@@ -97,6 +97,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `real-input-control` | diagnostic: virtual devices without disabling the real ones (counts the user's own input events, `realEvents=`) |
 | `power-use-probability <0..1>` | chance a bot uses each usable power (0 = every seat sleeps through the sleep button) |
 | `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the vote's Skip button) |
+| `vote-skip <id,id…>` | these seats always skip the vote (no roll): with `vote-probability 1` + `vote-focus`, a scenario chains its target for sure and still exercises Skip |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
@@ -112,7 +113,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Powers | `power.start`, `power.end`, `power.skip`, `power.timeout`, `power.error`, `power.verdict` |
 | Selection | `select.character`, `select.role`, `select.error`, `picker.open`, `picker.hover`, `picker.click`, `picker.closed` |
 | Vote / portal | `vote`, `vote.skip`, `vote.skip.click`, `portal.click` (`via=click\|direct` in real-input mode) |
-| Real input | `input.install`, `input.uninstall` (devices disabled, `realEvents=` meaningful with `real-input-control` only), `input.click` (`<action> target= pos= hit= mode=pointer\|reticle\|key`), `input.miss` (same + `reason=`: target `not-found`, `inactive`, `zero-size`, `disabled`, `no-canvas`, `no-camera`, `behind-camera`, `off-screen`, `occluded` (with `uitk=` when a UI Toolkit panel took the click), `no-effect`, `lock-changed`; reticle `screen-fixed`, `look-clamped`, `out-of-reach`, `no-raycast-target`; UI Toolkit `hidden`, `not-laid-out`, `app-closed`, `picked-other`, `no-render-texture`, `no-convergence`, `degenerate`; lobby `not-open`, `scroll-stuck`), `input.skip` (effect already there: no click), `input.reaim` (reticle target moved off before the click: aimed again once), `input.error` (exception in an input flow, then direct path), `input.scroll`, `input.mask`, `power.direct`, `vote.late`, `sleep … via=`, `picker.click … via=click\|direct\|none`, `vote … via=click\|click-late` |
+| Real input | `input.install`, `input.uninstall` (devices disabled, `realEvents=` meaningful with `real-input-control` only), `input.click` (`<action> target= pos= hit= mode=pointer\|reticle\|key`), `input.miss` (same + `reason=`: target `not-found`, `inactive`, `zero-size`, `disabled`, `no-canvas`, `no-camera`, `behind-camera`, `off-screen`, `occluded` (with `uitk=` when a UI Toolkit panel took the click), `no-effect`, `lock-changed`; reticle `screen-fixed`, `look-clamped`, `out-of-reach`, `no-raycast-target`; UI Toolkit `hidden`, `not-laid-out`, `app-closed`, `picked-other`, `no-render-texture`, `no-convergence`, `degenerate`; lobby `not-open`, `scroll-stuck`), `input.skip` (effect already there: no click), `input.look` (a target out of view brought into view by turning the head), `input.view` / `input.view-try` (vote target reached by switching view with the arrow keys: `key=… <from>-><to>`, each failed try with what the locator saw), `input.reaim` (reticle target moved off before the click: aimed again once), `input.error` (exception in an input flow, then direct path), `input.scroll`, `input.mask`, `power.direct`, `vote.late`, `sleep … via=`, `picker.click … via=click\|direct\|none`, `vote … via=click\|click-late` |
 | Lobby / tour / menu | `lobby.preset`, `lobby.force`, `lobby.ready` (`via=click\|already\|direct`), `lobby.role-card` (`open\|close ok\|miss`), `lobby.autostart`, `lobby.status`, `composition … via=`, `tour.<step>` (`ok\|miss`, `tour.aborted` when a seat wakes), `menu.<step>`, `menu.notification-top`, `menu.notification-dismiss`, `leave … via=` |
 | Knowledge | `knowledge` (`viewer>target role= corrupt= force= hacked=` levels, on every change) |
 | Captures | `capture`, `capture.state`, `capture.error`, `capture.state.error`, `record`, `record.start`, `record.skip`, `record.tracks.error` |
@@ -284,6 +285,13 @@ How the four gaps reported after the network-hardening runs were covered; copy t
   found by a lambda, re-run before and after the glide: panels rebuild their trees), `PressKeyFor`, `ClickAt`. Each
   checks the effect, clicks once (never twice: a late effect must not be toggled back) and skips the click when the
   effect already holds (`input.skip`).
+- Locked cursor = the GAME's intent (`AvatarCameraArbiter.WantsLockedCursor`), not `Cursor.lockState`: the window
+  guard unlocks the OS cursor whenever the player window has the focus (the user's mouse stays free), so the seated
+  first-person vote must still aim with the head and click at the screen centre (`AutoplayVirtualInput.WarpTo`, no
+  motion: in first person any pointer move turns the head). A vote target out of the head's reach falls back to the
+  arrow keys (first person ↔ board overviews); never during a picker (the arrows rebuild the role shelf).
+- Bots possessed by the host act from the HOST's seat and the cards re-turn at every possession switch: their misses
+  are possession artefacts (warnings in the real-input scenarios); real players are the clients (strict checks).
 - Cursor locked (seated vote): `AimAt` turns the camera with mouse deltas, steered in angles (the camera's measured
   rotation per delta unit; a hovered card moves by itself and would fool a pixel ratio), one step then a wait for the
   damped camera; a screen-overlay element cannot be aimed (`reason=screen-fixed`).

@@ -1,6 +1,6 @@
 {
   "name": "real-input-actions",
-  "goal": "Real-input mode on every seat with a screen (host + possessed bots, 3 real clients): each power, card pick, vote (reticle aim), vote skip, sleep and the Mage's portal card is a real click through the EventSystem that produces its game effect; the real mouse / keyboard are disabled. Only two design findings are exempted and warned (Poyo, 2026-10-05): role-picker cards laid out off screen at 16:9, and the vote's Skip button (screen overlay) out of the seated reticle's reach. Any other miss or direct fallback fails.",
+  "goal": "Real-input mode on every seat with a screen (host + possessed bots, 3 real clients): each power, card pick, vote (first-person view: the bot turns its head until the vote button is under the reticle, then clicks), vote skip, sleep and the Mage's portal card is a real click through the EventSystem that produces its game effect; the real mouse / keyboard are disabled. Only two design findings are exempted and warned (Poyo, 2026-10-05): role-picker cards laid out off screen at 16:9, and the vote's Skip button (screen overlay) out of the seated reticle's reach. Any other miss or direct fallback fails. Votes are forced, not rolled: everyone votes the Mage except seats 0 and 101 (the Mage at seed 777), which click Skip, so the Mage is chained on day 1 and its portal card always comes up. Real players (the clients) must have no miss at all. The host's checks are warnings: the bots it possesses have no view of their own and vote from the HOST's seat (a vote aimed at the host's own card, or one out of the host seat's head reach, is a possession artefact, not something a player meets).",
   "mode": "net",
   "clients": 3,
   "seed": 777,
@@ -11,7 +11,9 @@
     "-autoplay-power-use-probability",
     "0.8",
     "-autoplay-vote-probability",
-    "0.7",
+    "1",
+    "-autoplay-vote-skip",
+    "0,101",
     "-autoplay-force-roles",
     "Mage",
     "-autoplay-vote-focus",
@@ -50,7 +52,7 @@
     {
       "type": "event",
       "kind": "input.click",
-      "detail": "mode=reticle",
+      "detail": "^vote .*mode=reticle",
       "process": "any",
       "min": 1
     },
@@ -85,9 +87,18 @@
       "type": "event",
       "kind": "input.miss",
       "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
-      "process": "any",
+      "process": "clients",
       "min": 0,
       "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
     },
     {
       "type": "event",
@@ -124,9 +135,18 @@
       "type": "event",
       "kind": "vote",
       "detail": "^(?!.*via=click)",
-      "process": "any",
+      "process": "clients",
       "min": 0,
       "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "detail": "^(?!.*via=click)",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
     },
     {
       "type": "event",
@@ -145,7 +165,6 @@
       "type": "noErrors",
       "process": "all",
       "ignore": [
-        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
         "ClientLoadedSynchronization"
       ]
     }

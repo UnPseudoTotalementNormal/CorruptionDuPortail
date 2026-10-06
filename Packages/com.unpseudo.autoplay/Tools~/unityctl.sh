@@ -120,7 +120,10 @@ for p in range($port, 7900):
     try: s.bind(('127.0.0.1', p)); print(p); break
     except OSError: pass
     finally: s.close()")
-    out="$ROOT/AutoplayRuns/net-$(date +%Y%m%d-%H%M%S)-c$clients-seed$seed"
+    # Two runs started in the same second with the same seed would share a folder (journals mixed): claim it atomically.
+    out="$ROOT/AutoplayRuns/net-$(date +%Y%m%d-%H%M%S)-c$clients-seed$seed"; base="$out"; n=1
+    mkdir -p "$ROOT/AutoplayRuns"
+    until mkdir "$out" 2>/dev/null; do n=$((n+1)); out="$base-$n"; done
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-net.ps1" -Exe "$EXE" -Clients "$clients"       -Seed "$seed" -Port "$port" -OutRoot "$out" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}"       -CommonArgs "-autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"       -ClientArgs "${AUTOPLAY_CLIENT_ARGS:-}" -FirstClientArgs "${AUTOPLAY_CLIENT1_ARGS:-}"       -RelaunchArgs "${AUTOPLAY_CLIENT1_RELAUNCH_ARGS:-}" -RelaunchDelaySeconds "${AUTOPLAY_CLIENT1_RELAUNCH_DELAY:-5}" || true
     $PY "$HERE/make_videos.py" "$out" || true
     $PY "$HERE/compare_runs.py" "$out" || true

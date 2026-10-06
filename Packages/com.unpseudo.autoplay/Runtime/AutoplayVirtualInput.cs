@@ -201,6 +201,14 @@ namespace Unpseudo.Autoplay
             yield return null;
         }
 
+        /// <summary>Puts the pointer at <paramref name="_screen"/> WITHOUT motion (zero delta): what a locked cursor is
+        /// for the UI (the screen centre), with no look turned by the move.</summary>
+        public IEnumerator WarpTo(Vector2 _screen)
+        {
+            QueueMouse(_screen, Vector2.zero, leftDown);
+            yield return null;
+        }
+
         /// <summary>One frame of relative mouse motion (what turns a first-person camera while the cursor is locked).
         /// The pointer position does not change.</summary>
         public IEnumerator Look(Vector2 _delta)

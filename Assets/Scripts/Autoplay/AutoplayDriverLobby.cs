@@ -228,6 +228,21 @@ namespace Autoplay
                     Journal.Record("lobby.ready", $"{_self} via=already");
                     return true;
                 }
+                // A player clicks once the tablet shows the button: wait (bounded) for its first layout pass, a
+                // just-opened lobby panel is not laid out yet (input.miss reason=not-laid-out otherwise).
+                float _layoutDeadline = Time.realtimeSinceStartup + 10f;
+                while (Time.realtimeSinceStartup < _layoutDeadline)
+                {
+                    Button _start = LobbyRoot()?.Q<VisualElement>(className: "lobby-roles__footer")?.Q<Button>(className: "lobby-roles__start");
+                    // Same test as AutoplayUiLocator: a laid-out world rectangle (its centre is NaN until the position
+                    // is resolved, even when the width already is).
+                    if (_start != null && _start.worldBound.width > 0f && !float.IsNaN(_start.worldBound.center.x)
+                        && !float.IsNaN(_start.worldBound.center.y))
+                    {
+                        break;
+                    }
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.1f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                }
                 bool _clicked = (await ClickLobbyElement(_root => _root.Q<VisualElement>(className: "lobby-roles__footer")?.Q<Button>(className: "lobby-roles__start"),
                                                  "lobby-ready", _ready));
                 Journal.Record("lobby.ready", $"{_self} via={(_clicked ? "click" : "direct")}");

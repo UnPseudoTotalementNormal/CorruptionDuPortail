@@ -303,6 +303,7 @@ namespace Autoplay
                 lobbyInput = LobbyUi(_context) ? realInput : null,
                 powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
                 voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
+                voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = true,
             };
@@ -585,6 +586,13 @@ namespace Autoplay
                 realInput = null;
             }
         }
+
+        // "0,101" -> {0, 101}; unparsable entries are ignored.
+        private static ulong[] ParseIds(string _text)
+            => string.IsNullOrEmpty(_text)
+                ? Array.Empty<ulong>()
+                : _text.Split(',').Select(_s => ulong.TryParse(_s.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong _v) ? (ulong?)_v : null)
+                    .Where(_v => _v.HasValue).Select(_v => _v.Value).ToArray();
 
         private static double ParseProbability(string _text, double _fallback)
             => double.TryParse(_text, NumberStyles.Float, CultureInfo.InvariantCulture, out double _value) ? Math.Clamp(_value, 0.0, 1.0) : _fallback;
@@ -1222,6 +1230,7 @@ namespace Autoplay
                 lobbyInput = LobbyUi(_context) ? realInput : null,
                 powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
                 voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
+                voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 joinedMidPhase = _joinedMidPhase,

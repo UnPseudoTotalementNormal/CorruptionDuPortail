@@ -33,6 +33,9 @@ namespace Autoplay
         public float powerTimeout = 15f;
         public double powerUseProbability = 1.0;
         public double voteProbability = 1.0;
+        [Tooltip("Scenario lever: these seats always skip the vote (no roll), so a scenario can both chain someone for " +
+                 "sure (vote probability 1 for the others) and still exercise the Skip button.")]
+        public ulong[] voteSkipIds = Array.Empty<ulong>();
         [Tooltip("Possess the acting bot's identity so the host screen shows what that player sees (local-only feedback).")]
         public bool possessActor = true;
         public bool captureOnVerdict = true;
@@ -91,6 +94,8 @@ namespace Autoplay
         public int aimSettleFrames = 40;
         [Tooltip("Reticle aiming: real seconds the reticle rests on the target before the click (hover dwell).")]
         public float aimSettleSeconds = 0.25f;
+        [Tooltip("Real seconds a view switch (arrow key) takes to blend before the target is checked again.")]
+        public float viewBlendSeconds = 0.8f;
     }
 
     /// <summary>
@@ -664,7 +669,7 @@ namespace Autoplay
                     continue;
                 }
 
-                if (_voter.isEliminated.Value || !policy.Roll(options.voteProbability, "vote"))
+                if (_voter.isEliminated.Value || Array.IndexOf(options.voteSkipIds, _id) >= 0 || !policy.Roll(options.voteProbability, "vote"))
                 {
                     Journal.Record("vote.skip", $"{_id}");
                     if (options.realInput != null && !_voter.isEliminated.Value)
@@ -738,6 +743,8 @@ namespace Autoplay
 
             List<Character> _candidates = characterManager.GetCharacters(false)
                 .Where(_c => _c && !_c.isFake && _c.ownerClientId.Value != _mageId && !portalTried.Contains(_c.ownerClientId.Value))
+                // Same rule as the state (GetIgnoreCharacters): a role already public cannot be guessed, its click is ignored.
+                .Where(_c => revealer == null || revealer.GetCharacterInfo(_c.ownerClientId.Value).isRoleRevealed < RevealLevel.Public)
                 .OrderBy(_c => _c.ownerClientId.Value)
                 .ToList();
             if (_candidates.Count == 0)

@@ -1,6 +1,6 @@
 {
   "name": "real-input-tour",
-  "goal": "In-game interfaces by real input on every seat with a screen (host + 3 real clients, -autoplay-real-input-tour): at night while idle, a tooltip shows on hover, the pause menu opens by its button, an audio slider moves on a click (host only: the processes share PlayerPrefs) and the menu closes, the tablet opens with Tab, swipes with an arrow, the chat app's channel tab and input field take a click, Tab closes it; at the vote recap the emote wheel opens on T held, turns with the mouse and plays an emote on release. Known gaps (not covered): typing/sending in the chat, the notes ribbon (in no scene), nested tooltip links. Client 1 then leaves on the second night through the pause menu's Leave button (not at a recap: the message journal covers the HUD there by design) (quit-at with real input) and is chained on the host.",
+  "goal": "In-game interfaces by real input on every seat with a screen (host + 3 real clients, -autoplay-real-input-tour): at night while idle, a tooltip shows on hover, the pause menu opens by its button, an audio slider moves on a click (host only: the processes share PlayerPrefs) and the menu closes, the tablet opens with Tab, swipes with an arrow, the chat app's channel tab and input field take a click, Tab closes it; at the vote recap the emote wheel opens on T held, turns with the mouse and plays an emote on release. Known gaps (not covered): typing/sending in the chat, the notes ribbon (in no scene), nested tooltip links. Client 1 then leaves on the second night through the pause menu's Leave button (not at a recap: the message journal covers the HUD there by design) (quit-at with real input) and is chained on the host. Real players (the clients) must have no miss; the host's misses are warnings: the bots it possesses act from the host's seat and the cards re-turn at every possession switch (possession artefact).",
   "mode": "net",
   "clients": 3,
   "seed": 777,
@@ -10,7 +10,9 @@
     "-autoplay-real-input",
     "-autoplay-real-input-tour",
     "-autoplay-max-days",
-    "2"
+    "2",
+    "-autoplay-rejoin-grace",
+    "10"
   ],
   "expect": [
     {
@@ -100,9 +102,18 @@
       "type": "event",
       "kind": "input.miss",
       "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
-      "process": "any",
+      "process": "clients",
       "min": 0,
       "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
     },
     {
       "type": "event",
@@ -130,7 +141,6 @@
       "type": "noErrors",
       "process": "all",
       "ignore": [
-        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
         "ClientLoadedSynchronization"
       ]
     }

@@ -120,8 +120,25 @@ namespace Autoplay
             try
             {
                 await PrepareSeat(_id);
-                PowersBar _bar = FindAnyObjectByType<PowersBar>();
-                PowersBarObject _object = _bar ? _bar.GetPowerBarObject(_power) : null;
+                // The bar rebuilds its objects when the powers change (a copy granted, a use spent): wait (bounded)
+                // for this power's object, as a player waits for the bar to show it.
+                PowersBarObject _object = null;
+                float _barDeadline = Time.realtimeSinceStartup + 2f;
+                while (_object == null && Time.realtimeSinceStartup < _barDeadline)
+                {
+                    PowersBar _bar = FindAnyObjectByType<PowersBar>();
+                    _object = _bar ? _bar.GetPowerBarObject(_power) : null;
+                    if (_object == null)
+                    {
+                        await UniTask.Delay(TimeSpan.FromSeconds(0.1f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    }
+                }
+                if (_object == null && !(CurrentState is AwakeningState && _character && _character.isAwakened.Value))
+                {
+                    // The night ended meanwhile (game over, the seat slept): the bar is gone, nothing for a player to click.
+                    Journal.Record("input.skip", $"power {_id} {_power.powerName} reason=turn-over state={CurrentState?.GetType().Name}");
+                    return;
+                }
                 _clicked = await ClickTarget(_object ? _object.gameObject : null, $"power {_id} {_power.powerName}",
                     () => _started || _power.isCurrentlyUsed);
             }
@@ -176,7 +193,12 @@ namespace Autoplay
             string _described = DescribeCard(_card);
             try
             {
-                bool _hovered = await HoverTarget(_card ? _card.gameObject : null, $"picker #{_opening}", options.pickerHoverDwell);
+                if (!_picker.IsPickerActive || !_card)
+                {
+                    Journal.Record("picker.click", $"#{_opening} {_described} via=none reason=picker-closed");
+                    return;
+                }
+                bool _hovered = await HoverTarget(_card.gameObject, $"picker #{_opening}", options.pickerHoverDwell);
                 if (_hovered)
                 {
                     Journal.Record("picker.hover", $"#{_opening} {_described}");
@@ -340,12 +362,20 @@ namespace Autoplay
             => CurrentState is VoteState _vote && _vote.votesForPlayer.Any(_kv =>
                 (!_forId.HasValue || _kv.Key == _forId.Value) && _kv.Value.Contains(_voterId));
 
-        private static bool CursorLocked => Cursor.lockState == CursorLockMode.Locked;
+        // The game's intent, not Cursor.lockState: the autoplay window guard unlocks the OS cursor whenever the player
+        // window has the focus (to keep the user's mouse free), which used to send the seated first-person vote down
+        // the free-pointer path (every pointer move then turned the head and the target left the screen).
+        private static bool CursorLocked => Cursor.lockState == CursorLockMode.Locked ||
+                                            (FindAnyObjectByType<Avatars.AvatarCameraArbiter>() is Avatars.AvatarCameraArbiter _arbiter && _arbiter.WantsLockedCursor);
 
         /// <summary>Brings the pointer (free cursor) or the reticle (locked cursor) onto the target and keeps it there
         /// <paramref name="_dwell"/> real seconds. False (journaled input.miss) when the target cannot be reached.</summary>
         private async UniTask<bool> HoverTarget(GameObject _target, string _action, float _dwell)
         {
+            if (!CursorLocked)
+            {
+                await BringIntoView(_target, _action);
+            }
             bool _reached = CursorLocked ? await AimAt(_target, _action) : await PointAt(_target, _action);
             if (_reached && _dwell > 0f)
             {
@@ -368,8 +398,26 @@ namespace Autoplay
                 return true;
             }
 
+            if (!CursorLocked)
+            {
+                await BringIntoView(_target, _action);
+            }
             bool _locked = CursorLocked;
-            bool _reached = _locked ? await AimAt(_target, _action) : await PointAt(_target, _action);
+            bool _reached = _locked ? await AimAt(_target, _action, _journalMiss: false) : await PointAt(_target, _action);
+            if (!_reached && _locked && _action.StartsWith("vote", StringComparison.Ordinal))
+            {
+                // Out of the seated head's reach (or covered from this seat): switch view with the arrows, as a
+                // player can, then point and click on the board overview (free cursor there).
+                if (await SwitchViewToShow(_target, _action))
+                {
+                    _locked = CursorLocked;
+                    _reached = _locked ? await AimAt(_target, _action) : await PointAt(_target, _action);
+                }
+                else
+                {
+                    await AimAt(_target, _action); // journals the miss with its reason
+                }
+            }
             if (!_reached)
             {
                 return false;
@@ -393,6 +441,10 @@ namespace Autoplay
             }
 
             Vector2 _at = _locked ? ScreenCentre : VirtualInput.Position;
+            if (_locked && VirtualInput.Position != ScreenCentre)
+            {
+                await VirtualInput.WarpTo(ScreenCentre).WithCancellation(Cancel); // a locked cursor clicks at the centre
+            }
             GameObject _hit = AutoplayUiLocator.TopHit(_at);
             await VirtualInput.Click().WithCancellation(Cancel);
             string _where = string.Format(System.Globalization.CultureInfo.InvariantCulture, "target={0} pos={1:0},{2:0} hit={3} mode={4}",
@@ -417,6 +469,70 @@ namespace Autoplay
         }
 
         private static Vector2 ScreenCentre => new(Screen.width * 0.5f, Screen.height * 0.5f);
+
+        private static readonly UnityEngine.InputSystem.Key[] ViewKeys =
+        {
+            UnityEngine.InputSystem.Key.DownArrow, UnityEngine.InputSystem.Key.UpArrow,
+            UnityEngine.InputSystem.Key.LeftArrow, UnityEngine.InputSystem.Key.RightArrow,
+        };
+
+        /// <summary>
+        /// The seated first-person view (the vote) turns with the mouse while the cursor stays free: a target out of
+        /// view is brought into view as a player does, by looking around (mouse deltas, head clamped by the seat),
+        /// else by switching view with the arrow keys (first person and the board overviews are neighbours), then the
+        /// pointer clicks it. Journals <c>input.look</c> / <c>input.view</c>; nothing when the target is already shown.
+        /// </summary>
+        // Really on screen and reachable by the real raycast (TryAimPoint also answers for a target out of view: its
+        // projected centre, to turn towards it).
+        private static bool IsShown(GameObject _target)
+        {
+            AutoplayUiLocator.Probe _probe = AutoplayUiLocator.Locate(_target);
+            return _probe.found && string.IsNullOrEmpty(_probe.reason);
+        }
+
+        private async UniTask BringIntoView(GameObject _target, string _action)
+        {
+            if (_target == null || IsShown(_target))
+            {
+                return;
+            }
+            Avatars.AvatarEmbodiedCamera _firstPerson = FindAnyObjectByType<Avatars.AvatarEmbodiedCamera>();
+            if (_firstPerson != null && _firstPerson.IsActive &&
+                await AimAt(_target, _action, _journalMiss: false) && IsShown(_target))
+            {
+                Journal.Record("input.look", $"{_action} target={AutoplayUiLocator.PathOf(_target)}");
+                return;
+            }
+
+            if (_action.StartsWith("vote", StringComparison.Ordinal))
+            {
+                await SwitchViewToShow(_target, _action); // never during a picker: the arrows rebuild the role shelf
+            }
+        }
+
+        // Arrow keys move between the seated first-person view and the board overviews: try each until the target
+        // is shown and reachable. Journals input.view on success.
+        private async UniTask<bool> SwitchViewToShow(GameObject _target, string _action)
+        {
+            Board.BoardCameraSystem.BoardCameraManager _views = FindAnyObjectByType<Board.BoardCameraSystem.BoardCameraManager>();
+            foreach (UnityEngine.InputSystem.Key _key in ViewKeys)
+            {
+                string _from = _views != null ? _views.CurrentBoardCameraId.ToString() : "?";
+                await VirtualInput.PressKey(_key).WithCancellation(Cancel);
+                await UniTask.Delay(TimeSpan.FromSeconds(options.viewBlendSeconds), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                await WaitForStillCamera(Camera.main);
+                if (_target != null && IsShown(_target))
+                {
+                    Journal.Record("input.view", $"{_action} key={_key} {_from}->{(_views != null ? _views.CurrentBoardCameraId.ToString() : "?")} " +
+                                                 $"target={AutoplayUiLocator.PathOf(_target)}");
+                    return true;
+                }
+                AutoplayUiLocator.Probe _probe = _target != null ? AutoplayUiLocator.Locate(_target) : default;
+                Journal.Record("input.view-try", $"{_action} key={_key} {_from}->{(_views != null ? _views.CurrentBoardCameraId.ToString() : "?")} " +
+                                                 $"found={_probe.found} reason={_probe.reason ?? "-"} hit={AutoplayUiLocator.PathOf(_probe.hit)}");
+            }
+            return false;
+        }
 
         /// <summary>
         /// Clicks a UI Toolkit element with the pointer: a screen-space panel (<paramref name="_raw"/> null, e.g. the
@@ -466,9 +582,12 @@ namespace Autoplay
             Vector2 _screen = default;
             string _detail = null;
             bool _located = false;
-            // Not laid out yet, or covered for a moment (an overlay fading out): wait like a player, bounded.
+            // Not laid out yet, or covered for a moment (an overlay fading out): wait like a player, bounded. A panel
+            // still rebuilding (the lobby tablet during a join's first sync) gets longer: it settles, a player waits.
             float _deadline = Time.realtimeSinceStartup + Mathf.Max(1f, options.occludedWaitSeconds);
-            while (!_located && Time.realtimeSinceStartup < _deadline)
+            float _layoutDeadline = Time.realtimeSinceStartup + 5f;
+            while (!_located && (Time.realtimeSinceStartup < _deadline ||
+                                 (_detail == "reason=not-laid-out" && Time.realtimeSinceStartup < _layoutDeadline)))
             {
                 _located = AutoplayUiLocator.TryLocateUitkElement(_find(), _raw, out _screen, out _detail);
                 if (!_located)
@@ -522,7 +641,7 @@ namespace Autoplay
         // camera's measured rotation per delta unit (a hovered card moves by itself, which would fool a pixel ratio).
         // The camera follows with damping, so each correction is one step then a wait until the camera stops turning.
         // The camera is left where it ends (a player does not look back either).
-        private async UniTask<bool> AimAt(GameObject _target, string _action)
+        private async UniTask<bool> AimAt(GameObject _target, string _action, bool _journalMiss = true)
         {
             Vector2 _centre = ScreenCentre;
             Camera _camera = Camera.main;
@@ -599,10 +718,18 @@ namespace Autoplay
 
             if (_aimed)
             {
+                if (VirtualInput.Position != _centre)
+                {
+                    await VirtualInput.WarpTo(_centre).WithCancellation(Cancel); // hover / click where the reticle is
+                }
                 await UniTask.Delay(TimeSpan.FromSeconds(options.aimSettleSeconds), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
                 return true;
             }
 
+            if (!_journalMiss)
+            {
+                return false;
+            }
             AutoplayUiLocator.TryAimPoint(_target, out Vector2 _last, out _);
             Journal.Record("input.miss", string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "{0} target={1} aim={2:0},{3:0} start={4:0},{5:0} steps={6} degPerUnit={7:0.000} hit={8} mode=reticle reason={9}", _action,

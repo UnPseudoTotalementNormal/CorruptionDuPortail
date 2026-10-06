@@ -108,7 +108,7 @@ namespace Autoplay
         {
             // Wait (bounded) for something with a tooltip to be on screen and reachable (power bar, role cards…).
             HoverTooltipComponent _trigger = null;
-            float _waitUntil = Time.realtimeSinceStartup + 4f;
+            float _waitUntil = Time.realtimeSinceStartup + 6f;
             while (_trigger == null && Time.realtimeSinceStartup < _waitUntil)
             {
                 _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
@@ -121,11 +121,31 @@ namespace Autoplay
             }
             if (_trigger == null || TooltipManager.instance == null)
             {
-                TourStep("tooltip", false, "reason=no-visible-trigger");
+                // Evidence: which triggers exist and why none is reachable (hidden HUD, off-screen, covered…).
+                string _seen = string.Join(", ", FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
+                    .Take(6)
+                    .Select(_t => $"{AutoplayUiLocator.PathOf(_t.gameObject)}:{(_t.isActiveAndEnabled ? AutoplayUiLocator.Locate(_t.gameObject).reason ?? "ok" : "inactive")}"));
+                TourStep("tooltip", false, $"reason=no-visible-trigger manager={(TooltipManager.instance != null)} " +
+                                           $"locked={CursorLocked} triggers=[{_seen}]");
                 return;
             }
 
             bool _hovered = await HoverTarget(_trigger.gameObject, "tooltip", 0f);
+            // The host's power bar is rebuilt at every possession switch (the bar shows the possessed seat's powers):
+            // a trigger can vanish under the pointer. Try fresh ones, bounded.
+            for (int _retry = 0; _trigger == null && _retry < 5; _retry++)
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(0.3f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
+                    .Where(_t => _t.isActiveAndEnabled)
+                    .FirstOrDefault(_t => AutoplayUiLocator.Locate(_t.gameObject) is var _p && _p.found && string.IsNullOrEmpty(_p.reason));
+                _hovered = _trigger != null && await HoverTarget(_trigger.gameObject, "tooltip", 0f);
+            }
+            if (_trigger == null)
+            {
+                TourStep("tooltip", false, "reason=target-destroyed");
+                return;
+            }
             float _deadline = Time.realtimeSinceStartup + options.clickEffectTimeout;
             while (_hovered && !TooltipManager.instance.IsTooltipOpenForGameObject(_trigger.gameObject) && Time.realtimeSinceStartup < _deadline)
             {
@@ -373,12 +393,27 @@ namespace Autoplay
                 TourStep("emote-open", _wheel.IsOpen);
                 if (_wheel.IsOpen)
                 {
-                    for (int _i = 0; _i < 12; _i++)
+                    if (Cursor.lockState == CursorLockMode.Locked)
                     {
-                        await VirtualInput.Look(new Vector2(25f, 0f)).WithCancellation(Cancel);
+                        for (int _i = 0; _i < 12; _i++)
+                        {
+                            await VirtualInput.Look(new Vector2(25f, 0f)).WithCancellation(Cancel); // locked: delta stick
+                        }
+                    }
+                    else
+                    {
+                        // Cursor not locked (the window guard frees it while the player window has the focus): the
+                        // wheel reads the pointer's direction from the screen centre.
+                        await VirtualInput.MoveTo(ScreenCentre + new Vector2(Screen.height * 0.25f, 0f), options.pointerMoveSeconds)
+                            .WithCancellation(Cancel);
                     }
                     capture.Request("tour-emote-wheel", 0f);
                     await UniTask.Delay(TimeSpan.FromSeconds(0.2f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    // What the wheel will read on release (evidence when no emote plays).
+                    object _view = _wheel.GetType().GetField("wheel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)?.GetValue(_wheel);
+                    object _count = _view?.GetType().GetProperty("Count")?.GetValue(_view);
+                    Journal.Record("tour.emote-state", $"emotes={_count ?? "?"} lock={Cursor.lockState} pointer={VirtualInput.Position.x:0},{VirtualInput.Position.y:0} " +
+                                                       $"screen={Screen.width}x{Screen.height}");
                 }
             }
             finally

@@ -247,8 +247,17 @@ namespace Board
 
         #region Info Display
 
+        // A card being rebuilt (chaining, a rejoin's table rebuild) can lose its visuals while a reveal is requested
+        // (onLocalIdentityChanged fires at the rejoin) or awaited: every visual step checks they still exist.
+        private bool VisualsAlive => this != null && visualComponents != null
+                                     && visualComponents.cardImage != null && visualComponents.factionLogoImage != null;
+
         public async UniTask ShowPseudoWithRevealedInfo(bool _turnCard = false, bool _allowChangeSideInfo = true)
         {
+            if (!VisualsAlive || characterInfo == null)
+            {
+                return;
+            }
             var _cancellationToken = showPseudoTaskHandler.GetNewToken();
             
             try
@@ -452,14 +461,18 @@ namespace Board
             {
                 await ShowBackSide().AttachExternalCancellation(_cancellationToken);
             }
-            
+            if (!VisualsAlive)
+            {
+                return;
+            }
+
             visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
             _pseudoVisible = true;
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             visualUpdater.SetFaction(roleInfo.factionType);
             await visualUpdater.SetRolePortrait(roleInfo).AttachExternalCancellation(_cancellationToken);
-            
-            if (_turnCard)
+
+            if (_turnCard && VisualsAlive)
             {
                 await ShowFrontSide().AttachExternalCancellation(_cancellationToken);
             }

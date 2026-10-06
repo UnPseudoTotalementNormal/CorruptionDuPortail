@@ -81,10 +81,15 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - `Character.isEliminated` is quasi-deprecated: build "player out" on chaining.
 - Quit mid-game = seat RESERVED for `GameValues.REJOIN_GRACE_SECONDS` (shown left, skipped at night, no vote; never wait on him), then chained instantly when the delay expires; last anomaly chained → élus win.
 - **Rejoin = seat alias.** A rejoined player keeps his ORIGINAL clientId (the seat) everywhere in game state; only the
-  transport id is new. Server: `CharacterManager.SeatOfTransport(sender)` for every inbound sender id,
+  transport id is new. Server: `CharacterManager.SeatOfTransport(id)` for every inbound sender id and every
+  `NetworkManager.ConnectedClientsIds` entry,
   `TransportOfSeat(seat)` / `GetSafeRpcTarget` for every outbound target (a raw `RpcTarget.Single(seat)` misses him).
   Client: `GetLocalClientId()` (the seat), never `NetworkManager.LocalClientId`. Per-player data pushed once
   (chat channels, icon slices, knowledge) must also be re-sent on `GameManager.onPlayerRejoinedServer`.
+- **Unity Transport is embedded and patched** (`Packages/com.unity.transport`, `[CdP patch]` in `UDPNetworkInterface`):
+  on Windows each ICMP "port unreachable" (a peer whose game died) failed a UDP receive request whose buffer was never
+  released, so the host went deaf within seconds and every client dropped. Proof: PlayMode `UdpDeadPeerTests`. Re-apply
+  the patch when upgrading the package (or drop it once Unity fixes it upstream).
 - `GameSnapshotBuilder.FromLiveState` runs synchronously before any `await` (NV tearing moves goldens). A moved `[Category("GoldenMaster")]` = real behaviour change: find the cause, never re-bless.
 
 ## UI Toolkit gotchas

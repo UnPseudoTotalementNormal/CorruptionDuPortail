@@ -153,6 +153,11 @@ namespace Tests.PlayMode.Desingleton
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            // Seating a client hands it a rejoin token, saved in PlayerPrefs: keep the tests' session under their own
+            // key and start from none, so no test (nor the Editor's play mode) inherits another one's token.
+            Network.RejoinSessionStore.KeySuffix = "-playmode-tests";
+            Network.RejoinSessionStore.Clear();
+
             // --- Build the two network-prefab templates (shared by both NMs so their
             // hashes match by construction). Adding a GameManager/CharacterManager
             // component runs its Awake, which claims the static `instance`; we null
@@ -268,6 +273,9 @@ namespace Tests.PlayMode.Desingleton
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            Network.RejoinSessionStore.Clear();
+            Network.RejoinSessionStore.KeySuffix = string.Empty;
+
             // Tearing down two UnityTransport loopback sockets in-process logs a benign
             // "[Error] All socket receive requests were marked as failed" from UTP when
             // one socket closes while the other has a pending receive job. It is shutdown

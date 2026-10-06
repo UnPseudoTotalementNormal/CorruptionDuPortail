@@ -108,8 +108,13 @@ namespace UI
         private void CreateRejoinButton()
         {
             if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session) ||
-                (_session.hostKind != "relay" && _session.hostKind != "steam") || openJoinMenu == null)
+                (_session.hostKind != "relay" && _session.hostKind != "steam" && _session.hostKind != "direct") || openJoinMenu == null)
             {
+                return;
+            }
+            if (_rejoinButton != null)
+            {
+                _rejoinButton.gameObject.SetActive(true);
                 return;
             }
 
@@ -117,14 +122,65 @@ namespace UI
             _copy.name = "RejoinButton";
             var _rect = (RectTransform)_copy.transform;
             var _source = (RectTransform)openJoinMenu.transform;
-            _rect.anchoredPosition = _source.anchoredPosition - new Vector2(0f, _source.rect.height * 1.25f);
+            // The Host / Join / Quit column has no room left: the button sits alone at the top centre, above the
+            // logo, wide enough for its label on one line.
+            _rect.anchorMin = new Vector2(0.5f, 1f);
+            _rect.anchorMax = new Vector2(0.5f, 1f);
+            _rect.pivot = new Vector2(0.5f, 1f);
+            _rect.sizeDelta = new Vector2(_source.rect.width * 1.6f, _source.rect.height); // clear of the audio panel
+            _rect.anchoredPosition = new Vector2(0f, -_source.rect.height * 0.8f);
             foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
             {
                 _label.text = "Rejoindre la partie en cours";
+                _label.enableWordWrapping = false;
+                _label.fontSizeMax = _label.fontSize;
+                _label.fontSizeMin = _label.fontSize * 0.5f;
+                _label.enableAutoSizing = true; // one line, as large as the button allows
             }
             _rejoinButton = _copy.GetComponent<Button>();
             _rejoinButton.onClick.RemoveAllListeners();
             _rejoinButton.onClick.AddListener(OnRejoinButtonClicked);
+        }
+
+        /// <summary>Looks at the saved session again (the dev / autoplay session key can be set after this menu started).</summary>
+        public void RefreshRejoinButton()
+        {
+            if (Network.RejoinSessionStore.TryLoad(out _))
+            {
+                CreateRejoinButton();
+            }
+            else if (_rejoinButton != null)
+            {
+                _rejoinButton.gameObject.SetActive(false);
+            }
+        }
+
+        private static async UniTask<bool> StartRejoinClientAsync()
+        {
+            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
+            if (!NetworkManager.Singleton.StartClient())
+            {
+                throw new System.Exception("Failed to start client");
+            }
+            ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+            if (_fail != ConnectFailReason.None)
+            {
+                LobbyManager.instance?.ReportError(JoinHandshake.BuildFailureMessage(_fail));
+            }
+            return _fail == ConnectFailReason.None;
+        }
+
+        private static bool TrySplitHostPort(string _hostAddress, out string _address, out ushort _port)
+        {
+            _address = string.Empty;
+            _port = 0;
+            int _colon = string.IsNullOrEmpty(_hostAddress) ? -1 : _hostAddress.LastIndexOf(':');
+            if (_colon <= 0)
+            {
+                return false;
+            }
+            _address = _hostAddress.Substring(0, _colon);
+            return ushort.TryParse(_hostAddress.Substring(_colon + 1), out _port);
         }
 
         public void OnRejoinButtonClicked()
@@ -167,17 +223,19 @@ namespace UI
                         throw new System.Exception("FacepunchTransport not found on NetworkManager!");
                     }
                     _transport.targetSteamId = _hostSteamId;
-                    Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
-                    if (!NetworkManager.Singleton.StartClient())
+                    _ok = await StartRejoinClientAsync();
+                }
+                else if (_session.hostKind == "direct" && TrySplitHostPort(_session.hostAddress, out string _address, out ushort _port))
+                {
+                    // A host reached by address (LAN / dev builds, the autoplay): plain UDP transport, no Relay.
+                    var _transport = NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                    if (_transport == null)
                     {
-                        throw new System.Exception("Failed to start client");
+                        throw new System.Exception("UnityTransport not found on NetworkManager!");
                     }
-                    ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
-                    _ok = _fail == ConnectFailReason.None;
-                    if (!_ok)
-                    {
-                        LobbyManager.instance?.ReportError(JoinHandshake.BuildFailureMessage(_fail));
-                    }
+                    NetworkManager.Singleton.NetworkConfig.NetworkTransport = _transport;
+                    _transport.SetConnectionData(_address, _port);
+                    _ok = await StartRejoinClientAsync();
                 }
             }
             catch (System.Exception e)

@@ -39,9 +39,48 @@ $script:TR_IdleThresholdSeconds = 900    # 15 min
 # live turn in a concurrent session is never swept out from under it.
 $script:TR_StaleActivitySeconds = 86400  # 24 h
 
+# Map a session's directory to the MAIN checkout. A session running in a git
+# worktree must book into the main checkout's ledger: it is the one the Unity
+# calendar reads, the pause flag lives there, and a worktree's gitignored
+# folder dies with the worktree. A worktree's .git is a file
+# "gitdir: <main>/.git/worktrees/<name>" whose commondir points back to
+# <main>/.git. Any failure falls back to the given directory.
+. (Join-Path $PSScriptRoot '_timerecorder_context.ps1')
+
+function Resolve-MainCheckout {
+    param([string]$ProjectDir)
+    try {
+        $root = [System.IO.Path]::GetFullPath($ProjectDir)
+        while ($root -and -not (Test-Path -LiteralPath (Join-Path $root '.git'))) {
+            $root = [System.IO.Path]::GetDirectoryName($root)
+        }
+        if (-not $root) { return $ProjectDir }
+
+        $dotGit = Join-Path $root '.git'
+        if (Test-Path -LiteralPath $dotGit -PathType Container) { return $root }
+
+        $line = ([System.IO.File]::ReadAllText($dotGit)).Trim()
+        if ($line -notmatch '^gitdir:\s*(.+)$') { return $root }
+        $gitDir = $Matches[1].Trim()
+        if (-not [System.IO.Path]::IsPathRooted($gitDir)) { $gitDir = Join-Path $root $gitDir }
+
+        $commonFile = Join-Path $gitDir 'commondir'
+        if (-not (Test-Path -LiteralPath $commonFile -PathType Leaf)) { return $root }
+        $common = ([System.IO.File]::ReadAllText($commonFile)).Trim()
+        if (-not [System.IO.Path]::IsPathRooted($common)) { $common = Join-Path $gitDir $common }
+
+        $main = [System.IO.Path]::GetDirectoryName([System.IO.Path]::GetFullPath($common).TrimEnd('\', '/'))
+        if ($main -and (Test-Path -LiteralPath $main -PathType Container)) { return $main }
+        return $root
+    } catch {
+        return $ProjectDir
+    }
+}
+
 function Get-TimeRecorderDir {
     $projectDir = $env:CLAUDE_PROJECT_DIR
     if ([string]::IsNullOrWhiteSpace($projectDir)) { $projectDir = (Get-Location).Path }
+    $projectDir = Resolve-MainCheckout $projectDir
     $dir = Join-Path $projectDir '.claude/timerecorder'
     [System.IO.Directory]::CreateDirectory($dir) | Out-Null
     return $dir
@@ -211,7 +250,7 @@ function Persist-Accrual {
 # threshold; false (response end) accrues the gap clamped to the compute cap.
 # A missing / empty / non-numeric stamp is treated as "no baseline" (accrue 0)
 # and always re-stamped, so a corrupt stamp can never brick a session.
-# Returns the seconds accrued.
+# Returns @{ seconds; clamped; nowMs } so the caller can journal the span.
 function Update-Activity {
     param([string]$Dir, [string]$Session, [bool]$IdleGated)
 
@@ -223,6 +262,7 @@ function Update-Activity {
     # rejects it. A gap beyond the stale window means a broken/truncated baseline
     # (never a real turn), so it accrues nothing instead of clamping to a cap.
     $accrue = 0
+    $clamped = $false
     if (Test-Path $path) {
         try {
             $txt = [System.IO.File]::ReadAllText($path).Trim()
@@ -234,6 +274,7 @@ function Update-Activity {
                         if ($gap -le $script:TR_IdleThresholdSeconds) { $accrue = [int]$gap }
                     } else {
                         $accrue = [int][Math]::Min($gap, $script:TR_MaxComputeSeconds)
+                        $clamped = $gap -gt $script:TR_MaxComputeSeconds
                     }
                 }
             }
@@ -243,7 +284,7 @@ function Update-Activity {
     Write-FileAtomic -Path $path -Content ([string]$nowMs)
 
     if ($accrue -gt 0) { Persist-Accrual -Dir $Dir -Seconds $accrue }
-    return $accrue
+    return @{ seconds = $accrue; clamped = $clamped; nowMs = $nowMs }
 }
 
 # Delete a session's activity stamp (used on pause / teardown).
@@ -253,9 +294,11 @@ function Clear-Activity {
     Remove-Item -Path $path -Force -ErrorAction SilentlyContinue
 }
 
-# Housekeeping. Delete dead activity stamps from other sessions (older than the
-# stale threshold, never the current session), plus legacy start_*.txt /
-# completed_turn_*.txt markers and orphaned atomic-write temp files.
+# Housekeeping. Delete dead activity stamps and turn states from other sessions
+# (older than the stale threshold, never the current session), old start_*.txt /
+# completed_turn_*.txt markers and orphaned atomic-write temp files. The marker
+# sweep is age-gated: the Codex hooks share this folder and keep their in-flight
+# start markers and replay tombstones under those same names.
 function Remove-StaleActivity {
     param([string]$Dir, [string]$Session)
 
@@ -266,8 +309,14 @@ function Remove-StaleActivity {
         Where-Object { $_.FullName -ne $keep -and $_.LastWriteTime -lt $cutoff } |
         ForEach-Object { Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue }
 
+    $keepTurn = Get-TurnStatePath -Dir $Dir -Session $Session
+    Get-ChildItem -Path $Dir -File -Filter 'turn_*.json' -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -ne $keepTurn -and $_.LastWriteTime -lt $cutoff } |
+        ForEach-Object { Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue }
+
     foreach ($pat in @('start_*.txt', 'completed_turn_*.txt')) {
         Get-ChildItem -Path $Dir -File -Filter $pat -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTime -lt $cutoff } |
             ForEach-Object { Remove-Item -Path $_.FullName -Force -ErrorAction SilentlyContinue }
     }
 

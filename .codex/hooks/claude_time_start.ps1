@@ -10,7 +10,9 @@
 $ErrorActionPreference = 'Stop'
 
 function Read-HookPayload {
-    $raw = [Console]::In.ReadToEnd()
+    # Read-HookStdin (shared helpers) decodes UTF-8; Windows PowerShell would
+    # otherwise mangle accented prompts with the console code page.
+    $raw = if (Get-Command Read-HookStdin -ErrorAction SilentlyContinue) { Read-HookStdin } else { [Console]::In.ReadToEnd() }
     if ([string]::IsNullOrWhiteSpace($raw)) {
         return [pscustomobject]@{}
     }
@@ -23,7 +25,7 @@ function Read-HookPayload {
     }
 }
 
-function Get-ProjectDirectory {
+function Get-SessionDirectory {
     param([object]$Payload)
 
     # Codex includes the event cwd in its hook payload. Prefer it over the
@@ -37,6 +39,22 @@ function Get-ProjectDirectory {
     }
 
     return (Get-Location).Path
+}
+
+# Sessions running in a git worktree book into the MAIN checkout's ledger (the
+# one the Unity calendar reads, next to the pause flag). Resolve-MainCheckout
+# is shared with the Claude hooks; without it, stay on the session directory.
+$sharedHelpers = Join-Path $PSScriptRoot '..\..\.claude\hooks\_timerecorder_common.ps1'
+if (Test-Path -LiteralPath $sharedHelpers) { . $sharedHelpers }
+
+function Get-ProjectDirectory {
+    param([object]$Payload)
+
+    $sessionDir = Get-SessionDirectory $Payload
+    if (Get-Command Resolve-MainCheckout -ErrorAction SilentlyContinue) {
+        return Resolve-MainCheckout $sessionDir
+    }
+    return $sessionDir
 }
 
 function Get-SafeMarkerKey {
@@ -70,7 +88,7 @@ function Remove-StaleMarkers {
     # consumed. A marker older than the retention window can no longer be
     # completed (turns are clamped to 4h), so pruning is always safe.
     $cutoff = [DateTime]::UtcNow.AddDays(-7)
-    foreach ($pattern in 'completed_*.txt', 'start_*.txt', 'start_*.txt.claiming_*') {
+    foreach ($pattern in 'completed_*.txt', 'start_*.txt', 'start_*.txt.claiming_*', 'prompt_*.txt') {
         Get-ChildItem -LiteralPath $Directory -Filter $pattern -File -ErrorAction SilentlyContinue |
             Where-Object { $_.LastWriteTimeUtc -lt $cutoff } |
             Remove-Item -Force -ErrorAction SilentlyContinue
@@ -119,6 +137,10 @@ try {
         # initial state check but before this Start publishes its marker.
         if ((Test-Path -LiteralPath $completedMarker) -or (Test-TurnClaimed $marker)) {
             Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
+        } elseif ($payload.prompt) {
+            # The Stop hook journals the turn with the prompt that opened it.
+            $promptFile = Join-Path $dir ("prompt_{0}.txt" -f $markerKey)
+            [System.IO.File]::WriteAllText($promptFile, [string]$payload.prompt, (New-Object System.Text.UTF8Encoding($false)))
         }
     } finally {
         if (Test-Path -LiteralPath $tempMarker) {

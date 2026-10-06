@@ -27,11 +27,22 @@ namespace Meaf75.Unity{
 
         static TimeRecorder(){
 
+            // Batchmode editors (agent headless editors, CI, test runs) are not a dev at work.
+            // PlayerPrefs are shared by every editor of this project (main checkout and worktrees),
+            // so recording here would add their uptime to the dev's own time, on top of the
+            // visual editor's.
+            if (Application.isBatchMode)
+                return;
+
             isPaused = PlayerPrefs.GetInt(TimeRecorderExtras.TIME_RECORDER_PAUSE_P_PREF,0) == 1 ;
 
             // Restore callbacks
             EditorApplication.update += TimeRecorderUpdate;
-            EditorApplication.quitting += () => SaveTimeRecorded(false);
+            EditorApplication.quitting += () => {
+                // A paused recorder must not book the partial period on quit either
+                if (!isPaused)
+                    SaveTimeRecorded(false);
+            };
         }
 
         /// <summary> Update plugin in unity editor update event </summary>
@@ -102,25 +113,27 @@ namespace Meaf75.Unity{
 
             int secondsToAdd = saveOnMinutes * 60;
 
-            if(countdownCompleted){
-                // Add time reference for current date
-                dateTimeInfo.dayInfo.timeInSeconds += secondsToAdd;
-            } else{
+            if(!countdownCompleted){
                 if(EditorApplication.timeSinceStartup < saveOnMinutes * 60){
                     // Editor recently oppened so i should save EditorApplication.timeSinceStartup
                     secondsToAdd = (int) EditorApplication.timeSinceStartup;
                 } else {
-                    // Save time elapsed from the last save time
+                    // Save time elapsed from the last save time (the whole duration, not its seconds
+                    // component, and never more than one period)
                     DateTime lastSave = nextSaveTime.AddMinutes(-saveOnMinutes);
 
                     var diferencia = DateTime.Now - lastSave;
-                    secondsToAdd = diferencia.Seconds;
+                    secondsToAdd = Mathf.Clamp((int) diferencia.TotalSeconds, 0, saveOnMinutes * 60);
                 }
-                Debug.Log("No se completó pero aún así guardo");
             }
 
-
+            // Book the period into the day too (a partial period on quit used to reach the total only)
+            dateTimeInfo.dayInfo.timeInSeconds += secondsToAdd;
             timeRecorderInfo.totalRecordedTime += secondsToAdd;
+
+            // Timestamped span of the same period, so billing can merge dev and AI time without counting
+            // an instant twice (BillableTime). The day total above stays the source for the dev total.
+            ClaudeTimeReader.AppendDevSpan(currentTime, secondsToAdd);
 
             // Save the registry
             SaveTimeRecorded(timeRecorderInfo);

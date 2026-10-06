@@ -27,6 +27,13 @@ human (UI seams, server calls), choosing among options the game declares legal t
 (`RandomValidPolicy` is seeded, so a run is reproducible). Use `context.Capture.Request(label, delay)` /
 `RequestBurst(label, delays)` at the moments worth seeing, `context.Capture.AddProbe(name, read)` for extra values.
 
+Also implement `IAutoplayWatchdogSource` (optional, strongly advised): `BudgetFor(step)` gives each step (`boot`, `host`,
+`setup`, `start`) and phase (`phase <label>`) a real-seconds budget ("never longer when all is well": derive phase
+budgets from the game's own timers and `Time.timeScale`), `DescribeWait()` says in one line what the game waits on.
+`AutoplayWatchdog` then turns any hang into alerts (`watchdog.slow` / `watchdog.stall`, relayed live by the launchers to
+`alerts.log`) and, at 3× budget, a failed run WITH a report; an operator can `extend` / `abort` it through
+`watchdog-control.txt`. Without the interface the package defaults apply and alerts say nothing about the wait.
+
 ## Run
 
 | Where | How |

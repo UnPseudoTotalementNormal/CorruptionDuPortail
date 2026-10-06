@@ -78,8 +78,33 @@ namespace Unpseudo.Autoplay
 
         public int Count(string _kind) => counters.TryGetValue(_kind, out int _n) ? _n : 0;
 
+        /// <summary>
+        /// Real time (since startup) of the last event that shows the game moving: every kind except the passive
+        /// ones (captures, periodic samples, the watchdog's own alerts). Read by <see cref="AutoplayWatchdog"/>.
+        /// </summary>
+        public float LastProgressRealTime { get; private set; } = Time.realtimeSinceStartup;
+
+        private static readonly string[] PassiveKindPrefixes =
+            { "capture", "net.rtt", "state.hash", "state.repl", "state.view", "watchdog", "record", "video" };
+
+        public static bool IsProgressKind(string _kind)
+        {
+            foreach (string _prefix in PassiveKindPrefixes)
+            {
+                if (_kind.StartsWith(_prefix, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void Record(string _kind, string _detail)
         {
+            if (IsProgressKind(_kind))
+            {
+                LastProgressRealTime = Time.realtimeSinceStartup;
+            }
             var _entry = new Entry
             {
                 realTime = Time.realtimeSinceStartup - startRealTime,

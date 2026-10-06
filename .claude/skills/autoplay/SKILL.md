@@ -39,6 +39,13 @@ new forced-composition option), then run. Afterwards, check in the logs that the
   on screen). Use the user's open editor only when they ask for it; when unclear, ask. Recipe + traps:
   `tools/HEADLESS_UNITY.md`.
 - Everything long runs **in the background** (`run_in_background` / Monitor), never in a foreground loop.
+- **Watch the watchdog.** Every run is under `AutoplayWatchdog` (per step / phase budgets, see `REFERENCE.md` § Watchdog):
+  arm a Monitor on `AutoplayRuns/alerts.log` (`tail -f … | grep --line-buffered -E "WATCHDOG|RUN.FAIL|DIED|ABORT|TIMEOUT|BUSY"`)
+  for any long run or campaign. On each alert: read the line (what it waits on) + the folder's `watchdog.json`, look at
+  the capture if needed, then write `extend <s>` (legit) or `abort <reason>` (stuck) into `<folder>/watchdog-control.txt`.
+  Never wait out a global timeout on a stuck run.
+- Stopping a campaign on Windows: `TaskStop` leaves the child bash / python / powershell / game processes alive: kill
+  them by command line too, and check nothing is left before launching again (launchers queue, but orphans keep going).
 - Use `tools/autoplay/unityctl.sh` (wrapper of the package CLI): `compile`, `editmode`, `build`, `play-build`,
   `last-run`. Never recompile while a PlayMode run is in flight.
 
@@ -96,6 +103,13 @@ assert on the numbers with an `animation` check (thresholds measured on a refere
 not a game bug — check before concluding.
 
 ### Speed
+Measured costs: ~45-60 s of start-up per run (player boot + GameScene + clients joining), so prefer fewer, richer runs.
+Levers that keep the test's value: `role-holder` SEATS the forced role (no re-roll of whole games); clients capped at
+30 fps (`-ClientFps`); `-autoplay-fast-phases "Intro|Chaining"` on network / desync runs (nobody acts there; keep recaps
+at normal speed when the goal samples them); 2 days for a power / role sweep; 2 lanes in parallel
+(`AUTOPLAY_MAX_PARALLEL=2`, `run_scenario.py --port 7870` / `--port 7880`) once the machine is known to cope (watch for
+`DIED`). Do not raise the global time scale for desync hunts (latency weighs more than in a real game) and never run
+clients in batchmode (end of frame never comes).
 
 `-autoplay-fast-fakes` (fake roles sleep after ~1 s: night time 77 s → 12 s on 3 days, seed 777) and
 `-autoplay-fast-phases "Recap|Intro|Chaining" -autoplay-fast-timescale 12` cut a game ~3× (118 s → 39.5 s). Use them by
@@ -122,6 +136,13 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `join-stuck-load-kick` | un chargement bloqué est éjecté à 90 s, le lobby démarre sans lui | réseau, 3 clients | PASS 2026-10-05 |
 | `join-slow-load-honest` | un chargement lent (30 s) n'est pas éjecté, le client joue | réseau, 3 clients | PASS 2026-10-05 |
 | `join-spawn-during-load` | un joueur assis pendant un chargement > 10 s est vu par tous (propriétaire + liste complète), 0 désync | réseau, 3 clients | PASS 2026-10-05 (FAIL 2/2 avant le correctif) |
+| `net-sync-7clients-chat` | table pleine de vrais joueurs (hôte + 7 clients) qui discutent en privé : 0 désync sur 8 process, aucune fuite | réseau, 7 clients | PASS 2026-10-06 |
+| `heavy-loss` | partie complète à 250 ms, gigue 80 ms, 5 % de pertes, avec chat | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-at-vote` | déconnexion en plein vote du jour 1 puis retour : le vote se résout, siège intact | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-at-night` | déconnexion la nuit (pouvoirs en cours) puis retour : siège intact, listes de pouvoirs complètes | réseau, 3 clients | PASS 2026-10-06 (FAIL 1/2 avant le correctif `CharacterManager`) |
+| `rejoin-under-lag` | retour par le menu avec 150 ms, gigue 40 ms, 2 % de pertes | réseau, 3 clients | PASS 2026-10-06 |
+| `mass-rejoin` | les 3 clients tombent en même temps et reviennent tous | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-after-expiry` | retour après la grâce : refus « La partie a déjà commencé. », session oubliée, la partie continue | réseau, 3 clients | PASS 2026-10-06 |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
 | `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |

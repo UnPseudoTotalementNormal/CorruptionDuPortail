@@ -1,0 +1,89 @@
+{
+  "name": "rejoin-after-expiry",
+  "goal": "A player comes back too late: client1 drops at the first awakening recap, its seat is reserved 10 s then chained; it clicks the menu's rejoin button 15 s after the drop and is refused with the game-in-progress wording, the menu drops the saved session (rejoin button hidden), no seat stolen, no half-join; the host and the other clients finish the game, no desync between them. Nobody votes (vote-probability 0) so no early victory ends the game before the attempt.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 57,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-rejoin-grace",
+    "10",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log",
+    "-autoplay-vote-probability",
+    "0"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "AwakeningRecapState day=1",
+    "-autoplay-rejoin-after",
+    "15",
+    "-autoplay-rejoin-via",
+    "menu",
+    "-autoplay-png"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.drop",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "chained=True",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.seat",
+      "process": "clients",
+      "max": 0,
+      "min": 0
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.refused",
+      "detail": "partie a déjà commencé.*button=hidden",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "connect.rejected",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "fact",
+      "match": "rejected=",
+      "process": "clients"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "host",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

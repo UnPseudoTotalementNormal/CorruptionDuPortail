@@ -289,6 +289,19 @@ namespace Characters
             // without raising OnListChanged for the initial state, so force a
             // rebuild here (kept dirty until every reference resolves).
             _cacheDirty = true;
+
+            // A peer that joins mid-game (rejoin) gets every object in one synchronization, in an order where a
+            // Character and then its Power can both spawn before this manager: the Power then finds no owner to
+            // refresh (the list resolved nothing yet) and the Character had scanned the registry before the Power
+            // registered, so that power list stayed empty until the next refresh (transient Powers desync). Now
+            // that owners resolve, re-run the scan for every character already spawned.
+            if (!IsServer)
+            {
+                foreach (Character _character in _characters)
+                {
+                    _character.CheckForPowersLocal();
+                }
+            }
         }
 
         public override void OnNetworkDespawn()

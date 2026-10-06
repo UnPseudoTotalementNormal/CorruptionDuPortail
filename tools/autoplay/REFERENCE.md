@@ -27,7 +27,7 @@ Keep this file exact: a lever, event or check that is added, renamed or removed 
 | `play-net <clients> <seed>` | host + N real UDP clients (separate processes), bots fill to 8 |
 | `last-run` | summary of the newest run (outcome, trace, counters, deduplicated errors) |
 
-Environment: `AUTOPLAY_ARGS` (every process), `AUTOPLAY_CLIENT_ARGS` (every client), `AUTOPLAY_CLIENT1_ARGS` (client 1
+Environment: `AUTOPLAY_MAX_PARALLEL` (runs allowed at once, 1; give each lane its own port: `run_scenario.py --port`), `AUTOPLAY_ARGS` (every process), `AUTOPLAY_CLIENT_ARGS` (every client), `AUTOPLAY_CLIENT1_ARGS` (client 1
 only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_VISUAL_PICKER=1`, `AUTOPLAY_PROJECT`,
 `AUTOPLAY_GUARDED_FILES`.
 
@@ -54,6 +54,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `fast-phases <regex>` + `fast-timescale X` | phases matching the regex run at X (paused while recording) |
 | `record "kindRegex:seconds[,…]"` | record N game seconds frame by frame after each matching journal event |
 | `record-fps N` / `record-width W` | recording rate (default 20) and frame width |
+| `fps N` | cap this process's frame rate (`launch-net.ps1 -ClientFps`, 30 by default for clients); game time unaffected |
+| `budget "regex:seconds;…"` | watchdog: real-seconds budget override for the steps / phases whose name matches (`boot`, `host`, `setup`, `start`, `phase <label>`) |
+| `stall-idle S` / `stall-factor F` / `no-watchdog` | watchdog: a step is suspect once over budget AND no game event for S s (25); it fails at F× budget (3); off |
 
 ### Corruption du Portail adapter
 
@@ -62,7 +65,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `role host\|client` · `connect <ip>` | process role in `play-net` (set by the launcher) |
 | `players N` · `bots N` · `clients N` | seats; the host waits for N clients, then fills with bots |
 | `force-roles A,B` | role-name fragments guaranteed in the composition |
-| `role-holder host\|client\|bot` | who must hold the forced roles; mismatch fails fast, `run_scenario` retries the next seed |
+| `role-holder host\|client\|bot` | who holds the forced roles: they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
 | `vote-focus <role text>` | every bot votes the holder of that role |
 | `max-days N` | stop after day N (fact `stopped-after-day`) |
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
@@ -99,8 +102,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 
 | Area | Kinds |
 |---|---|
+| Watchdog | `watchdog.slow` (1× budget, idle), `watchdog.stall` (2×), `watchdog.extend` / `watchdog.dump` (operator), `watchdog.error`; then `run.fail watchdog: <step> stalled …` (F×) — each with `waiting=<what the game waits on>` |
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
-| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
+| Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `rejoin.refused` (`reason= button=shown|hidden`: the host refused the rejoin, the run ends completed with `rejected=`), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
 | Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
 | Chat | `chat.sent` (`chat= from= token= phase=`), `chat.recv` (every process, always: `chat= from= token= text=`), host `chat.members` |
 | Composition | `composition`, `composition.force`, `roles.assigned`, `possess` |
@@ -112,6 +116,25 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | Lobby / tour / menu | `lobby.preset`, `lobby.force`, `lobby.ready` (`via=click\|already\|direct`), `lobby.role-card` (`open\|close ok\|miss`), `lobby.autostart`, `lobby.status`, `composition … via=`, `tour.<step>` (`ok\|miss`, `tour.aborted` when a seat wakes), `menu.<step>`, `menu.notification-top`, `menu.notification-dismiss`, `leave … via=` |
 | Knowledge | `knowledge` (`viewer>target role= corrupt= force= hacked=` levels, on every change) |
 | Captures | `capture`, `capture.state`, `capture.error`, `capture.state.error`, `record`, `record.start`, `record.skip`, `record.tracks.error` |
+
+## Watchdog: nothing hangs silently
+
+Package `AutoplayWatchdog` (every game, every mode). Each step (`boot`, `host`, `setup`, `start`) and each phase has a
+budget in real seconds: the game's `IAutoplayWatchdogSource.BudgetFor` (here: the vote and night timers at the current
+time scale + a network margin, the host's set-up grows with the clients), else the package defaults, overridable with
+`-autoplay-budget`. A step is SUSPECT once over budget AND idle (no game event in the journal for `stall-idle` s: a long
+but busy phase is not a stall). Escalation: `watchdog.slow` (1×) → `watchdog.stall` (2×) → the run fails with a report
+(`stall-factor`×, 3), each alert with `DescribeWait()` (who is awake, which power is open, vote timer, clients…) and a
+capture. The runner runs every step as its own coroutine, so a failed run stops waiting at once.
+
+- Operator control: write `watchdog-control.txt` in the process folder: `extend <s>` (legit wait), `abort [reason]` (stuck:
+  fail now, report written), `dump` (alert + capture now). `watchdog.json` there = heartbeat every 2 s.
+- Launchers relay every `watchdog.*` / `run.fail` line, as it happens, to `<run>/alerts.log` and `AutoplayRuns/alerts.log`
+  (with the folder to write the control file into). `launch-net.ps1`: a client that dies on its own (non-zero exit, not a
+  `crash-at`) → `DIED`, run aborted 5 s later (exit 125). One run at a time: a launcher started while another runs waits
+  for it (`BUSY`, 60 min max).
+- During any long run or campaign, watch `AutoplayRuns/alerts.log` (Monitor) and decide on each alert: extend or abort.
+- Breakage tests: `watchdog-stall`, `watchdog-died` (`Tools~/check_alerts.py <run> <regex>…` checks the relay).
 
 ## Captured moments and exported state
 
@@ -142,6 +165,8 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
+| `watchdog-stall` | breakage test: an idle vote over a 10 s budget gives slow → stall → `run.fail watchdog:` with a report, relayed to alerts.log |
+| `watchdog-died` | breakage test: a client dying outside `crash-at` is reported `DIED` and the run aborted within seconds |
 | `client-leaves-at-vote` | a client leaving at the vote gets a reserved seat, chained when the (10 s) grace expires; the game goes on |
 | `relay-game` | a game over Unity Relay set up through the real menus (login, Host, Join by code), played to the day limit; no desync |
 | `relay-crash-relaunch` | the crash + relaunch rejoin over Relay: the relaunched game signs in again, clicks the rejoin button, reconnects through Relay |
@@ -149,6 +174,13 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `client-rejoin` | a client drops at the first awakening recap, clicks the menu's rejoin button 8 s later: same seat, role, powers, chat channels, icons and knowledge (`analyze_rejoin.py`), no longer reserved nor left, votes again; no desync |
 | `client-disconnect-reserved` | a client leaving at night: seat reserved (skipped, no vote), chained only when the 30 s grace expires; no hang, no desync |
 | `lag-150ms` | a full game under 150 ms simulated latency |
+| `heavy-loss` | a full game with 3 chatting clients under 250 ms latency, 80 ms jitter and 5 % loss; no desync |
+| `net-sync-7clients-chat` | a full table of real players (host + 7 clients, no bot) chatting in private channels: zero desync on 8 processes, private lines delivered, no leak |
+| `rejoin-at-vote` | a client drops in the middle of the day-1 vote and rejoins: the vote resolves, seat intact, votes again |
+| `rejoin-at-night` | a client drops during a night (powers in use) and rejoins: no hang, seat intact (a use spent just before the drop is accounted for), every power list complete on the rejoined peer (`[DESYNC] component=Powers` before the `CharacterManager` re-scan fix) |
+| `rejoin-under-lag` | the menu rejoin with 150 ms latency, 40 ms jitter, 2 % loss on every client |
+| `mass-rejoin` | every real client drops at once and rejoins: three seats reserved and claimed concurrently, all intact |
+| `rejoin-after-expiry` | a rejoin after the grace delay is refused with the game-in-progress wording, the saved session is dropped (button hidden), the game goes on |
 | `net-sync-3clients` | zero desync on every public-state component |
 | `client-owner-local-powers` | client-held Repenti / Orpheline reveals reach the owning client |
 | `orpheline-contact-chosen` | Lack of Affection on a chosen real client: contact line + the Orpheline's role revealed to the target |

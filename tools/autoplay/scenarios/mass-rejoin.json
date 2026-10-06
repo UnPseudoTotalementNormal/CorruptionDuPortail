@@ -1,0 +1,91 @@
+{
+  "name": "mass-rejoin",
+  "goal": "Every real client drops at the same moment (first awakening recap) and rejoins through the menu 8 s later: three seats reserved at once, three tokens claimed concurrently (the three loads in parallel take ~30 s, so they miss a day or two), every seat back intact (analyze_rejoin per client), each votes again after its rejoin, the game completes, no desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 56,
+  "timescale": 3,
+  "timeout": 1500,
+  "args": [
+    "-autoplay-max-days",
+    "4",
+    "-autoplay-rejoin-grace",
+    "60",
+    "-autoplay-fast-fakes",
+    "-autoplay-net-log"
+  ],
+  "clientArgs": [
+    "-autoplay-quit-at",
+    "AwakeningRecapState day=1",
+    "-autoplay-rejoin-after",
+    "8",
+    "-autoplay-rejoin-via",
+    "menu"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.drop",
+      "process": "clients",
+      "min": 3,
+      "max": 3
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.reconnect",
+      "detail": "token present",
+      "process": "clients",
+      "min": 3,
+      "max": 3
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.seat",
+      "process": "clients",
+      "min": 3,
+      "max": 3
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 3,
+      "max": 3
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "left=False",
+      "process": "host",
+      "min": 3,
+      "max": 3
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

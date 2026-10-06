@@ -1,0 +1,50 @@
+{
+  "name": "heavy-loss",
+  "goal": "Bad connections on every client (250 ms latency, 80 ms jitter, 5 % packet loss), 3 real clients chatting: the game still completes 3 days with zero desync and no error.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 52,
+  "timescale": 3,
+  "timeout": 1800,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-fast-fakes",
+    "-autoplay-chat"
+  ],
+  "clientArgs": [
+    "-autoplay-netsim",
+    "250,80,5"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "netsim",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.hash",
+      "process": "every-client",
+      "min": 3
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

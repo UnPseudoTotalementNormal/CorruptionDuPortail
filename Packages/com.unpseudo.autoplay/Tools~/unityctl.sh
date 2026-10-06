@@ -106,7 +106,7 @@ print('result=',s.get('result'),'errors=',s.get('totalErrors'))"
     args="$args -autoplay-scenario ${AUTOPLAY_SCENARIO:-build} -autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"
     args="$args -screen-fullscreen 0 -screen-width 1600 -screen-height 900 -logFile $ROOT/Logs/autoplay-player-$seed.log"
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$HERE/launch-background.ps1" \
-      -Exe "$EXE" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}" -PlayerArgs "$args" || true
+      -Exe "$EXE" -TimeoutSeconds "${AUTOPLAY_TIMEOUT:-900}" -PlayerArgs "$args" -AlertsRoot "$ROOT/AutoplayRuns" || true
     $PY "$HERE/make_videos.py" "$(ls -td "$ROOT"/AutoplayRuns/*/ | head -1)" || true
     "$0" last-run
     ;;

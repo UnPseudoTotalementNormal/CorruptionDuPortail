@@ -69,5 +69,7 @@ an optional interface the adapter implements (pattern: `IAutoplayAnimationSource
 1. `unityctl.sh compile` clean, `editmode` green (adapter code is compiled in the game assemblies).
 2. `build`, then the scenario runs and **passes** (`run_scenario.py`), on `play-net` if a client is involved.
 3. Show it can fail: break the condition once (wrong lever value, tighter `max`) and see the check fail.
-4. Docs updated in the same commit: the game's reference (lever, events, check, scenario row), the usage skill if the
+4. No hang: a new step, phase or wait has a watchdog budget (`IAutoplayWatchdogSource.BudgetFor`) and shows up in
+   `DescribeWait()`; a new long wait in a step is a bounded `context.WaitFor`, never an unbounded loop.
+5. Docs updated in the same commit: the game's reference (lever, events, check, scenario row), the usage skill if the
    workflow changed, this file if a generic rule was learned.

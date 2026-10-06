@@ -91,6 +91,18 @@ namespace GameLogic.GameStates
                 ApplyRole(_frozenOrder[_fakeRoleIndex], Command.CreateNewFakeCharacter());
             }
 
+            // Dev seam (autoplay): may reorder WHO receives each drawn role (the draw itself is untouched). Null in a
+            // normal game; the autoplay uses it to seat a forced role on a real client without re-rolling whole games.
+            if (DevSeatOrder != null)
+            {
+                var _drawnRoles = new List<RoleDataObject>(_distribution.RealRoleIndices.Count);
+                foreach (int _index in _distribution.RealRoleIndices)
+                {
+                    _drawnRoles.Add(_frozenOrder[_index]);
+                }
+                _realCharacters = DevSeatOrder(_drawnRoles, _realCharacters) ?? _realCharacters;
+            }
+
             //assign the remaining draws to the real characters, in processing order
             for (int i = 0; i < _distribution.RealRoleIndices.Count; i++)
             {
@@ -99,6 +111,12 @@ namespace GameLogic.GameStates
 
             Loop.NextGameState();
         }
+
+        /// <summary>
+        /// Dev seam (autoplay only, null otherwise): given the drawn real roles (in assignment order) and the real
+        /// characters, returns the characters in the order that receives them. Same multiset, any order.
+        /// </summary>
+        public static System.Func<IReadOnlyList<RoleDataObject>, List<Character>, List<Character>> DevSeatOrder;
 
         // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored
         // SerializedDictionary order. A plain Dictionary's key enumeration order is

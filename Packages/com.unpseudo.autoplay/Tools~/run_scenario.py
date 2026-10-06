@@ -13,11 +13,15 @@ Scenario file (JSON):
   "visualPicker": false,
   "args": ["-autoplay-force-roles", "Mage"],      # every process
   "clientArgs": [], "client1Args": [],           # net only: every client / client1 only
+  "video": true | "client1",                     # film the run (or --video [all|client1]): video.mp4 per process
+  "client1Relaunch": {"after": 5, "args": ["-autoplay-relaunched"]},   # net only: relaunch client1 once if its game
+                                                                       # dies first (lever crash-at), after N seconds
   "expect": [ … see CHECKS below … ]
 }
 
 CHECKS (all must pass; a check with "severity": "warn" is reported but does not fail the scenario):
-  {"type": "outcome", "value": "Completed", "process": "all|host|clients"}
+  {"type": "outcome", "value": "Completed", "process": "all|host|clients"}   (+ "alsoAccept": ["Crashed"]: a process
+                                                                     killed on purpose by crash-at writes no report)
   {"type": "event", "kind": "portal.click", "detail": "regex", "process": "any|host|clients|all|every-client", "min": 1, "max": 5}
       any / host / clients = total over those processes; all / every-client = each of those processes on its own
   {"type": "noErrors", "ignore": ["regex", …], "process": "all|host|clients"}
@@ -67,9 +71,17 @@ def quote_args(items):
 
 def run_once(scenario, seed, ctl, project):
     env = dict(os.environ)
-    env["AUTOPLAY_ARGS"] = quote_args(scenario.get("args", []))
+    # "video": true / "all" films every process, "client1" only that one (video.mp4 in each process folder).
+    video = scenario.get("video")
+    film_all = video is True or video == "all"
+    film_c1 = video == "client1"
+    env["AUTOPLAY_ARGS"] = quote_args(scenario.get("args", []) + (["-autoplay-video"] if film_all else []))
     env["AUTOPLAY_CLIENT_ARGS"] = quote_args(scenario.get("clientArgs", []))
-    env["AUTOPLAY_CLIENT1_ARGS"] = quote_args(scenario.get("client1Args", []))
+    env["AUTOPLAY_CLIENT1_ARGS"] = quote_args(scenario.get("client1Args", []) + (["-autoplay-video"] if film_c1 else []))
+    relaunch = scenario.get("client1Relaunch")
+    relaunch_args = (relaunch.get("args", ["-autoplay-relaunched"]) + (["-autoplay-video"] if film_c1 else [])) if relaunch else []
+    env["AUTOPLAY_CLIENT1_RELAUNCH_ARGS"] = quote_args(relaunch_args)
+    env["AUTOPLAY_CLIENT1_RELAUNCH_DELAY"] = str(relaunch.get("after", 5)) if relaunch else "5"
     env["AUTOPLAY_TIMESCALE"] = str(scenario.get("timescale", 4))
     env["AUTOPLAY_TIMEOUT"] = str(scenario.get("timeout", 900))
     env["AUTOPLAY_SCENARIO"] = re.sub(r"[^A-Za-z0-9-]", "-", scenario["name"])
@@ -101,7 +113,11 @@ class Run:
 
     @staticmethod
     def report(proc):
-        return compare_runs.load_report(proc) or {}
+        rep = compare_runs.load_report(proc)
+        if rep is None and any(e["kind"] == "crash" for e in Run.events(proc)):
+            # Killed on purpose (lever crash-at): a real crash writes no report.
+            return {"outcome": "Crashed", "errors": [], "facts": []}
+        return rep or {}
 
     @staticmethod
     def events(proc):
@@ -179,8 +195,9 @@ def check_animation(run, c):
 def check(run, c, project):
     t = c["type"]
     if t == "outcome":
+        accepted = [c.get("value", "Completed")] + list(c.get("alsoAccept", []))
         bad = [os.path.basename(p) for p in run.select(c.get("process", "all"))
-               if run.report(p).get("outcome") != c.get("value", "Completed")]
+               if run.report(p).get("outcome") not in accepted]
         return not bad, f"outcome {c.get('value', 'Completed')}" + (f" — not for {bad}" if bad else "")
 
     if t == "event":
@@ -265,9 +282,13 @@ def main():
     ap.add_argument("--seed", type=int)
     ap.add_argument("--project", default=os.getcwd())
     ap.add_argument("--evaluate", help="re-check an existing run folder against the scenario, without playing")
+    ap.add_argument("--video", nargs="?", const="all", choices=["all", "client1"],
+                    help="film the run (all processes, or client1 only): video.mp4 in each process folder")
     a = ap.parse_args()
 
     scenario = json.load(open(a.scenario, encoding="utf-8-sig"))
+    if a.video:
+        scenario["video"] = a.video
     seed = a.seed if a.seed is not None else scenario.get("seed", 1)
     attempts = max(1, scenario.get("seedRetries", 1))
     print(f"scenario: {scenario['name']} — {scenario.get('goal', '')}")
@@ -279,6 +300,8 @@ def main():
         if run_path is None:
             print("could not find the run folder in the launcher output:\n" + out[-2000:])
             sys.exit(2)
+        with open(os.path.join(run_path, "launcher.log"), "w", encoding="utf-8") as f:
+            f.write(out)
         run = Run(run_path, scenario.get("mode", "build"))
         reason = run.report(run.host).get("failureReason") or ""
         if reason.startswith("composition mismatch") and attempt + 1 < attempts:
@@ -302,6 +325,8 @@ def main():
                "pass": passed, "checks": results}
     with open(os.path.join(run_path, "verdict.json"), "w", encoding="utf-8") as f:
         json.dump(verdict, f, ensure_ascii=False, indent=2)
+    for video in sorted(glob.glob(os.path.join(run_path, "**", "video.mp4"), recursive=True)):
+        print(f"  video: {video}")
     print(f"VERDICT: {'PASS' if passed else 'FAIL'}  ({run_path})")
     sys.exit(0 if passed else 1)
 

@@ -1,9 +1,9 @@
 {
-  "name": "client-rejoin",
-  "goal": "Rejoin after a disconnection: a real client drops at the first awakening recap (no Leave button), lands in the main menu, and 8 s later clicks \"Rejoindre la partie en cours\" with the virtual pointer: it gets its seat back with the same seat, role, powers and uses, knowledge, chat channels and icons as before the drop (analyze_rejoin compares the exported views), is no longer reserved nor shown as left (it may have been voted out while away, never chained by the grace expiry), and plays on (votes) until the end; no desync.",
+  "name": "client-crash-relaunch",
+  "goal": "Rejoin after a crash: a real client's game process is killed at the first awakening recap (no Leave, no disconnect message), the launcher relaunches the game 3 s later, and the new process finds the session saved on the PC, shows \"Rejoindre la partie en cours\" in the main menu and clicks it with the virtual pointer: the player gets his seat back (same seat, role, powers, chat channels, knowledge: analyze_rejoin compares the crashed process's last view with the relaunched one), whether the host already noticed the crash (seat reserved) or not yet (the token takes the seat over from the dead connection); he plays on and votes; no desync.",
   "mode": "net",
   "clients": 3,
-  "seed": 33,
+  "seed": 34,
   "timescale": 3,
   "timeout": 1200,
   "args": [
@@ -15,30 +15,37 @@
     "-autoplay-net-log"
   ],
   "client1Args": [
-    "-autoplay-quit-at",
+    "-autoplay-crash-at",
     "AwakeningRecapState day=1",
-    "-autoplay-rejoin-after",
-    "8",
-    "-autoplay-rejoin-via",
-    "menu",
     "-autoplay-png"
   ],
+  "client1Relaunch": {
+    "after": 3,
+    "args": [
+      "-autoplay-relaunched",
+      "-autoplay-png"
+    ]
+  },
   "expect": [
     {
       "type": "outcome",
       "value": "Completed",
-      "process": "all"
+      "process": "all",
+      "alsoAccept": [
+        "Crashed"
+      ]
     },
     {
       "type": "event",
-      "kind": "rejoin.drop",
+      "kind": "crash",
+      "detail": "token present",
       "process": "clients",
       "min": 1,
       "max": 1
     },
     {
       "type": "event",
-      "kind": "rejoin.reconnect",
+      "kind": "rejoin.relaunch",
       "detail": "token present",
       "process": "clients",
       "min": 1,

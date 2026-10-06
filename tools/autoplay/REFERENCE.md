@@ -152,7 +152,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `heavy-loss` | a full game with 3 chatting clients under 250 ms latency, 80 ms jitter and 5 % loss; no desync |
 | `net-sync-7clients-chat` | a full table of real players (host + 7 clients, no bot) chatting in private channels: zero desync on 8 processes, private lines delivered, no leak |
 | `rejoin-at-vote` | a client drops in the middle of the day-1 vote and rejoins: the vote resolves, seat intact, votes again |
-| `rejoin-at-night` | a client drops during a night (powers in use) and rejoins: no hang, seat intact (a use spent just before the drop is accounted for) |
+| `rejoin-at-night` | a client drops during a night (powers in use) and rejoins: no hang, seat intact (a use spent just before the drop is accounted for), every power list complete on the rejoined peer (`[DESYNC] component=Powers` before the `CharacterManager` re-scan fix) |
 | `rejoin-under-lag` | the menu rejoin with 150 ms latency, 40 ms jitter, 2 % loss on every client |
 | `mass-rejoin` | every real client drops at once and rejoins: three seats reserved and claimed concurrently, all intact |
 | `rejoin-after-expiry` | a rejoin after the grace delay is refused with the game-in-progress wording, the saved session is dropped (button hidden), the game goes on |

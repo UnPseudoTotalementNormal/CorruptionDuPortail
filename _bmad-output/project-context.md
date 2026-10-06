@@ -86,6 +86,11 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   `TransportOfSeat(seat)` / `GetSafeRpcTarget` for every outbound target (a raw `RpcTarget.Single(seat)` misses him).
   Client: `GetLocalClientId()` (the seat), never `NetworkManager.LocalClientId`. Per-player data pushed once
   (chat channels, icon slices, knowledge) must also be re-sent on `GameManager.onPlayerRejoinedServer`.
+- **A mid-game joiner's sync spawns objects before `CharacterManager` resolves them.** Until its own
+  `OnNetworkSpawn`, its character list is empty, so a Power / any object that looks its owner up through it in
+  `OnNetworkSpawn` finds nobody, while the owner may already have run its own scan. A spawn-time link between two
+  NetworkObjects must be made from both sides AND re-run when the manager spawns (`CharacterManager.OnNetworkSpawn`
+  re-scans every power list). Repro: autoplay `rejoin-at-night` (`[DESYNC] component=Powers` before the fix).
 - **Unity Transport is embedded and patched** (`Packages/com.unity.transport`, `[CdP patch]` in `UDPNetworkInterface`):
   on Windows each ICMP "port unreachable" (a peer whose game died) failed a UDP receive request whose buffer was never
   released, so the host went deaf within seconds and every client dropped. Proof: PlayMode `UdpDeadPeerTests`. Re-apply

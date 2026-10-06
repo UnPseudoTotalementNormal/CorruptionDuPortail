@@ -125,7 +125,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `net-sync-7clients-chat` | table pleine de vrais joueurs (hôte + 7 clients) qui discutent en privé : 0 désync sur 8 process, aucune fuite | réseau, 7 clients | PASS 2026-10-06 |
 | `heavy-loss` | partie complète à 250 ms, gigue 80 ms, 5 % de pertes, avec chat | réseau, 3 clients | PASS 2026-10-06 |
 | `rejoin-at-vote` | déconnexion en plein vote du jour 1 puis retour : le vote se résout, siège intact | réseau, 3 clients | PASS 2026-10-06 |
-| `rejoin-at-night` | déconnexion la nuit (pouvoirs en cours) puis retour : siège intact | réseau, 3 clients | FAIL 2026-10-06 : désync `Powers` transitoire au retour (1 run sur 2) |
+| `rejoin-at-night` | déconnexion la nuit (pouvoirs en cours) puis retour : siège intact, listes de pouvoirs complètes | réseau, 3 clients | PASS 2026-10-06 (FAIL 1/2 avant le correctif `CharacterManager`) |
 | `rejoin-under-lag` | retour par le menu avec 150 ms, gigue 40 ms, 2 % de pertes | réseau, 3 clients | PASS 2026-10-06 |
 | `mass-rejoin` | les 3 clients tombent en même temps et reviennent tous | réseau, 3 clients | PASS 2026-10-06 |
 | `rejoin-after-expiry` | retour après la grâce : refus « La partie a déjà commencé. », session oubliée, la partie continue | réseau, 3 clients | PASS 2026-10-06 |

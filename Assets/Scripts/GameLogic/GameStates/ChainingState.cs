@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using AudioSystem;
 using Board;
 using Characters;
@@ -47,10 +46,10 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateClient();
 
-            _ = HandleChainingStateClientAsync();
+            HandleChainingStateClientAsync().Forget(); // UniTaskVoid: an exception reaches the log (a discarded Task swallowed it)
         }
 
-        private async Task HandleChainingStateClientAsync()
+        private async UniTaskVoid HandleChainingStateClientAsync()
         {
             // NET-06: snapshot the ids now. The host clears the replicated list when ITS animation ends; enumerating the
             // live NetworkList across awaits truncated the loop on any slower client (chain animations skipped).

@@ -315,6 +315,12 @@ namespace ChatSystem
                 Debug.LogError($"[CHAT] RevokeChannelServer({_chatId}, {_member}) called on a client; ignored.");
                 return;
             }
+            if (_membership.IsPublic(_chatId))
+            {
+                // Public channels (General, Server) belong to everyone: never taken away by a power.
+                Debug.LogError($"[CHAT] RevokeChannelServer({_chatId}, {_member}): public channel, ignored.\n{System.Environment.StackTrace}");
+                return;
+            }
             _membership.Revoke(_chatId, _member);
             UndiscoverChatRpc(_chatId, CharacterManager.instance.GetSafeRpcTarget(_member));
         }

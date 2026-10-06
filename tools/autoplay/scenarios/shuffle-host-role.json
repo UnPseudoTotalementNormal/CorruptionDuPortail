@@ -1,0 +1,56 @@
+{
+  "name": "shuffle-host-role",
+  "goal": "B1 regression: Luma's Mélange des cartes held by a real client, aimed at the HOST's role card (target-focus host on that power). The server re-validates from the owner's point of view: the guess step comes, no power hangs (no power.timeout), and a refused click (if any) cancels the power instead of a silent hang.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 720,
+  "seedRetries": 3,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-force-roles",
+    "croupi",
+    "-autoplay-role-holder",
+    "client",
+    "-autoplay-target-focus",
+    "host",
+    "-autoplay-target-focus-power",
+    "lange",
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-fast-fakes",
+    "-autoplay-fast-phases",
+    "Intro|Chaining",
+    "-autoplay-fast-timescale",
+    "12"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "select.role",
+      "detail": "focus=host",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "power.timeout",
+      "process": "clients",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all"
+    }
+  ]
+}

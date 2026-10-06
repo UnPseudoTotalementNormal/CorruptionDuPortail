@@ -12,7 +12,7 @@ namespace Extensions
             _canvasGroup.DOKill(true);
             _canvasGroup.interactable = _interactable;
             _canvasGroup.blocksRaycasts = _blocksRaycasts;
-            _canvasGroup.DOFade(_endAlpha, _duration);
+            _canvasGroup.DOFade(_endAlpha, _duration).SetLink(_canvasGroup.gameObject);
         }
         
         public static void DoHideGroup(this CanvasGroup _canvasGroup, float _duration = 0.5f,
@@ -21,7 +21,7 @@ namespace Extensions
             _canvasGroup.DOKill(true);
             _canvasGroup.interactable = _interactable;
             _canvasGroup.blocksRaycasts = _blocksRaycasts;
-            _canvasGroup.DOFade(0, _duration);
+            _canvasGroup.DOFade(0, _duration).SetLink(_canvasGroup.gameObject);
         }
     }
 }

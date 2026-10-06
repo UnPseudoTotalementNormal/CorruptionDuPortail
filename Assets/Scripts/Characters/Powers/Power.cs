@@ -335,7 +335,8 @@ namespace Characters.Powers
 
         private bool RejectUse(string _reason)
         {
-            Debug.LogWarning($"[POWER] rejected '{powerName}' of {ownerClientId.Value}: {_reason}");
+            Debug.LogWarning($"[POWER] rejected '{powerName}' of {ownerClientId.Value}: {_reason} " +
+                             $"(uses left {powerUseLeft.Value}, effect awaiting consume {_serverEffectAwaitingConsume}, pre-consumed {_serverPreConsumedUses})");
             return false;
         }
 
@@ -390,17 +391,25 @@ namespace Characters.Powers
             return true;
         }
 
+        /// <summary>Server: an authorized effect was refused after all (its consume will never come): drop the pairing.</summary>
+        protected void ServerCancelAuthorizedEffect()
+        {
+            _serverEffectAwaitingConsume = false;
+        }
+
         // Server: one use is consumed. Pairs with the effect that preceded it, or pre-authorizes the effect that follows.
         private bool ServerTryConsumeUse()
         {
-            if (powerUseLeft.Value <= 0)
-            {
-                return RejectUse("consume with no use left");
-            }
+            // The consume of an effect already authorized (it had a use then): the effect itself may have spent the
+            // uses since (a failed "En chaîne" power sets them to 0), so the pairing is accepted as is.
             if (_serverEffectAwaitingConsume)
             {
                 _serverEffectAwaitingConsume = false;
                 return true;
+            }
+            if (powerUseLeft.Value <= 0)
+            {
+                return RejectUse("consume with no use left");
             }
             if (!ServerOwnerCanAct(_requireAwake: true))
             {
@@ -570,7 +579,10 @@ namespace Characters.Powers
         
         protected virtual void OnUsedServer()
         {
-            powerUseLeft.Value -= 1;
+            if (powerUseLeft.Value > 0) // never below 0 (the effect may have spent the uses already)
+            {
+                powerUseLeft.Value -= 1;
+            }
             onPowerUsedServer?.Invoke();
             characterManager.AskForUpdateAllCharactersRpc();
         }

@@ -66,6 +66,12 @@ never comes): complete games run in a windowed dev build via autoplay. Full reci
 
 After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
 
+## AI working time
+
+Hooks journal every span of AI work (branch, prompt, tools, tags) into the main checkout's `.claude/timerecorder/`;
+the Unity calendar shows it. Questions or corrections about worked time ("halve the autoplay time of the last 3 days")
+go through `tools/timerecorder/tr.py` (dry run first, confirm with Poyo before `--yes`). See `tools/timerecorder/README.md`.
+
 ## Discord task board
 
 The team's task list is a **Discord forum channel** (`liste-de-taches`, one thread = one task). No Discord MCP — talk to it via the **REST API** (`https://discord.com/api/v10`) using the bot token. Credentials live in `.env` at repo root (gitignored):

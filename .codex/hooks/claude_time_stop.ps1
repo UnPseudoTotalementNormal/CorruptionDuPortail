@@ -12,7 +12,9 @@ $ErrorActionPreference = 'Stop'
 $MaxTurnSeconds = 14400   # 4h
 
 function Read-HookPayload {
-    $raw = [Console]::In.ReadToEnd()
+    # Read-HookStdin (shared helpers) decodes UTF-8; Windows PowerShell would
+    # otherwise mangle accented prompts with the console code page.
+    $raw = if (Get-Command Read-HookStdin -ErrorAction SilentlyContinue) { Read-HookStdin } else { [Console]::In.ReadToEnd() }
     if ([string]::IsNullOrWhiteSpace($raw)) {
         return [pscustomobject]@{}
     }
@@ -25,7 +27,7 @@ function Read-HookPayload {
     }
 }
 
-function Get-ProjectDirectory {
+function Get-SessionDirectory {
     param([object]$Payload)
 
     if ($Payload.cwd -and (Test-Path -LiteralPath ([string]$Payload.cwd) -PathType Container)) {
@@ -37,6 +39,22 @@ function Get-ProjectDirectory {
     }
 
     return (Get-Location).Path
+}
+
+# Sessions running in a git worktree book into the MAIN checkout's ledger (the
+# one the Unity calendar reads, next to the pause flag). Resolve-MainCheckout
+# is shared with the Claude hooks; without it, stay on the session directory.
+$sharedHelpers = Join-Path $PSScriptRoot '..\..\.claude\hooks\_timerecorder_common.ps1'
+if (Test-Path -LiteralPath $sharedHelpers) { . $sharedHelpers }
+
+function Get-ProjectDirectory {
+    param([object]$Payload)
+
+    $sessionDir = Get-SessionDirectory $Payload
+    if (Get-Command Resolve-MainCheckout -ErrorAction SilentlyContinue) {
+        return Resolve-MainCheckout $sessionDir
+    }
+    return $sessionDir
 }
 
 function Get-SafeMarkerKey {
@@ -203,6 +221,28 @@ try {
             } catch {
                 if ($attempt -eq 3) { throw }
                 Start-Sleep -Milliseconds (100 * $attempt)
+            }
+        }
+
+        # Journal the span (branch, worktree, prompt). Best effort: the ledger
+        # is already booked, a journal failure must not re-run the turn.
+        if (Get-Command Add-IntervalRecord -ErrorAction SilentlyContinue) {
+            try {
+                $promptFile = Join-Path $dir ("prompt_{0}.txt" -f $markerKey)
+                $prompt = ''
+                if (Test-Path -LiteralPath $promptFile) {
+                    $prompt = [System.IO.File]::ReadAllText($promptFile, [System.Text.Encoding]::UTF8)
+                    Remove-Item -LiteralPath $promptFile -Force -ErrorAction SilentlyContinue
+                }
+                $sessionDir = Get-SessionDirectory $payload
+                $sessionName = if ($payload.session_id) { [string]$payload.session_id } else { $markerKey }
+                $model = if ($payload.model) { [string]$payload.model } else { '' }
+                $activity = @{ model = $model; skills = @(); tools = @(); commands = @(); files = @(); tags = @() }
+                Add-IntervalRecord -Dir $dir -Json (New-IntervalRecord -Source 'codex' -Kind 'turn' -Trigger 'prompt' `
+                    -EndMs $nowMs -Seconds $seconds -Clamped ($seconds -ge $MaxTurnSeconds) -Session $sessionName `
+                    -Git (Get-GitContext $sessionDir) -SessionDir $sessionDir -Prompt $prompt -Activity $activity)
+            } catch {
+                [Console]::Error.WriteLine("[timerecorder stop hook] journal failed: $_")
             }
         }
 

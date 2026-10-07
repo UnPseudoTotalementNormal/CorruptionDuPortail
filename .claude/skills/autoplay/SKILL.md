@@ -47,7 +47,10 @@ new forced-composition option), then run. Afterwards, check in the logs that the
 - Stopping a campaign on Windows: `TaskStop` leaves the child bash / python / powershell / game processes alive: kill
   them by command line too, and check nothing is left before launching again (launchers queue, but orphans keep going).
 - Use `tools/autoplay/unityctl.sh` (wrapper of the package CLI): `compile`, `editmode`, `build`, `play-build`,
-  `last-run`. Never recompile while a PlayMode run is in flight.
+  `last-run`, `prune`, `park`, `unpark`. Never recompile while a PlayMode run is in flight.
+- **Disk.** Screenshots are JPEG; `play-build` / `play-net` first drop the images of PASSED runs older than 2 days in
+  every checkout (`unityctl.sh prune [days] [--dry-run]`; failed / unjudged runs keep everything). A worktree costs
+  ~4 GB of `Library` on top: see § 6 when its work is merged.
 
 ## 3. Pick the run mode
 
@@ -185,7 +188,7 @@ and then say which extension would cover it (and add it to the backlog table).
 1. `tools/autoplay/unityctl.sh last-run` (outcome, trace, counters, deduplicated errors).
 2. Goal-specific analysis over the state files (e.g. `python -X utf8 tools/autoplay/analyze_picker.py <run>`); write a
    small analyzer for a new kind of goal rather than reading hundreds of files.
-3. Look at **a few targeted PNGs** only (the ones an analysis flags, plus one passing example) — never all of them.
+3. Look at **a few targeted captures** (`NNN-label.jpg`, `.png` in older runs) only (the ones an analysis flags, plus one passing example) — never all of them.
 
 ## 5. Answer
 
@@ -195,3 +198,22 @@ and then say which extension would cover it (and add it to the backlog table).
   **tool problems** (fix them), and **design observations** (overlaps, layout — report only, design is owned by the
   game designer).
 - Never commit `AutoplayRuns/` or editor import noise; stage explicit files only, and only when the user says so.
+
+## 6. Work merged → park the worktree (reversible)
+
+Once the PR is merged and nothing needs the editor any more:
+
+1. Stop this worktree's headless editor (and kill leftover game / launcher processes by command line).
+2. `tools/autoplay/unityctl.sh park`: deletes `Library` + `Temp` (~4 GB). Code, branch, `Builds/` and `AutoplayRuns/`
+   stay; it refuses on the main checkout or while an editor holds the checkout. Say it in the answer.
+
+Resuming in the same conversation (the user wants more after the merge):
+
+1. Git: a squash-merged PR is finished, restart the branch from Dev (`git fetch origin Dev && git checkout -B
+   <branch> origin/Dev`; rebase any unmerged commits onto it instead of discarding them).
+2. `tools/autoplay/unityctl.sh unpark`: re-seeds `Library` from the main checkout (~20 s, no full reimport), then
+   relaunch the headless editor (`tools/HEADLESS_UNITY.md` § 1) and `unityctl.sh compile`. `play-build` on the existing
+   build works even before that.
+
+Never delete a worktree folder that contains an NTFS junction: `git worktree remove --force` deletes **through** it
+(verified: the junction's target was emptied).

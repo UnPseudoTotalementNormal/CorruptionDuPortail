@@ -12,11 +12,14 @@ namespace Unpseudo.Autoplay
 {
     /// <summary>
     /// Capture points: each one writes <c>NNN-label.json</c> (time, phase, probes, and the game's exported state under
-    /// <c>"game"</c>) and, when something is rendered, <c>NNN-label.png</c>. The state file is written in every mode —
-    /// it is the variable export; the PNG needs a rendering window (in batchmode the end of frame never comes).
+    /// <c>"game"</c>) and, when something is rendered, <c>NNN-label.jpg</c>. The state file is written in every mode —
+    /// it is the variable export; the screenshot needs a rendering window (in batchmode the end of frame never comes).
+    /// JPEG, not PNG: a full-resolution PNG weighed ~0.9 MB and a run takes up to ~230 of them.
     /// </summary>
     public sealed class AutoplayCapture : MonoBehaviour
     {
+        private const int JpegQuality = 85;
+
         [Serializable]
         private sealed class ProbeValue
         {
@@ -112,8 +115,8 @@ namespace Unpseudo.Autoplay
             try
             {
                 _texture = ScreenCapture.CaptureScreenshotAsTexture();
-                string _file = $"{_baseName}.png";
-                File.WriteAllBytes(Path.Combine(journal.OutputDirectory, _file), _texture.EncodeToPNG());
+                string _file = $"{_baseName}.jpg";
+                File.WriteAllBytes(Path.Combine(journal.OutputDirectory, _file), _texture.EncodeToJPG(JpegQuality));
                 journal.Record(AutoplayJournal.CaptureEvent, _file);
             }
             catch (Exception _exception)

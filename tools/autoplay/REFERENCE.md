@@ -154,7 +154,7 @@ capture. The runner runs every step as its own coroutine, so a failed run stops 
 - Automatic: every phase change, every power verdict (burst 0.15 / 0.5 / 1.2 s), every picker opening in
   `visual-picker` mode (burst 0 / 0.1 / 0.25 / 0.5 / 1 s + hover).
 - Each capture writes `NNN-label.json` (time, phase, probes, game state under `"game"`: characters, flags, roles,
-  powers, picker state, `frostAlpha`, pickable cards, knowledge) and `NNN-label.png` (not in batchmode / `no-png`).
+  powers, picker state, `frostAlpha`, pickable cards, knowledge) and `NNN-label.jpg` (JPEG q85; not in batchmode / `no-png`).
 - Recordings: `rec-NNN-label/` with `f###.png`, `tracks.csv`, `manifest.json`. Tracks: `stateIndex`, `frost`,
   `lifted`, `card0..9` transforms (`.x .y .z` …).
 

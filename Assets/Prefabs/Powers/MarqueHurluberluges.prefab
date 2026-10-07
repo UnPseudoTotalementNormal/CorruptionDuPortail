@@ -689,7 +689,7 @@ MonoBehaviour:
       byte0508: 0
       byte0509: 0
   power3DObjectPrefab: {fileID: 0}
-  maxWaitTime: 0
+  maxWaitTime: 60
   isPassive: 1
   hideFromRoleCard: 0
   hasToBeAwakened: 0

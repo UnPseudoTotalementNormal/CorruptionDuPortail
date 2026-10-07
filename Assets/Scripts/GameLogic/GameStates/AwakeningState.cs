@@ -296,11 +296,14 @@ namespace GameLogic.GameStates
             {
                 var _fakeAwakenedCharacters = CharacterQuery.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
+                // Per-frame chance from a per-SECOND rate, so a fake role's wait no longer depends on the host's
+                // framerate (it was a flat 0.00045 per frame: ~37 s on average at 60 fps, ~4 s at 500 fps).
+                float _sleepChance = FakeSleepChance(Time.deltaTime);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
                     // [DETERMINISM-QUARANTINE §3b B] Frame-timed RNG: call count depends on framerate. Out of scope for Phase 0 / Wave 1 — needs IGameClock + seed isolation (Wave). MUST NOT feed any golden. Proven isolated by AwakeningStateIsolationTests (no WinningCondition reads awakening state).
                     float _r = Random.Range(0.0f, 1.0f);
-                    if (_r < 0.00045f)
+                    if (_r < _sleepChance)
                     {
                         _fakeAwakenedCharacter.SleepCharacterServerRpc();
                     }
@@ -313,6 +316,20 @@ namespace GameLogic.GameStates
             }
             
             GoToNextAwakeLayer();
+        }
+
+        // Rate at which an awake fake role goes back to sleep once a fifth of its layer has elapsed: the old
+        // per-frame chance (0.00045) at the 60 fps it was tuned for, so the average wait is unchanged there.
+        public const float FAKE_SLEEP_RATE_PER_SECOND = 0.00045f * 60f;
+
+        /// <summary>Chance that an awake fake role falls asleep during a frame of <paramref name="_deltaTime"/> seconds.</summary>
+        public static float FakeSleepChance(float _deltaTime)
+        {
+            if (_deltaTime <= 0f)
+            {
+                return 0f;
+            }
+            return 1f - Mathf.Exp(-FAKE_SLEEP_RATE_PER_SECOND * _deltaTime);
         }
 
         private void GoToNextAwakeLayer()

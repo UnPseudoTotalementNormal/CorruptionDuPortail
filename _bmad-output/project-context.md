@@ -98,6 +98,12 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **A power copy (Ugës steal, Luma copy) is despawned when spent**: every server hook it subscribed (game-state events)
   must be removed in `OnNetworkDespawn`, else it runs on a dead object (NetworkVariables read as defaults: chat id 0 =
   General revoked from players). Public chat channels are never revocable (`RevokeChannelServer` guard).
+- **A Marque d'Hurluberluges copy obeys its Marque's budget** (none the night of the theft, then one per night):
+  `Power.marqueSourceId` points to the granting Marque, whose replicated `copiesLocked` gates `CanUse` and the
+  server-side authorization. A new path that grants powers FROM a Marque copy (like a stolen Réincarnation's grants)
+  must copy `marqueSourceId` onto them, else they escape the one-per-night rule. Repro: autoplay `copies-uges-client`.
+- `role.powers` is a projection of the power registry by `ownerClientId` (NET-08): a test that also adds a power to it
+  by hand lists it twice (Ugës then steals it twice).
 - **Avatars are keyed by SEAT**, NGO-owned by the seat's current connection: after a rejoin the transport id changes,
   the seat does not (`AvatarManager.SpawnAvatar(seat, connection)`, ring order = the game's seats, not spawn order).
 - **Unity Transport is embedded and patched** (`Packages/com.unity.transport`, `[CdP patch]` in `UDPNetworkInterface`):

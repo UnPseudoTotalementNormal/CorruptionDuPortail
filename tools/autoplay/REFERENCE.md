@@ -193,7 +193,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `full-game-victory` | a whole net game to its victory (no day limit), 3 chatting clients: every process reaches `GameEndingState`, no desync, no error |
 | `full-game-ending` | the same, then 10 s on the ending screen: same winners on every process, board = the winners' cards, winners match their faction (`analyze_ending.py`) |
 | `last-anomaly-leaves` | the other anomaly chained at the first vote, then the real client holding the last anomaly leaves and never comes back: grace expiry chains it, the leave victory re-check ends the game (chosen win) and the game STAYS on its ending screen (it wrapped back to the lobby before the 2026-10-06 fix) |
-| `rejoin-while-chained` | a player chained on day 1 drops and tries to rejoin: as specified, no seat reserved, refused with the game-in-progress wording, button hidden, the game goes on |
+| `rejoin-while-chained` | a player chained on day 1 drops and rejoins through the menu: seat reserved like anyone's, taken back still chained, counted again at the table (decision 2026-10-07, D1) |
 | `rejoin-at-chaining` | a client drops as the first chaining starts and rejoins 3 s later through the menu: seat intact, no error, no desync |
 | `idle-table` | nobody acts (no power, every vote skipped) for 4 days: every phase ends on its own timer, no watchdog alert, no error |
 | `full-table-lag-victory` | host + 7 real clients under 100 ms / 30 ms / 1 % loss, chatting, play a whole game and its ending screen: same winners everywhere, no desync on 8 processes |

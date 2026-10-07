@@ -84,6 +84,56 @@ namespace Tests.PlayMode.Desingleton
             Assert.IsFalse(_seatCharacter.isChained.Value, "A taken-back seat must not be chained when the grace delay ends.");
         }
 
+        // Owner decision 2026-10-07 (D1): a chained player still votes, so a drop must not cost that for good. Their seat
+        // is reserved like anyone's, the token takes it back, and they stay chained (the grace expiry chains nothing).
+        [UnityTest]
+        public IEnumerator ChainedClient_Drops_SeatReserved_RejoinsStillChained()
+        {
+            ulong _seat = ClientNm.LocalClientId;
+            yield return SpawnRealCharacterForClient(_seat, new Role { roleName = "TestRole-ChainedRejoiner" });
+            Character _seatCharacter = LastSpawnedCharacter;
+            HostCm.Seats.IssueToken(_seat, "chained-rejoin-token");
+            SetServerIndex(1); // mid-game
+            yield return WaitForRemoteTraceCount(RemoteIndexTrace.Count + 1);
+            _seatCharacter.ChainCharacterServer();
+            Assert.IsTrue(_seatCharacter.isChained.Value, "Precondition: the seat is chained before the drop.");
+
+            bool _prevIgnore = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true; // documented UTP loopback teardown noise on the drop
+            try
+            {
+                ClientNm.Shutdown();
+                yield return NetworkTestHelper.WaitUntilOrTimeout(() => HostGm.IsSeatReserved(_seat), 5f,
+                    "A chained player's seat must be reserved too when they drop.");
+                yield return NetworkTestHelper.WaitUntilOrTimeout(() => !ClientNm.ShutdownInProgress && !ClientNm.IsListening, 5f,
+                    "The client NetworkManager never finished shutting down.");
+                Assert.IsTrue(HostGm.HasClientLeft(_seat), "While away the seat counts as left (skipped, no vote).");
+
+                Assert.IsTrue(ClientNm.StartClient(), "The client could not start again.");
+                yield return NetworkTestHelper.WaitUntilOrTimeout(
+                    () => ClientNm.IsConnectedClient && CharacterManager.For(ClientNm) != null && GameManager.For(ClientNm) != null, 10f,
+                    "The reconnecting client never got its replicas.");
+            }
+            finally
+            {
+                LogAssert.ignoreFailingMessages = _prevIgnore;
+            }
+
+            ulong _connection = ClientNm.LocalClientId;
+            Assert.IsTrue(HostGm.TryClaimReservedSeat("chained-rejoin-token", _connection, out ulong _claimed),
+                "The chained seat's token must open it.");
+            Assert.AreEqual(_seat, _claimed);
+            HostGm.CompleteRejoin(_connection);
+
+            Assert.IsFalse(HostGm.IsSeatReserved(_seat), "The seat is no longer reserved.");
+            Assert.IsFalse(HostGm.HasClientLeft(_seat), "Back at the table: counted again, votes again.");
+            Assert.IsTrue(_seatCharacter.isChained.Value, "Taking the seat back does not unchain it.");
+
+            HostGm.ExpireReservedSeats(Time.realtimeSinceStartupAsDouble + HostGm.RejoinGraceSeconds + 1.0);
+            yield return null;
+            Assert.IsTrue(_seatCharacter.isChained.Value, "Still chained, nothing changed by the grace timer.");
+        }
+
         // A player relaunches faster than the host notices his crash: his old connection still holds the seat. The
         // token proves it is him: the old connection is dropped (the seat gets reserved) and the new one claims it.
         [UnityTest]

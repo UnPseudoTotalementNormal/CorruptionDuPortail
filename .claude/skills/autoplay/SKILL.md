@@ -147,7 +147,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `full-game-ending` | puis 10 s sur l'écran de fin : mêmes vainqueurs partout, plateau = vainqueurs (`analyze_ending.py`) | réseau, 3 clients | PASS 2026-10-06 (seeds 302-304) |
 | `last-anomaly-leaves` | la dernière anomalie quitte : grâce expirée → victoire des élus, la partie RESTE sur l'écran de fin | réseau, 3 clients | PASS 2026-10-06 (FAIL avant le correctif N2 : retour au lobby) |
 | `last-anomaly-leaves-recap` | même chose, grâce expirée PENDANT le récap du vote (course N2 forcée) | réseau, 3 clients | PASS 2026-10-06 |
-| `rejoin-while-chained` | un enchaîné qui se déconnecte est refusé au retour (spec-rejoin-01) | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-while-chained` | un enchaîné qui se déconnecte reprend son siège (toujours enchaîné, revote) | réseau, 3 clients | PASS 2026-10-07 ×2 (après le correctif D1 ; refus avant) |
 | `rejoin-at-chaining` | déconnexion au début de l'enchaînement puis retour | réseau, 3 clients | PASS 2026-10-06 (FAIL avant N4) |
 | `idle-table` | personne n'agit 4 jours : chaque phase finit sur son minuteur | réseau, 2 clients | PASS 2026-10-06 |
 | `full-table-lag-victory` | hôte + 7 clients, 100 ms / 1 % de pertes, partie complète + écran de fin | réseau, 7 clients | PASS 2026-10-06 |

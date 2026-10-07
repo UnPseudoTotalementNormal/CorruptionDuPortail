@@ -1,6 +1,6 @@
 {
   "name": "rejoin-while-chained",
-  "goal": "A real player chained at the first vote drops at the next awakening and tries the menu's rejoin button: as specified (spec-rejoin-01, 'already chained player drops: nothing to reserve'), no seat is reserved and the rejoin is refused with the game-in-progress wording, the saved session is dropped (button hidden); the game goes on without him, no desync, no error. client1 connects first (the others wait 4 s) so it holds seat 1, which role-holder seat:1 targets; every voter votes that role.",
+  "goal": "A real player chained at the first vote drops at the next awakening and clicks the menu's rejoin button 5 s later: as decided 2026-10-07 (D1), their seat is reserved like anyone's, they take it back still chained (role, icons, knowledge, chat as before, analyze_rejoin) and count again at the table (chained-but-present players vote); no desync, no error. client1 connects first (the others wait 4 s) so it is seat 1 (role-holder seat:1); every voter votes that role.",
   "mode": "net",
   "clients": 3,
   "seed": 610,
@@ -60,14 +60,6 @@
       "type": "event",
       "kind": "seat.reserved",
       "process": "host",
-      "min": 0,
-      "max": 0
-    },
-    {
-      "type": "event",
-      "kind": "rejoin.refused",
-      "detail": "déjà commencé.*button=hidden",
-      "process": "clients",
       "min": 1,
       "max": 1
     },
@@ -75,8 +67,27 @@
       "type": "event",
       "kind": "rejoin.seat",
       "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "left=False",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "rejoin.refused",
+      "process": "clients",
       "min": 0,
       "max": 0
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"
     },
     {
       "type": "desync",

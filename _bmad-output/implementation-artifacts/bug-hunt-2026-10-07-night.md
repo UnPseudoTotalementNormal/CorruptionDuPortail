@@ -183,7 +183,7 @@ purpose (not proven, design, or out of scope) · **Tool** = autoplay / environme
 
 | # | What | Status |
 |---|---|---|
-| D1 | A chained player who disconnects can never rejoin (spec-rejoin-01: "nothing to reserve"), so they lose their vote for good although chained-but-present players may vote | **Noted** (spec behaviour, `rejoin-while-chained` checks it) |
+| D1 | A chained player who disconnects can never rejoin (spec-rejoin-01: "nothing to reserve"), so they lose their vote for good although chained-but-present players may vote | **Fixed 2026-10-07** (Poyo: fix it): the chained leaver's seat is reserved too, they rejoin still chained; `rejoin-while-chained` now checks the rejoin, PlayMode `ChainedClient_Drops_SeatReserved_RejoinsStillChained` |
 | O1 | The awakening's "Arrêter l'éveil" button stays drawn (greyed) in every phase, ending screen included | **Noted** |
 | O2 | Host loss is noticed by clients after ~14-15 s (liveness timeout 15 s, by design) | **Noted** |
 | O3 | Real input: role-picker cards off screen at 16:9; the vote's Skip button out of the seated reticle's reach (known since 10-05) | **Noted** |

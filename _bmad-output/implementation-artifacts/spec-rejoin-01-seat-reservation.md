@@ -40,7 +40,7 @@ transport ignition); pure bookkeeping in Domain (`SeatReservations`), clock inje
 | Mage chained while away | portal step | step skipped | N/A |
 | Delay expires | 120 s later | instant chain + victory re-check (last anomaly → élus win) | N/A |
 | Drop in lobby | lobby | character removed (unchanged) | N/A |
-| Already chained player drops | mid-game | nothing to reserve, state unblocked | N/A |
+| Already chained player drops | mid-game | seat reserved too (owner decision 2026-10-07: chained players still vote), state unblocked; may rejoin still chained; grace expiry chains nothing | N/A |
 
 </frozen-after-approval>
 

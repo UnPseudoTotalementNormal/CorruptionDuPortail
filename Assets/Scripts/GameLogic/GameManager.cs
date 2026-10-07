@@ -908,18 +908,18 @@ namespace GameLogic
                 // chain -> victory re-check) once the delay is over, unless he came back.
                 Character _leaver = characterManager.GetCharacters()
                     .FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
-                if (_leaver != null && !_leaver.isChained.Value)
+                if (_leaver != null)
                 {
+                    // An already chained player gets their seat reserved too (owner decision 2026-10-07): chained but
+                    // present, they still vote, so a drop must not cost them that for good. Their grace expiry has nothing
+                    // left to chain (ExpireReservedSeats skips chained seats, no victory re-check).
                     _reservedSeats.Reserve(_clientId, Time.realtimeSinceStartupAsDouble, RejoinGraceSeconds);
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game — seat reserved for {RejoinGraceSeconds:0} s (not chained yet).");
+                    Debug.Log(_leaver.isChained.Value
+                        ? $"[LEAVE] Player {_clientId} left mid-game, already chained — seat reserved for {RejoinGraceSeconds:0} s (may rejoin)."
+                        : $"[LEAVE] Player {_clientId} left mid-game — seat reserved for {RejoinGraceSeconds:0} s (not chained yet).");
 
                     // Unblock whatever state was waiting on this specific player so the night/vote/portal cannot
                     // hang on a seat that is away.
-                    UnblockCurrentStateAfterLeave(_clientId);
-                }
-                else if (_leaver != null)
-                {
-                    Debug.Log($"[LEAVE] Player {_clientId} left mid-game, already chained — nothing to reserve.");
                     UnblockCurrentStateAfterLeave(_clientId);
                 }
                 else

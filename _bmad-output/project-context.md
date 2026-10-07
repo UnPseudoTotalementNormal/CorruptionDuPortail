@@ -79,7 +79,7 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **`DisconnectReason` non-empty ≠ server reason:** every client transport drop yields a `"[Disconnect Event]…"` placeholder. Use `HasServerReason`.
 - **`CharacterManager.GetCharacters()` defaults `triggerUpdate: true`** and re-raises `onCharactersListUpdated` at end of frame. Calling it from that event's handler = per-frame loop. Passive readers: `GetCharacters(false)`.
 - `Character.isEliminated` is quasi-deprecated: build "player out" on chaining.
-- Quit mid-game = seat RESERVED for `GameValues.REJOIN_GRACE_SECONDS` (shown left, skipped at night, no vote; never wait on him), then chained instantly when the delay expires; last anomaly chained → élus win.
+- Quit mid-game = seat RESERVED for `GameValues.REJOIN_GRACE_SECONDS` (shown left, skipped at night, no vote; never wait on them), then chained instantly when the delay expires; last anomaly chained → élus win. An already chained player's seat is reserved too (they may rejoin, still chained; the expiry chains nothing).
 - **Rejoin = seat alias.** A rejoined player keeps his ORIGINAL clientId (the seat) everywhere in game state; only the
   transport id is new. Server: `CharacterManager.SeatOfTransport(id)` for every inbound sender id and every
   `NetworkManager.ConnectedClientsIds` entry,

@@ -1,5 +1,6 @@
 #region
 
+using System.Collections.Generic;
 using System.Linq;
 using Board.UI.CharacterBar;
 using Characters;
@@ -76,6 +77,9 @@ namespace UI.RoleCard
 
         [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
         [SerializeField] private PortraitTable portraitTable;
+
+        [Tooltip("The designer's per-role passive lines (the \"Passif\" block). A role without an entry shows its passive powers' descriptions. Wire the RoleCardTexts asset.")]
+        [SerializeField] private RoleCardTexts roleCardTexts;
 
         private const float PortraitCardWidth = 250f; // the canonical RoleCardElement face used for the portrait
 
@@ -243,14 +247,16 @@ namespace UI.RoleCard
             hasDescription: !string.IsNullOrEmpty(p.powerDescription.ToString()));
 
         // One bulleted row per passive so distinct passives read as a scannable list instead of a run-on
-        // paragraph. Membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
+        // paragraph. The designer's per-role lines win (RoleCardTexts); otherwise one row per passive power, whose
+        // membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
         private void BuildPassive(Role role)
         {
             _passiveList.Clear();
-            foreach (var power in role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow))
+            IEnumerable<string> lines = roleCardTexts != null && roleCardTexts.TryGetPassives(role.roleID, out var authored)
+                ? authored
+                : role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow).Select(p => p.powerDescription.ToString());
+            foreach (var desc in lines)
             {
-                var desc = power.powerDescription.ToString();
-
                 var row = new VisualElement();
                 row.AddToClassList(PassiveRowClass);
 

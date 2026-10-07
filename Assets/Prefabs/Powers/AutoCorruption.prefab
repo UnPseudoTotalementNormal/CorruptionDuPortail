@@ -142,63 +142,63 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 51
+    utf8LengthInBytes: 21
     bytes:
       offset0000:
-        byte0000: 76
-        byte0001: 111
-        byte0002: 114
-        byte0003: 115
-        byte0004: 113
-        byte0005: 117
-        byte0006: 101
-        byte0007: 32
-        byte0008: 108
-        byte0009: 97
-        byte0010: 32
-        byte0011: 112
-        byte0012: 97
-        byte0013: 114
-        byte0014: 116
-        byte0015: 105
-      offset0016:
-        byte0000: 101
-        byte0001: 32
-        byte0002: 100
-        byte0003: 195
-        byte0004: 169
-        byte0005: 98
-        byte0006: 117
-        byte0007: 116
-        byte0008: 101
-        byte0009: 44
-        byte0010: 32
-        byte0011: 108
-        byte0012: 101
-        byte0013: 32
-        byte0014: 106
-        byte0015: 111
-      offset0032:
-        byte0000: 117
-        byte0001: 101
-        byte0002: 117
-        byte0003: 114
-        byte0004: 32
-        byte0005: 115
-        byte0006: 39
-        byte0007: 97
-        byte0008: 117
-        byte0009: 116
-        byte0010: 111
+        byte0000: 73
+        byte0001: 108
+        byte0002: 32
+        byte0003: 99
+        byte0004: 111
+        byte0005: 109
+        byte0006: 109
+        byte0007: 101
+        byte0008: 110
+        byte0009: 99
+        byte0010: 101
         byte0011: 32
         byte0012: 99
         byte0013: 111
         byte0014: 114
         byte0015: 114
-      offset0048:
+      offset0016:
         byte0000: 111
         byte0001: 109
         byte0002: 112
+        byte0003: 117
+        byte0004: 46
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0032:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
+        byte0003: 0
+        byte0004: 0
+        byte0005: 0
+        byte0006: 0
+        byte0007: 0
+        byte0008: 0
+        byte0009: 0
+        byte0010: 0
+        byte0011: 0
+        byte0012: 0
+        byte0013: 0
+        byte0014: 0
+        byte0015: 0
+      offset0048:
+        byte0000: 0
+        byte0001: 0
+        byte0002: 0
         byte0003: 0
         byte0004: 0
         byte0005: 0

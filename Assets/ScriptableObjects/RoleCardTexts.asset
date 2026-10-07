@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1afa8432ab7a39d4a95edd9f3bdc170c, type: 3}
+  m_Name: RoleCardTexts
+  m_EditorClassIdentifier: Game::Characters.RoleCardTexts
+  passives:
+    _serializedList:
+    - Key: 3307
+      Value:
+        lines:
+        - Il commence corrompu.
+        - Les <i>Anomalies</i> se connaissent et communiquent entre elles.
+        - "Les <i>Anomalies</i> connaissent autant de <i>r\xF4les factices</i> que
+          leur nombre dans la partie."
+    - Key: 1042
+      Value:
+        lines:
+        - Il commence corrompu.
+        - Les <i>Anomalies</i> se connaissent et communiquent entre elles.
+        - "Les <i>Anomalies</i> connaissent autant de <i>r\xF4les factices</i> que
+          leur nombre dans la partie."
+    - Key: 3917
+      Value:
+        lines:
+        - "Le robot est constamment <i>pirat\xE9</i>."
+        - Il peut envoyer un message anonyme par nuit.
+    - Key: 5555
+      Value:
+        lines:
+        - "Il commence avec une balise sur lui-m\xEAme."
+        - Il sait quand le <i>Robot</i> est corrompu.
+    - Key: 6592
+      Value:
+        lines:
+        - "Elle apprend quels r\xF4les l'ont cibl\xE9e cette nuit."
+    - Key: 5871
+      Value:
+        lines:
+        - "Il conna\xEEt l'\xE9tat de corruption et de soin des diff\xE9rents \xE9lus."
+    - Key: 3920
+      Value:
+        lines:
+        - "Elle conna\xEEt l'\xE9tat de corruption et de soin des diff\xE9rents \xE9lus."
+    - Key: 2048
+      Value:
+        lines:
+        - "Il commence la partie corrompu et conna\xEEt son propre \xE9tat de corruption."

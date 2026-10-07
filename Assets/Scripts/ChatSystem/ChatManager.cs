@@ -1,5 +1,6 @@
 #region
 
+using GameLogic;
 using System;
 using System.Collections.Generic;
 using AudioSystem;
@@ -34,6 +35,10 @@ namespace ChatSystem
         // POCO. This adapter still owns the discovered-id set, the active-channel state, every RPC, and
         // the clientId>=100 bot interception — it only delegates the *decisions*.
         private readonly CorruptionDuPortail.Domain.ChatChannelPolicy _policy = new();
+
+        // NET-11: server-side channel membership (general + server channels are implicit for everyone).
+        private readonly CorruptionDuPortail.Domain.ChatMembership _membership =
+            new((int)ChatWindowIDs.General, (int)ChatWindowIDs.Server);
 
         private List<ChatWindow> chatWindows = new();
         public HashSet<int> discoveredChatIds = new();
@@ -79,8 +84,28 @@ namespace ChatSystem
             };
         }
 
+        // Rejoin 02: a player who reconnects starts with no channel list; announce his channels again. The game
+        // manager may spawn after this one, so the server hooks it on the first frame it exists.
+        private GameManager _rejoinSource;
+
+        private void Update()
+        {
+            if (_rejoinSource == null && IsServer && GameManager.instance != null)
+            {
+                _rejoinSource = GameManager.instance;
+                _rejoinSource.onPlayerRejoinedServer += OnPlayerRejoinedServer;
+            }
+        }
+
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection) => ResendChannelsServer(_seat);
+
         public override void OnNetworkDespawn()
         {
+            if (_rejoinSource != null)
+            {
+                _rejoinSource.onPlayerRejoinedServer -= OnPlayerRejoinedServer;
+                _rejoinSource = null;
+            }
             if (instance == this)
             {
                 instance = null;
@@ -88,6 +113,12 @@ namespace ChatSystem
 
             base.OnNetworkDespawn();
         }
+
+        /// <summary>Server-side, read-only: private channels the player belongs to (autoplay bots, tests).</summary>
+        public IReadOnlyList<int> ServerChannelsOf(ulong _member) => _membership.ChannelsOf(_member);
+
+        /// <summary>Server-side, read-only: members of a private channel (autoplay checks, tests).</summary>
+        public IReadOnlyList<ulong> ServerMembersOf(int _chatId) => _membership.MembersOf(_chatId);
 
         public void ChangeActiveChat(int _chatId)
         {
@@ -174,13 +205,133 @@ namespace ChatSystem
             return _policy.ResolveWindowName(_chatId, _hasOverride, _overrideName, _enumName);
         }
         
+        // NET-11: the server decides who reads a private channel. The sender id is the transport's, never the one
+        // written in the message (only the host may speak for a simulated bot or the server sentinel), the sender
+        // must be a member, and the message goes ONLY to the members known right now. A member's discovery was sent
+        // on this same object before, so reliable ordered delivery guarantees its client knows the channel first.
         [Rpc(SendTo.Server)]
-        public void SendChatMessageServerRpc(ChatMessage _chatMessage)
+        public void SendChatMessageServerRpc(ChatMessage _chatMessage, RpcParams _params = default)
         {
-            ReceiveChatMessageRpc(_chatMessage);
-            OnMessageSentRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_chatMessage.senderClientId));
+            if (_chatMessage == null)
+            {
+                return;
+            }
+
+            ulong _transportSender = _params.Receive.SenderClientId;
+            bool _fromServer = _transportSender == NetworkManager.ServerClientId;
+            if (!_fromServer)
+            {
+                // Rejoin 02: a rejoined player's new connection writes as his seat.
+                _chatMessage.senderClientId = CharacterManager.instance != null
+                    ? CharacterManager.instance.SeatOfTransport(_transportSender)
+                    : _transportSender;
+                if (_chatMessage.chatId == (int)ChatWindowIDs.Server)
+                {
+                    Debug.LogWarning($"[CHAT] Client {_transportSender} tried to write in the read-only server channel.");
+                    return;
+                }
+            }
+
+            bool _isSentinel = _fromServer && _chatMessage.senderClientId == SERVER_CLIENT_ID;
+            if (!_isSentinel && !_membership.IsMember(_chatMessage.chatId, _chatMessage.senderClientId))
+            {
+                Debug.LogWarning($"[CHAT] {_chatMessage.senderClientId} is not a member of channel {_chatMessage.chatId}; message dropped.");
+                return;
+            }
+
+            if (_membership.IsPublic(_chatMessage.chatId))
+            {
+                ReceiveChatMessageRpc(_chatMessage);
+            }
+            else
+            {
+                foreach (ulong _recipient in RoutedRecipients(_chatMessage.chatId))
+                {
+                    ReceiveRoutedChatMessageRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_recipient));
+                }
+            }
+
+            if (_chatMessage.senderClientId != SERVER_CLIENT_ID)
+            {
+                OnMessageSentRpc(_chatMessage, CharacterManager.instance.GetSafeRpcTarget(_chatMessage.senderClientId));
+            }
         }
-        
+
+        // One delivery per real connection: simulated bots (>= 100) are all served by the host, which must receive a
+        // message once even when itself and several of its bots are members. Departed clients are skipped.
+        private List<ulong> RoutedRecipients(int _chatId)
+        {
+            var _recipients = new List<ulong>();
+            foreach (ulong _member in _membership.MembersOf(_chatId))
+            {
+                ulong _connection = _member >= 100
+                    ? NetworkManager.ServerClientId
+                    : (CharacterManager.instance != null ? CharacterManager.instance.TransportOfSeat(_member) : _member);
+                if (_recipients.Contains(_connection))
+                {
+                    continue;
+                }
+                if (_connection != NetworkManager.ServerClientId && !NetworkManager.ConnectedClients.ContainsKey(_connection))
+                {
+                    continue;
+                }
+                _recipients.Add(_connection);
+            }
+            return _recipients;
+        }
+
+        /// <summary>Rejoin 02, server-only: announces again every channel <paramref name="_member"/> belongs to (his client
+        /// reconnected and starts with no channel list).</summary>
+        public void ResendChannelsServer(ulong _member)
+        {
+            if (!IsServer || CharacterManager.instance == null)
+            {
+                return;
+            }
+            foreach (int _chatId in _membership.ChannelsOf(_member))
+            {
+                DiscoverChatRpc(_chatId, default, CharacterManager.instance.GetSafeRpcTarget(_member));
+            }
+        }
+
+        /// <summary>NET-11: server-only. Makes <paramref name="_member"/> a member of a private channel and tells its client.</summary>
+        public void GrantChannelServer(int _chatId, string _overrideName, ulong _member)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError($"[CHAT] GrantChannelServer({_chatId}, {_member}) called on a client; ignored.");
+                return;
+            }
+            _membership.Grant(_chatId, _member);
+            DiscoverChatRpc(_chatId, new FixedString64Bytes(_overrideName ?? string.Empty),
+                CharacterManager.instance.GetSafeRpcTarget(_member));
+        }
+
+        /// <summary>NET-11: server-only. Removes <paramref name="_member"/> from a private channel and tells its client.</summary>
+        public void RevokeChannelServer(int _chatId, ulong _member)
+        {
+            if (!IsServer)
+            {
+                Debug.LogError($"[CHAT] RevokeChannelServer({_chatId}, {_member}) called on a client; ignored.");
+                return;
+            }
+            if (_membership.IsPublic(_chatId))
+            {
+                // Public channels (General, Server) belong to everyone: never taken away by a power.
+                Debug.LogError($"[CHAT] RevokeChannelServer({_chatId}, {_member}): public channel, ignored.\n{System.Environment.StackTrace}");
+                return;
+            }
+            _membership.Revoke(_chatId, _member);
+            // Session teardown (end of game, host leaving): a power's despawn hook can revoke after the scene's
+            // CharacterManager (or this manager) despawned: nobody is left to tell (it threw a NullReferenceException).
+            CharacterManager _characters = CharacterManager.instance;
+            if (_characters == null || !IsSpawned)
+            {
+                return;
+            }
+            UndiscoverChatRpc(_chatId, _characters.GetSafeRpcTarget(_member));
+        }
+
         [Rpc(SendTo.SpecifiedInParams)]
         public void OnMessageSentRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
         {
@@ -195,6 +346,16 @@ namespace ChatSystem
                 return;
             }
             
+            ChatWindow _window = GetChatWindow(_chatMessage.chatId);
+            _window?.AddChatMessage(_chatMessage);
+            onChatMessageReceived?.Invoke(_chatMessage);
+        }
+
+        // NET-11: a private message the server routed to this client because it is a member. Never filtered on the
+        // local channel list: the server's membership is the truth (the discovery always arrives first anyway).
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void ReceiveRoutedChatMessageRpc(ChatMessage _chatMessage, RpcParams _rpcParams = default)
+        {
             ChatWindow _window = GetChatWindow(_chatMessage.chatId);
             _window?.AddChatMessage(_chatMessage);
             onChatMessageReceived?.Invoke(_chatMessage);

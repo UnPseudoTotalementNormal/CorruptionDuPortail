@@ -1,0 +1,83 @@
+{
+  "name": "last-anomaly-leaves",
+  "goal": "Leave policy, last anomaly: Abyss is chained at the first vote (every bot votes it), then the real client holding the Mage Occulte (the last anomaly) leaves at the next awakening and never comes back. Once its 10 s grace expires its seat is chained and the out-of-band victory check ends the game: the chosen win, on every remaining screen (ending checked by analyze_ending). client1 connects first so it holds seat 1, which role-holder seat:1 targets.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 640,
+  "seedRetries": 4,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-force-roles",
+    "Occulte",
+    "-autoplay-role-holder",
+    "seat:1",
+    "-autoplay-vote-focus",
+    "Extension",
+    "-autoplay-vote-probability",
+    "1",
+    "-autoplay-rejoin-grace",
+    "10",
+    "-autoplay-fast-fakes",
+    "-autoplay-linger-end",
+    "8",
+    "-autoplay-net-log"
+  ],
+  "clientArgs": [
+    "-autoplay-connect-delay",
+    "4"
+  ],
+  "client1Args": [
+    "-autoplay-connect-delay",
+    "0",
+    "-autoplay-quit-at",
+    "AwakeningState day=2"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "roster",
+      "match": "^1 Va'ahl.*chained=True",
+      "min": 1
+    },
+    {
+      "type": "roster",
+      "match": "Abyss.*chained=True",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "GameEndingState",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "LobbyState day=[2-9]",
+      "process": "all",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_ending.py {run}"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

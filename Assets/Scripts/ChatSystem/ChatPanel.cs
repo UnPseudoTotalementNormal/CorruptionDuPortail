@@ -108,13 +108,19 @@ namespace ChatSystem
             {
                 ChatManager.instance.ChangeActiveChat(_chatId);
             };
-            ChatManager.instance.onChatUndiscovered += (int _undiscoveredId) =>
+            void OnUndiscovered(int _undiscoveredId)
             {
-                if (_undiscoveredId == _chatId && _newButton != null)
+                if (_undiscoveredId != _chatId)
+                {
+                    return;
+                }
+                ChatManager.instance.onChatUndiscovered -= OnUndiscovered; // one button, one subscription
+                if (_newButton != null)
                 {
                     Destroy(_newButton.gameObject);
                 }
-            };
+            }
+            ChatManager.instance.onChatUndiscovered += OnUndiscovered;
             _newButton.GetComponentInChildren<ChatNotificationComponent>().chatId = _chatId;
         }
 
@@ -170,7 +176,9 @@ namespace ChatSystem
             
             string _senderName = _chatMessage.senderClientId == GameValues.CHAT_SERVER_CLIENT_ID 
                 ? "Server" 
-                : LobbyPlayerInfoHolder.instance.GetPlayerInfo(_chatMessage.senderClientId).playerName.ToString();
+                : LobbyPlayerInfoHolder.instance != null
+                    ? LobbyPlayerInfoHolder.instance.GetDisplayPseudo(_chatMessage.senderClientId)
+                    : CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
             
             TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
 

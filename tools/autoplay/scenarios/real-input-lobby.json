@@ -1,0 +1,113 @@
+{
+  "name": "real-input-lobby",
+  "goal": "Lobby by mouse on the tablet (UI Toolkit in a RenderTexture, -autoplay-lobby-ui; game actions stay direct): the host clicks '★ Preset classique', scrolls the role list with the wheel and clicks Imposé '+' for two roles outside the preset's forced set, every real client and then the host click 'Prêt', and LobbyState.TryAutoStart starts the game (no ForceStart) with both roles dealt. After the preset, a role card face on the tablet opens the role detail overlay (screen-space UI Toolkit) and its close button closes it.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 777,
+  "timescale": 4,
+  "timeout": 900,
+  "args": [
+    "-autoplay-lobby-ui",
+    "-autoplay-force-roles",
+    "Imposteur,Orpheline",
+    "-autoplay-fast-fakes",
+    "-autoplay-max-days",
+    "1"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "lobby.role-card",
+      "detail": "^open ok",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "lobby.role-card",
+      "detail": "^close ok",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "lobby.preset",
+      "detail": "via=click",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "lobby.force",
+      "detail": "via=(click|already)",
+      "process": "host",
+      "min": 2
+    },
+    {
+      "type": "event",
+      "kind": "lobby.force",
+      "detail": "via=direct",
+      "process": "host",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "lobby.ready",
+      "detail": "via=click",
+      "process": "all",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "lobby.autostart",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "roles.assigned",
+      "detail": "Imposteur",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "roles.assigned",
+      "detail": "Orpheline",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "input.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

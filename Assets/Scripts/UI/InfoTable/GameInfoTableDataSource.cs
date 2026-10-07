@@ -42,11 +42,14 @@ namespace UI.InfoTable
             var result = new List<InfoTablePlayer>();
             if (characterManager == null) return result;
 
+            var rows = new List<Character>();
             foreach (Character c in characterManager.GetCharacters(false))
             {
                 if (c == null || c.role == null || c.isFake) continue;
                 result.Add(new InfoTablePlayer(c.ownerClientId.Value, c.GetOwnerPseudo()));
+                rows.Add(c);
             }
+            TrackNameSources(rows);
             return result;
         }
 
@@ -77,5 +80,43 @@ namespace UI.InfoTable
                 .FirstOrDefault(x => x != null && x.ownerClientId.Value == clientId);
             return c != null && c.role != null ? c.role.roleName.ToString() : null;
         }
+
+        // ---- NET-03: pseudo refresh without a rebuild ----
+
+        public event Action OnNamesChanged;
+
+        // Characters whose roster change we listen to (the rows of the last GetPlayers()).
+        private readonly List<Character> _nameSources = new();
+
+        public string GetPseudo(ulong clientId)
+        {
+            if (characterManager == null) return string.Empty;
+            Character c = characterManager.GetCharacters(false)
+                .FirstOrDefault(x => x != null && x.ownerClientId.Value == clientId);
+            return c != null ? c.GetOwnerPseudo() : string.Empty;
+        }
+
+        private void TrackNameSources(IEnumerable<Character> characters)
+        {
+            UntrackNameSources();
+            foreach (Character c in characters)
+            {
+                c.onOwnerPseudoChanged += RaiseNamesChanged;
+                _nameSources.Add(c);
+            }
+        }
+
+        private void UntrackNameSources()
+        {
+            foreach (Character c in _nameSources)
+            {
+                if (c != null) c.onOwnerPseudoChanged -= RaiseNamesChanged;
+            }
+            _nameSources.Clear();
+        }
+
+        private void RaiseNamesChanged() => OnNamesChanged?.Invoke();
+
+        private void OnDestroy() => UntrackNameSources();
     }
 }

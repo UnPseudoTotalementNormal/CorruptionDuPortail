@@ -120,14 +120,12 @@ namespace Avatars
                 return;
             }
 
-            if (_holder != null && _holder.playerInfos != null)
+            if (_holder != null)
             {
-                _holder.playerInfos.OnListChanged += OnPlayerInfosChanged;
+                _holder.onRosterChanged += RefreshText;
             }
             RefreshText();
         }
-
-        private void OnPlayerInfosChanged(NetworkListEvent<PlayerInfo> _evt) => RefreshText();
 
         private void RefreshText()
         {
@@ -199,9 +197,9 @@ namespace Avatars
 
         private void OnDestroy()
         {
-            if (_holder != null && _holder.playerInfos != null)
+            if (_holder != null)
             {
-                _holder.playerInfos.OnListChanged -= OnPlayerInfosChanged;
+                _holder.onRosterChanged -= RefreshText;
             }
         }
     }

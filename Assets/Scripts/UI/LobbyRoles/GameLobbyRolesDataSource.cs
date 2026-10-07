@@ -62,7 +62,7 @@ namespace UI.LobbyRoles
             // NGO ConnectedClientsIds: simulated bots (clientId >= 100) enter playerInfos via AddDebugPlayer but
             // never register as NGO clients, so ConnectedClientsIds undercounts them and never fires connect.
             _manager.OnSettingsChanged += Raise;
-            _lobby.playerInfos.OnListChanged += OnPlayerListChanged;
+            _lobby.onRosterChanged += Raise;
             _ready = true;
             Raise();
         }
@@ -70,11 +70,10 @@ namespace UI.LobbyRoles
         private void OnDestroy()
         {
             if (_manager != null) _manager.OnSettingsChanged -= Raise;
-            if (_lobby != null && _lobby.playerInfos != null)
-                _lobby.playerInfos.OnListChanged -= OnPlayerListChanged;
+            if (_lobby != null)
+                _lobby.onRosterChanged -= Raise;
         }
 
-        private void OnPlayerListChanged(NetworkListEvent<Network.Player.PlayerInfo> _e) => Raise();
         private void Raise() => OnChanged?.Invoke();
 
         public int GetPlayerCount()

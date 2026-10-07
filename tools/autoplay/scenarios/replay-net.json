@@ -1,0 +1,22 @@
+{
+  "name": "replay-net",
+  "goal": "Play again: host + 3 real clients play a whole game, stay 6 s on the ending screen, the host ends it ('Terminer la partie' → every process back to the main menu), then hosts a second game in the SAME processes; the clients join again and the second game plays to its end. Whatever survives a game (statics, singletons, cached sessions, subscriptions) must not break the second one: no error, no desync, same winners everywhere at the second ending.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 690,
+  "timescale": 3,
+  "timeout": 2400,
+  "args": ["-autoplay-replay", "1", "-autoplay-linger-end", "6", "-autoplay-fast-fakes", "-autoplay-fast-phases", "Intro|Chaining",
+           "-autoplay-fast-timescale", "12", "-autoplay-chat", "-autoplay-no-png"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "round.shutoff", "process": "host", "min": 1, "max": 1},
+    {"type": "event", "kind": "round.menu", "process": "all", "min": 1, "max": 1},
+    {"type": "event", "kind": "round.begin", "process": "all", "min": 1, "max": 1},
+    {"type": "event", "kind": "ending.linger", "process": "all", "min": 2, "max": 2},
+    {"type": "event", "kind": "connected", "process": "every-client", "min": 2, "max": 2},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_ending.py {run}"},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

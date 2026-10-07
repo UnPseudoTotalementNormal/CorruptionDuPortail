@@ -104,6 +104,7 @@ namespace Board
             }
             
             cardEffectsByCardId[_targetId].Remove(_cardEffectID);
+            pendingEffectData.Remove((_cardEffectID, _targetId));
             
             if (cardEffectsByCardId[_targetId].Count == 0)
             {
@@ -158,8 +159,9 @@ namespace Board
             var _key = (_cardEffectID, _targetId);
             if (pendingEffectData.TryGetValue(_key, out var _data))
             {
+                // Kept while the effect lives (dropped by RemoveCardEffect): the board re-creates cards (chaining,
+                // rejoin) and OnCardSpawned rebuilds their effects, which need the same data again.
                 _effectData = _data;
-                pendingEffectData.Remove(_key); // Clean up after use
             }
             
             CardEffectComponent _cardEffectComponent = Instantiate(cardEffects[_cardEffectID].cardEffectPrefab, _card.visualComponents.cardEffectsParent);

@@ -249,6 +249,9 @@ namespace Tests.PlayMode
             var grantedPower = grantedGo.AddComponent<Power>();
             grantedPower.powerName = "Reincarnated";
             grantedGo.GetComponent<NetworkObject>().Spawn();
+            // NET-08: power lists are projections of the replicated ownerClientId — the target's power must be OWNED by
+            // the target (its default 0 is the host = the caster here, which would list it in the caster's kit).
+            grantedPower.ownerClientId.Value = target.ownerClientId.Value;
             target.role = new Role { roleID = RoleID.Omniscient };
             target.role.powers.Add(grantedPower);
 
@@ -265,7 +268,7 @@ namespace Tests.PlayMode
             yield return new WaitUntil(() =>
                 owner.role.powers.Any(p => p.powerName == grantedPower.powerName) || Time.time > timeout);
 
-            Assert.IsTrue(power.isPassive, "Reincarnation should broadcast isPassive=true.");
+            Assert.IsTrue(power.IsPassive, "Reincarnation should replicate the live passive state (NET-08: IsPassive).");
             Assert.IsTrue(owner.role.powers.Any(p => p.powerName == grantedPower.powerName),
                 "Reincarnation should grant the target role's powers to the owner.");
         }
@@ -297,6 +300,9 @@ namespace Tests.PlayMode
             grantedPower.powerName = "Reincarnated";
             grantedPower.powerDescription = "Granted active power.";
             grantedGo.GetComponent<NetworkObject>().Spawn();
+            // NET-08: power lists are projections of the replicated ownerClientId — the target's power must be OWNED by
+            // the target (its default 0 is the host = the caster here, which would list it in the caster's kit).
+            grantedPower.ownerClientId.Value = target.ownerClientId.Value;
             target.role = new Role { roleID = RoleID.Omniscient };
             target.role.powers.Add(grantedPower);
 
@@ -320,7 +326,7 @@ namespace Tests.PlayMode
             Assert.IsNotNull(grantedClone, "Reincarnation should have granted a clone of the target role's power.");
 
             // (1) Wiring: the live flip happened, the authored snapshot held, and the grant got the hide marker.
-            Assert.IsTrue(power.isPassive, "Reincarnation flips its live isPassive to true post-use.");
+            Assert.IsTrue(power.IsPassive, "Reincarnation flips its live passive state to true post-use (NET-08: IsPassive).");
             Assert.IsFalse(power.authoredIsPassive,
                 "authoredIsPassive must survive the live isPassive flip (Awake snapshot).");
             Assert.IsTrue(grantedClone.hideFromRoleCardRuntime.Value,

@@ -83,9 +83,11 @@ namespace Avatars
         // Authoritative, replicated set of spawned avatars (mirror CharacterManager.networkedCharacters):
         // late joiners receive it pre-populated WITHOUT OnListChanged, so OnNetworkSpawn force-rebuilds.
         // Field initializer (NOT Awake): NGO collects NetworkList fields via reflection at init time.
-        private NetworkList<NetworkBehaviourReference> _avatars = new();
+        // NET-04 (epic-network-sync-hardening): full-value snapshot of avatar NetworkObject ids (never a NetworkList:
+        // index RemoveAt on a #3280-diverged replica removed the wrong avatar, and list order is the seat index).
+        private readonly NetworkVariable<Network.NetworkObjectIdList> _avatars = new(new Network.NetworkObjectIdList());
 
-        // Backing cache rebuilt only when _avatars changes (OnListChanged) or on spawn, so reads
+        // Backing cache rebuilt only when _avatars changes (OnValueChanged) or on spawn, so reads
         // allocate nothing in steady state (mirror CharacterManager._charactersCache).
         private readonly List<PlayerAvatar> _avatarsCache = new();
         private bool _cacheDirty = true;
@@ -94,6 +96,8 @@ namespace Avatars
         // the clientId <-> Character <-> seat mapping (AC #3). Null-tolerant — degrades gracefully if no
         // CharacterManager is registered for this NM (e.g. an avatar-only test harness).
         private ICharacterQuery _characterQuery;
+        private CharacterManager _characterManager;
+        private GameManager _rejoinSource;
 
         public override void OnNetworkSpawn()
         {
@@ -114,10 +118,11 @@ namespace Avatars
             // lightweight value resolver and needs no scene root — CharacterQuery is null when no
             // CharacterManager is registered for this NM, which the seat mapping tolerates.
             _characterQuery = CompositionRoot.For(_networkManager).CharacterQuery;
+            _characterManager = CompositionRoot.For(_networkManager).CharacterManager;
 
             // Authoritative list -> cache invalidation (mirror CharacterManager.cs:230). Late joiners get
             // the list pre-populated without OnListChanged, so force a rebuild here.
-            _avatars.OnListChanged += OnAvatarsChanged;
+            _avatars.OnValueChanged += OnAvatarsChanged;
             _cacheDirty = true;
 
             // Server-only spawn driver (mirror LobbyState.cs:57–69): spawn for already-connected real
@@ -129,15 +134,26 @@ namespace Avatars
 
                 foreach (var _client in _networkManager.ConnectedClients)
                 {
-                    SpawnAvatar(_client.Key);
+                    SpawnAvatar(SeatOf(_client.Key), _client.Key);
                 }
                 _networkManager.OnClientConnectedCallback += OnClientConnected;
                 _networkManager.OnClientDisconnectCallback += OnClientDisconnected;
+                // Rejoin: the new connection takes its seat's body back (handed over once the seat is aliased).
+                _rejoinSource = GameManager.For(_networkManager);
+                if (_rejoinSource != null)
+                {
+                    _rejoinSource.onPlayerRejoinedServer += OnPlayerRejoinedServer;
+                }
             }
         }
 
         public override void OnNetworkDespawn()
         {
+            if (_rejoinSource != null)
+            {
+                _rejoinSource.onPlayerRejoinedServer -= OnPlayerRejoinedServer;
+                _rejoinSource = null;
+            }
             if (IsServer && NetworkManager != null)
             {
                 NetworkManager.OnClientConnectedCallback -= OnClientConnected;
@@ -145,7 +161,7 @@ namespace Avatars
             }
             if (_avatars != null)
             {
-                _avatars.OnListChanged -= OnAvatarsChanged;
+                _avatars.OnValueChanged -= OnAvatarsChanged;
             }
             UnregisterFromRegistry();
             base.OnNetworkDespawn();
@@ -163,7 +179,7 @@ namespace Avatars
             }
             if (_avatars != null)
             {
-                _avatars.OnListChanged -= OnAvatarsChanged;
+                _avatars.OnValueChanged -= OnAvatarsChanged;
             }
             UnregisterFromRegistry();
         }
@@ -187,15 +203,52 @@ namespace Avatars
             }
         }
 
-        private void OnClientConnected(ulong _clientId) => SpawnAvatar(_clientId);
-        private void OnClientDisconnected(ulong _clientId) => DespawnAvatar(_clientId);
+        // Avatars are keyed by SEAT (the player's original clientId), never by transport id: a rejoined player gets
+        // a new connection id but plays his seat (rejoin = seat alias). Keyed by connection, his avatar came back
+        // under the new id: an empty nameplate (the roster is keyed by seat) and every body moved around the table.
+        private void OnClientConnected(ulong _connection)
+        {
+            GameManager _game = GameManager.For(NetworkManager);
+            if (_game != null && _game.IsRejoining(_connection))
+            {
+                return; // spawned by OnPlayerRejoinedServer once the seat is aliased
+            }
+            SpawnAvatar(SeatOf(_connection), _connection);
+        }
+
+        private void OnClientDisconnected(ulong _connection)
+        {
+            ulong _seat = SeatOf(_connection);
+            PlayerAvatar _avatar = GetAvatar(_seat);
+            // A seat already taken over by a newer connection (fast relaunch) keeps its new body.
+            if (_avatar != null && _avatar.OwnerClientId == _connection)
+            {
+                DespawnAvatar(_seat);
+            }
+        }
+
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection) => SpawnAvatar(_seat, _connection);
+
+        private ulong SeatOf(ulong _connection) =>
+            _characterManager != null ? _characterManager.SeatOfTransport(_connection) : _connection;
+
+        /// <summary>This peer's own seat, debug possession ignored (the body and camera are the real player's).</summary>
+        private ulong LocalSeat => _characterManager != null ? _characterManager.LocalSeatId
+            : NetworkManager != null ? NetworkManager.LocalClientId : 0UL;
+
+        /// <summary>This peer's own avatar (its seat's), or null while it is not spawned yet.</summary>
+        public PlayerAvatar GetLocalAvatar() => GetAvatar(LocalSeat);
 
         /// <summary>
         /// Server-side per-client avatar spawn (mirror CharacterManager.AddNewCharacter, CharacterManager.cs:400).
         /// Bots (clientId &gt;= 100) get NO avatar (AC #6 / DO2). Idempotent: a second call for an
         /// already-avatared client is a no-op. Returns the spawned avatar (null when skipped).
         /// </summary>
-        public PlayerAvatar SpawnAvatar(ulong _clientId)
+        public PlayerAvatar SpawnAvatar(ulong _clientId) => SpawnAvatar(_clientId, _clientId);
+
+        /// <summary>Spawns the avatar of seat <paramref name="_clientId"/>, owned by <paramref name="_ownerConnection"/>
+        /// (the seat's current transport id: they differ after a rejoin).</summary>
+        public PlayerAvatar SpawnAvatar(ulong _clientId, ulong _ownerConnection)
         {
             Assert.IsTrue(IsServer, "SpawnAvatar must run on the server.");
 
@@ -222,7 +275,7 @@ namespace Avatars
             Quaternion _spawnRotation = _spawn != null ? _spawn.rotation : Quaternion.identity;
 
             NetworkObject _avatarObject = NetworkManager.SpawnManager.InstantiateAndSpawn(
-                _avatarPrefab, ownerClientId: _clientId, destroyWithScene: true,
+                _avatarPrefab, ownerClientId: _ownerConnection, destroyWithScene: true,
                 position: _spawnPosition, rotation: _spawnRotation);
 
             // Reparent under the scene parent if wired; defer until it is spawned (mirror CharacterManager.cs:409).
@@ -242,10 +295,8 @@ namespace Avatars
             PlayerAvatar _avatar = _avatarObject.GetComponent<PlayerAvatar>();
             _avatar.ownerClientId.Value = _clientId;
 
-            // Authoritative source: adding here raises OnListChanged on the server and replicates the new
-            // avatar to late joiners (mirror CharacterManager.cs:424). Implicit Character/PlayerAvatar ->
-            // NetworkBehaviourReference conversion.
-            _avatars.Add(_avatar);
+            // Authoritative source (NET-04: assign a NEW id list — full-value replication, late-joiner safe).
+            _avatars.Value = _avatars.Value.WithAdded(_avatarObject.NetworkObjectId);
             _cacheDirty = true;
             return _avatar;
         }
@@ -265,13 +316,8 @@ namespace Avatars
                 return;
             }
 
-            for (int _i = _avatars.Count - 1; _i >= 0; _i--)
-            {
-                if (_avatars[_i].TryGet(out PlayerAvatar _a) && _a == _avatar)
-                {
-                    _avatars.RemoveAt(_i);
-                }
-            }
+            // NET-04: by id, never by index.
+            _avatars.Value = _avatars.Value.WithRemoved(_avatar.NetworkObjectId);
 
             var _no = _avatar.GetComponent<NetworkObject>();
             if (_no != null && _no.IsSpawned)
@@ -291,15 +337,34 @@ namespace Avatars
         /// </summary>
         private int SeatIndexForClient(ulong _clientId)
         {
-            var _cache = ResolvedAvatars();
-            for (int _i = 0; _i < _cache.Count; _i++)
+            List<ulong> _seats = SeatOrder();
+            int _index = _seats.IndexOf(_clientId);
+            return _index >= 0 ? _index : _seats.Count;
+        }
+
+        // Every player seat of the game in id order: the real players' characters (they stay when a player leaves,
+        // so a seat reserved for a rejoin keeps its place and nobody else moves) plus any avatar not mapped yet.
+        private List<ulong> SeatOrder()
+        {
+            var _seats = new SortedSet<ulong>();
+            foreach (PlayerAvatar _avatar in ResolvedAvatars())
             {
-                if (_cache[_i] != null && _cache[_i].ownerClientId.Value == _clientId)
+                if (_avatar != null)
                 {
-                    return _i;
+                    _seats.Add(_avatar.ownerClientId.Value);
                 }
             }
-            return _cache.Count;
+            if (_characterQuery != null)
+            {
+                foreach (Character _character in _characterQuery.GetCharacters(false))
+                {
+                    if (_character != null && !_character.isFake && _character.ownerClientId.Value < 100)
+                    {
+                        _seats.Add(_character.ownerClientId.Value);
+                    }
+                }
+            }
+            return _seats.ToList();
         }
 
         /// <summary>
@@ -322,7 +387,7 @@ namespace Avatars
                 return new SeatPose(Vector3.zero, Quaternion.identity);
             }
 
-            ulong _localId = NetworkManager != null ? NetworkManager.LocalClientId : _clientId;
+            ulong _localId = NetworkManager != null ? LocalSeat : _clientId;
             // The LOCAL avatar (the POV) always uses _ringRadius so the embodied camera stays close; OTHER
             // avatars use _remoteRingRadius when it is set (> 0) so their bodies sit further out and don't clip
             // the table. The gaze yaw is applied as a head-local rotation relative to seat facing (unchanged by
@@ -330,7 +395,7 @@ namespace Avatars
             bool _isLocal = _clientId == _localId;
             float _radius = _isLocal || _remoteRingRadius <= 0f ? _ringRadius : _remoteRingRadius;
             return SeatRingGeometry.Compute(
-                AvatarCount,
+                SeatOrder().Count,
                 SeatIndexForClient(_localId),
                 SeatIndexForClient(_clientId),
                 _ringCenter.position,
@@ -375,11 +440,21 @@ namespace Avatars
         {
             _avatarsCache.Clear();
             bool _allResolved = true;
-            foreach (var _reference in _avatars)
+            // NET-04: resolve ids through THIS manager's own NetworkManager.
+            var _spawned = NetworkManager != null && NetworkManager.SpawnManager != null
+                ? NetworkManager.SpawnManager.SpawnedObjects
+                : null;
+            foreach (ulong _objectId in _avatars.Value != null ? _avatars.Value.Ids : System.Array.Empty<ulong>())
             {
-                if (_reference.TryGet(out PlayerAvatar _avatar))
+                if (_spawned != null
+                    && _spawned.TryGetValue(_objectId, out NetworkObject _networkObject)
+                    && _networkObject != null
+                    && _networkObject.TryGetComponent(out PlayerAvatar _avatar))
                 {
-                    _avatarsCache.Add(_avatar);
+                    if (!_avatarsCache.Contains(_avatar))
+                    {
+                        _avatarsCache.Add(_avatar);
+                    }
                 }
                 else
                 {
@@ -391,7 +466,7 @@ namespace Avatars
             _cacheDirty = !_allResolved;
         }
 
-        private void OnAvatarsChanged(NetworkListEvent<NetworkBehaviourReference> _changeEvent) => _cacheDirty = true;
+        private void OnAvatarsChanged(Network.NetworkObjectIdList _previous, Network.NetworkObjectIdList _current) => _cacheDirty = true;
 
         private IEnumerator WaitForParentToSpawnAndSet(NetworkObject _child, NetworkObject _parent)
         {

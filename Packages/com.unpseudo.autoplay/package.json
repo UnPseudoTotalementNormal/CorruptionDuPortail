@@ -1,0 +1,10 @@
+{
+  "name": "com.unpseudo.autoplay",
+  "version": "0.1.0",
+  "displayName": "Autoplay (bot playtesting)",
+  "description": "Runs whole games without humans: a game adapter plays every seat through the real code paths, the runner tracks phases, detects stalls, writes a report, a live event trace and state files at capture points (+ screenshots when rendering). Dev builds can self-run with -autoplay and stay out of the user's way (no focus stealing, no cursor lock unless the real-input mode needs one while unfocused, muted); an optional virtual mouse / keyboard drives the real UI for \"can a player actually do it\" checks. Editor and Development builds only.",
+  "unity": "6000.0",
+  "author": { "name": "UnPseudoTotalementNormal" },
+  "keywords": [ "testing", "automation", "bots", "playtest" ],
+  "dependencies": { "com.unity.inputsystem": "1.7.0" }
+}

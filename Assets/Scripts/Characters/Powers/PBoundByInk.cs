@@ -74,8 +74,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _characterId)
+        private void OnCardClickedRpc(ulong _characterId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _characterId)) return; // NET-09: server-side use authorization
             if (alreadyTargetedClients.Contains(_characterId) || currentTargets.Contains(_characterId))
             {
                 return;
@@ -95,16 +96,46 @@ namespace Characters.Powers
             var _gameManager = GameManager.For(NetworkManager);
             foreach (var _awakeningState in _gameManager.GetGameStates(typeof(AwakeningState)))
             {
-                _awakeningState.onStateStartServer += () =>
-                {
-                    foreach (var _targetClientId in currentTargets)
-                    {
-                        chatManager.UndiscoverChatRpc(powerChatId.Value, characterManager.GetSafeRpcTarget(_targetClientId));
-                    }
-                    
-                    currentTargets.Clear();
-                };
+                _awakeningState.onStateStartServer += RevokeInkChannelServer;
+                _subscribedNights.Add(_awakeningState);
             }
+        }
+
+        // A new night closes last night's ink channel (NET-11: server membership).
+        private void RevokeInkChannelServer()
+        {
+            if (!IsServer || !isChatAttributed || !chatManager)
+            {
+                currentTargets.Clear();
+                return;
+            }
+            foreach (var _targetClientId in currentTargets)
+            {
+                chatManager.RevokeChannelServer(powerChatId.Value, _targetClientId);
+            }
+            currentTargets.Clear();
+        }
+
+        private readonly List<GameState> _subscribedNights = new();
+
+        // A copy of this power (stolen by Ugës, copied by Luma) is despawned once spent. Its night hook used to stay
+        // subscribed: at the next night it read the despawned object's chat id (0 = the GENERAL channel) and revoked
+        // the general chat of its targets. Close its own channel now and unsubscribe.
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer)
+            {
+                RevokeInkChannelServer();
+                foreach (GameState _night in _subscribedNights)
+                {
+                    if (_night != null)
+                    {
+                        _night.onStateStartServer -= RevokeInkChannelServer;
+                    }
+                }
+                _subscribedNights.Clear();
+            }
+            base.OnNetworkDespawn();
         }
 
         private void AttributeBoundByInkChat()
@@ -129,7 +160,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            chatManager.DiscoverChatRpc(_chatId, new FixedString64Bytes("Lié par l'encre"), characterManager.GetSafeRpcTarget(ownerClientId.Value));
+            chatManager.GrantChannelServer(_chatId, "Lié par l'encre", ownerClientId.Value); // NET-11: server membership
         }
 
         protected override void StopUse()

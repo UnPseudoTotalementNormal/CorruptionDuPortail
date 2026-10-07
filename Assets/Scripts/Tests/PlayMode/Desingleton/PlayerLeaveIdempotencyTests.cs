@@ -155,6 +155,13 @@ namespace Tests.PlayMode.Desingleton
                 _gameManager.HandlePlayerLeft(1); // first ignition source
                 _gameManager.HandlePlayerLeft(1); // redundant second source — must be a total no-op
                 yield return null;
+                // Rejoin step 1: the leave reserves the seat; the chain happens once the grace delay expires,
+                // however many times expiry is evaluated.
+                Assert.IsFalse(_leaver.isChained.Value, "The leave only reserves the seat: no chain before the grace delay.");
+                double _later = Time.realtimeSinceStartupAsDouble + _gameManager.RejoinGraceSeconds + 1.0;
+                _gameManager.ExpireReservedSeats(_later);
+                _gameManager.ExpireReservedSeats(_later + 10.0);
+                yield return null;
             }
             finally
             {
@@ -162,7 +169,7 @@ namespace Tests.PlayMode.Desingleton
                 LogAssert.ignoreFailingMessages = _prevIgnore;
             }
 
-            Assert.IsTrue(_leaver.isChained.Value, "The mid-game leaver must be chained by the first call.");
+            Assert.IsTrue(_leaver.isChained.Value, "The mid-game leaver must be chained once his reserved seat expires.");
             Assert.AreEqual(1, _chainingLogCount,
                 "The chaining path must run EXACTLY ONCE across two calls — the second call is a no-op (no double-chain).");
             Assert.IsTrue(_gameManager.HasClientLeft(1), "The leaver must be recorded in the departed-set.");

@@ -42,8 +42,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _targetClientId)
+        private void OnCardClickedRpc(ulong _targetClientId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _targetClientId)) return; // NET-09: server-side use authorization
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_targetClientId, roster: Roster));
         }

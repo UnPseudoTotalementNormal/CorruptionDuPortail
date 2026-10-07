@@ -61,6 +61,13 @@ namespace GameLogic.GameStates
         {
             base.OnEndStateClient();
             
+            DealBoard();
+        }
+
+        // The table this introduction leaves behind: player cards and the role shelf. Also replayed on a peer that
+        // rejoins after the introduction (Rejoin 02), which never received this state's end.
+        public void DealBoard()
+        {
             _ = boardManager.ShowAllPlayerCards();
             charactersBar.ResetCharactersBar(CharacterQuery.GetCharacters());
         }

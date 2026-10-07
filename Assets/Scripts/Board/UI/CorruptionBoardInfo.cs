@@ -32,6 +32,8 @@ namespace Board.UI
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            shownText.OnValueChanged += ShowText;
+            ShowText(default, shownText.Value);
             if (!IsServer)
             {
                 return;
@@ -47,7 +49,7 @@ namespace Board.UI
 
         private void OnGameStarted()
         {
-            WriteNewTextRpc(
+            SetShownText(
                 $"0/{CharacterQuery.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake)}");
         }
 
@@ -63,13 +65,29 @@ namespace Board.UI
                 .Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake);
             int _corruptedChosenCount = CharacterQuery.GetCharacters()
                 .Count(_c => _c.role.factionType != FactionType.anomaly && _c.isCorrupted.Value && !_c.isFake);
-            WriteNewTextRpc($"{_corruptedChosenCount}/{_chosenCount}");
+            SetShownText($"{_corruptedChosenCount}/{_chosenCount}");
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void WriteNewTextRpc(FixedString32Bytes _newText)
+        // Replicated, not pushed by RPC: a peer that (re)joins mid-game reads the current count on spawn.
+        private readonly NetworkVariable<FixedString32Bytes> shownText = new();
+
+        private void SetShownText(FixedString32Bytes _newText)
         {
-            text.text = _newText.ToString();
+            shownText.Value = _newText;
+        }
+
+        private void ShowText(FixedString32Bytes _previous, FixedString32Bytes _current)
+        {
+            if (_current.Length > 0)
+            {
+                text.text = _current.ToString();
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            shownText.OnValueChanged -= ShowText;
+            base.OnNetworkDespawn();
         }
     }
 }

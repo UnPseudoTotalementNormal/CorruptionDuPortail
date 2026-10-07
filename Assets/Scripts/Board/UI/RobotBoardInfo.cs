@@ -37,6 +37,8 @@ namespace Board.UI
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            shownText.OnValueChanged += ShowText;
+            ShowText(default, shownText.Value);
             roleTargetSystem = CompositionRoot.For(NetworkManager).RoleTargetSystem;
             if (!IsServer)
             {
@@ -53,7 +55,7 @@ namespace Board.UI
 
         private void OnGameStarted()
         {
-            WriteNewTextRpc("0");
+            SetShownText("0");
         }
 
         private void OnAwakeningStateEnd()
@@ -67,17 +69,33 @@ namespace Board.UI
             Character _robot = CharacterQuery.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
             if (!_robot)
             {
-                WriteNewTextRpc("0");
+                SetShownText("0");
                 return;
             }
             var _targetingDatas = roleTargetSystem.GetAllTargetersForTarget(_robot.ownerClientId.Value);
-            WriteNewTextRpc($"{_targetingDatas.Count}");
+            SetShownText($"{_targetingDatas.Count}");
         }
 
-        [Rpc(SendTo.Everyone)]
-        private void WriteNewTextRpc(FixedString32Bytes _newText)
+        // Replicated, not pushed by RPC: a peer that (re)joins mid-game reads the current count on spawn.
+        private readonly NetworkVariable<FixedString32Bytes> shownText = new();
+
+        private void SetShownText(FixedString32Bytes _newText)
         {
-            text.text = _newText.ToString();
+            shownText.Value = _newText;
+        }
+
+        private void ShowText(FixedString32Bytes _previous, FixedString32Bytes _current)
+        {
+            if (_current.Length > 0)
+            {
+                text.text = _current.ToString();
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            shownText.OnValueChanged -= ShowText;
+            base.OnNetworkDespawn();
         }
     }
 }

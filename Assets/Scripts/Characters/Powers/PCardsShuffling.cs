@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -77,14 +77,19 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked)
+        private void OnCharacterBarObjectClickedRpc(ulong _clientIdClicked, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _clientIdClicked)) return; // NET-09: server-side use authorization
             // Re-validation autoritaire serveur : les règles d'OnRolePicked ont tourné côté client seulement,
             // mais cette branche ACCORDE désormais un pouvoir — un client trafiqué ne doit pas contourner les
             // règles (cible valide, non déjà découverte, faction élue). Rejette aussi les RPC en double (la 2e
             // arrive après discoveredClientIds.Add → règle !Contains) et les rôles null (règle faction).
-            if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
+            if (!ServerRoleTargetValid(_clientIdClicked))
             {
+                // Never a silent return: the owner's picker is waiting for the next step.
+                ServerCancelAuthorizedEffect();
+                Debug.LogWarning($"[POWER] '{powerName}' of {ownerClientId.Value}: role of {_clientIdClicked} refused by the server");
+                RoleClickRefusedRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 return;
             }
 
@@ -102,6 +107,35 @@ namespace Characters.Powers
             AskForGuessRoleRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
         }
         
+        // Server re-validation from the OWNER's point of view. The client validator goes through TargetUtils, which is
+        // viewer-relative (it reads the LOCAL player's identity and knowledge): run on the server it judged the host's
+        // view, so a client's click on the host's own role card was refused and the power hung. Same rules, the
+        // owner as "self".
+        private bool ServerRoleTargetValid(ulong _target)
+        {
+            Character _targetCharacter = characterManager.GetCharacter(_target, false);
+            if (_targetCharacter == null || _targetCharacter.role == null)
+            {
+                return false;
+            }
+            if (discoveredClientIds.Contains(_target))
+            {
+                return false; // already discovered (also rejects a duplicated RPC)
+            }
+            if (_targetCharacter.role.factionType != FactionType.chosen)
+            {
+                return false;
+            }
+            return targetIncludeFlags.HasFlag(TargetIncludeFlags.Self) || _target != ownerClientId.Value;
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void RoleClickRefusedRpc(RpcParams _rpcParams)
+        {
+            selectionFlowService.CancelSelection();
+            Cancel();
+        }
+
         private void OnGuessCharacterPicked(Character _character)
         {
             GuessRoleRpc(_character.ownerClientId.Value);
@@ -109,16 +143,17 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void GuessRoleRpc(ulong _clickedId)
+        private void GuessRoleRpc(ulong _clickedId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _clickedId)) return; // NET-09: server-side use authorization
             _lastGuessClickedId = _clickedId;
             // State feeds BOTH the context (the decision READS ctx.State<ICardsShufflingGuess>()) and the
             // runtime (DiscoveredAdd WRITES the discovered list) — both resolve to this carrier via SelfState.
             var _selfState = SelfState;
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_clickedId, state: _selfState), _selfState);
-
-            OnUsed();
+            // The use is consumed by the owner's OnUsed (OnGuessCharacterPicked): a second consume here counted it
+            // twice on the host and was rejected ("consume with no use left") for a client.
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

@@ -1,0 +1,53 @@
+{
+  "name": "watchdog-stall",
+  "goal": "Breakage test of the watchdog: nobody votes and the vote gets a 10 s budget (5 s idle): every process journals watchdog.slow then watchdog.stall with what it waits on, then fails as 'watchdog: … stalled' WITH a report (not a launcher kill), and the launcher relays the alerts to alerts.log as they happen.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 61,
+  "timescale": 3,
+  "timeout": 600,
+  "args": [
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-fast-fakes",
+    "-autoplay-vote-probability",
+    "0",
+    "-autoplay-budget",
+    "VoteState:10",
+    "-autoplay-stall-idle",
+    "5"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Failed",
+      "process": "host"
+    },
+    {
+      "type": "event",
+      "kind": "watchdog.slow",
+      "detail": "VoteState.*waiting=",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "watchdog.stall",
+      "detail": "VoteState",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "run.fail",
+      "detail": "^watchdog: phase .*VoteState.* stalled",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 Packages/com.unpseudo.autoplay/Tools~/check_alerts.py {run} \"WATCHDOG.SLOW host-\" \"WATCHDOG.STALL host-\" \"RUN.FAIL host-[^ ]+ watchdog: phase\""
+    }
+  ]
+}

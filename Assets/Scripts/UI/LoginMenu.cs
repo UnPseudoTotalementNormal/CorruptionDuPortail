@@ -142,7 +142,8 @@ public class LoginMenu : MonoBehaviour
                     nameResult = await AuthenticationService.Instance.UpdatePlayerNameAsync(username);
                 }
                 Debug.Log("Username set to: " + nameResult);
-                LocalPlayerInfoHolder.CreateNewClientData(nameResult);
+                // NET-02: only UGS names carry the "#1234" discriminator; a Steam name keeps its '#'.
+                LocalPlayerInfoHolder.CreateNewClientData(nameResult, !_useSteamAuth);
             }
             catch (Exception e)
             {

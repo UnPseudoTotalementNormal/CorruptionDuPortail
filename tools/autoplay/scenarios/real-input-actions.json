@@ -1,0 +1,172 @@
+{
+  "name": "real-input-actions",
+  "goal": "Real-input mode on every seat with a screen (host + possessed bots, 3 real clients): each power, card pick, vote (first-person view: the bot turns its head until the vote button is under the reticle, then clicks), vote skip, sleep and the Mage's portal card is a real click through the EventSystem that produces its game effect; the real mouse / keyboard are disabled. Only two design findings are exempted and warned (Poyo, 2026-10-05): role-picker cards laid out off screen at 16:9, and the vote's Skip button (screen overlay) out of the seated reticle's reach. Any other miss or direct fallback fails. Votes are forced, not rolled: everyone votes the Mage except seats 0 and 101 (the Mage at seed 777), which click Skip, so the Mage is chained on day 1 and its portal card always comes up. Real players (the clients) must have no miss at all. The host's checks are warnings: the bots it possesses have no view of their own and vote from the HOST's seat (a vote aimed at the host's own card, or one out of the host seat's head reach, is a possession artefact, not something a player meets).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 777,
+  "timescale": 4,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-power-use-probability",
+    "0.8",
+    "-autoplay-vote-probability",
+    "1",
+    "-autoplay-vote-skip",
+    "0,101",
+    "-autoplay-force-roles",
+    "Mage",
+    "-autoplay-vote-focus",
+    "Mage",
+    "-autoplay-fast-fakes",
+    "-autoplay-max-days",
+    "2"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "input.install",
+      "detail": "background=IgnoreFocus disabled=[1-9]",
+      "process": "all",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^power ",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^vote ",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^vote .*mode=reticle",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^picker ",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "sleep",
+      "detail": "via=click",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "portal.click",
+      "detail": "via=click",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "vote.skip.click",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "process": "clients",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(picker .*reason=off-screen|vote-skip .*reason=screen-fixed)",
+      "process": "any",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "input.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "power.direct",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "sleep",
+      "detail": "via=direct",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "detail": "^(?!.*via=click)",
+      "process": "clients",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "detail": "^(?!.*via=click)",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "picker.click",
+      "detail": "via=direct",
+      "process": "any",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

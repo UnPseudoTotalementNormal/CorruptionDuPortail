@@ -1,0 +1,70 @@
+{
+  "name": "client-disconnect-reserved",
+  "goal": "Rejoin step 1: a real client quits during the first night (awakening); its seat is reserved, not chained: the game goes on (the absent seat is skipped at night and does not vote), and the seat is chained only when the grace delay (30 s here) expires. No hang, no desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 32,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-rejoin-grace",
+    "30",
+    "-autoplay-fast-fakes"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "AwakeningState day=1"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "leave",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "chained=True",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "VoteState",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "leaverChained"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "host",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData"
+      ]
+    }
+  ]
+}

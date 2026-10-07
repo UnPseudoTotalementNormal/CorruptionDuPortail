@@ -1,0 +1,15 @@
+{
+  "name": "phase-leave",
+  "goal": "A real client leaves for good at {phase}: its seat is reserved, then chained when the 8 s grace expires; the game goes on to day 3 without hanging, no error, no desync.",
+  "mode": "net", "clients": 3, "seed": 820, "timescale": 3, "timeout": 1200,
+  "args": ["-autoplay-force-roles", "Gloubi", "-autoplay-vote-focus", "Gloubi", "-autoplay-vote-probability", "1",
+           "-autoplay-max-days", "3", "-autoplay-rejoin-grace", "8", "-autoplay-fast-fakes", "-autoplay-net-log", "-autoplay-no-png"],
+  "client1Args": ["-autoplay-quit-at", "{phase}"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "leave", "process": "clients", "min": 1, "max": 1},
+    {"type": "leaverChained"},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

@@ -70,8 +70,9 @@ namespace Characters.Powers
         }
 
         [Rpc(SendTo.Server)]
-        private void ObserveServerRpc(ulong[] _targetIds)
+        private void ObserveServerRpc(ulong[] _targetIds, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _targetIds)) return; // NET-09: server-side use authorization
             var _slots = _targetIds.Select(_id => (int)_id).ToList();
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, roster: Roster, targetSlots: _slots));

@@ -244,6 +244,20 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.pipeline": {
+      "version": "0.8.0-exp.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.test-framework": "1.1.33",
+        "com.unity.nuget.mono-cecil": "1.11.6",
+        "com.unity.modules.uielements": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.screencapture": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.0.2"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.profiling.core": {
       "version": "1.0.3",
       "depth": 1,
@@ -438,9 +452,9 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.transport": {
-      "version": "6.5.0",
-      "depth": 1,
-      "source": "builtin",
+      "version": "file:com.unity.transport",
+      "depth": 0,
+      "source": "embedded",
       "dependencies": {
         "com.unity.collections": "6.5.0",
         "com.unity.burst": "1.8.24",
@@ -468,6 +482,14 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.unpseudo.autoplay": {
+      "version": "file:com.unpseudo.autoplay",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.inputsystem": "1.7.0"
+      }
     },
     "dev.ameye.linework-lite": {
       "version": "file:dev.ameye.linework-lite",

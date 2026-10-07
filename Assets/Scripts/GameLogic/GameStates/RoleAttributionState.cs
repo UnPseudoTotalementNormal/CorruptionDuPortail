@@ -29,8 +29,15 @@ namespace GameLogic.GameStates
         private CompositionRuleSet _compositionRules;
 
         public override void OnStateCreated()
-        { 
+        {
             base.OnStateCreated();
+
+            // NET-07: every peer creates this state, so every peer learns the role pool (RoleID → RoleDataObject)
+            // and can rebuild a replicated role locally from its id.
+            foreach (RoleDataObject _role in roleAttributionDictionary.Keys)
+            {
+                RoleRegistry.Register(_role);
+            }
         }
 
         public override void OnStartStateServer()
@@ -84,6 +91,18 @@ namespace GameLogic.GameStates
                 ApplyRole(_frozenOrder[_fakeRoleIndex], Command.CreateNewFakeCharacter());
             }
 
+            // Dev seam (autoplay): may reorder WHO receives each drawn role (the draw itself is untouched). Null in a
+            // normal game; the autoplay uses it to seat a forced role on a real client without re-rolling whole games.
+            if (DevSeatOrder != null)
+            {
+                var _drawnRoles = new List<RoleDataObject>(_distribution.RealRoleIndices.Count);
+                foreach (int _index in _distribution.RealRoleIndices)
+                {
+                    _drawnRoles.Add(_frozenOrder[_index]);
+                }
+                _realCharacters = DevSeatOrder(_drawnRoles, _realCharacters) ?? _realCharacters;
+            }
+
             //assign the remaining draws to the real characters, in processing order
             for (int i = 0; i < _distribution.RealRoleIndices.Count; i++)
             {
@@ -92,6 +111,12 @@ namespace GameLogic.GameStates
 
             Loop.NextGameState();
         }
+
+        /// <summary>
+        /// Dev seam (autoplay only, null otherwise): given the drawn real roles (in assignment order) and the real
+        /// characters, returns the characters in the order that receives them. Same multiset, any order.
+        /// </summary>
+        public static System.Func<IReadOnlyList<RoleDataObject>, List<Character>, List<Character>> DevSeatOrder;
 
         // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored
         // SerializedDictionary order. A plain Dictionary's key enumeration order is
@@ -139,7 +164,8 @@ namespace GameLogic.GameStates
 
         // Applies a decided role (RoleDistributor output) to a character: clone, set, give powers, replicate.
         // Side effects only — the selection + count depletion are owned by the POCO (Story 3.3). The order
-        // (Clone → role set → ownerClientId → GivePowerToCharacter loop → GiveRoleToCharacterRpc) is preserved.
+        // (Clone → role set → ownerClientId → GivePowerToCharacter loop → replicate) is preserved; NET-07 replaced
+        // the replicate step (GiveRoleToCharacterRpc) with the Character.roleId NetworkVariable.
         private void ApplyRole(RoleDataObject _randomRole, Character _character)
         {
             if (_character)
@@ -153,7 +179,10 @@ namespace GameLogic.GameStates
                     Command.GivePowerToCharacter(_character.ownerClientId.Value, _powerDataObject);
                 }
 
-                Command.GiveRoleToCharacterRpc(_character.ownerClientId.Value, _character.role);
+                // NET-07: the role replicates as state (Character.roleId); each peer rebuilds it from RoleRegistry.
+                RoleRegistry.Register(_randomRole);
+                _character.CheckForPowersLocal();
+                _character.CommitRoleServer();
             }
         }
 

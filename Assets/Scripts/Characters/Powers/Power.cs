@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AudioSystem;
+using Board;
 using ChatSystem;
 using Cysharp.Threading.Tasks;
 using RoleTarget;
@@ -30,7 +31,7 @@ using static Characters.Powers.Target.TargetUtils;
 namespace Characters.Powers
 {
     [Serializable]
-    public class Power : NetworkBehaviour
+    public class Power : NetworkBehaviour, IViewerEffectRelay
     {
         public NetworkVariable<ulong> ownerClientId = new();
 
@@ -70,7 +71,7 @@ namespace Characters.Powers
         [Tooltip("-1 == maxUse")] public int powerUseRegenPerAwakening = -1;
         
         /// <summary>
-        /// A generic validator for target selection. Add your rules here in Awake/Start/OnNetworkSpawn().
+        /// A generic validator for target selection. Add your rules here in Awake, Start or OnNetworkSpawn.
         /// Example: targetValidator.AddRule(ctx => ctx.targetId != ownerClientId.Value);
         /// </summary>
         protected Validator<(ulong targetId, TargetType targetType)> targetValidator = new();
@@ -147,6 +148,33 @@ namespace Characters.Powers
         /// <summary>The private-marker sprite for this power (null when the power places no icon).</summary>
         public Sprite BarIcon => barIcon;
 
+        // APPENDED (NET-08, epic-network-sync-hardening) — never reorder/rename the fields above it.
+        // Server-stamped grant order: the replicated sort key of the owner's power list (role.powers is a projection
+        // of PowerRegistry by ownerClientId, identical on every peer).
+        public NetworkVariable<int> grantOrder = new();
+
+        // Runtime passive state (PReincarnation turns itself passive after use). 0 = authored value (isPassive),
+        // 1 = forced passive, 2 = forced active. Replicated state, replacing the ChangeIsPassiveRpc event.
+        public NetworkVariable<byte> passiveOverride = new();
+
+        /// <summary>NET-08: the LIVE passive state on every peer (authored value unless overridden at runtime).</summary>
+        public bool IsPassive => passiveOverride.Value switch
+        {
+            1 => true,
+            2 => false,
+            _ => isPassive,
+        };
+
+        /// <summary>NET-08, server: overrides the live passive state (replicates to every peer).</summary>
+        public void SetPassiveServer(bool _passive)
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+            passiveOverride.Value = _passive ? (byte)1 : (byte)2;
+        }
+
         public static event Action<Power> onPowerSpawned;
         public event Action onPowerUsedServer;
         public NetworkAction onPowerUsed;
@@ -195,9 +223,43 @@ namespace Characters.Powers
             if (IsServer)
             {
                 ownerClientId.Value = idHolderServer;
+                grantOrder.Value = Runtime.PowerRegistry.NextGrantOrder();
                 onPowerUsed = new NetworkAction("OnPowerUsed_" + powerName, this);
             }
+
+            // NET-08: the owner's power list is a projection of the registry — rebuild it now and on every owner change.
+            Runtime.PowerRegistry.Register(this);
+            ownerClientId.OnValueChanged += OnOwnerChanged;
+            RebuildOwnerPowerList(ownerClientId.Value);
+
             onPowerSpawned?.Invoke(this);
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            ownerClientId.OnValueChanged -= OnOwnerChanged;
+            Runtime.PowerRegistry.Unregister(this);
+            RebuildOwnerPowerList(ownerClientId.Value);
+            base.OnNetworkDespawn();
+        }
+
+        private void OnOwnerChanged(ulong _previousOwner, ulong _newOwner)
+        {
+            RebuildOwnerPowerList(_previousOwner);
+            RebuildOwnerPowerList(_newOwner);
+        }
+
+        private void RebuildOwnerPowerList(ulong _owner)
+        {
+            if (characterManager == null)
+            {
+                return;
+            }
+            Character _character = characterManager.GetCharacter(_owner, false);
+            if (_character != null)
+            {
+                _character.CheckForPowersLocal();
+            }
         }
         
         public bool IsTheSamePower(Power _isTheSamePower)
@@ -213,38 +275,153 @@ namespace Characters.Powers
         // Returns the outcome's verdict (None when it did not run or the power has no notion of correctness)
         // so an adapter that still owns engine-coupled bookkeeping can key off the same grade instead of
         // re-deriving it — see PDroolyHealing's per-night healed roster.
+        // NET-09 (epic-network-sync-hardening): every decision runs HERE, on the server, from server state. A decision
+        // whose effects are local to ONE player (owner-local reveal, local chat line, card effect — Embrace, Cursed
+        // Vision, Lack of Affection) passes that player as localViewer: the executors deliver those effects to that
+        // player instead of applying them on the host. The former client-side variant (RunClientDecisionEffects)
+        // decided outcomes from a client replica and is gone.
         protected PowerVerdict RunDecisionEffects(IPowerDecision decision, in PowerContext context,
-            IPowerStateResolver state = null)
+            IPowerStateResolver state = null, ulong? localViewer = null)
         {
             if (!IsServer) return PowerVerdict.None;
             PowerOutcome outcome = decision.Decide(context);
             if (!outcome.Accepted) return PowerVerdict.None;
-            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
+            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state, localViewer, this));
             EmitVerdictServer(outcome.Verdict);
             return outcome.Verdict;
         }
 
-        // Client-runtime variant of RunDecisionEffects for the handful of powers whose effect runs on a
-        // SPECIFIC client rather than the server (LackOfAffection — the decision resolves on the contacted
-        // target's own client, keyed by PowerContext.IsTrueLocalTarget). No IsServer guard: the caller is
-        // already inside a client-scoped RPC body and has done its own locality check. The dispatch + state
-        // threading are otherwise identical.
-        protected PowerVerdict RunClientDecisionEffects(IPowerDecision decision, in PowerContext context,
-            IPowerStateResolver state = null)
+        // ---- NET-09: viewer-local effect relay ---------------------------------------------------------
+
+        void IViewerEffectRelay.AddCardEffectForViewer(ulong _viewer, int _cardEffectId, ulong _targetSlot, bool _flag)
         {
-            PowerOutcome outcome = decision.Decide(context);
-            if (!outcome.Accepted) return PowerVerdict.None;
-            PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state));
-            EmitVerdictFromClient(outcome.Verdict);
-            return outcome.Verdict;
+            AddCardEffectForViewerRpc(_cardEffectId, _targetSlot, _flag, characterManager.GetSafeRpcTarget(_viewer));
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void AddCardEffectForViewerRpc(int _cardEffectId, ulong _targetSlot, bool _flag, RpcParams _params = default)
+        {
+            if (CardEffectManager.instance != null)
+            {
+                CardEffectManager.instance.AddCardEffect((CardEffectID)_cardEffectId, _targetSlot, _flag);
+            }
+        }
+
+        // ---- NET-09: server-side use authorization -------------------------------------------------------
+        // A use is a pair (effect RPC, consume). Most powers send the effect then OnUsed(); a few (Vision of the
+        // Impossible, Lack of Affection) consume first. The server accepts at most ONE effect per consumed use, from
+        // the owner (or the host acting for a simulated identity), while the owner can still act — so a double click,
+        // a forged sender, or a click that lands after the owner was put to sleep cannot apply an effect twice or late,
+        // and powerUseLeft never goes negative. Target RULES are not re-evaluated here: they depend on what the VIEWER
+        // knows (reveals), which the server only tracks once knowledge moves to a server ledger (NET-10).
+
+        private int _serverPreConsumedUses;
+        private bool _serverEffectAwaitingConsume;
+
+        // Rejoin 02: a rejoined owner's new connection acts for his seat.
+        private bool IsAllowedSender(ulong _sender) =>
+            (characterManager != null ? characterManager.SeatOfTransport(_sender) : _sender) == ownerClientId.Value
+            || _sender == NetworkManager.ServerClientId;
+
+        private bool ServerOwnerCanAct(bool _requireAwake)
+        {
+            Character _owner = ownerCharacter;
+            if (!_owner || _owner.isChained.Value || _owner.isEliminated.Value)
+            {
+                return false;
+            }
+            return !_requireAwake || !hasToBeAwakened || _owner.isAwakened.Value;
+        }
+
+        private bool RejectUse(string _reason)
+        {
+            Debug.LogWarning($"[POWER] rejected '{powerName}' of {ownerClientId.Value}: {_reason} " +
+                             $"(uses left {powerUseLeft.Value}, effect awaiting consume {_serverEffectAwaitingConsume}, pre-consumed {_serverPreConsumedUses})");
+            return false;
+        }
+
+        /// <summary>
+        /// NET-09, server: call at the top of every player-initiated effect RPC. Returns false (and the effect must
+        /// not run) when the sender is not the owner/host, the owner cannot act, a target does not exist, or no use
+        /// is available for this effect.
+        /// </summary>
+        protected bool ServerAuthorizeEffect(RpcParams _params, params ulong[] _targetSlots)
+        {
+            if (!IsServer)
+            {
+                return false;
+            }
+            ulong _sender = _params.Receive.SenderClientId;
+            // The host's own requests (its player, or a simulated identity it drives) run in the same frame on the
+            // authoritative state its UI just validated (CanUse): no latency, so no race to guard against.
+            if (_sender == NetworkManager.ServerClientId)
+            {
+                return true;
+            }
+            if (!IsAllowedSender(_sender))
+            {
+                return RejectUse($"sender {_sender} is not the owner");
+            }
+
+            bool _preConsumed = _serverPreConsumedUses > 0;
+            // A use consumed before its effect was authorized at consume time (the owner may since have been put to
+            // sleep by the awakening flow reacting to that consume), so only the "not out of the game" part applies.
+            if (!ServerOwnerCanAct(_requireAwake: !_preConsumed))
+            {
+                return RejectUse("owner cannot act (asleep, chained or eliminated)");
+            }
+            foreach (ulong _slot in _targetSlots)
+            {
+                if (characterManager.GetCharacter(_slot, false) == null)
+                {
+                    return RejectUse($"unknown target {_slot}");
+                }
+            }
+
+            if (_preConsumed)
+            {
+                _serverPreConsumedUses--;
+                return true;
+            }
+            if (powerUseLeft.Value <= 0)
+            {
+                return RejectUse("no use left");
+            }
+            _serverEffectAwaitingConsume = true;
+            return true;
+        }
+
+        /// <summary>Server: an authorized effect was refused after all (its consume will never come): drop the pairing.</summary>
+        protected void ServerCancelAuthorizedEffect()
+        {
+            _serverEffectAwaitingConsume = false;
+        }
+
+        // Server: one use is consumed. Pairs with the effect that preceded it, or pre-authorizes the effect that follows.
+        private bool ServerTryConsumeUse()
+        {
+            // The consume of an effect already authorized (it had a use then): the effect itself may have spent the
+            // uses since (a failed "En chaîne" power sets them to 0), so the pairing is accepted as is.
+            if (_serverEffectAwaitingConsume)
+            {
+                _serverEffectAwaitingConsume = false;
+                return true;
+            }
+            if (powerUseLeft.Value <= 0)
+            {
+                return RejectUse("consume with no use left");
+            }
+            if (!ServerOwnerCanAct(_requireAwake: true))
+            {
+                return RejectUse("consume while the owner cannot act");
+            }
+            _serverPreConsumedUses++;
+            return true;
         }
 
         // ---- Caster-facing verdict channel ------------------------------------------------------------
-        // Owner-only, one hop. Server path: raise locally when the owner IS the server (host / simulated
-        // bot), else one targeted RPC. Client path: a client-runtime decision (RunClientDecisionEffects)
-        // may resolve on the OWNER's client (CursedVision, EmbraceOfShadows) — raise straight away — or on
-        // the CONTACTED TARGET's client (LackOfAffection) — bounce through the server so the grade still
-        // lands on the caster. PowerVerdict.None never travels.
+        // Owner-only, one hop: raise locally when the owner IS the server, else one targeted RPC (GetSafeRpcTarget
+        // sends a simulated bot's grade to the host). PowerVerdict.None never travels.
 
         /// <summary>Server-side entry: route an outcome's verdict to the caster. No-op for None.</summary>
         protected void EmitVerdictServer(PowerVerdict verdict)
@@ -261,21 +438,6 @@ namespace Characters.Powers
             OnPowerVerdictClientRpc(verdict, characterManager.GetSafeRpcTarget(_owner));
         }
 
-        /// <summary>Client-side entry for the client-runtime decision path. No-op for None.</summary>
-        protected void EmitVerdictFromClient(PowerVerdict verdict)
-        {
-            if (verdict == PowerVerdict.None) return;
-
-            if (characterManager.IsLocalOrSimulated(ownerClientId.Value))
-            {
-                onPowerVerdict?.Invoke(verdict);
-                return;
-            }
-            ReportVerdictServerRpc(verdict);
-        }
-
-        [Rpc(SendTo.Server)]
-        private void ReportVerdictServerRpc(PowerVerdict _verdict) => EmitVerdictServer(_verdict);
 
         [Rpc(SendTo.SpecifiedInParams)]
         private void OnPowerVerdictClientRpc(PowerVerdict _verdict, RpcParams _params)
@@ -304,6 +466,15 @@ namespace Characters.Powers
         
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
+            // Session stopping (the host left or ended the game): the session registries are reset before GameScene
+            // unloads, so the power bars' per-frame polling read cleared target data (NullReferenceException in
+            // TargetUtils). Nothing is usable once the session is going away.
+            var _network = Unity.Netcode.NetworkManager.Singleton;
+            if (_network == null || _network.ShutdownInProgress || !_network.IsListening)
+            {
+                return false;
+            }
+
             var _powerCharacter = ownerCharacter;
             if (!_powerCharacter)
             {
@@ -313,7 +484,7 @@ namespace Characters.Powers
 
             var _context = new CorruptionDuPortail.Domain.PowerUsabilityContext(
                 allComponentsAllowUse: !powerComponents.Any(_pc => !_pc.CanUsePower()),
-                isPassive: isPassive,
+                isPassive: IsPassive,
                 isCurrentlyUsed: isCurrentlyUsed,
                 ignoreCurrentlyUsed: _ignoreCurrentlyUsed,
                 isChained: _powerCharacter.isChained.Value,
@@ -336,8 +507,19 @@ namespace Characters.Powers
         }
         
         [Rpc(SendTo.Server)]
-        public void OnUsedServerRpc()
+        public void OnUsedServerRpc(RpcParams _params = default)
         {
+            // NET-09: a REMOTE consume is validated (owner only, a use left, paired with its effect); the host's own
+            // consumes call OnUsed directly on the server and never come through here.
+            if (!IsAllowedSender(_params.Receive.SenderClientId))
+            {
+                RejectUse($"consume from non-owner {_params.Receive.SenderClientId}");
+                return;
+            }
+            if (!ServerTryConsumeUse())
+            {
+                return;
+            }
             OnUsed(false);
         }
 
@@ -364,7 +546,7 @@ namespace Characters.Powers
                 }
                 return;
             }
-            
+
             OnUsedServer();
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
@@ -406,7 +588,10 @@ namespace Characters.Powers
         
         protected virtual void OnUsedServer()
         {
-            powerUseLeft.Value -= 1;
+            if (powerUseLeft.Value > 0) // never below 0 (the effect may have spent the uses already)
+            {
+                powerUseLeft.Value -= 1;
+            }
             onPowerUsedServer?.Invoke();
             characterManager.AskForUpdateAllCharactersRpc();
         }
@@ -441,7 +626,7 @@ namespace Characters.Powers
 
         public virtual void Cancel()
         {
-            if (!isCurrentlyUsed && !isPassive)
+            if (!isCurrentlyUsed && !IsPassive)
             {
                 return;
             }
@@ -490,37 +675,19 @@ namespace Characters.Powers
             }
             ulong _oldOwnerId = ownerClientId.Value;
             ownerClientId.Value = GetComponentInParent<Character>().ownerClientId.Value;
+            // NET-06/08: the new owner id must reach clients BEFORE the reparent notification.
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             OnReparentedClientRpc(_oldOwnerId, ownerClientId.Value);
         }
 
         [Rpc(SendTo.Everyone)]
         public virtual void OnReparentedClientRpc(ulong _oldParentId, ulong _newParentId)
         {
-            // SendTo.Everyone + fire-and-forget: this runs on every peer the instant the server
-            // reparents, but a target Character may not be in a remote client's roster yet. At game
-            // start the fake-client / bot owner (ownerClientId == GameValues.FAKE_CLIENT_ID =
-            // ulong.MaxValue) lags replication, so GetCharacter returns null there while the host
-            // (which simulates the bot synchronously) resolves it. Skipping the powers-list edit on
-            // null is safe: Character.CheckForPowersRpc rebuilds role.powers from the reparented
-            // Power children once the character syncs, so the client still converges. Mirrors the
-            // null-guard in the sibling SendTo.Everyone RPC PowerManager.RemovePowerFromCharacterPowerListRpc.
-            var _oldParentCharacter = characterManager.GetCharacter(_oldParentId, false);
-            var _newParentCharacter = characterManager.GetCharacter(_newParentId, false);
-
-            if (_oldParentCharacter && _oldParentCharacter.role != null)
-            {
-                _oldParentCharacter.role.powers.Remove(this);
-                _oldParentCharacter.InvokeOnPowersUpdated();
-            }
-
-            if (_newParentCharacter && _newParentCharacter.role != null)
-            {
-                if (!_newParentCharacter.role.powers.Contains(this))
-                {
-                    _newParentCharacter.role.powers.Add(this);
-                }
-                _newParentCharacter.InvokeOnPowersUpdated();
-            }
+            // NET-08: notification only. The power lists are projections of PowerRegistry by the replicated
+            // ownerClientId (already applied thanks to the flush in OnReparentedServer), so this never edits them by
+            // hand — it just makes sure both owners' projections are current, then raises the cosmetic event.
+            RebuildOwnerPowerList(_oldParentId);
+            RebuildOwnerPowerList(_newParentId);
 
             onPowerReparented?.Invoke();
         }

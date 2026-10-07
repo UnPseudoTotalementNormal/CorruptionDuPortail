@@ -1,0 +1,66 @@
+{
+  "name": "join-version-mismatch",
+  "goal": "A client whose build version differs from the host's is refused at join with the owner-approved wording, which reaches the join error report (LobbyManager.OnLobbyError -> notification panel; capture join-rejected on client 1); the host plays on with the other clients. Not asserted: that the panel is visible (autoplay clients skip the login, whose canvas sorts above it). Needs builds: an Editor on either side is let through.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 91,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-expect-clients",
+    "2",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes"
+  ],
+  "client1Args": [
+    "-autoplay-build-version",
+    "0.0.0-autoplay",
+    "-autoplay-png"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "join.version",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "connect.rejected",
+      "detail": "Version différente de l'hôte",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "fact",
+      "match": "rejected=Version différente",
+      "process": "clients"
+    },
+    {
+      "type": "event",
+      "kind": "clients.joined",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

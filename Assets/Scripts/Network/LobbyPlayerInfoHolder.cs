@@ -1,5 +1,8 @@
 #region
 
+using System;
+using System.Collections.Generic;
+using CorruptionDuPortail.Domain;
 using Network.Player;
 using Unity.Netcode;
 using Characters;
@@ -20,7 +23,16 @@ namespace Network
         // accessor in the migrated set; this holder itself uses the bare `instance` self-ref below.
         public static LobbyPlayerInfoHolder instance { get; private set; } // recorded §4 census survivor (12.3 strategy B), whitelisted in StaticSingletonCensusGuardTests
 
-        public NetworkList<PlayerInfo> playerInfos { get; private set; } = new();
+        // NET-01 (epic-network-sync-hardening): the roster is ONE full-value snapshot in a NetworkVariable, never a
+        // NetworkList (index deltas + NGO #3280 late-join duplicate made replicas lose other players' rows). Every
+        // server write assigns a NEW snapshot; see PlayerRosterSnapshot for the rules.
+        private readonly NetworkVariable<PlayerRosterSnapshot> _roster = new(new PlayerRosterSnapshot());
+
+        /// <summary>The replicated roster rows, unique by clientId, in first-join order. Read-only on every peer.</summary>
+        public IReadOnlyList<PlayerInfo> playerInfos => _roster.Value != null ? _roster.Value.Entries : Array.Empty<PlayerInfo>();
+
+        /// <summary>Raised on every peer whenever the replicated roster changes (and once on spawn).</summary>
+        public event System.Action onRosterChanged;
 
         // Story 10.4 (Epic 10 / D4): CharacterManager resolved once here (lane C) so this holder stops
         // reaching the locator for GetSafeRpcTarget (clears the §4a CharacterManager-census row). Resolved
@@ -30,6 +42,10 @@ namespace Network
         // field may stay null and is never dereferenced — identical to the prior behaviour. NFR5: the
         // GetSafeRpcTarget call stays verbatim on the concrete CharacterManager.
         private CharacterManager characterManager;
+
+        // NET-03 lane A (scene-wired in GameScene): read only to know whether a disconnect happens in the lobby
+        // (row removed) or mid-game (row kept, flagged hasLeft). Never resolved in OnNetworkSpawn (spawn-order race).
+        [SerializeField] private GameManager gameManager;
 
         private void Awake()
         {
@@ -44,8 +60,13 @@ namespace Network
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            if (IsServer && gameManager != null)
+            {
+                gameManager.onPlayerRejoinedServer += OnPlayerRejoinedServer; // Rejoin 02
+            }
 
             characterManager = CompositionRoot.For(NetworkManager).CharacterManager;
+            _roster.OnValueChanged += OnRosterValueChanged;
 
             if (IsServer)
             {
@@ -53,10 +74,20 @@ namespace Network
                 NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
                 OnClientConnected(NetworkManager.LocalClient.ClientId);
             }
+
+            // A late joiner receives the roster in the spawn payload without OnValueChanged: notify once so
+            // subscribers that wired before spawn render the initial state.
+            onRosterChanged?.Invoke();
         }
 
         public override void OnNetworkDespawn()
         {
+            if (gameManager != null)
+            {
+                gameManager.onPlayerRejoinedServer -= OnPlayerRejoinedServer;
+            }
+            _roster.OnValueChanged -= OnRosterValueChanged;
+
             if (IsServer && NetworkManager != null)
             {
                 NetworkManager.OnClientConnectedCallback -= OnClientConnected;
@@ -71,24 +102,81 @@ namespace Network
             base.OnNetworkDespawn();
         }
 
+        private void OnRosterValueChanged(PlayerRosterSnapshot _previous, PlayerRosterSnapshot _current)
+        {
+            onRosterChanged?.Invoke();
+        }
+
+        // Server-only single write point: assigning a NEW snapshot is what marks the NetworkVariable dirty.
+        private void SetRosterServer(PlayerRosterSnapshot _next)
+        {
+            if (!IsServer || !IsSpawned || _next == null || ReferenceEquals(_next, _roster.Value))
+            {
+                return;
+            }
+            _roster.Value = _next;
+        }
+
+
+        // Rejoin 02: the player of that seat is back — his row is no longer "left".
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection)
+        {
+            if (IsSpawned)
+            {
+                SetRosterServer(_roster.Value.WithBack(_seat));
+            }
+        }
+
         private void OnClientDisconnected(ulong clientId)
         {
+            ConnectionApprovalGate.DiscardPendingProfile(clientId);
             if (!IsSpawned) return;
 
-            for (int i = 0; i < playerInfos.Count; i++)
-            {
-                if (playerInfos[i].playerClientId != clientId)
-                {
-                    continue;
-                }
-                
-                playerInfos.RemoveAt(i);
-                break;
-            }
+            // NET-03: mid-game, the leaver's character stays on the board (chained), so its row is KEPT and flagged —
+            // removing it made every client lose that player's name. Lobby leaves still remove the row. An unwired /
+            // unspawned GameManager reads as lobby (= the previous always-remove behaviour).
+            bool _inLobby = gameManager == null || !gameManager.IsSpawned || gameManager.IsInLobbyPhase;
+            // Rejoin 02: a rejoined player's connection id stands for his seat's row.
+            ulong _seat = characterManager != null ? characterManager.SeatOfTransport(clientId) : clientId;
+            SetRosterServer(_inLobby ? _roster.Value.WithRemoved(_seat) : _roster.Value.WithLeft(_seat));
         }
 
         private void OnClientConnected(ulong clientId)
         {
+            if (!IsServer || !IsSpawned) return;
+
+            // NET-02: the host's own profile is local — no RPC to itself.
+            if (clientId == NetworkManager.LocalClientId)
+            {
+                PlayerInfo _host = LocalPlayerInfoHolder.playerInfo;
+                _host.playerClientId = clientId;
+                SetRosterServer(_roster.Value.WithUpsert(_host));
+                return;
+            }
+
+            // NET-05: a joiner that finished loading after the game started is disconnected by ConnectionApprovalGate;
+            // it must not get a roster row (it would show up as a phantom "(parti)" player).
+            if (gameManager != null && gameManager.IsSpawned && !gameManager.IsInLobbyPhase)
+            {
+                ConnectionApprovalGate.DiscardPendingProfile(clientId);
+                return;
+            }
+
+            // NET-02: a joiner's profile arrived WITH its connection request (atomic with approval) — upsert it now,
+            // keyed on the transport's clientId. The ask/answer RPC below is only the fallback for a client that sent
+            // no (or a malformed) payload.
+            if (ConnectionApprovalGate.TryTakePendingProfile(clientId, out ConnectionPayload _payload))
+            {
+                SetRosterServer(_roster.Value.WithUpsert(new PlayerInfo
+                {
+                    playerClientId = clientId,
+                    playerName = PlayerNameSanitizer.Sanitize(_payload.PlayerName, false, $"Player{clientId}"),
+                    playerFullName = PlayerNameSanitizer.TruncateUtf8(_payload.PlayerFullName, PlayerNameSanitizer.MaxUtf8Bytes),
+                    playerSteamId = _payload.SteamId,
+                }));
+                return;
+            }
+
             AskForPlayerInfo(clientId);
         }
 
@@ -96,43 +184,54 @@ namespace Network
         {
             AskForPlayerInfoRpc(characterManager.GetSafeRpcTarget(clientId));
         }
-        
+
         [Rpc(SendTo.SpecifiedInParams)]
         private void AskForPlayerInfoRpc(RpcParams rpcParams = default)
         {
             var _info = LocalPlayerInfoHolder.playerInfo;
             _info.playerClientId = NetworkManager.LocalClient.ClientId;
             LocalPlayerInfoHolder.playerInfo = _info;
-            
+
             SavePlayerInfoRpc(_info);
         }
 
         [Rpc(SendTo.Server)]
-        private void SavePlayerInfoRpc(PlayerInfo playerInfo)
+        private void SavePlayerInfoRpc(PlayerInfo playerInfo, RpcParams rpcParams = default)
         {
-            if (!IsSpawned || playerInfos == null) return;
-            playerInfos.Add(playerInfo);
+            if (!IsSpawned) return;
+            // NET-01: key the row on the RPC SENDER (never a client-supplied id) and upsert — a repeated answer
+            // replaces the row instead of adding a second one.
+            playerInfo.playerClientId = rpcParams.Receive.SenderClientId;
+            SetRosterServer(_roster.Value.WithUpsert(playerInfo));
         }
 
         public PlayerInfo GetPlayerInfo(ulong _clientId)
         {
-            if (!IsSpawned || playerInfos == null) return default;
+            if (!IsSpawned || _roster.Value == null) return default;
+            return _roster.Value.TryGet(_clientId, out PlayerInfo _info) ? _info : default;
+        }
 
-            foreach (var info in playerInfos)
-            {
-                if (info.playerClientId == _clientId)
-                {
-                    return info;
-                }
-            }
-            return default;
+        /// <summary>True when the replicated roster holds a row for that clientId.</summary>
+        public bool HasPlayerInfo(ulong _clientId) => TryGetPlayerInfo(_clientId, out _);
+
+        public bool TryGetPlayerInfo(ulong _clientId, out PlayerInfo _info)
+        {
+            _info = default;
+            return IsSpawned && _roster.Value != null && _roster.Value.TryGet(_clientId, out _info);
+        }
+
+        /// <summary>NET-03: the pseudo as every name surface must show it (fallback + "left" marker).</summary>
+        public string GetDisplayPseudo(ulong _clientId)
+        {
+            bool _hasEntry = TryGetPlayerInfo(_clientId, out PlayerInfo _info);
+            return PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
         }
 
         // Story 13.0 (Epic 13): runtime update seam (additive — no current caller). Today playerInfos only
         // grows on connect and shrinks on disconnect; a mid-session change (the personalization story's
         // appearance vars) had nowhere to go. A later 13.x story calls UpdateLocalPlayerInfo() after the
         // local player edits an appearance var, and the server replaces that client's entry so it replicates.
-        // Server-authoritative: the list is mutated server-side only, exactly like SavePlayerInfoRpc.
+        // Server-authoritative: the roster is mutated server-side only, exactly like SavePlayerInfoRpc.
 
         /// <summary>
         /// Client → server: stamp this client's id onto its local profile and ask the server to replace the
@@ -166,52 +265,31 @@ namespace Network
         }
 
         /// <summary>
-        /// Server-authoritative replace-by-clientId: find the entry whose playerClientId matches and overwrite
-        /// it in place (NetworkList index-set replicates the change). Idempotent — an unknown clientId is a
-        /// no-op (no phantom entry is added), and an unchanged value is skipped (no redundant replication).
+        /// Server-authoritative replace-by-clientId. Idempotent — an unknown clientId is a no-op (no phantom entry
+        /// is added), an unchanged value is skipped (no redundant replication), and the row's ready flag is kept
+        /// (isReady is owned exclusively by SetReadyServer).
         /// </summary>
         public void UpdatePlayerInfo(PlayerInfo _info)
         {
-            if (!IsServer || !IsSpawned || playerInfos == null) return;
-
-            for (int i = 0; i < playerInfos.Count; i++)
-            {
-                if (playerInfos[i].playerClientId != _info.playerClientId)
-                {
-                    continue;
-                }
-
-                // feat/lobby-ready-system: isReady is owned exclusively by SetReadyServer (a whole-profile replace
-                // must never change it). Carry the current ready flag onto the incoming profile so a future
-                // appearance/name update can't silently un-ready the player (isReady defaults to false in the
-                // client-supplied _info, and it participates in Equals).
-                _info.isReady = playerInfos[i].isReady;
-
-                // Code-review F3: skip a no-op write so a redundant UpdateLocalPlayerInfo() (e.g. the
-                // personalization UI firing with no real change) does not spam OnListChanged / replication.
-                // Uses the value equality this story tidied up.
-                if (!playerInfos[i].Equals(_info))
-                {
-                    playerInfos[i] = _info;
-                }
-                return;
-            }
+            if (!IsServer || !IsSpawned) return;
+            SetRosterServer(_roster.Value.WithUpdate(_info));
         }
 
         public void AddDebugPlayer(ulong _clientId, string _name)
         {
-            if (!IsServer || !IsSpawned || playerInfos == null) return;
-            
-            playerInfos.Add(new Network.Player.PlayerInfo
+            if (!IsServer || !IsSpawned) return;
+
+            // Simulated bots (clientId >= 100) are auto-ready: they never open a UI to toggle, so without this the
+            // all-ready gate could never be satisfied in solo bot-debug (feat/lobby-ready-system). Upsert first
+            // (keeps any existing ready flag), then force the bot ready.
+            PlayerRosterSnapshot _next = _roster.Value.WithUpsert(new PlayerInfo
             {
                 playerClientId = _clientId,
                 playerName = _name,
                 playerFullName = _name,
                 playerSteamId = 0,
-                // Simulated bots (clientId >= 100) are auto-ready: they never open a UI to toggle, so without
-                // this the all-ready gate could never be satisfied in solo bot-debug (feat/lobby-ready-system).
-                isReady = true
             });
+            SetRosterServer(_next.WithReady(_clientId, true));
         }
 
         // ─────────────────── Lobby ready-to-start (feat/lobby-ready-system) ───────────────────
@@ -230,37 +308,19 @@ namespace Network
         }
 
         /// <summary>
-        /// Server-side: flip ONLY the isReady field on one census entry (by clientId) and replicate via index-set.
-        /// Never a whole-PlayerInfo replace (that would clobber name/steamId). Unknown clientId = no-op; unchanged
-        /// value skipped (no redundant OnListChanged). Also the host's direct entry point for a simulated identity.
+        /// Server-side: flip ONLY the isReady field of one row (by clientId). Unknown clientId = no-op; unchanged
+        /// value skipped (no redundant replication). Also the host's direct entry point for a simulated identity.
         /// </summary>
         public void SetReadyServer(ulong clientId, bool ready)
         {
-            if (!IsServer || !IsSpawned || playerInfos == null) return;
-
-            for (int i = 0; i < playerInfos.Count; i++)
-            {
-                if (playerInfos[i].playerClientId != clientId)
-                {
-                    continue;
-                }
-
-                if (playerInfos[i].isReady == ready)
-                {
-                    return; // no-op: skip redundant replication
-                }
-
-                PlayerInfo _info = playerInfos[i];
-                _info.isReady = ready;
-                playerInfos[i] = _info;
-                return;
-            }
+            if (!IsServer || !IsSpawned) return;
+            SetRosterServer(_roster.Value.WithReady(clientId, ready));
         }
 
-        /// <summary>Every census entry is ready AND there is at least one (an empty census is NOT all-ready).</summary>
+        /// <summary>Every roster row is ready AND there is at least one (an empty roster is NOT all-ready).</summary>
         public bool AllReady()
         {
-            if (!IsSpawned || playerInfos == null || playerInfos.Count == 0)
+            if (!IsSpawned || playerInfos.Count == 0)
             {
                 return false;
             }
@@ -275,10 +335,10 @@ namespace Network
             return true;
         }
 
-        /// <summary>Number of ready census entries (for the "X / N prêts" tally).</summary>
+        /// <summary>Number of ready roster rows (for the "X / N prêts" tally).</summary>
         public int ReadyCount()
         {
-            if (!IsSpawned || playerInfos == null)
+            if (!IsSpawned)
             {
                 return 0;
             }

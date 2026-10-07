@@ -135,52 +135,8 @@ namespace Meaf75.Unity{
             return  paused ? "Resume ▶" : "Pause ▯▯";
         }
 
-        public static string GetClaudePauseButtonLabelForState(bool paused) {
-            return  paused ? "Resume AI ▶" : "Pause AI ▯▯";
-        }
-        
         public static readonly string CALENDAR_TEMPLATE_PATH = "CalendarTemplate";
         public static readonly string CALENDAR_TEMPLATE_STYLE_PATH = "CalendarTemplateStyle";
-        
-        public static readonly string DAY_CONTAINER_TEMPLATE_PATH = "DayContainerTemplate";
-        public static readonly string DAY_CONTAINER_TEMPLATE_STYLE_PATH = "DayContainerTemplateStyle";
-
-        public static readonly string EDIT = "Edit";
-        public static readonly string SAVE = "Save";
-        
-        /// <summary> Used to have a way to identify day visualElement </summary>
-        public static string GetDayNameFormat(int day, int month, int year) {
-            return $"{day + 1}-{month}-{year}";
-        }
-        
-        /// <summary> Retreive day,month and year by given day visualElement name identifier </summary>
-        public static (int day, int month, int year) GetDateByDayNameFormat(string dayFormat) {
-            var parts = dayFormat.Split('-');
-            return (int.Parse(parts[0]),int.Parse(parts[1]),int.Parse(parts[2]));
-        }
-    }
-
-    public class DayCalendarEvent {
-        public VisualElement target;
-    }
-
-    public static class DayContainerTemplateNames {
-        public const string LABEL_DAY = "label-day";
-        public const string EDIT_BTN = "edit-btn";
-        public const string LABEL_HOURS = "label-hours";
-        public const string LABEL_CLAUDE_HOURS = "label-claude-hours";
-        public const string EDIT_DAY_CONTAINER = "edit-day-container";
-        public const string INPUT_EDIT_MINUTES = "input-edit-minutes";
-    }
-    
-    public static class CalendarContainerTemplateNames {
-        public const string BTN_PREV_MONTH = "btn-prev-month";
-        public const string BTN_NEXT_MONTH = "btn-next-month";
-        public const string LABEL_DATE = "label-date";
-        public const string TIME_RECORDER_STATE_BTN = "time-recorder-state-btn";
-        public const string LABEL_TOTAL_DEV_TIME = "label-total-dev-time";
-        public const string LABEL_TOTAL_CLAUDE_TIME = "label-total-claude-time";
-        public const string CLAUDE_PAUSE_STATE_BTN = "claude-pause-state-btn";
     }
 }
 

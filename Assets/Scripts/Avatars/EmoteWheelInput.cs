@@ -106,6 +106,7 @@ namespace Avatars
         {
             _open = true;
             _stick = Vector2.zero;
+            _highlighted = EmoteWheelSelection.None;
             wheel?.Open();
             Opened?.Invoke();
         }
@@ -133,7 +134,12 @@ namespace Avatars
 
             int _index = EmoteWheelSelection.SelectionIndex(_direction, wheel.Count, deadzone);
             wheel.SetSelection(_index);
+            _highlighted = _index;
         }
+
+        // The slot the player saw highlighted while holding: what the release plays. Recomputing at release read
+        // the input of another mode when the cursor lock changed in between (the Closed handler re-applies it).
+        private int _highlighted = EmoteWheelSelection.None;
 
         private void CloseWheel(bool playSelection)
         {
@@ -143,9 +149,11 @@ namespace Avatars
 
             if (playSelection)
             {
-                int _index = EmoteWheelSelection.SelectionIndex(
-                    Cursor.lockState == CursorLockMode.Locked ? _stick : PointerDirection(),
-                    wheel.Count, deadzone);
+                int _index = _highlighted != EmoteWheelSelection.None
+                    ? _highlighted
+                    : EmoteWheelSelection.SelectionIndex(
+                        Cursor.lockState == CursorLockMode.Locked ? _stick : PointerDirection(),
+                        wheel.Count, deadzone);
                 EmoteDefinition _emote = wheel.GetEmote(_index);
                 if (_emote != null)
                 {

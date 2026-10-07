@@ -1,0 +1,53 @@
+{
+  "name": "chat-private",
+  "goal": "Private chat channels: Le Messager (real client) binds a real client by ink (target-focus client on 'encre'), Abyss opens the anomaly channel. Every player writes a tokenized line per phase in each private channel it belongs to; every line reaches every real member and never a real non-member (analyze_chat).",
+  "mode": "net",
+  "clients": 7,
+  "seed": 81,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-force-roles",
+    "Messager",
+    "-autoplay-role-holder",
+    "client",
+    "-autoplay-target-focus",
+    "client",
+    "-autoplay-target-focus-power",
+    "encre",
+    "-autoplay-chat",
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "chat.sent",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_chat.py {run}"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

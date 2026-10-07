@@ -126,7 +126,11 @@ public class Role : INetworkSerializable, ICloneable
 
     public object Clone()
     {
-        Role _newRole = (Role)this.MemberwiseClone();
+        // NET-07: build a NEW Role (not MemberwiseClone): `powers` is a readonly runtime list, and a member-wise
+        // copy shared it with the authored asset and with every other character holding the same role. The old
+        // role RPC hid this by deserializing a fresh Role on every peer; roles are now rebuilt locally from RoleID.
+        Role _newRole = new Role();
+        _newRole.UpdateRole(this);
         _newRole.winningConditions = new List<WinningCondition>();
         foreach (WinningCondition _condition in winningConditions)
         {

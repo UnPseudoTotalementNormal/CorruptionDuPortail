@@ -241,7 +241,7 @@ namespace Avatars
                 {
                     _boundAvatar = _avatar;
                     _manager = _resolved;
-                    _localId = _networkManager.LocalClientId;
+                    _localId = _avatar.ownerClientId.Value; // the seat (a rejoined peer's connection id differs)
                     _bound = true;
                     break;
                 }

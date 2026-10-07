@@ -1,5 +1,6 @@
 #region
 
+using CorruptionDuPortail.Domain;
 using UnityEngine;
 
 #endregion
@@ -17,19 +18,21 @@ namespace Network.Player
             playerName = "Player" + UnityEngine.Random.Range(1, 9999),
         };
 
-        public static void CreateNewClientData(string _playerName)
-        {
-            string _shortName = _playerName;
-            int _hashIndex = _playerName.IndexOf('#');
-            if (_hashIndex >= 0)
-            {
-                _shortName = _playerName.Substring(0, _hashIndex);
-            }
+        /// <summary>UGS sign-in: the name comes as "Name#1234"; the "#1234" discriminator is stripped for display.</summary>
+        public static void CreateNewClientData(string _playerName) => CreateNewClientData(_playerName, true);
 
+        /// <summary>
+        /// NET-02: <paramref name="_isUgsName"/> = false for Steam names, which may legitimately contain '#'
+        /// ("#Nohan" used to become an empty pseudo). Names are sanitized (whitespace, empty → default pseudo,
+        /// UTF-8-safe truncation to the FixedString64Bytes capacity).
+        /// </summary>
+        public static void CreateNewClientData(string _playerName, bool _isUgsName)
+        {
+            string _fallback = BuildDefault().playerName.ToString();
             playerInfo = new PlayerInfo()
             {
-                playerFullName = _playerName,
-                playerName = _shortName,
+                playerFullName = PlayerNameSanitizer.TruncateUtf8(_playerName ?? string.Empty, PlayerNameSanitizer.MaxUtf8Bytes),
+                playerName = PlayerNameSanitizer.Sanitize(_playerName, _isUgsName, _fallback),
             };
         }
 

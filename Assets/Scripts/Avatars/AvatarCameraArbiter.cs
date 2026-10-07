@@ -366,12 +366,17 @@ namespace Avatars
         // (FreeRoam/Embodied) lock + hide the cursor so the mouse drives the look — UNLESS the tablet is open,
         // which frees the cursor (to click the tablet UI) and freezes the look so the camera no longer turns
         // with the mouse. Board mode always shows the cursor (board/UI is click-driven).
+        /// <summary>What this arbiter asked of the OS cursor (locked in first person, tablet closed). Read by tools:
+        /// <c>Cursor.lockState</c> itself can be reset by the platform (an unfocused or guarded window).</summary>
+        public bool WantsLockedCursor { get; private set; }
+
         private void ApplyCursorAndLook()
         {
             bool _firstPerson = _currentMode == CameraMode.FreeRoam
                 || ((_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive);
             bool _lockCursor = _firstPerson && !_tabletOpen;
 
+            WantsLockedCursor = _lockCursor;
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !_lockCursor;
 

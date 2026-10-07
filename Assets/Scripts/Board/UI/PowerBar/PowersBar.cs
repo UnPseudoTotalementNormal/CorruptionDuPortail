@@ -41,6 +41,26 @@ namespace Board.UI.PowerBar
             characterManager.onLocalIdentityChanged += SubscribeToLocalCharacter;
         }
 
+        // The scene's characters outlive this bar while GameScene unloads (end of game, return to menu): their powers'
+        // despawn rebuilds their lists and raised onPowersUpdated on this destroyed bar (NRE in CreatePowerBar).
+        private void OnDestroy()
+        {
+            if (gameManager)
+            {
+                gameManager.onGameStarted -= SubscribeToLocalCharacter;
+            }
+            if (characterManager)
+            {
+                characterManager.onLocalIdentityChanged -= SubscribeToLocalCharacter;
+            }
+            if (_currentSubscribedCharacter)
+            {
+                _currentSubscribedCharacter.onPowersUpdated -= OnPowersUpdated;
+                _currentSubscribedCharacter.onRoleUpdated -= OnPowersUpdated;
+            }
+            _currentSubscribedCharacter = null;
+        }
+
         private void SubscribeToLocalCharacter()
         {
             if (_currentSubscribedCharacter)
@@ -69,6 +89,14 @@ namespace Board.UI.PowerBar
 
         private void Update()
         {
+            // Session stopped (host left / ended the game: NGO shut down and the session registries were reset, the
+            // scene unloads a frame later): nothing to show, and target checks would read the cleared registries.
+            var _network = Unity.Netcode.NetworkManager.Singleton;
+            if (!characterManager || !characterManager.IsSpawned || _network == null || _network.ShutdownInProgress || !_network.IsListening)
+            {
+                return;
+            }
+
             var _rolePowers = characterManager.GetLocalCharacter(false)?.role?.powers;
             
             if (_rolePowers == null)
@@ -157,7 +185,7 @@ namespace Board.UI.PowerBar
             
             foreach (var _power in _powers)
             {
-                if (_power.isPassive)
+                if (_power.IsPassive)
                 {
                     continue;
                 }
@@ -180,7 +208,7 @@ namespace Board.UI.PowerBar
 
             foreach (Power _currentPower in _powers)
             {
-                if (_currentPower.isPassive)
+                if (_currentPower.IsPassive)
                 {
                     continue;
                 }

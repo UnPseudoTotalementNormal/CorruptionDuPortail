@@ -442,7 +442,11 @@ namespace UI.Lobby
             }
 
             _transport.targetSteamId = _hostSteamId;
+            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
+            Network.RejoinSessionStore.SetConnectionTarget("steam", _hostSteamId.ToString(), lobby.LobbyCode);
             
+            // NET-02: the profile + build version travel inside the connection request.
+            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
             bool ok = NetworkManager.Singleton.StartClient();
             if (!ok)
             {
@@ -464,6 +468,8 @@ namespace UI.Lobby
 
             // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
             // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
+            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
+            Network.RejoinSessionStore.SetConnectionTarget("relay", lobby.Data["joinCode"].Value, lobby.LobbyCode);
             return await RelayConnector.ConnectClientAsync(lobby.Data["joinCode"].Value);
         }
 

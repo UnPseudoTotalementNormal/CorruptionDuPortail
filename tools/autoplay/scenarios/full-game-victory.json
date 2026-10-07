@@ -1,0 +1,17 @@
+{
+  "name": "full-game-victory",
+  "goal": "A whole network game played to its victory (no day limit): host + 3 real clients + 4 bots chatting; the game reaches GameEndingState on every process, with no desync and no unexpected error on the way (victory check, last chainings, ending animation).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 301,
+  "timescale": 3,
+  "timeout": 1800,
+  "args": ["-autoplay-fast-fakes", "-autoplay-fast-phases", "Intro|Chaining", "-autoplay-fast-timescale", "12", "-autoplay-chat", "-autoplay-no-png"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "state.enter", "detail": "GameEndingState", "process": "every-client", "min": 1},
+    {"type": "event", "kind": "state.enter", "detail": "GameEndingState", "process": "host", "min": 1},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

@@ -157,6 +157,9 @@ namespace Tests.Editor
             typeof(VoteStateUI),
             typeof(NoteChoosePanel),
             typeof(AwakeningRecapCorruption),
+            // NET-00 (epic-network-sync-hardening) — DesyncMonitor is lane A: GameManager + CharacterManager +
+            // LobbyPlayerInfoHolder scene-wired on the GameScene GameManager object (never resolved in OnNetworkSpawn).
+            typeof(Network.DesyncMonitor),
         };
 
         /// <summary>

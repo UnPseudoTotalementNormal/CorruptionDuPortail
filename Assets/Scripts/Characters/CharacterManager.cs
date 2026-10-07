@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,7 +69,7 @@ namespace Characters
         // statics survive across Play Mode sessions; this fires once at Play entry
         // (SubsystemRegistration) to drop any manager/registry left over from a prior
         // session. It does NOT run on scene loads and is NOT a subscription cleanup:
-        // the networkedCharacters.OnListChanged unsubscribe and the registry/instance
+        // the networkedCharacters.OnValueChanged unsubscribe and the registry/instance
         // teardown for normal scene exit (incl. menu -> scene -> menu round-trips) live
         // in OnNetworkDespawn and OnDestroy, which fire because CharacterManager is
         // scene-placed in GameScene (Shutdown despawns, single-mode LoadScene destroys).
@@ -80,38 +81,57 @@ namespace Characters
         }
 #endif
 
-        private Dictionary<ulong, UniTaskCompletionSource<Character>> _spawnPromises = new();
-
-        public async UniTask<Character> GetCharacterAsync(ulong _clientId)
-        {
-            var _character = GetCharacter(_clientId, false);
-            if (_character != null) return _character;
-
-            if (!_spawnPromises.ContainsKey(_clientId))
-            {
-                _spawnPromises[_clientId] = new UniTaskCompletionSource<Character>();
-            }
-
-            return await _spawnPromises[_clientId].Task;
-        }
-
-        public void RegisterSpawnedCharacter(Character _character)
-        {
-            ulong _id = _character.ownerClientId.Value;
-            if (_spawnPromises.TryGetValue(_id, out var _promise))
-            {
-                _promise.TrySetResult(_character);
-                _spawnPromises.Remove(_id);
-            }
-        }
-        
         public RpcParams GetSafeRpcTarget(ulong _clientId)
         {
-            var _target = _clientId >= 100 
-                ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent) 
-                : NetworkManager.RpcTarget.Single(_clientId, RpcTargetUse.Persistent);
-                
+            // Rejoin 02: a seat whose player reconnected is reached through its current connection (seat alias).
+            var _target = _clientId >= 100
+                ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent)
+                : NetworkManager.RpcTarget.Single(TransportOfSeat(_clientId), RpcTargetUse.Persistent);
+
             return new RpcParams { Send = new RpcSendParams { Target = _target } };
+        }
+
+        // ---- Rejoin 02 (feat/player-rejoin): seat <-> connection aliases and session tokens ----
+        // A seat keeps the clientId its player had when seated (the key of his character, votes, chat, knowledge…);
+        // after a reconnect NGO gives him a new clientId, bound here to that seat. Server-side bookkeeping only.
+        public SeatDirectory Seats { get; } = new SeatDirectory();
+
+        /// <summary>Server: the seat a connection plays (itself unless it is a rejoined player's new connection).</summary>
+        public ulong SeatOfTransport(ulong _transportId) => _transportId >= 100 ? _transportId : Seats.SeatOf(_transportId);
+
+        /// <summary>Server: the connection currently playing a seat (itself unless its player rejoined).</summary>
+        public ulong TransportOfSeat(ulong _seatId) => _seatId >= 100 ? _seatId : Seats.TransportOf(_seatId);
+
+        // Client: the seat this peer plays when it is a rejoined player (null = its own clientId).
+        private ulong? _localSeatId;
+
+        /// <summary>Server: hands a seated real player his secret rejoin token (kept on his PC).</summary>
+        public void IssueRejoinToken(ulong _seatId)
+        {
+            if (!IsServer || _seatId >= 100 || _seatId == NetworkManager.ServerClientId)
+            {
+                return;
+            }
+            string _token = Guid.NewGuid().ToString("N");
+            Seats.IssueToken(_seatId, _token);
+            ReceiveRejoinTokenRpc(_token, GetSafeRpcTarget(_seatId));
+        }
+
+        [Rpc(SendTo.SpecifiedInParams)]
+        private void ReceiveRejoinTokenRpc(string _token, RpcParams _params = default)
+        {
+            Network.RejoinSessionStore.Remember(_token);
+        }
+
+        /// <summary>Server -> a rejoined player's new connection: from now on this peer plays <paramref name="_seatId"/>.</summary>
+        [Rpc(SendTo.SpecifiedInParams)]
+        public void AssignLocalSeatRpc(ulong _seatId, RpcParams _params = default)
+        {
+            _localSeatId = _seatId == NetworkManager.LocalClientId ? null : _seatId;
+            Debug.Log($"[REJOIN] This peer plays seat {_seatId} (connection {NetworkManager.LocalClientId}).");
+            onLocalIdentityChanged?.Invoke();
+            _cacheDirty = true;
+            onCharactersListUpdated?.Invoke(_characters);
         }
 
         [SerializeField] private Transform _charactersParent;
@@ -151,9 +171,17 @@ namespace Characters
         {
             _charactersCache.Clear();
             bool _allResolved = true;
-            foreach (var _networkBehaviourReference in networkedCharacters)
+            // NET-04: ids resolved through THIS manager's own NetworkManager (a bare NetworkBehaviourReference.TryGet
+            // resolved against NetworkManager.Singleton, i.e. the host, in 2-NM setups).
+            var _spawned = NetworkManager != null && NetworkManager.SpawnManager != null
+                ? NetworkManager.SpawnManager.SpawnedObjects
+                : null;
+            foreach (ulong _objectId in ReplicatedCharacterObjectIds)
             {
-                if (_networkBehaviourReference.TryGet(out Character _character))
+                if (_spawned != null
+                    && _spawned.TryGetValue(_objectId, out NetworkObject _networkObject)
+                    && _networkObject != null
+                    && _networkObject.TryGetComponent(out Character _character))
                 {
                     // Self-healing projection: NGO can deliver the same list entry
                     // twice to a joining client (initial-sync + pending-delta race —
@@ -166,7 +194,7 @@ namespace Characters
                     {
                         if (_reportedDuplicateObjectIds.Add(_character.NetworkObjectId))
                         {
-                            Debug.LogError($"[CHARLIST] Duplicate networkedCharacters entry dropped: ownerClientId={_character.ownerClientId.Value} networkObjectId={_character.NetworkObjectId} listCount={networkedCharacters.Count}");
+                            Debug.LogError($"[CHARLIST] Duplicate networkedCharacters entry dropped: ownerClientId={_character.ownerClientId.Value} networkObjectId={_character.NetworkObjectId} listCount={ReplicatedCharacterObjectIds.Count}");
                         }
                         continue;
                     }
@@ -183,13 +211,20 @@ namespace Characters
             _cacheDirty = !_allResolved;
         }
 
-        private void OnNetworkedCharactersChanged(NetworkListEvent<NetworkBehaviourReference> _changeEvent)
+        private void OnNetworkedCharactersChanged(NetworkObjectIdList _previous, NetworkObjectIdList _current)
         {
             // Authoritative source changed: force a rebuild on next access.
             _cacheDirty = true;
         }
 
-        private NetworkList<NetworkBehaviourReference> networkedCharacters = new();
+        // NET-04 (epic-network-sync-hardening): the character list is ONE full-value snapshot of NetworkObject ids in
+        // a NetworkVariable, never a NetworkList (index RemoveAt on a #3280-diverged replica removed the WRONG
+        // character client-side, and the list order is card order). Server writes assign a NEW list.
+        private readonly NetworkVariable<NetworkObjectIdList> networkedCharacters = new(new NetworkObjectIdList());
+
+        /// <summary>The replicated character NetworkObject ids, in authoritative order (read-only, every peer).</summary>
+        public IReadOnlyList<ulong> ReplicatedCharacterObjectIds =>
+            networkedCharacters.Value != null ? networkedCharacters.Value.Ids : Array.Empty<ulong>();
         
         public event Action<List<Character>> onCharactersListUpdated;
         public event Action onLocalIdentityChanged;
@@ -248,17 +283,30 @@ namespace Characters
 
             // Subscribe to the authoritative list so the cache is invalidated
             // whenever it changes.
-            networkedCharacters.OnListChanged += OnNetworkedCharactersChanged;
+            networkedCharacters.OnValueChanged += OnNetworkedCharactersChanged;
 
             // The NetworkList is delivered already populated to late joiners
             // without raising OnListChanged for the initial state, so force a
             // rebuild here (kept dirty until every reference resolves).
             _cacheDirty = true;
+
+            // A peer that joins mid-game (rejoin) gets every object in one synchronization, in an order where a
+            // Character and then its Power can both spawn before this manager: the Power then finds no owner to
+            // refresh (the list resolved nothing yet) and the Character had scanned the registry before the Power
+            // registered, so that power list stayed empty until the next refresh (transient Powers desync). Now
+            // that owners resolve, re-run the scan for every character already spawned.
+            if (!IsServer)
+            {
+                foreach (Character _character in _characters)
+                {
+                    _character.CheckForPowersLocal();
+                }
+            }
         }
 
         public override void OnNetworkDespawn()
         {
-            networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
+            networkedCharacters.OnValueChanged -= OnNetworkedCharactersChanged;
 
             UnregisterFromRegistry();
 
@@ -276,7 +324,7 @@ namespace Characters
             // Safety net: a same-NM duplicate is destroyed in OnNetworkSpawn and may
             // never despawn cleanly; also covers teardown ordering where
             // OnNetworkDespawn was not invoked. Unsubscribing twice is harmless.
-            networkedCharacters.OnListChanged -= OnNetworkedCharactersChanged;
+            networkedCharacters.OnValueChanged -= OnNetworkedCharactersChanged;
 
             UnregisterFromRegistry();
 
@@ -307,7 +355,10 @@ namespace Characters
             }
         }
 
-        public ulong GetLocalClientId() => _debugPossessedId ?? NetworkManager.LocalClientId;
+        public ulong GetLocalClientId() => _debugPossessedId ?? _localSeatId ?? NetworkManager.LocalClientId;
+
+        /// <summary>The seat this peer really plays (a rejoined peer's original clientId), debug possession ignored.</summary>
+        public ulong LocalSeatId => _localSeatId ?? NetworkManager.LocalClientId;
         
         public bool IsLocalOrSimulated(ulong _clientId)
         {
@@ -345,24 +396,11 @@ namespace Characters
             return new List<Character>(_characters);
         }
         
-        [Rpc(SendTo.Everyone, RequireOwnership = true)]
-        public void GiveRoleToCharacterRpc(ulong _characterId, Role _role)
-        {
-            _ = GiveRoleToCharacterAsync(_characterId, _role);
-        }
-
-        private async UniTaskVoid GiveRoleToCharacterAsync(ulong _characterId, Role _role)
-        {
-            Character _character = await GetCharacterAsync(_characterId);
-
-            _character.role = _role;
-            _character.UpdateRoleRpc(_role);
-            _character.CheckForPowersRpc();
-            _character.role.ownerClientId = _characterId;
-        }
-        
         #region Characters Updates
 
+        // NET-07: this refresh no longer re-sends every role (roles are replicated state now — Character.roleId).
+        // It keeps the side effects the old role fan-out had on each peer: re-scan the power lists and raise
+        // onRoleUpdated, then onCharactersListUpdated on clients.
         [Rpc(SendTo.Server)]
         public void AskForUpdateAllCharactersRpc()
         {
@@ -370,18 +408,24 @@ namespace Characters
             {
                 return;
             }
-     
+
             foreach (var _character in _characters)
             {
-                _character.AskForRoleUpdateRpc();
+                _character.CheckForPowersLocal();
             }
-            
+
+            Network.NetworkVariableFlush.TryFlush(NetworkManager);
             UpdateAllCharactersRpc();
         }
-    
+
         [Rpc(SendTo.NotServer)]
         private void UpdateAllCharactersRpc()
         {
+            foreach (var _character in _characters)
+            {
+                _character.RefreshLocalRoleViews();
+            }
+
             onCharactersListUpdated?.Invoke(this._characters);
         }
         
@@ -438,11 +482,11 @@ namespace Characters
             
             Character _newCharacter = _newCharacterObject.GetComponent<Character>();
             _newCharacter.ownerClientId.Value = _clientId;
+            // Rejoin 02: a seated real player gets the token that lets him take this seat back after a drop.
+            IssueRejoinToken(_clientId);
 
-            // Authoritative source. Adding here raises OnListChanged on the
-            // server and invalidates the cache; the previous _characters.Add(..)
-            // on the throwaway list was a silent no-op.
-            networkedCharacters.Add(_newCharacter);
+            // Authoritative source (NET-04: assign a NEW id list — full-value replication).
+            networkedCharacters.Value = networkedCharacters.Value.WithAdded(_newCharacterObject.NetworkObjectId);
 
             // Force the cache to include the just-spawned character (its
             // NetworkObject is already spawned locally so TryGet resolves) and
@@ -457,18 +501,9 @@ namespace Characters
             Character _characterToRemove = _characters.FirstOrDefault(_c => _c.ownerClientId.Value == _clientId);
             if (_characterToRemove != null)
             {
-                // Remove from the authoritative source BEFORE despawning: once
-                // the NetworkObject is despawned its NetworkBehaviourReference no
-                // longer resolves, so we must match the entry while it is still
-                // valid. The previous _characters.Remove(..) on the throwaway
-                // list was a silent no-op.
-                for (int _i = networkedCharacters.Count - 1; _i >= 0; _i--)
-                {
-                    if (networkedCharacters[_i].TryGet(out Character _c) && _c == _characterToRemove)
-                    {
-                        networkedCharacters.RemoveAt(_i);
-                    }
-                }
+                // Remove from the authoritative source BEFORE despawning (NET-04: by id, never by index — a
+                // replica can no longer lose the wrong character).
+                networkedCharacters.Value = networkedCharacters.Value.WithRemoved(_characterToRemove.NetworkObjectId);
 
                 var _networkObject = _characterToRemove.GetComponent<NetworkObject>();
                 if (_networkObject != null && _networkObject.IsSpawned)
@@ -528,7 +563,8 @@ namespace Characters
                 return;
             }
             
-            PowerManager.instance.RemovePowerFromCharacterPowerListRpc(_characterId, new(_power));
+            // NET-08: despawning unregisters the power; Power.OnNetworkDespawn rebuilds the owner's list on every peer.
+            // (The previous list-removal "RPC" lived on a MonoBehaviour, so it never left the host.)
             NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
             if (_powerNetworkObject != null)
             {

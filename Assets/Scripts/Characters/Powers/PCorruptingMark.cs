@@ -61,17 +61,24 @@ namespace Characters.Powers
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;
             }
+            // NET-10: the caster learning that its target is corrupted is written by the SERVER (OnCardClickedRpc)
+            // into the knowledge ledger — it used to be a client-local write the server never knew about.
             OnCardClickedRpc(_clickedCharacterId);
-            gameInfoRevealer.SetRevealLevel(
-                _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
             OnUsed();
         }
 
         [Rpc(SendTo.Server)]
-        private void OnCardClickedRpc(ulong _clickedCharacterId)
+        private void OnCardClickedRpc(ulong _clickedCharacterId, RpcParams _params = default)
         {
+            if (!ServerAuthorizeEffect(_params, _clickedCharacterId)) return; // NET-09: server-side use authorization
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_clickedCharacterId), SelfState);
+            // NET-10: the caster knows its target is now corrupted (ledger write + push to the caster).
+            if (gameInfoRevealer != null)
+            {
+                gameInfoRevealer.SendRevealLevelRpc(
+                    _clickedCharacterId, nameof(CharacterInfoReveal.isCorruptRevealed), RevealLevel.Personal, ownerClientId.Value);
+            }
         }
 
         [Rpc(SendTo.Everyone)]

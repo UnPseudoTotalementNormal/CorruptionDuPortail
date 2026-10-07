@@ -1,0 +1,67 @@
+{
+  "name": "client-leaves-at-vote",
+  "goal": "Exactly one real client quits during the first vote; its seat is reserved (rejoin step 1, grace shortened to 10 s by rejoin-grace) and, nobody coming back, it is chained when the delay expires (disconnect policy: quit mid-game = CHAIN); the remaining players finish the game without hanging or desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 31,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-rejoin-grace",
+    "10"
+  ],
+  "client1Args": [
+    "-autoplay-quit-at",
+    "VoteState"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "leave",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "fact",
+      "match": "^left=.*VoteState",
+      "process": "clients"
+    },
+    {
+      "type": "event",
+      "kind": "seat.reserved",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "seat.released",
+      "detail": "chained=True",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "leaverChained"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "host",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData"
+      ]
+    }
+  ]
+}

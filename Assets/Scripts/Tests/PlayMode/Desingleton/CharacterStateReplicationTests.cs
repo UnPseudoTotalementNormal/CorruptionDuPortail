@@ -231,24 +231,25 @@ namespace Tests.PlayMode.Desingleton
             yield return SpawnRealCharacterForClient(_clientSeat);
             yield return SpawnRealCharacterForClient(FakeSeat);
 
-            var _clientList = (NetworkList<NetworkBehaviourReference>)ReflectionHelper.GetPrivateField(
-                ClientCm, "networkedCharacters");
-            Assert.IsNotNull(_clientList, "Could not read the client CM's networkedCharacters NetworkList.");
+            // NET-04: the replicated list is now a full-value snapshot of NetworkObject ids.
+            IReadOnlyList<ulong> _clientList = null;
+            System.Func<IReadOnlyList<ulong>> _read = () => _clientList = ClientCm.ReplicatedCharacterObjectIds;
 
             // Stable wait on EXACTLY 3: a duplicate landing one tick after the third entry resets the
             // stability counter, so the no-dup claim is checked over a settled window, not a snapshot.
             yield return NetworkTestHelper.WaitUntilStableOrTimeout(
-                () => _clientList.Count == 3, 5f, 3,
-                () => $"Client networkedCharacters never settled on exactly 3 entries (got {_clientList.Count}).");
+                () => _read().Count == 3, 5f, 3,
+                () => $"Client networkedCharacters never settled on exactly 3 entries (got {_read().Count}).");
 
-            Assert.AreEqual(3, _clientList.Count,
+            Assert.AreEqual(3, _read().Count,
                 "Client's replicated character list must have EXACTLY one entry per spawned seat (no duplicates).");
 
             var _ids = new List<ulong>();
-            foreach (NetworkBehaviourReference _reference in _clientList)
+            foreach (ulong _objectId in _clientList)
             {
-                Assert.IsTrue(_reference.TryGet(out Character _replica, ClientNm),
+                Assert.IsTrue(ClientNm.SpawnManager.SpawnedObjects.TryGetValue(_objectId, out NetworkObject _replicaObject),
                     "A client list entry did not resolve against the CLIENT NetworkManager.");
+                Character _replica = _replicaObject.GetComponent<Character>();
                 Assert.AreSame(ClientNm, _replica.NetworkManager,
                     "A resolved roster entry is not a client-side object — the projection leaked a host object.");
                 _ids.Add(_replica.ownerClientId.Value);

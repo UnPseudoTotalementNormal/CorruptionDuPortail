@@ -280,10 +280,16 @@ namespace Network
 
             _localWasPureClient = false;
 
+            // NET-05: the server may have disconnected us ON PURPOSE with a reason (finished loading after the game
+            // started, loading too long). Show that reason instead of a misleading "host lost". Read BEFORE
+            // ReturnToMenu shuts NGO down.
+            string _reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
+            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? _reason : HostLostMessage;
+
             // Best-effort: drop the cloud lobby so we don't linger as a ghost member.
             TryLeaveLobby();
 
-            ShowNotification(HostLostMessage);
+            ShowNotification(_message);
             ReturnToMenu();
         }
 
@@ -339,7 +345,9 @@ namespace Network
             _canvasGo.transform.SetParent(transform, false);
             _canvas = _canvasGo.AddComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 999; // above gameplay UI
+            // Above every other UI, the menu's LoginCanvas (1000) included: a join refusal or kick is reported while the
+            // login screen can be up, and the message must not be hidden behind it (found by autoplay, 2026-10-05).
+            _canvas.sortingOrder = 32000;
             _canvasGo.AddComponent<CanvasScaler>();
             _canvasGo.AddComponent<GraphicRaycaster>();
 

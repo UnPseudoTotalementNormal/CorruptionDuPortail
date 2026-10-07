@@ -2,7 +2,7 @@
 
 ## Executive summary
 
-Server-authoritative multiplayer Unity game using **Netcode for GameObjects (NGO)** over **Facepunch Steam transport**. The host owns all game-state mutations; clients propose via `ServerRpc`s. Cinematics and powers run asynchronously through **UniTask**.
+Server-authoritative multiplayer Unity game using **Netcode for GameObjects (NGO)** over **UTP + Unity Relay** (dtls → wss fallback) or the vendored **Facepunch Steam** transport. The host owns all game-state mutations; clients propose via `ServerRpc`s. Cinematics and powers run asynchronously through **UniTask**.
 
 Two signature architectural features:
 
@@ -11,7 +11,7 @@ Two signature architectural features:
 
 ## Technology stack
 
-See [project-overview.md](./project-overview.md#tech-stack-summary).
+See [project-context.md](./project-context.md#stack-versions--packagesmanifestjson-projectsettingsprojectversiontxt).
 
 ## Architecture pattern
 

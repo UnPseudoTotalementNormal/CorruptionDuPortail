@@ -91,6 +91,10 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   `OnNetworkSpawn` finds nobody, while the owner may already have run its own scan. A spawn-time link between two
   NetworkObjects must be made from both sides AND re-run when the manager spawns (`CharacterManager.OnNetworkSpawn`
   re-scans every power list). Repro: autoplay `rejoin-at-night` (`[DESYNC] component=Powers` before the fix).
+- **A new knowledge field (`CharacterInfoReveal`) touches six places** that compile without it: `KnowledgeField` +
+  `FieldCount`, `GameInfoRevealer.FieldOf` (throws on an unknown name), `ApplySlice` (raised / changed / copy),
+  `KnowledgeEntry` (`From` + `NetworkSerialize`), and the autoplay replication dump (`AutoplayDriverReplication`, a
+  hard-coded level array: a missing entry reports a false desync on every row). Ex: `isFakeRevealed`.
 - **`TargetUtils` is viewer-relative** (local identity via `GetLocalClientId()`, local knowledge via `GameInfoRevealer`):
   never call it in a server RPC to re-validate a client's pick, it judges the HOST's view (a client's click on the host's
   own card was refused, the power hung). Re-validate server-side with the owner as "self", and answer a refusal (never a

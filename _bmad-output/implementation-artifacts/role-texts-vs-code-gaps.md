@@ -9,9 +9,9 @@ Where the texts live: power names / descriptions in `Assets/Prefabs/Powers/*.pre
 `powerDescription`); the role card's "Passif" lines per role in `Assets/ScriptableObjects/RoleCardTexts.asset`.
 Designer's source: Discord thread T7 « Revoir les descriptions des personnages pour la bulle info » (2026-07-18).
 
-Policy used: the designer's text is shown verbatim (typos fixed); **no behaviour was changed**. Each row below is a
-place where the text promises something the code does not do (or the reverse). Decide with the designer: change the
-code, or change the text.
+Policy used: the designer's text is shown verbatim (typos fixed). Each row below is a place where the text promised
+something the code did not do (or the reverse), as found on 2026-10-07. Poyo then decided each one the same day; the
+**Status** section at the bottom says what was done. Rows that are still open must be settled with the designer.
 
 | # | Role / power | Designer's text says | Code does (2026-10-07) | Evidence |
 |---|---|---|---|---|
@@ -30,3 +30,19 @@ code, or change the text.
 Checked and matching (no gap): Étreintes des ombres (2 tries per night max), Abyss (one extra use per night when the
 only live anomaly), Robot (always counts as hacked, Piratage), Technomancien (self beacon, sees the Robot's
 corruption), Repenti, Observation Clandestine, Ugës (Marque d'Hurluberluges).
+
+## Status (2026-10-07, same PR)
+
+| # | Decision | Done |
+|---|---|---|
+| 1 | Code follows the text | Corruption Ciblée always spends Étreintes des ombres, so the Mage's turn ends (`PCConcentrated`); the role reveal still needs Étreintes untouched. |
+| 2 | Code follows the text | The Mage also holds Oeil du néant (anomaly chat without Abyss); it now reveals each anomaly's role to the others and skips fake anomalies (`EyeOfTheVoidDecision`, `IRosterView.IsFake`). A chat granted twice opens one tab (`ChatPanel`). |
+| 3 | Code follows the text | At game start the anomalies learn as many fake non-anomaly roles as there are anomalies, the same ones for each (`AnomalyFakeRoleHint`, `GameIntroductionState`, knowledge field `isFakeRevealed`). Shown greyscale in the character bar with a "Rôle factice" tooltip, and on the role card (also covers board task T10). |
+| 4 | Keep the power, add the text | Role card line « Il voit quels joueurs sont corrompus. » for the Mage and Abyss. |
+| 5 | Code follows the text | Luma copies every active power of an absent role (`StolenPowerSelector.SelectAllEligible`). |
+| 6 | Kept as is | The icon on the players who target her is the mechanic the designer described in task T14 « Ajustements des Rôles » (validated there); the wording « quels rôles » is loose. |
+| 7 | Code follows the text | An élu target also learns her corruption state; a non-élu only reads « Quelqu'un est venu vous voir... ». |
+| 8 | Code follows the text | Placeholder "healed" mark (green dot, `HealedEffect.prefab`) on a healed player's card, seen only by holders of the passive (`CorruptionIconDriver`). The real visual is the designer's. |
+| 9 | Code follows the text | Soin Baveux flags 120 → 56: chained élus can no longer be targeted. |
+| 10 | Code follows the text | Bénédiction flags 136 → 8: healed élus can no longer be targeted; the server now re-checks the blessing immunity of Corruption Ciblée (`PCorruptingMark.OnCardClickedRpc`). |
+| 11 | Code follows the text | Prime Prioritaire removed from the Chasseuse's role (power and code kept). |

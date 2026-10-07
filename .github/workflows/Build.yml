@@ -174,7 +174,7 @@ jobs:
           npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
           claude --version || echo "claude CLI install failed"
           claude -p "Lis le fichier $RUNNER_TEMP/commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier $RUNNER_TEMP/changelog.txt." \
-            --model claude-opus-4-8 \
+            --model claude-opus-5-5 \
             --allowedTools Read,Write \
             --permission-mode acceptEdits 2>&1 | tail -5
 

@@ -32,7 +32,11 @@ namespace TooltipSystem
 
         void Update()
         {
-            int _linkIndex = TMP_TextUtilities.FindIntersectingLink(DescriptionText, Input.mousePosition, null);
+            // Input System pointer, not the legacy Input.mousePosition (the OS cursor): with autoplay's virtual mouse the
+            // real devices are disabled, and the user's own cursor must never drive an unfocused player.
+            var _pointer = UnityEngine.InputSystem.Pointer.current;
+            Vector3 _pointerPosition = _pointer != null ? (Vector3)_pointer.position.ReadValue() : Input.mousePosition;
+            int _linkIndex = TMP_TextUtilities.FindIntersectingLink(DescriptionText, _pointerPosition, null);
 
             var _tooltipManager = TooltipManager.instance;
             if (_linkIndex == -1)

@@ -96,6 +96,9 @@ namespace Board
             CreateCardEffect(_cardEffectID, _targetId);
         }
         
+        public bool HasCardEffect(CardEffectID _cardEffectID, ulong _targetId) =>
+            cardEffectsByCardId.TryGetValue(_targetId, out List<CardEffectID> _effects) && _effects.Contains(_cardEffectID);
+
         public void RemoveCardEffect(CardEffectID _cardEffectID, ulong _targetId)
         {
             if (!cardEffectsByCardId.ContainsKey(_targetId))

@@ -46,6 +46,7 @@ namespace Tests.Editor
             public readonly System.Collections.Generic.HashSet<int> Corrupted = new();
             public readonly System.Collections.Generic.HashSet<int> Chained = new();
             public readonly System.Collections.Generic.HashSet<int> Eliminated = new();
+            public readonly System.Collections.Generic.HashSet<int> Fakes = new();
             public readonly System.Collections.Generic.Dictionary<int, string> RoleNames = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
@@ -55,6 +56,7 @@ namespace Tests.Editor
             public bool IsCorrupted(int slot) => Corrupted.Contains(slot);
             public bool IsChained(int slot) => Chained.Contains(slot);
             public bool IsEliminated(int slot) => Eliminated.Contains(slot);
+            public bool IsFake(int slot) => Fakes.Contains(slot);
             public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 
@@ -99,6 +101,29 @@ namespace Tests.Editor
             {
                 new DiscoverChat(1, "", PowerEffectAudience.Specific(1)),
                 new DiscoverChat(1, "", PowerEffectAudience.Specific(2)),
+                new RevealInfo(2, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 2, false),
+            }, outcome.Effects);
+        }
+
+        [Test]
+        public void EyeOfTheVoid_SkipsFakeAnomalies()
+        {
+            // Slot 3 is a fake anomaly (unassigned role): no chat, not revealed, sees nothing.
+            var roster = new FakeRoster { Slots = new[] { 1, 2, 3 } };
+            roster.Factions[1] = Characters.FactionType.anomaly;
+            roster.Factions[2] = Characters.FactionType.anomaly;
+            roster.Factions[3] = Characters.FactionType.anomaly;
+            roster.Fakes.Add(3);
+
+            var outcome = new EyeOfTheVoidDecision { AnomalyChatId = 1 }.Decide(new PowerContext(ownerSlot: 1, roster: roster));
+
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new DiscoverChat(1, "", PowerEffectAudience.Specific(1)),
+                new DiscoverChat(1, "", PowerEffectAudience.Specific(2)),
+                new RevealInfo(2, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
+                new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 2, false),
             }, outcome.Effects);
         }
 
@@ -468,6 +493,7 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new RevealInfo(0, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
+                new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 1, false),
                 new ChatLocal("Marginal est venu(e) vous voir...", -1),
             }, outcome.Effects);
         }

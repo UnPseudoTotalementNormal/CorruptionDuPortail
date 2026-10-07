@@ -28,6 +28,7 @@ namespace Tests.Editor
             public readonly HashSet<int> Corrupted = new();
             public readonly HashSet<int> Chained = new();
             public readonly HashSet<int> Eliminated = new();
+            public readonly HashSet<int> Fakes = new();
             public readonly Dictionary<int, string> RoleNames = new();
             public Characters.FactionType FactionOf(int slot) => Factions.TryGetValue(slot, out var f) ? f : default;
             public string PseudoOf(int slot) => Pseudos.TryGetValue(slot, out var p) ? p : "";
@@ -37,6 +38,7 @@ namespace Tests.Editor
             public bool IsCorrupted(int slot) => Corrupted.Contains(slot);
             public bool IsChained(int slot) => Chained.Contains(slot);
             public bool IsEliminated(int slot) => Eliminated.Contains(slot);
+            public bool IsFake(int slot) => Fakes.Contains(slot);
             public string RoleNameOf(int slot) => RoleNames.TryGetValue(slot, out var n) ? n : "";
         }
 

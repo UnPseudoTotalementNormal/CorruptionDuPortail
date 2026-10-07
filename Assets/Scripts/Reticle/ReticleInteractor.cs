@@ -124,8 +124,10 @@ namespace Reticle
             _hud?.SetOver(_bodyHandler != null || _uiHandler != null || _worldHandler != null);
 
             // Confirm → click priority: a uGUI control (vote/skip button) first, then a 3D interactable
-            // (power / board 3D button), then the body (card) underneath.
-            if (ConfirmPressed())
+            // (power / board 3D button), then the body (card) underneath. Only with a locked cursor: otherwise the
+            // InputSystemUIInputModule clicks what is under the free pointer itself (same button → clicked twice,
+            // or the reticle clicking the screen centre while the player clicks elsewhere).
+            if (ConfirmPressed() && ShouldDispatchClick(Cursor.lockState == CursorLockMode.Locked))
             {
                 GameObject _clickTarget = _uiHandler != null ? _uiHandler
                     : (_worldHandler != null ? _worldHandler : _bodyHandler);
@@ -253,6 +255,14 @@ namespace Reticle
         /// target and the blocking panels are ScreenSpace-Overlay (always in front of world geometry).
         /// </summary>
         public static bool ShouldSuppressWorld(int _uiHitCount) => _uiHitCount > 0;
+
+        /// <summary>
+        /// Pure decision (unit-tested): the reticle clicks only while the cursor is really locked. The UI input
+        /// module ignores a locked pointer (CursorLockBehavior OutsideScreen), so the reticle is then the only one
+        /// to click; with a free cursor (platform unlock, unfocused window, autoplay) the module clicks under the
+        /// pointer, and a reticle click on top delivered every click twice (seen as duplicate votes).
+        /// </summary>
+        public static bool ShouldDispatchClick(bool _cursorLocked) => _cursorLocked;
 
         // Confirm = the wired action if any, else a sensible default so clicking works out of the box: left
         // mouse button or gamepad south (the cursor is locked but the buttons still register).

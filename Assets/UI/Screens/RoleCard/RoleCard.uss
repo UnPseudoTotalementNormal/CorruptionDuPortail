@@ -146,6 +146,15 @@
     -unity-background-scale-mode: scale-to-fit;
 }
 
+/* A role the viewer knows is fake (anomalies learn some at game start). Placeholder look, design-owned. */
+.role-card__fake-badge {
+    color: var(--cdp-color-role-faction);
+    font-size: 16px;
+    -unity-font-style: italic;
+    -unity-text-align: middle-center;
+    margin-bottom: var(--cdp-space-sm);
+}
+
 .role-card__name {
     color: var(--cdp-color-role-title);
     font-size: 32px;

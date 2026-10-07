@@ -619,17 +619,20 @@ namespace Autoplay
             string _holder = _context.Config.Option("role-holder");
             if (!string.IsNullOrEmpty(_forced) && !string.IsNullOrEmpty(_holder))
             {
-                foreach (string _fragment in _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0))
+                string[] _fragments = _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0).ToArray();
+                for (int _f = 0; _f < _fragments.Length; _f++)
                 {
+                    string _fragment = _fragments[_f];
+                    string _wanted = HolderFor(_holder, _f);
                     Character _owner = characterManager.GetCharacters(false).FirstOrDefault(_c => _c && !_c.isFake &&
                         _c.role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0);
                     string _kind = _owner == null ? "nobody" : HolderKind(_owner.ownerClientId.Value);
-                    bool _held = _holder.StartsWith("seat:", StringComparison.OrdinalIgnoreCase)
-                        ? _owner != null && _owner.ownerClientId.Value.ToString(CultureInfo.InvariantCulture) == _holder.Substring(5).Trim()
-                        : string.Equals(_kind, _holder, StringComparison.OrdinalIgnoreCase);
+                    bool _held = _wanted.StartsWith("seat:", StringComparison.OrdinalIgnoreCase)
+                        ? _owner != null && _owner.ownerClientId.Value.ToString(CultureInfo.InvariantCulture) == _wanted.Substring(5).Trim()
+                        : string.Equals(_kind, _wanted, StringComparison.OrdinalIgnoreCase);
                     if (!_held)
                     {
-                        _context.Fail($"composition mismatch: '{_fragment}' held by {_kind} {(_owner != null ? _owner.ownerClientId.Value.ToString() : "-")}, wanted {_holder}");
+                        _context.Fail($"composition mismatch: '{_fragment}' held by {_kind} {(_owner != null ? _owner.ownerClientId.Value.ToString() : "-")}, wanted {_wanted}");
                         yield break;
                     }
                 }
@@ -734,6 +737,13 @@ namespace Autoplay
             };
         }
 
+        // "role-holder host,bot": one holder per forced role, in order (the last one repeats); a single holder = all.
+        private static string HolderFor(string _holder, int _index)
+        {
+            string[] _holders = _holder.Split(',').Select(_h => _h.Trim()).Where(_h => _h.Length > 0).ToArray();
+            return _holders.Length == 0 ? _holder : _holders[Math.Min(_index, _holders.Length - 1)];
+        }
+
         // Lever "role-holder host|client|bot" with "force-roles": the forced roles are SEATED on that kind of player
         // (RoleAttributionState.DevSeatOrder reorders who receives the drawn roles; the draw itself is untouched), so a
         // run never has to be thrown away and re-rolled with another seed because the role landed elsewhere. The
@@ -750,28 +760,30 @@ namespace Autoplay
             {
                 var _order = new List<Character>(_characters);
                 var _placed = new HashSet<int>();
-                foreach (string _fragment in _fragments)
+                for (int _f = 0; _f < _fragments.Length; _f++)
                 {
+                    string _fragment = _fragments[_f];
+                    string _holderOf = HolderFor(_holder, _f);
                     int _roleIndex = IndexWhere(Math.Min(_roles.Count, _order.Count), _i =>
                         _roles[_i].role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0);
                     if (_roleIndex < 0)
                     {
                         continue; // not drawn: the composition check reports it
                     }
-                    if (Holds(_order[_roleIndex], _holder))
+                    if (Holds(_order[_roleIndex], _holderOf))
                     {
                         _placed.Add(_roleIndex);
                         continue;
                     }
                     int _seat = IndexWhere(_order.Count, _i => !_placed.Contains(_i) && _i != _roleIndex &&
-                        Holds(_order[_i], _holder));
+                        Holds(_order[_i], _holderOf));
                     if (_seat < 0)
                     {
                         continue;
                     }
                     (_order[_roleIndex], _order[_seat]) = (_order[_seat], _order[_roleIndex]);
                     _placed.Add(_roleIndex);
-                    _context.Journal.Record("composition.seat", $"{_fragment} -> {_holder} {_order[_roleIndex].ownerClientId.Value}");
+                    _context.Journal.Record("composition.seat", $"{_fragment} -> {_holderOf} {_order[_roleIndex].ownerClientId.Value}");
                 }
                 return _order;
             };

@@ -25,6 +25,9 @@ namespace UI
         [SerializeField] private EventReference hoverSound;
         [SerializeField] private EventReference unHoverSound;
         
+        // False = greyed out (disabledColor) and inert: no click, hover or sound. Runtime only, never serialized.
+        public bool Interactable { get; private set; } = true;
+
         public event Action onButtonClicked;
         public event Action onButtonHovered;
         public event Action onButtonUnhovered;
@@ -43,8 +46,18 @@ namespace UI
             }
         }
         
+        public void SetInteractable(bool _interactable)
+        {
+            if (Interactable == _interactable) return;
+            Interactable = _interactable;
+            if (panelImage != null) panelImage.DOColor(RestColor, 0.2f).SetLink(gameObject);
+        }
+
+        private Color RestColor => Interactable ? baseColor : disabledColor;
+
         public void OnPointerClick(PointerEventData _eventData)
         {
+            if (!Interactable) return;
             transform.DOKill(true);
             transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f).SetLink(gameObject);
             onButtonClicked?.Invoke();
@@ -54,6 +67,7 @@ namespace UI
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
+            if (!Interactable) return;
             if (panelImage != null) panelImage.DOColor(hoverColor, 0.2f).SetLink(gameObject);
             onButtonHovered?.Invoke();
             hoverSound.TryPlayOneShot();
@@ -61,6 +75,7 @@ namespace UI
 
         public void OnPointerExit(PointerEventData _eventData)
         {
+            if (!Interactable) return;
             if (panelImage != null) panelImage.DOColor(baseColor, 0.2f).SetLink(gameObject);
             onButtonUnhovered?.Invoke();
             unHoverSound.TryPlayOneShot();
@@ -77,7 +92,7 @@ namespace UI
         
         private void OnEnable()
         {
-            if (panelImage != null) panelImage.DOColor(baseColor, 0.2f).SetLink(gameObject);
+            if (panelImage != null) panelImage.DOColor(RestColor, 0.2f).SetLink(gameObject);
         }
     }
 }

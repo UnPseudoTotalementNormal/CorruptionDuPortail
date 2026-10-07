@@ -60,10 +60,6 @@ MonoBehaviour:
       Value:
         max: 0
         forced: 0
-    - Key: {fileID: 11400000, guid: 11506f81493a6f34cb03bf0c3c6dcdd1, type: 2}
-      Value:
-        max: 0
-        forced: 0
     - Key: {fileID: 11400000, guid: 7230414b732731648a2124645aa33033, type: 2}
       Value:
         max: 0

@@ -142,54 +142,54 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 38
+    utf8LengthInBytes: 43
     bytes:
       offset0000:
-        byte0000: 76
-        byte0001: 101
+        byte0000: 73
+        byte0001: 108
         byte0002: 32
-        byte0003: 112
-        byte0004: 101
-        byte0005: 114
-        byte0006: 115
-        byte0007: 111
-        byte0008: 110
-        byte0009: 110
-        byte0010: 97
-        byte0011: 103
-        byte0012: 101
-        byte0013: 32
-        byte0014: 115
-        byte0015: 97
+        byte0003: 99
+        byte0004: 111
+        byte0005: 110
+        byte0006: 110
+        byte0007: 97
+        byte0008: 195
+        byte0009: 174
+        byte0010: 116
+        byte0011: 32
+        byte0012: 115
+        byte0013: 111
+        byte0014: 110
+        byte0015: 32
       offset0016:
-        byte0000: 105
-        byte0001: 116
-        byte0002: 32
-        byte0003: 115
-        byte0004: 105
-        byte0005: 32
-        byte0006: 105
-        byte0007: 108
-        byte0008: 32
-        byte0009: 101
-        byte0010: 115
+        byte0000: 112
+        byte0001: 114
+        byte0002: 111
+        byte0003: 112
+        byte0004: 114
+        byte0005: 101
+        byte0006: 32
+        byte0007: 195
+        byte0008: 169
+        byte0009: 116
+        byte0010: 97
         byte0011: 116
         byte0012: 32
-        byte0013: 99
-        byte0014: 111
-        byte0015: 114
+        byte0013: 100
+        byte0014: 101
+        byte0015: 32
       offset0032:
-        byte0000: 114
+        byte0000: 99
         byte0001: 111
-        byte0002: 109
-        byte0003: 112
+        byte0002: 114
+        byte0003: 114
         byte0004: 117
-        byte0005: 46
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
-        byte0009: 0
-        byte0010: 0
+        byte0005: 112
+        byte0006: 116
+        byte0007: 105
+        byte0008: 111
+        byte0009: 110
+        byte0010: 46
         byte0011: 0
         byte0012: 0
         byte0013: 0

@@ -145,7 +145,7 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 146
+    utf8LengthInBytes: 153
     bytes:
       offset0000:
         byte0000: 67
@@ -228,88 +228,88 @@ MonoBehaviour:
         byte0009: 108
         byte0010: 101
         byte0011: 32
-        byte0012: 99
-        byte0013: 111
-        byte0014: 114
-        byte0015: 114
+        byte0012: 60
+        byte0013: 117
+        byte0014: 62
+        byte0015: 99
       offset0080:
         byte0000: 111
-        byte0001: 109
-        byte0002: 112
-        byte0003: 116
-        byte0004: 32
-        byte0005: 33
-        byte0006: 10
-        byte0007: 10
-        byte0008: 40
-        byte0009: 65
-        byte0010: 116
-        byte0011: 116
-        byte0012: 101
-        byte0013: 110
-        byte0014: 116
-        byte0015: 105
+        byte0001: 114
+        byte0002: 114
+        byte0003: 111
+        byte0004: 109
+        byte0005: 112
+        byte0006: 116
+        byte0007: 60
+        byte0008: 47
+        byte0009: 117
+        byte0010: 62
+        byte0011: 32
+        byte0012: 33
+        byte0013: 10
+        byte0014: 10
+        byte0015: 40
       offset0096:
-        byte0000: 111
-        byte0001: 110
-        byte0002: 32
-        byte0003: 58
-        byte0004: 32
-        byte0005: 109
+        byte0000: 65
+        byte0001: 116
+        byte0002: 116
+        byte0003: 101
+        byte0004: 110
+        byte0005: 116
         byte0006: 105
-        byte0007: 101
-        byte0008: 117
-        byte0009: 120
-        byte0010: 32
-        byte0011: 118
-        byte0012: 97
-        byte0013: 117
-        byte0014: 116
-        byte0015: 32
+        byte0007: 111
+        byte0008: 110
+        byte0009: 32
+        byte0010: 58
+        byte0011: 32
+        byte0012: 109
+        byte0013: 105
+        byte0014: 101
+        byte0015: 117
       offset0112:
-        byte0000: 110
+        byte0000: 120
+        byte0001: 32
+        byte0002: 118
+        byte0003: 97
+        byte0004: 117
+        byte0005: 116
+        byte0006: 32
+        byte0007: 110
+        byte0008: 101
+        byte0009: 32
+        byte0010: 112
+        byte0011: 97
+        byte0012: 115
+        byte0013: 32
+        byte0014: 108
+        byte0015: 39
+      offset0128:
+        byte0000: 117
+        byte0001: 116
+        byte0002: 105
+        byte0003: 108
+        byte0004: 105
+        byte0005: 115
+        byte0006: 101
+        byte0007: 114
+        byte0008: 32
+        byte0009: 195
+        byte0010: 160
+        byte0011: 32
+        byte0012: 99
+        byte0013: 104
+        byte0014: 97
+        byte0015: 113
+      offset0144:
+        byte0000: 117
         byte0001: 101
         byte0002: 32
-        byte0003: 112
-        byte0004: 97
-        byte0005: 115
-        byte0006: 32
-        byte0007: 108
-        byte0008: 39
-        byte0009: 117
-        byte0010: 116
-        byte0011: 105
-        byte0012: 108
-        byte0013: 105
-        byte0014: 115
-        byte0015: 101
-      offset0128:
-        byte0000: 114
-        byte0001: 32
-        byte0002: 195
-        byte0003: 160
-        byte0004: 32
-        byte0005: 99
-        byte0006: 104
-        byte0007: 97
-        byte0008: 113
-        byte0009: 117
-        byte0010: 101
-        byte0011: 32
-        byte0012: 110
-        byte0013: 117
-        byte0014: 105
-        byte0015: 116
-      offset0144:
-        byte0000: 46
-        byte0001: 41
-        byte0002: 0
-        byte0003: 0
-        byte0004: 0
-        byte0005: 0
-        byte0006: 0
-        byte0007: 0
-        byte0008: 0
+        byte0003: 110
+        byte0004: 117
+        byte0005: 105
+        byte0006: 116
+        byte0007: 46
+        byte0008: 41
         byte0009: 0
         byte0010: 0
         byte0011: 0

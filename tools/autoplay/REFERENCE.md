@@ -65,7 +65,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `role host\|client` · `connect <ip>` | process role in `play-net` (set by the launcher) |
 | `players N` · `bots N` · `clients N` | seats; the host waits for N clients, then fills with bots |
 | `force-roles A,B` | role-name fragments guaranteed in the composition |
-| `role-holder host\|client\|bot` | who holds the forced roles (`seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
+| `role-holder host\|client\|bot` | who holds the forced roles (a comma list gives one holder per forced role, in order, e.g. `force-roles Dryade,Messager` + `role-holder host,bot`; `seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
 | `vote-focus <role text>` | every bot votes the holder of that role |
 | `max-days N` | stop after day N (fact `stopped-after-day`) |
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
@@ -100,7 +100,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `real-input-mask <GameObject name>` | breakage test (needs `real-input`, else the run fails): a transparent click-eating overlay covers that object; its clicks must end in `input.miss … hit=…AutoplayMask` |
 | `real-input-control` | diagnostic: virtual devices without disabling the real ones (counts the user's own input events, `realEvents=`) |
 | `power-use-probability <0..1>` | chance a bot uses each usable power (0 = every seat sleeps through the sleep button) |
-| `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the vote's Skip button) |
+| `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the board's skip button, "Passer le vote" during the vote) |
 | `vote-skip <id,id…>` | these seats always skip the vote (no roll): with `vote-probability 1` + `vote-focus`, a scenario chains its target for sure and still exercises Skip |
 | `vote-skip-cast` | a bot that skips the vote (roll failed, `vote-skip`, `vote-probability 0`) casts the Skip vote like the Skip button, instead of abstaining: a vote where everyone skips closes 5 s after the last one instead of waiting out its timer. Off by default (`idle-table` checks the abstention timer) |
 | `linger-end <seconds>` | stay that long on the ending screen instead of ending the run when `GameEndingState` starts: journal `ending.linger`, captures `ending-*` (0.5 s, 2 s, end); each capture exports `boardCards` (owner seat of each card on the board) and `winners` (`team:ids` received by this peer, `GameEndingState.WinningTeams`) for `analyze_ending.py` |
@@ -216,7 +216,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `join-stuck-load-kick` | a joiner whose load never ends is kicked by the host at the 90 s cap; the lobby then starts without it |
 | `join-slow-load-honest` | a load held 30 s is not kicked: the client joins and plays |
 | `join-spawn-during-load` | a player seated while a joiner's load outlasts NGO's SpawnTimeout: every client still sees every owner and the full roster (late-joiner Characters desync, 2026-10-05) |
-| `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; only two exempted, warned design findings: role-picker cards off screen, Skip vote button out of the seated reticle's reach |
+| `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; vote skip through the board's skip button ("Passer le vote") must be a real click; only one exempted, warned design finding: role-picker cards off screen |
 | `real-input-mask` | breakage test: a covered sleep button fails as `input.miss hit=…AutoplayMask` |
 | `real-input-tour` | tooltip, pause menu + audio slider, tablet + chat app, emote wheel by real input on every screen; a client leaves through the pause menu and is chained |
 | `real-input-lobby` | lobby by mouse on the tablet: preset, role card overlay (screen-space UI Toolkit) opened and closed, wheel + Imposé "+", every "Prêt", start by `TryAutoStart` |
@@ -228,7 +228,7 @@ Other tools: `campaign.sh` (all scenarios + random seeds → `summary.md`), `swe
 role → `coverage.md`), `sweep_chain_roles.py` (each role held by a real client and chained at the first vote, the game
 goes on → `coverage.md`), `sweep_phases.py <template>` (one scenario template replayed at every phase of the day,
 `{phase}` substituted → `coverage.md`; templates in `scenarios/templates/`: `phase-leave`, `phase-rejoin`,
-`phase-host-crash`, `phase-host-leave`; not picked by `campaign.sh`), `analyze_ending.py` (ending screen: winners / board per process), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_rejoin.py` (what a rejoined player sees, before the drop vs after the rejoin), `analyze_contact.py`
+`phase-host-crash`, `phase-host-leave`; not picked by `campaign.sh`), `analyze_ending.py` (ending screen: winners / board per process), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_rejoin.py` (what a rejoined player sees, before the drop vs after the rejoin), `analyze_fake_hint.py` (the anomalies know the same fake roles, nobody else), `analyze_duplicate_votes.py` (one click = one vote: no refused duplicate in the logs), `analyze_contact.py`
 (Lack of Affection per target faction), `analyze_copies.py` (copied powers: no Marque copy used locked or the night of the theft, one per night, unlocked each new night, no spent husk, host = clients, every use resolved; `--expect-use` / `--expect-copy` = the forced situation happened), `sweep_copies.py` (every copy path forced on real clients: Ugës steals each chosen active power, Luma copies each factice chosen role, l'Incomplet into Ugës / Luma, Ugës on the host, a factice Ugës's layer length, Ugës's client rejoining → `coverage.md`), `compare_runs.py`, `contact_sheet.py`. Shared run loading for analyzers:
 `autoplay_runs.py`.
 

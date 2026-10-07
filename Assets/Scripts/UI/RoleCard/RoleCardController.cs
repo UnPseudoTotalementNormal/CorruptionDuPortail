@@ -1,5 +1,6 @@
 #region
 
+using System.Collections.Generic;
 using System.Linq;
 using Board.UI.CharacterBar;
 using Characters;
@@ -77,6 +78,12 @@ namespace UI.RoleCard
         [Tooltip("Resolves role.rolePortrait -> Sprite (replaces the old Addressables lookup). Wire the PortraitTable asset.")]
         [SerializeField] private PortraitTable portraitTable;
 
+        [Tooltip("The designer's per-role passive lines (the \"Passif\" block). A role without an entry shows its passive powers' descriptions. Wire the RoleCardTexts asset.")]
+        [SerializeField] private RoleCardTexts roleCardTexts;
+
+        [Tooltip("Knowledge store: tells whether the viewer knows a clicked role is fake. Wire the scene's GameInfoRevealer.")]
+        [SerializeField] private GameLogic.GameInfoRevealer gameInfoRevealer;
+
         private const float PortraitCardWidth = 250f; // the canonical RoleCardElement face used for the portrait
 
         private VisualElement _root;
@@ -85,6 +92,7 @@ namespace UI.RoleCard
         private Label _faction;
         private VisualElement _factionIcon;
         private Label _roleName;
+        private Label _fakeBadge;
         private VisualElement _difficulty;
         private VisualElement _panel;
         private VisualElement _divider;
@@ -125,6 +133,7 @@ namespace UI.RoleCard
             _faction = _root.Q<Label>("faction");
             _factionIcon = _root.Q<VisualElement>("faction-icon");
             _roleName = _root.Q<Label>("role-name");
+            _fakeBadge = _root.Q<Label>("fake-badge");
             _difficulty = _root.Q<VisualElement>("difficulty");
             _divider = _root.Q<VisualElement>("divider");
             _passiveBlock = _root.Q<VisualElement>("passive-block");
@@ -160,16 +169,25 @@ namespace UI.RoleCard
         // A character in the bar was clicked -> show its role card.
         private void OnCharacterBarClicked(Character character)
         {
-            if (character != null && character.role != null) Open(character.role);
+            if (character != null && character.role != null) Open(character.role, IsKnownFake(character));
         }
 
+        // The viewer (or the bot the host possesses) was told this character's role is fake.
+        private bool IsKnownFake(Character character) =>
+            character.isFake && gameInfoRevealer != null &&
+            gameInfoRevealer.GetCharacterInfo(character.ownerClientId.Value).isFakeRevealed > GameLogic.RevealLevel.False;
+
         /// <summary>Bind a role and reveal the card.</summary>
-        public void Open(Role role)
+        public void Open(Role role) => Open(role, false);
+
+        /// <summary>Bind a role and reveal the card; <paramref name="knownFake"/> adds the "rôle factice" line.</summary>
+        public void Open(Role role, bool knownFake)
         {
             TryInitialize();
             if (_root == null || role == null) return;
 
             Bind(role);
+            _fakeBadge?.EnableInClassList(CollapsedClass, !knownFake);
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position; // modal: scrim blocks the world + catches dismiss clicks
             // Remove the fade class next frame so the opacity transition actually runs from 0 -> 1.
@@ -243,14 +261,16 @@ namespace UI.RoleCard
             hasDescription: !string.IsNullOrEmpty(p.powerDescription.ToString()));
 
         // One bulleted row per passive so distinct passives read as a scannable list instead of a run-on
-        // paragraph. Membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
+        // paragraph. The designer's per-role lines win (RoleCardTexts); otherwise one row per passive power, whose
+        // membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
         private void BuildPassive(Role role)
         {
             _passiveList.Clear();
-            foreach (var power in role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow))
+            IEnumerable<string> lines = roleCardTexts != null && roleCardTexts.TryGetPassives(role.roleID, out var authored)
+                ? authored
+                : role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow).Select(p => p.powerDescription.ToString());
+            foreach (var desc in lines)
             {
-                var desc = power.powerDescription.ToString();
-
                 var row = new VisualElement();
                 row.AddToClassList(PassiveRowClass);
 

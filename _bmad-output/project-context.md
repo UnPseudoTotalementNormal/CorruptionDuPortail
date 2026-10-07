@@ -132,7 +132,7 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 ## 3D interaction
 
-- Board objects are driven entirely through `IPointer*` (no `OnMouse*`): cursor mode = `InputSystemUIInputModule` + `PhysicsRaycaster` on CameraBrain; embodied mode = `ReticleInteractor`. Mutually exclusive.
+- Board objects are driven entirely through `IPointer*` (no `OnMouse*`): cursor mode = `InputSystemUIInputModule` + `PhysicsRaycaster` on CameraBrain; embodied mode = `ReticleInteractor`. Mutually exclusive: the reticle clicks only while `Cursor.lockState` is really Locked (the UI module ignores a locked pointer); with a free cursor (unfocused window, autoplay) both clicked the same button, every click arrived twice.
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
 - Animating the scale of a non-convex `MeshCollider` re-cooks it every frame → raycast dropouts. Put the collider on an unscaled parent or use a primitive.
 

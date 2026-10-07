@@ -46,7 +46,7 @@ Every run writes `<out>/<stamp>-<scenario>-seed<N>/`:
 - `report.json` — read first: outcome, failure reason, phase trace, game facts, event counters, roster, errors.
 - `events.ndjson` — every event, appended live (a hung or crashed run still leaves it).
 - `NNN-<label>.json` — at each capture point: time, phase, probes, and the game's state under `"game"`.
-- `NNN-<label>.png` — the same moment as rendered (windowed runs only).
+- `NNN-<label>.jpg` — the same moment as rendered (windowed runs only; JPEG q85, older runs have `.png`).
 
 ## Verify an animation
 
@@ -75,6 +75,11 @@ to capture it from its first frame.
   (refuses if guarded settings drifted from git), `play-build [seed] [port]`, `last-run`.
 - `unityctl.sh play-net <clients> [seed] [port]` — host + N **real network clients** (separate processes of the same
   build, loopback UDP, agreed port), then `compare_runs.py` on their traces.
+- `unityctl.sh prune [days] [--dry-run]` / `prune_runs.py` — retention, run automatically before `play-build` /
+  `play-net`: images of PASSED runs older than N days (2, `AUTOPLAY_KEEP_IMAGES_DAYS`) go, in every checkout of the
+  repository; reports, journals, logs and failed / unjudged runs stay.
+- `unityctl.sh park` / `unpark` — free a finished worktree's `Library` + `Temp` (~4 GB), and re-seed it from the main
+  checkout (robocopy, no full reimport) to resume.
 - `compare_runs.py` — desync detector: every process journals `state.hash` (a hash of a canonical view of the
   replicated state, once each phase has settled); the host's hashes are compared phase by phase with each client's.
 - `run_scenario.py <scenario.json>` — **declarative scenarios**: goal, mode (build / net), levers (player args, per

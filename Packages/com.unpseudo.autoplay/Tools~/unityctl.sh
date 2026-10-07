@@ -10,6 +10,9 @@
 #   unityctl.sh play-build [seed] [port]  one autoplay game in that build, launched WITHOUT focus, always killed
 #   unityctl.sh play-net <clients> [seed] [port]  host + N real network clients (separate processes), desync check
 #   unityctl.sh last-run                  summary of the newest AutoplayRuns/*/report.json
+#   unityctl.sh prune [days] [--dry-run]  drop images of PASSED runs older than N days (2), in every checkout
+#   unityctl.sh park                      worktree done (PR merged): free its Library + Temp (~4 GB), keep code/Builds/runs
+#   unityctl.sh unpark                    resume a parked worktree: re-seed Library from the main checkout (minutes)
 #
 # Environment:
 #   AUTOPLAY_PROJECT        project root (default: current directory)
@@ -19,6 +22,7 @@
 #   -autoplay-video in AUTOPLAY_ARGS / AUTOPLAY_CLIENT1_ARGS: film those processes (video.mp4 in each run folder)
 #   AUTOPLAY_CLIENT1_RELAUNCH_ARGS / _DELAY (5 s)  play-net only: relaunch client1 once if its game dies first (crash-at)
 #   AUTOPLAY_TIMESCALE (4)  AUTOPLAY_TIMEOUT (900 s)  AUTOPLAY_SCENARIO (build)
+#   AUTOPLAY_KEEP_IMAGES_DAYS (2)  retention applied automatically before play-build / play-net
 #
 # Long commands block until done: run them in the background from an agent session.
 set -euo pipefail
@@ -38,6 +42,15 @@ wait_ready() {
     sleep 3
   done
   echo "editor not ready: $s" >&2; return 1
+}
+
+# Main checkout of this repository (= ROOT outside a git worktree).
+MAIN="$(cd "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/.." 2>/dev/null && (pwd -W 2>/dev/null || pwd))" || MAIN="$ROOT"
+same_dir() { [ "$(echo "${1%/}" | tr 'A-Z\\' 'a-z/')" = "$(echo "${2%/}" | tr 'A-Z\\' 'a-z/')" ]; }
+prune_runs() { $PY "$HERE/prune_runs.py" --project "$ROOT" "$@" || true; }
+editor_running() {  # an editor (GUI or batchmode) holds this checkout
+  powershell.exe -NoProfile -Command "\$r='$ROOT'.Replace('\','/').TrimEnd('/').ToLower();
+    if (Get-CimInstance Win32_Process -Filter \"Name='Unity.exe'\" | ? { \$_.CommandLine -and \$_.CommandLine.Replace('\','/').ToLower().Contains(\$r) }) { exit 0 } else { exit 1 }"
 }
 
 status_file() { echo "$ROOT/Temp/pipeline_test_status.json"; }
@@ -102,6 +115,7 @@ print('result=',s.get('result'),'errors=',s.get('totalErrors'))"
     # Launched without focus (SW_SHOWNOACTIVATE) through launch-background.ps1, which hands the focus back if Unity
     # activates itself, waits (bounded) and ALWAYS kills the player at the end — no stray process keeps a port.
     seed="${2:-$RANDOM}"; port="${3:-7851}"
+    prune_runs --quiet
     args="-autoplay -autoplay-seed $seed -autoplay-port $port -autoplay-out $ROOT/AutoplayRuns"
     args="$args -autoplay-scenario ${AUTOPLAY_SCENARIO:-build} -autoplay-timescale ${AUTOPLAY_TIMESCALE:-4} ${AUTOPLAY_ARGS:-}"
     args="$args -screen-fullscreen 0 -screen-width 1600 -screen-height 900 -logFile $ROOT/Logs/autoplay-player-$seed.log"
@@ -113,6 +127,7 @@ print('result=',s.get('result'),'errors=',s.get('totalErrors'))"
   play-net)
     # 1 host + N real clients of the same build over loopback UDP, all without focus; then the desync comparison.
     clients="${2:?clients}"; seed="${3:-$RANDOM}"; port="${4:-7870}"
+    prune_runs --quiet
     port=$($PY -c "
 import socket
 for p in range($port, 7900):
@@ -143,5 +158,27 @@ for e in d.get('errors',[]): errs[e[:200]]=errs.get(e[:200],0)+1
 for e,n in sorted(errs.items(), key=lambda x:-x[1])[:15]: print(f'  ERR x{n}', e)
 print('files:', len(os.listdir(r'$R')))"
     ;;
-  *) sed -n '2,25p' "$0"; exit 2 ;;
+  prune)
+    shift; days="${1:-}"; [ -n "$days" ] && [ "${days#--}" = "$days" ] && shift || days=""
+    prune_runs ${days:+--days "$days"} "$@"
+    ;;
+  park)
+    # Reversible: only what `unpark` re-creates goes (Library, Temp). Code, branch, Builds (play-build still works) and
+    # runs (pruned by retention) stay. Never on the main checkout, never under a live editor.
+    if same_dir "$ROOT" "$MAIN"; then echo "park is for worktrees, not the main checkout ($ROOT)" >&2; exit 2; fi
+    if editor_running; then echo "an editor is open on $ROOT — stop it first" >&2; exit 3; fi
+    du -sh "$ROOT/Library" 2>/dev/null || true
+    rm -rf "$ROOT/Library" "$ROOT/Temp"
+    echo "parked $ROOT (resume: unityctl.sh unpark, then relaunch the headless editor)"
+    ;;
+  unpark)
+    if [ -d "$ROOT/Library" ]; then echo "Library already present: nothing to do"; exit 0; fi
+    if same_dir "$ROOT" "$MAIN" || [ ! -d "$MAIN/Library" ]; then echo "no main-checkout Library to seed from ($MAIN)" >&2; exit 2; fi
+    # Same exclusions as the headless recipe: no compiled assemblies, Bee cache or pipeline port file of the main editor.
+    rc=0; MSYS2_ARG_CONV_EXCL='*' robocopy "$(cygpath -w "$MAIN/Library")" "$(cygpath -w "$ROOT/Library")" /E /MT:16 /NFL /NDL /NJH /NP       /XF '*.lock' UnityLockfile /XD ScriptAssemblies Bee Pipeline || rc=$?
+    [ "$rc" -lt 8 ] || { echo "robocopy failed ($rc)" >&2; exit 1; }
+    rm -f "$ROOT/Library/Pipeline/.unity-pipeline-port"
+    echo "Library re-seeded. Launch the headless editor (tools/HEADLESS_UNITY.md), then: unityctl.sh compile"
+    ;;
+  *) sed -n '2,28p' "$0"; exit 2 ;;
 esac

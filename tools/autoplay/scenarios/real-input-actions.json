@@ -1,6 +1,6 @@
 {
   "name": "real-input-actions",
-  "goal": "Real-input mode on every seat with a screen (host + possessed bots, 3 real clients): each power, card pick, vote (first-person view: the bot turns its head until the vote button is under the reticle, then clicks), vote skip, sleep and the Mage's portal card is a real click through the EventSystem that produces its game effect; the real mouse / keyboard are disabled. Only two design findings are exempted and warned (Poyo, 2026-10-05): role-picker cards laid out off screen at 16:9, and the vote's Skip button (screen overlay) out of the seated reticle's reach. Any other miss or direct fallback fails. Votes are forced, not rolled: everyone votes the Mage except seats 0 and 101 (the Mage at seed 777), which click Skip, so the Mage is chained on day 1 and its portal card always comes up. Real players (the clients) must have no miss at all. The host's checks are warnings: the bots it possesses have no view of their own and vote from the HOST's seat (a vote aimed at the host's own card, or one out of the host seat's head reach, is a possession artefact, not something a player meets).",
+  "goal": "Real-input mode on every seat with a screen (host + possessed bots, 3 real clients): each power, card pick, vote (first-person view: the bot turns its head until the vote button is under the reticle, then clicks), vote skip, sleep and the Mage's portal card is a real click through the EventSystem that produces its game effect; the real mouse / keyboard are disabled. Only one design finding is exempted and warned (Poyo, 2026-10-05): role-picker cards laid out off screen at 16:9. The vote's Skip is the board's skip button (\"Passer le vote\", the night's \"Arrêter l'éveil\"), clicked for real (since 2026-10-07; the old screen-overlay Skip was out of the seated reticle's reach). Any other miss or direct fallback fails. Votes are forced, not rolled: everyone votes the Mage except seats 0 and 101 (the Mage at seed 777), which click Skip, so the Mage is chained on day 1 and its portal card always comes up. Real players (the clients) must have no miss at all. The host's checks are warnings: the bots it possesses have no view of their own and vote from the HOST's seat (a vote aimed at the host's own card, or one out of the host seat's head reach, is a possession artefact, not something a player meets).",
   "mode": "net",
   "clients": 3,
   "seed": 777,
@@ -81,12 +81,13 @@
       "type": "event",
       "kind": "vote.skip.click",
       "process": "any",
-      "min": 1
+      "min": 1,
+      "detail": "via=click"
     },
     {
       "type": "event",
       "kind": "input.miss",
-      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "detail": "^(?!picker .*reason=off-screen)",
       "process": "clients",
       "min": 0,
       "max": 0
@@ -94,7 +95,7 @@
     {
       "type": "event",
       "kind": "input.miss",
-      "detail": "^(?!(picker .*reason=off-screen|vote-skip .*reason=screen-fixed))",
+      "detail": "^(?!picker .*reason=off-screen)",
       "process": "host",
       "min": 0,
       "max": 0,
@@ -103,7 +104,7 @@
     {
       "type": "event",
       "kind": "input.miss",
-      "detail": "^(picker .*reason=off-screen|vote-skip .*reason=screen-fixed)",
+      "detail": "^picker .*reason=off-screen",
       "process": "any",
       "min": 0,
       "max": 0,

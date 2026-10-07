@@ -163,7 +163,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | balayage des copies (`sweep_copies.py`) | Ugës vole chacun des 11 pouvoirs actifs d'élu, Luma copie chaque élu factice, l'Incomplet en Ugës / Luma, Ugës hôte, faux Ugës (couche non instantanée), rejoin d'Ugës, 8 chaînes de copieurs dans les deux ordres | réseau, 2 clients | 33/33 cas 2026-10-07 (3 échecs d'outil corrigés puis rejoués, 1 non couvert : Ugës enchaîné par Abyss la nuit 1, rejoué avec une autre graine) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 45/48 2026-10-07 (3 échecs = outil : T8, T9 corrigés, `real-input-lobby` instable) |
-| `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |
+| `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-07 (skip du vote par vrai clic depuis le bouton unifié) |
 | `real-input-mask` | un bouton de sommeil masqué fait échouer le scénario (`input.miss hit=AutoplayMask`) | build | PASS 2026-10-05 |
 | `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
 | `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) |

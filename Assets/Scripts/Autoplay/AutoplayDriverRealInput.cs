@@ -288,7 +288,8 @@ namespace Autoplay
             }
         }
 
-        // The vote screen's "Skip" button (a vote for SKIP_VOTE_ID; the direct path abstains instead).
+        // The board's skip button, "Passer le vote" during the vote (a vote for SKIP_VOTE_ID; the direct path
+        // abstains instead). It is the night's "Arrêter l'éveil" button: the vote screen has no Skip button of its own.
         private async UniTaskVoid SkipVoteByClick(Character _voter)
         {
             ulong _id = _voter.ownerClientId.Value;
@@ -296,9 +297,7 @@ namespace Autoplay
             try
             {
                 await PrepareSeat(_id);
-                VoteStateUI _ui = FindAnyObjectByType<VoteStateUI>();
-                CustomButton _button = _ui ? _ui.GetComponentsInChildren<CustomButton>(true)
-                    .FirstOrDefault(_b => _b.name.IndexOf("Skip", StringComparison.OrdinalIgnoreCase) >= 0) : null;
+                SkipButton _button = FindAnyObjectByType<SkipButton>(FindObjectsInactive.Include);
                 _clicked = await ClickTarget(_button ? _button.gameObject : null, $"vote-skip {_id}",
                     () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
             }

@@ -100,7 +100,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `real-input-mask <GameObject name>` | breakage test (needs `real-input`, else the run fails): a transparent click-eating overlay covers that object; its clicks must end in `input.miss … hit=…AutoplayMask` |
 | `real-input-control` | diagnostic: virtual devices without disabling the real ones (counts the user's own input events, `realEvents=`) |
 | `power-use-probability <0..1>` | chance a bot uses each usable power (0 = every seat sleeps through the sleep button) |
-| `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the vote's Skip button) |
+| `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the board's skip button, "Passer le vote" during the vote) |
 | `vote-skip <id,id…>` | these seats always skip the vote (no roll): with `vote-probability 1` + `vote-focus`, a scenario chains its target for sure and still exercises Skip |
 | `vote-skip-cast` | a bot that skips the vote (roll failed, `vote-skip`, `vote-probability 0`) casts the Skip vote like the Skip button, instead of abstaining: a vote where everyone skips closes 5 s after the last one instead of waiting out its timer. Off by default (`idle-table` checks the abstention timer) |
 | `linger-end <seconds>` | stay that long on the ending screen instead of ending the run when `GameEndingState` starts: journal `ending.linger`, captures `ending-*` (0.5 s, 2 s, end); each capture exports `boardCards` (owner seat of each card on the board) and `winners` (`team:ids` received by this peer, `GameEndingState.WinningTeams`) for `analyze_ending.py` |
@@ -216,7 +216,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `join-stuck-load-kick` | a joiner whose load never ends is kicked by the host at the 90 s cap; the lobby then starts without it |
 | `join-slow-load-honest` | a load held 30 s is not kicked: the client joins and plays |
 | `join-spawn-during-load` | a player seated while a joiner's load outlasts NGO's SpawnTimeout: every client still sees every owner and the full roster (late-joiner Characters desync, 2026-10-05) |
-| `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; only two exempted, warned design findings: role-picker cards off screen, Skip vote button out of the seated reticle's reach |
+| `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; vote skip through the board's skip button ("Passer le vote") must be a real click; only one exempted, warned design finding: role-picker cards off screen |
 | `real-input-mask` | breakage test: a covered sleep button fails as `input.miss hit=…AutoplayMask` |
 | `real-input-tour` | tooltip, pause menu + audio slider, tablet + chat app, emote wheel by real input on every screen; a client leaves through the pause menu and is chained |
 | `real-input-lobby` | lobby by mouse on the tablet: preset, role card overlay (screen-space UI Toolkit) opened and closed, wheel + Imposé "+", every "Prêt", start by `TryAutoStart` |

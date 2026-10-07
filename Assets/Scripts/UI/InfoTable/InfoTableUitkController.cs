@@ -45,6 +45,8 @@ namespace UI.InfoTable
         private const string CellConflictClass = "info-table__cell--conflict";
         private const string CellLockedClass = "info-table__cell--locked";
         private const string CellDimmedClass = "info-table__cell--dimmed";
+        private const string CellMaybeClass = "info-table__cell--maybe";
+        private const string CellNotClass = "info-table__cell--not";
         private const string SegmentClass = "info-table__seg";
         private const string SegSureClass = "info-table__seg--sure";
         private const string SegMaybeClass = "info-table__seg--maybe";
@@ -101,6 +103,9 @@ namespace UI.InfoTable
         private const float PseudoTint = 0.82f;        // wash blend toward BoardDarkBg (near-dark)
         // The camp chip is small, so a deeper faction fill there is fine (no large flat surface to frame).
         private const float CampMute = 0.55f;
+        // A marked cell reads as one selection: its two other segments take a soft wash of the state colour (same
+        // alpha as the --cdp-color-info-*-soft USS tokens used for ? and ✗).
+        private const float SegmentWashAlpha = 0.35f;
 
         private static readonly CellState[] SegmentOrder = { CellState.Sure, CellState.Maybe, CellState.SurelyNot };
         private static readonly string[] AllPlayerTierClasses =
@@ -450,19 +455,20 @@ namespace UI.InfoTable
                     cell.EnableInClassList(CellConflictClass, _model.IsCellInConflict(pi, ri));
                     // "Freed" cells recede once the row is found or the column is claimed — visual only, still clickable.
                     cell.EnableInClassList(CellDimmedClass, _model.IsCellDimmed(pi, ri));
+                    // GD feedback: a ? or ✗ colours the whole cell (its 3 segments), as the ✓ does (USS washes).
+                    cell.EnableInClassList(CellMaybeClass, state == CellState.Maybe);
+                    cell.EnableInClassList(CellNotClass, state == CellState.SurelyNot);
 
+                    // A Sûr cell takes the role's faction colour (Option A), painted inline so it overrides the USS
+                    // green: the ✓ in full, the two other segments as a soft wash. Cleared back to the USS otherwise.
+                    Color? sure = state == CellState.Sure ? FactionColor(_model.Roles[ri].Faction) : (Color?)null;
                     int idx = 0;
                     foreach (VisualElement seg in cell.Children())
                     {
                         bool selected = idx < SegmentOrder.Length && state == SegmentOrder[idx];
                         seg.EnableInClassList(SegSelectedClass, selected);
-                        // The Sûr ✓ segment (idx 0) takes the role's faction colour when confirmed (Option A) —
-                        // painted inline so it overrides the USS green; cleared back to the USS ghost otherwise.
-                        if (idx == 0)
-                        {
-                            if (selected) PaintFactionFill(seg, FactionColor(_model.Roles[ri].Faction));
-                            else ClearFactionFill(seg);
-                        }
+                        if (sure.HasValue) PaintFactionFill(seg, selected ? sure.Value : Wash(sure.Value));
+                        else ClearFactionFill(seg);
                         idx++;
                     }
                 }
@@ -567,6 +573,8 @@ namespace UI.InfoTable
 
         // Blend a faction colour toward the dark board surface (0 = full faction, 1 = pure dark).
         private static Color Mute(Color c, float t) => Color.Lerp(c, BoardDarkBg, t);
+
+        private static Color Wash(Color c) => new(c.r, c.g, c.b, SegmentWashAlpha);
 
         private static void ClearFaction(VisualElement el)
         {

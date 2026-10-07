@@ -103,6 +103,8 @@
     --cdp-color-info-sure: rgb(78, 168, 92);           /* Sûr — green */
     --cdp-color-info-maybe: rgb(214, 176, 74);         /* peut être — amber */
     --cdp-color-info-not: rgb(190, 82, 74);            /* Pas lui — red */
+    --cdp-color-info-maybe-soft: rgba(214, 176, 74, 0.35); /* wash of a "peut être" cell's other segments */
+    --cdp-color-info-not-soft: rgba(190, 82, 74, 0.35);    /* wash of a "pas lui" cell's other segments */
     --cdp-color-info-glyph-on: rgb(16, 14, 11);        /* glyph on a filled segment — near-black */
     --cdp-color-info-conflict: rgb(120, 40, 36);       /* conflict row/cell tint */
     --cdp-color-info-conflict-edge: rgb(224, 96, 84);  /* conflict border — bright red */

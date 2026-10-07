@@ -85,12 +85,16 @@ The team's task list is a **Discord forum channel** (`liste-de-taches`, one thre
 
 Forum tags (id → name): `1524509766972604517` Haute Priorité · `1524509938116726984` Moyenne Priorité · `1524509912019894373` Faible Priorité · `1524509841043882048` MODELE 3D · `1524511158445277268` Bug · `1524722157689638953` En Cours · `1524514526660263956` Résolu.
 
-Common ops (all authed with the Bot header):
-- **List tasks** — `GET /guilds/{guild}/threads/active` (filter `parent_id == channel`) + `GET /channels/{channel}/threads/archived/public`. Open = tag not in `applied_tags`; done = `DISCORD_DONE_TAG_ID` present.
-- **Read a task** — `GET /channels/{threadId}` (metadata + `applied_tags`) then `GET /channels/{threadId}/messages` (thread body = first message).
+**Reading = `tools/discord/discord_tasks.py`** (read-only, stdlib, finds `.env` from a worktree too, UTF-8 output). Never hand-roll curl for reads: most tasks are *archived* (inactive forum threads auto-archive), threads can exceed one 50-message page, and bodies carry attachments/embeds/mentions.
+- `check` — bot, Message Content intent ON/OFF, tag list, task count.
+- `list [--open|--done|--all] [--json]` — active + archived (public/private, paginated); default open.
+- `read <thread id | title substring> [--download DIR] [--json]` — every message: starter post, attachments (`--download` saves images so you can `Read` them), embeds, replies, reactions, polls, mentions resolved to names.
+- `dump [--open|--done|--all] [--download DIR] [--json]` — `read` for every task.
+
+Writes stay raw REST (all authed with the Bot header):
 - **Mark in-progress / complete** — `PATCH /channels/{threadId}` with `{"applied_tags":[...]}` (full replacement — read current tags, add/swap, write back). Complete = add Résolu (+ archive via `"archived":true`); starting = add "En Cours".
 - **Create a task** — `POST /channels/{channel}/threads` with `{"name":..., "applied_tags":[...], "message":{"content":...}}`.
 
 **Always confirm with Poyo before any write** (PATCH/POST) to the board — same rule as commits.
 
-Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8. The bot lacks the MESSAGE_CONTENT intent: message `content` always comes back `""`. Titles and tags are readable, bodies are not, so ask Poyo to paste the text.
+Gotchas: bot token as a `python` argv gets mangled → 403; pass it via **env var** or use `curl`. Git Bash `curl -o /tmp/x` writes a path the native Windows `python` can't read → write to the scratchpad dir with an absolute path. Console is cp1252 → accents print as `�` but the JSON data is fine UTF-8. Bodies (`content`, `attachments`, `embeds`) need the privileged **Message Content intent** (Developer Portal → bot app → Bot → Privileged Gateway Intents); without it Discord returns them empty, even over REST. `discord_tasks.py` warns when it is OFF; then ask Poyo to enable it (or to paste the text).

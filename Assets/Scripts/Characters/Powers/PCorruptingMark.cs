@@ -23,7 +23,8 @@ namespace Characters.Powers
     {
         [field:SerializeField] public string concentratedEffectDescription { get; set; }
 
-        private NetworkVariable<ulong> lastCorruptedCharacterId = new(9999999);
+        private const ulong NoCorruptedTarget = 9999999;
+        private NetworkVariable<ulong> lastCorruptedCharacterId = new(NoCorruptedTarget);
 
         public event Action<Character> onCharacterCorruptionSuccessful;
         public event Action<Character> onCharacterCorruptionFailed;
@@ -71,6 +72,16 @@ namespace Characters.Powers
         private void OnCardClickedRpc(ulong _clickedCharacterId, RpcParams _params = default)
         {
             if (!ServerAuthorizeEffect(_params, _clickedCharacterId)) return; // NET-09: server-side use authorization
+            // The Dryade's blessing makes a player immune to this power for the game. The picker already hides blessed
+            // players, but that is a client-side filter: re-check on the server. The use stays consumed (the client
+            // already sent OnUsed); the corruption simply fails, and the concentration reveal finds no target.
+            Character _target = characterManager.GetCharacter(_clickedCharacterId, false);
+            if (_target == null || _target.isBlessed.Value)
+            {
+                lastCorruptedCharacterId.Value = NoCorruptedTarget;
+                InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
+                return;
+            }
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_clickedCharacterId), SelfState);
             // NET-10: the caster knows its target is now corrupted (ledger write + push to the caster).
@@ -130,6 +141,7 @@ namespace Characters.Powers
         
         public void OnConcentratedEffectServer()
         {
+            if (lastCorruptedCharacterId.Value == NoCorruptedTarget) return; // refused target: nothing to reveal
             gameInfoRevealer.SendRevealLevelRpc(
                 lastCorruptedCharacterId.Value, nameof(CharacterInfoReveal.isRoleRevealed), RevealLevel.Personal, ownerClientId.Value, true);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using DG.Tweening;
 using Network;
 using TMPro;
@@ -100,9 +101,18 @@ namespace ChatSystem
             }
         }
 
+        // One tab per channel: a channel can be granted more than once (e.g. the anomaly chat, opened by both the
+        // Mage's and Abyss's Oeil du néant), and DiscoverChat raises the event every time.
+        private readonly Dictionary<int, CustomButton> chatButtons = new();
+
         private void OnChatDiscovered(int _chatId)
         {
+            if (chatButtons.TryGetValue(_chatId, out CustomButton _existing) && _existing != null)
+            {
+                return;
+            }
             CustomButton _newButton = Instantiate(discoveredChatButtonPrefab, discoveredChatLayoutTransform);
+            chatButtons[_chatId] = _newButton;
             _newButton.GetComponentInChildren<TMP_Text>().text = ChatManager.instance.GetChatWindow(_chatId).chatName.ToString();
             _newButton.onButtonClicked += () =>
             {
@@ -115,6 +125,7 @@ namespace ChatSystem
                     return;
                 }
                 ChatManager.instance.onChatUndiscovered -= OnUndiscovered; // one button, one subscription
+                chatButtons.Remove(_chatId);
                 if (_newButton != null)
                 {
                     Destroy(_newButton.gameObject);

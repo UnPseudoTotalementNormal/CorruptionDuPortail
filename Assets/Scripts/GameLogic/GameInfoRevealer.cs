@@ -323,16 +323,19 @@ namespace GameLogic
                 bool _raised = (int)_new.roleRevealed > (int)_info.isRoleRevealed
                                || (int)_new.corruptRevealed > (int)_info.isCorruptRevealed
                                || (int)_new.forceCorruptOnRoleRevealed > (int)_info.forceCorruptOnRoleRevealed
-                               || (int)_new.hacked > (int)_info.isHacked;
+                               || (int)_new.hacked > (int)_info.isHacked
+                               || (int)_new.fakeRevealed > (int)_info.isFakeRevealed;
                 bool _changed = _new.roleRevealed != _info.isRoleRevealed
                                 || _new.corruptRevealed != _info.isCorruptRevealed
                                 || _new.forceCorruptOnRoleRevealed != _info.forceCorruptOnRoleRevealed
-                                || _new.hacked != _info.isHacked;
+                                || _new.hacked != _info.isHacked
+                                || _new.fakeRevealed != _info.isFakeRevealed;
 
                 _info.isRoleRevealed = _new.roleRevealed;
                 _info.isCorruptRevealed = _new.corruptRevealed;
                 _info.forceCorruptOnRoleRevealed = _new.forceCorruptOnRoleRevealed;
                 _info.isHacked = _new.hacked;
+                _info.isFakeRevealed = _new.fakeRevealed;
 
                 _anyChange |= _changed;
                 if (_target == _hintTarget && _raised)
@@ -368,6 +371,7 @@ namespace GameLogic
             if (_name == nameof(CharacterInfoReveal.isCorruptRevealed)) return KnowledgeField.CorruptRevealed;
             if (_name == nameof(CharacterInfoReveal.forceCorruptOnRoleRevealed)) return KnowledgeField.ForceCorruptOnRoleRevealed;
             if (_name == nameof(CharacterInfoReveal.isHacked)) return KnowledgeField.Hacked;
+            if (_name == nameof(CharacterInfoReveal.isFakeRevealed)) return KnowledgeField.FakeRevealed;
             throw new ArgumentException($"Unknown knowledge field: {_name}");
         }
 
@@ -379,6 +383,7 @@ namespace GameLogic
             public RevealLevel corruptRevealed;
             public RevealLevel forceCorruptOnRoleRevealed;
             public RevealLevel hacked;
+            public RevealLevel fakeRevealed;
 
             public static KnowledgeEntry From(KnowledgeRow _row) => new()
             {
@@ -387,6 +392,7 @@ namespace GameLogic
                 corruptRevealed = (RevealLevel)_row.Levels[(int)KnowledgeField.CorruptRevealed],
                 forceCorruptOnRoleRevealed = (RevealLevel)_row.Levels[(int)KnowledgeField.ForceCorruptOnRoleRevealed],
                 hacked = (RevealLevel)_row.Levels[(int)KnowledgeField.Hacked],
+                fakeRevealed = (RevealLevel)_row.Levels[(int)KnowledgeField.FakeRevealed],
             };
 
             public void NetworkSerialize<T>(BufferSerializer<T> _serializer) where T : IReaderWriter
@@ -396,6 +402,7 @@ namespace GameLogic
                 _serializer.SerializeValue(ref corruptRevealed);
                 _serializer.SerializeValue(ref forceCorruptOnRoleRevealed);
                 _serializer.SerializeValue(ref hacked);
+                _serializer.SerializeValue(ref fakeRevealed);
             }
         }
     }
@@ -409,6 +416,8 @@ namespace GameLogic
         // POmniscience (hack) : "cette carte est piratée", révélé Personal au seul Robot. Pilote le
         // glitch visuel côté client (CardHackGlitch). Aucun autre reveal ne l'écrit.
         public RevealLevel isHacked = RevealLevel.False;
+        // Anomalies only, at game start: "nobody plays this role" (a safe bluff). Greys the role in the character bar.
+        public RevealLevel isFakeRevealed = RevealLevel.False;
     }
 
     public enum RevealLevel

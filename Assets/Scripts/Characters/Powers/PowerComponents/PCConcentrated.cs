@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace Characters.Powers.PowerComponents
 {
-    [Tooltip("Will do the power concentrated action if the precedent power wasn't used this turn")]
+    [Tooltip("Ends the turn (spends the precedent power); does the concentrated action if the precedent power wasn't used this turn")]
     public class PCConcentrated : PowerComponent
     {
-        public string concentratedEffectDescription => "Si \"{var:precedentPowerName}\" n'est pas utilisé, renonce à son utilisation et " 
+        public string concentratedEffectDescription => "Termine le tour ; si \"{var:precedentPowerName}\" n'est pas utilisé, " 
                                                        + (power as IConcentratedPowerEffect)?.concentratedEffectDescription;
         public string precedentPowerName => GetPrecedentPower() ? GetPrecedentPower().powerName.ToString() : "Power not found";
         
@@ -35,20 +35,22 @@ namespace Characters.Powers.PowerComponents
                 return;
             }
 
-            if (_precedentPower.powerUseLeft.Value != _precedentPower.maxPowerUse)
+            // The concentrated effect only when the precedent power is untouched this turn...
+            if (_precedentPower.powerUseLeft.Value == _precedentPower.maxPowerUse)
             {
-                return;
+                if (power is IConcentratedPowerEffect _cPower)
+                {
+                    _cPower.OnConcentratedEffectServer();
+                }
+                else
+                {
+                    Debug.LogError("PCConcentrated used on a power that doesn't implement IConcentratedPowerEffect: " + power.powerName);
+                }
             }
-            
-            if (power is IConcentratedPowerEffect _cPower)
-            {
-                _cPower.OnConcentratedEffectServer();
-                _precedentPower.powerUseLeft.Value = 0;
-            }
-            else
-            {
-                Debug.LogError("PCConcentrated used on a power that doesn't implement IConcentratedPowerEffect: " + power.powerName);
-            }
+
+            // ...but using this power always ends the turn (GD wording of Corruption Ciblée: "puis finit son tour"):
+            // the precedent power is spent too, so AwakeningState's no-usable-power check puts the owner to sleep.
+            _precedentPower.powerUseLeft.Value = 0;
         }
 
         private Power GetPrecedentPower()

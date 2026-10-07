@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Characters;
+using Characters.Powers;
 using Cysharp.Threading.Tasks;
 using GameLogic;
 using Unity.Netcode;
@@ -38,7 +39,13 @@ namespace Board.UI.CharacterBar
         [Tooltip("Sprite shown on a KNOWN-corrupted player's thumbnail. Reuses the old CorruptOverlay sprite.")]
         [SerializeField] private Sprite corruptionSprite;
 
+        [Tooltip("Scene-wired card effects: the \"healed\" mark on a player's card for Dr Gloubi / the Dryade.")]
+        [SerializeField] private CardEffectManager cardEffectManager;
+
         private ICharacterQuery CharacterQuery => characterManager;
+
+        // Players whose card carries our "healed" mark, so it is removed when no longer visible.
+        private readonly HashSet<ulong> _healedMarked = new();
 
         // Characters we currently watch, so isCorrupted is subscribed/unsubscribed exactly once each.
         private readonly List<Character> _watched = new();
@@ -64,6 +71,7 @@ namespace Board.UI.CharacterBar
             if (characterManager != null)
             {
                 CharacterQuery.onCharactersListUpdated += OnCharactersListUpdated;
+                CharacterQuery.onLocalIdentityChanged += RecomputeAll; // host possessing another bot
                 // triggerUpdate:false — a passive reader must never re-raise onCharactersListUpdated, or it
                 // would drive a self-sustaining per-frame loop through its own subscription.
                 RebindWatched(CharacterQuery.GetCharacters(false));
@@ -85,6 +93,7 @@ namespace Board.UI.CharacterBar
             if (characterManager != null)
             {
                 CharacterQuery.onCharactersListUpdated -= OnCharactersListUpdated;
+                CharacterQuery.onLocalIdentityChanged -= RecomputeAll;
             }
             UnwatchAll();
             UnsubscribeRevealer();
@@ -169,6 +178,7 @@ namespace Board.UI.CharacterBar
                     continue;
                 }
                 _character.isCorrupted.OnValueChanged += OnCorruptedChanged;
+                _character.isHealed.OnValueChanged += OnCorruptedChanged;
                 _watched.Add(_character);
             }
         }
@@ -180,6 +190,7 @@ namespace Board.UI.CharacterBar
                 if (_character != null)
                 {
                     _character.isCorrupted.OnValueChanged -= OnCorruptedChanged;
+                    _character.isHealed.OnValueChanged -= OnCorruptedChanged;
                 }
             }
             _watched.Clear();
@@ -211,6 +222,9 @@ namespace Board.UI.CharacterBar
             // triggerUpdate:false — never re-raise the roster event from a passive read (see OnEnable).
             var _characters = CharacterQuery.GetCharacters(false);
             var _present = new HashSet<ulong>();
+            // GD wording (Dr Gloubi / Dryade passive): they know who has been healed. Gated on holding the passive
+            // itself, not on the shared corruption-knowledge flag (the Technomancien's beacons grant that too).
+            bool _seesHealed = LocalSeesHealed();
             foreach (var _character in _characters)
             {
                 if (_character == null)
@@ -235,6 +249,18 @@ namespace Board.UI.CharacterBar
                     _registry.ClearIcon(_id, CorruptionIconKey);
                     _markedIds.Remove(_id);
                 }
+
+                SetHealedMark(_id, _seesHealed && _character.isHealed.Value);
+            }
+
+            if (_healedMarked.Count > 0)
+            {
+                _staleBuffer.Clear();
+                foreach (ulong _id in _healedMarked)
+                {
+                    if (!_present.Contains(_id)) _staleBuffer.Add(_id);
+                }
+                foreach (ulong _id in _staleBuffer) SetHealedMark(_id, false);
             }
 
             // A player that left the roster keeps no stale corruption icon behind (rematch reuses ids).
@@ -253,6 +279,31 @@ namespace Board.UI.CharacterBar
                     _registry.ClearIcon(_id, CorruptionIconKey);
                     _markedIds.Remove(_id);
                 }
+            }
+        }
+
+        private bool LocalSeesHealed()
+        {
+            Character _local = CharacterQuery.GetLocalCharacter(false);
+            if (_local == null || _local.role == null) return false;
+            foreach (var _power in _local.role.powers)
+            {
+                if (_power is PCorruptionKnowledge) return true;
+            }
+            return false;
+        }
+
+        private void SetHealedMark(ulong _id, bool _visible)
+        {
+            if (cardEffectManager == null) return;
+            if (_visible)
+            {
+                if (!cardEffectManager.HasCardEffect(CardEffectID.Healed, _id)) cardEffectManager.AddCardEffect(CardEffectID.Healed, _id);
+                _healedMarked.Add(_id);
+            }
+            else if (_healedMarked.Remove(_id))
+            {
+                cardEffectManager.RemoveCardEffect(CardEffectID.Healed, _id);
             }
         }
 

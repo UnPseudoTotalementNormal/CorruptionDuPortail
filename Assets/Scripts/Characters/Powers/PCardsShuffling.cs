@@ -28,11 +28,6 @@ namespace Characters.Powers
         private readonly CardsShufflingDecision _decision = new();
         private ulong _lastGuessClickedId;
 
-        // Seed seam (story d'archi, catalogue 246-252): the fake-card copy pick goes through an INJECTABLE random
-        // provider instead of a hard-wired new UnityRandomProvider(). Prod default = UnityRandomProvider; tests seed
-        // it via reflection. Server-only path (GrantCopyFromFakeRole), so no client-side draw to diverge.
-        private IRandomProvider _randomProvider = new UnityRandomProvider();
-
         bool ICardsShufflingGuess.IsCorrect =>
             characterManager.GetCharacter(_lastGuessClickedId).role.roleID
             == characterManager.GetCharacter(currentRoleGuessClientId).role.roleID;
@@ -173,16 +168,19 @@ namespace Characters.Powers
         [SerializeField] private string rolePickerDescription;
         [SerializeField] private string guessCharacterPickerDescription;
 
-        // {0} = nom du rôle copié, {1} = nom du pouvoir copié.
+        // {0} = nom du rôle copié, {1} = nom(s) du ou des pouvoirs copiés.
         [SerializeField] private string copyObtainedMessage =
             "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique).";
+        [SerializeField] private string copiesObtainedMessage =
+            "Le rôle {0} n'est pas en jeu : vous copiez temporairement ses pouvoirs « {1} » (usage unique chacun).";
         [SerializeField] private string noActivePowerToCopyMessage =
             "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier.";
 
-        // Server-only. Rôle élu piochée absent (fausse carte) : tire UN pouvoir actif au hasard et en donne une
-        // copie one-shot à Luma. Réutilise le kernel pur StolenPowerSelector (pickCount 1) + GivePowerToCharacter
-        // + la config one-shot d'Ugues. En fixant ownerIsChosen:true / ownerIsUgues:false, PowerCandidate.IsEligible
-        // se réduit à (!isPassive && !isStolenCopy) = « pouvoir actif copiable ».
+        // Server-only. Rôle élu piochée absent (fausse carte) : donne à Luma une copie one-shot de CHACUN de ses
+        // pouvoirs actifs (texte du GD : « une copie de ses pouvoirs à utilisation unique »), dans l'ordre du rôle.
+        // Réutilise le kernel pur StolenPowerSelector.SelectAllEligible + GivePowerToCharacter + la config one-shot
+        // d'Ugues. En fixant ownerIsChosen:true / ownerIsUgues:false, PowerCandidate.IsEligible se réduit à
+        // (!isPassive && !isStolenCopy) = « pouvoir actif copiable ».
         private void GrantCopyFromFakeRole(Character _fakeCharacter)
         {
             List<Power> _powers = _fakeCharacter.role.powers;
@@ -194,7 +192,7 @@ namespace Characters.Powers
                 _candidates.Add(new PowerCandidate(true, false, _isPassive, _isCopied));
             }
 
-            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, 1, _randomProvider);
+            List<int> _picks = StolenPowerSelector.SelectAllEligible(_candidates);
             string _message;
             if (_picks.Count == 0)
             {
@@ -203,13 +201,17 @@ namespace Characters.Powers
             }
             else
             {
-                Power _template = _powers[_picks[0]];
                 // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn. A Mélange
-                // stolen by Ugës: the copy it gives joins his Marque's per-night budget.
-                characterManager.GivePowerToCharacter(ownerClientId.Value, _template,
-                    InheritMarqueBudget(Power.ConfigureAsOneShotStolenCopy));
-                _message = string.Format(copyObtainedMessage,
-                    _fakeCharacter.role.roleName.ToString(), _template.powerName.ToString());
+                // stolen by Ugës: the copies it gives join his Marque's per-night budget.
+                var _onReady = InheritMarqueBudget(Power.ConfigureAsOneShotStolenCopy);
+                var _names = new List<string>(_picks.Count);
+                foreach (int _pick in _picks)
+                {
+                    characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_pick], _onReady);
+                    _names.Add(_powers[_pick].powerName.ToString());
+                }
+                _message = string.Format(_names.Count == 1 ? copyObtainedMessage : copiesObtainedMessage,
+                    _fakeCharacter.role.roleName.ToString(), string.Join(" », « ", _names));
             }
 
             ChatMessage _chat = new ChatMessage

@@ -3,13 +3,15 @@ using System.Collections.Generic;
 
 namespace CorruptionDuPortail.Domain
 {
-    /// <summary>NET-10: the four knowledge fields a viewer can hold about a target (CharacterInfoReveal).</summary>
+    /// <summary>NET-10: the knowledge fields a viewer can hold about a target (CharacterInfoReveal).</summary>
     public enum KnowledgeField
     {
         RoleRevealed = 0,
         CorruptRevealed = 1,
         ForceCorruptOnRoleRevealed = 2,
         Hacked = 3,
+        /// <summary>"This character's role is fake (nobody plays it)": told to the anomalies at game start.</summary>
+        FakeRevealed = 4,
     }
 
     /// <summary>One target's levels in a viewer's slice (RevealLevel values: 0 False, 10 Personal, 20 Public).</summary>
@@ -35,7 +37,7 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public sealed class KnowledgeLedger
     {
-        public const int FieldCount = 4;
+        public const int FieldCount = 5;
         public const int Public = 20;
 
         private readonly Dictionary<ulong, Dictionary<ulong, int[]>> _personal = new();

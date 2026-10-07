@@ -405,6 +405,7 @@ MonoBehaviour:
   hoverCameraZoomDistance: 9
   hoverFaceCamera: 1
   hoverTweenDuration: 0.35
+  knownFakeMaterial: {fileID: 2100000, guid: 47409e2b52958f142ad506e8e7a96a7b, type: 2}
 --- !u!114 &6371621035504576672
 MonoBehaviour:
   m_ObjectHideFlags: 0

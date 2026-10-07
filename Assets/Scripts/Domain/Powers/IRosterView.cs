@@ -26,6 +26,8 @@ namespace CorruptionDuPortail.Domain.Powers
         bool IsChained(int slot);
         /// <summary>Whether the slot's character is currently eliminated (ChainedByShadows "sole anomaly still in play" count).</summary>
         bool IsEliminated(int slot);
+        /// <summary>Whether the slot's character is a fake one (an unassigned role of the composition, no player).</summary>
+        bool IsFake(int slot);
         /// <summary>The slot's character's role display name (message composition).</summary>
         string RoleNameOf(int slot);
     }

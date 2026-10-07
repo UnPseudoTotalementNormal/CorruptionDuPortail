@@ -18,6 +18,7 @@ MonoBehaviour:
       Value:
         lines:
         - Il commence corrompu.
+        - Il voit quels joueurs sont corrompus.
         - Les <i>Anomalies</i> se connaissent et communiquent entre elles.
         - "Les <i>Anomalies</i> connaissent autant de <i>r\xF4les factices</i> que
           leur nombre dans la partie."
@@ -25,6 +26,7 @@ MonoBehaviour:
       Value:
         lines:
         - Il commence corrompu.
+        - Il voit quels joueurs sont corrompus.
         - Les <i>Anomalies</i> se connaissent et communiquent entre elles.
         - "Les <i>Anomalies</i> connaissent autant de <i>r\xF4les factices</i> que
           leur nombre dans la partie."

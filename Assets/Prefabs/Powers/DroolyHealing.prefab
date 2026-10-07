@@ -689,7 +689,7 @@ MonoBehaviour:
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1
-  targetIncludeFlags: 120
+  targetIncludeFlags: 56
   powerUseLeft:
     m_InternalValue: 0
   maxPowerUse: 1

@@ -1,0 +1,87 @@
+{
+  "name": "last-anomaly-leaves-recap",
+  "goal": "N2 race forced: Abyss is chained at the first vote, then the real client holding the Mage Occulte (the last anomaly) leaves 1 s into the day-2 vote recap with a 2 s grace, at time scale 1, so the grace expires DURING the recap: the leave victory jumps to GameEndingState while the recap's async flow still awaits. The recap must then NOT advance the loop (host log 'VoteRecapState: no longer the current state'), the game stays on its ending screen (it wrapped back to the lobby before the fix).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 642,
+  "seedRetries": 4,
+  "timescale": 1,
+  "timeout": 1500,
+  "args": [
+    "-autoplay-force-roles",
+    "Occulte",
+    "-autoplay-role-holder",
+    "seat:1",
+    "-autoplay-vote-focus",
+    "Extension",
+    "-autoplay-vote-probability",
+    "1",
+    "-autoplay-rejoin-grace",
+    "2",
+    "-autoplay-fast-fakes",
+    "-autoplay-linger-end",
+    "8",
+    "-autoplay-net-log"
+  ],
+  "clientArgs": [
+    "-autoplay-connect-delay",
+    "4"
+  ],
+  "client1Args": [
+    "-autoplay-connect-delay",
+    "0",
+    "-autoplay-quit-at",
+    "VoteRecapState day=2"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "roster",
+      "match": "^1 Va'ahl.*chained=True",
+      "min": 1
+    },
+    {
+      "type": "roster",
+      "match": "Abyss.*chained=True",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "GameEndingState",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "LobbyState day=[2-9]",
+      "process": "all",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_ending.py {run}"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 -c \"import sys;sys.exit(0 if 'VoteRecapState: no longer the current state' in open(r'{run}/host.log',encoding='utf-8',errors='replace').read() else 1)\""
+    }
+  ]
+}

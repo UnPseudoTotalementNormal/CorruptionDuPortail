@@ -143,12 +143,27 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `rejoin-under-lag` | retour par le menu avec 150 ms, gigue 40 ms, 2 % de pertes | réseau, 3 clients | PASS 2026-10-06 |
 | `mass-rejoin` | les 3 clients tombent en même temps et reviennent tous | réseau, 3 clients | PASS 2026-10-06 |
 | `rejoin-after-expiry` | retour après la grâce : refus « La partie a déjà commencé. », session oubliée, la partie continue | réseau, 3 clients | PASS 2026-10-06 |
+| `full-game-victory` | partie réseau jouée jusqu'à la victoire (sans limite de jours), 3 clients + chat | réseau, 3 clients | PASS 2026-10-06 |
+| `full-game-ending` | puis 10 s sur l'écran de fin : mêmes vainqueurs partout, plateau = vainqueurs (`analyze_ending.py`) | réseau, 3 clients | PASS 2026-10-06 (seeds 302-304) |
+| `last-anomaly-leaves` | la dernière anomalie quitte : grâce expirée → victoire des élus, la partie RESTE sur l'écran de fin | réseau, 3 clients | PASS 2026-10-06 (FAIL avant le correctif N2 : retour au lobby) |
+| `last-anomaly-leaves-recap` | même chose, grâce expirée PENDANT le récap du vote (course N2 forcée) | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-while-chained` | un enchaîné qui se déconnecte est refusé au retour (spec-rejoin-01) | réseau, 3 clients | PASS 2026-10-06 |
+| `rejoin-at-chaining` | déconnexion au début de l'enchaînement puis retour | réseau, 3 clients | PASS 2026-10-06 (FAIL avant N4) |
+| `idle-table` | personne n'agit 4 jours : chaque phase finit sur son minuteur | réseau, 2 clients | PASS 2026-10-06 |
+| `full-table-lag-victory` | hôte + 7 clients, 100 ms / 1 % de pertes, partie complète + écran de fin | réseau, 7 clients | PASS 2026-10-06 |
+| `replay-net` | « Terminer la partie » puis 2e partie dans les mêmes process | réseau, 3 clients | PASS 2026-10-06 (FAIL avant N5) |
+| `real-input-full-game` | partie complète par vraies entrées, clic réel sur « Terminer la partie », 2e partie | réseau, 3 clients | PASS 2026-10-06 |
+| `host-leaves-mid-game` | l'hôte quitte en plein vote : clients au menu sans avis d'erreur | réseau, 3 clients | PASS 2026-10-06 (FAIL avant N7) |
+| `host-crash-mid-game` | l'hôte crashe : « Connexion à l'hôte perdue » sur chaque client | réseau, 3 clients | PASS 2026-10-06 |
+| `late-join-refused` | un nouveau venu en pleine partie est refusé « La partie a déjà commencé. » | réseau, 3 clients | PASS 2026-10-06 |
+| balayage d'enchaînement (`sweep_chain_roles.py`) | chaque rôle, tenu par un vrai client (ou l'hôte : `--holder host`), enchaîné au 1er vote | réseau, 3 clients | 14/14 client + 14/14 hôte 2026-10-07 |
+| balayages par phase (`sweep_phases.py` + `scenarios/templates/`) | départ / rejoin / crash hôte / départ hôte à chacune des 7 phases | réseau, 3 clients | 4 × 7/7 2026-10-07 (après N8, N9) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
-| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 7/7 PASS 2026-10-04 |
+| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 45/48 2026-10-07 (3 échecs = outil : T8, T9 corrigés, `real-input-lobby` instable) |
 | `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |
 | `real-input-mask` | un bouton de sommeil masqué fait échouer le scénario (`input.miss hit=AutoplayMask`) | build | PASS 2026-10-05 |
 | `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
-| `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | PASS 2026-10-05 |
+| `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) |
 | `real-input-menu` | premier écran capturé ; la notification de refus passe au-dessus de l'écran de connexion et se ferme au clic | réseau, 3 clients | PASS 2026-10-05 |
 
 ### Not covered? Extend, do not hand it back

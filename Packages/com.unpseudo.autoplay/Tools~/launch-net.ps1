@@ -266,7 +266,9 @@ if ($aborted) {
 }
 
 # Clients end on their own once the host session closes; give them a moment, then clean up whatever is left.
-$deadline = (Get-Date).AddSeconds($(if ($aborted) { 0 } else { 20 }))
+# 40 s: a client that lost a CRASHED host only notices it after the liveness timeout (15 s), then goes back to its
+# menu and reports (lever expect-host-loss); 20 s cut that short.
+$deadline = (Get-Date).AddSeconds($(if ($aborted) { 0 } else { 40 }))
 foreach ($p in $procs) {
     $left = [Math]::Max(0, ($deadline - (Get-Date)).TotalMilliseconds)
     if (-not $p.WaitForExit([int]$left)) {

@@ -466,6 +466,15 @@ namespace Characters.Powers
         
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)
         {
+            // Session stopping (the host left or ended the game): the session registries are reset before GameScene
+            // unloads, so the power bars' per-frame polling read cleared target data (NullReferenceException in
+            // TargetUtils). Nothing is usable once the session is going away.
+            var _network = Unity.Netcode.NetworkManager.Singleton;
+            if (_network == null || _network.ShutdownInProgress || !_network.IsListening)
+            {
+                return false;
+            }
+
             var _powerCharacter = ownerCharacter;
             if (!_powerCharacter)
             {

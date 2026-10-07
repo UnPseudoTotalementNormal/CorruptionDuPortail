@@ -1,0 +1,23 @@
+{
+  "name": "rejoin-at-chaining",
+  "goal": "A real client drops as the first chaining starts (every bot votes Dr Gloubi, so a chaining happens on day 1) and clicks the menu's rejoin button 3 s later: it comes back during the chaining / portal / next awakening, gets its seat back intact, the chained card shows the chained player, no error (B10 family: card rebuilt while the board animates), no desync.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 660,
+  "seedRetries": 4,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": ["-autoplay-force-roles", "Gloubi", "-autoplay-vote-focus", "Gloubi", "-autoplay-vote-probability", "1",
+           "-autoplay-max-days", "3", "-autoplay-rejoin-grace", "60", "-autoplay-fast-fakes", "-autoplay-net-log"],
+  "client1Args": ["-autoplay-quit-at", "ChainingState day=1", "-autoplay-rejoin-after", "3", "-autoplay-rejoin-via", "menu"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "roster", "match": "Gloubi.*chained=True", "min": 1},
+    {"type": "event", "kind": "rejoin.drop", "process": "clients", "min": 1, "max": 1},
+    {"type": "event", "kind": "rejoin.seat", "process": "clients", "min": 1, "max": 1},
+    {"type": "event", "kind": "seat.released", "detail": "left=False", "process": "host", "min": 1, "max": 1},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

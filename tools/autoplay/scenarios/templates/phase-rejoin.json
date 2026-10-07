@@ -1,0 +1,16 @@
+{
+  "name": "phase-rejoin",
+  "goal": "A real client drops at {phase} and clicks the menu's rejoin button 3 s later: seat back intact (analyze_rejoin), the game goes on, no error, no desync. Dr Gloubi is forced and voted by every bot so day 1 has a chaining.",
+  "mode": "net", "clients": 3, "seed": 800, "seedRetries": 3, "timescale": 3, "timeout": 1200,
+  "args": ["-autoplay-force-roles", "Gloubi", "-autoplay-vote-focus", "Gloubi", "-autoplay-vote-probability", "1",
+           "-autoplay-max-days", "3", "-autoplay-rejoin-grace", "60", "-autoplay-fast-fakes", "-autoplay-net-log", "-autoplay-no-png"],
+  "client1Args": ["-autoplay-quit-at", "{phase}", "-autoplay-rejoin-after", "3", "-autoplay-rejoin-via", "menu"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "rejoin.drop", "process": "clients", "min": 1, "max": 1},
+    {"type": "event", "kind": "rejoin.seat", "process": "clients", "min": 1, "max": 1},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_rejoin.py {run}"},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

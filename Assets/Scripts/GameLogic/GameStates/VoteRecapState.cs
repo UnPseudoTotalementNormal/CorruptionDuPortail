@@ -56,13 +56,23 @@ namespace GameLogic.GameStates
         {
             try
             {
-                await boardManager.ShowAllPlayerCards();
+                // Tied to the board's lifetime: a client that drops or leaves mid-recap unloads the scene while this
+                // awaits; the recap then stops (OperationCanceledException, silent) instead of touching destroyed cards.
+                var _boardAlive = boardManager.GetCancellationTokenOnDestroy();
+                await boardManager.ShowAllPlayerCards().AttachExternalCancellation(_boardAlive);
 
-                await UniTask.Delay(TimeSpan.FromSeconds(1));
+                await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: _boardAlive);
 
-                await ShowVoteResult();
+                await ShowVoteResult(_boardAlive);
 
-                if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
+                // The recap may have been left meanwhile (a leaver's grace expired and the victory re-check jumped to
+                // GameEndingState): advancing from there wrapped the loop back to the lobby. Only a live recap advances.
+                // Checked by TYPE (DoStateMethodRpc runs this flow on the first instance of the type).
+                if (gameManager.IsServer && !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is VoteRecapState))
+                {
+                    Debug.Log("[LEAVE] VoteRecapState: no longer the current state when its recap ended — not advancing.");
+                }
+                else if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
                 {
                     if (gameManager.IsServer)
                     {
@@ -93,6 +103,10 @@ namespace GameLogic.GameStates
         {
             foreach (var _card in boardManager.visibleCards)
             {
+                if (!_card)
+                {
+                    continue;
+                }
                 var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
                 if (_voteCanvas)
                 {
@@ -108,10 +122,14 @@ namespace GameLogic.GameStates
             }
         }
 
-        private async UniTask ShowVoteResult()
+        private async UniTask ShowVoteResult(System.Threading.CancellationToken _boardAlive)
         {
             foreach (var _card in boardManager.visibleCards)
             {
+                if (!_card)
+                {
+                    continue;
+                }
                 var _voteCanvas = _card.GetComponentInChildren<VoteCanvas>();
                 if (_voteCanvas)
                 {
@@ -121,10 +139,10 @@ namespace GameLogic.GameStates
 
             SetVoteCanvasVisibility(true);
             onShowVoteRecap?.Invoke();
-            await UniTask.Delay(TimeSpan.FromSeconds(5));
+            await UniTask.Delay(TimeSpan.FromSeconds(5), cancellationToken: _boardAlive);
             SetVoteCanvasVisibility(false);
             onHideVoteRecap?.Invoke();
-            await UniTask.Delay(TimeSpan.FromSeconds(1));
+            await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: _boardAlive);
         }
 
         public override void OnEndStateClient()

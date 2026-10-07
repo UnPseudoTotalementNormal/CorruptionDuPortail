@@ -460,15 +460,15 @@ namespace Autoplay
             }
 
             // During the awakening players act while the processes sample, and each process samples 1.5 s after ITS
-            // phase start (a client starts later by the latency): flags set in between differ by timing only. With an
-            // input lever (slower, less regular actions) they are left out of the one-shot hash there; the in-game
-            // tripwire re-checks once settled. Without a lever the hash is unchanged.
+            // phase start (a client starts later by the latency): flags set in between differ by timing only (seen
+            // 2026-10-06 with fast-fakes: a corruption landing between the host's and the clients' samples). They are
+            // left out of the one-shot hash there; the in-game tripwire re-checks once settled, and the next phase's
+            // hash compares them again.
             bool _volatilePhase = _state is AwakeningState;
-            bool _inputLever = options.realInput != null || options.lobbyInput != null;
             string _canonical = string.Join(";", characterManager.GetCharacters(false)
                 .Where(_c => _c && !_c.isFake)
                 .OrderBy(_c => _c.ownerClientId.Value)
-                .Select(_c => _volatilePhase && _inputLever ? $"{_c.ownerClientId.Value}:{_c.role?.roleName}" :
+                .Select(_c => _volatilePhase ? $"{_c.ownerClientId.Value}:{_c.role?.roleName}" :
                     $"{_c.ownerClientId.Value}:{_c.role?.roleName}:{(_c.isChained.Value ? 1 : 0)}{(_c.isCorrupted.Value ? 1 : 0)}" +
                     $"{(_c.isHealed.Value ? 1 : 0)}{(_c.isBlessed.Value ? 1 : 0)}{(_c.isEliminated.Value ? 1 : 0)}"));
             // Plus the in-game desync tripwire's public projection (roster + pseudos, characters, flags, game state,
@@ -1064,6 +1064,9 @@ namespace Autoplay
             public ulong[] leftPlayers;
             // Avatars this peer sees: "owner=<id> mine=<IsOwner> name=<nameplate text> pos=<x,z>".
             public string[] avatars;
+            // Board cards this peer shows (owner seat of each visible card) and, at the ending, the winners it received.
+            public ulong[] boardCards;
+            public string[] winners;
         }
 
         /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
@@ -1122,6 +1125,13 @@ namespace Autoplay
                         _a.GetComponentInChildren<TMPro.TextMeshPro>(true)?.text ?? "-",
                         _a.transform.position.x, _a.transform.position.z))
                     .ToArray(),
+                boardCards = BoardManager.instance != null
+                    ? BoardManager.instance.visibleCards.Where(_c => _c && _c.characterInfo)
+                        .Select(_c => _c.characterInfo.ownerClientId.Value).ToArray()
+                    : Array.Empty<ulong>(),
+                winners = CurrentState is GameEndingState _ending
+                    ? _ending.WinningTeams.Select(_t => $"{_t.Key}:{string.Join(",", _t.Value.OrderBy(_id => _id))}").ToArray()
+                    : Array.Empty<string>(),
             };
 
             return JsonUtility.ToJson(_snapshot);

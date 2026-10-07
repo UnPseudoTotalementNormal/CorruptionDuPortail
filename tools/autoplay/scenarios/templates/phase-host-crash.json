@@ -1,0 +1,15 @@
+{
+  "name": "phase-host-crash",
+  "goal": "The host process is killed at {phase}: every real client shows 'Connexion à l'hôte perdue' over the main menu, and nothing throws while the session dies under that phase's flows.",
+  "mode": "net", "clients": 3, "seed": 840, "timescale": 3, "timeout": 900,
+  "args": ["-autoplay-host-crash-at", "{phase}", "-autoplay-expect-host-loss", "-autoplay-force-roles", "Gloubi",
+           "-autoplay-vote-focus", "Gloubi", "-autoplay-vote-probability", "1", "-autoplay-fast-fakes", "-autoplay-chat",
+           "-autoplay-net-log", "-autoplay-no-png"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "clients"},
+    {"type": "outcome", "value": "Completed", "process": "host", "alsoAccept": ["Crashed"]},
+    {"type": "event", "kind": "host.lost", "process": "every-client", "min": 1, "max": 1},
+    {"type": "event", "kind": "host.lost.menu", "detail": "menu=reached notification=shown", "process": "every-client", "min": 1, "max": 1},
+    {"type": "noErrors", "process": "clients", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

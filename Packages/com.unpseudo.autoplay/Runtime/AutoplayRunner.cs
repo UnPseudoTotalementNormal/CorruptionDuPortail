@@ -69,42 +69,59 @@ namespace Unpseudo.Autoplay
 
             yield return RunStep(_capture, _watchdog, "boot", _game.Boot(_context), _context);
 
-            if (!_context.Failed)
+            // "port-strict": the port was agreed with other processes (multi-process runs) — never move it.
+            ushort _port = _config.port;
+            // Lever "replay N": N more rounds in this process after the first (games implementing IAutoplayRounds).
+            int _rounds = 1 + (_game is IAutoplayRounds ? Math.Max(0, _config.OptionInt("replay", 0)) : 0);
+            for (int _round = 1; _round <= _rounds && !_context.Failed; _round++)
             {
-                // "port-strict": the port was agreed with other processes (multi-process runs) — never move it.
-                ushort _port = _config.Flag("port-strict") ? _config.port : UdpPorts.FindFree(_config.port, _config.portRangeSize);
-                if (_port != _config.port)
+                if (_round > 1)
                 {
-                    _journal.Record("port", $"UDP {_config.port} busy, using {_port}");
+                    _journal.Record("round.end", $"round {_round - 1} over, starting round {_round}");
+                    yield return RunStep(_capture, _watchdog, "round-end", ((IAutoplayRounds)_game).EndRound(_context, _round), _context);
+                    if (_context.Failed) break;
+                    _journal.Record("round.begin", $"round {_round}");
                 }
-                yield return RunStep(_capture, _watchdog, "host", _game.Host(_context, _port), _context);
+
                 if (!_context.Failed)
                 {
-                    // The session is up (host: listening with the game scene loaded; client: joined or refused). The
-                    // multi-process launcher starts the clients only after the host's one: a client joining while the
-                    // host still loads its scene gets a broken scene synchronization.
-                    _journal.Record(AutoplayJournal.SessionReadyEvent, _game.Phase);
+                    if (_round == 1)
+                    {
+                        _port = _config.Flag("port-strict") ? _config.port : UdpPorts.FindFree(_config.port, _config.portRangeSize);
+                        if (_port != _config.port)
+                        {
+                            _journal.Record("port", $"UDP {_config.port} busy, using {_port}");
+                        }
+                    }
+                    yield return RunStep(_capture, _watchdog, "host", _game.Host(_context, _port), _context);
+                    if (!_context.Failed)
+                    {
+                        // The session is up (host: listening with the game scene loaded; client: joined or refused). The
+                        // multi-process launcher starts the clients only after the host's one: a client joining while the
+                        // host still loads its scene gets a broken scene synchronization.
+                        _journal.Record(AutoplayJournal.SessionReadyEvent, _game.Phase);
+                    }
                 }
-            }
 
-            if (!_context.Failed)
-            {
-                yield return RunStep(_capture, _watchdog, "setup", _game.SetUp(_context), _context);
-            }
+                if (!_context.Failed)
+                {
+                    yield return RunStep(_capture, _watchdog, "setup", _game.SetUp(_context), _context);
+                }
 
-            if (!_context.Failed)
-            {
-                yield return RunStep(_capture, _watchdog, "start", _game.StartGame(_context), _context);
-            }
+                if (!_context.Failed)
+                {
+                    yield return RunStep(_capture, _watchdog, "start", _game.StartGame(_context), _context);
+                }
 
-            if (!_context.Failed)
-            {
-                Time.timeScale = _config.timeScale;
-                yield return Watch(_game, _context, _watchdog);
+                if (!_context.Failed)
+                {
+                    Time.timeScale = _config.timeScale;
+                    yield return Watch(_game, _context, _watchdog);
 
-                yield return new WaitForSecondsRealtime(_context.Failed ? 0.2f : 1.5f);
-                _capture.Request(_context.Failed ? "failure" : "final");
-                yield return new WaitForSecondsRealtime(0.8f);
+                    yield return new WaitForSecondsRealtime(_context.Failed ? 0.2f : 1.5f);
+                    _capture.Request(_context.Failed ? "failure" : _round < _rounds ? $"final-round{_round}" : "final");
+                    yield return new WaitForSecondsRealtime(0.8f);
+                }
             }
 
             _watchdog.Stop();

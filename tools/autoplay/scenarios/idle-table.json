@@ -1,0 +1,61 @@
+{
+  "name": "idle-table",
+  "goal": "Nobody does anything: every seat sleeps through its powers (power-use-probability 0) and skips every vote (vote-probability 0) for 4 days. Every phase must still end on its own timer (no stall, no watchdog alert), no error, no desync: the timers and the 'nobody acted' paths of every state.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 650,
+  "timescale": 3,
+  "timeout": 1500,
+  "args": [
+    "-autoplay-power-use-probability",
+    "0",
+    "-autoplay-vote-probability",
+    "0",
+    "-autoplay-max-days",
+    "4",
+    "-autoplay-fast-phases",
+    "Intro",
+    "-autoplay-fast-timescale",
+    "12",
+    "-autoplay-no-png",
+    "-autoplay-timeout",
+    "1400"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "power.start",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "watchdog.slow",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "fact",
+      "match": "stopped-after-day=4",
+      "process": "host"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

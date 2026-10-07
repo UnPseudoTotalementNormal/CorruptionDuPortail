@@ -322,7 +322,14 @@ namespace ChatSystem
                 return;
             }
             _membership.Revoke(_chatId, _member);
-            UndiscoverChatRpc(_chatId, CharacterManager.instance.GetSafeRpcTarget(_member));
+            // Session teardown (end of game, host leaving): a power's despawn hook can revoke after the scene's
+            // CharacterManager (or this manager) despawned: nobody is left to tell (it threw a NullReferenceException).
+            CharacterManager _characters = CharacterManager.instance;
+            if (_characters == null || !IsSpawned)
+            {
+                return;
+            }
+            UndiscoverChatRpc(_chatId, _characters.GetSafeRpcTarget(_member));
         }
 
         [Rpc(SendTo.SpecifiedInParams)]

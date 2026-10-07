@@ -1,0 +1,19 @@
+{
+  "name": "full-table-lag-victory",
+  "goal": "A full table of real players (host + 7 clients, no bot) under 100 ms latency, 30 ms jitter and 1 % loss, chatting, plays a whole game to its victory and stays 10 s on the ending screen: same winners everywhere, board = winners, no desync on 8 processes, no error.",
+  "mode": "net",
+  "clients": 7,
+  "seed": 670,
+  "timescale": 3,
+  "timeout": 2400,
+  "args": ["-autoplay-fast-fakes", "-autoplay-fast-phases", "Intro|Chaining", "-autoplay-fast-timescale", "12",
+           "-autoplay-chat", "-autoplay-linger-end", "10", "-autoplay-no-png"],
+  "clientArgs": ["-autoplay-netsim", "100,30,1"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "ending.linger", "process": "all", "min": 1, "max": 1},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_ending.py {run}"},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

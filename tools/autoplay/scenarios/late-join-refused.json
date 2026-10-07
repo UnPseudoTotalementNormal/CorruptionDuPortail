@@ -1,0 +1,63 @@
+{
+  "name": "late-join-refused",
+  "goal": "A newcomer (never seated) tries to join a game already started: client1 connects 45 s after the others, while the game runs. The host refuses him with the game-in-progress reason (connect.rejected, wording shown by the join error report) and the game goes on for the seated players, no desync, no error.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 720,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-expect-clients",
+    "2",
+    "-autoplay-max-days",
+    "4",
+    "-autoplay-fast-fakes"
+  ],
+  "client1Args": [
+    "-autoplay-connect-delay",
+    "45",
+    "-autoplay-png"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "connect.rejected",
+      "process": "clients",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "fact",
+      "match": "^rejected=",
+      "process": "clients"
+    },
+    {
+      "type": "fact",
+      "match": "stopped-after-day=4",
+      "process": "host"
+    },
+    {
+      "type": "event",
+      "kind": "state.enter",
+      "detail": "AwakeningState day=1",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

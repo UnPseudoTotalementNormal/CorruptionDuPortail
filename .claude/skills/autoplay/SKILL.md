@@ -129,8 +129,10 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `lag-150ms` | partie complète sous 150 ms de latence | réseau, 3 clients | PASS 2026-10-04 |
 | `net-sync-3clients` | zéro désync sur chaque composant de l'état public | réseau, 3 clients | PASS 2026-10-05 |
 | `client-owner-local-powers` | les révélations du Repenti / de l'Orpheline atteignent le client qui les tient | réseau, 7 clients | PASS 2026-10-05 |
-| `orpheline-contact-chosen` | Manque d'affection sur un élu : ligne de contact + rôle révélé | réseau, 7 clients | PASS 2026-10-05 |
-| `orpheline-contact-anomaly` | Manque d'affection sur une anomalie : ligne de contact, pas de révélation | réseau, 7 clients | PASS 2026-10-05 |
+| `orpheline-contact-chosen` | Manque d'affection sur un élu : ligne de contact + rôle ET état de corruption révélés | réseau, 7 clients | PASS 2026-10-07 (variante 3 clients, RAM) |
+| `orpheline-contact-anomaly` | Manque d'affection sur une anomalie : ligne « Quelqu'un est venu vous voir » (aucun rôle nommé), pas de révélation | réseau, 7 clients | PASS 2026-10-07 (variante 3 clients, RAM) |
+| `healed-mark-dryade` | la Dryade (hôte) bénit le Messager : marque « soigné » provisoire sur sa carte, visible par elle seule (`role-holder host,bot`) | build | PASS 2026-10-07 (pastille vue sur la capture du verdict) |
+| `analyze_fake_hint.py` (sur tout run avec anomalies) | chaque anomalie connaît les mêmes rôles factices (≤ nombre d'anomalies), personne d'autre | réseau | PASS 2026-10-07 (2 runs, 2 anomalies) |
 | `chat-private` | les messages privés atteignent chaque membre réel, jamais un non-membre | réseau, 7 clients | PASS 2026-10-05 |
 | `join-version-mismatch` | une autre version du jeu est refusée avec le message de version | réseau, 3 clients | PASS 2026-10-05 |
 | `join-stuck-load-kick` | un chargement bloqué est éjecté à 90 s, le lobby démarre sans lui | réseau, 3 clients | PASS 2026-10-05 |
@@ -163,7 +165,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | balayage des copies (`sweep_copies.py`) | Ugës vole chacun des 11 pouvoirs actifs d'élu, Luma copie chaque élu factice, l'Incomplet en Ugës / Luma, Ugës hôte, faux Ugës (couche non instantanée), rejoin d'Ugës, 8 chaînes de copieurs dans les deux ordres | réseau, 2 clients | 33/33 cas 2026-10-07 (3 échecs d'outil corrigés puis rejoués, 1 non couvert : Ugës enchaîné par Abyss la nuit 1, rejoué avec une autre graine) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 45/48 2026-10-07 (3 échecs = outil : T8, T9 corrigés, `real-input-lobby` instable) |
-| `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-07 (skip du vote par vrai clic depuis le bouton unifié) |
+| `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 4/5 2026-10-07 (1 FAIL non reproduit : vote d'un client sans effet vu, cause non prouvée ; à côté, clics doublés réticule + module UI observés, bug d'entrée signalé à part) |
 | `real-input-mask` | un bouton de sommeil masqué fait échouer le scénario (`input.miss hit=AutoplayMask`) | build | PASS 2026-10-05 |
 | `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
 | `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) |

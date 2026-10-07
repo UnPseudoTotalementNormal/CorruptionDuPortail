@@ -65,7 +65,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `role host\|client` · `connect <ip>` | process role in `play-net` (set by the launcher) |
 | `players N` · `bots N` · `clients N` | seats; the host waits for N clients, then fills with bots |
 | `force-roles A,B` | role-name fragments guaranteed in the composition |
-| `role-holder host\|client\|bot` | who holds the forced roles (`seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
+| `role-holder host\|client\|bot` | who holds the forced roles (a comma list gives one holder per forced role, in order, e.g. `force-roles Dryade,Messager` + `role-holder host,bot`; `seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
 | `vote-focus <role text>` | every bot votes the holder of that role |
 | `max-days N` | stop after day N (fact `stopped-after-day`) |
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |

@@ -1,0 +1,22 @@
+{
+  "name": "healed-mark-dryade",
+  "goal": "The host is the Dryade and blesses the Messager (a real role, bot-held) on night 1: the blessing heals him, so the host's screen shows the placeholder 'healed' mark (green dot, top right) on the Messager's card from the next phase on (Dr Gloubi / Dryade passive, GD wording « connaît l'état de soin des élus »). Checked on the captures; the run proves the heal happened.",
+  "mode": "build",
+  "seed": 5150,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-force-roles", "Dryade,Messager",
+    "-autoplay-role-holder", "host,bot",
+    "-autoplay-target-focus", "Messager",
+    "-autoplay-target-focus-power", "diction",
+    "-autoplay-power-use-probability", "1",
+    "-autoplay-max-days", "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "power.verdict", "detail": "Bénédiction Correct", "min": 1}
+  ]
+}

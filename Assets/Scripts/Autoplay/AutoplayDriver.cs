@@ -1006,13 +1006,23 @@ namespace Autoplay
                 yield break;
             }
 
-            List<ulong> _targets = characterManager.GetCharacters(false)
-                .Where(_c => _c && !_c.isFake).Select(_c => _c.ownerClientId.Value).OrderBy(_id => _id).ToList();
+            // Fakes too, but only once known fake (the anomalies' fake-role hint): their other levels are noise.
+            List<Character> _targets = characterManager.GetCharacters(false)
+                .Where(_c => _c).OrderBy(_c => _c.ownerClientId.Value).ToList();
             foreach (ulong _viewer in controlledIds.OrderBy(_id => _id))
             {
-                foreach (ulong _target in _targets.Where(_t => _t != _viewer))
+                foreach (Character _character in _targets.Where(_c => _c.ownerClientId.Value != _viewer))
                 {
+                    ulong _target = _character.ownerClientId.Value;
                     CharacterInfoReveal _info = revealer.GetCharacterInfo(_target, _viewer);
+                    if (_character.isFake)
+                    {
+                        if (_info.isFakeRevealed > RevealLevel.False)
+                        {
+                            yield return $"{_viewer}>{_target} fake={(int)_info.isFakeRevealed} role={_character.role?.roleName}";
+                        }
+                        continue;
+                    }
                     if (_info.isRoleRevealed == RevealLevel.False && _info.isCorruptRevealed == RevealLevel.False &&
                         _info.forceCorruptOnRoleRevealed == RevealLevel.False && _info.isHacked == RevealLevel.False)
                     {

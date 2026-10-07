@@ -25,6 +25,7 @@ Entry point for AI-assisted work on **Corruption du Portail**. Read `CLAUDE.md` 
 - [modular-information-system-rewrite.md](./implementation-artifacts/modular-information-system-rewrite.md), [character-info-badge-overlay-system.md](./implementation-artifacts/character-info-badge-overlay-system.md): old backlog (June), check before starting
 - [datamosh-shader-prompt.md](./implementation-artifacts/datamosh-shader-prompt.md): shader prompt, status unknown
 - [epics-player-embodiment.md](./planning-artifacts/epics-player-embodiment.md): stories 13.5/13.6 (proximity voice) held on Steam
+- [role-texts-vs-code-gaps.md](./implementation-artifacts/role-texts-vs-code-gaps.md): designer's role texts vs what the code did, and what was decided for each gap (2026-10-07, not a source of truth)
 
 The team's task list is the Discord forum (see `CLAUDE.md`), not these files.
 

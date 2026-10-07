@@ -209,7 +209,7 @@ namespace Autoplay
                          .Where(_t => _t != _seat).OrderBy(_t => _t))
             {
                 CharacterInfoReveal _info = revealer.GetCharacterInfo(_target, _seat);
-                int[] _levels = { (int)_info.isRoleRevealed, (int)_info.isCorruptRevealed, (int)_info.forceCorruptOnRoleRevealed, (int)_info.isHacked };
+                int[] _levels = { (int)_info.isRoleRevealed, (int)_info.isCorruptRevealed, (int)_info.forceCorruptOnRoleRevealed, (int)_info.isHacked, (int)_info.isFakeRevealed };
                 if (_levels.Any(_l => _l > 0))
                 {
                     _mine.Add($"{_target}:{string.Join(",", _levels)}");

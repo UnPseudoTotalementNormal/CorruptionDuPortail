@@ -248,6 +248,25 @@
     scale: 1.06 1.06;
 }
 
+/* A marked cell reads as one selection (GD feedback): its other segments take a soft wash of the state colour.
+   Placed before the --selected rules (same specificity) so the chosen segment keeps its full fill. The Sûr ✓
+   cell gets the same treatment inline, in the role's faction colour. */
+.info-table__cell--maybe .info-table__seg {
+    background-color: var(--cdp-color-info-maybe-soft);
+    border-color: var(--cdp-color-info-maybe-soft);
+}
+
+.info-table__cell--not .info-table__seg {
+    background-color: var(--cdp-color-info-not-soft);
+    border-color: var(--cdp-color-info-not-soft);
+}
+
+/* Keep the hover edge on washed segments (the wash rules above outrank the plain .seg:hover). */
+.info-table__cell--maybe .info-table__seg:hover,
+.info-table__cell--not .info-table__seg:hover {
+    border-color: var(--cdp-color-info-text);
+}
+
 /* Selected: the whole tile fills with its state colour + a near-black glyph (colour + glyph both encode the
    state, so it reads without relying on hue — colour-blind + RT-desaturation safe). */
 .info-table__seg--selected {

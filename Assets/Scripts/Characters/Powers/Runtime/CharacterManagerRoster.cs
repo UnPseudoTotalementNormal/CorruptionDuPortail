@@ -56,6 +56,9 @@ namespace Characters.Powers.Runtime
         public bool IsEliminated(int slot) =>
             CharacterAt(slot)?.isEliminated.Value ?? false;
 
+        public bool IsFake(int slot) =>
+            CharacterAt(slot)?.isFake ?? false;
+
         public string RoleNameOf(int slot) =>
             CharacterAt(slot)?.role.roleName.ToString() ?? string.Empty;
 

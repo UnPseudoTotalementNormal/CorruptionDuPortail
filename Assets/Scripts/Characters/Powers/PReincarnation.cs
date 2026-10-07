@@ -29,6 +29,8 @@ namespace Characters.Powers
             // are hidden from the RoleCard (showing them leaks a real Incomplet + the copied role) via the onReady.
             bool _isCopiedReincarnation = isStolenCopy.Value;
             Action<Power> _onReady = _isCopiedReincarnation ? ConfigureOneShotGrant : ConfigurePermanentGrant;
+            // A Réincarnation stolen by a Marque d'Hurluberluges: its grants join the same per-night budget.
+            _onReady = InheritMarqueBudget(_onReady);
 
             foreach (var _rolePower in _fromRoleCharacter.role.powers)
             {

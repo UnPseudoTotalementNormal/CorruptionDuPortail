@@ -5,6 +5,7 @@ using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using GameLogic;
+using TooltipSystem;
 using UI;
 using Unity.Netcode;
 using UnityEngine;
@@ -42,6 +43,26 @@ namespace Board.UI.CharacterBar
 
         [SerializeField] private float hoverTweenDuration = 0.35f;
 
+        [Tooltip("Coloured outline drawn around the portrait while hovered, on top of the zoom: tells the player " +
+                 "the portrait is clickable and opens the role card (GD request). Placeholder colour, design-owned.")]
+        [SerializeField] private Color hoverOutlineColor = new Color(1f, 0.82f, 0.2f, 1f);
+
+        [SerializeField] private float hoverOutlineWidth = 4f;
+
+        private Outline _hoverOutline;
+
+        [Tooltip("Greyscale material for a role the local player knows is fake (anomalies learn some at game start: " +
+                 "GD \"rôle factice en noir et blanc\"). Wire Assets/Shaders/UI_Grayscale.mat.")]
+        [SerializeField] private Material knownFakeMaterial;
+
+        private const string KnownFakeTooltipTitle = "Rôle factice";
+        private const string KnownFakeTooltipDescription = "Personne ne joue ce rôle dans cette partie.";
+
+        private Material _baseMaterial;
+        private bool _baseMaterialCaptured;
+        private HoverTooltipComponent _knownFakeTooltip;
+        private ICharacterQuery _identitySource;
+
         /// <summary>
         /// The hover motion's duration, exposed READ-ONLY so children riding that motion
         /// (CharacterBarIconStack) share the single source of truth instead of duplicating the value on
@@ -72,10 +93,22 @@ namespace Board.UI.CharacterBar
             };
             customButton.onButtonHovered += OnButtonHovered;
             customButton.onButtonUnhovered += OnButtonUnhovered;
+            if (characterImage != null)
+            {
+                _hoverOutline = characterImage.gameObject.AddComponent<Outline>();
+                _hoverOutline.effectColor = hoverOutlineColor;
+                _hoverOutline.effectDistance = new Vector2(hoverOutlineWidth, -hoverOutlineWidth);
+                _hoverOutline.useGraphicAlpha = false;
+                _hoverOutline.enabled = false;
+            }
             // Story 7.4: CharactersBarObject is instantiated by TWO creators (CharactersBar + NoteRibbon),
             // so a single lane-B push is impractical; it resolves the (non-de-singletonised) revealer from
             // the composition root — behaviour-identical (same scene revealer). Proper injection: Epic 12.
             CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer.onCharacterInfoRevealedChanged += DoUpdateCharacter;
+            // The host possessing another bot changes whose knowledge the bar shows, without any reveal event.
+            _identitySource = CompositionRoot.For(NetworkManager.Singleton).CharacterManager;
+            if (_identitySource != null) _identitySource.onLocalIdentityChanged += DoUpdateCharacter;
+            UpdateCharacter();
         }
 
         private void OnButtonHovered()
@@ -96,6 +129,7 @@ namespace Board.UI.CharacterBar
                 _visual.DORotateQuaternion(GetFaceCameraRotation(), hoverTweenDuration).SetEase(Ease.OutQuint);
             }
             canvasObject.sortingOrder += 1;
+            if (_hoverOutline != null) _hoverOutline.enabled = true;
             onCharacterBarObjectHovered?.Invoke(playerCharacter);
         }
 
@@ -109,6 +143,7 @@ namespace Board.UI.CharacterBar
                 _visual.DORotateQuaternion(_restRotation, hoverTweenDuration).SetEase(Ease.OutQuint);
             }
             canvasObject.sortingOrder -= 1;
+            if (_hoverOutline != null) _hoverOutline.enabled = false;
             onCharacterBarObjectUnhovered?.Invoke(playerCharacter);
         }
 
@@ -179,6 +214,7 @@ namespace Board.UI.CharacterBar
                     _revealer.onCharacterInfoRevealedChanged -= DoUpdateCharacter;
                 }
             }
+            if (_identitySource != null) _identitySource.onLocalIdentityChanged -= DoUpdateCharacter;
             UnsubscribeFromCharacterEvents();
         }
         private void OnCharacterRoleUpdated()
@@ -189,6 +225,36 @@ namespace Board.UI.CharacterBar
         private void UpdateCharacter()
         {
             characterImage.sprite = portraitTable.Get(playerCharacter.GetRole().rolePortrait);
+            ShowKnownFake(IsKnownFake());
+        }
+
+        // The local player (or the bot the host possesses) was told this role is fake.
+        private bool IsKnownFake()
+        {
+            if (playerCharacter == null || !playerCharacter.isFake || NetworkManager.Singleton == null) return false;
+            GameInfoRevealer _revealer = CompositionRoot.For(NetworkManager.Singleton).GameInfoRevealer;
+            return _revealer != null &&
+                   _revealer.GetCharacterInfo(playerCharacter.ownerClientId.Value).isFakeRevealed > RevealLevel.False;
+        }
+
+        // Greyscale portrait + a hover tooltip saying it is fake.
+        private void ShowKnownFake(bool _knownFake)
+        {
+            if (characterImage == null) return;
+            if (!_baseMaterialCaptured)
+            {
+                _baseMaterial = characterImage.material == characterImage.defaultMaterial ? null : characterImage.material;
+                _baseMaterialCaptured = true;
+            }
+            characterImage.material = _knownFake && knownFakeMaterial != null ? knownFakeMaterial : _baseMaterial;
+
+            if (_knownFake && _knownFakeTooltip == null)
+            {
+                _knownFakeTooltip = gameObject.AddComponent<HoverTooltipComponent>();
+                _knownFakeTooltip.SetTooltipTitle(KnownFakeTooltipTitle);
+                _knownFakeTooltip.SetTooltipDescription(KnownFakeTooltipDescription);
+            }
+            if (_knownFakeTooltip != null) _knownFakeTooltip.enabled = _knownFake;
         }
         
         private void DoUpdateCharacter()

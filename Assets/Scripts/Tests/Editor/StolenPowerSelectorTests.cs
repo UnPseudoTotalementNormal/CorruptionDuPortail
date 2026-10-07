@@ -133,29 +133,25 @@ namespace Tests.Editor
             CollectionAssert.IsEmpty(picks);
         }
 
-        // --- Luma « Mélange des cartes » : copie UN pouvoir actif d'un rôle élu absent (pickCount 1).
-        // Luma construit ses PowerCandidate avec ownerIsChosen:true / ownerIsUgues:false, donc IsEligible se
-        // réduit à (!isPassive && !isCopiedPower). Le tirage réutilise le même kernel avec pickCount 1.
+        // --- Luma « Mélange des cartes » : copie TOUS les pouvoirs actifs d'un rôle élu absent (texte du GD :
+        // « une copie de ses pouvoirs »). Luma construit ses PowerCandidate avec ownerIsChosen:true /
+        // ownerIsUgues:false, donc IsEligible se réduit à (!isPassive && !isCopiedPower).
 
         [Test]
-        public void SelectStealable_Luma_PicksExactlyOneActive_SkippingPassives()
+        public void SelectAllEligible_Luma_TakesEveryActive_InAuthoredOrder_SkippingPassives()
         {
-            // indices: 0 passif, 1 actif, 2 passif, 3 actif → éligibles [1,3], stub(0) prend le 1er.
+            // indices: 0 passif, 1 actif, 2 passif, 3 actif → [1,3], dans l'ordre (ordre de la barre de pouvoirs).
             var candidates = new List<PowerCandidate> { Passive(), Eligible(), Passive(), Eligible() };
 
-            var picks = StolenPowerSelector.SelectStealable(candidates, 1, new StubRandomProvider(0));
-
-            CollectionAssert.AreEqual(new[] { 1 }, picks);
+            CollectionAssert.AreEqual(new[] { 1, 3 }, StolenPowerSelector.SelectAllEligible(candidates));
         }
 
         [Test]
-        public void SelectStealable_Luma_ReturnsEmpty_WhenRoleHasOnlyPassivePowers()
+        public void SelectAllEligible_Luma_ReturnsEmpty_WhenRoleHasOnlyPassivePowers()
         {
             var candidates = new List<PowerCandidate> { Passive(), Passive() };
 
-            var picks = StolenPowerSelector.SelectStealable(candidates, 1, new StubRandomProvider(0));
-
-            CollectionAssert.IsEmpty(picks);
+            CollectionAssert.IsEmpty(StolenPowerSelector.SelectAllEligible(candidates));
         }
     }
 }

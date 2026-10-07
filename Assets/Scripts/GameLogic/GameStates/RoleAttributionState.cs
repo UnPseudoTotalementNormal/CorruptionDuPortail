@@ -85,8 +85,13 @@ namespace GameLogic.GameStates
             RoleDistribution _distribution = new RoleDistributor().Distribute(
                 _initialCounts, _forced, _factions, _minimums, _fakeRoleAmountToRemove, _realCharacters.Count, new UnityRandomProvider());
 
+            var _fakeRoleIndices = new List<int>(_distribution.FakeRoleIndices);
+            var _realRoleIndices = new List<int>(_distribution.RealRoleIndices);
+            // Dev seam (autoplay): may move given roles to the fake side (same counts on each side). Null in a normal game.
+            DevFakeRoles?.Invoke(_frozenOrder, _fakeRoleIndices, _realRoleIndices);
+
             //assign fake roles to freshly created fake characters (fakes draw first, in order)
-            foreach (int _fakeRoleIndex in _distribution.FakeRoleIndices)
+            foreach (int _fakeRoleIndex in _fakeRoleIndices)
             {
                 ApplyRole(_frozenOrder[_fakeRoleIndex], Command.CreateNewFakeCharacter());
             }
@@ -95,8 +100,8 @@ namespace GameLogic.GameStates
             // normal game; the autoplay uses it to seat a forced role on a real client without re-rolling whole games.
             if (DevSeatOrder != null)
             {
-                var _drawnRoles = new List<RoleDataObject>(_distribution.RealRoleIndices.Count);
-                foreach (int _index in _distribution.RealRoleIndices)
+                var _drawnRoles = new List<RoleDataObject>(_realRoleIndices.Count);
+                foreach (int _index in _realRoleIndices)
                 {
                     _drawnRoles.Add(_frozenOrder[_index]);
                 }
@@ -104,9 +109,9 @@ namespace GameLogic.GameStates
             }
 
             //assign the remaining draws to the real characters, in processing order
-            for (int i = 0; i < _distribution.RealRoleIndices.Count; i++)
+            for (int i = 0; i < _realRoleIndices.Count; i++)
             {
-                ApplyRole(_frozenOrder[_distribution.RealRoleIndices[i]], _realCharacters[i]);
+                ApplyRole(_frozenOrder[_realRoleIndices[i]], _realCharacters[i]);
             }
 
             Loop.NextGameState();
@@ -117,6 +122,13 @@ namespace GameLogic.GameStates
         /// characters, returns the characters in the order that receives them. Same multiset, any order.
         /// </summary>
         public static System.Func<IReadOnlyList<RoleDataObject>, List<Character>, List<Character>> DevSeatOrder;
+
+        /// <summary>
+        /// Dev seam (autoplay only, null otherwise): given the frozen role pool order and the drawn fake / real role
+        /// indices into it, may edit both lists in place (a fake role swapped with a real one, or a fake replaced),
+        /// keeping each list's count. The autoplay uses it to make a given role a factice (e.g. for Luma's copy).
+        /// </summary>
+        public static System.Action<IReadOnlyList<RoleDataObject>, List<int>, List<int>> DevFakeRoles;
 
         // [DETERMINISM §3b A] Canonical, drift-free role-pool ordering: the authored
         // SerializedDictionary order. A plain Dictionary's key enumeration order is

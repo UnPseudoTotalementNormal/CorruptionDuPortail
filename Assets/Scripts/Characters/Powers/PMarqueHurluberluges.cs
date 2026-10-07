@@ -6,6 +6,7 @@ using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
 using GameLogic;
+using Unity.Netcode;
 using UnityEngine;
 
 #endregion
@@ -47,6 +48,55 @@ namespace Characters.Powers
         // OnGameStartedServer can be reached twice for a late-spawned power (OnPowerSpawned + OnGameStarted);
         // steal exactly once.
         private bool _hasStolen;
+
+        // Shared budget of the copies this Marque granted (each copy points back here through
+        // Power.marqueSourceId): locked the night of the theft, unlocked at each new day, locked again as soon as
+        // one copy is used — "à partir du second tour, une fois par nuit". Replicated so every peer's CanUse
+        // (power bar, bots) agrees with the server.
+        public NetworkVariable<bool> copiesLocked = new();
+
+        public bool CopiesLocked => copiesLocked.Value;
+
+        private IGameLoop _gameLoop;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (IsServer)
+            {
+                _gameLoop = CompositionRoot.For(NetworkManager).GameLoop;
+                if (_gameLoop != null)
+                {
+                    _gameLoop.onNewDayPassed += UnlockCopiesServer;
+                }
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer && _gameLoop != null)
+            {
+                _gameLoop.onNewDayPassed -= UnlockCopiesServer;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        private void UnlockCopiesServer()
+        {
+            if (IsServer && IsSpawned)
+            {
+                copiesLocked.Value = false;
+            }
+        }
+
+        /// <summary>Server: one of this Marque's copies was just used — the others wait for the next night.</summary>
+        public void OnCopyUsedServer()
+        {
+            if (IsServer)
+            {
+                copiesLocked.Value = true;
+            }
+        }
 
         public override void OnGameStartedServer()
         {
@@ -105,15 +155,71 @@ namespace Characters.Powers
             // Deterministic-source draw (mirrors RoleAttributionState's UnityRandomProvider); the filter +
             // distinct-pick + cap-at-what-exists mechanic lives in the EditMode-tested Domain kernel.
             List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, _randomProvider);
+            if (DevStealPreference != null && DevStealPreference.Length > 0)
+            {
+                _picks = PreferForDev(_candidates, _powers, _picks);
+            }
             if (_picks.Count == 0)
             {
                 Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
                 return;
             }
+            // Not usable the night of the theft (game start = night 1 for Ugës; the night of the copy for an
+            // Incomplet who took the Marque): the next onNewDayPassed unlocks them.
+            copiesLocked.Value = true;
             foreach (int _index in _picks)
             {
                 // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], Power.ConfigureAsOneShotStolenCopy);
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], ConfigureMarqueCopy);
+            }
+        }
+
+        /// <summary>
+        /// Dev seam (autoplay only, null otherwise): power-name fragments stolen FIRST when an eligible power matches
+        /// (in this order), the rest of the draw is kept. Lets a test cover a given stolen power without re-rolling.
+        /// </summary>
+        public static string[] DevStealPreference;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetDevSeams() => DevStealPreference = null;
+
+        private static List<int> PreferForDev(List<PowerCandidate> _candidates, List<Power> _powers, List<int> _drawn)
+        {
+            var _picks = new List<int>();
+            foreach (string _fragment in DevStealPreference)
+            {
+                for (int _i = 0; _i < _candidates.Count; _i++)
+                {
+                    if (_candidates[_i].IsEligible && !_picks.Contains(_i) &&
+                        _powers[_i].powerName.ToString().IndexOf(_fragment, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        _picks.Add(_i);
+                        break;
+                    }
+                }
+            }
+            foreach (int _index in _drawn)
+            {
+                if (!_picks.Contains(_index))
+                {
+                    _picks.Add(_index);
+                }
+            }
+            if (_picks.Count > POWERS_TO_STEAL)
+            {
+                _picks.RemoveRange(POWERS_TO_STEAL, _picks.Count - POWERS_TO_STEAL);
+            }
+            Debug.Log("[UGUES] dev steal preference: " + string.Join(", ", _picks.ConvertAll(_i => _powers[_i].powerName.ToString())));
+            return _picks;
+        }
+
+        // Server, onReady of each stolen copy: one-shot copy, tied to this Marque's per-night budget.
+        private void ConfigureMarqueCopy(Power _copy)
+        {
+            Power.ConfigureAsOneShotStolenCopy(_copy);
+            if (_copy != null && _copy.IsServer && IsSpawned)
+            {
+                _copy.marqueSourceId.Value = NetworkObjectId;
             }
         }
     }

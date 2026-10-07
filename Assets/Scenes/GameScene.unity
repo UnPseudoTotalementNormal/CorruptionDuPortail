@@ -3508,6 +3508,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Board.UI.CharacterBar.CorruptionIconDriver
   characterManager: {fileID: 1541735909}
   corruptionSprite: {fileID: 21300000, guid: 25eb58769ba58d641bcb5d985aafdcd2, type: 3}
+  cardEffectManager: {fileID: 541973516}
 --- !u!1 &465352332
 GameObject:
   m_ObjectHideFlags: 0
@@ -4159,6 +4160,9 @@ MonoBehaviour:
     - Key: 2
       Value:
         cardEffectPrefab: {fileID: 2866664585791456158, guid: 2e380cbac537e3ebc99abb87a8e5905d, type: 3}
+    - Key: 3
+      Value:
+        cardEffectPrefab: {fileID: 7796531256758399116, guid: c63f1a4d79d1ff348bc93df51712951c, type: 3}
 --- !u!1 &552546343
 GameObject:
   m_ObjectHideFlags: 0
@@ -10624,7 +10628,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff4bd586021a412a86fcc554911f67a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hoverColor: {r: 0.3254902, g: 0.49411765, b: 0.38169938, a: 1}
+  hoverColor: {r: 0.78, g: 0.34, b: 0.3, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
   clickSound:
@@ -10664,6 +10668,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
 --- !u!1 &1259611660
 GameObject:
   m_ObjectHideFlags: 0
@@ -10731,6 +10736,8 @@ MonoBehaviour:
   frostFadeDuration: 0.25
   factionDatabase: {fileID: 11400000, guid: 19ecc1a7ccad9e642b3c1e9bf0d8cacc, type: 2}
   portraitTable: {fileID: 11400000, guid: 60ad95a6ca4f42344af418149260738c, type: 2}
+  roleCardTexts: {fileID: 11400000, guid: 0850aafbd2e555a4b82b5f3a9878b561, type: 2}
+  gameInfoRevealer: {fileID: 1771149311}
 --- !u!114 &1269060634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11337,7 +11344,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2627451, g: 0.4, b: 0.30849677, a: 1}
+  m_Color: {r: 0.62, g: 0.2, b: 0.18, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

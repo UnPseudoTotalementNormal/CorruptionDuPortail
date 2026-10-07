@@ -57,6 +57,14 @@ namespace Tests.PlayMode
             Assert.IsTrue(Reticle.ReticleInteractor.ShouldSuppressWorld(5), "several hits → still suppressed");
         }
 
+        // A free cursor is the UI module's: a reticle click on top delivered each click twice (duplicate votes).
+        [Test]
+        public void ShouldDispatchClick_OnlyWithALockedCursor()
+        {
+            Assert.IsTrue(Reticle.ReticleInteractor.ShouldDispatchClick(true), "locked cursor → the reticle clicks");
+            Assert.IsFalse(Reticle.ReticleInteractor.ShouldDispatchClick(false), "free cursor → the UI module clicks, not the reticle");
+        }
+
         // Hover feedback rides the IPointer path (module + PhysicsRaycaster in free cursor, reticle in
         // embodied): enter hovers, exit clears — no stuck hover, no legacy OnMouse* involved.
         [UnityTest]

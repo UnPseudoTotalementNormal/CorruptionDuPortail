@@ -157,6 +157,46 @@ namespace Characters.Powers
         // 1 = forced passive, 2 = forced active. Replicated state, replacing the ChangeIsPassiveRpc event.
         public NetworkVariable<byte> passiveOverride = new();
 
+        // APPENDED (Ugës fixes) — never reorder/rename the fields above it. NetworkObjectId of the Marque
+        // d'Hurluberluges that granted this copy (0 = not granted by a Marque). The Marque holds the copies' shared
+        // budget: none usable the night they were stolen, then one per night (PMarqueHurluberluges.CopiesLocked).
+        public NetworkVariable<ulong> marqueSourceId = new();
+
+        /// <summary>True while the Marque that granted this copy forbids using a copy (replicated, every peer).</summary>
+        public bool IsLockedByMarque()
+        {
+            if (marqueSourceId.Value == 0 || NetworkManager == null || NetworkManager.SpawnManager == null)
+            {
+                return false;
+            }
+            return NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(marqueSourceId.Value, out NetworkObject _source)
+                   && _source != null
+                   && _source.TryGetComponent(out PMarqueHurluberluges _marque)
+                   && _marque.CopiesLocked;
+        }
+
+        /// <summary>
+        /// Server, for a power that GRANTS powers (Réincarnation, Mélange des cartes): when this power is itself a
+        /// Marque copy, what it grants joins the same Marque's per-night budget (Ugës uses one stored power per night;
+        /// tonight's was this one, so its grants wait for the next night). Wraps the grant's onReady hook.
+        /// </summary>
+        protected Action<Power> InheritMarqueBudget(Action<Power> _onReady)
+        {
+            ulong _source = marqueSourceId.Value;
+            if (_source == 0)
+            {
+                return _onReady;
+            }
+            return _granted =>
+            {
+                _onReady?.Invoke(_granted);
+                if (_granted != null && _granted.IsServer)
+                {
+                    _granted.marqueSourceId.Value = _source;
+                }
+            };
+        }
+
         /// <summary>NET-08: the LIVE passive state on every peer (authored value unless overridden at runtime).</summary>
         public bool IsPassive => passiveOverride.Value switch
         {
@@ -387,6 +427,10 @@ namespace Characters.Powers
             {
                 return RejectUse("no use left");
             }
+            if (IsLockedByMarque())
+            {
+                return RejectUse("stolen copy locked by its Marque until the next night");
+            }
             _serverEffectAwaitingConsume = true;
             return true;
         }
@@ -410,6 +454,10 @@ namespace Characters.Powers
             if (powerUseLeft.Value <= 0)
             {
                 return RejectUse("consume with no use left");
+            }
+            if (IsLockedByMarque())
+            {
+                return RejectUse("consume of a stolen copy locked by its Marque");
             }
             if (!ServerOwnerCanAct(_requireAwake: true))
             {
@@ -479,6 +527,12 @@ namespace Characters.Powers
             if (!_powerCharacter)
             {
                 Debug.LogWarning("power character is null in power " + powerName + " of " + ownerClientId);
+                return false;
+            }
+
+            // Ugës: a copy from a Marque d'Hurluberluges is usable from the night after the theft, one per night.
+            if (IsLockedByMarque())
+            {
                 return false;
             }
 
@@ -591,6 +645,15 @@ namespace Characters.Powers
             if (powerUseLeft.Value > 0) // never below 0 (the effect may have spent the uses already)
             {
                 powerUseLeft.Value -= 1;
+            }
+            // Ugës: spending one Marque copy locks the others until the next night. Before onPowerUsed, so the
+            // awakening flow (AwakeningState.OnPowerUsedServer) already sees the other copies unusable and sleeps him.
+            if (marqueSourceId.Value != 0
+                && NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(marqueSourceId.Value, out NetworkObject _source)
+                && _source != null
+                && _source.TryGetComponent(out PMarqueHurluberluges _marque))
+            {
+                _marque.OnCopyUsedServer();
             }
             onPowerUsedServer?.Invoke();
             characterManager.AskForUpdateAllCharactersRpc();

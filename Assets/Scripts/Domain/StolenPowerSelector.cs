@@ -70,6 +70,22 @@ namespace CorruptionDuPortail.Domain
             }
             return result;
         }
+
+        /// <summary>
+        /// Every candidate that may be copied (see <see cref="PowerCandidate.IsEligible"/>), as ORIGINAL indices in
+        /// authored order (no draw). Luma's « Mélange des cartes » on an absent role copies all of its active powers.
+        /// </summary>
+        public static List<int> SelectAllEligible(IReadOnlyList<PowerCandidate> candidates)
+        {
+            if (candidates == null) throw new ArgumentNullException(nameof(candidates));
+
+            var result = new List<int>();
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                if (candidates[i].IsEligible) result.Add(i);
+            }
+            return result;
+        }
     }
 
     /// <summary>

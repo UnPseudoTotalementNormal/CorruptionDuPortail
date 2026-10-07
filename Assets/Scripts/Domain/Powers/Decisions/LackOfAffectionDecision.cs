@@ -5,8 +5,9 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
 {
     /// <summary>
     /// PLackOfAffection — runs on the CONTACTED target's client. If the target is a "chosen" faction, reveal
-    /// the SENDER's (owner's) role to the target (server-local); and if this is the true-local target, post a
-    /// local chat line. The faction-keyed contact SOUND stays adapter-side.
+    /// the SENDER's (owner's) role AND corruption state to the target (server-local); and if this is the true-local
+    /// target, post a local chat line: naming the sender's role for a chosen, only the visit otherwise (GD wording:
+    /// a non-élu "ne recevra que la visite et non l'identité"). The faction-keyed contact SOUND stays adapter-side.
     /// </summary>
     public sealed class LackOfAffectionDecision : IPowerDecision
     {
@@ -16,13 +17,16 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
         public PowerOutcome Decide(in PowerContext ctx)
         {
             var effects = new List<EffectDescriptor>();
-            if (ctx.Roster.FactionOf(ctx.TargetSlot) == FactionType.chosen)
+            bool chosen = ctx.Roster.FactionOf(ctx.TargetSlot) == FactionType.chosen;
+            if (chosen)
             {
                 effects.Add(new RevealInfo(ctx.OwnerSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.TargetSlot, false));
+                effects.Add(new RevealInfo(ctx.OwnerSlot, RevealField.CorruptRevealed, RevealVisibility.Personal, ctx.TargetSlot, false));
             }
             if (ctx.IsTrueLocalTarget)
             {
-                effects.Add(new ChatLocal($"{ctx.Roster.RoleNameOf(ctx.OwnerSlot)} est venu(e) vous voir...", ChatWindows.Server));
+                string line = chosen ? $"{ctx.Roster.RoleNameOf(ctx.OwnerSlot)} est venu(e) vous voir..." : "Quelqu'un est venu vous voir...";
+                effects.Add(new ChatLocal(line, ChatWindows.Server));
             }
             return PowerOutcome.Accept(effects);
         }

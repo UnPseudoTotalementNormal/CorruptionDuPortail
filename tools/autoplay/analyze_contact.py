@@ -1,12 +1,14 @@
 """Lack of Affection (the Orpheline's contact) check over a run: every contact on a REAL player must reach that
-player's screen, and reveal the Orpheline's role to the target if and only if the target is a chosen.
+player's screen, and reveal the Orpheline's role AND corruption state to the target if and only if the target is a
+chosen; a non-chosen only gets the visit (the line names nobody: "Quelqu'un est venu vous voir...").
 
     python -X utf8 tools/autoplay/analyze_contact.py <run> [--power affection] [--expect-faction chosen|anomaly|marginal]
 
 Per contact (power.start of the power, then the actor's next select.character "picked T"):
 - T is a real player (host or a client process): T's process journals the contact line (chat.recv on the server
-  channel with "vous voir") and, if T is a chosen, a knowledge line "T>A role=10" (Personal level). A role reveal on a
-  non-chosen target is reported as a warning (another power may have revealed it).
+  channel with "vous voir") and, if T is a chosen, a knowledge line "T>A role=10 corrupt=10" (Personal level). A role
+  reveal on a non-chosen target is reported as a warning (another power may have revealed it); a contact line naming a
+  role on a non-chosen target is a failure.
 - T is a bot or a fake character: not checkable on a screen, listed only.
 Exit 0 = pass, 1 = failure, 2 = not covered (no contact on a real player, or none on --expect-faction).
 """
@@ -55,11 +57,17 @@ def main():
         checked.append(faction)
         before = len(failures)
         lines = [fields(e["detail"]) for e in tp.of("chat.recv")]
-        if not any(l.get("chat") == "-1" and "vous voir" in l.get("text", "") for l in lines):
+        contact = [l.get("text", "") for l in lines if l.get("chat") == "-1" and "vous voir" in l.get("text", "")]
+        if not contact:
             failures.append(f"MISS  {label}: no contact line on the target's screen")
+        elif faction != "chosen" and not any(c.startswith("Quelqu'un") for c in contact):
+            failures.append(f"LEAK  {label}: the contact line names the visitor on a non-chosen screen: {contact[0]!r}")
         revealed = any(e["detail"].startswith(f"{target}>{actor} ") and " role=10" in e["detail"] for e in tp.of("knowledge"))
         if faction == "chosen" and not revealed:
             failures.append(f"MISS  {label}: chosen target never learned the Orpheline's role (knowledge {target}>{actor} role=10)")
+        corrupt = any(e["detail"].startswith(f"{target}>{actor} ") and " corrupt=10" in e["detail"] for e in tp.of("knowledge"))
+        if faction == "chosen" and not corrupt:
+            failures.append(f"MISS  {label}: chosen target never learned the Orpheline's corruption state (knowledge {target}>{actor} corrupt=10)")
         if faction != "chosen" and revealed:
             warnings.append(f"WARN  {label}: non-chosen target knows the actor's role (another power may explain it)")
         if len(failures) == before:

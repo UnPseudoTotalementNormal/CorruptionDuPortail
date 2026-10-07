@@ -36,6 +36,9 @@ namespace Autoplay
         [Tooltip("Scenario lever: these seats always skip the vote (no roll), so a scenario can both chain someone for " +
                  "sure (vote probability 1 for the others) and still exercise the Skip button.")]
         public ulong[] voteSkipIds = Array.Empty<ulong>();
+        [Tooltip("Scenario lever: a bot that skips the vote casts the Skip vote (what the Skip button sends) instead of " +
+                 "abstaining, so a vote where everyone skips closes after 5 s instead of its whole timer.")]
+        public bool voteSkipCast;
         [Tooltip("Possess the acting bot's identity so the host screen shows what that player sees (local-only feedback).")]
         public bool possessActor = true;
         public bool captureOnVerdict = true;
@@ -59,6 +62,12 @@ namespace Autoplay
         public string targetFocus;
         [Tooltip("Restricts targetFocus to picks made while a power whose name contains this text is used.")]
         public string targetFocusPower;
+        [Tooltip("Scenario lever: per-power target focus, \"<power text>=<focus>;…\" (first matching power wins, before " +
+                 "targetFocus). Lets a chain of copies aim each step (e.g. Réincarnation=Imposteur;Mélange=fake).")]
+        public string targetMap;
+        [Tooltip("Scenario lever: \"<power text>:<day>,…\" — bots keep a matching power unused before that day (an " +
+                 "Incomplet that reincarnates on day 3, after Ugës used his copies).")]
+        public string holdPowers;
 
         [Tooltip("Scenario lever: every controlled player writes one tokenized line per phase in each private chat " +
                  "channel it belongs to; every process journals what it receives (chat.sent / chat.recv / chat.members).")]
@@ -169,6 +178,7 @@ namespace Autoplay
             {
                 TargetFocus = options.targetFocus,
                 TargetFocusPower = options.targetFocusPower,
+                TargetMap = AutoplaySelectionAutopilot.ParseTargetMap(options.targetMap),
             };
             if (!options.visualPicker)
             {
@@ -489,6 +499,7 @@ namespace Autoplay
                 .Select(_kv => $"{_kv.Key}={_kv.Value:x16}"));
             string _phase = $"{_gameManager.currentGameStateIndex.Value}:{_state.GetType().Name} day={_gameManager.currentDay}";
             Journal.Record("state.hash", $"{_phase} | {StableHash(_canonical)} | {_canonical}");
+            RecordCopies(_phase);
             // Every replicated value, outside the awakening (players act while the processes sample): compared by
             // compare_replication.py, it catches what the projection above does not cover.
             if (!_volatilePhase && !_lobbyInFlux)
@@ -591,7 +602,7 @@ namespace Autoplay
                 }
 
                 Power _next = _character.role?.powers.FirstOrDefault(_p =>
-                    _p && !_turn.tried.Contains(_p) && !_p.IsPassive && SafeCanUse(_p));
+                    _p && !_turn.tried.Contains(_p) && !_p.IsPassive && SafeCanUse(_p) && !IsHeld(_id, _p));
                 if (_next == null)
                 {
                     _turn.done = true;
@@ -621,6 +632,7 @@ namespace Autoplay
 
                 SubscribeVerdict(_next);
                 Journal.Record("power.start", $"{_id} {_character.role.roleName} {_next.powerName}");
+                RecordCopyUse(_id, _next);
                 _turn.active = _next;
                 _turn.activeSince = Time.time;
                 _someoneActing = true;
@@ -677,6 +689,11 @@ namespace Autoplay
                         inputBusy = true;
                         SkipVoteByClick(_voter).Forget();
                         return;
+                    }
+                    if (options.voteSkipCast && !_voter.isEliminated.Value)
+                    {
+                        VoteDirect(_gameManager, _id, VoteState.SKIP_VOTE_ID);
+                        return; // one vote per frame
                     }
                     continue;
                 }

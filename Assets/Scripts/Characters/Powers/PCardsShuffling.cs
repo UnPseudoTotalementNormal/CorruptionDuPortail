@@ -204,8 +204,10 @@ namespace Characters.Powers
             else
             {
                 Power _template = _powers[_picks[0]];
-                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
-                characterManager.GivePowerToCharacter(ownerClientId.Value, _template, Power.ConfigureAsOneShotStolenCopy);
+                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn. A Mélange
+                // stolen by Ugës: the copy it gives joins his Marque's per-night budget.
+                characterManager.GivePowerToCharacter(ownerClientId.Value, _template,
+                    InheritMarqueBudget(Power.ConfigureAsOneShotStolenCopy));
                 _message = string.Format(copyObtainedMessage,
                     _fakeCharacter.role.roleName.ToString(), _template.powerName.ToString());
             }

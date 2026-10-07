@@ -158,6 +158,9 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `late-join-refused` | un nouveau venu en pleine partie est refusé « La partie a déjà commencé. » | réseau, 3 clients | PASS 2026-10-06 |
 | balayage d'enchaînement (`sweep_chain_roles.py`) | chaque rôle, tenu par un vrai client (ou l'hôte : `--holder host`), enchaîné au 1er vote | réseau, 3 clients | 14/14 client + 14/14 hôte 2026-10-07 |
 | balayages par phase (`sweep_phases.py` + `scenarios/templates/`) | départ / rejoin / crash hôte / départ hôte à chacune des 7 phases | réseau, 3 clients | 4 × 7/7 2026-10-07 (après N8, N9) |
+| `copies-uges-client` | Ugës (vrai client) vole Soin Baveux : rien la nuit du vol, une copie par nuit ensuite, copie dépensée disparue partout, pairs d'accord | réseau, 2 clients | PASS 2026-10-07 |
+| `copies-uges-real-input` | même chose par vraies entrées : Ugës clique ses copies dans la barre de pouvoirs (nuits 2, 3, 4), aucun clic raté | réseau, 2 clients | PASS 2026-10-07 |
+| balayage des copies (`sweep_copies.py`) | Ugës vole chacun des 11 pouvoirs actifs d'élu, Luma copie chaque élu factice, l'Incomplet en Ugës / Luma, Ugës hôte, faux Ugës (couche non instantanée), rejoin d'Ugës, 8 chaînes de copieurs dans les deux ordres | réseau, 2 clients | 33/33 cas 2026-10-07 (3 échecs d'outil corrigés puis rejoués, 1 non couvert : Ugës enchaîné par Abyss la nuit 1, rejoué avec une autre graine) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 45/48 2026-10-07 (3 échecs = outil : T8, T9 corrigés, `real-input-lobby` instable) |
 | `real-input-actions` | pouvoirs, cartes, vote (réticule), sommeil : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 2026-10-05 |

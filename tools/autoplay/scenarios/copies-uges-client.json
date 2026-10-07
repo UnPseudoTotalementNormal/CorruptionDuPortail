@@ -1,0 +1,20 @@
+{
+  "name": "copies-uges-client",
+  "goal": "Ugës held by a real client steals Gloubi's Soin Baveux first (-autoplay-steal): no copy usable the night of the theft (night 1), then one copy per night from night 2, each spent copy despawned on every process, host and clients agree on the copies, no desync, no error (analyze_copies.py).",
+  "mode": "net",
+  "clients": 2,
+  "seed": 901,
+  "seedRetries": 4,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": ["-autoplay-force-roles", "Imposteur,Gloubi", "-autoplay-role-holder", "client", "-autoplay-steal", "Soin",
+           "-autoplay-max-days", "3", "-autoplay-fast-fakes", "-autoplay-vote-probability", "0", "-autoplay-vote-skip-cast",
+           "-autoplay-fast-phases", "Intro|Chaining|Vote", "-autoplay-fast-timescale", "12", "-autoplay-net-log"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "power.error", "process": "any", "min": 0, "max": 0},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_copies.py {run} --expect-use Soin --expect-seat client --min-day 2"}
+  ]
+}

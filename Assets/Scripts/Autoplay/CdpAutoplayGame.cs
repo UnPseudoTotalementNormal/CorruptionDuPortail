@@ -417,12 +417,15 @@ namespace Autoplay
                 fastFakes = _context.Config.Flag("fast-fakes"),
                 targetFocus = _context.Config.Option("target-focus"),
                 targetFocusPower = _context.Config.Option("target-focus-power"),
+                targetMap = _context.Config.Option("target-map"),
+                holdPowers = _context.Config.Option("hold-power"),
                 chat = _context.Config.Flag("chat"),
                 realInput = GameRealInput(_context),
                 lobbyInput = LobbyUi(_context) ? realInput : null,
                 powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
                 voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
                 voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
+                voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = true,
             };
@@ -467,6 +470,7 @@ namespace Autoplay
 
             string _forced = _context.Config.Option("force-roles");
             InstallSeatOrder(_context, _forced, _context.Config.Option("role-holder"));
+            InstallCopyLevers(_context);
             if (!string.IsNullOrEmpty(_forced))
             {
                 foreach (string _fragment in _forced.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0))
@@ -595,6 +599,21 @@ namespace Autoplay
             _context.Journal.Record("roles.assigned", string.Join(", ", characterManager.GetCharacters(false)
                 .Where(_c => _c && !_c.isFake).OrderBy(_c => _c.ownerClientId.Value)
                 .Select(_c => $"{_c.ownerClientId.Value}:{HolderKind(_c.ownerClientId.Value)}:{_c.role.roleName}")));
+            _context.Journal.Record("roles.fakes", string.Join(", ", characterManager.GetCharacters(false)
+                .Where(_c => _c && _c.isFake && _c.role != null).Select(_c => _c.role.roleName.ToString())));
+            string _forcedFakes = _context.Config.Option("force-fakes");
+            if (!string.IsNullOrEmpty(_forcedFakes))
+            {
+                foreach (string _fragment in SplitList(_forcedFakes))
+                {
+                    if (!characterManager.GetCharacters(false).Any(_c => _c && _c.isFake && _c.role != null &&
+                            _c.role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        _context.Fail($"composition mismatch: '{_fragment}' is not a fake role (force-fakes)");
+                        yield break;
+                    }
+                }
+            }
 
             string _forced = _context.Config.Option("force-roles");
             string _holder = _context.Config.Option("role-holder");
@@ -637,6 +656,82 @@ namespace Autoplay
             {
                 FMODUnity.RuntimeManager.MuteAllEvents(_muted);
             }
+        }
+
+        private static string[] SplitList(string _list)
+            => _list.Split(',').Select(_f => _f.Trim()).Where(_f => _f.Length > 0).ToArray();
+
+        private static void ClearCopyLevers()
+        {
+            RoleAttributionState.DevFakeRoles = null;
+            Characters.Powers.PMarqueHurluberluges.DevStealPreference = null;
+        }
+
+        // Copied-power levers (host). "steal A,B": Ugës's Marque d'Hurluberluges steals the powers whose name contains A,
+        // then B, first when they are present (the rest of its draw is kept). "force-fakes R,S": those roles are drawn as
+        // factices (swapped with a real draw, same faction first, else they replace a fake), so Luma can pick an absent
+        // role and copy it. Checked after the attribution (composition mismatch -> next seed).
+        private static void InstallCopyLevers(AutoplayContext _context)
+        {
+            ClearCopyLevers();
+            string _steal = _context.Config.Option("steal");
+            if (!string.IsNullOrEmpty(_steal))
+            {
+                Characters.Powers.PMarqueHurluberluges.DevStealPreference = SplitList(_steal);
+                _context.Journal.Record("steal.prefer", _steal);
+            }
+
+            string _fakes = _context.Config.Option("force-fakes");
+            if (string.IsNullOrEmpty(_fakes))
+            {
+                return;
+            }
+            string[] _fragments = SplitList(_fakes);
+            RoleAttributionState.DevFakeRoles = (_pool, _fake, _real) =>
+            {
+                bool Matches(int _index, string _fragment) =>
+                    _pool[_index].role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0;
+                bool Protected(int _index) => _fragments.Any(_f => Matches(_index, _f));
+
+                foreach (string _fragment in _fragments)
+                {
+                    int _role = -1;
+                    for (int _i = 0; _i < _pool.Count && _role < 0; _i++)
+                    {
+                        if (Matches(_i, _fragment)) _role = _i;
+                    }
+                    if (_role < 0)
+                    {
+                        _context.Journal.Record("composition.fake", $"{_fragment} no such role");
+                        continue;
+                    }
+                    if (_fake.Contains(_role))
+                    {
+                        _context.Journal.Record("composition.fake", $"{_pool[_role].role.roleName} via=already");
+                        continue;
+                    }
+                    FactionType _faction = _pool[_role].role.factionType;
+                    int _slot = _fake.FindIndex(_f => !Protected(_f) && _pool[_f].role.factionType == _faction);
+                    if (_slot < 0)
+                    {
+                        _slot = _fake.FindIndex(_f => !Protected(_f));
+                    }
+                    if (_slot < 0)
+                    {
+                        _context.Journal.Record("composition.fake", $"{_pool[_role].role.roleName} no fake slot");
+                        continue;
+                    }
+                    int _drawn = _real.IndexOf(_role);
+                    string _replaced = _pool[_fake[_slot]].role.roleName.ToString();
+                    if (_drawn >= 0)
+                    {
+                        _real[_drawn] = _fake[_slot];
+                    }
+                    _fake[_slot] = _role;
+                    _context.Journal.Record("composition.fake",
+                        $"{_pool[_role].role.roleName} via={(_drawn >= 0 ? "swap" : "replace")} with={_replaced}");
+                }
+            };
         }
 
         // Lever "role-holder host|client|bot" with "force-roles": the forced roles are SEATED on that kind of player
@@ -738,6 +833,7 @@ namespace Autoplay
             _context.Journal.Record("round.menu", $"back to the main menu, round {_nextRound} next");
 
             RoleAttributionState.DevSeatOrder = null;
+            ClearCopyLevers();
             gameManager = null;
             characterManager = null;
             endingSeenAt = -1f;
@@ -801,6 +897,7 @@ namespace Autoplay
         public void TearDown()
         {
             RoleAttributionState.DevSeatOrder = null;
+            ClearCopyLevers();
             if (driver != null)
             {
                 driver.End();
@@ -1457,12 +1554,15 @@ namespace Autoplay
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 targetFocus = _context.Config.Option("target-focus"),
                 targetFocusPower = _context.Config.Option("target-focus-power"),
+                targetMap = _context.Config.Option("target-map"),
+                holdPowers = _context.Config.Option("hold-power"),
                 chat = _context.Config.Flag("chat"),
                 realInput = GameRealInput(_context),
                 lobbyInput = LobbyUi(_context) ? realInput : null,
                 powerUseProbability = ParseProbability(_context.Config.Option("power-use-probability"), 1.0),
                 voteProbability = ParseProbability(_context.Config.Option("vote-probability"), 1.0),
                 voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
+                voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 joinedMidPhase = _joinedMidPhase,

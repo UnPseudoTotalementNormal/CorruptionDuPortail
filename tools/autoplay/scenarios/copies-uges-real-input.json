@@ -1,0 +1,22 @@
+{
+  "name": "copies-uges-real-input",
+  "goal": "Ugës on a real client plays through the REAL UI (virtual mouse): on night 1 his stolen copies are locked so nothing is clicked, from night 2 he clicks one copy per night and it takes effect; the spent copy leaves his power bar; no input miss on the copies, no desync, no error.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 1001,
+  "seedRetries": 4,
+  "timescale": 2,
+  "timeout": 1500,
+  "args": ["-autoplay-force-roles", "Imposteur,Gloubi", "-autoplay-role-holder", "client", "-autoplay-steal", "Soin",
+           "-autoplay-max-days", "3", "-autoplay-fast-fakes", "-autoplay-vote-probability", "0", "-autoplay-vote-skip-cast",
+           "-autoplay-fast-phases", "Intro|Chaining|Vote", "-autoplay-fast-timescale", "12", "-autoplay-net-log"],
+  "clientArgs": ["-autoplay-real-input"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "power.error", "process": "any", "min": 0, "max": 0},
+    {"type": "event", "kind": "input.click", "detail": "Soin", "process": "clients", "min": 1},
+    {"type": "desync", "max": 0},
+    {"type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"]},
+    {"type": "analyzer", "cmd": "python -X utf8 tools/autoplay/analyze_copies.py {run} --expect-use Soin --expect-seat client --min-day 2"}
+  ]
+}

@@ -131,12 +131,14 @@ jobs:
             echo "status=first" >> $GITHUB_OUTPUT
             exit 0
           fi
-          COMMITS=$(git log "$PREV_SHA".."$GITHUB_SHA" --pretty=format:"- %s : %b" --no-merges 2>/dev/null || echo "")
+          COMMITS=$(git log "$PREV_SHA".."$GITHUB_SHA" --pretty=format:"### %s%n%b%n" --no-merges 2>/dev/null || echo "")
           if [ -z "$COMMITS" ]; then
             echo "status=empty" >> $GITHUB_OUTPUT
             exit 0
           fi
           printf '%s' "$COMMITS" > "$RUNNER_TEMP/commits.txt"
+          # Writing guidelines shared by every generator below (Claude, Codex, Gemini).
+          cp .github/changelog-prompt.md "$RUNNER_TEMP/changelog_prompt.md"
           echo "status=ok" >> $GITHUB_OUTPUT
 
       # Primary generator: Claude Code CLI headless (subscription OAuth token, no paid API).
@@ -150,7 +152,8 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
           claude --version || echo "claude CLI install failed"
-          claude -p "Lis le fichier $RUNNER_TEMP/commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier $RUNNER_TEMP/changelog.txt." \
+          cd "$RUNNER_TEMP"
+          claude -p "Lis changelog_prompt.md : ce sont tes consignes de rédaction. Les commits sont dans commits.txt. Rédige le changelog en suivant ces consignes et écris-le, et rien d'autre, dans le fichier changelog.txt." \
             --model claude-opus-5-5 \
             --allowedTools Read,Write \
             --permission-mode acceptEdits 2>&1 | tail -5
@@ -176,7 +179,7 @@ jobs:
           mkdir -p "$HOME/.codex"
           printf '%s' "$CODEX_AUTH_JSON" > "$HOME/.codex/auth.json"
           codex exec --full-auto --skip-git-repo-check --cd "$RUNNER_TEMP" \
-            "Lis le fichier commits.txt : il liste les commits Unity entre deux builds. Rédige un changelog court en français pour des joueurs (max 400 caractères). Bullet points avec •. Regroupe en Nouveautés / Corrections si pertinent. Si aucun commit pertinent, écris seulement : Améliorations internes. Écris UNIQUEMENT le texte du changelog (aucun préambule, aucune explication) dans le fichier changelog.txt." 2>&1 | tail -20 || true
+            "Lis changelog_prompt.md : ce sont tes consignes de rédaction. Les commits sont dans commits.txt. Rédige le changelog en suivant ces consignes et écris-le, et rien d'autre, dans le fichier changelog.txt." 2>&1 | tail -20 || true
 
       - name: Lire changelog (fallback Gemini)
         id: changelog
@@ -197,8 +200,8 @@ jobs:
           if [ -z "$(printf '%s' "$TEXT" | tr -d '[:space:]')" ]; then
             echo "Claude + Codex indisponibles — fallback Gemini."
             COMMITS=$(cat "$RUNNER_TEMP/commits.txt" 2>/dev/null || echo "")
-            jq -n --arg commits "$COMMITS" \
-              '{contents:[{parts:[{text:("Commits Unity entre deux builds :\n"+$commits+"\n\nGénère un changelog court en français pour des joueurs (max 400 caractères). Bullet points •. Groupé par Nouveautés/Corrections si pertinent. Si aucun commit pertinent, réponds uniquement : Améliorations internes.")}]}]}' \
+            jq -n --arg commits "$COMMITS" --rawfile guide "$RUNNER_TEMP/changelog_prompt.md" \
+              '{contents:[{parts:[{text:($guide+"\n\n# Commits\n\n"+$commits)}]}]}' \
               > "$RUNNER_TEMP/changelog_payload.json"
             RESPONSE=$(curl -s -X POST \
               "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY" \
@@ -236,7 +239,7 @@ jobs:
               --arg dur "$DURATION" \
               --arg log "$CHANGELOG" \
               --arg url "$RUN_URL" \
-              '{embeds:[{title:"✅ Build réussie — Corruption du Portail",color:5763719,fields:[{name:"Build",value:$name,inline:true},{name:"Durée",value:$dur,inline:true},{name:"Changelog",value:$log,inline:false},{name:"Artifact",value:("[Télécharger]("+$url+")"),inline:false}],url:$url}]}')"
+              '{embeds:[{title:"✅ Build réussie — Corruption du Portail",color:5763719,description:($log | if length > 4000 then .[0:3990] + "\n…" else . end),fields:[{name:"Build",value:$name,inline:true},{name:"Durée",value:$dur,inline:true},{name:"Artifact",value:("[Télécharger]("+$url+")"),inline:false}],url:$url}]}')"
 
       - name: Discord — Échec
         if: failure()

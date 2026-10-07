@@ -301,6 +301,41 @@ namespace Autoplay
         /// <summary>The footer's status line (ready count or the composition error), for a start that never comes.</summary>
         public string LobbyStatus()
             => LobbyRoot()?.Q<Label>(className: "lobby-roles__reason")?.text ?? "none";
+
+        /// <summary>Host, ending screen: "Terminer la partie" by real input (lever replay). False = no button or a miss:
+        /// the caller then ends the game directly.</summary>
+        public async UniTask<bool> ClickEndGame()
+        {
+            await AcquireInput();
+            try
+            {
+                UI.ShutOffGameButton _button = FindAnyObjectByType<UI.ShutOffGameButton>();
+                UI.CustomButton _custom = _button ? _button.GetComponent<UI.CustomButton>() : null;
+                if (!_custom)
+                {
+                    Journal.Record("input.miss", "end-game target=ShutOffGameButton reason=not-found");
+                    return false;
+                }
+                bool _clicked = false;
+                void OnClicked() => _clicked = true;
+                _custom.onButtonClicked += OnClicked;
+                try
+                {
+                    return await ClickTarget(_button.gameObject, "end-game", () => _clicked);
+                }
+                finally
+                {
+                    if (_custom)
+                    {
+                        _custom.onButtonClicked -= OnClicked;
+                    }
+                }
+            }
+            finally
+            {
+                inputBusy = false;
+            }
+        }
     }
 }
 #endif

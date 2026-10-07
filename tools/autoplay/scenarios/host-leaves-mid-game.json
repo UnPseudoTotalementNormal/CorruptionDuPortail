@@ -1,0 +1,54 @@
+{
+  "name": "host-leaves-mid-game",
+  "goal": "The host leaves in the middle of day 1's vote (always reached: a later one can be cut by an early victory) through its Leave button (ShutOffGameRpc, a graceful end): every real client goes back to the main menu WITHOUT the 'host lost' notification (expected shutdown), and nothing throws on the way out (async recap / board flows torn down mid-await).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 700,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-host-quit-at",
+    "VoteState day=1",
+    "-autoplay-expect-host-loss",
+    "-autoplay-fast-fakes",
+    "-autoplay-chat",
+    "-autoplay-net-log"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "leave",
+      "detail": "host leaves at 7:VoteState day=1",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "host.lost",
+      "process": "every-client",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "host.lost.menu",
+      "detail": "menu=reached notification=hidden",
+      "process": "every-client",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

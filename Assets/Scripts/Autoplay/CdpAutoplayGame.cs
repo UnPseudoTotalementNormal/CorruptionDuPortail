@@ -47,7 +47,7 @@ namespace Autoplay
     /// drops or crashes, then takes its seat back; see the methods). Every host run writes <c>roles.json</c> (role pool +
     /// powers) for coverage tools.</para>
     /// </summary>
-    public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource, IAutoplayWatchdogSource
+    public sealed class CdpAutoplayGame : IAutoplayGame, IAutoplayAnimationSource, IAutoplayWatchdogSource, IAutoplayRounds
     {
         private const int BootSceneIndex = 0;
         private const int MainMenuSceneIndex = 1;
@@ -95,14 +95,128 @@ namespace Autoplay
             }
         }
 
-        public bool IsOver => rejected != null || leftAt != null || stoppedAtDay || (gameManager != null && gameManager.IsSpawned &&
-                              gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is GameEndingState);
+        public bool IsOver => rejected != null || leftAt != null || stoppedAtDay || EndingOver || hostLossDone || HostLossSeen();
+
+        // Scenario lever "linger-end <seconds>": stay that long on the ending screen (winners' cards, ending animation)
+        // instead of ending the run as soon as GameEndingState starts; captures "ending" on the way.
+        private bool EndingOver
+        {
+            get
+            {
+                if (gameManager == null || !gameManager.IsSpawned ||
+                    gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is not GameEndingState)
+                {
+                    return false;
+                }
+                if (lingerEndSeconds <= 0f || lingerContext == null)
+                {
+                    return true;
+                }
+                if (endingSeenAt < 0f)
+                {
+                    endingSeenAt = Time.realtimeSinceStartup;
+                    lingerContext.Journal.Record("ending.linger", $"{lingerEndSeconds:0.#}s");
+                    lingerContext.Capture.RequestBurst("ending", new[] { 0.5f, 2f, Mathf.Max(2.5f, lingerEndSeconds - 0.5f) });
+                }
+                return Time.realtimeSinceStartup - endingSeenAt >= lingerEndSeconds;
+            }
+        }
+        private float lingerEndSeconds;
+        private float endingSeenAt = -1f;
+        private AutoplayContext lingerContext;
+
+        // Client lever "expect-host-loss": the host is meant to vanish (host-quit-at / host-crash-at). Once this client
+        // lost its session it stops its bot, journals host.lost, waits for the main menu (the game's own return path),
+        // journals whether the "host lost" notification is shown (host.lost.menu notification=shown|hidden), captures
+        // "host-lost" and ends the run completed. Never true without the lever.
+        private bool HostLossSeen()
+        {
+            if (!expectHostLoss || !isClient || hostLostAt != null || !everConnected || lingerContext == null ||
+                networkManager == null || networkManager.IsConnectedClient || rejoinInProgress || leftAt != null)
+            {
+                return false;
+            }
+            hostLostAt = gameManager != null && gameManager ? Phase : "unknown";
+            lingerContext.Journal.Record("host.lost", $"at {hostLostAt}");
+            if (driver != null)
+            {
+                driver.End();
+            }
+            lingerContext.Capture.StartCoroutine(HostLossToMenu(lingerContext));
+            return false;
+        }
+
+        private IEnumerator HostLossToMenu(AutoplayContext _context)
+        {
+            float _deadline = Time.realtimeSinceStartup + 30f;
+            while (SceneManager.GetActiveScene().buildIndex != MainMenuSceneIndex && Time.realtimeSinceStartup < _deadline)
+            {
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(1f);
+            GameObject _handler = GameObject.Find("ClientDisconnectHandler");
+            Transform _notification = _handler != null ? _handler.transform.Find("ClientDisconnectCanvas/Notification") : null;
+            bool _shown = _notification != null && _notification.gameObject.activeInHierarchy;
+            string _text = _shown ? _notification.GetComponentInChildren<UnityEngine.UI.Text>(true)?.text : null;
+            _context.Journal.Record("host.lost.menu", string.Format(CultureInfo.InvariantCulture, "menu={0} notification={1}{2}",
+                SceneManager.GetActiveScene().buildIndex == MainMenuSceneIndex ? "reached" : "missed",
+                _shown ? "shown" : "hidden", _text != null ? $" text='{_text}'" : string.Empty));
+            _context.Capture.Request("host-lost", 0f);
+            yield return new WaitForSecondsRealtime(0.5f);
+            hostLossDone = true;
+        }
+
+        private bool expectHostLoss;
+        private bool everConnected;
+        private string hostLostAt;
+        private bool hostLossDone;
+
+        // Host levers "host-quit-at <phase text>" (the host leaves through its pause menu's Leave: ShutOffGameRpc, a
+        // graceful end for everyone) and "host-crash-at <phase text>" (the host process is killed: the clients lose it).
+        // Given to every process (scenario "args"): only the host acts on them.
+        private IEnumerator HostQuitAt(AutoplayContext _context, string _phaseText, bool _crash)
+        {
+            while (Phase.IndexOf(_phaseText, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                yield return null;
+            }
+            yield return new WaitForSecondsRealtime(1f);
+            string _phase = Phase;
+            if (_crash)
+            {
+                if (Application.isEditor)
+                {
+                    _context.Fail("host-crash-at kills the process: player builds only");
+                    yield break;
+                }
+                _context.Capture.Request("host-crash", 0f);
+                yield return new WaitForSecondsRealtime(0.8f);
+                _context.Journal.Record("crash", $"host at {_phase}");
+                System.Diagnostics.Process.GetCurrentProcess().Kill();
+                yield break;
+            }
+            bool _viaUi = false;
+            if (GameRealInput(_context) != null && driver != null)
+            {
+                yield return driver.LeaveThroughPauseMenu().ToCoroutine(_left => _viaUi = _left, _e => InputError(_context, "host-leave", _e));
+            }
+            if (!_viaUi && gameManager != null && gameManager.IsSpawned)
+            {
+                gameManager.ShutOffGameRpc(); // what the host's Leave button does
+            }
+            leftAt = _phase;
+            _context.Journal.Record("leave", $"host leaves at {_phase} via={(_viaUi ? "click" : "direct")}");
+            if (driver != null)
+            {
+                driver.End();
+            }
+        }
 
         // Scenario lever "max-days N": end the run (completed) once day N+1 starts — enough for coverage runs.
         private bool stoppedAtDay => maxDays > 0 && gameManager != null && gameManager.IsSpawned && gameManager.currentDay > maxDays;
         private int maxDays;
 
-        public bool IsAlive => rejected != null || leftAt != null || rejoinInProgress ||
+        public bool IsAlive => rejected != null || leftAt != null || rejoinInProgress || hostLostAt != null || HostLossSeen() ||
                                (networkManager != null && (isClient ? networkManager.IsConnectedClient : networkManager.IsListening));
 
         private AutoplayConfig config;
@@ -158,6 +272,9 @@ namespace Autoplay
         {
             isClient = string.Equals(_context.Config.Option("role", "host"), "client", StringComparison.OrdinalIgnoreCase);
             maxDays = _context.Config.OptionInt("max-days", 0);
+            lingerEndSeconds = ParseSeconds(_context.Config.Option("linger-end"));
+            lingerContext = _context;
+            expectHostLoss = _context.Config.Flag("expect-host-loss");
             rejoinGraceSeconds = ParseSeconds(_context.Config.Option("rejoin-grace"));
             if (Relay(_context))
             {
@@ -266,7 +383,9 @@ namespace Autoplay
             }
             if (_clients > 0)
             {
-                yield return _context.WaitFor(() => networkManager.ConnectedClientsIds.Count >= _clients + 1 && CountPlayers() >= _clients + 1,
+                // Bots already seated by spawn-during-load are characters too: without them in the count, a joiner whose
+                // load is held looked arrived (host + early bot + the others) and the table filled before its Character.
+                yield return _context.WaitFor(() => networkManager.ConnectedClientsIds.Count >= _clients + 1 && CountPlayers() >= _clients + 1 + earlyBots,
                     180f, $"only {networkManager.ConnectedClientsIds.Count - 1}/{_clients} clients joined");
                 if (_context.Failed) yield break;
                 _context.Journal.Record("clients.joined", string.Join(",", networkManager.ConnectedClientsIds));
@@ -309,6 +428,13 @@ namespace Autoplay
             };
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, _controlled, new RandomValidPolicy(_context.Config.seed), _options, _context.Journal, _context.Capture);
+            string _hostQuitAt = _context.Config.Option("host-quit-at");
+            string _hostCrashAt = _context.Config.Option("host-crash-at");
+            if (!string.IsNullOrEmpty(_hostQuitAt) || !string.IsNullOrEmpty(_hostCrashAt))
+            {
+                _context.Capture.StartCoroutine(HostQuitAt(_context, string.IsNullOrEmpty(_hostCrashAt) ? _hostQuitAt : _hostCrashAt,
+                    !string.IsNullOrEmpty(_hostCrashAt)));
+            }
             yield return null;
 
             // The designer's classic preset for this player count, applied like the lobby tablet does.
@@ -479,7 +605,10 @@ namespace Autoplay
                     Character _owner = characterManager.GetCharacters(false).FirstOrDefault(_c => _c && !_c.isFake &&
                         _c.role.roleName.ToString().IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0);
                     string _kind = _owner == null ? "nobody" : HolderKind(_owner.ownerClientId.Value);
-                    if (!string.Equals(_kind, _holder, StringComparison.OrdinalIgnoreCase))
+                    bool _held = _holder.StartsWith("seat:", StringComparison.OrdinalIgnoreCase)
+                        ? _owner != null && _owner.ownerClientId.Value.ToString(CultureInfo.InvariantCulture) == _holder.Substring(5).Trim()
+                        : string.Equals(_kind, _holder, StringComparison.OrdinalIgnoreCase);
+                    if (!_held)
                     {
                         _context.Fail($"composition mismatch: '{_fragment}' held by {_kind} {(_owner != null ? _owner.ownerClientId.Value.ToString() : "-")}, wanted {_holder}");
                         yield break;
@@ -495,6 +624,7 @@ namespace Autoplay
             if (rejected != null) yield return $"rejected={rejected}";
             if (leftAt != null) yield return $"left={leftAt}";
             if (stoppedAtDay) yield return $"stopped-after-day={maxDays}";
+            if (hostLostAt != null) yield return $"host-lost={hostLostAt}";
             if (gameManager == null) yield break;
             yield return $"days={gameManager.currentDay}";
         }
@@ -533,13 +663,13 @@ namespace Autoplay
                     {
                         continue; // not drawn: the composition check reports it
                     }
-                    if (KindOf(_order[_roleIndex]) == _holder.ToLowerInvariant())
+                    if (Holds(_order[_roleIndex], _holder))
                     {
                         _placed.Add(_roleIndex);
                         continue;
                     }
                     int _seat = IndexWhere(_order.Count, _i => !_placed.Contains(_i) && _i != _roleIndex &&
-                        KindOf(_order[_i]) == _holder.ToLowerInvariant());
+                        Holds(_order[_i], _holder));
                     if (_seat < 0)
                     {
                         continue;
@@ -560,11 +690,112 @@ namespace Autoplay
                 return -1;
             }
 
+            // "seat:<id>" = that exact seat (e.g. seat:1, the first client to connect), else a kind (host / client / bot).
+            static bool Holds(Character _c, string _holderSpec)
+                => _holderSpec.StartsWith("seat:", StringComparison.OrdinalIgnoreCase)
+                    ? _c.ownerClientId.Value.ToString(CultureInfo.InvariantCulture) == _holderSpec.Substring(5).Trim()
+                    : KindOf(_c) == _holderSpec.ToLowerInvariant();
+
             static string KindOf(Character _c)
             {
                 ulong _id = _c.ownerClientId.Value;
                 return _id == NetworkManager.ServerClientId ? "host" : _id >= 100 ? "bot" : "client";
             }
+        }
+
+        // Lever "replay N" (IAutoplayRounds): the host ends the finished game with "Terminer la partie" (a real click with
+        // real-input, else the button's own RPC), every process goes back to the main menu (GameManager.ShutOffGame),
+        // then the runner hosts / joins, seats and starts the next game in the same processes.
+        public IEnumerator EndRound(AutoplayContext _context, int _nextRound)
+        {
+            bool _atEnding = gameManager != null && gameManager.IsSpawned &&
+                             gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is GameEndingState;
+            if (!isClient)
+            {
+                bool _clicked = false;
+                if (driver != null && GameRealInput(_context) != null && _atEnding)
+                {
+                    yield return driver.ClickEndGame().ToCoroutine(_ok => _clicked = _ok, _e => InputError(_context, "end-game", _e));
+                }
+                if (!_clicked && gameManager != null && gameManager.IsSpawned)
+                {
+                    gameManager.ShutOffGameRpc();
+                }
+                _context.Journal.Record("round.shutoff", $"at={(_atEnding ? "ending" : Phase)} via={(_clicked ? "click" : "direct")}");
+            }
+            if (driver != null)
+            {
+                driver.End();
+                UnityEngine.Object.Destroy(driver);
+                driver = null;
+            }
+
+            // Everyone (the RPC goes to every peer) shuts NGO down and loads the main menu.
+            yield return _context.WaitFor(() => networkManager != null && !networkManager.IsListening && !networkManager.ShutdownInProgress &&
+                                                SceneManager.GetActiveScene().buildIndex == MainMenuSceneIndex, 60f,
+                "the end-of-game button never brought this process back to the main menu");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("round.menu", $"back to the main menu, round {_nextRound} next");
+
+            RoleAttributionState.DevSeatOrder = null;
+            gameManager = null;
+            characterManager = null;
+            endingSeenAt = -1f;
+            earlyBots = 0;
+            // Let the menu settle (its own Start / login checks) before hosting or joining again.
+            yield return new WaitForSecondsRealtime(isClient ? 3f : 1f);
+            if (isClient)
+            {
+                // A client joining while the host still loads GameScene gets a broken scene sync ("Server Scene Handle
+                // already exist", stuck): wait for the host's session.ready of this round, as the launcher does for the
+                // first one (the host's journal is a sibling folder of this process's).
+                yield return WaitForHostSessionReady(_context, _nextRound);
+            }
+        }
+
+        private static IEnumerator WaitForHostSessionReady(AutoplayContext _context, int _count)
+        {
+            string _parent = System.IO.Path.GetDirectoryName(_context.Journal.OutputDirectory.TrimEnd('/', '\\'));
+            string _hostDir = _parent != null && System.IO.Directory.Exists(_parent)
+                ? System.IO.Directory.GetDirectories(_parent, "*-host-*").FirstOrDefault()
+                : null;
+            if (_hostDir == null)
+            {
+                _context.Journal.Record("round.wait-host", "host journal not found: waiting 20 s");
+                yield return new WaitForSecondsRealtime(20f);
+                yield break;
+            }
+            string _events = System.IO.Path.Combine(_hostDir, "events.ndjson");
+            float _deadline = Time.realtimeSinceStartup + 180f;
+            while (Time.realtimeSinceStartup < _deadline)
+            {
+                int _ready = 0;
+                try
+                {
+                    using var _stream = new System.IO.FileStream(_events, System.IO.FileMode.Open, System.IO.FileAccess.Read,
+                        System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+                    using var _reader = new System.IO.StreamReader(_stream);
+                    string _line;
+                    while ((_line = _reader.ReadLine()) != null)
+                    {
+                        if (_line.Contains("\"kind\":\"session.ready\""))
+                        {
+                            _ready++;
+                        }
+                    }
+                }
+                catch (System.IO.IOException)
+                {
+                    // being written: read again next time
+                }
+                if (_ready >= _count)
+                {
+                    _context.Journal.Record("round.wait-host", $"host session ready (round {_count})");
+                    yield break;
+                }
+                yield return new WaitForSecondsRealtime(1f);
+            }
+            _context.Fail($"round {_count}: the host never journaled its session.ready");
         }
 
         public void TearDown()
@@ -728,6 +959,7 @@ namespace Autoplay
                 }
             }
             ClientDisconnectHandler.SetJoinHandshakeInProgress(false);
+            everConnected = true;
             _context.Journal.Record("connected", string.Format(CultureInfo.InvariantCulture, "as client {0} to {1}:{2}{3}",
                 networkManager.LocalClientId, _address, _port, _synchronizing
                     ? string.Format(CultureInfo.InvariantCulture, " load={0:0.0}s", Time.realtimeSinceStartup - _syncStart)

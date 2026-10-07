@@ -59,6 +59,20 @@ namespace Unpseudo.Autoplay
         void TearDown();
     }
 
+    /// <summary>
+    /// Optional: a game that can play several rounds in one process (lever <c>-autoplay-replay N</c>: N more games after
+    /// the first). Between two rounds the runner calls <see cref="EndRound"/>, then <see cref="IAutoplayGame.Host"/>,
+    /// <see cref="IAutoplayGame.SetUp"/> and <see cref="IAutoplayGame.StartGame"/> again: state that survives a game
+    /// (statics, singletons, cached sessions) is exercised the way a player meets it with "play again".
+    /// </summary>
+    public interface IAutoplayRounds
+    {
+        /// <summary>Leave the finished game the way players do (end-of-game button, back to the menu) and bring this
+        /// process back to where <see cref="IAutoplayGame.Host"/> can start round <paramref name="_nextRound"/>
+        /// (2 for the first replay).</summary>
+        IEnumerator EndRound(AutoplayContext _context, int _nextRound);
+    }
+
     [Serializable]
     public sealed class AutoplayConfig
     {

@@ -1,0 +1,19 @@
+{
+  "name": "host-crash-mid-game",
+  "goal": "The host's game process is killed at day 2's awakening (powers in use on the clients): every real client notices, shows 'Connexion à l'hôte perdue' over the main menu and goes back there, and nothing throws while the session dies under the night's flows (pickers, power RPCs, chat).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 710,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": ["-autoplay-host-crash-at", "AwakeningState day=2", "-autoplay-expect-host-loss", "-autoplay-fast-fakes", "-autoplay-chat",
+           "-autoplay-net-log"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "clients"},
+    {"type": "outcome", "value": "Completed", "process": "host", "alsoAccept": ["Crashed"]},
+    {"type": "event", "kind": "crash", "detail": "host at 3:AwakeningState day=2", "process": "host", "min": 1, "max": 1},
+    {"type": "event", "kind": "host.lost", "process": "every-client", "min": 1, "max": 1},
+    {"type": "event", "kind": "host.lost.menu", "detail": "menu=reached notification=shown text='Connexion à l'hôte perdue'", "process": "every-client", "min": 1, "max": 1},
+    {"type": "noErrors", "process": "clients", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

@@ -17,7 +17,10 @@ namespace GameLogic.GameStates
     public class GameEndingState : GameState
     {
         private Dictionary<WinningTeam, ulong[]> winningTeams = new();
-        
+
+        /// <summary>Winners this peer received (read-only; autoplay state export).</summary>
+        public IReadOnlyDictionary<WinningTeam, ulong[]> WinningTeams => winningTeams;
+
         public void SetWinnersServer(Dictionary<WinningTeam, HashSet<ulong>> _winningTeams)
         {
             var _winnersArray = _winningTeams

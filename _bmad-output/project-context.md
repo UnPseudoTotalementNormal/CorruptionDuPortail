@@ -104,6 +104,11 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   on Windows each ICMP "port unreachable" (a peer whose game died) failed a UDP receive request whose buffer was never
   released, so the host went deaf within seconds and every client dropped. Proof: PlayMode `UdpDeadPeerTests`. Re-apply
   the patch when upgrading the package (or drop it once Unity fixes it upstream).
+- **An async state flow must re-check the current state before `NextGameState()`.** The loop can jump out of band
+  (leave victory → `GameEndingState`) while a recap / chaining animation awaits; advancing from the last state wraps
+  to `LobbyState` (game stuck in the lobby). Check by TYPE on `GetGameState(currentGameStateIndex.Value)`, never
+  `IsStateActive()`: `DoStateMethodRpc` dispatches by type name to the FIRST instance, and the loop holds two
+  `ChainingState`s. Repro: autoplay `last-anomaly-leaves`.
 - `GameSnapshotBuilder.FromLiveState` runs synchronously before any `await` (NV tearing moves goldens). A moved `[Category("GoldenMaster")]` = real behaviour change: find the cause, never re-bless.
 
 ## UI Toolkit gotchas

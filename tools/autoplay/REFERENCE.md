@@ -65,7 +65,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `role host\|client` · `connect <ip>` | process role in `play-net` (set by the launcher) |
 | `players N` · `bots N` · `clients N` | seats; the host waits for N clients, then fills with bots |
 | `force-roles A,B` | role-name fragments guaranteed in the composition |
-| `role-holder host\|client\|bot` | who holds the forced roles: they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
+| `role-holder host\|client\|bot` | who holds the forced roles (`seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
 | `vote-focus <role text>` | every bot votes the holder of that role |
 | `max-days N` | stop after day N (fact `stopped-after-day`) |
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
@@ -98,12 +98,19 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `power-use-probability <0..1>` | chance a bot uses each usable power (0 = every seat sleeps through the sleep button) |
 | `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the vote's Skip button) |
 | `vote-skip <id,id…>` | these seats always skip the vote (no roll): with `vote-probability 1` + `vote-focus`, a scenario chains its target for sure and still exercises Skip |
+| `linger-end <seconds>` | stay that long on the ending screen instead of ending the run when `GameEndingState` starts: journal `ending.linger`, captures `ending-*` (0.5 s, 2 s, end); each capture exports `boardCards` (owner seat of each card on the board) and `winners` (`team:ids` received by this peer, `GameEndingState.WinningTeams`) for `analyze_ending.py` |
+| `host-quit-at <phase text>` | host only (give it in `args`, clients ignore it): the host leaves 1 s after that phase starts, through its pause menu's Leave with `real-input`, else what that button does (`ShutOffGameRpc`, a graceful end for everyone); journal `leave host leaves at …` |
+| `host-crash-at <phase text>` | host only, player builds: the host process is killed 1 s after that phase starts (journal `crash host at …`, capture `host-crash`); the launcher gives the clients 20 s to end on their own; check the host with `"alsoAccept": ["Crashed"]` |
+| `expect-host-loss` | client: the host is meant to vanish. On losing the session the client stops its bot, journals `host.lost at <phase>`, waits for the main menu, journals `host.lost.menu menu=reached\|missed notification=shown\|hidden text='…'` (the `ClientDisconnectHandler` notification), captures `host-lost`, ends completed with fact `host-lost=<phase>` |
+| `replay N` | N more games in the same processes after the first (package `IAutoplayRounds`): at the end of a round the host clicks "Terminer la partie" (real click with `real-input`, else the button's `ShutOffGameRpc`), every process goes back to the main menu, then the host hosts again, the clients rejoin, seats / composition / start run again. Journal `round.end`, `round.shutoff` (`at= via=`), `round.menu`, `round.begin`; captures `final-roundN`. Meant with full games (no `max-days`) and `linger-end` |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
 | Area | Kinds |
 |---|---|
 | Watchdog | `watchdog.slow` (1× budget, idle), `watchdog.stall` (2×), `watchdog.extend` / `watchdog.dump` (operator), `watchdog.error`; then `run.fail watchdog: <step> stalled …` (F×) — each with `waiting=<what the game waits on>` |
+| Rounds | `round.end`, `round.shutoff`, `round.menu`, `round.begin`, `ending.linger` |
+| Host loss | `host.lost`, `host.lost.menu`, host `leave` / `crash` |
 | Run | `run.begin`, `session.ready` (Host step done: the net launcher starts clients after the host's), `run.fail`, `port`, `autoplay.begin`, `teardown.error` |
 | Network | `connected` (with `load=` after a held load), `connect.retry`, `clients.joined`, `net.rtt`, `netsim`, `leave`, host `seat.grace`, `seat.reserved` (`<id> phase=`), `seat.released` (`<id> chained= left=`), host `relay.lobby`, `chat.grant` / `chat.revoke` (`<chatId> <seat>`), client `relay.join`, `login.ok`, `input.type` (`mode=keyboard|events|set`), `rejoin.drop`, `rejoin.menu`, `rejoin.reconnect` (`token present|missing`), `rejoin.click` / `rejoin.retry` (menu button), `rejoin.refused` (`reason= button=shown|hidden`: the host refused the rejoin, the run ends completed with `rejected=`), `crash` (`seat … token present`), `rejoin.relaunch`, `login.skip`, `rejoin.seat` (`seat <id> connection <id>`), `state.hash` (FNV of roles + flags + public-state component hashes, once per settled phase) |
 | Join | `join.version`, `join.stall`, `join.synchronizing`, `join.stall.released`, `join.delay`, `connect.rejected` (`reason= \| after-sync=`), host `lobby.wait-loaders`, `lobby.loaders-done`, `join.spawn-during-load` |
@@ -183,6 +190,19 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mass-rejoin` | every real client drops at once and rejoins: three seats reserved and claimed concurrently, all intact |
 | `rejoin-after-expiry` | a rejoin after the grace delay is refused with the game-in-progress wording, the saved session is dropped (button hidden), the game goes on |
 | `net-sync-3clients` | zero desync on every public-state component |
+| `full-game-victory` | a whole net game to its victory (no day limit), 3 chatting clients: every process reaches `GameEndingState`, no desync, no error |
+| `full-game-ending` | the same, then 10 s on the ending screen: same winners on every process, board = the winners' cards, winners match their faction (`analyze_ending.py`) |
+| `last-anomaly-leaves` | the other anomaly chained at the first vote, then the real client holding the last anomaly leaves and never comes back: grace expiry chains it, the leave victory re-check ends the game (chosen win) and the game STAYS on its ending screen (it wrapped back to the lobby before the 2026-10-06 fix) |
+| `rejoin-while-chained` | a player chained on day 1 drops and tries to rejoin: as specified, no seat reserved, refused with the game-in-progress wording, button hidden, the game goes on |
+| `rejoin-at-chaining` | a client drops as the first chaining starts and rejoins 3 s later through the menu: seat intact, no error, no desync |
+| `idle-table` | nobody acts (no power, every vote skipped) for 4 days: every phase ends on its own timer, no watchdog alert, no error |
+| `full-table-lag-victory` | host + 7 real clients under 100 ms / 30 ms / 1 % loss, chatting, play a whole game and its ending screen: same winners everywhere, no desync on 8 processes |
+| `real-input-full-game` | a whole game to its victory by real input (3 clients), then the ending screen; client misses reported as warnings |
+| `last-anomaly-leaves-recap` | the N2 race forced: the last anomaly's grace expires DURING the day-2 vote recap; the recap's async flow must not advance the loop (host log "not advancing"), the game stays on its ending screen |
+| `host-leaves-mid-game` | the host leaves by its Leave button during day 2's vote: every client back to the main menu without the "host lost" notification, no error |
+| `host-crash-mid-game` | the host process is killed at day 2's awakening: every client shows "Connexion à l'hôte perdue" over the main menu, no error while the session dies under the night's flows |
+| `late-join-refused` | a newcomer connecting 45 s late, game in progress, is refused "La partie a déjà commencé." (`connect.rejected`, `rejected=` fact); the game goes on |
+| `replay-net` | two games in a row in the same processes ("Terminer la partie" → main menu → host again → clients rejoin): the second game starts, plays to its end, no stale state (errors, desync) |
 | `client-owner-local-powers` | client-held Repenti / Orpheline reveals reach the owning client |
 | `orpheline-contact-chosen` | Lack of Affection on a chosen real client: contact line + the Orpheline's role revealed to the target |
 | `orpheline-contact-anomaly` | Lack of Affection on an anomaly real client: contact line, no reveal |
@@ -198,7 +218,10 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `real-input-menu` | first screen captured; a refused join's notification is above the login screen and closes on Dismiss |
 
 Other tools: `campaign.sh` (all scenarios + random seeds → `summary.md`), `sweep_powers.py` (one forced-role run per
-role → `coverage.md`), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_rejoin.py` (what a rejoined player sees, before the drop vs after the rejoin), `analyze_contact.py`
+role → `coverage.md`), `sweep_chain_roles.py` (each role held by a real client and chained at the first vote, the game
+goes on → `coverage.md`), `sweep_phases.py <template>` (one scenario template replayed at every phase of the day,
+`{phase}` substituted → `coverage.md`; templates in `scenarios/templates/`: `phase-leave`, `phase-rejoin`,
+`phase-host-crash`, `phase-host-leave`; not picked by `campaign.sh`), `analyze_ending.py` (ending screen: winners / board per process), `analyze_picker.py`, `analyze_chat.py` (private chat delivery / leaks), `analyze_rejoin.py` (what a rejoined player sees, before the drop vs after the rejoin), `analyze_contact.py`
 (Lack of Affection per target faction), `compare_runs.py`, `contact_sheet.py`. Shared run loading for analyzers:
 `autoplay_runs.py`.
 

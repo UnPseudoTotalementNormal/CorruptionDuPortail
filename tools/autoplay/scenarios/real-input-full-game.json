@@ -1,0 +1,73 @@
+{
+  "name": "real-input-full-game",
+  "goal": "A whole game to its victory in real-input mode (every seat with a screen clicks through the real EventSystem, host + 3 real clients), then 10 s on the ending screen: the late game (few seats left awake, last chainings, victory) is playable by mouse on the clients, and the ending is the same everywhere. Real players' misses are reported (warning), errors and desyncs fail. Then the host clicks 'Terminer la partie' by real input and a second game is played (replay 1).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 680,
+  "timescale": 4,
+  "timeout": 2400,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-power-use-probability",
+    "0.8",
+    "-autoplay-vote-probability",
+    "0.9",
+    "-autoplay-fast-fakes",
+    "-autoplay-linger-end",
+    "10",
+    "-autoplay-replay",
+    "1"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "round.shutoff",
+      "detail": "at=ending via=click",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "ending.linger",
+      "process": "all",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_ending.py {run}"
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "process": "clients",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "input.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "phase-host-leave",
+  "goal": "The host leaves by its Leave button at {phase} (ShutOffGameRpc): every real client goes back to the main menu without the 'host lost' notification, nothing throws on any process.",
+  "mode": "net", "clients": 3, "seed": 860, "timescale": 3, "timeout": 900,
+  "args": ["-autoplay-host-quit-at", "{phase}", "-autoplay-expect-host-loss", "-autoplay-force-roles", "Gloubi",
+           "-autoplay-vote-focus", "Gloubi", "-autoplay-vote-probability", "1", "-autoplay-fast-fakes", "-autoplay-chat",
+           "-autoplay-net-log", "-autoplay-no-png"],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "host.lost", "process": "every-client", "min": 1, "max": 1},
+    {"type": "event", "kind": "host.lost.menu", "detail": "menu=reached notification=hidden", "process": "every-client", "min": 1, "max": 1},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

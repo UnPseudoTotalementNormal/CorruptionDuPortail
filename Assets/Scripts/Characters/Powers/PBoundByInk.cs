@@ -104,7 +104,7 @@ namespace Characters.Powers
         // A new night closes last night's ink channel (NET-11: server membership).
         private void RevokeInkChannelServer()
         {
-            if (!IsServer || !isChatAttributed)
+            if (!IsServer || !isChatAttributed || !chatManager)
             {
                 currentTargets.Clear();
                 return;

@@ -323,7 +323,15 @@ namespace GameLogic
         
         public async UniTask WaitAFrameAndNextGameState()
         {
+            int _from = currentGameStateIndex.Value;
             await UniTask.WaitForEndOfFrame();
+            // The state that asked may have been left during that frame (out-of-band victory after a leave): advancing
+            // from the new state would skip it (from GameEndingState, wrap back to the lobby).
+            if (currentGameStateIndex.Value != _from)
+            {
+                Debug.Log($"[LEAVE] WaitAFrameAndNextGameState: state {_from} was left meanwhile — not advancing.");
+                return;
+            }
             NextGameState();
         }
     

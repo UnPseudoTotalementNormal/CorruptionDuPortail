@@ -79,6 +79,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   power: {fileID: 0}
   fromCharacter: {fileID: 0}
+  wasStolenCopy: 0
+  animateOutDuration: 0.25
   modelParentTransform: {fileID: 2436092952460952581}
   defaultPower3DModel: {fileID: 8346909822748617366, guid: 27bd63ae22bf63c498750664f2f5e3f6, type: 3}
   hoverSound:
@@ -99,6 +101,8 @@ MonoBehaviour:
   hoverTweenDuration: 0.15
   clickPunchIntensity: 0.18
   clickPunchDuration: 0.25
+  singleUseCoatMaterial: {fileID: 2100000, guid: 120c54c1a134d4a48a6d0b3dc3a375b2, type: 2}
+  singleUseDripPrefab: {fileID: 8711122620186976641, guid: 259c293a5962a8c4ba8e8e1f35d66b51, type: 3}
 --- !u!114 &8704216733893804600
 MonoBehaviour:
   m_ObjectHideFlags: 0

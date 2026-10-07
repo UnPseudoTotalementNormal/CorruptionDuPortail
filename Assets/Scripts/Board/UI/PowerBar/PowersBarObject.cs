@@ -93,11 +93,17 @@ namespace Board.UI.PowerBar
             }
             _isAnimatingOut = true;
 
+            OnAnimateOut();
             SetInteractable(false);
             transform.DOKill();
             transform.DOScale(Vector3.zero, animateOutDuration)
                 .SetEase(Ease.InBack)
                 .OnComplete(() => Destroy(gameObject));
+        }
+
+        /// <summary>Hook run once when the object starts leaving the bar, before the shrink tween.</summary>
+        protected virtual void OnAnimateOut()
+        {
         }
 
         protected virtual void OnDestroy()

@@ -1094,6 +1094,8 @@ namespace Autoplay
             // Board cards this peer shows (owner seat of each visible card) and, at the ending, the winners it received.
             public ulong[] boardCards;
             public string[] winners;
+            // Board T2: this peer's own 3D power objects, "<power> stolen=<isStolenCopy> left=<uses> coat=<slime coat> drips=<live drops>".
+            public string[] powerBar;
         }
 
         /// <summary>Corruption du Portail state exported with every capture (the package adds time, phase, probes).</summary>
@@ -1159,9 +1161,26 @@ namespace Autoplay
                 winners = CurrentState is GameEndingState _ending
                     ? _ending.WinningTeams.Select(_t => $"{_t.Key}:{string.Join(",", _t.Value.OrderBy(_id => _id))}").ToArray()
                     : Array.Empty<string>(),
+                powerBar = DescribePowerBar().ToArray(),
             };
 
             return JsonUtility.ToJson(_snapshot);
+        }
+
+        private static IEnumerable<string> DescribePowerBar()
+        {
+            foreach (var _object in FindObjectsByType<Board.UI.PowerBar.PowerBarObject3D>(FindObjectsInactive.Exclude)
+                         .Where(_o => _o && _o.power)
+                         .OrderBy(_o => _o.power.NetworkObjectId))
+            {
+                bool _coat = _object.GetComponentsInChildren<Renderer>()
+                    .Any(_r => _r.sharedMaterials.Any(_m => _m && _m.name == "SingleUseSlimeCoat"));
+                int _drops = _object.GetComponentsInChildren<ParticleSystem>()
+                    .Where(_p => _p.name == Board.UI.PowerBar.SingleUseSlimeMark.DRIPS_OBJECT_NAME)
+                    .Sum(_p => _p.particleCount);
+                yield return string.Format(CultureInfo.InvariantCulture, "{0} stolen={1} left={2} coat={3} drips={4}",
+                    _object.power.powerName, _object.power.isStolenCopy.Value, _object.power.powerUseLeft.Value, _coat, _drops);
+            }
         }
 
         private IEnumerable<string> DescribeLocalIcons()

@@ -1,0 +1,180 @@
+{
+  "name": "real-input-big-table",
+  "goal": "Same as real-input-actions at the biggest table (14 seats, designer's classic preset; 2 real clients): the cards are shrunk to fit two lines (V1, 2026-10-08) and the lines are spaced for the vote panels (V3): every power, card pick, vote (reticle) and skip is still a real click that lands, no miss for the real players.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 780,
+  "timescale": 4,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-power-use-probability",
+    "0.8",
+    "-autoplay-vote-probability",
+    "1",
+    "-autoplay-vote-skip",
+    "0,101",
+    "-autoplay-force-roles",
+    "Mage",
+    "-autoplay-vote-focus",
+    "Mage",
+    "-autoplay-fast-fakes",
+    "-autoplay-max-days",
+    "2",
+    "-autoplay-players",
+    "14"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "input.install",
+      "detail": "background=IgnoreFocus disabled=[1-9]",
+      "process": "all",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^power ",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^vote ",
+      "process": "every-client",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^vote .*mode=reticle",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "input.click",
+      "detail": "^picker ",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "sleep",
+      "detail": "via=click",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "portal.click",
+      "detail": "via=click",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "vote.skip.click",
+      "process": "any",
+      "min": 1,
+      "detail": "via=click"
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!picker .*reason=off-screen)",
+      "process": "clients",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^(?!picker .*reason=off-screen)",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "input.miss",
+      "detail": "^picker .*reason=off-screen",
+      "process": "any",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "input.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "power.direct",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "sleep",
+      "detail": "via=direct",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "detail": "^(?!.*via=click)",
+      "process": "clients",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "event",
+      "kind": "vote",
+      "detail": "^(?!.*via=click)",
+      "process": "host",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "event",
+      "kind": "picker.click",
+      "detail": "via=direct",
+      "process": "any",
+      "min": 0,
+      "max": 0,
+      "severity": "warn"
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_duplicate_votes.py {run}"
+    }
+  ],
+  "seedRetries": 4
+}

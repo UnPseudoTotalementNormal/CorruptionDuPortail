@@ -105,6 +105,18 @@ namespace Autoplay
         public float aimSettleSeconds = 0.25f;
         [Tooltip("Real seconds a view switch (arrow key) takes to blend before the target is checked again.")]
         public float viewBlendSeconds = 0.8f;
+
+        [Tooltip("Card visibility probe (-autoplay-card-visibility <layouts>, host, first vote): layouts to measure, " +
+                 "\"cur\" = the game's own; see AutoplayDriverVisibility.ParseLayouts. Empty = off.")]
+        public string cardVisibility;
+        [Tooltip("Board card arrangement to play (-autoplay-card-layout RaisedLeft|Centred|CentredTop). Empty = the scene's.")]
+        public string cardLayout;
+        [Tooltip("Views the card visibility probe measures: top, powers, fps-rest (seated, head at rest), fps (head turned to each card); -hover = the card hovered first.")]
+        public string cardVisibilityViews = "top,top-hover,fps,fps-hover";
+        [Tooltip("Real seconds after the vote starts before the board is measured (cards shown, vote panels out).")]
+        public float cardVisibilitySettle = 4f;
+        [Tooltip("Real seconds a view switch gets to blend before a view is measured.")]
+        public float cardVisibilityBlend = 1.5f;
     }
 
     /// <summary>
@@ -301,6 +313,7 @@ namespace Autoplay
             }
 
             UpdateTour(_state);
+            UpdateCardVisibility(_state);
 
             switch (_state)
             {

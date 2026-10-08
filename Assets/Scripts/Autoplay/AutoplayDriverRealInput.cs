@@ -249,6 +249,8 @@ namespace Autoplay
                 var _panel = _card ? _card.GetComponentInChildren<Board.UI.VoteCanvas.VoteCanvas>(true) : null;
                 if (_panel != null && await HoverTarget(_card.gameObject, $"vote {_id} -> {_targetId}", 0.5f))
                 {
+                    // The hovered card's vote panel, as the voter sees it (is it covered by the next line of cards?).
+                    capture.Request($"vote-hover-{_id}-{_targetId}", 0f);
                     _clicked = await ClickTarget(_panel.voteButton ? _panel.voteButton.gameObject : null, $"vote {_id} -> {_targetId}",
                         () => HasVoted(_id));
                 }
@@ -445,11 +447,28 @@ namespace Autoplay
                 await VirtualInput.WarpTo(ScreenCentre).WithCancellation(Cancel); // a locked cursor clicks at the centre
             }
             GameObject _hit = AutoplayUiLocator.TopHit(_at);
+            string _stack = EventSystemStack(_at);
             await VirtualInput.Click().WithCancellation(Cancel);
-            string _where = string.Format(System.Globalization.CultureInfo.InvariantCulture, "target={0} pos={1:0},{2:0} hit={3} mode={4}",
-                AutoplayUiLocator.PathOf(_target), _at.x, _at.y, AutoplayUiLocator.PathOf(_hit), _locked ? "reticle" : "pointer");
+            string _where = string.Format(System.Globalization.CultureInfo.InvariantCulture, "target={0} pos={1:0},{2:0} hit={3} mode={4} stack=[{5}]",
+                AutoplayUiLocator.PathOf(_target), _at.x, _at.y, AutoplayUiLocator.PathOf(_hit), _locked ? "reticle" : "pointer", _stack);
             Journal.Record("input.click", $"{_action} {_where}");
             return await WaitForEffect(_action, _where, _effect);
+        }
+
+        // What the EventSystem itself sees under the click, every raycaster (UI and physics), nearest first: a click that
+        // reaches the wrong object names it (the journal's hit= is the UI-only view).
+        private static readonly System.Collections.Generic.List<RaycastResult> raycastBuffer = new();
+
+        private static string EventSystemStack(Vector2 _at)
+        {
+            if (EventSystem.current == null)
+            {
+                return "no-eventsystem";
+            }
+            raycastBuffer.Clear();
+            EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = _at }, raycastBuffer);
+            return string.Join("; ", raycastBuffer.Take(4).Select(_r => string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "{0}@{1:0.00}", AutoplayUiLocator.PathOf(_r.gameObject), _r.distance)));
         }
 
         private async UniTask<bool> WaitForEffect(string _action, string _where, Func<bool> _effect)

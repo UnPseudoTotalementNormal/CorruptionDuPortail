@@ -428,7 +428,14 @@ namespace Autoplay
                 voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = true,
+                cardVisibility = _context.Config.Option("card-visibility"),
+                cardLayout = _context.Config.Option("card-layout"),
+                cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
+            if (!string.IsNullOrEmpty(_options.cardVisibility))
+            {
+                _context.Config.stallRealSeconds = Mathf.Max(_context.Config.stallRealSeconds, 1800f); // the probe holds the vote
+            }
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, _controlled, new RandomValidPolicy(_context.Config.seed), _options, _context.Journal, _context.Capture);
             string _hostQuitAt = _context.Config.Option("host-quit-at");
@@ -1481,6 +1488,8 @@ namespace Autoplay
                        characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
             }, 150f, "relay: the client never joined the lobby's game through Relay");
             if (_context.Failed) yield break;
+            // Same as the direct connect: host-loss expectations (expect-host-loss) only arm once connected.
+            everConnected = true;
             _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through Relay (lobby {_code})");
         }
 
@@ -1577,8 +1586,15 @@ namespace Autoplay
                 voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
+                cardLayout = _context.Config.Option("card-layout"),
+                cardVisibility = _context.Config.Option("card-visibility"),
+                cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
                 joinedMidPhase = _joinedMidPhase,
             };
+            if (!string.IsNullOrEmpty(_clientOptions.cardVisibility))
+            {
+                _context.Config.stallRealSeconds = Mathf.Max(_context.Config.stallRealSeconds, 1800f); // the probe holds the vote
+            }
             driver = _context.Capture.gameObject.AddComponent<AutoplayDriver>();
             driver.Begin(networkManager, new[] { _self }, new RandomValidPolicy(_context.Config.seed + (int)_self),
                 _clientOptions, _context.Journal, _context.Capture);

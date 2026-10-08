@@ -4,85 +4,139 @@ using NUnit.Framework;
 namespace Tests.Editor
 {
     /// <summary>
-    /// Story 11.2 — EditMode characterization of <see cref="CardLayout.GetPlacedPosition"/>, the pure
-    /// extraction of <c>BoardManager.GetCardPlacedPosition</c>. Pins the origin case, the per-step
-    /// horizontal advance, the wrap-on-/-over-maxX boundary (the original uses <c>&gt;=</c>), multi-line
-    /// wrapping, the non-positive-index guard, and that y is never modified.
+    /// EditMode pins of <see cref="CardLayout"/>: the grid per table size and preset, the placement arithmetic, and the
+    /// board's fit constraints measured in game by the autoplay card visibility probe (2026-10-08, 1600 × 900), so a
+    /// retune that would hide a card, a vote button or a vote count again fails here before it reaches a playtest.
     /// </summary>
     [Category("CardLayout")]
     public class CardLayoutTests
     {
         private const float Tol = 1e-4f;
+
+        // Board anchors of GameScene (BoardManager.spawnCardPosition / maxCardPosition, board units).
+        private const float OriginX = -19f;
+        private const float MaxX = 19f;
+        private const float CentreX = 0f;
+
+        // Card geometry (Card.prefab) and what the probe measured around it.
+        private const float HalfDepth = 4.4f;
+        private const float HoveredTextBelowCentre = 6.89f * 1.1f; // hovered vote count text, hovered card enlarged
+        private const float MoiTagAboveCentre = 4.4f + 2.6f;
+        private const float CharactersBarZ = 9.8f; // top of the free band (top view)
+        private const float BottomHudZ = -13.6f; // bottom of the free band (bottom HUD, skip button)
+        private const float BoardHalfWidth = 19f + CardLayout.CardWidth / 2f;
+
         private readonly CardLayout _layout = new();
 
-        // Origin (0,0,0), spacing 7, lineSpacing 9, maxX 20 → x advances 0,7,14 then wraps at index 3.
-        private CardPlacement At(int index, float maxX = 20f, float originX = 0f, float originY = 0f, float originZ = 0f)
-            => _layout.GetPlacedPosition(index, originX, originY, originZ, 7f, 9f, maxX);
+        private static readonly CardGridPreset[] Presets =
+            { CardGridPreset.RaisedLeft, CardGridPreset.Centred, CardGridPreset.CentredTop };
 
-        private static void AssertAt(CardPlacement p, float x, float y, float z)
+        private CardPlacement Place(int index, int count, CardGridPreset preset)
+            => _layout.Place(index, count, _layout.GridFor(count, preset), OriginX, 0.09f, 0f, CentreX);
+
+        private static int Lines(int count, CardGrid grid) => (count + grid.Columns - 1) / grid.Columns;
+
+        [TestCase(1)]
+        [TestCase(5)]
+        [TestCase(6)]
+        public void OneLine_KeepsFullSize(int count)
         {
-            Assert.AreEqual(x, p.X, Tol, "X");
-            Assert.AreEqual(y, p.Y, Tol, "Y");
-            Assert.AreEqual(z, p.Z, Tol, "Z");
+            foreach (CardGridPreset _preset in Presets)
+            {
+                CardGrid _grid = _layout.GridFor(count, _preset);
+                Assert.AreEqual(1f, _grid.Scale, Tol, $"{_preset}");
+                Assert.AreEqual(1, Lines(count, _grid), $"{_preset}");
+            }
+        }
+
+        [TestCase(7)]
+        [TestCase(12)]
+        public void TwoLinesOfSix_UpToTwelveSeats(int count)
+        {
+            CardGrid _grid = _layout.GridFor(count, CardGridPreset.Centred);
+            Assert.AreEqual(6, _grid.Columns);
+            Assert.AreEqual(2, Lines(count, _grid));
+            Assert.Less(_grid.Scale, 1f, "two lines with every hovered vote text visible need smaller cards");
+        }
+
+        [TestCase(13)]
+        [TestCase(14)]
+        public void TwoLinesOfSeven_AtThirteenAndFourteen(int count)
+        {
+            CardGrid _grid = _layout.GridFor(count, CardGridPreset.RaisedLeft);
+            Assert.AreEqual(7, _grid.Columns);
+            Assert.AreEqual(2, Lines(count, _grid));
         }
 
         [Test]
-        public void IndexZero_ReturnsOrigin()
+        public void OnlyRaisedLeft_IsLeftAligned()
         {
-            AssertAt(At(0), 0f, 0f, 0f);
+            Assert.IsFalse(_layout.GridFor(8, CardGridPreset.RaisedLeft).Centred);
+            Assert.IsTrue(_layout.GridFor(8, CardGridPreset.Centred).Centred);
+            Assert.IsTrue(_layout.GridFor(8, CardGridPreset.CentredTop).Centred);
         }
 
         [Test]
-        public void WithinLine_AdvancesBySpacing()
+        public void LeftAligned_FirstCardKeepsTheBoardsLeftEdge_AndColumnsAdvance()
         {
-            AssertAt(At(1), 7f, 0f, 0f);
-            AssertAt(At(2), 14f, 0f, 0f);
+            CardGrid _grid = _layout.GridFor(8, CardGridPreset.RaisedLeft);
+            CardPlacement _first = Place(0, 8, CardGridPreset.RaisedLeft);
+            CardPlacement _second = Place(1, 8, CardGridPreset.RaisedLeft);
+            Assert.AreEqual(OriginX - CardLayout.CardWidth / 2f, _first.X - CardLayout.CardWidth / 2f * _grid.Scale, Tol);
+            Assert.AreEqual(CardLayout.ColumnSpacing * _grid.Scale, _second.X - _first.X, Tol);
         }
 
         [Test]
-        public void OverflowingMaxX_WrapsToNextLine()
+        public void Wrap_StartsTheNextLineOneLineSpacingFurther()
         {
-            // index 3: x would be 21 ≥ 20 → wrap back to origin x, one lineSpacing further along -z.
-            AssertAt(At(3), 0f, 0f, -9f);
-            AssertAt(At(4), 7f, 0f, -9f);
+            CardGrid _grid = _layout.GridFor(8, CardGridPreset.RaisedLeft);
+            CardPlacement _first = Place(0, 8, CardGridPreset.RaisedLeft);
+            CardPlacement _seventh = Place(6, 8, CardGridPreset.RaisedLeft);
+            Assert.AreEqual(_first.X, _seventh.X, Tol, "back to the first column");
+            Assert.AreEqual(_first.Z - _grid.LineSpacing, _seventh.Z, Tol);
+            Assert.AreEqual(_grid.FirstLineZ, _first.Z, Tol);
         }
 
         [Test]
-        public void AtExactlyMaxX_Wraps_BecauseComparisonIsGreaterOrEqual()
+        public void Centred_EveryLineIsCentredOnTheBoard()
         {
-            // maxX 14: at index 2 x hits exactly 14 ⇒ 14 >= 14 wraps (proves the boundary uses >=, not >).
-            AssertAt(At(2, maxX: 14f), 0f, 0f, -9f);
+            // 8 cards: a full line of 6 then a line of 2, each centred.
+            float _full = (Place(0, 8, CardGridPreset.Centred).X + Place(5, 8, CardGridPreset.Centred).X) / 2f;
+            float _partial = (Place(6, 8, CardGridPreset.Centred).X + Place(7, 8, CardGridPreset.Centred).X) / 2f;
+            Assert.AreEqual(CentreX, _full, Tol);
+            Assert.AreEqual(CentreX, _partial, Tol);
+            Assert.AreEqual(CentreX, (Place(0, 7, CardGridPreset.Centred).X + Place(5, 7, CardGridPreset.Centred).X) / 2f, Tol);
+            Assert.AreEqual(CentreX, Place(6, 7, CardGridPreset.Centred).X, Tol, "a lone card on its line sits in the middle");
         }
 
         [Test]
-        public void MultipleLines_KeepWrapping()
+        public void YNeverChanges_AndNegativeIndexIsTheFirstCard()
         {
-            // maxX 20: indices 0..2 line 0; 3..5 line 1; 6..8 line 2 (each line restarts at x=0).
-            AssertAt(At(6), 0f, 0f, -18f);
-            AssertAt(At(7), 7f, 0f, -18f);
+            Assert.AreEqual(0.09f, Place(9, 12, CardGridPreset.RaisedLeft).Y, Tol);
+            Assert.AreEqual(Place(0, 5, CardGridPreset.Centred).X, Place(-3, 5, CardGridPreset.Centred).X, Tol);
         }
 
+        // The in-game constraints (probe, every view, hovered or not), for every table size the presets ship and more.
         [Test]
-        public void NonPositiveIndex_ReturnsOrigin()
+        public void EveryCardAndVotePanel_FitsTheFreeBand([Values(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)] int count,
+            [Values(CardGridPreset.RaisedLeft, CardGridPreset.Centred, CardGridPreset.CentredTop)] CardGridPreset preset)
         {
-            AssertAt(At(0), 0f, 0f, 0f);
-            AssertAt(At(-5), 0f, 0f, 0f);
-        }
-
-        [Test]
-        public void OriginIsHonoured_AndYNeverChanges()
-        {
-            // Non-zero origin; y must stay at originY across a wrap.
-            var p0 = _layout.GetPlacedPosition(0, 3f, 5f, 11f, 7f, 9f, 20f);
-            Assert.AreEqual(3f, p0.X, Tol);
-            Assert.AreEqual(5f, p0.Y, Tol);
-            Assert.AreEqual(11f, p0.Z, Tol);
-
-            // index 3 from origin x=3: 3→10→17→24(≥20 wrap)→ x=3, z=11-9=2; y stays 5.
-            var p3 = _layout.GetPlacedPosition(3, 3f, 5f, 11f, 7f, 9f, 20f);
-            Assert.AreEqual(3f, p3.X, Tol);
-            Assert.AreEqual(5f, p3.Y, Tol, "y must never change");
-            Assert.AreEqual(2f, p3.Z, Tol);
+            CardGrid _grid = _layout.GridFor(count, preset);
+            int _lines = Lines(count, _grid);
+            float _s = _grid.Scale;
+            float _nearZ = _grid.FirstLineZ - (_lines - 1) * _grid.LineSpacing;
+            Assert.LessOrEqual(_grid.FirstLineZ + MoiTagAboveCentre * _s, CharactersBarZ + Tol, "the Moi tag stays under the characters bar");
+            Assert.GreaterOrEqual(_nearZ - HoveredTextBelowCentre * _s, BottomHudZ - Tol, "the near line's hovered vote text stays above the bottom HUD");
+            if (_lines > 1)
+            {
+                Assert.GreaterOrEqual(_grid.LineSpacing - (HalfDepth + HoveredTextBelowCentre) * _s, 0.2f,
+                    "a far line's hovered vote text clears the next line");
+            }
+            for (int _i = 0; _i < count; _i++)
+            {
+                float _x = _layout.Place(_i, count, _grid, OriginX, 0f, 0f, CentreX).X;
+                Assert.LessOrEqual(System.Math.Abs(_x) + CardLayout.CardWidth / 2f * _s, BoardHalfWidth + Tol, $"card {_i} on the board");
+            }
         }
     }
 }

@@ -137,14 +137,26 @@ def main(run):
             print(f"  OK chatChannels: all {len(b.get('chatChannels') or [])} kept ({len(a.get('chatChannels') or [])} now)")
         kept("icons")
         # Knowledge only grows ("viewer>target role=… corrupt=… force=… hacked=…", levels may rise while he was away).
+        # A factice role's entry carries its name ("…>id fake=10 role=La Dryade"): a token without "=" continues the
+        # previous value. Only numeric levels are compared.
         def levels(entries):
             out = {}
             for e in entries or []:
                 key, _, rest = e.partition(" ")
-                out[key] = dict(kv.split("=") for kv in rest.split())
+                fields, last = {}, None
+                for tok in rest.split():
+                    if "=" in tok:
+                        last, _, val = tok.partition("=")
+                        fields[last] = val
+                    elif last is not None:
+                        fields[last] += " " + tok
+                out[key] = fields
             return out
+        def num(v):
+            return int(v) if str(v).lstrip("-").isdigit() else None
         kb, ka = levels(b.get("knowledge")), levels(a.get("knowledge"))
-        lost = [k for k, lv in kb.items() if k not in ka or any(int(ka[k].get(n, 0)) < int(v) for n, v in lv.items())]
+        lost = [k for k, lv in kb.items() if k not in ka or any(
+            num(v) is not None and (num(ka[k].get(n, 0)) or 0) < num(v) for n, v in lv.items())]
         if lost:
             failures.append(f"{name}: knowledge lost after the rejoin: {sorted(lost)}")
         else:

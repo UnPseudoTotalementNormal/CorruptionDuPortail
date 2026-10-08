@@ -50,6 +50,8 @@ None of these fits → stop and ask a human.
 - Depend on the **narrow slice** (`IGameLoop`, `IGameStateQuery`, `ICharacterQuery`, `ICharacterCommand`, `IRevealService`), never the manager.
 - `CompositionRoot.For(nm)` is the **only** sanctioned static. Call it only in `OnNetworkSpawn`, against `base.NetworkManager`, **never `NetworkManager.Singleton`** (wrong graph in the 2-NM test fixture).
 - **No NGO spawn order.** Resolving a *peer manager* via `For(nm)` inside `OnNetworkSpawn` races → scene-wire it as a lane-A `[SerializeField]` instead. Never read another replica's resolved fields during your own spawn.
+- **Per-character data cloned from an authored asset must be deep-cloned.** `[SerializeReference]` lists on a `RoleDataObject` (winning conditions) were shared by every character and every game when the element type was not `ICloneable` (`Role.Clone` fell back to a shallow copy): the Robot's victory read seat 0 on the server and a stale owner hung the next game (W1, 2026-10-08). New condition / effect types stay value-only or implement a real clone.
+- A grandfathered singleton served by `CompositionRoot` must be **published in `Awake`**, not in its own `OnNetworkSpawn`: in-scene objects spawn in no guaranteed order, so a consumer resolving it in its `OnNetworkSpawn` caches null for the whole game (`RobotBoardInfo` ← `RoleTargetSystem`, 2026-10-08). A spawned instance still takes over one that only ran `Awake` (test templates).
 - Fail loud: `Assert.IsNotNull(dep, "<dep> not wired")` after each resolution. **No `?? X.instance` fallback.**
 - Never add a new `static instance`. Grandfathered façades (`GameManager.instance`, `CharacterManager.instance` for static win-rule machinery; `GameAudioManager`, `LobbyManager`, `InputManager`) are not an invitation.
 - `GameManager` owns `currentGameStateIndex` + `OnEnd → write NV → OnStart` sequencing by design. Don't "finish removing" it.
@@ -67,6 +69,9 @@ Unity serializes by **name**. Append new fields; never rename/reorder/retype (re
 Every subscribe has a mirrored unsubscribe on the **cached** target: spawned replicas in `OnNetworkDespawn`; instantiated-not-spawned objects (`StateUI` subclasses) in `OnDestroy`.
 
 ## NGO gotchas found the hard way
+
+- **Async client flows that await an animation re-check they are still current** before wiring anything (vote panels, portal selection, recaps): a leave victory or the host ending the game moves the loop meanwhile. Key the check on the peer's own `OnEndStateClient` (epoch) or the state type, never on `IsStateActive()` (two `ChainingState` instances) — N2, N3, N12.
+- **UGS Lobby calls fail transiently** (the SDK even throws a `NullReferenceException` from `TryCatchRequest` on an error without body): loops (polling, heartbeat) retry inside the loop and report only a lasting failure; leaving / deleting treats `LobbyNotFound` as done (the host deletes the lobby while clients leave it).
 
 - **`ConnectionApproval` must be set identically on host and client**, else NGO rejects every join. Host-only playtests hide it (BootScene serialized `true` + guard test).
 - **Join handshake:** after `WaitForConnectedOrTimeout`, NGO has already loaded GameScene and unloaded the menu. Never raw `LoadScene` (destroys NetworkObjects), no UI in the continuation, no `Shutdown` in a generic `catch`.
@@ -135,6 +140,8 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - Board objects are driven entirely through `IPointer*` (no `OnMouse*`): cursor mode = `InputSystemUIInputModule` + `PhysicsRaycaster` on CameraBrain; embodied mode = `ReticleInteractor`. Mutually exclusive: the reticle clicks only while `Cursor.lockState` is really Locked (the UI module ignores a locked pointer); with a free cursor (unfocused window, autoplay) both clicked the same button, every click arrived twice.
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
 - Animating the scale of a non-convex `MeshCollider` re-cooks it every frame → raycast dropouts. Put the collider on an unscaled parent or use a primitive.
+- **The UI raycast ranks canvases by sorting order before distance.** A world-space canvas BEHIND a card with a higher order takes the cursor's and the seated reticle's hover / click (the characters bar's portraits at order 0 over cards at −1: looking at the top of a far card hovered a portrait, 2026-10-08). Keep world-space interactables that can sit behind cards at an order ≤ the cards' (−1); equal orders fall back to distance.
+- **Board card layout values are measured, never guessed** (`CardLayout.GridFor`). Free band of the top view at 1600 × 900: z ≈ +9.8 (characters bar) to −13.6 (bottom HUD / skip button); a hovered card grows ~1.1× and its vote count text slides to 6.89 × scale under the card's centre. Each guess so far hid something (V3 spacing 10.3: near-line panels under the bottom HUD at 12 seats). Any change: `CardLayoutTests` constraints, then `tools/autoplay/sweep_card_visibility.py` (every size, PASS with `--effects-see-through`).
 
 ## Code organization
 

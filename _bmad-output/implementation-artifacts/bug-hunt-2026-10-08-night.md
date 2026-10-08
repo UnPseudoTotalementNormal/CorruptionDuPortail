@@ -30,6 +30,23 @@ logs an error, shows the notification, and keeps `currentLobby` + its polling al
 **Fix:** `LeaveLobby` / `DeleteLobby` forget the lobby (stop polling + heartbeat) whatever the service answers, and
 treat `LobbyNotFound` as success (the wanted outcome).
 
+### W1 — The Robot's victory was evaluated on seat 0; a stale owner hung the next game (Critical, victory)
+Found at 05:40 by `real-input-full-game` at 14 seats: in the SECOND game (play again), every process stuck in
+`VictoryConditionCheckState` (watchdog stall), host log `NullReferenceException` in
+`WOmniscienceHackedCharacter.CheckCondition` (owner not in the snapshot — the "golden O1" NRE the snapshot path keeps
+on purpose). Root cause: `WinningCondition` was not `ICloneable`, so `Role.Clone` fell back to **sharing the authored
+asset's condition instances** (`Robot.asset`, `ownerClientId: 0`) between every Robot of every game, and the server
+never set their owner (only clients do, on rebuild). Consequences:
+- on the host the Robot's two conditions looked at **seat 0** (the host's character): "the Robot wins if chained" fired
+  when the HOST was chained — seeds 861 and 865 at 13 seats, where the forced vote chained the host's Dr Gloubi and the
+  Robot "won" at the end of day 1 without being chained (first read as a design rule, it was this bug);
+- any serialization of a Role (e.g. a role card in a picker RPC) rewrote the shared owner; in the next game it named a
+  seat that no longer existed (clients reconnect with new ids) → the NRE → the victory check never advanced: **game hung
+  for everyone**.
+**Fix:** `WinningCondition : ICloneable` (value fields only, `MemberwiseClone`): each character owns its conditions;
+`Character.CommitRoleServer` sets every condition's owner to the character. EditMode `WinningConditionCloneTests`
+(fails on the old code: shared instance). Re-run in game: see the coverage table.
+
 ### V1 — 13-14 seats: the third line of cards is off screen (High, gameplay at big tables)
 Cards go 6 per line, 2 lines fit above the power bar. At 13-14 seats the third line (2 players) is drawn under the
 power bar / skip button and off the bottom of the screen (capture `002-3_AwakeningState_day_1.jpg`, 14 seats,
@@ -119,7 +136,7 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | `campaign.sh 2 1 3` (57 runs: every scenario + 3 random games) on the build with V1-V3, L1, L2, R1, V2, N3, N6, D1 | full regression | **55/57**: the 2 failures are tool-side — `client-crash-relaunch` (T3, analyzer crash, fixed and re-run below) and `real-input-actions` (`lobby-ready … not-laid-out`, the known N11 lobby flakiness; every vote landed) |
 | `real-input` random network games, 6/9/11/13/7/14 seats (seeds 640-645) | every action by real clicks at every size | 6/6: 0 error, 0 desync; real clients' only misses = role-picker cards off screen (O2) |
 | After the PR: `heavy-loss` at 14 seats, `mass-rejoin` at 14, `net-sync-3clients` at 14, `relay-game` at 13, `rejoin-while-chained` at 12 (3 clients) | network stress at the biggest tables | 5/5 PASS |
-| Phase sweeps at 13 seats (`sweep_phases.py`, 4 templates × 7 phases, seeds 860-866) | leave / rejoin / host leave / host crash at every phase of the day at a big table | host leave 7/7, host crash 7/7; leave 6/7 + rejoin 5/7: seed 865 = the Robot wins at the end of day 1 (game over before the reserved seat expires or the rejoin: not covered, legit victory); seed 861 (rejoin at the awakening, FAIL 3/3): same cause — the Robot hacked the Dr Gloubi the template forces everyone to vote, so it wins when he is chained at the end of day 1 (`WOmniscienceHackedCharacter`, design-owned) and the host's run ends before the rejoin completes. Not covered, not a bug |
+| Phase sweeps at 13 seats (`sweep_phases.py`, 4 templates × 7 phases, seeds 860-866) | leave / rejoin / host leave / host crash at every phase of the day at a big table | host leave 7/7, host crash 7/7; leave 6/7 + rejoin 5/7: seed 865 = the game ended at day 1 by a Robot "victory" (W1); seed 861 (rejoin at the awakening, FAIL 3/3): same early end. **Both were W1** (the Robot "won" because the host's Dr Gloubi was chained), found at 05:40 |
 | Final soak on the PR build: `sweep_random_net.py` 10 games, 5..14 seats, seeds 700-709, every other one over Relay | | **10/10, empty harvest** (0 error, 0 desync, no miss) |
 | `replay-net` at 13 seats, `rejoin-at-night` at 14, `real-input-tour` at 14, `full-game-ending` at 5 (2 clients each) | existing regressions at the table-size extremes | 4/4 PASS |
 
@@ -129,9 +146,7 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
   one closes the previous one's picker (`picker.closed … before the pick`). One screen for several seats: harness only.
 - `OperationCanceledException` journaled as `input.error picker`: the driver's own picker wait cancelled at a phase end.
 - `lobby-ready … not-laid-out` / `lobby-role-card … no-effect`: the known lobby-tablet flakiness (N11, 10-07).
-- Phase templates at 12+ seats: the Robot is in the preset and, when it hacks the forced vote target (Gloubi), wins at
-  the end of day 1 — later phases are then not covered. Backlog: a `steal`-like dev seam for the Robot's hack target,
-  or `role-holder` keeping the Robot off the forced target.
+- Phase templates at 12+ seats ended at day 1 by a Robot "victory": that was W1, not a design rule (first misread).
 
 ## Observations for the game designer (not changed)
 
@@ -146,6 +161,7 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 
 | # | Severity | Area | What the player saw / what broke | Found by | Root cause | Status |
 |---|---|---|---|---|---|---|
+| W1 | **Critical** | Victory | Robot victory checked on the HOST's seat (Robot "won" when the host was chained); in a second game a stale owner threw in the victory check: game hung for everyone | `real-input-full-game` at 14 seats (replay), phase sweeps at 13 seats | `WinningCondition` not cloneable → asset instances shared, owner never set on the server | **Fixed** (cloned per character + owner set at commit); EditMode test; re-run in game |
 | V1 | **High** | Board, 13-14 seats | The third line of cards (2 players) off screen, under the power bar: those cards could not be read or clicked | `sweep_table_sizes.py` (new), captures | Fixed 6 cards per line, 2 lines visible | **Fixed** (`CardLayout.FitScale`: 2 lines of 7 at 0.84, inside the board's edges); 13/14 seats + `real-input-big-table` PASS |
 | V3 | Medium | Board, vote | The next line of cards hid the vote panels (text, and the "Voter" button on hover) | Poyo (during the night), measured on `Card.prefab` | Line spacing 9 < card 8.8 + panel overhang | **Fixed** (spacing 10.3, full size up to 12 seats); `real-input-actions` 3/3, `vote-hover` captures |
 | L1 | Medium | UGS lobby | "Connexion au lobby perdue: Object reference not set…" popped mid-game (17× in one evening's Relay runs); polling dead for the rest of the session | T2 deferred item + logs of 10-07 | SDK NRE on a transient error; caught outside the loop + shown to the player | **Fixed** (retry in loop, warning only, notify only without a running session) |

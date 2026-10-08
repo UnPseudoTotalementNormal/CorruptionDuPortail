@@ -98,6 +98,14 @@ namespace Characters
                 return;
             }
             role.ownerClientId = ownerClientId.Value;
+            // The server evaluates victory with these: they must name THIS character (clients do it on rebuild).
+            foreach (var _condition in role.winningConditions)
+            {
+                if (_condition != null)
+                {
+                    _condition.ownerClientId = ownerClientId.Value;
+                }
+            }
             roleId.Value = role.roleID;
             onRoleUpdated?.Invoke();
         }

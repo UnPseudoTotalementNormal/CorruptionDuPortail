@@ -118,6 +118,9 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | table sizes 12 + 8 (seeds 530-531) after V3 | top-down view: gap between lines, second line still on screen | 2/2, 0 error |
 | `campaign.sh 2 1 3` (57 runs: every scenario + 3 random games) on the build with V1-V3, L1, L2, R1, V2, N3, N6, D1 | full regression | **55/57**: the 2 failures are tool-side — `client-crash-relaunch` (T3, analyzer crash, fixed and re-run below) and `real-input-actions` (`lobby-ready … not-laid-out`, the known N11 lobby flakiness; every vote landed) |
 | `real-input` random network games, 6/9/11/13/7/14 seats (seeds 640-645) | every action by real clicks at every size | 6/6: 0 error, 0 desync; real clients' only misses = role-picker cards off screen (O2) |
+| After the PR: `heavy-loss` at 14 seats, `mass-rejoin` at 14, `net-sync-3clients` at 14, `relay-game` at 13, `rejoin-while-chained` at 12 (3 clients) | network stress at the biggest tables | 5/5 PASS |
+| Phase sweeps at 13 seats (`sweep_phases.py`, 4 templates × 7 phases, seeds 860-866) | leave / rejoin / host leave / host crash at every phase of the day at a big table | host leave 7/7, host crash 7/7; leave 6/7 + rejoin 5/7: seed 865 = the Robot wins at the end of day 1 (game over before the reserved seat expires or the rejoin: not covered, legit victory); seed 861 (rejoin at the awakening, FAIL 3/3): same cause — the Robot hacked the Dr Gloubi the template forces everyone to vote, so it wins when he is chained at the end of day 1 (`WOmniscienceHackedCharacter`, design-owned) and the host's run ends before the rejoin completes. Not covered, not a bug |
+| Final soak on the PR build: `sweep_random_net.py` 10 games, 5..14 seats, seeds 700-709, every other one over Relay | | **10/10, empty harvest** (0 error, 0 desync, no miss) |
 | `replay-net` at 13 seats, `rejoin-at-night` at 14, `real-input-tour` at 14, `full-game-ending` at 5 (2 clients each) | existing regressions at the table-size extremes | 4/4 PASS |
 
 ## Tool-side noise seen in the harvest (not game bugs)
@@ -126,6 +129,9 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
   one closes the previous one's picker (`picker.closed … before the pick`). One screen for several seats: harness only.
 - `OperationCanceledException` journaled as `input.error picker`: the driver's own picker wait cancelled at a phase end.
 - `lobby-ready … not-laid-out` / `lobby-role-card … no-effect`: the known lobby-tablet flakiness (N11, 10-07).
+- Phase templates at 12+ seats: the Robot is in the preset and, when it hacks the forced vote target (Gloubi), wins at
+  the end of day 1 — later phases are then not covered. Backlog: a `steal`-like dev seam for the Robot's hack target,
+  or `role-holder` keeping the Robot off the forced target.
 
 ## Observations for the game designer (not changed)
 

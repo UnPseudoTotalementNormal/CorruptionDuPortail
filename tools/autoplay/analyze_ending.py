@@ -20,7 +20,12 @@ from autoplay_runs import host_of, load_run, roster  # noqa: E402
 
 
 def last_ending_state(folder):
-    files = sorted(glob.glob(os.path.join(folder, "*ending*.json")))
+    # By capture number, not by name: past 999 captures "1240-…" sorts before "501-…" and a replay's last ending
+    # would be compared with the previous round's (false FAIL, real-input-full-game at 14 seats, 2026-10-08).
+    def number(path):
+        head = os.path.basename(path).split("-", 1)[0]
+        return int(head) if head.isdigit() else -1
+    files = sorted(glob.glob(os.path.join(folder, "*ending*.json")), key=number)
     if not files:
         return None
     with open(files[-1], encoding="utf-8-sig") as f:

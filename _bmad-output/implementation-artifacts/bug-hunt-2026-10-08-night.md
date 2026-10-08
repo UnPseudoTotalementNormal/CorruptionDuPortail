@@ -115,6 +115,11 @@ Since the fake-role hints (10-07), an anomaly's knowledge holds entries like `1>
 analyzer split them on spaces and crashed, failing `client-crash-relaunch` (campaign, seed 34) although the rejoin was
 perfect. Values with spaces are now kept whole; only numeric levels are compared.
 
+### T4 (tool) — `analyze_ending.py` compared the wrong rounds past 999 captures
+It took the "last" ending capture by NAME: `1240-ending…` sorts before `501-ending…`, so a replay's host was compared
+with the clients' other round (false FAIL, `real-input-full-game` at 14 seats). Sorted by capture number now; the same
+run then PASSES: both rounds, same winners everywhere, and the second game no longer hangs (W1 verified in a replay).
+
 ### T1 (tool) — `expect-host-loss` never armed over Relay
 The Relay join path did not set `everConnected`, so a client that lost its host reported "session died" instead of
 `host.lost`. Fixed.
@@ -138,6 +143,7 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | After the PR: `heavy-loss` at 14 seats, `mass-rejoin` at 14, `net-sync-3clients` at 14, `relay-game` at 13, `rejoin-while-chained` at 12 (3 clients) | network stress at the biggest tables | 5/5 PASS |
 | Phase sweeps at 13 seats (`sweep_phases.py`, 4 templates × 7 phases, seeds 860-866) | leave / rejoin / host leave / host crash at every phase of the day at a big table | host leave 7/7, host crash 7/7; leave 6/7 + rejoin 5/7: seed 865 = the game ended at day 1 by a Robot "victory" (W1); seed 861 (rejoin at the awakening, FAIL 3/3): same early end. **Both were W1** (the Robot "won" because the host's Dr Gloubi was chained), found at 05:40 |
 | Final soak on the PR build: `sweep_random_net.py` 10 games, 5..14 seats, seeds 700-709, every other one over Relay | | **10/10, empty harvest** (0 error, 0 desync, no miss) |
+| `real-input-full-game` at 14 seats, 3 clients, seed 680, play again (after W1) | the hang's own scenario | both games played to their end (anomalies, then the Robot at day 9 — chained), same winners on every process once T4 fixed, 0 desync; misses: O2 picker cards, O5 far-right vote, N11 lobby |
 | `replay-net` at 13 seats, `rejoin-at-night` at 14, `real-input-tour` at 14, `full-game-ending` at 5 (2 clients each) | existing regressions at the table-size extremes | 4/4 PASS |
 
 ## Tool-side noise seen in the harvest (not game bugs)
@@ -176,8 +182,10 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | D1 | Low | Vote panel | DOTween "NULL target" on a client when the host leaves during the vote | `host-leaves-relay` logs | Tweens not linked to their object | **Fixed** (`SetLink`) |
 | T1 | Tool | Autoplay Relay | `expect-host-loss` never armed over Relay | `host-leaves-relay` | `everConnected` not set on the Relay join path | **Fixed** |
 | T2 | Tool | Autoplay evidence | No view of the vote panel; no EventSystem view of a click | Investigating V3 | — | **Added** `vote-hover-*` captures, `stack=[…]` on every real click |
+| T4 | Tool | `analyze_ending.py` | Compared a replay's rounds crosswise past 999 captures (false FAIL) | `real-input-full-game` at 14 | Name sort | **Fixed** |
 | T3 | Tool | `analyze_rejoin.py` | Crashed on factice-role knowledge → false FAIL of `client-crash-relaunch` | Campaign | Space in values | **Fixed** |
 | O1 | Design | Tablet, 13+ roles | Role headers break mid-word | `real-input-tour` at 14 seats | ≥ 9-roles tier (18 px + tooltip) | Noted for the GD |
 | O2 | Design | Role picker | Cards partly off screen at 16:9 (more at 14 seats) | real-input warnings | Known since 10-05 | Noted |
+| O5 | Design / to check | 14 seats, real input | From some seats the far line's right-most card (7th column) is out of the seated head's reach for a first-person vote; the bot's view switch did not get it either (2 clients, `real-input-full-game` at 14, seed 680). Intermittent per seat (`real-input-big-table` seed 780 had none) | `input.miss vote … reason=out-of-reach` | Head yaw limit vs. a 7-wide line | To check with Poyo (playtest at 13-14) |
 | O3 | Design | Own card | "Moi" tag mirrored during the first flip | Captures | Tag flips with the card | Noted |
 | O4 | Design | 14 seats, host seat | A near-line vote button hidden by the power bar's 3D models from the seated view | `real-input-big-table` warning | Geometry at 14 seats | Noted |

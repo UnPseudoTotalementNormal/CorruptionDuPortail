@@ -70,6 +70,43 @@ How the value was found (kept because two first attempts were wrong, and the tes
   WAS the only thing under the reticle, but at that size and distance (~15 units) the click slid off it between press
   and release. A/B on the same build with the Dev layout: 3/3 PASS. Hence full size up to 12 seats.
 
+(Superseded by V4: measured, this layout still hid near-line vote panels at 12 seats.)
+
+### V4 — Cards, vote buttons and vote counts hidden at the table's edges (High, every table size; follow-up asked by Poyo)
+Poyo, after the PR: no card may be hidden behind anything, seated first person or top view. Measured instead of eyeballed,
+with a new probe (`AutoplayDriverVisibility`, `-autoplay-card-visibility`): each card's face, vote button and vote count
+are painted flat magenta for one frame; a sample point counts as seen when magenta reaches its pixel (a dark card reads
+like a bright one; anything drawn over the card keeps it off). Views: top, top hovered, first person with the head turned
+to each card, hovered, plus a played reticle check (aim at the card, then its vote button, with the real reticle and time
+running). It also checks where a click / a hover would land (UI raycast), since a visible button can still be unreachable.
+
+What the PR's layout (V1 + V3: full size up to 12 seats, line spacing 10.3, grid at the board's origin) still hid:
+- top view, 12 seats: the near line's vote counts under the bottom HUD and the skip button (16.7 % of the text visible),
+  their hovered vote buttons off the board (0 % clickable), the far line's hovered vote count under the near line;
+- first person: the skip button's 3D model over a near-line vote panel (90 %).
+
+Fix (`CardLayout.GridFor` / `Place`, `BoardManager.cardGridPreset`): the grid is raised towards the characters bar and the
+lines spaced so the far line's hovered vote count clears the near line; two lines need smaller cards for that to fit
+(0.86 for 7-12 seats, 0.84 for 13-14 on lines of 7), one line keeps full size. Constraints measured in game and pinned in
+`CardLayoutTests` (free band z +9.8 … −13.6 at 1600 × 900, hovered text 6.89 × scale × 1.1 under the card's centre).
+Three arrangements, Poyo picks the default: `RaisedLeft` (left-aligned as before), `Centred` (each line centred, a
+single line slightly lower), `CentredTop` (centred, a single line at the top).
+
+C1 (found by the real-input check of the raised grid, game bug): looking at the top of a far card in first person
+hovered a **characters bar portrait** behind it: the UI raycast ranks canvases by sorting order before distance and the
+portraits' canvas (order 0) outranked the cards (−1). Real-input clients could not vote for far-line cards (`out-of-reach`,
+the reticle oscillating between the card and the bar, `[AIMDBG]` trace). **Fix:** portraits at order −1, equal to the cards:
+the nearest wins (still above their plank at −100; a hovered portrait still rises to 0).
+
+Probe traps fixed on the way (each one gave false "hidden"): face-down cards (paint both sides), the card's own marks
+(healed pastille, "Moi" tag: painted as card), the user's mouse resting on the unfocused window and the seated reticle
+hovering cards while time was frozen (both switched off during the measure), dark cards on a dark table (hide-and-compare
+replaced by the paint).
+
+Not changed, for the GD: the Technomancien's beacon (a 3D pin standing on a card) hides up to 4 % of a neighbouring card's
+face, and up to 13 % of its vote count when hovered, in first person; no arrangement avoids it (its line-of-sight shadow is
+~3 board units, the gap between cards 0.7). The analyzer reports it apart (`--effects-see-through`).
+
 ### V2 — 12+ seats: the characters bar runs past the plank (Medium, visual)
 The top bar (faction groups of role portraits, HorizontalLayoutGroup, 1206 px) overflows from 12 seats (5 groups) and
 14 seats: the last group is drawn off the plank, over the robot counter panel (the Mask does not clip the portraits'
@@ -147,6 +184,13 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | After W1: `full-game-victory`, `replay-net`, `last-anomaly-leaves`, `full-game-ending` (3 clients) | victory logic regression | 4/4 PASS |
 | `replay-net` at 13 seats, `rejoin-at-night` at 14, `real-input-tour` at 14, `full-game-ending` at 5 (2 clients each) | existing regressions at the table-size extremes | 4/4 PASS |
 
+| V4 probe, `sweep_card_visibility.py` 5..14 seats, presets `Centred` (game) + `RaisedLeft` (+ `CentredTop` at 5-6), views top / top hovered / first person / hovered / played reticle | every card's face, vote button, vote count, click and hover reach | **10/10 sizes PASS** on every criterion (Technomancien's beacon reported apart, `--effects-see-through`); the PR's layout before: 16.7 % of the near-line vote count visible at 12 seats |
+| V4 probe from 3 real clients (their own seat and avatar, 8 seats) | first-person reticle, 4 layouts | 4/4 PASS on each client |
+| `real-input-actions` (3 clients) on the raised grid, before C1 | far-line votes by reticle | FAIL: every client vote for a far-line card `out-of-reach` (portrait behind the card took the hover) |
+| same after C1: `RaisedLeft` / `Centred` | | PASS / every vote a real click (only the picker tooltip issue below, seen at night too) |
+| `real-input-big-table` (14) `Centred`; 6 seats `Centred` / `CentredTop` | | every vote landed but one `no-effect` click at 14 seats (unlocked-cursor autoplay path, same flake as the night's 0.877 attempt); PASS / votes all real clicks (N11 lobby flake only) |
+| EditMode | | 649/649; `CardLayout` 54/54 |
+
 ## Tool-side noise seen in the harvest (not game bugs)
 
 - `power.timeout` in real-input runs: the host possesses several bots awake in the same layer; switching to the next
@@ -188,5 +232,9 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | O1 | Design | Tablet, 13+ roles | Role headers break mid-word | `real-input-tour` at 14 seats | ≥ 9-roles tier (18 px + tooltip) | Noted for the GD |
 | O2 | Design | Role picker | Cards partly off screen at 16:9 (more at 14 seats) | real-input warnings | Known since 10-05 | Noted |
 | O5 | Design / to check | 14 seats, real input | From some seats the far line's right-most card (7th column) is out of the seated head's reach for a first-person vote; the bot's view switch did not get it either (2 clients, `real-input-full-game` at 14, seed 680). Intermittent per seat (`real-input-big-table` seed 780 had none) | `input.miss vote … reason=out-of-reach` | Head yaw limit vs. a 7-wide line | To check with Poyo (playtest at 13-14) |
+| V4 | High | Board, every size | Near-line vote counts / hovered vote buttons under the bottom HUD and skip button (12 seats: 16.7 % of the text visible), far-line hovered vote counts under the near line, a near-line panel behind the skip button in first person | Poyo + card visibility probe (new) | Grid at the board's origin, spacing guessed | **Fixed** (raised grid, measured spacing, 0.86 / 0.84 at two lines; 3 presets for Poyo); probe 10/10 sizes |
+| C1 | High | First-person vote | Looking at the top of a far card hovered a characters bar portrait behind it; real-input clients could not vote for far-line cards | `real-input-actions` on the raised grid | Portrait canvases at order 0 over cards at −1 (UI raycast: order before distance) | **Fixed** (portraits at −1: nearest wins); `real-input-actions` PASS |
+| O6 | Design | Technomancien's beacon | The 3D pin standing on a card hides up to 4 % of the neighbouring card's face (13 % of its hovered vote count) in first person | V4 probe (`effect:Sphere`) | Pin height vs 0.7 gap between cards | Noted for the GD |
+| O7 | UI | Night picker | A tooltip opened under the pointer covers the picker card about to be clicked | real-input runs (Dev layout too, 5× that night) | Tooltip under the pointer takes the raycast | To decide with Poyo |
 | O3 | Design | Own card | "Moi" tag mirrored during the first flip | Captures | Tag flips with the card | Noted |
 | O4 | Design | 14 seats, host seat | A near-line vote button hidden by the power bar's 3D models from the seated view | `real-input-big-table` warning | Geometry at 14 seats | Noted |

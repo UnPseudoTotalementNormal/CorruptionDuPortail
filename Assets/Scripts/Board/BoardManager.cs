@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using Board;
 using Characters;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Extensions;
@@ -40,7 +41,7 @@ public class BoardManager : NetworkBehaviour
     // Story 11.2 (Epic 11 / D5): the card grid-wrap placement arithmetic extracted to a pure,
     // EditMode-tested Domain POCO. The adapter reads the scene Transforms' local positions + the
     // spacing constants and wraps the plain-float result back into a Vector3.
-    private readonly CorruptionDuPortail.Domain.CardLayout _cardLayout = new();
+    private readonly CardLayout _cardLayout = new();
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -55,18 +56,11 @@ public class BoardManager : NetworkBehaviour
     public event Action<Card> onCardSpawned;
     public event Action<Card> onCardDestroyed;
     
-    public const float CARD_SPACING = 7;
-    // The next line of cards must start below the vote panel of the line above (Poyo, 2026-10-07: with 9 it hid it).
-    // Card.prefab, card spanning z -4.40..4.40: the panel's text sits at -5.64..-4.39 when shown, the "Voter" button at
-    // -5.52..-4.52 when hovered (the text then slides to -6.89..-5.64, under the next line, unneeded while voting).
-    // So the next card's top edge (-spacing + 4.40) must stay under -5.64: 10.04, plus a small gap.
-    public const float CARD_LINE_SPACING = 10.3f;
-    // Card depth in board units, and the depth the grid may take: two full-size lines (up to 12 seats, laid out at full
-    // size: shrinking them made the far line's vote buttons too small for a first-person click, real-input-actions
-    // 2026-10-08). A grid needing more (13+ seats) shrinks. Never lifted towards the characters bar either: a first
-    // line moved there was out of the seated view's reach.
-    private const float CARD_DEPTH = 8.8f;
-    private const float MAX_GRID_DEPTH = CARD_LINE_SPACING + CARD_DEPTH;
+    // Arrangement of the cards (CardLayout): every preset keeps each card, its vote button and its vote count visible
+    // in the top view and seated first person, hovered or not, at every table size (autoplay card visibility probe,
+    // 2026-10-08). Poyo picks the default.
+    [Tooltip("How the cards are laid out on the board (all three keep every card and vote panel visible).")]
+    public CardGridPreset cardGridPreset = CardGridPreset.Centred;
     
     public bool hasAllCardsShown => visibleCards.Count == CharacterQuery.GetCharacters().Count(_c => !_c.isFake);
     
@@ -143,40 +137,22 @@ public class BoardManager : NetworkBehaviour
     
     public void PlaceAllCardsToPosition()
     {
-        float _scale = GetCardFitScale(visibleCards.Count);
-        for (var _i = 0; _i < visibleCards.Count; _i++)
+        int _count = visibleCards.Count;
+        CardGrid _grid = _cardLayout.GridFor(_count, cardGridPreset);
+        Vector3 _origin = spawnCardPosition.localPosition;
+        float _centreX = (_origin.x + maxCardPosition.localPosition.x) / 2f;
+        for (var _i = 0; _i < _count; _i++)
         {
             var _card = visibleCards[_i];
-            //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
-            Vector3 _localTargetPosition = GetCardPlacedPosition(_i, _scale);
-            
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveX(_localTargetPosition.x, 0.5f);
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveY(_localTargetPosition.y, 0.5f);
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveZ(_localTargetPosition.z, 0.5f);
-            // Bigger tables shrink every card so they all stay on the visible board. Set at once, not tweened: a card
-            // still shrinking at the vote start moved its vote button under the voter's click (autoplay, 2026-10-08).
-            _card.visualComponents.compositor.GetLayer("Transform").localScale = cardPrefab.transform.localScale * _scale;
+            CardPlacement _placement = _cardLayout.Place(_i, _count, _grid, _origin.x, _origin.y, _origin.z, _centreX);
+            var _layer = _card.visualComponents.compositor.GetLayer("Transform");
+            _layer.DOLocalMoveX(_placement.X, 0.5f);
+            _layer.DOLocalMoveY(_placement.Y, 0.5f);
+            _layer.DOLocalMoveZ(_placement.Z, 0.5f);
+            // Set at once, not tweened: a card still shrinking at the vote start moved its vote button under the
+            // voter's click (autoplay, 2026-10-08).
+            _layer.localScale = cardPrefab.transform.localScale * _grid.Scale;
         }
-    }
-
-    // Card width in board units (Card prefab renderers' bounds).
-    private const float CARD_WIDTH = 6.3f;
-
-    private float GetCardFitScale(int _cardCount)
-    {
-        return _cardLayout.FitScale(_cardCount, spawnCardPosition.localPosition.x, CARD_SPACING, CARD_LINE_SPACING,
-            maxCardPosition.localPosition.x, CARD_WIDTH, CARD_DEPTH, MAX_GRID_DEPTH);
-    }
-
-    private Vector3 GetCardPlacedPosition(int _cardIndex, float _scale)
-    {
-        Vector3 _origin = spawnCardPosition.localPosition;
-        float _maxX = _scale < 1f
-            ? _cardLayout.ScaledMaxX(_origin.x, CARD_SPACING, maxCardPosition.localPosition.x, CARD_WIDTH, _scale)
-            : maxCardPosition.localPosition.x;
-        var _placement = _cardLayout.GetPlacedPosition(
-            _cardIndex, _origin.x, _origin.y, _origin.z, CARD_SPACING * _scale, CARD_LINE_SPACING * _scale, _maxX);
-        return new Vector3(_placement.X, _placement.Y, _placement.Z);
     }
 
     public async UniTask ShowAllPlayerCards(bool _forceRefresh = false, bool _stopOtherAnims = true)

@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using Characters.Powers;
 using DG.Tweening;
 using Extensions;
 using FMODUnity;
@@ -33,6 +34,13 @@ namespace Board.UI.PowerBar
         [SerializeField] private float clickPunchIntensity = 0.18f;
         [SerializeField] private float clickPunchDuration = 0.25f;
 
+        // APPENDED (board T2) — a one-shot copied power is coated in slime (see SingleUseSlimeMark).
+        [Header("Single-use copy")]
+        [SerializeField] private Material singleUseCoatMaterial;
+        [SerializeField] private GameObject singleUseDripPrefab;
+
+        private Power stolenCopyWatched;
+
         private Transform powerViusalTransform;
         private Transform powerColliderTransform;
 
@@ -60,6 +68,12 @@ namespace Board.UI.PowerBar
                 
                 power.onStartUse += StartUsePower;
                 power.onStopUse += StopUsePower;
+
+                // A copy is flagged one-shot by its grant hook AFTER it spawned: the bar may already show it, so the
+                // slime follows the flag instead of being decided once here.
+                UnwatchStolenCopy();
+                stolenCopyWatched = power;
+                power.isStolenCopy.OnValueChanged += OnStolenCopyChanged;
             }
 
             if (powerViusalTransform != null)
@@ -94,6 +108,11 @@ namespace Board.UI.PowerBar
             {
                 Destroy(_collider);
             }
+
+            if (power.isStolenCopy.Value)
+            {
+                ApplySingleUseMark();
+            }
         }
         
         private static void ResetLocalPositionAndScale(Transform _transform)
@@ -110,6 +129,36 @@ namespace Board.UI.PowerBar
                 power.onStartUse -= StartUsePower;
                 power.onStopUse -= StopUsePower;
             }
+            UnwatchStolenCopy();
+        }
+
+        // SetPower can swap the power under an existing bar object: never leave the previous power's flag driving it.
+        private void UnwatchStolenCopy()
+        {
+            if (stolenCopyWatched != null)
+            {
+                stolenCopyWatched.isStolenCopy.OnValueChanged -= OnStolenCopyChanged;
+            }
+            stolenCopyWatched = null;
+        }
+
+        private void OnStolenCopyChanged(bool _previous, bool _isStolenCopy)
+        {
+            if (_isStolenCopy)
+            {
+                wasStolenCopy = true;
+                ApplySingleUseMark();
+            }
+        }
+
+        private void ApplySingleUseMark()
+        {
+            SingleUseSlimeMark.Apply(powerViusalTransform, singleUseCoatMaterial, singleUseDripPrefab);
+        }
+
+        protected override void OnAnimateOut()
+        {
+            SingleUseSlimeMark.ReleaseDrips(powerViusalTransform);
         }
 
         private void SetTooltip()

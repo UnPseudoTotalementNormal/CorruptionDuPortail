@@ -55,6 +55,15 @@ namespace Board.UI.CharacterBar
             CharacterQuery.onCharactersListUpdated += OnCharacterListUpdated;
         }
 
+        private void OnDestroy()
+        {
+            // Same family as PowersBar (N5): never leave a destroyed bar subscribed to a manager that may outlive it.
+            if (characterManager != null)
+            {
+                CharacterQuery.onCharactersListUpdated -= OnCharacterListUpdated;
+            }
+        }
+
         private void OnCharacterListUpdated(List<Character> _characters)
         {
             foreach (var _character in _characters)
@@ -254,7 +263,33 @@ namespace Board.UI.CharacterBar
             if (charactersBarParent is RectTransform _parentRect)
             {
                 UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(_parentRect);
+                FitToAvailableWidth(_parentRect);
             }
+        }
+
+        // Large tables (12+ seats: 4-5 faction groups) are wider than the plank: the icons ran past its right end and
+        // over the robot panel (the Mask does not clip the icons' nested Canvases). Shrink the whole row to fit,
+        // widening the stretched rect by the same factor so the layout keeps the full plank width to work with.
+        private void FitToAvailableWidth(RectTransform _layoutRect)
+        {
+            if (!(_layoutRect.parent is RectTransform _container))
+            {
+                return;
+            }
+
+            float _available = _container.rect.width;
+            float _content = UnityEngine.UI.LayoutUtility.GetPreferredWidth(_layoutRect);
+            float _scale = _content > _available && _content > 0f ? _available / _content : 1f;
+            if (Mathf.Approximately(_scale, _layoutRect.localScale.x))
+            {
+                return;
+            }
+
+            float _extra = _available / _scale - _available;
+            _layoutRect.localScale = new Vector3(_scale, _scale, 1f);
+            _layoutRect.offsetMin = new Vector2(-_extra / 2f, _layoutRect.offsetMin.y);
+            _layoutRect.offsetMax = new Vector2(_extra / 2f, _layoutRect.offsetMax.y);
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(_layoutRect);
         }
 
         private async UniTaskVoid RebuildLayoutDeferred()

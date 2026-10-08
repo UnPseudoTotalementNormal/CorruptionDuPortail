@@ -12,7 +12,8 @@
         "TNRD.NSubstitute",
         "Unity.Collections",
         "Unity.Netcode.Runtime",
-        "AYellowpaper.SerializedCollections"
+        "AYellowpaper.SerializedCollections",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

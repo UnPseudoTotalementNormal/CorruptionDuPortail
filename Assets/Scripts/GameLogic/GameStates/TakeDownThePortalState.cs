@@ -308,8 +308,16 @@ namespace GameLogic.GameStates
 
         private async UniTaskVoid WaitForCardsToBeVisible()
         {
+            int _from = gameManager.currentGameStateIndex.Value;
             await UniTask.WaitForSeconds(3);
-            await UniTask.WaitUntil(() => boardManager.visibleCards.Count > 0);
+            await UniTask.WaitUntil(() => boardManager == null || boardManager.visibleCards.Count > 0);
+            // The step may have been left during the wait (the Mage left, a leave victory): opening the portal
+            // selection now would highlight the cards in the next phase and wait on a gone Mage (N3, same as N2).
+            if (boardManager == null || gameManager.currentGameStateIndex.Value != _from)
+            {
+                Debug.Log($"[LEAVE] TakeDownThePortal: step {_from} was left during the card wait — selection not opened.");
+                return;
+            }
             WaitForCharacterClickServer();
         }
 

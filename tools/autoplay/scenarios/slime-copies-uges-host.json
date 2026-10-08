@@ -1,0 +1,68 @@
+{
+  "name": "slime-copies-uges-host",
+  "goal": "Board T2: Ugës held by the host (the copy is flagged one-shot after the host already built its bar) steals Gloubi's Soin Baveux over Relay; every one-shot copy on his table wears the slime coat + live drips, no normal power does (analyze_slime.py on the exported powerBar), copy budget unchanged (analyze_copies.py), no desync, no error. Filmed on every process.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 901,
+  "seedRetries": 4,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-force-roles",
+    "Imposteur,Gloubi",
+    "-autoplay-role-holder",
+    "host,bot",
+    "-autoplay-steal",
+    "Soin",
+    "-autoplay-max-days",
+    "3",
+    "-autoplay-fast-fakes",
+    "-autoplay-vote-probability",
+    "0",
+    "-autoplay-vote-skip-cast",
+    "-autoplay-fast-phases",
+    "Intro|Chaining|Vote",
+    "-autoplay-fast-timescale",
+    "12",
+    "-autoplay-net-log"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "power.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "desync",
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+        "ClientLoadedSynchronization"
+      ]
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_slime.py {run} --min-marked 3"
+    },
+    {
+      "type": "analyzer",
+      "cmd": "python -X utf8 tools/autoplay/analyze_copies.py {run} --expect-use Soin --expect-seat host --min-day 2"
+    }
+  ],
+  "clientArgs": [
+    "-autoplay-png"
+  ],
+  "video": true
+}

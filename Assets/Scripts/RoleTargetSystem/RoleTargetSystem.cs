@@ -17,11 +17,24 @@ namespace RoleTarget
         
         public List<TargetingData> currentTargetingDataList = new();
 
+        // Published in Awake (scene load) as well as on spawn: consumers resolve it in their own OnNetworkSpawn, and
+        // in-scene objects spawn in no guaranteed order (RobotBoardInfo spawning first kept a null reference all game).
+        private void Awake()
+        {
+            if (instance != null && instance != this)
+            {
+                return;
+            }
+            instance = this;
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
-            if (instance != null && instance != this)
+            // A spawned system wins over one that only went through Awake (a template never spawned): the
+            // executors resolve it server-side.
+            if (instance != null && instance != this && instance.IsSpawned)
             {
                 return;
             }

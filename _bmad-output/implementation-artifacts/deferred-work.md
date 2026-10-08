@@ -300,3 +300,10 @@ Constats réels mais **non causés** par ce chantier, ou hors de son périmètre
 - **[AMÉLIORATION] Aucun feedback joueur sur `RelayConnectResult.Failed(null)`** (allocation UGS down, endpoint absent, StartClient refusé) : `AbortJoin(null)`/throw générique → le joueur retombe au menu sans explication (log `[RELAY]` seul). Mapper null → message générique au call site.
 - **[AMÉLIORATION] Pas de CancellationToken dans le flux join** (pré-existant, allongé par le fallback : pire cas ~70 s non annulable). Le threader exigerait de toucher `WaitForConnectedOrTimeout` (Ask First). Un bouton annuler sur l'overlay de chargement irait avec.
 - **[PRÉ-EXISTANT] Réentrance cross-panels** : `MainMenu._isBusy` et `LobbySelectionPanel._isJoining` sont des gardes indépendantes ; deux joins simultanés depuis les deux panels peuvent se marcher dessus (Shutdown croisé + latch statique togglé). Fenêtre allongée par le fallback. Garde statique partagée à envisager.
+
+- 2026-10-07 (seen during T2 autoplay `slime-copies-uges`, Relay): `LobbyManager.StartLobbyPolling` → `RefreshLobby` →
+  UGS `WrappedLobbyService.GetLobbyAsync` throws a NullReferenceException inside the SDK (`TryCatchRequest`), logged
+  « Échec du polling du lobby », once per process mid-game (day 1 vote recap). Pre-existing, not caused by T2. Investigate
+  (lobby deleted / service state after the game started?) before ignoring it in Relay scenarios.
+  **Resolved 2026-10-08** (bug hunt L1): transient failure inside the SDK; polling + heartbeat now retry, no player
+  notification during a running session (`bug-hunt-2026-10-08-night.md`).

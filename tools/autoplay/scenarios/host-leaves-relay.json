@@ -1,0 +1,55 @@
+{
+  "name": "host-leaves-relay",
+  "goal": "Over Unity Relay (real UGS lobby), the host leaves during day 1's vote through Leave: it deletes the cloud lobby while every client removes itself from it. Whichever lands first, no client may show an error notification ('Impossible de quitter le lobby', lobby not found) nor keep polling the deleted lobby; every client reaches the menu cleanly.",
+  "mode": "net",
+  "clients": 2,
+  "seed": 710,
+  "timescale": 3,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-host-quit-at",
+    "VoteState day=1",
+    "-autoplay-expect-host-loss",
+    "-autoplay-fast-fakes",
+    "-autoplay-chat",
+    "-autoplay-net-log"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "leave",
+      "detail": "host leaves at 7:VoteState day=1",
+      "process": "host",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "host.lost",
+      "process": "every-client",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "event",
+      "kind": "host.lost.menu",
+      "detail": "menu=reached notification=hidden",
+      "process": "every-client",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

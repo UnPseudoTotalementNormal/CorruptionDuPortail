@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using Board;
 using Characters;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Extensions;
@@ -40,7 +41,7 @@ public class BoardManager : NetworkBehaviour
     // Story 11.2 (Epic 11 / D5): the card grid-wrap placement arithmetic extracted to a pure,
     // EditMode-tested Domain POCO. The adapter reads the scene Transforms' local positions + the
     // spacing constants and wraps the plain-float result back into a Vector3.
-    private readonly CorruptionDuPortail.Domain.CardLayout _cardLayout = new();
+    private readonly CardLayout _cardLayout = new();
     
     public Transform spawnCardPosition;
     public Transform maxCardPosition; //cards will overflow past this point
@@ -55,8 +56,11 @@ public class BoardManager : NetworkBehaviour
     public event Action<Card> onCardSpawned;
     public event Action<Card> onCardDestroyed;
     
-    public const float CARD_SPACING = 7;
-    public const float CARD_LINE_SPACING = 9;
+    // Arrangement of the cards (CardLayout): every preset keeps each card, its vote button and its vote count visible
+    // in the top view and seated first person, hovered or not, at every table size (autoplay card visibility probe,
+    // 2026-10-08). Poyo picks the default.
+    [Tooltip("How the cards are laid out on the board (all three keep every card and vote panel visible).")]
+    public CardGridPreset cardGridPreset = CardGridPreset.Centred;
     
     public bool hasAllCardsShown => visibleCards.Count == CharacterQuery.GetCharacters().Count(_c => !_c.isFake);
     
@@ -133,24 +137,22 @@ public class BoardManager : NetworkBehaviour
     
     public void PlaceAllCardsToPosition()
     {
-        for (var _i = 0; _i < visibleCards.Count; _i++)
+        int _count = visibleCards.Count;
+        CardGrid _grid = _cardLayout.GridFor(_count, cardGridPreset);
+        Vector3 _origin = spawnCardPosition.localPosition;
+        float _centreX = (_origin.x + maxCardPosition.localPosition.x) / 2f;
+        for (var _i = 0; _i < _count; _i++)
         {
             var _card = visibleCards[_i];
-            //_card.transform.DOLocalMove(new Vector3(spawnCardPosition.localPosition.x + _i * CARD_SPACING, 0, 0), 0.5f);
-            Vector3 _localTargetPosition = GetCardPlacedPosition(_i);
-            
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveX(_localTargetPosition.x, 0.5f);
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveY(_localTargetPosition.y, 0.5f);
-            _card.visualComponents.compositor.GetLayer("Transform").DOLocalMoveZ(_localTargetPosition.z, 0.5f);
+            CardPlacement _placement = _cardLayout.Place(_i, _count, _grid, _origin.x, _origin.y, _origin.z, _centreX);
+            var _layer = _card.visualComponents.compositor.GetLayer("Transform");
+            _layer.DOLocalMoveX(_placement.X, 0.5f);
+            _layer.DOLocalMoveY(_placement.Y, 0.5f);
+            _layer.DOLocalMoveZ(_placement.Z, 0.5f);
+            // Set at once, not tweened: a card still shrinking at the vote start moved its vote button under the
+            // voter's click (autoplay, 2026-10-08).
+            _layer.localScale = cardPrefab.transform.localScale * _grid.Scale;
         }
-    }
-
-    private Vector3 GetCardPlacedPosition(int _cardIndex)
-    {
-        Vector3 _origin = spawnCardPosition.localPosition;
-        var _placement = _cardLayout.GetPlacedPosition(
-            _cardIndex, _origin.x, _origin.y, _origin.z, CARD_SPACING, CARD_LINE_SPACING, maxCardPosition.localPosition.x);
-        return new Vector3(_placement.X, _placement.Y, _placement.Z);
     }
 
     public async UniTask ShowAllPlayerCards(bool _forceRefresh = false, bool _stopOtherAnims = true)

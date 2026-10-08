@@ -86,8 +86,8 @@ def main():
         print(f"{n:>4} {kind:5} {s_set['pickableCount']:>8} {s_set['liftedCount']:>13} {s_set['frostAlpha']:>12.2f}  "
               f"{verdict:7}  {opener.get(n, '?')}")
         for problem in problems:
-            png = os.path.splitext(p_set)[0] + ".png"
-            print(f"       - {problem}  (look: {os.path.basename(png) if os.path.exists(png) else 'no png'})")
+            shot = next((s for s in (os.path.splitext(p_set)[0] + e for e in (".jpg", ".png")) if os.path.exists(s)), None)
+            print(f"       - {problem}  (look: {os.path.basename(shot) if shot else 'no screenshot'})")
 
     print(f"{len(bursts)} openings, {failures} failing, {incomplete} incomplete (not judged)")
     sys.exit(1 if failures else 0)

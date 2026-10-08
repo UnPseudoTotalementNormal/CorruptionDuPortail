@@ -47,7 +47,10 @@ new forced-composition option), then run. Afterwards, check in the logs that the
 - Stopping a campaign on Windows: `TaskStop` leaves the child bash / python / powershell / game processes alive: kill
   them by command line too, and check nothing is left before launching again (launchers queue, but orphans keep going).
 - Use `tools/autoplay/unityctl.sh` (wrapper of the package CLI): `compile`, `editmode`, `build`, `play-build`,
-  `last-run`. Never recompile while a PlayMode run is in flight.
+  `last-run`, `prune`, `park`, `unpark`. Never recompile while a PlayMode run is in flight.
+- **Disk.** Screenshots are JPEG; `play-build` / `play-net` first drop the images of PASSED runs older than 2 days in
+  every checkout (`unityctl.sh prune [days] [--dry-run]`; failed / unjudged runs keep everything). A worktree costs
+  ~4 GB of `Library` on top: see § 6 when its work is merged.
 
 ## 3. Pick the run mode
 
@@ -163,12 +166,17 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `copies-uges-client` | Ugës (vrai client) vole Soin Baveux : rien la nuit du vol, une copie par nuit ensuite, copie dépensée disparue partout, pairs d'accord | réseau, 2 clients | PASS 2026-10-07 |
 | `copies-uges-real-input` | même chose par vraies entrées : Ugës clique ses copies dans la barre de pouvoirs (nuits 2, 3, 4), aucun clic raté | réseau, 2 clients | PASS 2026-10-07 |
 | balayage des copies (`sweep_copies.py`) | Ugës vole chacun des 11 pouvoirs actifs d'élu, Luma copie chaque élu factice, l'Incomplet en Ugës / Luma, Ugës hôte, faux Ugës (couche non instantanée), rejoin d'Ugës, 8 chaînes de copieurs dans les deux ordres | réseau, 2 clients | 33/33 cas 2026-10-07 (3 échecs d'outil corrigés puis rejoués, 1 non couvert : Ugës enchaîné par Abyss la nuit 1, rejoué avec une autre graine) |
+| `host-leaves-relay` | en Relay (vrai lobby UGS), l'hôte quitte au vote : il supprime le lobby pendant que chaque client le quitte ; aucune notification « Impossible de quitter le lobby », plus de polling | réseau, 2 clients, Relay | PASS ×2 2026-10-08 (FAIL 2/2 clients avant le correctif L2) |
+| balayage des tailles de table (`sweep_table_sizes.py`) | une partie complète par nombre de places (5 à 14, preset classique) | build | 9/9 2026-10-08 après R1 (13 places : 8 NRE avant) ; captures : cartes hors écran à 13-14 et barre qui déborde dès 12 avant V1/V2 ; + rejouer à 13, rejoin de nuit à 14, tournée UI à 14, fin de partie à 5 : 4/4 |
+| balayage réseau aléatoire (`sweep_random_net.py`) | parties réseau complètes de 5 à 14 places, une sur deux en Relay, chat | réseau, 2 clients | 10/10 2026-10-08 (0 erreur, 0 désync) |
+| `real-input-big-table` | `real-input-actions` à 14 places : grille réduite (V1) et rangées espacées pour les panneaux de vote (V3), chaque clic réel porte | réseau, 2 clients | PASS 2026-10-08 (graine 780 ; 777 finit la nuit 1) |
+| balayage de visibilité des cartes (`sweep_card_visibility.py`) | chaque carte, bouton « Voter » et compteur de votes vus, cliquables et survolables, vue de dessus et première personne (survolée ou non, réticule joué), 5 à 14 places, par disposition | build (sonde `-autoplay-card-visibility`) | 10/10 tailles PASS 2026-10-08 (préréglages `Centred` + `RaisedLeft`, balise du Technomancien à part) ; disposition d'avant : 16,7 % du compteur visible à 12 places |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
-| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 45/48 2026-10-07 (3 échecs = outil : T8, T9 corrigés, `real-input-lobby` instable) |
-| `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 3/3 2026-10-07 après le correctif du clic doublé (réticule + module UI, curseur libre) ; `analyze_duplicate_votes.py` exige un vote par clic (FAIL sur le run d'avant le correctif) |
+| campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 55/57 2026-10-08 (2 échecs = outil : analyseur de rejoin T3 corrigé, `lobby-ready` instable N11) ; 45/48 2026-10-07 |
+| `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 3/3 2026-10-07 après le correctif du clic doublé (réticule + module UI, curseur libre) ; `analyze_duplicate_votes.py` exige un vote par clic (FAIL sur le run d'avant le correctif) ; PASS 3/3 2026-10-08 avec les rangées espacées (V3 : a attrapé 2 premières versions fautives, votes hors de portée puis clics perdus sur la rangée du fond) |
 | `real-input-mask` | un bouton de sommeil masqué fait échouer le scénario (`input.miss hit=AutoplayMask`) | build | PASS 2026-10-05 |
 | `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
-| `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) |
+| `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) ; PASS dans la campagne 2026-10-08 |
 | `real-input-menu` | premier écran capturé ; la notification de refus passe au-dessus de l'écran de connexion et se ferme au clic | réseau, 3 clients | PASS 2026-10-05 |
 
 ### Not covered? Extend, do not hand it back
@@ -185,7 +193,7 @@ and then say which extension would cover it (and add it to the backlog table).
 1. `tools/autoplay/unityctl.sh last-run` (outcome, trace, counters, deduplicated errors).
 2. Goal-specific analysis over the state files (e.g. `python -X utf8 tools/autoplay/analyze_picker.py <run>`); write a
    small analyzer for a new kind of goal rather than reading hundreds of files.
-3. Look at **a few targeted PNGs** only (the ones an analysis flags, plus one passing example) — never all of them.
+3. Look at **a few targeted captures** (`NNN-label.jpg`, `.png` in older runs) only (the ones an analysis flags, plus one passing example) — never all of them.
 
 ## 5. Answer
 
@@ -195,3 +203,22 @@ and then say which extension would cover it (and add it to the backlog table).
   **tool problems** (fix them), and **design observations** (overlaps, layout — report only, design is owned by the
   game designer).
 - Never commit `AutoplayRuns/` or editor import noise; stage explicit files only, and only when the user says so.
+
+## 6. Work merged → park the worktree (reversible)
+
+Once the PR is merged and nothing needs the editor any more:
+
+1. Stop this worktree's headless editor (and kill leftover game / launcher processes by command line).
+2. `tools/autoplay/unityctl.sh park`: deletes `Library` + `Temp` (~4 GB). Code, branch, `Builds/` and `AutoplayRuns/`
+   stay; it refuses on the main checkout or while an editor holds the checkout. Say it in the answer.
+
+Resuming in the same conversation (the user wants more after the merge):
+
+1. Git: a squash-merged PR is finished, restart the branch from Dev (`git fetch origin Dev && git checkout -B
+   <branch> origin/Dev`; rebase any unmerged commits onto it instead of discarding them).
+2. `tools/autoplay/unityctl.sh unpark`: re-seeds `Library` from the main checkout (~20 s, no full reimport), then
+   relaunch the headless editor (`tools/HEADLESS_UNITY.md` § 1) and `unityctl.sh compile`. `play-build` on the existing
+   build works even before that.
+
+Never delete a worktree folder that contains an NTFS junction: `git worktree remove --force` deletes **through** it
+(verified: the junction's target was emptied).

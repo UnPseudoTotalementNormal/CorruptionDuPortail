@@ -144,6 +144,7 @@ The Relay join path did not set `everConnected`, so a client that lost its host 
 | Phase sweeps at 13 seats (`sweep_phases.py`, 4 templates × 7 phases, seeds 860-866) | leave / rejoin / host leave / host crash at every phase of the day at a big table | host leave 7/7, host crash 7/7; leave 6/7 + rejoin 5/7: seed 865 = the game ended at day 1 by a Robot "victory" (W1); seed 861 (rejoin at the awakening, FAIL 3/3): same early end. **Both were W1** (the Robot "won" because the host's Dr Gloubi was chained), found at 05:40 |
 | Final soak on the PR build: `sweep_random_net.py` 10 games, 5..14 seats, seeds 700-709, every other one over Relay | | **10/10, empty harvest** (0 error, 0 desync, no miss) |
 | `real-input-full-game` at 14 seats, 3 clients, seed 680, play again (after W1) | the hang's own scenario | both games played to their end (anomalies, then the Robot at day 9 — chained), same winners on every process once T4 fixed, 0 desync; misses: O2 picker cards, O5 far-right vote, N11 lobby |
+| After W1: `full-game-victory`, `replay-net`, `last-anomaly-leaves`, `full-game-ending` (3 clients) | victory logic regression | 4/4 PASS |
 | `replay-net` at 13 seats, `rejoin-at-night` at 14, `real-input-tour` at 14, `full-game-ending` at 5 (2 clients each) | existing regressions at the table-size extremes | 4/4 PASS |
 
 ## Tool-side noise seen in the harvest (not game bugs)

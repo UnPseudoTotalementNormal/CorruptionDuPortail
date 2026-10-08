@@ -121,22 +121,22 @@ namespace Board.UI.VoteCanvas
 
         private void OnCardHovered(Card _card)
         {
-            rectTransform.DOAnchorPos(Vector2.zero, 0.5f).SetEase(Ease.OutQuint);
+            rectTransform.DOAnchorPos(Vector2.zero, 0.5f).SetEase(Ease.OutQuint).SetLink(gameObject);
         }
 
         private void OnCardUnhovered(Card _card)
         {
-            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint);
+            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint).SetLink(gameObject);
         }
         
         public void ShowCanvas()
         {
-            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint);
+            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y / 2f, 0.5f).SetEase(Ease.OutQuint).SetLink(gameObject);
         }
 
         public void HideCanvas()
         {
-            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y, 0.5f).SetEase(Ease.OutQuint);
+            rectTransform.DOAnchorPos(moveDirection * rectTransform.sizeDelta.y, 0.5f).SetEase(Ease.OutQuint).SetLink(gameObject);
         }
     }
 }

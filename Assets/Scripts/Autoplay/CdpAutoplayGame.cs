@@ -1481,6 +1481,8 @@ namespace Autoplay
                        characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
             }, 150f, "relay: the client never joined the lobby's game through Relay");
             if (_context.Failed) yield break;
+            // Same as the direct connect: host-loss expectations (expect-host-loss) only arm once connected.
+            everConnected = true;
             _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through Relay (lobby {_code})");
         }
 

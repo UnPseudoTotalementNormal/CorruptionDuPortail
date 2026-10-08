@@ -50,6 +50,7 @@ None of these fits → stop and ask a human.
 - Depend on the **narrow slice** (`IGameLoop`, `IGameStateQuery`, `ICharacterQuery`, `ICharacterCommand`, `IRevealService`), never the manager.
 - `CompositionRoot.For(nm)` is the **only** sanctioned static. Call it only in `OnNetworkSpawn`, against `base.NetworkManager`, **never `NetworkManager.Singleton`** (wrong graph in the 2-NM test fixture).
 - **No NGO spawn order.** Resolving a *peer manager* via `For(nm)` inside `OnNetworkSpawn` races → scene-wire it as a lane-A `[SerializeField]` instead. Never read another replica's resolved fields during your own spawn.
+- A grandfathered singleton served by `CompositionRoot` must be **published in `Awake`**, not in its own `OnNetworkSpawn`: in-scene objects spawn in no guaranteed order, so a consumer resolving it in its `OnNetworkSpawn` caches null for the whole game (`RobotBoardInfo` ← `RoleTargetSystem`, 2026-10-08). A spawned instance still takes over one that only ran `Awake` (test templates).
 - Fail loud: `Assert.IsNotNull(dep, "<dep> not wired")` after each resolution. **No `?? X.instance` fallback.**
 - Never add a new `static instance`. Grandfathered façades (`GameManager.instance`, `CharacterManager.instance` for static win-rule machinery; `GameAudioManager`, `LobbyManager`, `InputManager`) are not an invitation.
 - `GameManager` owns `currentGameStateIndex` + `OnEnd → write NV → OnStart` sequencing by design. Don't "finish removing" it.
@@ -67,6 +68,9 @@ Unity serializes by **name**. Append new fields; never rename/reorder/retype (re
 Every subscribe has a mirrored unsubscribe on the **cached** target: spawned replicas in `OnNetworkDespawn`; instantiated-not-spawned objects (`StateUI` subclasses) in `OnDestroy`.
 
 ## NGO gotchas found the hard way
+
+- **Async client flows that await an animation re-check they are still current** before wiring anything (vote panels, portal selection, recaps): a leave victory or the host ending the game moves the loop meanwhile. Key the check on the peer's own `OnEndStateClient` (epoch) or the state type, never on `IsStateActive()` (two `ChainingState` instances) — N2, N3, N12.
+- **UGS Lobby calls fail transiently** (the SDK even throws a `NullReferenceException` from `TryCatchRequest` on an error without body): loops (polling, heartbeat) retry inside the loop and report only a lasting failure; leaving / deleting treats `LobbyNotFound` as done (the host deletes the lobby while clients leave it).
 
 - **`ConnectionApproval` must be set identically on host and client**, else NGO rejects every join. Host-only playtests hide it (BootScene serialized `true` + guard test).
 - **Join handshake:** after `WaitForConnectedOrTimeout`, NGO has already loaded GameScene and unloaded the menu. Never raw `LoadScene` (destroys NetworkObjects), no UI in the continuation, no `Shutdown` in a generic `catch`.

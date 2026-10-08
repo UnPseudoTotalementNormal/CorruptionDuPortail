@@ -275,7 +275,15 @@ namespace GameLogic.GameStates
         {
             try
             {
+                int _epoch = clientVoteEpoch;
                 await boardManager.ShowAllPlayerCards();
+                // The vote may have ended during the cards' animation (a leave victory, the host ending the game):
+                // its panels would then open on the next phase's board, wired to a closed vote (N2 / N3 family).
+                // Keyed on this peer's own OnEndStateClient, not on a replicated value that could arrive later.
+                if (boardManager == null || clientVoteEpoch != _epoch)
+                {
+                    return;
+                }
 
                 foreach (var _c in boardManager.visibleCards)
                 {
@@ -296,9 +304,13 @@ namespace GameLogic.GameStates
             }
         }
 
+        // Bumped when this peer leaves the vote: an ActivateVoteUI still awaiting the cards then knows it is stale.
+        private int clientVoteEpoch;
+
         public override void OnEndStateClient()
         {
             base.OnEndStateClient();
+            clientVoteEpoch++;
             
             boardManager.visibleCards.ForEach(_c => _c.voteCanvas.DeactivateVoteCanvas());
         }

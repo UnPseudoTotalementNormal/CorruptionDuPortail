@@ -305,3 +305,5 @@ Constats réels mais **non causés** par ce chantier, ou hors de son périmètre
   UGS `WrappedLobbyService.GetLobbyAsync` throws a NullReferenceException inside the SDK (`TryCatchRequest`), logged
   « Échec du polling du lobby », once per process mid-game (day 1 vote recap). Pre-existing, not caused by T2. Investigate
   (lobby deleted / service state after the game started?) before ignoring it in Relay scenarios.
+  **Resolved 2026-10-08** (bug hunt L1): transient failure inside the SDK; polling + heartbeat now retry, no player
+  notification during a running session (`bug-hunt-2026-10-08-night.md`).

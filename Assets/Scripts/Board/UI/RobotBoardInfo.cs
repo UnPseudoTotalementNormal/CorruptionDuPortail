@@ -25,7 +25,9 @@ namespace Board.UI
         private IGameStateQuery Query => gameManager;
         private IGameLoop Loop => gameManager;
         // Story 10.2 lane C: the targeting system, resolved through the composition root in OnNetworkSpawn
-        // (RoleTargetSystem stays a singleton — not de-singletonised), consumed by AskForNewTextRpc.
+        // (RoleTargetSystem stays a singleton — not de-singletonised), consumed by AskForNewTextRpc. RoleTargetSystem
+        // now publishes its singleton in Awake: it used to do so in its own OnNetworkSpawn, and when this board spawned
+        // first the field stayed null all game (NRE at every night's end, robot counter stuck; autoplay 2026-10-07).
         private RoleTargetSystem roleTargetSystem;
 
         private void Start()
@@ -70,6 +72,11 @@ namespace Board.UI
             if (!_robot)
             {
                 SetShownText("0");
+                return;
+            }
+            if (roleTargetSystem == null)
+            {
+                Debug.LogWarning("[RobotBoardInfo] no RoleTargetSystem — robot counter not updated this night.");
                 return;
             }
             var _targetingDatas = roleTargetSystem.GetAllTargetersForTarget(_robot.ownerClientId.Value);

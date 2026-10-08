@@ -333,6 +333,14 @@ namespace Network.Services
             }
             catch (LobbyServiceException e)
             {
+                // Leaving is final whatever the service says: never keep polling / heartbeating a lobby we left.
+                ForgetCurrentLobby();
+                // Already gone (the host deleted it on a graceful end, or it expired): that IS the outcome wanted.
+                if (e.Reason == LobbyExceptionReason.LobbyNotFound)
+                {
+                    Debug.Log($"Lobby déjà fermé en le quittant: {e.Message}");
+                    return;
+                }
                 Debug.LogError($"Échec de quitter le lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de quitter le lobby: {e.Message}");
             }
@@ -359,9 +367,27 @@ namespace Network.Services
             }
             catch (LobbyServiceException e)
             {
+                ForgetCurrentLobby();
+                if (e.Reason == LobbyExceptionReason.LobbyNotFound)
+                {
+                    Debug.Log($"Lobby déjà supprimé: {e.Message}");
+                    return;
+                }
                 Debug.LogError($"Échec de suppression du lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de supprimer le lobby: {e.Message}");
             }
+        }
+
+        private void ForgetCurrentLobby()
+        {
+            StopHeartbeat();
+            StopLobbyPolling();
+            if (currentLobby == null)
+            {
+                return;
+            }
+            currentLobby = null;
+            OnLobbyLeft?.Invoke();
         }
 
         // Leave the cloud lobby cleanly on the way out. If we are the host, DELETE the whole lobby now
@@ -391,6 +417,7 @@ namespace Network.Services
 
             heartbeatCancellation = new CancellationTokenSource();
             CancellationToken _token = heartbeatCancellation.Token;
+            int _consecutiveFailures = 0;
 
             try
             {
@@ -401,26 +428,38 @@ namespace Network.Services
                     // Seul l'host du lobby peut heartbeat ; un client non-host déclenche
                     // "only lobby host can send heartbeat" côté service. Revérifié à chaque
                     // itération car l'host peut changer (migration).
-                    if (currentLobby != null && IsLobbyHost)
+                    if (currentLobby == null || !IsLobbyHost)
+                    {
+                        continue;
+                    }
+
+                    // Same rule as the polling: one failed ping used to stop the heartbeat for good, so the
+                    // lobby expired ~30 s later although the host was fine. Retry; report a lasting failure only.
+                    try
                     {
                         await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
-                        Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby.Name}");
+                        _consecutiveFailures = 0;
+                        Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby?.Name}");
+                    }
+                    catch (Exception e) when (!(e is OperationCanceledException))
+                    {
+                        _consecutiveFailures++;
+                        Debug.LogWarning($"Heartbeat du lobby en échec ({_consecutiveFailures}/{MaxConsecutivePollFailures}): {e.Message}");
+                        if (_consecutiveFailures >= MaxConsecutivePollFailures)
+                        {
+                            Debug.LogError($"Échec du heartbeat: {e}");
+                            if (!IsNetworkSessionRunning())
+                            {
+                                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
+                            }
+                            return;
+                        }
                     }
                 }
             }
             catch (OperationCanceledException)
             {
                 // Normal lors de l'arrêt (annulation du heartbeat) : sortie silencieuse
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.LogError($"Échec du heartbeat: {e.Message}");
-                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Erreur inattendue dans le heartbeat: {e}");
-                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
             }
         }
 
@@ -437,6 +476,7 @@ namespace Network.Services
 
             pollCancellation = new CancellationTokenSource();
             CancellationToken _token = pollCancellation.Token;
+            int _consecutiveFailures = 0;
 
             try
             {
@@ -444,12 +484,41 @@ namespace Network.Services
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(LOBBY_POLL_INTERVAL), cancellationToken: _token);
 
-                    if (currentLobby != null)
+                    if (currentLobby == null)
                     {
-                        var updatedLobby = await RefreshLobby(currentLobby.Id);
-                        if (updatedLobby != null)
+                        continue;
+                    }
+
+                    // One failed poll must not end the loop nor reach the player: the UGS SDK throws on transient
+                    // failures (a NullReferenceException inside WrappedLobbyService.TryCatchRequest when an error
+                    // response has no readable body, rate limits, network blips). Before, the first one stopped the
+                    // polling for good and popped "Connexion au lobby perdue: Object reference not set…" mid-game
+                    // (found by autoplay, 2026-10-07). Retry, and report only a lasting failure.
+                    string _lobbyId = currentLobby.Id;
+                    try
+                    {
+                        var _updatedLobby = await LobbyService.Instance.GetLobbyAsync(_lobbyId);
+                        _consecutiveFailures = 0;
+                        if (currentLobby != null && currentLobby.Id == _lobbyId)
                         {
-                            OnLobbyUpdated?.Invoke(updatedLobby);
+                            currentLobby = _updatedLobby;
+                            OnLobbyUpdated?.Invoke(_updatedLobby);
+                        }
+                    }
+                    catch (Exception e) when (!(e is OperationCanceledException))
+                    {
+                        _consecutiveFailures++;
+                        Debug.LogWarning($"Polling du lobby en échec ({_consecutiveFailures}/{MaxConsecutivePollFailures}): {e.Message}");
+                        if (_consecutiveFailures >= MaxConsecutivePollFailures)
+                        {
+                            Debug.LogError($"Échec du polling du lobby: {e}");
+                            // A live network session is the real link to the host (its loss is reported by
+                            // ClientDisconnectHandler); the cloud lobby is only bookkeeping by then.
+                            if (!IsNetworkSessionRunning())
+                            {
+                                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
+                            }
+                            return;
                         }
                     }
                 }
@@ -458,11 +527,14 @@ namespace Network.Services
             {
                 // Normal lors de l'arrêt (annulation du polling) : sortie silencieuse
             }
-            catch (Exception e)
-            {
-                Debug.LogError($"Échec du polling du lobby: {e}");
-                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
-            }
+        }
+
+        private const int MaxConsecutivePollFailures = 3;
+
+        private static bool IsNetworkSessionRunning()
+        {
+            var _nm = Unity.Netcode.NetworkManager.Singleton;
+            return _nm != null && (_nm.IsServer || _nm.IsConnectedClient);
         }
 
         private void StopLobbyPolling()

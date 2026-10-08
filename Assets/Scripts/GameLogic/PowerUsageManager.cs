@@ -32,6 +32,19 @@ namespace GameLogic
             CharacterQuery.onLocalIdentityChanged += OnLocalIdentityChanged;
         }
 
+        private void OnDestroy()
+        {
+            if (powersBar != null)
+            {
+                powersBar.onPowerClicked -= OnPowerClicked;
+            }
+
+            if (characterManager != null)
+            {
+                CharacterQuery.onLocalIdentityChanged -= OnLocalIdentityChanged;
+            }
+        }
+
         private void OnLocalIdentityChanged()
         {
             if (currentPower != null)

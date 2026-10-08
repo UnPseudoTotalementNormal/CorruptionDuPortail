@@ -42,13 +42,22 @@ namespace GameLogic.GameStates
 
         public async UniTaskVoid GameEndingAnimation()
         {
-            await boardManager.HideAllCards();
+            // Tied to the board's lifetime: "Terminer la partie" during the animation unloads the scene (B10 / N4 family).
+            var _boardAlive = boardManager.GetCancellationTokenOnDestroy();
+            if (await boardManager.HideAllCards().AttachExternalCancellation(_boardAlive).SuppressCancellationThrow())
+            {
+                return;
+            }
             
             foreach (var _winningTeam in winningTeams)
             {
                 foreach (var _playerId in _winningTeam.Value)
                 {
                     var _character = CharacterQuery.GetCharacter(_playerId, false);
+                    if (_character == null)
+                    {
+                        continue;
+                    }
                     
                     var _newCard = boardManager.AddNewCard();
                     _newCard.SetInfo(_character);
@@ -57,7 +66,10 @@ namespace GameLogic.GameStates
                 }
             }
             
-            await UniTask.Delay(TimeSpan.FromSeconds(1));
+            if (await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: _boardAlive).SuppressCancellationThrow())
+            {
+                return;
+            }
 
             boardManager.PlaceAllCardsToPosition();
             foreach (var _card in boardManager.visibleCards)

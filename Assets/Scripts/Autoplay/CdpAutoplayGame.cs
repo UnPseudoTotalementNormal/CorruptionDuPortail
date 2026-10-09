@@ -437,6 +437,7 @@ namespace Autoplay
                 tourAudioSlider = true,
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
+                seatedView = _context.Config.Option("seated-view"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
             if (!string.IsNullOrEmpty(_options.cardVisibility))
@@ -1594,6 +1595,7 @@ namespace Autoplay
                 realInputTour = _context.Config.Flag("real-input-tour"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
+                seatedView = _context.Config.Option("seated-view"),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
                 joinedMidPhase = _joinedMidPhase,

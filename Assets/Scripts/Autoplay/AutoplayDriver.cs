@@ -120,6 +120,10 @@ namespace Autoplay
         public float cardVisibilitySettle = 4f;
         [Tooltip("Real seconds a view switch gets to blend before a view is measured.")]
         public float cardVisibilityBlend = 1.5f;
+        [Tooltip("Seated view variant to play (-autoplay-seated-view \"h=1.5,pitch=12,r=22,scale=0.8,round=1,stand=1\"): " +
+                 "camera height offset, rest pitch, remote seat radius, seated cat scale, round table, standing cards. " +
+                 "Missing keys keep the scene's values. Local presentation only, never saved. Empty = off.")]
+        public string seatedView;
     }
 
     /// <summary>

@@ -80,24 +80,9 @@ public static class NoActivateLauncherNet
 }
 "@
 
-# One autoplay run at a time: two runs share ports, CPU and GPU (seen: a second campaign on the same port, a client
-# crashed in the graphics driver). Another launcher still running = this one waits for its turn (60 min at most).
-# AUTOPLAY_MAX_PARALLEL=N lets N runs share the machine (each on its own port: run_scenario.py --port).
-$maxParallel = 1
-if ($env:AUTOPLAY_MAX_PARALLEL -match '^\d+$') { $maxParallel = [Math]::Max(1, [int]$env:AUTOPLAY_MAX_PARALLEL) }
-$waitedFor = $null
-$queueDeadline = (Get-Date).AddMinutes(60)
-while ((Get-Date) -lt $queueDeadline) {
-    $others = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match 'launch-(net|background)\.ps1' })
-    if ($others.Count -lt $maxParallel) { break }
-    if ($null -eq $waitedFor) {
-        $waitedFor = Get-Date
-        Write-Output "BUSY another autoplay run is in flight (launcher pid $($others[0].ProcessId)): waiting for it"
-    }
-    Start-Sleep -Seconds 5
-}
-if ($null -ne $waitedFor) { Write-Output ("queue wait {0:0}s" -f ((Get-Date) - $waitedFor).TotalSeconds) }
+# One autoplay run at a time on the machine, first come first served (AUTOPLAY_MAX_PARALLEL=N: N at once).
+. (Join-Path $PSScriptRoot 'launcher-queue.ps1')
+Wait-AutoplayLauncherTurn
 
 $exePath = (Resolve-Path $Exe).Path
 $exeDir = Split-Path $exePath

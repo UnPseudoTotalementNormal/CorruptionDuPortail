@@ -25,6 +25,12 @@ namespace Characters.WinningConditions
         public abstract WinningTeam GetWinningTeam();
 
         /// <summary>
+        /// Short player-facing wording of this condition (the main menu's role book shows it above the powers). Kept
+        /// next to the check it describes so both change together. Null = not shown.
+        /// </summary>
+        public virtual string Description => null;
+
+        /// <summary>
         /// LEGACY live pull (Story 2.7): no longer the production path — the victory loop evaluates off the
         /// snapshot via <see cref="CheckCondition(GameSnapshot)"/>. Retained ONLY as the differential oracle until
         /// Story 2.7b swaps the oracle to the frozen Epic-1 goldens, after which it is removed. Not feature-shipped.

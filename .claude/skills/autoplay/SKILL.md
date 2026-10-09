@@ -178,6 +178,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `real-input-tour` | infobulle, pause + curseur audio, tablette + chat, roue d'émotes par vraies entrées | réseau, 3 clients | PASS 2026-10-05 |
 | `real-input-lobby` | lobby à la souris : preset, molette + Imposé « + », « Prêt » partout, départ par `TryAutoStart` | réseau, 3 clients | INSTABLE 2026-10-07 (2/5 ; build Dev non modifié 1/2 : pas une régression, N11) ; PASS dans la campagne 2026-10-08 |
 | `real-input-menu` | premier écran capturé ; la notification de refus passe au-dessus de l'écran de connexion et se ferme au clic | réseau, 3 clients | PASS 2026-10-05 |
+| levier `role-book` (+ `lobby-ui`, `role-card-dwell`) | livre des personnages du menu par vraies entrées : ouverture, coins cornés, flèche du clavier, chaque signet ouvre le 1er rôle de sa faction, fermeture ; boutons du menu masqués pendant la lecture puis rendus ; overlay de rôle ouvert depuis la tablette du lobby | build | PASS 2026-10-08 (graine 4243 ; graine 4242 avant le correctif : boutons du menu dessinés par-dessus le livre) |
 
 ### Not covered? Extend, do not hand it back
 

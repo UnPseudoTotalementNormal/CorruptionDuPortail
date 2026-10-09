@@ -44,6 +44,9 @@ namespace UI
         
         [SerializeField] private CanvasGroup loadingCanvasGroup; //shown when loading stuff
 
+        [Tooltip("The role book (UI Toolkit overlay of this scene) opened by the \"Personnages\" button.")]
+        [SerializeField] private RoleBook.RoleBookController roleBook;
+
         private string lobbyCreatingName = "";
 
         // Garde de rentrance pour éviter le double déclenchement Host/Join.
@@ -56,6 +59,7 @@ namespace UI
         private void Start()
         {
             CreateRejoinButton();
+            CreateRoleBookButton();
             closeHostMenu.onClick.AddListener(OnCloseHostButtonClicked);
             openHostMenu.onClick.AddListener(OnOpenHostButtonClicked);
         
@@ -97,6 +101,80 @@ namespace UI
         private void OnLobbyNameValueChange(string _text)
         {
             lobbyCreatingName = _text;
+        }
+
+        // ---- Role book: every role of the game, browsable from the menu ----
+
+        // Built from the join button at runtime like the rejoin button: same look, no scene edit (visuals are
+        // placeholders, design-owned). The Host / Join / Quit column is full: it sits in the bottom-left corner.
+        private void CreateRoleBookButton()
+        {
+            if (roleBook == null || openJoinMenu == null)
+            {
+                return;
+            }
+
+            GameObject _copy = Instantiate(openJoinMenu.gameObject, openJoinMenu.transform.parent);
+            _copy.name = "RoleBookButton";
+            var _rect = (RectTransform)_copy.transform;
+            var _source = (RectTransform)openJoinMenu.transform;
+            _rect.anchorMin = Vector2.zero;
+            _rect.anchorMax = Vector2.zero;
+            _rect.pivot = Vector2.zero;
+            _rect.anchoredPosition = new Vector2(40f, 40f);
+            _rect.sizeDelta = _source.sizeDelta;
+            foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
+            {
+                _label.text = "Personnages";
+                _label.enableWordWrapping = false;
+                _label.fontSizeMax = _label.fontSize;
+                _label.fontSizeMin = _label.fontSize * 0.5f;
+                _label.enableAutoSizing = true;
+            }
+            var _button = _copy.GetComponent<Button>();
+            _button.onClick.RemoveAllListeners();
+            _button.onClick.AddListener(roleBook.Open);
+            roleBook.Opened += HideMenuForRoleBook;
+            roleBook.Closed += ShowMenuAfterRoleBook;
+        }
+
+        // The menu's screen-space canvas draws over the UI Toolkit book and would take its clicks: while the book is
+        // open, everything but the menu's background is put away, then brought back as it was.
+        private readonly List<GameObject> _hiddenForRoleBook = new();
+
+        private void HideMenuForRoleBook()
+        {
+            _hiddenForRoleBook.Clear();
+            foreach (Transform _child in transform)
+            {
+                if (_child.name == "Background" || !_child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                _child.gameObject.SetActive(false);
+                _hiddenForRoleBook.Add(_child.gameObject);
+            }
+        }
+
+        private void ShowMenuAfterRoleBook()
+        {
+            foreach (GameObject _child in _hiddenForRoleBook)
+            {
+                if (_child != null)
+                {
+                    _child.SetActive(true);
+                }
+            }
+            _hiddenForRoleBook.Clear();
+        }
+
+        private void OnDestroy()
+        {
+            if (roleBook != null)
+            {
+                roleBook.Opened -= HideMenuForRoleBook;
+                roleBook.Closed -= ShowMenuAfterRoleBook;
+            }
         }
 
         // ---- Rejoin (feat/player-rejoin): back into the game this player dropped from ----

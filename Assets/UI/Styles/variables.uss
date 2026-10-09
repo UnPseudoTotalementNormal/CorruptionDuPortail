@@ -81,6 +81,15 @@
     --cdp-font-size-role-name: 44px;                 /* role name (fits ~2 lines at panel width) */
     --cdp-font-size-role-name-long: 30px;            /* stepped down for long names (no ellipsis) */
 
+    /* ---- Grimoire (role overlay page + main menu role book) ---- Aged parchment, ink, leather cover. PROVISIONAL and
+       design-owned like every block here: textures come from tools/ui/gen_book_textures.py (Assets/Art/Sprites/Book),
+       the faction accent is the FactionDatabase colour darkened to ink by RoleSheet.InkOf. */
+    --cdp-color-ink: rgb(46, 29, 16);                 /* body text, brown-black iron-gall ink */
+    --cdp-color-ink-soft: rgb(104, 74, 46);           /* labels, page numbers, hints */
+    --cdp-color-ink-faint: rgba(70, 44, 22, 0.35);    /* rules, scrollbar track */
+    --cdp-color-book-scrim: rgba(6, 4, 2, 0.82);      /* behind the open book */
+    --cdp-color-book-gold: rgb(214, 170, 92);         /* tooling / cover lettering */
+
     /* ---- InfoTable (deduction board) — "Dossier" direction, harmonised with the RoleCard gold/dark look.
        PROVISIONAL + design-owned: this block is the ONE place to swap when the real palette lands. Depth is
        faked with bevel tokens (UITK has no gradients/shadows). Sûr/Maybe/SurelyNot kept as swappable tokens. */

@@ -1,0 +1,240 @@
+/* Role sheet: the "grimoire page" look of a role, shared by the in-game role overlay (RoleCard.uxml) and the main
+ * menu's role book (RoleBook.uxml) so both always read the same. Ink on aged parchment, small capitals for titles,
+ * the faction accent = the FactionDatabase colour darkened to ink (RoleSheet.InkOf, set inline by code).
+ * Tokens: --cdp-color-ink* (variables.uss). Textures: Assets/Art/Sprites/Book (tools/ui/gen_book_textures.py).
+ * IM FELL English (SIL OFL, Assets/UI/Fonts/IMFellEnglish/OFL.txt) has no ★ / ✕: those labels keep LiberationSans. */
+
+.role-sheet {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Regular.ttf");
+    color: var(--cdp-color-ink);
+}
+
+/* A parchment sheet. 9-sliced so the burnt edge keeps its width whatever the page size. */
+.role-sheet__page {
+    background-image: url("project://database/Assets/Art/Sprites/Book/Parchment.png");
+    -unity-slice-left: 150;
+    -unity-slice-right: 150;
+    -unity-slice-top: 150;
+    -unity-slice-bottom: 150;
+    -unity-slice-scale: 0.55px;
+}
+
+.role-sheet__sc {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+}
+
+.role-sheet__italic {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Italic.ttf");
+}
+
+/* ---- Identity ---- */
+.role-sheet__faction-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+}
+
+.role-sheet__faction {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    color: var(--cdp-color-ink-soft);
+    font-size: 21px;
+    letter-spacing: 3px;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__name {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    font-size: 42px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    padding: 0;
+    margin: 0 0 4px 0;
+}
+
+.role-sheet__name--long {
+    font-size: 34px;
+}
+
+.role-sheet__fake {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Italic.ttf");
+    color: var(--cdp-color-ink-soft);
+    font-size: 18px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-bottom: 4px;
+}
+
+.role-sheet__difficulty {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.role-sheet__pip {
+    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+    font-size: 18px;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0 2px;
+}
+
+.role-sheet__pip--empty {
+    opacity: 0.25;
+}
+
+/* Ornamental rule (white texture, tinted with the faction ink by code). */
+.role-sheet__divider {
+    align-self: center;
+    width: 74%;
+    height: 18px;
+    margin: 12px 0;
+    flex-shrink: 0;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Divider.png");
+    -unity-background-scale-mode: stretch-to-fill;
+    -unity-background-image-tint-color: rgb(46, 29, 16);
+}
+
+/* Wax seal stamped with the faction's mark (seal tinted with the faction colour by code). */
+.role-sheet__seal {
+    width: 92px;
+    height: 92px;
+    align-items: center;
+    justify-content: center;
+    background-image: url("project://database/Assets/Art/Sprites/Book/WaxSeal.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.role-sheet__seal-icon {
+    width: 54px;
+    height: 54px;
+    -unity-background-scale-mode: scale-to-fit;
+    opacity: 0.9;
+}
+
+/* ---- Kit: victory, passives, powers ---- */
+.role-sheet__section {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    font-size: 23px;
+    letter-spacing: 2px;
+    padding: 0;
+    margin: 4px 0 6px 0;
+}
+
+.role-sheet__victory {
+    align-items: stretch;
+    margin-bottom: 6px;
+}
+
+.role-sheet__victory-label {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    color: var(--cdp-color-ink-soft);
+    font-size: 17px;
+    letter-spacing: 3px;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0 0 4px 0;
+}
+
+.role-sheet__victory-text {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Italic.ttf");
+    font-size: 21px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__passive {
+    margin-bottom: 8px;
+}
+
+.role-sheet__passive-row {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.role-sheet__passive-bullet {
+    font-size: 20px;
+    width: 18px;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__passive-text {
+    font-size: 20px;
+    white-space: normal;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__power {
+    margin-bottom: 10px;
+}
+
+.role-sheet__power-head {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-bottom: 2px;
+}
+
+/* Roman numeral of the power, the book's chapter mark. */
+.role-sheet__power-num {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    font-size: 24px;
+    min-width: 40px;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__power-title {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    font-size: 24px;
+    white-space: normal;
+    flex-shrink: 1;
+    padding: 0;
+    margin: 0;
+}
+
+.role-sheet__power-desc {
+    font-size: 20px;
+    white-space: normal;
+    padding: 0;
+    margin: 0 0 0 40px;
+}
+
+/* ---- Thin ink scrollbar ---- */
+.role-sheet .unity-scroller--vertical {
+    width: 6px;
+    background-color: transparent;
+    border-width: 0;
+}
+
+.role-sheet .unity-scroller--vertical .unity-base-slider__tracker {
+    background-color: var(--cdp-color-ink-faint);
+    border-width: 0;
+    border-radius: 3px;
+}
+
+.role-sheet .unity-scroller--vertical #unity-dragger {
+    background-color: var(--cdp-color-ink-soft);
+    border-width: 0;
+    border-radius: 3px;
+    width: 6px;
+}
+
+.role-sheet .unity-scroller__low-button,
+.role-sheet .unity-scroller__high-button {
+    display: none;
+}
+
+.role-sheet .unity-scroll-view__content-container {
+    padding-right: 12px;
+}

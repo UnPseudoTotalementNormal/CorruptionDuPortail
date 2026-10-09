@@ -266,6 +266,12 @@ namespace Autoplay
             {
                 yield return AutoplayMenuTour.Run(realInput, _context.Journal, _context.Capture);
             }
+            if (realInput != null && _context.Config.Flag("role-book"))
+            {
+                LiftLoginScreen(_context);
+                yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
+                yield return AutoplayRoleBookTour.Run(realInput, _context.Journal, _context.Capture);
+            }
         }
 
         public IEnumerator Host(AutoplayContext _context, ushort _port)
@@ -412,6 +418,7 @@ namespace Autoplay
 
             var _options = new AutoplayOptions
             {
+                roleCardDwell = ParseSeconds(_context.Config.Option("role-card-dwell")) is float _dwell && _dwell > 0f ? _dwell : 0.5f,
                 visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 fastFakes = _context.Config.Flag("fast-fakes"),
@@ -948,7 +955,7 @@ namespace Autoplay
         private void InstallRealInput(AutoplayContext _context)
         {
             bool _control = _context.Config.Flag("real-input-control");
-            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") ||
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") ||
                   RejoinViaMenu(_context) || Relay(_context)) || realInput != null)
             {
                 return;

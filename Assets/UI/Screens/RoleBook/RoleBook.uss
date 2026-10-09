@@ -1,0 +1,381 @@
+/* Role book (main menu): a leather-bound grimoire. Layout only; the pages' look is RoleSheet.uss. Placeholder art,
+ * design-owned: textures from tools/ui/gen_book_textures.py, tokens --cdp-color-book-* / --cdp-color-ink*.
+ * Sizes are at the 1920 x 1080 reference (PS_ScreenOverlay scales with the screen).
+ *
+ * Show/hide = cdp-is-hidden fades, cdp-is-collapsed removes layout + input. Opening, closing and page turns are
+ * animated by RoleBookController (cover swing, leaf flip), not by USS transitions. */
+
+.role-book {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cdp-color-book-scrim);
+    transition-property: opacity;
+    transition-duration: 220ms;
+    transition-timing-function: ease-out;
+}
+
+.role-book.cdp-is-hidden {
+    opacity: 0;
+}
+
+.role-book.cdp-is-collapsed,
+.role-book .cdp-is-collapsed {
+    display: none;
+}
+
+.role-book__hint {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    right: 0;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Italic.ttf");
+    color: var(--cdp-color-book-gold);
+    opacity: 0.75;
+    font-size: 20px;
+    -unity-text-align: middle-center;
+    white-space: pre;
+}
+
+/* Book + its ribbons + the close seal; translated by the controller while the cover opens. */
+.role-book__stage {
+    width: 1480px;
+    height: 820px;
+    margin-top: -70px;
+}
+
+.role-book__book {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    padding: 22px 24px;
+}
+
+/* Leather boards, one per half so the closed book shows only its cover. */
+.role-book__board {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Leather.png");
+    -unity-slice-left: 120;
+    -unity-slice-right: 120;
+    -unity-slice-top: 120;
+    -unity-slice-bottom: 120;
+    -unity-slice-scale: 0.5px;
+}
+
+.role-book__board--left {
+    left: 0;
+    transform-origin: right center;
+}
+
+.role-book__board--right {
+    right: 0;
+}
+
+.role-book__pages {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+.role-book__page {
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: 58px 64px 64px 64px;
+}
+
+.role-book__page--left {
+    margin-right: -6px;
+    transform-origin: right center;
+}
+
+.role-book__page--right {
+    margin-left: -6px;
+    transform-origin: left center;
+}
+
+.role-book__page-content {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+/* Folio (page number), bottom centre of each page. */
+.role-book__folio {
+    position: absolute;
+    bottom: 26px;
+    left: 0;
+    right: 0;
+    color: var(--cdp-color-ink-soft);
+    font-size: 19px;
+    letter-spacing: 2px;
+    -unity-text-align: middle-center;
+}
+
+/* Gutter shadow where the pages dive into the spine. */
+.role-book__gutter {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 150px;
+    margin-left: -75px;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Gutter.png");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+/* Dog-eared corners: click to turn. The texture is drawn for the bottom-right corner; mirrored on the left. */
+.role-book__corner {
+    position: absolute;
+    bottom: 0;
+    width: 86px;
+    height: 86px;
+    background-image: url("project://database/Assets/Art/Sprites/Book/PageCorner.png");
+    -unity-background-scale-mode: stretch-to-fill;
+    transition-property: scale, opacity;
+    transition-duration: 140ms;
+    transition-timing-function: ease-out;
+}
+
+.role-book__corner--right {
+    right: 0;
+    transform-origin: right bottom;
+}
+
+/* Mirrored around its own centre so it stays in the page's corner. */
+.role-book__corner--left {
+    left: 0;
+    scale: -1 1;
+    transform-origin: center;
+}
+
+.role-book__corner--right:hover {
+    scale: 1.25 1.25;
+}
+
+.role-book__corner--left:hover {
+    scale: -1.25 1.25;
+}
+
+/* ---- The turning page ---- */
+.role-book__flip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* One vertical strip of the sheet: a window (overflow hidden) on a full copy of the face it shows, squeezed to its
+ * projected width around its left edge. */
+.role-book__strip {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    transform-origin: left center;    /* x: squeezed around its left edge; y: grows about the middle (perspective) */
+}
+
+/* A full page copy inside a strip (size and offset set by code). */
+.role-book__face {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    overflow: hidden;
+    padding: 58px 64px 64px 64px;
+}
+
+/* The spine's shadow on a page copy (half of the gutter, the other half is clipped). */
+.role-book__face-gutter {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 150px;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Gutter.png");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+/* Light falling on a strip as it turns (opacity driven by its angle). */
+.role-book__strip-shade {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(24, 14, 6);
+    opacity: 0;
+}
+
+/* Soft shadow the lifted sheet casts on the page under it, next to its free edge. */
+.role-book__cast-shadow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 170px;
+    opacity: 0;
+    background-image: url("project://database/Assets/Art/Sprites/Book/CastShadow.png");
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.role-book__cast-shadow--left {
+    scale: -1 1;
+}
+
+/* ---- Pages' content (RoleSheet blocks) ---- */
+.role-sheet__identity {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.role-sheet__identity .role-sheet__card {
+    rotate: -3deg;
+    margin-bottom: 18px;
+}
+
+/* The seal is stamped over the card's lower right corner. */
+.role-sheet__identity .role-sheet__seal {
+    margin-top: -78px;
+    margin-left: 250px;
+    margin-bottom: 4px;
+}
+
+.role-sheet__identity .role-sheet__name {
+    font-size: 46px;
+}
+
+.role-sheet__identity .role-sheet__name--long {
+    font-size: 38px;
+}
+
+.role-sheet__kit {
+    flex-grow: 1;
+}
+
+/* ---- Ribbons ---- */
+.role-book__ribbons {
+    position: absolute;
+    bottom: -132px;
+    right: 120px;
+    flex-direction: row;
+}
+
+.role-book__ribbon {
+    width: 104px;
+    height: 200px;
+    margin: 0 10px;
+    padding: 0 0 42px 0;
+    justify-content: flex-end;
+    align-items: center;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Ribbon.png");
+    -unity-background-scale-mode: stretch-to-fill;
+    transition-property: translate;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+}
+
+.role-book__ribbon:hover {
+    translate: 0 10px;
+}
+
+.role-book__ribbon--active {
+    translate: 0 20px;
+}
+
+.role-book__ribbon-icon {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 4px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.role-book__ribbon-label {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    color: rgb(250, 240, 220);
+    font-size: 19px;
+    letter-spacing: 1px;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+/* ---- Cover (closed book) ---- */
+.role-book__cover {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+    transform-origin: left center;
+    background-image: url("project://database/Assets/Art/Sprites/Book/Leather.png");
+    -unity-slice-left: 120;
+    -unity-slice-right: 120;
+    -unity-slice-top: 120;
+    -unity-slice-bottom: 120;
+    -unity-slice-scale: 0.5px;
+}
+
+.role-book__cover-title {
+    color: var(--cdp-color-book-gold);
+    font-size: 64px;
+    letter-spacing: 4px;
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+.role-book__cover-title--small {
+    font-size: 34px;
+    letter-spacing: 6px;
+    margin-bottom: -6px;
+}
+
+.role-book__cover-emblem {
+    width: 260px;
+    height: 260px;
+    margin: 46px 0;
+    background-image: url("project://database/Assets/Art/Sprites/Symbole_Corruption.png");
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.role-book__cover-sub {
+    color: var(--cdp-color-book-gold);
+    opacity: 0.8;
+    font-size: 24px;
+    letter-spacing: 5px;
+    -unity-text-align: middle-center;
+}
+
+/* ---- Close: a gold cross on a leather tab, top-right of the book ---- */
+.role-book__close {
+    position: absolute;
+    top: -18px;
+    right: -18px;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    margin: 0;
+    border-width: 2px;
+    border-color: var(--cdp-color-book-gold);
+    border-radius: 26px;
+    background-color: rgb(52, 28, 20);
+    color: var(--cdp-color-book-gold);
+    font-size: 24px;
+    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
+    -unity-text-align: middle-center;
+    transition-property: scale;
+    transition-duration: 120ms;
+}
+
+.role-book__close:hover {
+    scale: 1.12;
+}

@@ -7,6 +7,8 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WMarginalIsChainedWin : WinningCondition
     {
+        public override string Description => "Il gagne s'il se fait enchaîner.";
+
         public override WinningTeam GetWinningTeam()
         {
             return WinningTeam.marginal;

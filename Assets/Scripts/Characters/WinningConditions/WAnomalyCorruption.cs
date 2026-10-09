@@ -12,6 +12,8 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WAnomalyCorruption : WinningCondition
     {
+        public override string Description => "Les Anomalies gagnent quand tous les joueurs sont corrompus.";
+
         public override WinningTeam GetWinningTeam()
         {
             return WinningTeam.anomaly;

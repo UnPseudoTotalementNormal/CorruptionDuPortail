@@ -133,6 +133,12 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - State-screen roots: `pickingMode = Ignore`; block the world with a scrim child (mapping uGUI `blocksRaycasts` to root `Position` blocks the whole screen).
 - USS transitions don't fire on elements recreated each rebuild → `experimental.animation.Start`.
 - A `Label` used as a cell keeps `.unity-label` margin (~3px "box in a box") → `margin: 0`. Diagnose via resolved styles, not USS theory.
+- A USS state class only works under a sheet that defines it: `cdp-is-collapsed` on a child of the role card did
+  nothing (no rule in RoleCard.uss), so the "rôle factice" line showed on every card. Scope the rule (`.role-card
+  .cdp-is-collapsed`) in the screen's own sheet.
+- In the player build, the main menu's screen-space overlay uGUI canvas drew OVER the UI Toolkit role book (book
+  PanelSettings sort order 10 > canvas 0) and its buttons took the clicks: hide the menu's content while a full-screen
+  UITK screen is open there (`MainMenu` + `RoleBookController.Opened/Closed`). Check it in a build, not the editor.
 - Faction colours come from `FactionDatabase` SO, never new USS tokens. UI visuals are placeholder and design-owned: don't invent palettes.
 
 ## 3D interaction

@@ -53,6 +53,9 @@ namespace Autoplay
         [Tooltip("Game seconds the chosen card stays hovered (captured) before the click.")]
         public float pickerHoverDwell = 0.6f;
 
+        [Tooltip("Scenario lever role-card-dwell: real seconds the lobby's role detail overlay stays open (lobby-ui).")]
+        public float roleCardDwell = 0.5f;
+
         [Tooltip("Scenario lever: when set, every bot votes for the living player whose role name contains this text " +
                  "(forces a situation to happen, e.g. chain the Mage to exercise the portal). Empty = random legal votes.")]
         public string voteFocusRole;

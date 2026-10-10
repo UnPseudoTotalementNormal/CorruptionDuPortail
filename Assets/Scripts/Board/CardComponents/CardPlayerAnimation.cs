@@ -36,6 +36,8 @@ namespace Board.CardComponents
         // is a one-shot slerp on enter; only the lift needs the continuous tracking.
         private const float HOVER_LIFT_LERP = 12f;
         private bool _fpsHoverActive;
+        // The card holds the first-person pose without being hovered (trial option "cards stand", T16).
+        private bool _standing;
         private Camera _hoverCamera;
         // Cached at arm-time so Update avoids the per-frame string GetLayer + lossyScale chain walk.
         private TransformLayer _hoverLayerRef;
@@ -61,22 +63,74 @@ namespace Board.CardComponents
             bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied
                                 && _channel.SeatedFirstPersonLive && _cam != null;
 
-            if (_firstPerson && TryComputeFpsHoverPose(visualComponents.transform, _cam, out Presentation.HoverFocusPose _pose))
+            if (_firstPerson && TryArmFpsPose(hoverLayer, _cam, false))
             {
-                // Start the one-shot look-at rotation + ARM continuous lift tracking: the lift is re-measured
-                // every Update so it follows the vote canvas as it slides in (no floor clip during deploy).
-                _hoverCamera = _cam;
-                _hoverLayerRef = hoverLayer;
-                Transform _parent = visualComponents.transform.parent;
-                _hoverParentScaleY = _parent != null ? _parent.lossyScale.y : 1f;
-                _fpsHoverActive = true;
-                SlerpLayerRotation(hoverLayer, _pose.Rotation);
+                return;
             }
-            else
+
+            // Non-FPS phases, or no measurable geometry → the plain flat lift (never a degenerate pose).
+            _fpsHoverActive = false;
+            _standing = false;
+            hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+        }
+
+        // ARM continuous lift tracking (re-measured every Update so it follows the vote canvas as it slides in: no
+        // floor clip during deploy). Hover: one-shot look-at rotation. Stand: Update eases the rotation every frame
+        // instead, so the card keeps facing the camera while it is still blending into the seat (a pose aimed once
+        // at the previous view's camera laid the near line upside down). False = no measurable geometry.
+        private bool TryArmFpsPose(TransformLayer _hoverLayer, Camera _cam, bool _stand)
+        {
+            if (!TryComputeFpsHoverPose(visualComponents.transform, _cam, PoseAmount(_stand), out Presentation.HoverFocusPose _pose))
             {
-                // Non-FPS phases, or no measurable geometry → the plain flat lift (never a degenerate pose).
-                _fpsHoverActive = false;
-                hoverLayer.DOLocalMoveY(HOVER_DISPLACEMENT_Y, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                return false;
+            }
+            _hoverCamera = _cam;
+            _hoverLayerRef = _hoverLayer;
+            Transform _parent = visualComponents.transform.parent;
+            _hoverParentScaleY = _parent != null ? _parent.lossyScale.y : 1f;
+            _fpsHoverActive = true;
+            if (!_stand)
+            {
+                SlerpLayerRotation(_hoverLayer, _pose.Rotation);
+            }
+            return true;
+        }
+
+        // A hovered card faces the camera fully; a standing one turns only the option's share of the way.
+        private float PoseAmount(bool _stand)
+        {
+            var _options = visualComponents.seatedViewOptions;
+            return _stand && _options != null ? _options.StandAmount : 1f;
+        }
+
+        // Trial option "cards stand" (T16): in the seated first-person Vote every card holds the look-at pose, hovered
+        // or not. Same gate as the first-person hover (Embodied + the seated node live), plus the local option.
+        private bool StandWanted(out Camera _cam)
+        {
+            _cam = Camera.main;
+            var _channel = visualComponents.cameraModeChannel;
+            var _options = visualComponents.seatedViewOptions;
+            return _options != null && _options.CardsStand && _channel != null
+                   && _channel.Current == Avatars.CameraMode.Embodied && _channel.SeatedFirstPersonLive && _cam != null;
+        }
+
+        // Not hovered: raise the card into the standing pose when the option applies, lower it when it stops applying.
+        private void UpdateStanding()
+        {
+            if (isCardZoomed || visualComponents == null || visualComponents.compositor == null)
+            {
+                return;
+            }
+            bool _want = StandWanted(out Camera _cam);
+            if (_want && !_standing)
+            {
+                var _hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
+                _hoverLayer.DOKill();
+                _standing = TryArmFpsPose(_hoverLayer, _cam, true);
+            }
+            else if (!_want && _standing)
+            {
+                DisarmFpsHover();
             }
         }
 
@@ -87,6 +141,7 @@ namespace Board.CardComponents
         public override void Update()
         {
             base.Update();
+            UpdateStanding();
             if (!_fpsHoverActive)
             {
                 return;
@@ -104,15 +159,22 @@ namespace Board.CardComponents
                 return;
             }
 
-            if (!TryComputeFpsHoverPose(_root, _hoverCamera, out Presentation.HoverFocusPose _pose))
+            bool _standingPose = _standing && !isCardZoomed;
+            if (!TryComputeFpsHoverPose(_root, _hoverCamera, PoseAmount(_standingPose), out Presentation.HoverFocusPose _pose))
             {
                 return;
+            }
+
+            float _ease = 1f - Mathf.Exp(-HOVER_LIFT_LERP * Time.deltaTime);
+            if (_standingPose)
+            {
+                _hoverLayerRef.localRotation = Quaternion.Slerp(_hoverLayerRef.localRotation, _pose.Rotation, _ease);
             }
 
             float _addLocal = Mathf.Abs(_hoverParentScaleY) > 1e-5f ? _pose.WorldLift / _hoverParentScaleY : _pose.WorldLift;
 
             Vector3 _lp = _hoverLayerRef.localPosition;
-            float _eased = Mathf.Lerp(_lp.y, _lp.y + _addLocal, 1f - Mathf.Exp(-HOVER_LIFT_LERP * Time.deltaTime));
+            float _eased = Mathf.Lerp(_lp.y, _lp.y + _addLocal, _ease);
             _lp.y = Mathf.Max(0f, _eased); // never ease BELOW rest, but may ease down toward the target
             _hoverLayerRef.localPosition = _lp;
         }
@@ -121,6 +183,7 @@ namespace Board.CardComponents
         private void DisarmFpsHover()
         {
             _fpsHoverActive = false;
+            _standing = false;
             _hoverCamera = null;
             if (_hoverLayerRef != null)
             {
@@ -133,7 +196,7 @@ namespace Board.CardComponents
 
         // Measure the dynamic card+vote-canvas bounds and compute the look-at + world lift. False (no FPS pose)
         // when there is no measurable geometry or no camera.
-        private bool TryComputeFpsHoverPose(Transform _root, Camera _cam, out Presentation.HoverFocusPose _pose)
+        private bool TryComputeFpsHoverPose(Transform _root, Camera _cam, float _amount, out Presentation.HoverFocusPose _pose)
         {
             _pose = default;
             if (_cam == null || _root == null)
@@ -148,7 +211,7 @@ namespace Board.CardComponents
                 _root.position, _cam.transform.position,
                 visualComponents.hoverFaceLocalNormal, visualComponents.hoverFaceLocalUp,
                 _top, _bottom, _halfWidth,
-                visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset);
+                visualComponents.hoverSurfaceY, visualComponents.hoverFloatOffset, _amount);
             return true;
         }
 
@@ -203,12 +266,23 @@ namespace Board.CardComponents
 
         protected override void UnHover(Canvas _cardCanvas)
         {
+            var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
+
+            // Standing cards (trial option) keep their look-at pose: only the hover zoom goes; the lift tracking goes
+            // on so the card settles as its vote panel folds back.
+            if (_fpsHoverActive && StandWanted(out _))
+            {
+                _standing = true;
+                hoverLayer.DOKill(); // the hover's look-at tween: Update eases back to the standing pose
+                hoverLayer.DOScale(1f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);
+                return;
+            }
+
             // Stop the per-frame lift tracking BEFORE tweening back, so Update no longer fights the return.
             _fpsHoverActive = false;
+            _standing = false;
             _hoverCamera = null;
             _hoverLayerRef = null;
-
-            var hoverLayer = visualComponents.compositor.GetLayer(HOVER_LAYER);
 
             hoverLayer.DOKill();
             hoverLayer.DOScale(1f, ZOOM_ANIMATION_DURATION).SetEase(Ease.OutQuint);

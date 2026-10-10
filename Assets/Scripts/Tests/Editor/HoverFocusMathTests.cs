@@ -86,6 +86,21 @@ namespace Tests.Editor.Presentation
         }
 
         [Test]
+        public void PartialAmount_TurnsOnlyThatShareOfTheWay_AndStillClearsTheSurface()
+        {
+            // Standing cards (T16 trial option) turn only part of the way: 0 = rest, 0.5 = half the full angle.
+            Vector3 _cam = new Vector3(0f, -10f, 5f);
+            HoverFocusPose _full = HoverFocusMath.Compute(Pivot, _cam, FaceNormal, FaceUp, ExtTop, ExtBottom, HalfW, SurfaceY, Offset);
+            HoverFocusPose _half = HoverFocusMath.Compute(Pivot, _cam, FaceNormal, FaceUp, ExtTop, ExtBottom, HalfW, SurfaceY, Offset, 0.5f);
+            HoverFocusPose _none = HoverFocusMath.Compute(Pivot, _cam, FaceNormal, FaceUp, ExtTop, ExtBottom, HalfW, SurfaceY, Offset, 0f);
+            float _fullAngle = Quaternion.Angle(Quaternion.identity, _full.Rotation);
+            Assert.That(Quaternion.Angle(Quaternion.identity, _half.Rotation), Is.EqualTo(_fullAngle / 2f).Within(0.01f));
+            Assert.That(Quaternion.Angle(Quaternion.identity, _none.Rotation), Is.EqualTo(0f).Within(0.01f));
+            Assert.That(LowestCornerY(_half, ExtBottom), Is.EqualTo(SurfaceY + Offset).Within(1e-2f),
+                "a half-turned card must still float its lowest corner at surface+offset");
+        }
+
+        [Test]
         public void DegenerateInputs_DoNotThrow()
         {
             Assert.DoesNotThrow(() =>

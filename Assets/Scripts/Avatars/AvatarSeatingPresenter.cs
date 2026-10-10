@@ -48,6 +48,7 @@ namespace Avatars
             public Quaternion EyeLocalRotation;
             public Vector3 Position;
             public Quaternion Rotation;
+            public Vector3 Scale;
         }
 
         private bool _active;
@@ -140,6 +141,11 @@ namespace Avatars
                 // deterministic (not networked), so no position interpolation is needed.
                 SeatPose _pose = _manager.GetSeatPose(_avatar.ownerClientId.Value);
                 _avatar.transform.SetPositionAndRotation(_pose.Position, _pose.Rotation);
+                // Seated size of the OTHER players: the pre-Vote scale times the manager's factor (restored on exit
+                // with the pose). Never the local avatar: its EyePivot is the first-person camera's anchor, a smaller
+                // local cat would lower the view (measured: vote buttons fell under the characters bar).
+                Vector3 _scale = _suppressed[_avatar].Scale;
+                _avatar.transform.localScale = _avatar.IsOwner ? _scale : _scale * _manager.SeatedAvatarScale;
 
                 // Head (rigged): the networked look (yaw/pitch RELATIVE to seat facing) drives the EyePivot's
                 // LOCAL rotation, so the head turns on the body that faces the table. Interpolated toward the
@@ -184,6 +190,7 @@ namespace Avatars
                 EyeLocalRotation = _eye != null ? _eye.localRotation : Quaternion.identity,
                 Position = _t.position,
                 Rotation = _t.rotation,
+                Scale = _t.localScale,
             };
             if (_nt != null)
             {
@@ -207,6 +214,7 @@ namespace Avatars
                 if (_avatar != null)
                 {
                     _avatar.transform.SetPositionAndRotation(_state.Position, _state.Rotation);
+                    _avatar.transform.localScale = _state.Scale;
                 }
                 // Put the head back where it was so it doesn't stay turned after the Vote.
                 if (_state.Eye != null)

@@ -40,7 +40,8 @@ namespace Presentation
             float _extentBottomWorld,
             float _halfWidthWorld,
             float _surfaceY,
-            float _offset)
+            float _offset,
+            float _amount = 1f)
         {
             // World target basis: face the camera; keep upright by flattening world-up perpendicular to the
             // look direction (degenerate fallbacks so LookRotation never gets collinear inputs).
@@ -57,6 +58,12 @@ namespace Presentation
             // R maps the local face basis (normal→N, up→U): R = world∘inverse(local) using LookRotation frames.
             Quaternion _rotation =
                 Quaternion.LookRotation(_N, _U) * Quaternion.Inverse(Quaternion.LookRotation(_ln, _lu));
+            // Partial pose (_amount < 1): only part of the way from rest (identity) to facing the camera; the lift
+            // below is computed for that partial rotation.
+            if (_amount < 1f)
+            {
+                _rotation = Quaternion.Slerp(Quaternion.identity, _rotation, Mathf.Clamp01(_amount));
+            }
 
             // Lowest of the 4 rotated corners (the asymmetric extents from the pivot): the min over the two
             // vertical extents minus the (symmetric) width contribution. Alloc-free. Then lift so the lowest

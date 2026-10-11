@@ -48,6 +48,8 @@ def main():
     ap.add_argument("--lanes", type=int, default=2)
     ap.add_argument("--extra", default="")
     a = ap.parse_args()
+    # The launchers let one run at a time on the machine by default: allow one per lane so the lanes really play together.
+    os.environ.setdefault("AUTOPLAY_MAX_PARALLEL", str(a.lanes))
     by_size = dict(item.split("=", 1) for item in a.layouts_by_size.split("|") if "=" in item)
     sizes = [int(s) for s in a.sizes.split(",")]
     results = []

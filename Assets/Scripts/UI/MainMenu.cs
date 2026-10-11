@@ -7,12 +7,10 @@ using Extensions;
 using Network;
 using Network.Services;
 using TMPro;
+using UI.Lobby;
 using Unity.Netcode;
 using Netcode.Transports.Facepunch;
-using Unity.Services.Core;
-using Unity.Services.Lobbies;
-using Unity.Services.Lobbies.Models;
-using Steamworks;
+using Network.Steam;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -44,6 +42,9 @@ namespace UI
         
         [SerializeField] private CanvasGroup loadingCanvasGroup; //shown when loading stuff
 
+        [Tooltip("The role book (UI Toolkit overlay of this scene) opened by the \"Personnages\" button.")]
+        [SerializeField] private RoleBook.RoleBookController roleBook;
+
         private string lobbyCreatingName = "";
 
         // Garde de rentrance pour éviter le double déclenchement Host/Join.
@@ -56,6 +57,7 @@ namespace UI
         private void Start()
         {
             CreateRejoinButton();
+            CreateRoleBookButton();
             closeHostMenu.onClick.AddListener(OnCloseHostButtonClicked);
             openHostMenu.onClick.AddListener(OnOpenHostButtonClicked);
         
@@ -67,6 +69,35 @@ namespace UI
             lobbyNameInputField.onValueChanged.AddListener(OnLobbyNameValueChange);
             
             quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
+
+            SteamInvites.JoinRequested += OnSteamJoinRequested;
+            OnSteamJoinRequested(); // a request made before the menu loaded (Steam started the game to join a friend)
+        }
+
+        // Steam build: a friend's invite or "Rejoindre la partie" on their profile. Runs the server browser's join,
+        // so a password, a full or started game are handled exactly as a click in the list.
+        private void OnSteamJoinRequested()
+        {
+            if (!SteamInvites.TryTakePending(out string _lobbyId))
+            {
+                return;
+            }
+            if (_isBusy)
+            {
+                Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
+                LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
+                return;
+            }
+
+            LobbySelectionPanel _browser = FindFirstObjectByType<LobbySelectionPanel>(FindObjectsInactive.Include);
+            if (_browser == null)
+            {
+                Debug.LogError("[STEAM] No server browser in the menu: cannot join the friend's game.");
+                return;
+            }
+            hostMenuCanvasGroup.DoHideGroup();
+            joinMenuCanvasGroup.DoShowGroup();
+            _browser.JoinFromSteamInvite(_lobbyId);
         }
 
         private void OnQuitGameButtonClicked()
@@ -99,16 +130,92 @@ namespace UI
             lobbyCreatingName = _text;
         }
 
+        // ---- Role book: every role of the game, browsable from the menu ----
+
+        // Built from the join button at runtime like the rejoin button: same look, no scene edit (visuals are
+        // placeholders, design-owned). The Host / Join / Quit column is full: it sits in the bottom-left corner.
+        private void CreateRoleBookButton()
+        {
+            if (roleBook == null || openJoinMenu == null)
+            {
+                return;
+            }
+
+            GameObject _copy = Instantiate(openJoinMenu.gameObject, openJoinMenu.transform.parent);
+            _copy.name = "RoleBookButton";
+            var _rect = (RectTransform)_copy.transform;
+            var _source = (RectTransform)openJoinMenu.transform;
+            _rect.anchorMin = Vector2.zero;
+            _rect.anchorMax = Vector2.zero;
+            _rect.pivot = Vector2.zero;
+            _rect.anchoredPosition = new Vector2(40f, 40f);
+            _rect.sizeDelta = _source.sizeDelta;
+            foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
+            {
+                _label.text = "Personnages";
+                _label.enableWordWrapping = false;
+                _label.fontSizeMax = _label.fontSize;
+                _label.fontSizeMin = _label.fontSize * 0.5f;
+                _label.enableAutoSizing = true;
+            }
+            var _button = _copy.GetComponent<Button>();
+            _button.onClick.RemoveAllListeners();
+            _button.onClick.AddListener(roleBook.Open);
+            roleBook.Opened += HideMenuForRoleBook;
+            roleBook.Closed += ShowMenuAfterRoleBook;
+        }
+
+        // The menu's screen-space canvas draws over the UI Toolkit book and would take its clicks: while the book is
+        // open, everything but the menu's background is put away, then brought back as it was.
+        private readonly List<GameObject> _hiddenForRoleBook = new();
+
+        private void HideMenuForRoleBook()
+        {
+            _hiddenForRoleBook.Clear();
+            foreach (Transform _child in transform)
+            {
+                if (_child.name == "Background" || !_child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                _child.gameObject.SetActive(false);
+                _hiddenForRoleBook.Add(_child.gameObject);
+            }
+        }
+
+        private void ShowMenuAfterRoleBook()
+        {
+            foreach (GameObject _child in _hiddenForRoleBook)
+            {
+                if (_child != null)
+                {
+                    _child.SetActive(true);
+                }
+            }
+            _hiddenForRoleBook.Clear();
+        }
+
+        private void OnDestroy()
+        {
+            SteamInvites.JoinRequested -= OnSteamJoinRequested;
+            if (roleBook != null)
+            {
+                roleBook.Opened -= HideMenuForRoleBook;
+                roleBook.Closed -= ShowMenuAfterRoleBook;
+            }
+        }
+
         // ---- Rejoin (feat/player-rejoin): back into the game this player dropped from ----
 
         private Button _rejoinButton;
 
-        // Shown only when this PC holds a fresh session of a game it was seated in (token + how to reach the host).
+        // Shown only when this PC holds a fresh session of a game it was seated in (token + how to reach the host),
+        // reached through this build's online stack (the Relay and Steam builds share the PC's PlayerPrefs).
         // Built from the join button at runtime: same look, no scene edit (visuals are placeholders, design-owned).
         private void CreateRejoinButton()
         {
             if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session) ||
-                (_session.hostKind != "relay" && _session.hostKind != "steam" && _session.hostKind != "direct") || openJoinMenu == null)
+                !OnlineFlavorRules.CanRejoin(GameFlavor.Current, _session.hostKind) || openJoinMenu == null)
             {
                 return;
             }
@@ -303,11 +410,18 @@ namespace UI
 
                 // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
                 // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
-                GameCode.gameCode = _lobby.LobbyCode;
+                GameCode.gameCode = _lobby.Code;
 
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    if (!JoinWithFacepunch(_lobby))
+                    // A Steam lobby has no password of its own: the host checks it at connection, and this path
+                    // has no field to type one.
+                    if (_lobby.HasPassword)
+                    {
+                        LobbyManager.instance.ReportError(SteamConnector.PasswordNeedsListMessage);
+                        throw new System.Exception(SteamConnector.PasswordNeedsListMessage);
+                    }
+                    if (!SteamConnector.StartClient(NetworkManager.Singleton, _lobby, null))
                     {
                         throw new System.Exception("Failed to join game");
                     }
@@ -384,61 +498,20 @@ namespace UI
         }
 
 
-        private bool JoinWithFacepunch(Unity.Services.Lobbies.Models.Lobby lobby)
-        {
-            // Récupérer le Steam ID de l'hôte depuis les données du lobby
-            if (!lobby.Data.TryGetValue("hostSteamId", out var _value))
-            {
-                Debug.Log("Lobby missing hostSteamId");
-                return false;
-            }
-
-            string _hostSteamIdString = _value.Value;
-            
-            if (!ulong.TryParse(_hostSteamIdString, out ulong _hostSteamId))
-            {
-                Debug.LogError($"Invalid Steam ID format: {_hostSteamIdString}");
-                return false;
-            }
-
-            // Configurer le transport FacePunch avec le Steam ID de l'hôte
-            var _transport = NetworkManager.Singleton.GetComponent<FacepunchTransport>();
-            if (_transport == null)
-            {
-                Debug.LogError("FacepunchTransport not found on NetworkManager!");
-                return false;
-            }
-
-            _transport.targetSteamId = _hostSteamId;
-            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("steam", _hostSteamId.ToString(), lobby.LobbyCode);
-            
-            // NET-02: the profile + build version travel inside the connection request.
-            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
-            bool _connected = NetworkManager.Singleton.StartClient();
-            if (!_connected)
-            {
-                Debug.LogError("Failed to start client");
-                return false;
-            }
-
-            return true;
-        }
-
-        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(GameLobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
-            if (!lobby.Data.TryGetValue("joinCode", out var _value))
+            if (!lobby.TryGetData(GameLobby.RelayJoinCodeKey, out string _joinCode))
             {
                 Debug.Log("Lobby missing joinCode");
                 return RelayConnectResult.Failed(null);
             }
 
             // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("relay", _value.Value, lobby.LobbyCode);
+            Network.RejoinSessionStore.SetConnectionTarget("relay", _joinCode, lobby.Code);
             // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
             // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
-            return await RelayConnector.ConnectClientAsync(_value.Value);
+            return await RelayConnector.ConnectClientAsync(_joinCode);
         }
 
 
@@ -477,22 +550,19 @@ namespace UI
                 _lobbySettings.isPrivate = false;
                 _lobbySettings.lobbyName = lobbyCreatingName;
                 _lobbySettings.maxPlayers = 15;
-                _lobbySettings.data = new Dictionary<string, DataObject>()
+                _lobbySettings.data = new Dictionary<string, string>()
                 {
-                    {
-                        nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language),
-                        new DataObject(DataObject.VisibilityOptions.Public,
-                            "Français")
-                    }
+                    { nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), "Français" }
                 };
 
                 string connectionData = null;
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    connectionData = HostWithFacepunch();
+                    // Steam lobbies have no password of their own: the host's connection approval checks it.
+                    connectionData = SteamConnector.StartHost(NetworkManager.Singleton, password);
                     if (!string.IsNullOrEmpty(connectionData))
                     {
-                        _lobbySettings.data["hostSteamId"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                        _lobbySettings.data[GameLobby.HostSteamIdKey] = connectionData;
                     }
                 }
                 else if (NetworkTransportDetector.IsUsingUnityRelay())
@@ -500,7 +570,7 @@ namespace UI
                     connectionData = await HostWithUnityRelay(15);
                     if (!string.IsNullOrEmpty(connectionData))
                     {
-                        _lobbySettings.data["joinCode"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                        _lobbySettings.data[GameLobby.RelayJoinCodeKey] = connectionData;
                     }
                 }
                 else
@@ -513,13 +583,13 @@ namespace UI
                     throw new System.Exception("Failed to get connection data");
                 }
 
-                Unity.Services.Lobbies.Models.Lobby _lobby = await LobbyManager.instance.CreateLobby(_lobbySettings);
+                GameLobby _lobby = await LobbyManager.instance.CreateLobby(_lobbySettings);
                 if (_lobby == null)
                 {
                     throw new System.Exception("Failed to create lobby");
                 }
 
-                GameCode.gameCode = _lobby.LobbyCode;
+                GameCode.gameCode = _lobby.Code;
                 SwitchToGameScene();
             }
             catch (System.Exception e)
@@ -549,32 +619,6 @@ namespace UI
             }
         }
 
-
-        private string HostWithFacepunch()
-        {
-            // Vérifier que Steam est initialisé
-            if (!SteamClient.IsValid)
-            {
-                Debug.LogError("Steam client not initialized!");
-                return null;
-            }
-
-            ulong _hostSteamId = SteamClient.SteamId;
-
-            // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
-            // enabled before StartHost so the server answers approval for every connecting client.
-            ConnectionApprovalGate.Enable(NetworkManager.Singleton);
-
-            // Démarrer l'hôte avec FacepunchTransport
-            bool _started = NetworkManager.Singleton.StartHost();
-            if (!_started)
-            {
-                Debug.LogError("Failed to start host");
-                return null;
-            }
-
-            return _hostSteamId.ToString();
-        }
 
         private async UniTask<string> HostWithUnityRelay(int maxConnections)
         {

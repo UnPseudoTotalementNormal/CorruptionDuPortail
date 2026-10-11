@@ -1,41 +1,46 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
-using Unity.Services.Lobbies;
-using Unity.Services.Lobbies.Models;
 using UnityEngine;
 
 namespace Network.Services
 {
+    /// <summary>
+    /// The lobby the local player is in (server browser, create, join, leave), over the backend of this build:
+    /// UGS lobbies in the Relay build, Steam lobbies in the Steam build (<see cref="GameFlavor"/>). Keeps the session
+    /// bookkeeping both share: current lobby, host heartbeat, polling, and the player-facing error channel.
+    /// </summary>
     public class LobbyManager : MonoBehaviour
     {
         public static LobbyManager instance { get; private set; }
-        
+
         // Events
-        public event Action<Lobby> OnLobbyCreated;
-        public event Action<Lobby> OnLobbyJoined;
-        public event Action<Lobby> OnLobbyUpdated;
+        public event Action<GameLobby> OnLobbyCreated;
+        public event Action<GameLobby> OnLobbyJoined;
+        public event Action<GameLobby> OnLobbyUpdated;
         public event System.Action OnLobbyLeft;
         public event Action<string> OnLobbyError;
-        
-        private Lobby currentLobby;
+
+        private ILobbyBackend backend;
+        private GameLobby currentLobby;
         private CancellationTokenSource heartbeatCancellation;
         private CancellationTokenSource pollCancellation;
-        private const float HEARTBEAT_INTERVAL = 15f; 
-        private const float LOBBY_POLL_INTERVAL = 5.1f; 
-        
-        public Lobby CurrentLobby => currentLobby;
+        private const float HEARTBEAT_INTERVAL = 15f;
+        private const float LOBBY_POLL_INTERVAL = 5.1f;
+
+        public GameLobby CurrentLobby => currentLobby;
         public bool IsInLobby => currentLobby != null;
 
-        // True when the local player owns the current lobby (Unity's Lobby HostId is the authoritative
-        // owner and the only member allowed to DeleteLobbyAsync). Used to decide, on leave, whether to
-        // delete the whole lobby (host) or just remove ourselves (non-host), and to gate the heartbeat
-        // ping (only the host may SendHeartbeatPingAsync).
-        public bool IsLobbyHost =>
-            currentLobby != null &&
-            currentLobby.HostId == Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
+        /// <summary>The lobby list can be queried: signed in to UGS / Steam client running.</summary>
+        public bool IsReady => Backend.IsReady;
+
+        // True when the local player owns the current lobby (the only member allowed to delete it). Used to decide,
+        // on leave, whether to delete the whole lobby (host) or just remove ourselves (non-host), and to gate the
+        // heartbeat ping (only the host may send it).
+        public bool IsLobbyHost => currentLobby != null && Backend.IsHost(currentLobby);
+
+        private ILobbyBackend Backend => backend ??= GameFlavor.IsSteam ? new SteamLobbyBackend() : new UgsLobbyBackend();
 
         /// <summary>
         /// Surface a message on the shared lobby-error channel (investigation join-started-game-gate). The event
@@ -78,11 +83,11 @@ namespace Network.Services
         {
             if (currentLobby != null)
             {
-                _ = LeaveOrDeleteLobby(); // Fire and forget: host deletes the lobby, a client just leaves.
+                LeaveOrDeleteLobby().Forget(); // host deletes the lobby, a client just leaves.
             }
         }
 
-        public async Task<Lobby> CreateLobby(LobbyCreationSettings _settings)
+        public async UniTask<GameLobby> CreateLobby(LobbyCreationSettings _settings)
         {
             if (string.IsNullOrWhiteSpace(_settings.lobbyName))
             {
@@ -95,28 +100,31 @@ namespace Network.Services
                 OnLobbyError?.Invoke("Le nombre de joueurs doit être entre 2 et 20");
                 return null;
             }
-            
-            if (_settings.password != null && _settings.password.Length < 8)
+
+            if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length < 8)
             {
                 OnLobbyError?.Invoke("Le mot de passe doit contenir au moins 8 caractères");
                 return null;
             }
 
+            // UGS caps it at 64; the Steam build sends it inside the connection request, whose strings are bounded.
+            if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length > MaxPasswordLength)
+            {
+                OnLobbyError?.Invoke($"Le mot de passe doit contenir au plus {MaxPasswordLength} caractères");
+                return null;
+            }
+
             try
             {
-                currentLobby = await LobbyService.Instance.CreateLobbyAsync(
-                    _settings.lobbyName,
-                    _settings.maxPlayers,
-                    _settings.Options);
+                currentLobby = await Backend.CreateAsync(_settings);
 
-                StartHeartbeat().Forget();
-                StartLobbyPolling().Forget();
+                StartSessionLoops();
                 OnLobbyCreated?.Invoke(currentLobby);
-                
-                Debug.Log($"Lobby créé: {currentLobby.Name} (ID: {currentLobby.Id})");
+
+                Debug.Log($"Lobby créé: {currentLobby.Name} (ID: {currentLobby.Id}, code: {currentLobby.Code})");
                 return currentLobby;
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de création du lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de créer le lobby: {e.Message}");
@@ -124,21 +132,20 @@ namespace Network.Services
             }
         }
 
-        public async Task<List<Lobby>> GetLobbies()
+        public async UniTask<List<GameLobby>> GetLobbies()
         {
             try
             {
-                var _q = await LobbyService.Instance.QueryLobbiesAsync(new QueryLobbiesOptions());
-                return _q.Results;
+                return await Backend.QueryAsync();
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 OnLobbyError?.Invoke($"Impossible de récupérer les lobbies: {e.Message}");
                 throw new Exception($"Échec de récupération des lobbies: {e.Message}");
             }
         }
 
-        public async Task<Lobby> JoinLobby(string _lobbyId, string _password = null)
+        public async UniTask<GameLobby> JoinLobby(string _lobbyId, string _password = null)
         {
             if (string.IsNullOrWhiteSpace(_lobbyId))
             {
@@ -148,24 +155,14 @@ namespace Network.Services
 
             try
             {
-                JoinLobbyByIdOptions options = null;
-                if (!string.IsNullOrEmpty(_password))
-                {
-                    options = new JoinLobbyByIdOptions
-                    {
-                        Password = _password
-                    };
-                }
-                
-                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(_lobbyId, options);
-                StartHeartbeat().Forget();
-                StartLobbyPolling().Forget();
+                currentLobby = await Backend.JoinByIdAsync(_lobbyId, _password);
+                StartSessionLoops();
                 OnLobbyJoined?.Invoke(currentLobby);
-                
+
                 Debug.Log($"Lobby rejoint: {currentLobby.Name} (ID: {currentLobby.Id})");
                 return currentLobby;
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de rejoindre le lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de rejoindre le lobby: {e.Message}");
@@ -173,7 +170,7 @@ namespace Network.Services
             }
         }
 
-        public async Task<Lobby> JoinLobbyByCode(string _lobbyCode)
+        public async UniTask<GameLobby> JoinLobbyByCode(string _lobbyCode)
         {
             if (string.IsNullOrWhiteSpace(_lobbyCode))
             {
@@ -183,15 +180,14 @@ namespace Network.Services
 
             try
             {
-                currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(_lobbyCode);
-                StartHeartbeat().Forget();
-                StartLobbyPolling().Forget();
+                currentLobby = await Backend.JoinByCodeAsync(_lobbyCode.Trim());
+                StartSessionLoops();
                 OnLobbyJoined?.Invoke(currentLobby);
-                
+
                 Debug.Log($"Lobby rejoint par code: {currentLobby.Name} (Code: {_lobbyCode})");
                 return currentLobby;
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de rejoindre le lobby par code: {e.Message}");
                 OnLobbyError?.Invoke($"Code invalide ou lobby introuvable: {e.Message}");
@@ -199,119 +195,22 @@ namespace Network.Services
             }
         }
 
-        public async Task UpdateLobbyData(string _key, string _value, DataObject.VisibilityOptions _visibility = DataObject.VisibilityOptions.Public)
+        /// <summary>Snapshot of a lobby known only by its id (Steam invite), without joining it. Null on failure.</summary>
+        public async UniTask<GameLobby> GetLobbyInfo(string _lobbyId)
         {
-            if (currentLobby == null)
-            {
-                OnLobbyError?.Invoke("Aucun lobby actif");
-                return;
-            }
-
             try
             {
-                var updatedData = new Dictionary<string, DataObject>();
-                
-                if (currentLobby.Data != null)
-                {
-                    foreach (var kvp in currentLobby.Data)
-                    {
-                        updatedData[kvp.Key] = kvp.Value;
-                    }
-                }
-                
-                updatedData[_key] = new DataObject(_visibility, _value);
-
-                await LobbyService.Instance.UpdateLobbyAsync(
-                    currentLobby.Id,
-                    new UpdateLobbyOptions
-                    {
-                        Data = updatedData
-                    });
-                    
-                Debug.Log($"Donnée du lobby mise à jour: {_key} = {_value}");
+                return await Backend.GetAsync(_lobbyId);
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
-                Debug.LogError($"Échec de mise à jour de {_key}: {e.Message}");
-                OnLobbyError?.Invoke($"Impossible de mettre à jour {_key}: {e.Message}");
-                throw;
-            }
-        }
-
-        public async Task UpdateLobbyJoinCode(string _lobbyId, string _joinCode)
-        {
-            if (string.IsNullOrWhiteSpace(_lobbyId))
-            {
-                OnLobbyError?.Invoke("L'ID du lobby ne peut pas être vide");
-                return;
-            }
-
-            try
-            {
-                var lobby = await LobbyService.Instance.GetLobbyAsync(_lobbyId);
-                var updatedData = new Dictionary<string, DataObject>();
-                
-                if (lobby.Data != null)
-                {
-                    foreach (var kvp in lobby.Data)
-                    {
-                        updatedData[kvp.Key] = kvp.Value;
-                    }
-                }
-                
-                updatedData["joinCode"] = new DataObject(DataObject.VisibilityOptions.Public, _joinCode);
-
-                await LobbyService.Instance.UpdateLobbyAsync(
-                    _lobbyId,
-                    new UpdateLobbyOptions
-                    {
-                        Data = updatedData
-                    });
-                    
-                Debug.Log($"Code de lobby mis à jour: {_joinCode}");
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.LogError($"Échec de mise à jour du code: {e.Message}");
-                OnLobbyError?.Invoke($"Impossible de mettre à jour le code: {e.Message}");
-            }
-        }
-        
-        public async Task<Lobby> RefreshLobby(string _lobbyId)
-        {
-            if (string.IsNullOrWhiteSpace(_lobbyId))
-            {
-                OnLobbyError?.Invoke("L'ID du lobby ne peut pas être vide");
-                return null;
-            }
-
-            try
-            {
-                var _lobby = await LobbyService.Instance.GetLobbyAsync(_lobbyId);
-                if (currentLobby != null && currentLobby.Id == _lobbyId)
-                {
-                    currentLobby = _lobby;
-                }
-                return _lobby;
-            }
-            catch (LobbyServiceException e)
-            {
-                Debug.LogError($"Échec de rafraîchissement du lobby: {e.Message}");
-                OnLobbyError?.Invoke($"Impossible de rafraîchir le lobby: {e.Message}");
+                Debug.LogError($"Échec de lecture du lobby {_lobbyId}: {e.Message}");
+                OnLobbyError?.Invoke($"Impossible de rejoindre la partie: {e.Message}");
                 return null;
             }
         }
-        
-        public void UpdateIsPrivateLobby(bool isPrivate)
-        {
-            UpdateLobbyOptions updateOptions = new()
-            {
-                IsPrivate = isPrivate
-            };
-            LobbyService.Instance.UpdateLobbyAsync(CurrentLobby.Id, updateOptions);
-        }
 
-        public async Task LeaveLobby()
+        public async UniTask LeaveLobby()
         {
             if (currentLobby == null)
             {
@@ -321,22 +220,16 @@ namespace Network.Services
 
             try
             {
-                string _playerId = Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
-                await LobbyService.Instance.RemovePlayerAsync(currentLobby.Id, _playerId);
-                
-                StopHeartbeat();
-                StopLobbyPolling();
-                currentLobby = null;
-                OnLobbyLeft?.Invoke();
-                
+                await Backend.LeaveAsync(currentLobby);
+                ForgetCurrentLobby();
                 Debug.Log("Lobby quitté avec succès");
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 // Leaving is final whatever the service says: never keep polling / heartbeating a lobby we left.
                 ForgetCurrentLobby();
                 // Already gone (the host deleted it on a graceful end, or it expired): that IS the outcome wanted.
-                if (e.Reason == LobbyExceptionReason.LobbyNotFound)
+                if (e.LobbyGone)
                 {
                     Debug.Log($"Lobby déjà fermé en le quittant: {e.Message}");
                     return;
@@ -346,7 +239,7 @@ namespace Network.Services
             }
         }
 
-        public async Task DeleteLobby()
+        public async UniTask DeleteLobby()
         {
             if (currentLobby == null)
             {
@@ -356,19 +249,14 @@ namespace Network.Services
 
             try
             {
-                await LobbyService.Instance.DeleteLobbyAsync(currentLobby.Id);
-                
-                StopHeartbeat();
-                StopLobbyPolling();
-                currentLobby = null;
-                OnLobbyLeft?.Invoke();
-                
+                await Backend.DeleteAsync(currentLobby);
+                ForgetCurrentLobby();
                 Debug.Log("Lobby supprimé avec succès");
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 ForgetCurrentLobby();
-                if (e.Reason == LobbyExceptionReason.LobbyNotFound)
+                if (e.LobbyGone)
                 {
                     Debug.Log($"Lobby déjà supprimé: {e.Message}");
                     return;
@@ -390,11 +278,11 @@ namespace Network.Services
             OnLobbyLeft?.Invoke();
         }
 
-        // Leave the cloud lobby cleanly on the way out. If we are the host, DELETE the whole lobby now
-        // instead of only removing ourselves — otherwise the lobby lingers (with the remaining members)
-        // until Unity's no-heartbeat auto-expiry (~30s), and those members poll a stale, hostless lobby.
-        // A non-host just removes itself (RemovePlayerAsync). Safe to call when not in a lobby.
-        public async Task LeaveOrDeleteLobby()
+        // Leave the lobby cleanly on the way out. If we are the host, DELETE the whole lobby now instead of only
+        // removing ourselves — otherwise the lobby lingers (with the remaining members) until UGS's no-heartbeat
+        // auto-expiry (~30s), or stays listed on Steam under a new owner, and its members poll a hostless lobby.
+        // A non-host just removes itself. Safe to call when not in a lobby.
+        public async UniTask LeaveOrDeleteLobby()
         {
             if (currentLobby == null)
             {
@@ -409,6 +297,15 @@ namespace Network.Services
             {
                 await LeaveLobby();
             }
+        }
+
+        private void StartSessionLoops()
+        {
+            if (Backend.NeedsHeartbeat)
+            {
+                StartHeartbeat().Forget();
+            }
+            StartLobbyPolling().Forget();
         }
 
         private async UniTaskVoid StartHeartbeat()
@@ -437,7 +334,7 @@ namespace Network.Services
                     // lobby expired ~30 s later although the host was fine. Retry; report a lasting failure only.
                     try
                     {
-                        await LobbyService.Instance.SendHeartbeatPingAsync(currentLobby.Id);
+                        await Backend.HeartbeatAsync(currentLobby);
                         _consecutiveFailures = 0;
                         Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby?.Name}");
                     }
@@ -497,7 +394,7 @@ namespace Network.Services
                     string _lobbyId = currentLobby.Id;
                     try
                     {
-                        var _updatedLobby = await LobbyService.Instance.GetLobbyAsync(_lobbyId);
+                        GameLobby _updatedLobby = await Backend.RefreshAsync(currentLobby);
                         _consecutiveFailures = 0;
                         if (currentLobby != null && currentLobby.Id == _lobbyId)
                         {
@@ -530,6 +427,7 @@ namespace Network.Services
         }
 
         private const int MaxConsecutivePollFailures = 3;
+        private const int MaxPasswordLength = 64;
 
         private static bool IsNetworkSessionRunning()
         {
@@ -544,7 +442,7 @@ namespace Network.Services
             pollCancellation = null;
         }
 
-        public async Task SetLobbyLocked(bool isLocked)
+        public async UniTask SetLobbyLocked(bool isLocked)
         {
             if (currentLobby == null)
             {
@@ -554,16 +452,10 @@ namespace Network.Services
 
             try
             {
-                await LobbyService.Instance.UpdateLobbyAsync(
-                    currentLobby.Id,
-                    new UpdateLobbyOptions
-                    {
-                        IsLocked = isLocked
-                    });
-                    
+                await Backend.SetLockedAsync(currentLobby, isLocked);
                 Debug.Log($"Lobby {(isLocked ? "verrouillé" : "déverrouillé")}");
             }
-            catch (LobbyServiceException e)
+            catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de verrouillage du lobby: {e.Message}");
                 OnLobbyError?.Invoke($"Impossible de verrouiller le lobby: {e.Message}");

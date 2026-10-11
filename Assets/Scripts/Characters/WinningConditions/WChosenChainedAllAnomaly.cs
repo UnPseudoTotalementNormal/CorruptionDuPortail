@@ -12,6 +12,8 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WChosenChainedAllAnomaly : WinningCondition
     {
+        public override string Description => "Les Élus gagnent quand toutes les Anomalies sont enchaînées.";
+
         public override WinningTeam GetWinningTeam()
         {
             return WinningTeam.chosen;

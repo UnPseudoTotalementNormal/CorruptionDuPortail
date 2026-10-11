@@ -53,6 +53,9 @@ namespace Autoplay
         [Tooltip("Game seconds the chosen card stays hovered (captured) before the click.")]
         public float pickerHoverDwell = 0.6f;
 
+        [Tooltip("Scenario lever role-card-dwell: real seconds the lobby's role detail overlay stays open (lobby-ui).")]
+        public float roleCardDwell = 0.5f;
+
         [Tooltip("Scenario lever: when set, every bot votes for the living player whose role name contains this text " +
                  "(forces a situation to happen, e.g. chain the Mage to exercise the portal). Empty = random legal votes.")]
         public string voteFocusRole;
@@ -117,6 +120,10 @@ namespace Autoplay
         public float cardVisibilitySettle = 4f;
         [Tooltip("Real seconds a view switch gets to blend before a view is measured.")]
         public float cardVisibilityBlend = 1.5f;
+        [Tooltip("Seated view variant to play (-autoplay-seated-view \"h=1.5,pitch=12,r=22,scale=0.8,round=1,stand=1\"): " +
+                 "camera height offset, rest pitch, remote seat radius, seated cat scale, round table, standing cards. " +
+                 "Missing keys keep the scene's values. Local presentation only, never saved. Empty = off.")]
+        public string seatedView;
     }
 
     /// <summary>

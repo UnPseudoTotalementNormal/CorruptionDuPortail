@@ -1,11 +1,9 @@
 #region
 
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using Board.UI.CharacterBar;
 using Characters;
-using Characters.Powers;
-using CorruptionDuPortail.Domain;
 using Extensions;
 using UI.Cards;
 using UnityEngine;
@@ -16,9 +14,10 @@ using UnityEngine.UIElements;
 namespace UI.RoleCard
 {
     /// <summary>
-    /// Drives the on-demand role-presentation card (RoleCard.uxml). NOT the role-reveal state screen —
-    /// this is a consultable panel opened by clicking a character in the power bar. Binds a <see cref="Role"/>
-    /// into the card and handles show/hide.
+    /// Drives the on-demand role presentation overlay (RoleCard.uxml): a grimoire page opened by clicking a character
+    /// in the power bar (or a card of the lobby tablet). NOT the role-reveal state screen. Binds a <see cref="Role"/>
+    /// into the page and handles show/hide. What the page says and how it looks is <see cref="RoleSheet"/>, shared
+    /// with the main menu's role book.
     ///
     /// Curation (owner-ratified): each personal passive is its own bullet row; any power flagged
     /// <see cref="Power.hideFromRoleCard"/> (a faction win-objective) is omitted; usage counts are static.
@@ -26,41 +25,19 @@ namespace UI.RoleCard
     /// factice) and which power/role was copied. Two markers cover the copy roles: <see cref="Power.isStolenCopy"/>
     /// (Ugues' Marque d'Hurluberluges, Luma's Mélange des cartes — one-shot copies) and
     /// <see cref="Power.hideFromRoleCardRuntime"/> (L'Incomplet's Réincarnation — permanent grants).
-    /// Active powers are shown as numbered pills. Faction display name is TEMP until a Faction
-    /// ScriptableObject carries a real displayName + tagline (design-owned narrative).
     ///
-    /// The card sits over the existing blurred game backdrop: opening the card fades the shared FrostCanvas
-    /// veil in (the uGUI blur consumer of _BackgroundBlurSource); closing fades it out.
+    /// The page sits over the existing blurred game backdrop: opening fades the shared FrostCanvas veil in (the uGUI
+    /// blur consumer of _BackgroundBlurSource); closing fades it out.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class RoleCardController : MonoBehaviour
     {
         private const string HiddenClass = "cdp-is-hidden";
         private const string CollapsedClass = "cdp-is-collapsed";
-        private const string PipClass = "role-card__pip";
-        private const string PipEmptyClass = "role-card__pip--empty";
-        private const string PowerClass = "role-card__power";
-        private const string PowerNumClass = "role-card__power-num";
-        private const string PowerHeadClass = "role-card__power-head";
-        private const string PowerTitleClass = "role-card__power-title";
-        private const string PowerDescClass = "role-card__power-desc";
-        private const string PassiveRowClass = "role-card__passive-row";
-        private const string PassiveBulletClass = "role-card__passive-bullet";
-        private const string PassiveTextClass = "role-card__passive-text";
-        private const string NameLongClass = "role-card__name--long";
-        private const string Bullet = "•";
-        private const string Star = "★";
-        private const int LongNameThreshold = 18;
-        private const int DifficultyPips = 3;
-        // Longest staggered exit transition (panel: 100ms delay + 300ms) + a small buffer. We collapse
+        // Longest staggered exit transition (portrait: 120ms delay + 340ms) + a small buffer. We collapse
         // (display:none) only after this so the exit animation isn't cut short.
-        private const long ExitCollapseDelayMs = 420;
-
-        // Per-faction tint (Sally): the card keeps a dark/gold frame but injects the faction accent colour
-        // (FactionData.color) into borders, titles, pills and pips. Shades are computed from that one source.
-        private static readonly Color TintDark = new Color(0.149f, 0.122f, 0.078f);      // panel base rgb(38,31,20)
-        private static readonly Color TintNearBlack = new Color(0.102f, 0.078f, 0.047f); // pill digit on light accents
-        private static readonly Color GoldAccent = new Color(0.749f, 0.604f, 0.322f);    // fallback when no faction colour
+        private const long ExitCollapseDelayMs = 500;
+        private const float PortraitCardWidth = 260f; // the canonical RoleCardElement face pinned on the page
 
         [SerializeField] private UIDocument document;
 
@@ -84,29 +61,33 @@ namespace UI.RoleCard
         [Tooltip("Knowledge store: tells whether the viewer knows a clicked role is fake. Wire the scene's GameInfoRevealer.")]
         [SerializeField] private GameLogic.GameInfoRevealer gameInfoRevealer;
 
-        private const float PortraitCardWidth = 250f; // the canonical RoleCardElement face used for the portrait
+        [Tooltip("Show the short victory condition above the kit. Off on the in-game card.")]
+        [SerializeField] private bool showVictoryCondition;
+
+        /// <summary>Raised when the card is dismissed (close button or click outside the page).</summary>
+        public event Action Closed;
 
         private VisualElement _root;
         private VisualElement _portrait;
         private RoleCardElement _portraitCard;
-        private Label _faction;
+        private VisualElement _seal;
         private VisualElement _factionIcon;
+        private Label _faction;
         private Label _roleName;
         private Label _fakeBadge;
         private VisualElement _difficulty;
-        private VisualElement _panel;
         private VisualElement _divider;
+        private VisualElement _victoryBlock;
+        private Label _victoryText;
         private VisualElement _passiveBlock;
         private Label _passiveLabel;
         private VisualElement _passiveList;
+        private VisualElement _powersBlock;
+        private Label _powersLabel;
         private VisualElement _powers;
         private bool _initialized;
 
-        // Faction accent + derived shades, computed once per Open() and consumed by the dynamic builders.
-        private Color _cAccent = Color.white;
-        private Color _cInset = Color.black;
-        private Color _cTitle = Color.white;
-        private Color _cPillDigit = Color.white;
+        private RoleSheetAssets Assets => new RoleSheetAssets(factionDatabase, portraitTable, roleCardTexts);
 
         private void OnEnable()
         {
@@ -128,24 +109,28 @@ namespace UI.RoleCard
             _root = tree?.Q<VisualElement>("role-card");
             if (_root == null) return;
 
-            _panel = _root.Q<VisualElement>("panel");
             _portrait = _root.Q<VisualElement>("portrait");
-            _faction = _root.Q<Label>("faction");
+            _seal = _root.Q<VisualElement>("seal");
             _factionIcon = _root.Q<VisualElement>("faction-icon");
+            _faction = _root.Q<Label>("faction");
             _roleName = _root.Q<Label>("role-name");
             _fakeBadge = _root.Q<Label>("fake-badge");
             _difficulty = _root.Q<VisualElement>("difficulty");
             _divider = _root.Q<VisualElement>("divider");
+            _victoryBlock = _root.Q<VisualElement>("victory-block");
+            _victoryText = _root.Q<Label>("victory-text");
             _passiveBlock = _root.Q<VisualElement>("passive-block");
             _passiveLabel = _root.Q<Label>("passive-label");
             _passiveList = _root.Q<VisualElement>("passive-list");
+            _powersBlock = _root.Q<VisualElement>("powers-block");
+            _powersLabel = _root.Q<Label>("powers-label");
             _powers = _root.Q<VisualElement>("powers");
 
             var closeButton = _root.Q<Button>("close");
             if (closeButton != null) closeButton.clicked += Close;
 
-            // The portrait is the CANONICAL card face (RoleCardElement) so the overlay's card matches the lobby
-            // grid / in-game card everywhere. The "portrait" element is just its animated, overlapping host.
+            // The pinned card is the CANONICAL card face (RoleCardElement) so the overlay's card matches the lobby
+            // grid / in-game card everywhere. The "portrait" element is just its animated host.
             if (_portrait != null)
             {
                 _portrait.Clear();
@@ -208,9 +193,10 @@ namespace UI.RoleCard
 
             // Collapse only after the staggered exit finishes (guarded, so a re-open in between cancels it).
             _root.schedule.Execute(CollapseIfHidden).ExecuteLater(ExitCollapseDelayMs);
+            Closed?.Invoke();
         }
 
-        // Dismiss only when the scrim itself is clicked, not the panel or its children.
+        // Dismiss only when the scrim itself is clicked, not the page or its children.
         private void OnRootPointerDown(PointerDownEvent evt)
         {
             if (evt.target == _root) Close();
@@ -223,198 +209,52 @@ namespace UI.RoleCard
 
         private void Bind(Role role)
         {
-            var roleName = role.roleName.ToString();
-            _roleName.text = roleName;
-            _roleName.EnableInClassList(NameLongClass, roleName.Length > LongNameThreshold);
-            _portraitCard?.SetName(roleName);
-            BindFaction(role.factionType);
-            BuildDifficulty(role.roleDifficulty);
-            BuildPassive(role);
-            BuildActivePowers(role);
-            BindPortrait(role);
-        }
+            RoleSheetAssets assets = Assets;
+            Color faction = RoleSheet.FactionColor(assets, role.factionType);
+            Color ink = RoleSheet.InkOf(faction);
+            string roleName = role.roleName.ToString();
 
-        // Always DifficultyPips dots; the ones past the role's difficulty are dimmed (empty) — same size,
-        // opacity only, for clean alignment.
-        private void BuildDifficulty(int difficulty)
-        {
-            _difficulty.Clear();
-            for (var i = 1; i <= DifficultyPips; i++)
+            RoleSheet.SetName(_roleName, roleName);
+            _roleName.style.color = ink;
+            _faction.text = RoleSheet.FactionName(assets, role.factionType);
+            if (_seal != null && _factionIcon != null) RoleSheet.FillSeal(_seal, _factionIcon, assets.Faction(role.factionType), faction);
+            RoleSheet.FillDifficulty(_difficulty, role.roleDifficulty, ink);
+            if (_divider != null) _divider.style.unityBackgroundImageTintColor = ink;
+
+            BindVictory(role, ink);
+
+            List<string> passives = RoleSheet.PassiveLines(role, roleCardTexts);
+            RoleSheet.FillPassives(_passiveList, passives, ink);
+            _passiveLabel.style.color = ink;
+            _passiveBlock.EnableInClassList(CollapsedClass, passives.Count == 0);
+
+            var powers = RoleSheet.ActivePowers(role);
+            RoleSheet.FillPowers(_powers, powers, ink);
+            if (_powersLabel != null)
             {
-                var pip = new Label(Star);
-                pip.AddToClassList(PipClass);
-                if (i > difficulty) pip.AddToClassList(PipEmptyClass);   // empty stars keep the shared dimmed look
-                else pip.style.color = _cAccent;                          // filled stars take the faction accent
-                _difficulty.Add(pip);
+                _powersLabel.text = powers.Count > 1 ? "Pouvoirs" : "Pouvoir";
+                _powersLabel.style.color = ink;
+            }
+            _powersBlock?.EnableInClassList(CollapsedClass, powers.Count == 0);
+
+            if (_portraitCard != null)
+            {
+                _portraitCard.SetName(roleName);
+                _portraitCard.SetAccent(faction);
+                _portraitCard.SetPortrait(portraitTable != null ? portraitTable.Get(role.rolePortrait) : null);
             }
         }
 
-        // Single source of truth for card membership + section: the pure RoleCardPowerVisibility classifier
-        // (EditMode-tested in RoleCardPowerVisibilityTests). Categorizes by authoredIsPassive (design-time),
-        // NOT the live isPassive — PReincarnation flips the live flag post-use to disable itself, but the power
-        // must still read as its authored active power here.
-        private static RoleCardSlot SlotOf(Power p) => RoleCardPowerVisibility.Classify(
-            authoredIsPassive: p.authoredIsPassive,
-            hideFromRoleCard: p.hideFromRoleCard,
-            isStolenCopy: p.isStolenCopy.Value,
-            hideFromRoleCardRuntime: p.hideFromRoleCardRuntime.Value,
-            hasDescription: !string.IsNullOrEmpty(p.powerDescription.ToString()));
-
-        // One bulleted row per passive so distinct passives read as a scannable list instead of a run-on
-        // paragraph. The designer's per-role lines win (RoleCardTexts); otherwise one row per passive power, whose
-        // membership (incl. the empty-description skip) is owned by SlotOf/RoleCardPowerVisibility.
-        private void BuildPassive(Role role)
+        // The victory lines (RoleSheet.VictoryLines, from the role's WinningConditions). Hidden on the in-game card
+        // (showVictoryCondition off) and when nothing describes the role's victory.
+        private void BindVictory(Role role, Color ink)
         {
-            _passiveList.Clear();
-            IEnumerable<string> lines = roleCardTexts != null && roleCardTexts.TryGetPassives(role.roleID, out var authored)
-                ? authored
-                : role.powers.Where(p => SlotOf(p) == RoleCardSlot.PassiveRow).Select(p => p.powerDescription.ToString());
-            foreach (var desc in lines)
-            {
-                var row = new VisualElement();
-                row.AddToClassList(PassiveRowClass);
-
-                var bullet = new Label(Bullet);
-                bullet.AddToClassList(PassiveBulletClass);
-                bullet.style.color = _cAccent;
-
-                var text = new Label(desc);
-                text.AddToClassList(PassiveTextClass);
-
-                row.Add(bullet);
-                row.Add(text);
-                _passiveList.Add(row);
-            }
-
-            _passiveBlock.EnableInClassList(CollapsedClass, _passiveList.childCount == 0);
+            if (_victoryBlock == null) return;
+            List<string> lines = showVictoryCondition ? RoleSheet.VictoryLines(role) : new List<string>();
+            _victoryBlock.EnableInClassList(CollapsedClass, lines.Count == 0);
+            if (lines.Count == 0) return;
+            _victoryText.text = string.Join("\n", lines);
+            _victoryText.style.color = ink;
         }
-
-        // Each active power: a numbered gold pill (the "I trigger this" marker) + the power name and
-        // description. The number lives in the pill, so the title is just the power name.
-        private void BuildActivePowers(Role role)
-        {
-            _powers.Clear();
-            var index = 1;
-            foreach (var power in role.powers.Where(p => SlotOf(p) == RoleCardSlot.ActivePill))
-            {
-                var entry = new VisualElement();
-                entry.AddToClassList(PowerClass);
-
-                var head = new VisualElement();
-                head.AddToClassList(PowerHeadClass);
-
-                var num = new Label(index.ToString());
-                num.AddToClassList(PowerNumClass);
-                num.style.backgroundColor = _cAccent;
-                num.style.color = _cPillDigit;
-
-                var title = new Label(power.powerName.ToString());
-                title.AddToClassList(PowerTitleClass);
-                title.style.color = _cTitle;
-
-                var desc = new Label(power.powerDescription.ToString());
-                desc.AddToClassList(PowerDescClass);
-
-                head.Add(num);
-                head.Add(title);
-                entry.Add(head);
-                entry.Add(desc);
-                _powers.Add(entry);
-                index++;
-            }
-        }
-
-        private void BindPortrait(Role role)
-        {
-            var sprite = portraitTable != null ? portraitTable.Get(role.rolePortrait) : null;
-            _portraitCard?.SetPortrait(sprite);
-        }
-
-        // Faction line from the FactionDatabase: "displayName : tagline" (tagline optional) + the faction icon,
-        // and the per-faction accent tint. Falls back to a name-only label + gold accent when unwired.
-        private void BindFaction(FactionType faction)
-        {
-            FactionData data = null;
-            if (factionDatabase != null && factionDatabase.TryGet(faction, out var d)) data = d;
-
-            var text = data != null
-                ? (string.IsNullOrEmpty(data.tagline) ? data.displayName : $"{data.displayName} : {data.tagline}")
-                : FactionHeader(faction);
-            var icon = data != null ? data.icon : null;
-
-            _faction.text = text;
-            if (_factionIcon != null)
-            {
-                _factionIcon.style.backgroundImage = icon != null ? new StyleBackground(icon) : new StyleBackground();
-                _factionIcon.style.display = icon != null ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-
-            ApplyFactionTint(data != null ? data.color : GoldAccent);
-        }
-
-        // Injects the faction accent colour into the card's frame + accents, keeping the body dark/neutral
-        // (Sally's ~75/25 rule). Shades are derived from the single source colour f; stores the accent/inset/
-        // title/pill-digit for the dynamic builders (pips, passive rows, power pills).
-        private void ApplyFactionTint(Color f)
-        {
-            var fBg = Color.Lerp(f, TintDark, 0.88f);
-            var fInset = Color.Lerp(f, TintDark, 0.80f);
-            var fTitle = WithLumaAtLeast(Color.Lerp(f, Color.white, 0.35f), 0.55f);
-            var fMuted = Color.Lerp(f, Color.white, 0.55f);
-            var fDivider = new Color(f.r, f.g, f.b, 0.28f);
-
-            _portraitCard?.SetAccent(f);
-            _cAccent = f;
-            _cInset = fInset;
-            _cTitle = fTitle;
-            _cPillDigit = Luma(f) < 0.5f ? Color.white : TintNearBlack;
-
-            if (_panel != null)
-            {
-                SetBorderColor(_panel, f);
-                _panel.style.backgroundColor = fBg;
-            }
-            if (_portrait != null) SetBorderColor(_portrait, f); // portrait fill stays warm-gold (USS); only the frame tints
-            if (_faction != null) _faction.style.color = fMuted;
-            if (_roleName != null) _roleName.style.color = fTitle;
-            if (_divider != null) _divider.style.backgroundColor = fDivider;
-            if (_passiveBlock != null)
-            {
-                _passiveBlock.style.backgroundColor = fInset;
-                _passiveBlock.style.borderLeftColor = f;
-            }
-            if (_passiveLabel != null) _passiveLabel.style.color = fMuted;
-
-            // Scrollbar thumb — faction-tinted too (owner's call; overrides the gold USS default).
-            var dragger = _root?.Q(null, "unity-scroller--vertical")?.Q("unity-dragger");
-            if (dragger != null) dragger.style.backgroundColor = f;
-        }
-
-        private static float Luma(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
-
-        // Lift a colour toward white until it reads legibly (keeps a dark/desaturated faction title readable).
-        private static Color WithLumaAtLeast(Color c, float min)
-        {
-            var col = c;
-            for (var i = 0; i < 8 && Luma(col) < min; i++) col = Color.Lerp(col, Color.white, 0.15f);
-            return col;
-        }
-
-        private static void SetBorderColor(VisualElement e, Color c)
-        {
-            e.style.borderTopColor = c;
-            e.style.borderRightColor = c;
-            e.style.borderBottomColor = c;
-            e.style.borderLeftColor = c;
-        }
-
-        // Name-only fallback when no FactionDatabase entry is available.
-        private static string FactionHeader(FactionType faction) => faction switch
-        {
-            FactionType.anomaly => "Anomalie",
-            FactionType.chosen => "Élu",
-            FactionType.marginal => "Marginal",
-            _ => "Inconnu"
-        };
     }
 }

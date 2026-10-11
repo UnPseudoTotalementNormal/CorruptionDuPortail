@@ -133,6 +133,10 @@ namespace UI.LobbyRoles
                 roleDifficulty = src.roleDifficulty,
             };
             if (rdo.powers != null) detail.powers.AddRange(rdo.powers);
+            // Own copies (conditions carry a per-character owner): the role book reads their Description.
+            if (src.winningConditions != null)
+                foreach (var condition in src.winningConditions)
+                    if (condition != null) detail.winningConditions.Add((Characters.WinningConditions.WinningCondition)condition.Clone());
             return detail;
         }
     }

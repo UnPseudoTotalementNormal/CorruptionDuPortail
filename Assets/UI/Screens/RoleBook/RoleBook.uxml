@@ -1,0 +1,55 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Role book of the main menu: a leather-bound grimoire, one spread per playable role. Left page = the role's
+         card, seal, name, faction, difficulty; right page = how it wins, its passives and powers (RoleSheet, the same
+         content and look as the in-game role overlay). Faction ribbons hang from the bottom edge (a ribbon opens its
+         chapter's first role), the dog-eared corners turn the pages, the keyboard too (arrows / Q D, Échap closes).
+
+         Layout = RoleBook.uss, page look = RoleSheet.uss. Pages, ribbons and the turning leaf are filled by
+         RoleBookController; nothing here is bound by name elsewhere. -->
+    <ui:Style src="../RoleCard/RoleSheet.uss" />
+    <ui:Style src="RoleBook.uss" />
+    <ui:VisualElement name="role-book" class="role-book cdp-is-hidden cdp-is-collapsed">
+        <ui:Label name="book-hint" text="Flèches ou Q / D : tourner les pages     Échap : fermer" class="role-book__hint" picking-mode="Ignore" />
+
+        <ui:VisualElement name="book-stage" class="role-book__stage" picking-mode="Ignore">
+            <!-- Ribbons first in the DOM: the book paints over their tops, they hang out of its bottom edge. -->
+            <ui:VisualElement name="book-ribbons" class="role-book__ribbons" picking-mode="Ignore" />
+
+            <ui:VisualElement name="book" class="role-book__book">
+                <!-- The two leather boards. The left one is the inside of the cover: it unfolds from the spine. -->
+                <ui:VisualElement name="board-left" class="role-book__board role-book__board--left" picking-mode="Ignore" />
+                <ui:VisualElement name="board-right" class="role-book__board role-book__board--right" picking-mode="Ignore" />
+                <ui:VisualElement name="book-pages" class="role-book__pages" picking-mode="Ignore">
+                    <ui:VisualElement name="page-left" class="role-book__page role-book__page--left role-sheet role-sheet__page">
+                        <ui:VisualElement name="page-left-content" class="role-book__page-content" picking-mode="Ignore" />
+                        <ui:Label name="page-left-number" text="1" class="role-book__folio role-sheet__sc" picking-mode="Ignore" />
+                        <ui:VisualElement name="corner-left" class="role-book__corner role-book__corner--left" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="page-right" class="role-book__page role-book__page--right role-sheet role-sheet__page">
+                        <ui:VisualElement name="page-right-content" class="role-book__page-content" />
+                        <ui:Label name="page-right-number" text="2" class="role-book__folio role-sheet__sc" picking-mode="Ignore" />
+                        <ui:VisualElement name="corner-right" class="role-book__corner role-book__corner--right" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="book-gutter" class="role-book__gutter" picking-mode="Ignore" />
+
+                    <!-- The turning page, built per turn by RoleBookController: vertical strips that each rotate around the
+                         spine a little behind the next (the free edge leads, so the sheet curls), recto then verso, plus
+                         the soft shadows it casts on the pages under it. -->
+                    <ui:VisualElement name="book-shadow-right" class="role-book__cast-shadow" picking-mode="Ignore" />
+                    <ui:VisualElement name="book-shadow-left" class="role-book__cast-shadow role-book__cast-shadow--left" picking-mode="Ignore" />
+                    <ui:VisualElement name="book-flip" class="role-book__flip" picking-mode="Ignore" />
+                </ui:VisualElement>
+
+                <!-- The closed cover, over the right half; it swings open around the spine. -->
+                <ui:VisualElement name="book-cover" class="role-book__cover" picking-mode="Ignore">
+                    <ui:Label text="Livre des" class="role-book__cover-title role-book__cover-title--small role-sheet__sc" picking-mode="Ignore" />
+                    <ui:Label text="Personnages" class="role-book__cover-title role-sheet__sc" picking-mode="Ignore" />
+                    <ui:VisualElement name="book-cover-emblem" class="role-book__cover-emblem" picking-mode="Ignore" />
+                    <ui:Label text="Corruption du Portail" class="role-book__cover-sub role-sheet__sc" picking-mode="Ignore" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:Button name="book-close" text="✕" class="role-book__close" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

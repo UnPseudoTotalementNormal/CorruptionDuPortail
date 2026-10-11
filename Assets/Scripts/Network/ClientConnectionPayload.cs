@@ -16,7 +16,9 @@ namespace Network
     /// </summary>
     public static class ClientConnectionPayload
     {
-        public static void Apply(NetworkManager _networkManager)
+        /// <param name="_lobbyPassword">Steam build: the password typed for the lobby, checked by the host's
+        /// connection approval. Null otherwise.</param>
+        public static void Apply(NetworkManager _networkManager, string _lobbyPassword = null)
         {
             if (_networkManager == null)
             {
@@ -33,6 +35,7 @@ namespace Network
                 IsEditor = Application.isEditor,
                 // Rejoin 02: proves this player owns a seat if he reconnects to a game already started.
                 RejoinToken = RejoinSessionStore.TokenForConnection(),
+                LobbyPassword = _lobbyPassword ?? string.Empty,
             };
             _networkManager.NetworkConfig.ConnectionData = _payload.ToBytes();
 

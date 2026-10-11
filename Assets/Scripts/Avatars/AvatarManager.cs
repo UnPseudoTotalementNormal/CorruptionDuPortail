@@ -76,6 +76,24 @@ namespace Avatars
         [SerializeField] private float _frontAngleDeg = 0f;
         [Tooltip("Lobby spawn points where avatars appear, in a STABLE order.")]
         [SerializeField] private List<Transform> _spawnPoints = new();
+        [Tooltip("Scale applied to the OTHER players' seated avatars (on top of their prefab scale) by the seating " +
+                 "presenter; restored when the players stand up (T16: the cats looked too big around the table). The " +
+                 "local avatar keeps its size (its eye anchors the first-person camera). 1 = the prefab's size.")]
+        [SerializeField] private float _seatedAvatarScale = 1f;
+
+        /// <summary>Remote seat ring radius (see the field's tooltip). Settable for autoplay view comparisons.</summary>
+        public float RemoteRingRadius
+        {
+            get => _remoteRingRadius;
+            set => _remoteRingRadius = value;
+        }
+
+        /// <summary>Seated avatar scale factor (see the field's tooltip). Settable for autoplay view comparisons.</summary>
+        public float SeatedAvatarScale
+        {
+            get => _seatedAvatarScale;
+            set => _seatedAvatarScale = value;
+        }
 
         // One-shot warn guard so a missing ring center logs once, not every frame the presenter polls.
         private bool _warnedNoRingCenter;

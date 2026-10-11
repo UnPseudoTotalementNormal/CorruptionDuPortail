@@ -53,6 +53,12 @@ namespace Avatars
         [SerializeField] private float _pitchClamp = 40f;
         [SerializeField] private int _activePriority = 100;
         [SerializeField] private int _inactivePriority = -100;
+        [Tooltip("Extra height (metres, world up) of the camera above the avatar's eye (T16: the designer wants to sit " +
+                 "higher above the table). 0 = the cat's own eye height.")]
+        [SerializeField] private float _heightOffset;
+        [Tooltip("Pitch (degrees, + = down) the look starts at on each entry, so a raised camera still looks at the " +
+                 "cards. The ±pitch clamp stays around the seat facing.")]
+        [SerializeField] private float _restPitch;
 
         private bool _active;
         // Look freeze (arbiter-driven): zeroed while the tablet is open so the freed cursor drives the tablet
@@ -82,6 +88,27 @@ namespace Avatars
 
         /// <summary>Whether the embodied seated camera is currently outranking the board cameras.</summary>
         public bool IsActive => _active;
+
+        /// <summary>Extra camera height above the eye (metres). Settable for autoplay view comparisons.</summary>
+        public float HeightOffset
+        {
+            get => _heightOffset;
+            set => _heightOffset = value;
+        }
+
+        /// <summary>Look pitch bound (± degrees around the seat facing). Settable for autoplay comparisons.</summary>
+        public float PitchClamp
+        {
+            get => _pitchClamp;
+            set => _pitchClamp = value;
+        }
+
+        /// <summary>Pitch the look starts at on each entry (degrees, + = down). Settable for autoplay comparisons.</summary>
+        public float RestPitch
+        {
+            get => _restPitch;
+            set => _restPitch = value;
+        }
 
         private void Awake()
         {
@@ -135,9 +162,9 @@ namespace Avatars
         {
             _active = true;
             _camera.Priority = _activePriority;
-            // Re-centre the look on the seat facing each time we enter the Vote.
+            // Re-centre the look on the seat facing (tilted down by the rest pitch) each time we enter the Vote.
             _yaw = 0f;
-            _pitch = 0f;
+            _pitch = Mathf.Clamp(_restPitch, -_pitchClamp, _pitchClamp);
             // Force a fresh publish of the (re-centred) yaw on the first frame so remote viewers don't briefly
             // see the previous Vote's stale gaze before we write again.
             _lastPublishedYaw = float.NaN;
@@ -216,7 +243,8 @@ namespace Avatars
             // animations would shake the camera. Fallback to seat + offset only if no EyePivot is wired.
             // Look stays RELATIVE to the seat facing (yaw 0 / pitch 0 looks straight at the table).
             Transform _eye = _boundAvatar.EyePivot;
-            Vector3 _eyePosition = _eye != null ? _eye.position : _seat.Position + _seat.Rotation * _eyeOffset;
+            Vector3 _eyePosition = (_eye != null ? _eye.position : _seat.Position + _seat.Rotation * _eyeOffset)
+                                   + Vector3.up * _heightOffset;
             _camera.transform.SetPositionAndRotation(
                 _eyePosition,
                 _seat.Rotation * Quaternion.Euler(_pitch, _yaw, 0f));

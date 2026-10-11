@@ -8,9 +8,7 @@ using Network.Services;
 using TMPro;
 using UI.LobbyUI;
 using Unity.Netcode;
-using Unity.Services.Authentication;
-using Netcode.Transports.Facepunch;
-using Steamworks;
+using Network.Steam;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -33,7 +31,7 @@ namespace UI.Lobby
         private bool _isRefreshing;
         private bool _isJoining;
 
-        private Unity.Services.Lobbies.Models.Lobby currentLobbySelected;
+        private GameLobby currentLobbySelected;
         private LobbyEntryUI currentLobbyEntryUISelected;
         
         private Dictionary<string, LobbyEntryUI> existingEntries = new Dictionary<string, LobbyEntryUI>();
@@ -111,6 +109,62 @@ namespace UI.Lobby
             }
         }
 
+        /// <summary>
+        /// Steam build: join the lobby a friend invited us to (SteamInvites), through the same path as a click in the
+        /// list: started game refused, password asked when the lobby has one.
+        /// </summary>
+        public void JoinFromSteamInvite(string _lobbyId)
+        {
+            if (_isJoining)
+            {
+                ReportJoinFailure(BusyForInviteMessage);
+                return;
+            }
+            _isJoining = true;
+
+            JoinFromSteamInviteAsync(_lobbyId).Forget();
+        }
+
+        private async UniTaskVoid JoinFromSteamInviteAsync(string _lobbyId)
+        {
+            try
+            {
+                loadingCanvasGroup.DoShowGroup();
+                GameLobby _lobby = await LobbyManager.instance.GetLobbyInfo(_lobbyId);
+                if (_lobby == null)
+                {
+                    HideLoadingSafe(); // GetLobbyInfo already reported why
+                    return;
+                }
+                // The invite replaces whatever was picked in the list: no highlighted row, no half-typed password
+                // (it would be sent to the invited lobby).
+                if (currentLobbyEntryUISelected != null)
+                {
+                    currentLobbyEntryUISelected.OnDeselectedFeedback();
+                    currentLobbyEntryUISelected = null;
+                }
+                enterPasswordCanvasGroup.DoHideGroup();
+                passwordInputField.text = "";
+                currentLobbySelected = _lobby;
+                await JoinLobby(_lobby);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec de la connexion à la partie d'un ami: {e}");
+                HideLoadingSafe();
+            }
+            finally
+            {
+                _isJoining = false;
+            }
+        }
+
+        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant.";
+
         private void OnConnectButtonClicked()
         {
             if (currentLobbySelected == null)
@@ -146,7 +200,7 @@ namespace UI.Lobby
 
         private void Update()
         {
-            if (!AuthenticationService.Instance.IsSignedIn)
+            if (LobbyManager.instance == null || !LobbyManager.instance.IsReady)
                 return;
 
             refreshTimer += Time.deltaTime;
@@ -159,7 +213,7 @@ namespace UI.Lobby
 
         public void Refresh()
         {
-            if (!AuthenticationService.Instance.IsSignedIn)
+            if (LobbyManager.instance == null || !LobbyManager.instance.IsReady)
             {
                 return;
             }
@@ -177,7 +231,7 @@ namespace UI.Lobby
         {
             try
             {
-                List<Unity.Services.Lobbies.Models.Lobby> lobbies;
+                List<GameLobby> lobbies;
                 try
                 {
                     lobbies = await LobbyManager.instance.GetLobbies();
@@ -189,7 +243,7 @@ namespace UI.Lobby
                 }
 
                 HashSet<string> currentLobbyIds = new HashSet<string>();
-                foreach (Unity.Services.Lobbies.Models.Lobby lobby in lobbies)
+                foreach (GameLobby lobby in lobbies)
                 {
                     if (lobby.IsLocked)
                     {
@@ -240,7 +294,7 @@ namespace UI.Lobby
             }
         }
 
-        private void CreateEntry(Unity.Services.Lobbies.Models.Lobby _lobby)
+        private void CreateEntry(GameLobby _lobby)
         {
             LobbyEntryUI _entry = Instantiate(lobbyEntryPrefab, contentRoot);
             for (var i = 0; i < _entry.entries.Length; i++)
@@ -261,7 +315,7 @@ namespace UI.Lobby
             existingEntries[_lobby.Id] = _entry;
         }
         
-        private async UniTask<bool> JoinLobby(Unity.Services.Lobbies.Models.Lobby lobby, string password = null)
+        private async UniTask<bool> JoinLobby(GameLobby lobby, string password = null)
         {
             // Cheap pre-shot: the list refreshes every AUTO_REFRESH_INTERVAL, so a lobby locked between the last
             // refresh and this click is still selectable. Refuse it here rather than paying a full connect just to
@@ -294,12 +348,12 @@ namespace UI.Lobby
 
                 // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
                 // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
-                GameCode.gameCode = lobby.LobbyCode;
+                GameCode.gameCode = lobby.Code;
 
                 // Détecter le type de transport et se connecter en conséquence
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    if (!JoinWithFacepunch(lobby))
+                    if (!SteamConnector.StartClient(NetworkManager.Singleton, lobby, password))
                     {
                         Debug.LogError("Failed to connect to game");
                         await AbortJoin(null);
@@ -416,51 +470,10 @@ namespace UI.Lobby
             }
         }
 
-        private bool JoinWithFacepunch(Unity.Services.Lobbies.Models.Lobby lobby)
-        {
-            // Récupérer le Steam ID de l'hôte depuis les données du lobby
-            if (!lobby.Data.ContainsKey("hostSteamId"))
-            {
-                Debug.LogError("Lobby missing hostSteamId");
-                return false;
-            }
-
-            string _hostSteamIdString = lobby.Data["hostSteamId"].Value;
-            
-            if (!ulong.TryParse(_hostSteamIdString, out ulong _hostSteamId))
-            {
-                Debug.LogError($"Invalid Steam ID format: {_hostSteamIdString}");
-                return false;
-            }
-
-            // Configurer le transport FacePunch avec le Steam ID de l'hôte
-            var _transport = NetworkManager.Singleton.GetComponent<FacepunchTransport>();
-            if (_transport == null)
-            {
-                Debug.LogError("FacepunchTransport not found on NetworkManager!");
-                return false;
-            }
-
-            _transport.targetSteamId = _hostSteamId;
-            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("steam", _hostSteamId.ToString(), lobby.LobbyCode);
-            
-            // NET-02: the profile + build version travel inside the connection request.
-            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
-            bool ok = NetworkManager.Singleton.StartClient();
-            if (!ok)
-            {
-                Debug.LogError("Failed to start client");
-                return false;
-            }
-
-            return true;
-        }
-
-        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(GameLobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
-            if (!lobby.Data.ContainsKey("joinCode"))
+            if (!lobby.TryGetData(GameLobby.RelayJoinCodeKey, out string _joinCode))
             {
                 Debug.LogError("Lobby missing joinCode");
                 return RelayConnectResult.Failed(null);
@@ -469,11 +482,11 @@ namespace UI.Lobby
             // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
             // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
             // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("relay", lobby.Data["joinCode"].Value, lobby.LobbyCode);
-            return await RelayConnector.ConnectClientAsync(lobby.Data["joinCode"].Value);
+            Network.RejoinSessionStore.SetConnectionTarget("relay", _joinCode, lobby.Code);
+            return await RelayConnector.ConnectClientAsync(_joinCode);
         }
 
-        private void OnLobbyEntryClicked(Unity.Services.Lobbies.Models.Lobby lobby, LobbyEntryUI lobbyEntryUI)
+        private void OnLobbyEntryClicked(GameLobby lobby, LobbyEntryUI lobbyEntryUI)
         {
             if (currentLobbyEntryUISelected)
             {

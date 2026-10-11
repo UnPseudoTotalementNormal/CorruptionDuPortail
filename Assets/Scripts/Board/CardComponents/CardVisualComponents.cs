@@ -41,7 +41,10 @@ namespace Board.CardComponents
                  "each hover (card face + deployed vote canvas), so there is no hardcoded extent to tune.")]
         [field: SerializeField] public float hoverSurfaceY { get; private set; } = -15.025f;
         [field: SerializeField] public float hoverFloatOffset { get; private set; } = 0.2f;
-        
+        [Tooltip("Local trial options: with 'cards stand' on, every card holds the first-person look-at pose for the " +
+                 "whole seated Vote, not only while hovered (T16). Wire the shared SeatedViewOptions asset.")]
+        [field: SerializeField] public Presentation.SeatedViewOptions seatedViewOptions { get; private set; }
+
         [Header("Both Side References")] 
         [field: SerializeField] public MeIconCard meIconCard { get; private set; }
 

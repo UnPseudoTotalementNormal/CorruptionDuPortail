@@ -279,7 +279,7 @@ namespace Autoplay
                 {
                     return false;
                 }
-                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                await UniTask.Delay(TimeSpan.FromSeconds(options.roleCardDwell), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
                 capture.Request("lobby-role-card", 0f);
                 bool _closed = await ClickUitk(() => RoleCardRoot()?.Q<Button>("close"), "role-card-close", () => !RoleCardOpen());
                 // The card animates out and only stops taking clicks once collapsed (~0.4 s): wait for it.

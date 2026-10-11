@@ -1,85 +1,75 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <!-- Role presentation card — an ON-DEMAND consultable panel (NOT the role-reveal state screen).
-         Opened by clicking a character in the power bar; shows that role's faction header, name,
-         difficulty, its passive traits (one bullet each) and its active powers (numbered).
+    <!-- Role presentation overlay: an ON-DEMAND consultable page (NOT the role-reveal state screen), opened by
+         clicking a character in the power bar or a card of the lobby tablet. A page torn from the role book: aged
+         parchment with the faction's wax seal, the role's card pinned on its left edge, then the kit in ink.
 
-         Tokens + shared components come from the PanelSettings theme (theme.tss); layout is RoleCard.uss.
-         The sample text below is a HARDCODED Mage Occulte placeholder — RoleCardController overwrites every
-         field at runtime from a Role (and clears/rebuilds the passive list, active powers, and pips).
-
-         Layout mirrors the mockup: a tall portrait card on the LEFT that slightly overlaps the gold info
-         panel on the RIGHT. The panel is a fixed-height dossier: header (faction / name / difficulty) above
-         a single gold rule, then a scrolling kit (passive traits, then active powers). The faction
-         win-objective (Power.hideFromRoleCard) is not shown; usage counts are static. -->
+         Look = RoleSheet.uss (shared with the main menu's role book); overlay layout + entrance = RoleCard.uss.
+         The sample text is a HARDCODED Mage Occulte placeholder: RoleCardController overwrites every field from a
+         Role (passive rows, numbered powers and stars are rebuilt). Element names are read by RoleCardController and
+         the autoplay (role-card, close): keep them. -->
+    <ui:Style src="RoleSheet.uss" />
     <ui:Style src="RoleCard.uss" />
     <ui:VisualElement name="role-card" class="role-card cdp-is-hidden cdp-is-collapsed">
         <ui:VisualElement name="role-card-row" class="role-card__row">
 
-            <!-- Gold info panel (right). NOTE: the row is row-reverse, so this first-in-DOM element sits on
-                 the RIGHT and the portrait (last-in-DOM) sits on the LEFT painted on top (mockup overlap). -->
-            <ui:VisualElement name="panel" class="role-card__panel">
+            <!-- The page (right). The row is row-reverse: this first-in-DOM element sits on the RIGHT and the
+                 portrait (last-in-DOM) on the LEFT, painted on top, pinned over the page's edge. -->
+            <ui:VisualElement name="panel" class="role-card__panel role-sheet role-sheet__page">
 
-                <!-- Header (cover of the dossier) -->
+                <ui:VisualElement name="seal" class="role-card__seal role-sheet__seal" picking-mode="Ignore">
+                    <ui:VisualElement name="faction-icon" class="role-sheet__seal-icon" picking-mode="Ignore" />
+                </ui:VisualElement>
+
                 <ui:VisualElement name="header" class="role-card__header">
-                    <ui:VisualElement name="faction-row" class="role-card__faction-row">
-                        <ui:Label name="faction" text="Anomalie : The Evil Guys" class="role-card__faction" />
-                        <ui:VisualElement name="faction-icon" class="role-card__faction-icon" />
+                    <ui:Label name="role-name" text="Va'ahl, le Mage Occulte" class="role-sheet__name" />
+                    <ui:VisualElement name="faction-row" class="role-sheet__faction-row">
+                        <ui:Label name="faction" text="Anomalie" class="role-sheet__faction" />
                     </ui:VisualElement>
-                    <ui:Label name="role-name" text="Le Mage Occulte" class="role-card__name" />
-                    <ui:Label name="fake-badge" text="Rôle factice : personne ne le joue dans cette partie" class="role-card__fake-badge cdp-is-collapsed" />
-                    <ui:VisualElement name="difficulty" class="role-card__difficulty">
-                        <ui:Label text="★" class="role-card__pip" />
-                        <ui:Label text="★" class="role-card__pip" />
-                        <ui:Label text="★" class="role-card__pip role-card__pip--empty" />
+                    <ui:Label name="fake-badge" text="Rôle factice : personne ne le joue dans cette partie" class="role-sheet__fake cdp-is-collapsed" />
+                    <ui:VisualElement name="difficulty" class="role-sheet__difficulty">
+                        <ui:Label text="★" class="role-sheet__pip" />
+                        <ui:Label text="★" class="role-sheet__pip" />
+                        <ui:Label text="★" class="role-sheet__pip" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement name="divider" class="role-card__divider" />
+                <ui:VisualElement name="divider" class="role-sheet__divider" />
 
-                <!-- Scrollable kit: bounds the panel height; only this scrolls on overflow. -->
-                <ui:ScrollView name="kit" class="role-card__kit">
+                <ui:ScrollView name="kit" class="role-card__kit role-sheet__kit">
+                    <!-- Short victory condition: only the role book turns it on (showVictoryCondition). -->
+                    <ui:VisualElement name="victory-block" class="role-sheet__victory cdp-is-collapsed">
+                        <ui:Label name="victory-label" text="Condition de victoire" class="role-sheet__victory-label" />
+                        <ui:Label name="victory-text" text="Les Anomalies gagnent quand tous les joueurs sont corrompus." class="role-sheet__victory-text" />
+                    </ui:VisualElement>
 
-                    <!-- Passive traits: one bullet row per passive (controller fills passive-list). -->
-                    <ui:VisualElement name="passive-block" class="role-card__passive">
-                        <ui:Label name="passive-label" text="Passif" class="role-card__section-label" />
-                        <ui:VisualElement name="passive-list" class="role-card__passive-list">
-                            <ui:VisualElement class="role-card__passive-row">
-                                <ui:Label text="•" class="role-card__passive-bullet" />
-                                <ui:Label class="role-card__passive-text" text="Il commence corrompu dès le début de la partie." />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="role-card__passive-row">
-                                <ui:Label text="•" class="role-card__passive-bullet" />
-                                <ui:Label class="role-card__passive-text" text="Il connaît l'état de corruption des joueurs." />
+                    <ui:VisualElement name="passive-block" class="role-sheet__passive">
+                        <ui:Label name="passive-label" text="Passif" class="role-sheet__section" />
+                        <ui:VisualElement name="passive-list">
+                            <ui:VisualElement class="role-sheet__passive-row">
+                                <ui:Label text="•" class="role-sheet__passive-bullet" />
+                                <ui:Label text="Il commence corrompu." class="role-sheet__passive-text" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <!-- Active powers: numbered pill + name + description (controller clones per power). -->
-                    <ui:VisualElement name="powers" class="role-card__powers">
-                        <ui:VisualElement class="role-card__power">
-                            <ui:VisualElement class="role-card__power-head">
-                                <ui:Label text="1" class="role-card__power-num" />
-                                <ui:Label class="role-card__power-title" text="Corruption Ciblée" />
+                    <ui:VisualElement name="powers-block">
+                        <ui:Label name="powers-label" text="Pouvoirs" class="role-sheet__section" />
+                        <ui:VisualElement name="powers">
+                            <ui:VisualElement class="role-sheet__power">
+                                <ui:VisualElement class="role-sheet__power-head">
+                                    <ui:Label text="I." class="role-sheet__power-num" />
+                                    <ui:Label text="Corruption Ciblée" class="role-sheet__power-title" />
+                                </ui:VisualElement>
+                                <ui:Label text="Il corrompt un joueur." class="role-sheet__power-desc" />
                             </ui:VisualElement>
-                            <ui:Label class="role-card__power-desc" text="Il cible un joueur et le corrompt." />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="role-card__power">
-                            <ui:VisualElement class="role-card__power-head">
-                                <ui:Label text="2" class="role-card__power-num" />
-                                <ui:Label class="role-card__power-title" text="Les Deux Corrupteurs" />
-                            </ui:VisualElement>
-                            <ui:Label class="role-card__power-desc" text="Il peut corrompre en chaîne, deux fois par éveil." />
                         </ui:VisualElement>
                     </ui:VisualElement>
-
                 </ui:ScrollView>
 
-                <!-- Close button (top-right, last-in-DOM so it paints above the header). -->
-                <ui:Button name="close" class="role-card__close" text="✕" />
+                <ui:Button name="close" text="✕" class="role-card__close" />
             </ui:VisualElement>
 
-            <!-- Portrait card (left, painted on top via row-reverse + last-in-DOM). Sprite set at runtime;
-                 until then the deep-warm fallback + gold frame avoid an empty hole. -->
+            <!-- The role's card, pinned on the page (RoleCardElement, filled at runtime). -->
             <ui:VisualElement name="portrait" class="role-card__portrait" />
         </ui:VisualElement>
     </ui:VisualElement>

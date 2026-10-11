@@ -39,8 +39,8 @@ namespace UI.LobbyUI
             {
                 Clear();
 
-                List<Unity.Services.Lobbies.Models.Lobby> _lobbies = await LobbyManager.instance.GetLobbies();
-                foreach (Unity.Services.Lobbies.Models.Lobby _lobby in _lobbies)
+                List<GameLobby> _lobbies = await LobbyManager.instance.GetLobbies();
+                foreach (GameLobby _lobby in _lobbies)
                     CreateEntry(_lobby);
             }
             catch (OperationCanceledException)
@@ -57,7 +57,7 @@ namespace UI.LobbyUI
             }
         }
 
-        void CreateEntry(Unity.Services.Lobbies.Models.Lobby _lobby)
+        void CreateEntry(GameLobby _lobby)
         {
             LobbyEntryUI _entry = Instantiate(lobbyEntryPrefab, contentRoot);
             _entry.Setup(_lobby);

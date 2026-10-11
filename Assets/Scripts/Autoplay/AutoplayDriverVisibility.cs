@@ -84,9 +84,56 @@ namespace Autoplay
             Journal.Record("card.layout", _preset.ToString());
         }
 
+        private bool seatedViewApplied;
+
+        // Lever -autoplay-seated-view "h=…,pitch=…,r=…,scale=…,round=0|1,stand=0|1" (T16 view comparisons): applied
+        // once the seated rig exists, never saved (PlayerPrefs are shared by every process). Journal seated.view.
+        private void UpdateSeatedViewLever()
+        {
+            if (string.IsNullOrEmpty(options.seatedView) || seatedViewApplied)
+            {
+                return;
+            }
+            AvatarEmbodiedCamera _camera = FindFirstObjectByType<AvatarEmbodiedCamera>();
+            AvatarManager _avatars = FindFirstObjectByType<AvatarManager>();
+            TableShapeSwitch _table = FindFirstObjectByType<TableShapeSwitch>(FindObjectsInactive.Include);
+            if (_camera == null || _avatars == null || _table == null)
+            {
+                return;
+            }
+            seatedViewApplied = true;
+            Presentation.SeatedViewOptions _viewOptions = _table.Options;
+            foreach (string _pair in options.seatedView.Split(','))
+            {
+                string[] _kv = _pair.Split('=');
+                if (_kv.Length != 2 || !float.TryParse(_kv[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float _value))
+                {
+                    Journal.Record("vis.error", $"seated-view: bad pair '{_pair}'");
+                    continue;
+                }
+                switch (_kv[0].Trim())
+                {
+                    case "h": _camera.HeightOffset = _value; break;
+                    case "pitch": _camera.RestPitch = _value; break;
+                    case "clamp": _camera.PitchClamp = _value; break;
+                    case "r": _avatars.RemoteRingRadius = _value; break;
+                    case "scale": _avatars.SeatedAvatarScale = _value; break;
+                    case "round": _viewOptions?.SetRoundTable(_value > 0.5f, false); break;
+                    case "stand": _viewOptions?.SetCardsStand(_value > 0.5f, false); break;
+                    case "standamt": if (_viewOptions != null) { _viewOptions.StandAmount = _value; } break;
+                    default: Journal.Record("vis.error", $"seated-view: unknown key '{_kv[0]}'"); break;
+                }
+            }
+            Journal.Record("seated.view", string.Format(CultureInfo.InvariantCulture,
+                "h={0} pitch={1} clamp={6} r={2} scale={3} round={4} stand={5} standamt={7}", _camera.HeightOffset, _camera.RestPitch,
+                _avatars.RemoteRingRadius, _avatars.SeatedAvatarScale, _viewOptions != null && _viewOptions.RoundTable,
+                _viewOptions != null && _viewOptions.CardsStand, _camera.PitchClamp, _viewOptions != null ? _viewOptions.StandAmount : 0f));
+        }
+
         private void UpdateCardVisibility(GameState _state)
         {
             UpdateCardLayoutLever();
+            UpdateSeatedViewLever();
             if (string.IsNullOrEmpty(options.cardVisibility) || visibilityDone || !(_state is VoteState))
             {
                 return;
@@ -320,12 +367,17 @@ namespace Autoplay
                 : _viewName.StartsWith("powers", StringComparison.Ordinal) ? BoardCameraIdEnum.LookAtPowers
                 : BoardCameraIdEnum.SeatedFirstPerson;
             _views.SetCurrentBoardCamera(_id);
-            SetEmbodiedLook(0f, 0f);
+            AvatarEmbodiedCamera _restCamera = FindFirstObjectByType<AvatarEmbodiedCamera>();
+            SetEmbodiedLook(0f, _restCamera != null ? _restCamera.RestPitch : 0f); // the head at rest, as on entry
             yield return new WaitForSecondsRealtime(options.cardVisibilityBlend);
             if (_views.CurrentBoardCameraId != _id)
             {
                 Journal.Record("vis.error", $"layout={_layout.name} view={_viewName} camera={_views.CurrentBoardCameraId}");
                 yield break;
+            }
+            if (!_hover)
+            {
+                yield return SaveClean($"vis-{_layout.name}-{_viewName}-clean");
             }
 
             var _overview = new List<VisPoint>();
@@ -961,6 +1013,22 @@ namespace Autoplay
             {
                 Journal.Record("vis.error", $"save {_name}: {_exception.Message}");
             }
+        }
+
+        // The view as the player sees it, before any measurement marks: vis-<layout>-<view>-clean.jpg.
+        private IEnumerator SaveClean(string _name)
+        {
+            yield return new WaitForEndOfFrame();
+            Texture2D _shot = ScreenCapture.CaptureScreenshotAsTexture();
+            try
+            {
+                File.WriteAllBytes(Path.Combine(Journal.OutputDirectory, _name + ".jpg"), _shot.EncodeToJPG(85));
+            }
+            catch (Exception _exception)
+            {
+                Journal.Record("vis.error", $"save {_name}: {_exception.Message}");
+            }
+            Destroy(_shot);
         }
 
         // Seated first person: turn the head (the embodied camera's own clamped yaw / pitch) towards a point.

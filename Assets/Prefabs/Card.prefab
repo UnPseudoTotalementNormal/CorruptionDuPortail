@@ -687,6 +687,7 @@ MonoBehaviour:
   <hoverFaceLocalUp>k__BackingField: {x: 0, y: 0, z: 1}
   <hoverSurfaceY>k__BackingField: -15.025
   <hoverFloatOffset>k__BackingField: 0.1
+  <seatedViewOptions>k__BackingField: {fileID: 11400000, guid: 7b710144c93b0254cad928f39198840b, type: 2}
   <meIconCard>k__BackingField: {fileID: 845519996604528795}
   <cardPlayerPseudo>k__BackingField: {fileID: 7225565607081040501}
   <cardPlayerPseudoHolder>k__BackingField: {fileID: 4161368764948520219}

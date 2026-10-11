@@ -55,6 +55,11 @@ namespace Network.Services
             return await Call(() => LobbyService.Instance.JoinLobbyByCodeAsync(code));
         }
 
+        public async UniTask<GameLobby> GetAsync(string lobbyId)
+        {
+            return await Call(() => LobbyService.Instance.GetLobbyAsync(lobbyId));
+        }
+
         public async UniTask<GameLobby> RefreshAsync(GameLobby lobby)
         {
             return await Call(() => LobbyService.Instance.GetLobbyAsync(lobby.Id));

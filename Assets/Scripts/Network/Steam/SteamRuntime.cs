@@ -81,6 +81,7 @@ namespace Network.Steam
                 SteamClient.Init(GameValues.STEAM_APP_ID, false);
                 SteamNetworkingUtils.InitRelayNetworkAccess();
                 Debug.Log($"[STEAM] Client ready: {SteamClient.Name} ({SteamClient.SteamId.Value}), app {GameValues.STEAM_APP_ID}.");
+                SteamInvites.Listen();
                 return true;
             }
             catch (Exception e)
@@ -101,6 +102,7 @@ namespace Network.Steam
 
         private void OnDestroy()
         {
+            SteamInvites.StopListening();
             if (SteamClient.IsValid)
             {
                 SteamClient.Shutdown();

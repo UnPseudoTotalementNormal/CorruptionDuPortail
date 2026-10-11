@@ -7,6 +7,7 @@ using Extensions;
 using Network;
 using Network.Services;
 using TMPro;
+using UI.Lobby;
 using Unity.Netcode;
 using Netcode.Transports.Facepunch;
 using Network.Steam;
@@ -68,6 +69,35 @@ namespace UI
             lobbyNameInputField.onValueChanged.AddListener(OnLobbyNameValueChange);
             
             quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
+
+            SteamInvites.JoinRequested += OnSteamJoinRequested;
+            OnSteamJoinRequested(); // a request made before the menu loaded (Steam started the game to join a friend)
+        }
+
+        // Steam build: a friend's invite or "Rejoindre la partie" on their profile. Runs the server browser's join,
+        // so a password, a full or started game are handled exactly as a click in the list.
+        private void OnSteamJoinRequested()
+        {
+            if (!SteamInvites.TryTakePending(out string _lobbyId))
+            {
+                return;
+            }
+            if (_isBusy)
+            {
+                Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
+                LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
+                return;
+            }
+
+            LobbySelectionPanel _browser = FindFirstObjectByType<LobbySelectionPanel>(FindObjectsInactive.Include);
+            if (_browser == null)
+            {
+                Debug.LogError("[STEAM] No server browser in the menu: cannot join the friend's game.");
+                return;
+            }
+            hostMenuCanvasGroup.DoHideGroup();
+            joinMenuCanvasGroup.DoShowGroup();
+            _browser.JoinFromSteamInvite(_lobbyId);
         }
 
         private void OnQuitGameButtonClicked()
@@ -167,6 +197,7 @@ namespace UI
 
         private void OnDestroy()
         {
+            SteamInvites.JoinRequested -= OnSteamJoinRequested;
             if (roleBook != null)
             {
                 roleBook.Opened -= HideMenuForRoleBook;

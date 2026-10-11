@@ -12,7 +12,7 @@ Previous 300-rule version: `archive/generated-docs/project-context-2026-06-13.md
 
 ## Stack (versions = `Packages/manifest.json`, `ProjectSettings/ProjectVersion.txt`)
 
-Unity **6000.5.0f1** · URP 17.5 · NGO 2.12 (+ Multiplayer Tools 2.2.8, bump together) · UTP + Unity Relay (dtls → wss fallback, `RelayConnector`) and vendored Facepunch/Steam transport (`Assets/Scripts/Facepunch/`, own asmdef, never via UPM) · UniTask · DOTween · FMOD · Input System · Cinemachine 3 · uGUI + UI Toolkit (RoleCard, InfoTable, lobby tablet) · NSubstitute for EditMode tests.
+Unity **6000.5.0f1** · URP 17.5 · NGO 2.12 (+ Multiplayer Tools 2.2.8, bump together) · UTP + Unity Relay (dtls → wss fallback, `RelayConnector`) and vendored Facepunch/Steam transport (`Assets/Scripts/Facepunch/`, own asmdef, never via UPM, `[CdP patch]` edits) · UniTask · DOTween · FMOD · Input System · Cinemachine 3 · uGUI + UI Toolkit (RoleCard, InfoTable, lobby tablet) · NSubstitute for EditMode tests.
 
 - **C# 9 only.** No `record struct`, file-scoped namespaces, global usings (CS8773). Use `struct` + `IEquatable<T>`.
 - `ProjectVersion.txt` is the Editor-version source of truth; never edit or bump it without the team.
@@ -125,6 +125,18 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   `IsStateActive()`: `DoStateMethodRpc` dispatches by type name to the FIRST instance, and the loop holds two
   `ChainingState`s. Repro: autoplay `last-anomaly-leaves`.
 - `GameSnapshotBuilder.FromLiveState` runs synchronously before any `await` (NV tearing moves goldens). A moved `[Category("GoldenMaster")]` = real behaviour change: find the cause, never re-bless.
+
+## Two online builds (Relay / Steam)
+
+- One code, two player builds (`GameFlavor`, spec `spec-steam-build.md`). The Steam build = `CDP_STEAM`, added **only**
+  by `CdpBuild` (`extraScriptingDefines`). Never put it in ProjectSettings: the Editor, tests and autoplay would turn
+  Steam (no UGS, Facepunch transport) without anything failing to compile.
+- Network/lobby code goes through `LobbyManager` / `GameLobby` (never `Unity.Services.Lobbies` types outside
+  `UgsLobbyBackend`), and checks the transport via `NetworkTransportDetector`: the Steam build has no UGS sign-in.
+- Steam lobbies run on Spacewar (480), shared by every game testing on it: every `SteamMatchmaking.LobbyList` query
+  must filter on the `cdp_game` tag (`SteamLobbyBackend`), or the browser lists strangers' lobbies.
+- A Steam client start path passes the typed lobby password to `ClientConnectionPayload.Apply` (Steam lobbies have no
+  password; the host checks it at approval).
 
 ## UI Toolkit gotchas
 

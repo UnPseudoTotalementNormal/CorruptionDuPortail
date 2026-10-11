@@ -642,7 +642,7 @@ namespace GameLogic
             // removes itself. Fire-and-forget — LobbyManager is DontDestroyOnLoad, so it outlives the scene load.
             if (Network.Services.LobbyManager.instance != null)
             {
-                _ = Network.Services.LobbyManager.instance.LeaveOrDeleteLobby();
+                Network.Services.LobbyManager.instance.LeaveOrDeleteLobby().Forget();
             }
 
             // [LEAVE][PHASE 4] Tie the grace delay to this object's lifetime. If the session is torn down

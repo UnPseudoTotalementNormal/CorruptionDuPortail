@@ -1,5 +1,6 @@
 #region
 
+using Cysharp.Threading.Tasks;
 using System.Linq;
 using Characters;
 using CorruptionDuPortail.Domain;
@@ -206,7 +207,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
-            _ = _lobbyManager.SetLobbyLocked(_locked);
+            _lobbyManager.SetLobbyLocked(_locked).Forget();
         }
         
         public override void OnStartStateClient()

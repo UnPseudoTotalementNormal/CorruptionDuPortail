@@ -1,5 +1,6 @@
 #region
 
+using Cysharp.Threading.Tasks;
 using GameLogic;
 using Network;
 using Network.Services;
@@ -52,7 +53,7 @@ namespace UI
 
             if (LobbyManager.instance != null && LobbyManager.instance.IsInLobby)
             {
-                _ = LobbyManager.instance.LeaveOrDeleteLobby();
+                LobbyManager.instance.LeaveOrDeleteLobby().Forget();
             }
 
             SceneManager.LoadScene(MainMenuSceneIndex);

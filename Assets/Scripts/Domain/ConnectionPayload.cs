@@ -13,9 +13,10 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public sealed class ConnectionPayload
     {
-        public const byte CurrentFormat = 2;
-        // Format 1 (before rejoin) is still read: same fields, no rejoin token.
+        public const byte CurrentFormat = 3;
+        // Older formats are still read: 1 = before rejoin (no rejoin token), 2 = before Steam lobbies (no password).
         private const byte Format1 = 1;
+        private const byte Format2 = 2;
         private const int MaxStringBytes = 256;
         private const int MaxPayloadBytes = 2048;
 
@@ -28,6 +29,9 @@ namespace CorruptionDuPortail.Domain
         /// <summary>Rejoin 02: secret session token proving the sender owns a seat in the running game (empty on a
         /// first join). Checked by the host's connection approval when the game has already started.</summary>
         public string RejoinToken = string.Empty;
+        /// <summary>Steam build: the lobby password the joiner typed, checked by the host's connection approval
+        /// (<see cref="LobbyPasswordGate"/>; Steam lobbies have no server-side password). Empty otherwise.</summary>
+        public string LobbyPassword = string.Empty;
 
         public byte[] ToBytes()
         {
@@ -41,6 +45,7 @@ namespace CorruptionDuPortail.Domain
                 _writer.Write(SteamId);
                 _writer.Write(IsEditor);
                 WriteString(_writer, RejoinToken);
+                WriteString(_writer, LobbyPassword);
             }
             return _stream.ToArray();
         }
@@ -58,7 +63,7 @@ namespace CorruptionDuPortail.Domain
                 using var _stream = new MemoryStream(bytes, writable: false);
                 using var _reader = new BinaryReader(_stream, Encoding.UTF8);
                 byte _format = _reader.ReadByte();
-                if (_format != CurrentFormat && _format != Format1)
+                if (_format != CurrentFormat && _format != Format2 && _format != Format1)
                 {
                     return false;
                 }
@@ -71,9 +76,13 @@ namespace CorruptionDuPortail.Domain
                     SteamId = _reader.ReadUInt64(),
                     IsEditor = _reader.ReadBoolean(),
                 };
-                if (_format == CurrentFormat)
+                if (_format >= Format2)
                 {
                     _result.RejoinToken = ReadString(_reader);
+                }
+                if (_format >= CurrentFormat)
+                {
+                    _result.LobbyPassword = ReadString(_reader);
                 }
                 payload = _result;
                 return true;

@@ -1,5 +1,6 @@
 #region
 
+using Cysharp.Threading.Tasks;
 using Network.Services;
 using Unity.Netcode;
 using UnityEngine;
@@ -308,7 +309,7 @@ namespace Network
             // LobbyManager is a DDoL singleton, so the fire-and-forget task survives the scene load.
             if (LobbyManager.instance != null && LobbyManager.instance.IsInLobby)
             {
-                _ = LobbyManager.instance.LeaveLobby();
+                LobbyManager.instance.LeaveLobby().Forget();
             }
         }
 

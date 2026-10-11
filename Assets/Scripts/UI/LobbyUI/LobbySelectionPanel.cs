@@ -109,6 +109,62 @@ namespace UI.Lobby
             }
         }
 
+        /// <summary>
+        /// Steam build: join the lobby a friend invited us to (SteamInvites), through the same path as a click in the
+        /// list: started game refused, password asked when the lobby has one.
+        /// </summary>
+        public void JoinFromSteamInvite(string _lobbyId)
+        {
+            if (_isJoining)
+            {
+                ReportJoinFailure(BusyForInviteMessage);
+                return;
+            }
+            _isJoining = true;
+
+            JoinFromSteamInviteAsync(_lobbyId).Forget();
+        }
+
+        private async UniTaskVoid JoinFromSteamInviteAsync(string _lobbyId)
+        {
+            try
+            {
+                loadingCanvasGroup.DoShowGroup();
+                GameLobby _lobby = await LobbyManager.instance.GetLobbyInfo(_lobbyId);
+                if (_lobby == null)
+                {
+                    HideLoadingSafe(); // GetLobbyInfo already reported why
+                    return;
+                }
+                // The invite replaces whatever was picked in the list: no highlighted row, no half-typed password
+                // (it would be sent to the invited lobby).
+                if (currentLobbyEntryUISelected != null)
+                {
+                    currentLobbyEntryUISelected.OnDeselectedFeedback();
+                    currentLobbyEntryUISelected = null;
+                }
+                enterPasswordCanvasGroup.DoHideGroup();
+                passwordInputField.text = "";
+                currentLobbySelected = _lobby;
+                await JoinLobby(_lobby);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation normale (destruction de l'objet) : sortie silencieuse
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Échec de la connexion à la partie d'un ami: {e}");
+                HideLoadingSafe();
+            }
+            finally
+            {
+                _isJoining = false;
+            }
+        }
+
+        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant.";
+
         private void OnConnectButtonClicked()
         {
             if (currentLobbySelected == null)

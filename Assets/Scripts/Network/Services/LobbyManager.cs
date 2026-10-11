@@ -195,6 +195,21 @@ namespace Network.Services
             }
         }
 
+        /// <summary>Snapshot of a lobby known only by its id (Steam invite), without joining it. Null on failure.</summary>
+        public async UniTask<GameLobby> GetLobbyInfo(string _lobbyId)
+        {
+            try
+            {
+                return await Backend.GetAsync(_lobbyId);
+            }
+            catch (LobbyBackendException e)
+            {
+                Debug.LogError($"Échec de lecture du lobby {_lobbyId}: {e.Message}");
+                OnLobbyError?.Invoke($"Impossible de rejoindre la partie: {e.Message}");
+                return null;
+            }
+        }
+
         public async UniTask LeaveLobby()
         {
             if (currentLobby == null)

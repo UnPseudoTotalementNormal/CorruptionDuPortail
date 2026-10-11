@@ -43,6 +43,21 @@ date: '2026-10-11'
   direct artifact links; one failed flavor = warning embed with the other link). The Steam leg checks
   `steam_appid.txt` + `steam_api64.dll` in the output.
 
+## Friend invites (feat/steam-friend-invites, 2026-10-11)
+
+- While in a joinable Steam lobby, the rich presence `connect` = `+connect_lobby <id>` (`SteamJoinRequest`): friends get
+  "Rejoindre la partie" on our Steam profile. Cleared on leave and once the game starts (host on lock, members on
+  their next lobby poll).
+- `SteamInvites` turns `OnGameLobbyJoinRequested` (accepted invite), `OnGameRichPresenceJoinRequested` and the
+  `+connect_lobby` launch arguments into one pending request. Mid-game it is refused with a message, never kept.
+- `MainMenu` takes it and runs `LobbySelectionPanel.JoinFromSteamInvite`: lobby data fetched by id
+  (`SteamLobbyBackend.GetAsync`, `cdp_game` tag checked: Spacewar is shared), then the browser's own join (game started,
+  password prompt).
+- Lobby UI: "Inviter des amis" under the game code (clone of StartGame without its behaviour) opens the Steam overlay
+  invite dialog; overlay disabled = message pointing to the Steam friends list.
+- **Spacewar limit**: when the game is NOT running, Steam launches app 480 (Spacewar), not our exe, so a cold
+  "Rejoindre la partie" only works once the game has its own app id. With the game already open it works now.
+
 ## Playtest checklist (Poyo; needs two PCs / two Steam accounts)
 
 1. Steam build, Steam running: no login form, own Steam name in the lobby.
@@ -51,13 +66,15 @@ date: '2026-10-11'
 4. Join by the 6-char code; code typed lower case with spaces still works.
 5. Password lobby: wrong password → "Mot de passe incorrect."; right one → joins; by code → refusal message.
 6. Started game disappears from the list; quitting mid-game → "Rejoindre" works within the grace delay.
-7. Relay build unchanged (login, list, code, 2 copies on one PC); it never lists Steam games.
+7. Friend invite: game open on both PCs, "Inviter des amis" (overlay) → the friend accepts → joins the lobby
+   (password asked if set). Friend list → "Rejoindre la partie" on a friend in a lobby → joins. Once started: no
+   "Rejoindre la partie", and an invite accepted mid-game shows a message.
+8. Relay build unchanged (login, list, code, 2 copies on one PC); it never lists Steam games.
 
 ## Follow-ups (not done)
 
 - Steam avatar display (design-owned placement; SteamID64 already replicated in `PlayerInfo.playerSteamId`).
-- Friend invites / "Rejoindre la partie" from the Steam friends list (`SteamFriends.OnGameLobbyJoinRequested`,
-  `OpenGameInviteOverlay`), rich presence.
+- Rich presence text ("En salon 4/15") needs localization tokens in the Steamworks app admin: own app id first.
 - Own app id: replace `GameValues.STEAM_APP_ID`, add `SteamClient.RestartAppIfNecessary`, stop shipping
   `steam_appid.txt`, SteamPipe upload from CI.
 - Trust: the host could check the payload's SteamID against the Steam-authenticated connection identity

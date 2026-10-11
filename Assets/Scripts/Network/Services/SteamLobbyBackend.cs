@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
@@ -27,6 +28,9 @@ namespace Network.Services
         private const string LockedKey = "locked";
         private const string VersionKey = "version";
         private const int MaxListedLobbies = 50;
+        // Rich presence key Steam turns into "Rejoindre la partie" on our profile (SteamInvites reads it back).
+        private const string ConnectKey = "connect";
+        private const float LobbyDataTimeoutSeconds = 5f;
 
         private readonly IRandomProvider random = new UnityRandomProvider();
         // Steam handles of the lobbies we are in, by id: their data stays live (Steam pushes the updates to members).
@@ -68,6 +72,7 @@ namespace Network.Services
             }
 
             joined[IdOf(_lobby)] = _lobby;
+            PublishJoin(_lobby, !settings.isLocked);
             return ToGameLobby(_lobby);
         }
 
@@ -108,6 +113,7 @@ namespace Network.Services
             }
 
             joined[IdOf(_lobby)] = _lobby;
+            PublishJoin(_lobby, _lobby.GetData(LockedKey) != "1");
             return ToGameLobby(_lobby);
         }
 
@@ -128,12 +134,67 @@ namespace Network.Services
             return await JoinByIdAsync(IdOf(_found[0]), null);
         }
 
+        public async UniTask<GameLobby> GetAsync(string lobbyId)
+        {
+            RequireSteam();
+            if (joined.TryGetValue(lobbyId, out Lobby _mine))
+            {
+                return ToGameLobby(_mine);
+            }
+            if (!ulong.TryParse(lobbyId, out ulong _id))
+            {
+                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+            }
+
+            // Steam only knows a foreign lobby's data after asking for it; the answer comes as a data-changed callback.
+            var _lobby = new Lobby(_id);
+            var _arrived = new UniTaskCompletionSource();
+            void OnDataChanged(Lobby changed)
+            {
+                if (changed.Id.Value == _id)
+                {
+                    _arrived.TrySetResult();
+                }
+            }
+            SteamMatchmaking.OnLobbyDataChanged += OnDataChanged;
+            try
+            {
+                if (!_lobby.Refresh())
+                {
+                    throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+                }
+                await _arrived.Task.Timeout(TimeSpan.FromSeconds(LobbyDataTimeoutSeconds));
+            }
+            catch (TimeoutException)
+            {
+                throw new LobbyBackendException("la partie n'existe plus ou Steam ne répond pas.", lobbyGone: true);
+            }
+            finally
+            {
+                SteamMatchmaking.OnLobbyDataChanged -= OnDataChanged;
+            }
+
+            // Spacewar is shared: a friend may be in another game's lobby. No tag at all = a lobby that no longer exists.
+            string _tag = _lobby.GetData(GameKey);
+            if (string.IsNullOrEmpty(_tag))
+            {
+                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+            }
+            if (_tag != GameTag)
+            {
+                throw new LobbyBackendException("ce n'est pas une partie de Corruption du Portail.", lobbyGone: true);
+            }
+            return ToGameLobby(_lobby);
+        }
+
         public UniTask<GameLobby> RefreshAsync(GameLobby lobby)
         {
             if (!joined.TryGetValue(lobby.Id, out Lobby _lobby))
             {
                 throw new LobbyBackendException("Lobby quitté.", lobbyGone: true);
             }
+            // Members follow the host's lock: no "Rejoindre la partie" on their profile once the game started.
+            PublishJoin(_lobby, _lobby.GetData(LockedKey) != "1");
             return UniTask.FromResult(ToGameLobby(_lobby));
         }
 
@@ -143,6 +204,7 @@ namespace Network.Services
         {
             if (joined.Remove(lobby.Id, out Lobby _lobby))
             {
+                ClearJoin();
                 _lobby.Leave();
             }
             return UniTask.CompletedTask;
@@ -156,6 +218,7 @@ namespace Network.Services
             {
                 _lobby.SetData(LockedKey, "1");
                 _lobby.SetJoinable(false);
+                ClearJoin();
                 _lobby.Leave();
             }
             return UniTask.CompletedTask;
@@ -167,6 +230,7 @@ namespace Network.Services
             {
                 _lobby.SetData(LockedKey, locked ? "1" : "0");
                 _lobby.SetJoinable(!locked);
+                PublishJoin(_lobby, !locked);
             }
             return UniTask.CompletedTask;
         }
@@ -180,6 +244,17 @@ namespace Network.Services
             return joined.TryGetValue(lobby.Id, out Lobby _lobby)
                 ? _lobby.IsOwnedBy(SteamClient.SteamId)
                 : lobby.HostId == SteamClient.SteamId.Value.ToString();
+        }
+
+        // Friends see "Rejoindre la partie" on our Steam profile while our lobby takes new players.
+        private static void PublishJoin(Lobby lobby, bool joinable)
+        {
+            SteamFriends.SetRichPresence(ConnectKey, joinable ? SteamJoinRequest.ConnectFor(lobby.Id.Value) : string.Empty);
+        }
+
+        private static void ClearJoin()
+        {
+            SteamFriends.SetRichPresence(ConnectKey, string.Empty);
         }
 
         private static void RequireSteam()

@@ -21,6 +21,8 @@ namespace Network.Services
         UniTask<List<GameLobby>> QueryAsync();
         UniTask<GameLobby> JoinByIdAsync(string lobbyId, string password);
         UniTask<GameLobby> JoinByCodeAsync(string code);
+        /// <summary>Snapshot of a lobby we are not in yet (Steam invite: only its id is known).</summary>
+        UniTask<GameLobby> GetAsync(string lobbyId);
         /// <summary>Fresh snapshot of a lobby we are in.</summary>
         UniTask<GameLobby> RefreshAsync(GameLobby lobby);
         UniTask HeartbeatAsync(GameLobby lobby);

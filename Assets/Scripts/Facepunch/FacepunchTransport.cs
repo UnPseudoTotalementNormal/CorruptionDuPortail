@@ -32,6 +32,14 @@ namespace Netcode.Transports.Facepunch
 
         private LogLevel LogLevel => NetworkManager.Singleton.LogLevel;
 
+        // [CdP patch] Messages drained per manager and per poll. Facepunch's default (32) throttles a host with 15
+        // players during the GameScene synchronization burst: the rest waits for the next frame.
+        private const int ReceiveBatchSize = 256;
+
+        // [CdP patch] True only when this component started the Steam client itself. The game's SteamRuntime owns it
+        // (init before the menu, callbacks, shutdown on quit); the transport no longer kills it on destroy.
+        private bool ownsSteamClient;
+
         private class Client
         {
             public SteamId steamId;
@@ -44,7 +52,11 @@ namespace Netcode.Transports.Facepunch
         {
             try
             {
-                SteamClient.Init(steamAppId, false);
+                if (!SteamClient.IsValid)
+                {
+                    SteamClient.Init(steamAppId, false);
+                    ownsSteamClient = true;
+                }
             }
             catch (Exception e)
             {
@@ -59,12 +71,14 @@ namespace Netcode.Transports.Facepunch
 
         private void Update()
         {
-            SteamClient.RunCallbacks();
+            if (ownsSteamClient && SteamClient.IsValid)
+                SteamClient.RunCallbacks();
         }
 
         private void OnDestroy()
         {
-            SteamClient.Shutdown();
+            if (ownsSteamClient)
+                SteamClient.Shutdown();
         }
 
         #endregion
@@ -87,7 +101,10 @@ namespace Netcode.Transports.Facepunch
             {
                 // Flush any pending messages before closing the connection
                 user.connection.Flush();
-                user.connection.Close();
+                // [CdP patch] linger: Steam keeps the connection until the queued reliable messages are delivered.
+                // Without it the server's disconnect reason ("Mot de passe incorrect.", "La partie a déjà commencé.")
+                // was dropped and the joiner only saw a generic connection loss.
+                user.connection.Close(true);
                 connectedClients.Remove(clientId);
 
                 if (LogLevel <= LogLevel.Developer)
@@ -135,13 +152,21 @@ namespace Netcode.Transports.Facepunch
                 if (LogLevel <= LogLevel.Error)
                     Debug.LogError($"[{nameof(FacepunchTransport)}] - Caught an exception while shutting down: {e}");
             }
+            finally
+            {
+                // [CdP patch] Forget the closed sockets: NGO keeps polling the transport after a Shutdown, and the next
+                // StartHost / StartClient (rejoin, new game) must not inherit the previous session's clients.
+                connectionManager = null;
+                socketManager = null;
+                connectedClients?.Clear();
+            }
         }
 
         public override void Send(ulong clientId, ArraySegment<byte> data, NetworkDelivery delivery)
         {
 	        var sendType = NetworkDeliveryToSendType(delivery);
 
-	        if (clientId == ServerClientId)
+	        if (clientId == ServerClientId && connectionManager != null)
 		        connectionManager.Connection.SendMessage(data.Array, data.Offset, data.Count, sendType);
 	        else if (connectedClients.TryGetValue(clientId, out Client user))
 		        user.connection.SendMessage(data.Array, data.Offset, data.Count, sendType);
@@ -151,8 +176,8 @@ namespace Netcode.Transports.Facepunch
 
         public override NetworkEvent PollEvent(out ulong clientId, out ArraySegment<byte> payload, out float receiveTime)
         {
-            connectionManager?.Receive();
-            socketManager?.Receive();
+            connectionManager?.Receive(ReceiveBatchSize);
+            socketManager?.Receive(ReceiveBatchSize);
 
             clientId = 0;
             receiveTime = Time.realtimeSinceStartup;

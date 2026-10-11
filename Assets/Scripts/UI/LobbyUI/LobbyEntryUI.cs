@@ -1,12 +1,8 @@
 using System;
-using System.Threading.Tasks;
 using DG.Tweening;
 using Network;
 using Network.Services;
 using TMPro;
-using Unity.Netcode;
-using Netcode.Transports.Facepunch;
-using Steamworks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,9 +22,9 @@ namespace UI.LobbyUI
         
         [SerializeField] private AYellowpaper.SerializedCollections.SerializedDictionary<string, string> lobbyLanguageCustomDisplayNames = new();
         
-        public event Action<Unity.Services.Lobbies.Models.Lobby> onEntryClicked;
+        public event Action<GameLobby> onEntryClicked;
 
-        Unity.Services.Lobbies.Models.Lobby lobby;
+        GameLobby lobby;
 
         private void Awake()
         {
@@ -36,18 +32,16 @@ namespace UI.LobbyUI
             joinButton.onClick.AddListener(OnJoinClicked);
         }
 
-        public void Setup(Unity.Services.Lobbies.Models.Lobby lobby)
+        public void Setup(GameLobby lobby)
         {
             this.lobby = lobby;
             lobbyNameText.text = lobby.Name;
             lobbyPrivateText.text = lobby.HasPassword ? "Oui" : "Non";
             
             string langue = "Non spécifiée";
-            if (lobby.Data != null && 
-                lobby.Data.TryGetValue(nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), 
-                    out var value))
+            if (lobby.TryGetData(nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), out string value))
             {
-                langue = value.Value;
+                langue = value;
                 if (lobbyLanguageCustomDisplayNames.TryGetValue(langue, out var displayName))
                 {
                     langue = displayName;
@@ -55,7 +49,7 @@ namespace UI.LobbyUI
             }
             lobbyLanguageText.text = langue;
             
-            lobbyPlayersCountText.text = $"{lobby.Players.Count}/{lobby.MaxPlayers}";
+            lobbyPlayersCountText.text = $"{lobby.PlayerCount}/{lobby.MaxPlayers}";
         }
 
         public void OnSelectedFeedback()

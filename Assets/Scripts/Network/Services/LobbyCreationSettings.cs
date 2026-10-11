@@ -1,47 +1,19 @@
 using System.Collections.Generic;
-using Unity.Services.Lobbies;
-using Unity.Services.Lobbies.Models;
 
 namespace Network.Services
 {
+    /// <summary>What the host asks for when creating a lobby; each backend translates it (UGS options, Steam lobby data).</summary>
     public class LobbyCreationSettings
     {
-        private CreateLobbyOptions options = new();
         public string lobbyName = "New Lobby";
         public int maxPlayers = 30;
-        
-        public bool? isPrivate
-        {
-            get => options.IsPrivate;
-            set => options.IsPrivate = value;
-        }
-        
-        public bool? isLocked
-        {
-            get => options.IsLocked;
-            set => options.IsLocked = value;
-        }
-        
-        public string password
-        {
-            get => options.Password;
-            set => options.Password = value;
-        }
-        
-        public Unity.Services.Lobbies.Models.Player player
-        {
-            get => options.Player;
-            set => options.Player = value;
-        }
-        
-        public Dictionary<string, DataObject> data
-        {
-            get => options.Data;
-            set => options.Data = value;
-        }
-        
-        public CreateLobbyOptions Options => options;
-        
+        public bool isPrivate;
+        public bool isLocked;
+        /// <summary>Null or empty = no password.</summary>
+        public string password;
+        /// <summary>Public lobby data (language, connection data of the host…).</summary>
+        public Dictionary<string, string> data = new();
+
         public enum LobbyCustomDataKeys
         {
             Language

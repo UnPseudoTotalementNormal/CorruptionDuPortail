@@ -9,10 +9,7 @@ using Network.Services;
 using TMPro;
 using Unity.Netcode;
 using Netcode.Transports.Facepunch;
-using Unity.Services.Core;
-using Unity.Services.Lobbies;
-using Unity.Services.Lobbies.Models;
-using Steamworks;
+using Network.Steam;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -181,12 +178,13 @@ namespace UI
 
         private Button _rejoinButton;
 
-        // Shown only when this PC holds a fresh session of a game it was seated in (token + how to reach the host).
+        // Shown only when this PC holds a fresh session of a game it was seated in (token + how to reach the host),
+        // reached through this build's online stack (the Relay and Steam builds share the PC's PlayerPrefs).
         // Built from the join button at runtime: same look, no scene edit (visuals are placeholders, design-owned).
         private void CreateRejoinButton()
         {
             if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session) ||
-                (_session.hostKind != "relay" && _session.hostKind != "steam" && _session.hostKind != "direct") || openJoinMenu == null)
+                !OnlineFlavorRules.CanRejoin(GameFlavor.Current, _session.hostKind) || openJoinMenu == null)
             {
                 return;
             }
@@ -381,11 +379,18 @@ namespace UI
 
                 // Set BEFORE connecting: NGO synchronization loads GameScene by itself, and GameCodeText reads this
                 // static in Start(). Assigning it after the handshake would leave the joiner's code label empty.
-                GameCode.gameCode = _lobby.LobbyCode;
+                GameCode.gameCode = _lobby.Code;
 
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    if (!JoinWithFacepunch(_lobby))
+                    // A Steam lobby has no password of its own: the host checks it at connection, and this path
+                    // has no field to type one.
+                    if (_lobby.HasPassword)
+                    {
+                        LobbyManager.instance.ReportError(SteamConnector.PasswordNeedsListMessage);
+                        throw new System.Exception(SteamConnector.PasswordNeedsListMessage);
+                    }
+                    if (!SteamConnector.StartClient(NetworkManager.Singleton, _lobby, null))
                     {
                         throw new System.Exception("Failed to join game");
                     }
@@ -462,61 +467,20 @@ namespace UI
         }
 
 
-        private bool JoinWithFacepunch(Unity.Services.Lobbies.Models.Lobby lobby)
-        {
-            // Récupérer le Steam ID de l'hôte depuis les données du lobby
-            if (!lobby.Data.TryGetValue("hostSteamId", out var _value))
-            {
-                Debug.Log("Lobby missing hostSteamId");
-                return false;
-            }
-
-            string _hostSteamIdString = _value.Value;
-            
-            if (!ulong.TryParse(_hostSteamIdString, out ulong _hostSteamId))
-            {
-                Debug.LogError($"Invalid Steam ID format: {_hostSteamIdString}");
-                return false;
-            }
-
-            // Configurer le transport FacePunch avec le Steam ID de l'hôte
-            var _transport = NetworkManager.Singleton.GetComponent<FacepunchTransport>();
-            if (_transport == null)
-            {
-                Debug.LogError("FacepunchTransport not found on NetworkManager!");
-                return false;
-            }
-
-            _transport.targetSteamId = _hostSteamId;
-            // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("steam", _hostSteamId.ToString(), lobby.LobbyCode);
-            
-            // NET-02: the profile + build version travel inside the connection request.
-            Network.ClientConnectionPayload.Apply(NetworkManager.Singleton);
-            bool _connected = NetworkManager.Singleton.StartClient();
-            if (!_connected)
-            {
-                Debug.LogError("Failed to start client");
-                return false;
-            }
-
-            return true;
-        }
-
-        private async UniTask<RelayConnectResult> JoinWithUnityRelay(Unity.Services.Lobbies.Models.Lobby lobby)
+        private async UniTask<RelayConnectResult> JoinWithUnityRelay(GameLobby lobby)
         {
             // Récupérer le join code Relay depuis les données du lobby
-            if (!lobby.Data.TryGetValue("joinCode", out var _value))
+            if (!lobby.TryGetData(GameLobby.RelayJoinCodeKey, out string _joinCode))
             {
                 Debug.Log("Lobby missing joinCode");
                 return RelayConnectResult.Failed(null);
             }
 
             // Rejoin: remember this host, saved with the session token it hands back once we are seated.
-            Network.RejoinSessionStore.SetConnectionTarget("relay", _value.Value, lobby.LobbyCode);
+            Network.RejoinSessionStore.SetConnectionTarget("relay", _joinCode, lobby.Code);
             // Allocation + transport + StartClient + handshake wait, with the dtls -> wss fallback, all live
             // in the single decision point (investigation vpn-instant-disconnect, backlog #7).
-            return await RelayConnector.ConnectClientAsync(_value.Value);
+            return await RelayConnector.ConnectClientAsync(_joinCode);
         }
 
 
@@ -555,22 +519,19 @@ namespace UI
                 _lobbySettings.isPrivate = false;
                 _lobbySettings.lobbyName = lobbyCreatingName;
                 _lobbySettings.maxPlayers = 15;
-                _lobbySettings.data = new Dictionary<string, DataObject>()
+                _lobbySettings.data = new Dictionary<string, string>()
                 {
-                    {
-                        nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language),
-                        new DataObject(DataObject.VisibilityOptions.Public,
-                            "Français")
-                    }
+                    { nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), "Français" }
                 };
 
                 string connectionData = null;
                 if (NetworkTransportDetector.IsUsingFacepunch())
                 {
-                    connectionData = HostWithFacepunch();
+                    // Steam lobbies have no password of their own: the host's connection approval checks it.
+                    connectionData = SteamConnector.StartHost(NetworkManager.Singleton, password);
                     if (!string.IsNullOrEmpty(connectionData))
                     {
-                        _lobbySettings.data["hostSteamId"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                        _lobbySettings.data[GameLobby.HostSteamIdKey] = connectionData;
                     }
                 }
                 else if (NetworkTransportDetector.IsUsingUnityRelay())
@@ -578,7 +539,7 @@ namespace UI
                     connectionData = await HostWithUnityRelay(15);
                     if (!string.IsNullOrEmpty(connectionData))
                     {
-                        _lobbySettings.data["joinCode"] = new DataObject(DataObject.VisibilityOptions.Public, connectionData);
+                        _lobbySettings.data[GameLobby.RelayJoinCodeKey] = connectionData;
                     }
                 }
                 else
@@ -591,13 +552,13 @@ namespace UI
                     throw new System.Exception("Failed to get connection data");
                 }
 
-                Unity.Services.Lobbies.Models.Lobby _lobby = await LobbyManager.instance.CreateLobby(_lobbySettings);
+                GameLobby _lobby = await LobbyManager.instance.CreateLobby(_lobbySettings);
                 if (_lobby == null)
                 {
                     throw new System.Exception("Failed to create lobby");
                 }
 
-                GameCode.gameCode = _lobby.LobbyCode;
+                GameCode.gameCode = _lobby.Code;
                 SwitchToGameScene();
             }
             catch (System.Exception e)
@@ -627,32 +588,6 @@ namespace UI
             }
         }
 
-
-        private string HostWithFacepunch()
-        {
-            // Vérifier que Steam est initialisé
-            if (!SteamClient.IsValid)
-            {
-                Debug.LogError("Steam client not initialized!");
-                return null;
-            }
-
-            ulong _hostSteamId = SteamClient.SteamId;
-
-            // Reject mid-game joins at the NGO handshake ("Rejoindre une partie déjà en cours"). Must be
-            // enabled before StartHost so the server answers approval for every connecting client.
-            ConnectionApprovalGate.Enable(NetworkManager.Singleton);
-
-            // Démarrer l'hôte avec FacepunchTransport
-            bool _started = NetworkManager.Singleton.StartHost();
-            if (!_started)
-            {
-                Debug.LogError("Failed to start host");
-                return null;
-            }
-
-            return _hostSteamId.ToString();
-        }
 
         private async UniTask<string> HostWithUnityRelay(int maxConnections)
         {

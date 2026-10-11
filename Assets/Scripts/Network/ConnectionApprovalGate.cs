@@ -35,13 +35,16 @@ namespace Network
         /// Turns on NGO connection approval and installs the gate callback. Idempotent and null-safe.
         /// Call once on the host path just before <c>StartHost()</c>.
         /// </summary>
-        public static void Enable(NetworkManager _networkManager)
+        /// <param name="_requiredLobbyPassword">Steam build: the lobby password a joiner must send
+        /// (<see cref="LobbyPasswordGate"/>). Null = no check (UGS lobbies enforce their password themselves).</param>
+        public static void Enable(NetworkManager _networkManager, string _requiredLobbyPassword = null)
         {
             if (_networkManager == null)
             {
                 return;
             }
 
+            s_requiredLobbyPassword = _requiredLobbyPassword;
             _networkManager.NetworkConfig.ConnectionApproval = true;
             _networkManager.ConnectionApprovalCallback = HandleApproval;
             s_joinPhase.Clear();
@@ -114,6 +117,16 @@ namespace Network
                                      $"'{(_hasPayload ? _payload.BuildVersion : "none")}', host '{Application.version}'.");
                 }
 
+                // Steam build: Steam lobbies have no password of their own, the host checks it here. A rejoin is
+                // exempt: its token already proves the seat, and the seat was claimed above.
+                if (!_rejoin && !LobbyPasswordGate.Accepts(s_requiredLobbyPassword, _hasPayload ? _payload.LobbyPassword : null))
+                {
+                    _response.Approved = false;
+                    _response.Reason = LobbyPasswordGate.WrongPasswordReason;
+                    Debug.Log($"[JOIN-GATE] Rejected connection {_clientId}: wrong lobby password.");
+                    return;
+                }
+
                 // NET-05: approved but not synchronized yet — blocks the lobby start until it finishes or leaves.
                 s_joinPhase.Approved(_clientId, Time.realtimeSinceStartupAsDouble);
             }
@@ -138,6 +151,7 @@ namespace Network
         // ---- NET-05: approved-but-still-loading joiners ----
 
         private static readonly JoinPhaseTracker s_joinPhase = new();
+        private static string s_requiredLobbyPassword;
         private static NetworkManager s_trackedNetworkManager;
 
         /// <summary>True while an approved joiner is still loading/synchronizing — the game must not start.</summary>
@@ -237,6 +251,7 @@ namespace Network
             s_pendingProfiles.Clear();
             s_joinPhase.Clear();
             s_trackedNetworkManager = null;
+            s_requiredLobbyPassword = null;
         }
 #endif
     }

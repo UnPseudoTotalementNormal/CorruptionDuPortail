@@ -36,6 +36,16 @@ namespace Network.Player
             };
         }
 
+        /// <summary>Steam build: the Steam persona name, and the SteamID64 that lets every player find this
+        /// profile (its avatar) through Steam. It travels in the connection request (ClientConnectionPayload).</summary>
+        public static void CreateSteamClientData(string _steamName, ulong _steamId)
+        {
+            CreateNewClientData(_steamName, false);
+            PlayerInfo _info = playerInfo;
+            _info.playerSteamId = _steamId;
+            playerInfo = _info;
+        }
+
 #if UNITY_EDITOR
         // Story 13.0: domain reload is disabled in this project, so this static survives across Play Mode
         // sessions — without this reset the previous session's "Player####" (or a name set via the login

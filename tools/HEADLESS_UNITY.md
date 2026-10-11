@@ -62,7 +62,8 @@ Always pass `--project-path "$(pwd -W)"` (several editors may be running). `--re
 | Discover | `unity command --query <term> [--detail full]` |
 
 The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode [filter]`, `playmode <filter>`,
-`build`, `play-build`, `play-net`, `last-run` (see `Packages/com.unpseudo.autoplay/README.md` for autoplay).
+`build`, `play-build`, `play-net`, `last-run` (autoplay: the `com.unpseudo.autoplay` package's `README.md`, folder given by
+`tools/autoplay/autoplay-tool.sh --dir`).
 
 ## 3. What a headless editor cannot do
 

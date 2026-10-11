@@ -28,8 +28,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.abspath(os.path.join(HERE, "..", ".."))
-RUNNER = os.path.join(PROJECT, "Packages", "com.unpseudo.autoplay", "Tools~", "run_scenario.py")
 sys.path.insert(0, HERE)
+import autoplay_pkg  # noqa: E402
+RUNNER = autoplay_pkg.tool("run_scenario.py")
 from sweep_powers import fragment_for, newest_roles  # noqa: E402
 
 COMMON = ["-autoplay-vote-probability", "0", "-autoplay-vote-skip-cast", "-autoplay-fast-phases", "Intro|Chaining|Vote", "-autoplay-fast-timescale", "12",

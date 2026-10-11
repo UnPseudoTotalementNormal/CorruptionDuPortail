@@ -24,7 +24,7 @@
     },
     {
       "type": "analyzer",
-      "cmd": "python -X utf8 Packages/com.unpseudo.autoplay/Tools~/check_alerts.py {run} \"DIED client2 exit=\" \"ABORT a process died\""
+      "cmd": "python -B -X utf8 {tools}/check_alerts.py {run} \"DIED client2 exit=\" \"ABORT a process died\""
     }
   ]
 }

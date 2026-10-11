@@ -22,7 +22,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.abspath(os.path.join(HERE, "..", ".."))
-RUNNER = os.path.join(PROJECT, "Packages", "com.unpseudo.autoplay", "Tools~", "run_scenario.py")
+sys.path.insert(0, HERE)
+import autoplay_pkg  # noqa: E402
+RUNNER = autoplay_pkg.tool("run_scenario.py")
 ANALYZER = os.path.join(HERE, "analyze_picker.py")
 KNOWN = ["CardEffect(TechnoBeacon|BoolEnabler): effectData"]
 

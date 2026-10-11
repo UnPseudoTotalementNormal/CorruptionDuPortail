@@ -7,7 +7,7 @@
 #   - ClientLoadedSynchronization : NGO NRE after the launcher's connect retry (suspected harness artefact)
 ROOT="$(cd "$(dirname "$0")/../.." && (pwd -W 2>/dev/null || pwd))"
 cd "$ROOT" || exit 2
-exec python -X utf8 "$ROOT/Packages/com.unpseudo.autoplay/Tools~/campaign.py" \
+exec bash "$ROOT/tools/autoplay/autoplay-tool.sh" campaign.py \
   --ctl "$ROOT/tools/autoplay/unityctl.sh" --project "$ROOT" \
   --scenarios "$ROOT/tools/autoplay/scenarios" \
   --random-builds "${1:-2}" --random-nets "${2:-1}" --clients "${3:-3}" --max-days 4 \

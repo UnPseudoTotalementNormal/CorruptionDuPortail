@@ -1,19 +1,36 @@
 # Autoplay — feature reference (Corruption du Portail)
 
 Everything the autoplay framework can do today, in one place. How to *use* it (goal → run → evidence → answer):
-the `autoplay` skill (`.claude/skills/autoplay/SKILL.md`). How to *add* to it: `Packages/com.unpseudo.autoplay/EXTENDING.md`.
+the `autoplay` skill (`.claude/skills/autoplay/SKILL.md`). How to *add* to it: the package's `EXTENDING.md`.
 Headless editor + Unity CLI workflow: `tools/HEADLESS_UNITY.md`.
 
 Keep this file exact: a lever, event or check that is added, renamed or removed is updated here in the same commit.
+
+## The package lives in its own repository
+
+The game-agnostic part is [`com.unpseudo.autoplay`](https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay), pinned by tag in `Packages/manifest.json`
+(`…com.unpseudo.autoplay.git#vX.Y.Z`). Unity installs it in `Library/PackageCache/com.unpseudo.autoplay@<hash>/`:
+read-only, renamed on every update, **never edit it**. Its docs (`README.md`, `EXTENDING.md`, `CHANGELOG.md`) and
+tools (`Tools~/`) are there; `tools/autoplay/autoplay-tool.sh --dir` prints the tools folder and
+`tools/autoplay/autoplay-tool.sh <tool> [args]` runs one (`run_scenario.py`, `contact_sheet.py`, `compare_runs.py`…).
+Python game tools use `tools/autoplay/autoplay_pkg.py`; a scenario's analyzer command writes `{tools}`.
+
+- **Update**: bump the tag in `Packages/manifest.json` (releases: the package's `CHANGELOG.md`), let Unity resolve
+  (`packages-lock.json` changes too), compile, run the relevant scenarios, commit both files.
+- **Change the package** (anything that works for any game): clone it into `Packages/com.unpseudo.autoplay/`
+  (gitignored here; an embedded package overrides the manifest, and the tools resolve to it), work and test against
+  this game, commit + push there, release a tag (`package.json` version + `CHANGELOG.md` entry), bump the tag here,
+  delete the clone. Anything that knows this game stays in the adapter (`Assets/Scripts/Autoplay`) or `tools/autoplay`.
+- A worktree without `Library` yet borrows the main checkout's tools (the resolver says so on stderr).
 
 ## Layers
 
 | Layer | Where | Owns |
 |---|---|---|
-| Package (game-agnostic) | `Packages/com.unpseudo.autoplay/Runtime` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard, virtual mouse / keyboard (`AutoplayVirtualInput`) |
-| Package tools | `Packages/com.unpseudo.autoplay/Tools~` | `unityctl.sh`, launchers, `run_scenario.py`, `campaign.py`, `compare_runs.py`, `contact_sheet.py` |
+| Package (game-agnostic, [`com.unpseudo.autoplay`](https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay)) | `Runtime/` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard, virtual mouse / keyboard (`AutoplayVirtualInput`) |
+| Package tools | `Tools~/` (`tools/autoplay/autoplay-tool.sh --dir`) | `unityctl.sh`, launchers, `run_scenario.py`, `campaign.py`, `compare_runs.py`, `contact_sheet.py` |
 | Game adapter | `Assets/Scripts/Autoplay` | `CdpAutoplayGame` (levers, host/client roles), `AutoplayDriver` (bot brain; real-input partials `AutoplayDriverRealInput`, `AutoplayDriverTour`, `AutoplayDriverLobby`), `AutoplayUiLocator`, `AutoplayMenuTour`, `AutoplayInputMask`, `AutoplaySelectionAutopilot`, `AutoplayComposition` |
-| Game tools | `tools/autoplay` | `unityctl.sh` wrapper (FMOD guarded files), analyzers, sweep, campaign, `scenarios/*.json` |
+| Game tools | `tools/autoplay` | `unityctl.sh` wrapper (FMOD guarded files), `autoplay-tool.sh` / `autoplay_pkg.py` (package tools finder), analyzers, sweep, campaign, `scenarios/*.json` |
 | Prod seams (dev use only) | `SelectionFlowService.Autopilot` (`ISelectionAutopilot`), read-only `CardPickerManager` accessors | |
 
 ## Commands (`tools/autoplay/unityctl.sh`)
@@ -173,8 +190,8 @@ capture. The runner runs every step as its own coroutine, so a failed run stops 
 `outcome` · `event` (kind / detail regex / min / max; `process` any|host|clients = total, all|every-client = each) ·
 `noErrors` (ignore regexes) · `fact` · `roster` · `desync` (net) · `state` (path in capture JSON, op, quantifier) ·
 `leaverChained` (net) · `analyzer` (external command, exit 0 = pass) · `animation` (start / end / reach / change /
-monotonic, `onlyIf`, `window`). Any check takes `"severity": "warn"`. Full syntax: docstring of
-`Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`.
+monotonic, `onlyIf`, `window`). Any check takes `"severity": "warn"`. Full syntax: docstring of the
+package's `Tools~/run_scenario.py`. In an `analyzer` command, `{run}` = the run folder, `{tools}` = the package's `Tools~`.
 
 Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetries`, `timescale`, `timeout`,
 `visualPicker`, `args`, `clientArgs`, `client1Args`, `client1Relaunch` (`{"after": s, "args": [...]}`: the launcher
@@ -259,7 +276,8 @@ Add a row whenever a goal turns out not to be covered, with the extension that w
 
 ## Extending in this game
 
-Generic method, rules and definition of done: `Packages/com.unpseudo.autoplay/EXTENDING.md`. Game specifics:
+Generic method, rules and definition of done: the package's `EXTENDING.md` (generic changes go to the package
+repository, see § The package lives in its own repository). Game specifics:
 
 - Levers and process roles: `CdpAutoplayGame` (`AutoplayOptions` carries them to the driver). Bot actions and game
   events: `AutoplayDriver`. Target / card choices: `AutoplaySelectionAutopilot` (plugged into

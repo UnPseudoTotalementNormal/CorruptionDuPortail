@@ -5,14 +5,17 @@ description: Play Corruption du Portail automatically with bots (host + simulate
 
 # Autoplay — goal → bots play → evidence → answer
 
-Framework: package `Packages/com.unpseudo.autoplay` (generic: runner, journal, captures + state export, dev-build
-bootstrap, window guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGame`,
+Framework: package `com.unpseudo.autoplay` (own repository, pinned by tag in `Packages/manifest.json`, installed
+read-only in `Library/PackageCache/`; generic: runner, journal, captures + state export, dev-build bootstrap, window
+guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGame`,
 `AutoplayDriver` bot brain, `AutoplaySelectionAutopilot`). R&D + findings:
 `_bmad-output/implementation-artifacts/investigations/autoplay-automated-games-rnd.md`.
 
 - **Every lever, event, capture, check and scenario that exists:** `tools/autoplay/REFERENCE.md`. Look there first.
-- **Adding to the framework:** `Packages/com.unpseudo.autoplay/EXTENDING.md` (generic method, rules, definition of
-  done) + `tools/autoplay/REFERENCE.md` § Extending in this game (where it goes here, backlog recipes).
+- **Package:** docs and tools in `$(tools/autoplay/autoplay-tool.sh --dir)/..`; update it, or change it (clone into
+  `Packages/com.unpseudo.autoplay/`, push + tag there, bump the manifest): `REFERENCE.md` § The package lives in its own
+  repository. Never edit `Library/PackageCache`.
+- **Adding to the framework:** the package's `EXTENDING.md` (generic method, rules, definition of done) + `tools/autoplay/REFERENCE.md` § Extending in this game (where it goes here, backlog recipes).
 - Package README (layout, outputs, hard-won lessons): read once.
 
 ## 1. Turn the request into a goal you can check
@@ -89,9 +92,9 @@ and the user's cursor is never captured; never drive the real cursor from a scri
 
 ### Declarative scenarios — prefer them for anything worth re-running
 
-Write `tools/autoplay/scenarios/<name>.json` (goal, mode, levers, expectations — format in
-`Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`) and run
-`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/run_scenario.py tools/autoplay/scenarios/<name>.json`.
+Write `tools/autoplay/scenarios/<name>.json` (goal, mode, levers, expectations — format in the package's
+`Tools~/run_scenario.py`; an analyzer command reaches package tools with `{tools}`) and run
+`tools/autoplay/autoplay-tool.sh run_scenario.py tools/autoplay/scenarios/<name>.json`.
 A passing scenario stays as a regression test; `tools/autoplay/campaign.sh` replays them all + random games.
 Coverage of targeted powers: `python -X utf8 tools/autoplay/sweep_powers.py` (one forced-role visual run per role →
 `coverage.md`, OK / FAIL / NOT COVERED per power).
@@ -100,7 +103,7 @@ Coverage of targeted powers: `python -X utf8 tools/autoplay/sweep_powers.py` (on
 
 To check that an animation plays right, record it: `-autoplay-record "power.start:1.8"` (trigger on an event BEFORE the
 animation, not on its own start, or the first frames are lost) → `rec-NNN-*/` frames + `tracks.csv`. Look at ONE contact
-sheet (`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/contact_sheet.py <rec-dir> --every 2 --track <name>`), and
+sheet (`tools/autoplay/autoplay-tool.sh contact_sheet.py <rec-dir> --every 2 --track <name>`), and
 assert on the numbers with an `animation` check (thresholds measured on a reference run, never invented). Reference:
 `tools/autoplay/scenarios/picker-animation.json`. A late-started recording or a run stopped mid-burst is an artefact,
 not a game bug — check before concluding.
@@ -185,7 +188,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 
 When the goal needs something autoplay cannot do yet (bots never chat, nothing stalls a join, targets are random…),
 the default is to **add the lever / event / check**, then prove the goal with a scenario: follow
-`Packages/com.unpseudo.autoplay/EXTENDING.md` (definition of done: compile, scenario PASS on `play-net` if a client is
+the package's `EXTENDING.md` (definition of done: compile, scenario PASS on `play-net` if a client is
 involved, shown able to fail, `REFERENCE.md` updated). Start from the backlog recipes in `tools/autoplay/REFERENCE.md`
 when the gap is listed there. Hand a point to human playtest only when the extension is out of scope for the task,
 and then say which extension would cover it (and add it to the backlog table).

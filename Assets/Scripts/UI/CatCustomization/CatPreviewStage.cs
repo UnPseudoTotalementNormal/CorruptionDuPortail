@@ -7,8 +7,8 @@ namespace UI.CatCustomization
     /// <summary>
     /// The player's cat in the main menu, alive (Idle animation) and dressed from the saved look, filmed into a
     /// transparent RenderTexture that the menu (uGUI RawImage) and the customization screen (UI Toolkit) both show.
-    /// Built at runtime far below the menu: the game's Cat_Avatar model, its gameplay / network components stripped
-    /// (no NetworkManager in the menu), one camera and one light of its own.
+    /// Built at runtime far below the menu: the game's Cat_Avatar model with its idle motion, its gameplay / network
+    /// components stripped (no NetworkManager in the menu), one camera and one light of its own.
     /// </summary>
     public class CatPreviewStage : MonoBehaviour
     {
@@ -103,9 +103,11 @@ namespace UI.CatCustomization
             holder.SetActive(false);
             holder.transform.SetParent(_turntable, false);
             GameObject cat = Instantiate(catModelPrefab, holder.transform);
+            // Kept: the dresser and the procedural idle (breathing, ears, whiskers, bow; no network, it falls back to
+            // the model as its root). Everything else needs the game (NetworkAnimator, head look, hops).
             foreach (MonoBehaviour behaviour in cat.GetComponentsInChildren<MonoBehaviour>(true))
             {
-                if (!(behaviour is CatAppearance))
+                if (!(behaviour is CatAppearance) && !(behaviour is Avatars.AvatarIdleMotion))
                 {
                     DestroyImmediate(behaviour);
                 }

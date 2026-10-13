@@ -13,7 +13,7 @@ namespace Autoplay
     /// <summary>
     /// Real-input tour of the main menu's cat customization (<c>-autoplay-cat-custo</c>): a click on the menu's cat opens
     /// the screen, each part's tab is opened and every vignette of it clicked (the cat changes), the cat is turned
-    /// (scripted: the virtual mouse has no drag), « Menu » closes it and the menu's cat wears the new look. Each step
+    /// (scripted: the virtual mouse has no drag), then thrown (it keeps spinning, slows down, stops), « Menu » closes it and the menu's cat wears the new look. Each step
     /// journals <c>cat.&lt;step&gt; ok|miss</c> next to <c>input.click</c> / <c>input.miss</c> and captures the screen.
     /// The look in force at the start is put back at the end (the tour must not change a player's saved cat).
     /// The UGS login screen covers the menu: the caller lifts it first.
@@ -80,6 +80,12 @@ namespace Autoplay
                 yield return null;
             }
             _journal.Record("cat.turn", "ok scripted");
+            // Thrown: it keeps spinning, slowing down, then stops.
+            _screen.Throw(900f);
+            yield return Pause(0.4f);
+            bool _spinning = _screen.IsSpinning;
+            yield return Pause(2.6f);
+            _journal.Record("cat.throw", $"{(_spinning && !_screen.IsSpinning ? "ok" : "miss")} spinning={_spinning} stopped={!_screen.IsSpinning}");
             bool _saveOk = CatLookStore.Load() == FinalLook;
             _journal.Record("cat.saved", $"{(_saveOk ? "ok" : "miss")} look={CatLookStore.Load()}");
             _capture.Request("cat-final", 0f);

@@ -11,7 +11,8 @@ namespace UI.CatCustomization
     /// The main menu's cat customization screen (CatCustomization.uxml, approved mockup personnalisation v2 C1): the
     /// player's cat on the left, one tab per part on the right, the vignettes of that part in a scrolling grid. A
     /// click on a vignette dresses the cat and saves the look at once (no confirm step): the next game sends it.
-    /// Échap or « Menu » closes it. Opened by clicking the cat of the menu (MainMenu).
+    /// The cat turns when dragged and keeps spinning (slowing down) when thrown. Échap or « Menu » closes it.
+    /// Opened by clicking the cat of the menu (MainMenu).
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class CatCustomizationController : MonoBehaviour
@@ -20,6 +21,10 @@ namespace UI.CatCustomization
         private const string CollapsedClass = "cdp-is-collapsed";
         private const long CollapseDelayMs = 260;
         private const float DragDegreesPerPixel = 0.45f;
+        // Spin kept after a fast drag: the release speed decays exponentially (per second), stops below the threshold.
+        private const float SpinDecayPerSecond = 3f;
+        private const float SpinStopDegreesPerSecond = 4f;
+        private const float SpinMaxDegreesPerSecond = 1080f;
 
         [SerializeField] private UIDocument document;
 
@@ -40,6 +45,8 @@ namespace UI.CatCustomization
         private bool _open;
         private bool _dragging;
         private float _lastDragX;
+        private float _lastDragTime;
+        private float _spin; // deg/s: measured while dragging, kept (decaying) after release
 
         public bool IsOpen => _open;
         public CatPreviewStage Stage => stage;
@@ -115,6 +122,7 @@ namespace UI.CatCustomization
             if (!_open) return;
             _open = false;
             _dragging = false;
+            _spin = 0f;
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
             _root.schedule.Execute(() =>
@@ -133,6 +141,14 @@ namespace UI.CatCustomization
             if (!_open) return;
             Keyboard kb = Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) Close();
+
+            if (!_dragging && _spin != 0f && stage != null)
+            {
+                float dt = Time.unscaledDeltaTime;
+                stage.AddYaw(_spin * dt);
+                _spin *= Mathf.Exp(-SpinDecayPerSecond * dt);
+                if (Mathf.Abs(_spin) < SpinStopDegreesPerSecond) _spin = 0f;
+            }
         }
 
         // ------------------------------------------------------------------------------------------ tabs + grid
@@ -214,23 +230,41 @@ namespace UI.CatCustomization
 
         // ------------------------------------------------------------------------------------------ turn the cat
 
+        /// <summary>Sets the cat spinning as if thrown at <paramref name="degreesPerSecond"/> (autoplay demo).</summary>
+        public void Throw(float degreesPerSecond)
+        {
+            _dragging = false;
+            _spin = Mathf.Clamp(degreesPerSecond, -SpinMaxDegreesPerSecond, SpinMaxDegreesPerSecond);
+        }
+
+        public bool IsSpinning => _spin != 0f;
+
         private void OnCatPointerDown(PointerDownEvent evt)
         {
             _dragging = true;
+            _spin = 0f; // grabbing the cat stops it
             _lastDragX = evt.position.x;
+            _lastDragTime = Time.unscaledTime;
             _catView.CapturePointer(evt.pointerId);
         }
 
         private void OnCatPointerMove(PointerMoveEvent evt)
         {
             if (!_dragging || stage == null) return;
-            stage.AddYaw(-(evt.position.x - _lastDragX) * DragDegreesPerPixel);
+            float degrees = -(evt.position.x - _lastDragX) * DragDegreesPerPixel;
+            stage.AddYaw(degrees);
+            // Speed of the drag, smoothed over the last moves: what the cat keeps when released.
+            float dt = Mathf.Max(Time.unscaledTime - _lastDragTime, 1f / 240f);
+            _spin = Mathf.Clamp(Mathf.Lerp(_spin, degrees / dt, 0.5f), -SpinMaxDegreesPerSecond, SpinMaxDegreesPerSecond);
             _lastDragX = evt.position.x;
+            _lastDragTime = Time.unscaledTime;
         }
 
         private void OnCatPointerUp(PointerUpEvent evt)
         {
             _dragging = false;
+            // Held still before letting go: no throw.
+            if (Time.unscaledTime - _lastDragTime > 0.08f) _spin = 0f;
             _catView.ReleasePointer(evt.pointerId);
         }
     }

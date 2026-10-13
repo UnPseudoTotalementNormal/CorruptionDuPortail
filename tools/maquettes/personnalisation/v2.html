@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personnalisation du chat, tour 2 : E1 + E3, de la place pour beaucoup de cosmétiques</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bg { position: absolute; inset: 0; background: url(../common/menu_bg.jpg) center / cover; }
+  .bg--dim::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 25% 55%, rgba(20,8,4,.72), rgba(8,3,2,.94) 60%); }
+  .cat { position: absolute; aspect-ratio: 440 / 575; }
+  .cat .layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .glow { position: absolute; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,150,50,.45), rgba(255,120,30,0) 70%); }
+  .hit { cursor: pointer; user-select: none; }
+  .vign { width: 100%; height: 100%; background-repeat: no-repeat; }
+  .vign--none::after { content: "—"; display: flex; height: 100%; align-items: center; justify-content: center; color: #8a6e52; font: 54px "Fell", serif; }
+  .back { position: absolute; left: 80px; top: 50px; font: 32px "Fell", serif; color: #d8c2a0; }
+  .back::before { content: "‹ "; color: #f0b85a; }
+
+  /* the cat, left, same place in every variant */
+  .stage .cat { left: 140px; top: 120px; height: 720px; }
+  .stage .glow { left: 130px; top: 700px; width: 580px; height: 150px; }
+
+  /* a vignette cell */
+  .cell { text-align: center; }
+  .box { background: rgba(30,16,8,.82); border: 2px solid #5a4028; }
+  .cell.on .box { border-color: #f0b85a; box-shadow: 0 0 22px rgba(240,184,90,.45); }
+  .cell span { display: block; margin-top: 6px; font: 23px "Fell", serif; color: #d8c2a0; line-height: 1.15; }
+  .scroll { position: absolute; overflow: hidden; }
+  .track { position: absolute; right: 0; top: 0; bottom: 0; width: 4px; background: rgba(240,184,90,.12); }
+  .thumb { position: absolute; right: 0; top: 0; width: 4px; height: 40%; background: rgba(240,184,90,.6); }
+
+  /* C1: tabs on top of the panel, grid under */
+  .c1 .tabs { position: absolute; left: 820px; top: 110px; display: flex; gap: 46px; }
+  .c1 .tab { font: 40px "FellSC", serif; color: #a88a68; padding-bottom: 8px; border-bottom: 3px solid transparent; }
+  .c1 .tab.on { color: #fbeedd; border-bottom-color: #f0b85a; }
+  .c1 .now { position: absolute; left: 820px; top: 190px; font: italic 30px "Fell", serif; color: #c99a5b; }
+  .c1 .scroll { left: 820px; top: 250px; width: 700px; height: 600px; }
+  .c1 .grid { display: grid; grid-template-columns: repeat(4, 160px); gap: 22px 18px; }
+  .c1 .box { width: 160px; height: 150px; }
+
+  /* C2: tabs as a column between the cat and the grid */
+  .c2 .tabs { position: absolute; left: 760px; top: 170px; }
+  .c2 .tab { font: 40px "FellSC", serif; color: #a88a68; padding: 12px 0 12px 22px; border-left: 3px solid transparent; }
+  .c2 .tab.on { color: #fbeedd; border-left-color: #f0b85a; }
+  .c2 .tab small { display: block; font: italic 22px "Fell", serif; color: #c99a5b; }
+  .c2 .scroll { left: 1060px; top: 120px; width: 470px; height: 740px; }
+  .c2 .grid { display: grid; grid-template-columns: repeat(3, 140px); gap: 20px 14px; }
+  .c2 .box { width: 140px; height: 132px; }
+
+  /* C3: every part in one scrolling list, a row of vignettes each */
+  .c3 .scroll { left: 800px; top: 100px; width: 740px; height: 780px; }
+  .c3 .scroll > div:first-child { padding-right: 30px; }
+  .c3 h4 { margin: 0 0 10px; font: 36px "FellSC", serif; color: #fbeedd; display: flex; justify-content: space-between; align-items: baseline; }
+  .c3 h4 small { font: italic 24px "Fell", serif; color: #c99a5b; }
+  .c3 .rowv { display: flex; gap: 14px; margin-bottom: 26px; }
+  .c3 .box { width: 128px; height: 120px; }
+  .c3 .cell span { font-size: 20px; }
+
+  .qcard { font-size: 16px; }
+</style>
+</head>
+<body data-subject="personnalisation">
+<header class="page">
+  <h1>Personnaliser son chat, tour 2</h1>
+  <p>Tes retours : E2 non ; E3 oui mais avec le chat à gauche comme E1, pour garder de la place quand il y aura
+    beaucoup de cosmétiques ; entrée B2 (ton chat dans le menu, on clique dessus) retenue.</p>
+  <p>Ici, 3 façons de mettre les vignettes à droite du chat. Les grilles défilent : la barre fine à droite montre où on
+    en est. Touche les onglets et les vignettes, le chat change.</p>
+</header>
+
+<section>
+  <h2>1. L'écran (chat à gauche, vignettes à droite)</h2>
+  <p>On y arrive en cliquant sur son chat dans le menu (B2) : le chat glisse à gauche et grandit, le panneau apparaît.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Onglets en haut, grille de 4</span></div>
+    <p class="vdesc">Les 4 parties en onglets au-dessus d'une grille de 4 colonnes. 12 vignettes visibles d'un coup,
+      au-delà ça défile. Le choix en cours est écrit sous les onglets.</p>
+    <div class="screen"><div class="stage c1" id="c1"></div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Onglets en colonne, grille de 3</span></div>
+    <p class="vdesc">Comme E3 (onglets avec le choix en cours en dessous) mais la grille passe à droite, sur toute la
+      hauteur : 15 vignettes visibles, défilement vertical.</p>
+    <div class="screen"><div class="stage c2" id="c2"></div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Tout dans une liste qui défile</span></div>
+    <p class="vdesc">Pas d'onglets : chaque partie est un titre suivi de sa rangée de vignettes, on fait défiler la
+      colonne. Tout est à un geste, mais une partie riche fait une longue rangée.</p>
+    <div class="screen"><div class="stage c3" id="c3"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Deux questions hors écran</h2>
+  <p>Vote 👍 sur la réponse que tu veux (ou écris dessous).</p>
+
+  <div class="variant qcard" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">En partie, tout le monde voit ton chat</span></div>
+    <p class="vdesc">Ton choix part avec ta connexion, l'hôte le donne à tous : chaque joueur a son look chez tout le
+      monde (rejoin compris). Ma recommandation.</p>
+  </div>
+  <div class="variant qcard" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Seulement dans le menu pour l'instant</span></div>
+    <p class="vdesc">En partie tout le monde reste Noir et blanc ; le réseau viendra plus tard.</p>
+  </div>
+  <div class="variant qcard" data-id="X1">
+    <div class="vhead"><span class="vid">X1</span><span class="vname">J'exporte les 3 skins depuis Blender</span></div>
+    <p class="vdesc">Un seul modèle avec toutes les pièces et un squelette commun (os du nœud + os de la cape), les
+      textures converties, les matériaux. Les bouches « Jake » manquantes restent à demander à l'artiste. Ma recommandation.</p>
+  </div>
+  <div class="variant qcard" data-id="X2">
+    <div class="vhead"><span class="vid">X2</span><span class="vname">L'artiste exporte</span></div>
+    <p class="vdesc">Je code le système avec le seul skin actuel et des emplacements prêts pour les autres.</p>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (noms des pièces, choix aléatoire, faire tourner le chat…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script src="cat.js"></script>
+<script>
+  const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const base = (s, st) => s.append(h("div", "bg bg--dim"), h("div", "glow"), catElement(st), h("div", "back hit", "Menu"));
+  function cell(st, part, o, w, ht, rebuild) {
+    const c = h("div", "cell hit" + (st.get(part) === o.id ? " on" : "")), b = h("div", "box");
+    b.append(vignette(part, o.id, w, ht)); c.append(b, h("span", "", o.name));
+    c.onclick = () => { st.set(part, o.id); rebuild(); };
+    return c;
+  }
+  const scroller = () => { const sc = h("div", "scroll"); sc.append(h("div", "track"), h("div", "thumb")); return sc; };
+
+  // C1 -----------------------------------------------------------------
+  (() => {
+    const st = new CatState(), s = document.getElementById("c1"); base(s, st);
+    let open = "outfit";
+    const tabs = h("div", "tabs"), now = h("div", "now"), sc = scroller(), grid = h("div", "grid"); sc.prepend(grid);
+    const build = () => {
+      tabs.innerHTML = ""; grid.innerHTML = "";
+      for (const p of PARTS) {
+        const t = h("div", "tab hit" + (p.key === open ? " on" : ""), p.label);
+        t.onclick = () => { open = p.key; build(); }; tabs.append(t);
+      }
+      now.textContent = st.name(open);
+      for (const o of PARTS.find(p => p.key === open).options) grid.append(cell(st, open, o, 160, 150, build));
+    };
+    s.append(tabs, now, sc); build();
+  })();
+
+  // C2 -----------------------------------------------------------------
+  (() => {
+    const st = new CatState(), s = document.getElementById("c2"); base(s, st);
+    let open = "outfit";
+    const tabs = h("div", "tabs"), sc = scroller(), grid = h("div", "grid"); sc.prepend(grid);
+    const build = () => {
+      tabs.innerHTML = ""; grid.innerHTML = "";
+      for (const p of PARTS) {
+        const t = h("div", "tab hit" + (p.key === open ? " on" : ""), p.label + "<small>" + st.name(p.key) + "</small>");
+        t.onclick = () => { open = p.key; build(); }; tabs.append(t);
+      }
+      for (const o of PARTS.find(p => p.key === open).options) grid.append(cell(st, open, o, 140, 132, build));
+    };
+    s.append(tabs, sc); build();
+  })();
+
+  // C3 -----------------------------------------------------------------
+  (() => {
+    const st = new CatState(), s = document.getElementById("c3"); base(s, st);
+    const sc = scroller(), list = h("div"); sc.prepend(list);
+    const build = () => {
+      list.innerHTML = "";
+      for (const p of PARTS) {
+        list.append(h("h4", "", p.label + "<small>" + st.name(p.key) + "</small>"));
+        const row = h("div", "rowv");
+        for (const o of p.options) row.append(cell(st, p.key, o, 128, 120, build));
+        list.append(row);
+      }
+    };
+    s.append(sc); build();
+  })();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

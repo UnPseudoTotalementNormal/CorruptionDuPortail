@@ -1,3 +1,5 @@
+using Avatars.Cosmetics;
+using CorruptionDuPortail.Domain;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -39,6 +41,15 @@ namespace Avatars
         // it so the momentary trigger + the EmoteId selector replicate to every client (incl. the owner). Wire
         // it on the PlayerAvatar prefab. Null-tolerant — an unwired ref simply makes RequestEmote a no-op.
         [SerializeField] private NetworkAnimator _networkAnimator;
+
+        // Customization: the cat this player picked in the menu (CatLook.Pack: fur, outfit, eyes, mouth). Server-written
+        // (default permission): the owner proposes its saved look with SubmitCatLookRpc when its avatar spawns (a
+        // rejoin spawns a new avatar, so it is sent again), the server sanitizes it against the catalog. Every replica
+        // dresses its cat model from it, late joiners included (full value on spawn).
+        public NetworkVariable<uint> CatLookPacked = new(CatLook.Default.Pack());
+
+        // The cat model's dresser (on the Cat_Avatar child). Null-tolerant: an unwired avatar keeps its default cat.
+        [SerializeField] private CatAppearance _catAppearance;
 
         // Animator wiring for emotes: an integer param selects WHICH emote. LOOP emotes ride the "Emoting" bool
         // (held true → the emote clip loops; false → back to Idle); ONE-SHOT emotes fire the momentary "Emote"
@@ -141,6 +152,56 @@ namespace Avatars
         {
             base.OnNetworkSpawn();
             ApplyAppearance();
+
+            CatLookPacked.OnValueChanged += OnCatLookChanged;
+            ApplyCatLook(CatLookPacked.Value);
+            SubmitLook(CatLookStore.Load());
+        }
+
+        /// <summary>Owner-only: proposes <paramref name="_look"/> to the server (sent at spawn with the saved look).
+        /// No-op on non-owners.</summary>
+        public void SubmitLook(CatLook _look)
+        {
+            if (IsOwner)
+            {
+                SubmitCatLookRpc(_look.Pack());
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            CatLookPacked.OnValueChanged -= OnCatLookChanged;
+            base.OnNetworkDespawn();
+        }
+
+        /// <summary>The cat this avatar wears (as replicated).</summary>
+        public CatLook CatLook => CatLook.Unpack(CatLookPacked.Value);
+
+        private void OnCatLookChanged(uint _previous, uint _current) => ApplyCatLook(_current);
+
+        private void ApplyCatLook(uint _packed)
+        {
+            if (_catAppearance != null)
+            {
+                _catAppearance.Apply(CatLook.Unpack(_packed));
+            }
+        }
+
+        // Owner -> server: the look saved on the owner's PC. Only the avatar's owner may dress it; an unknown id (newer
+        // version, forged value) falls back to the catalog default, so the server never relays something undrawable.
+        [Rpc(SendTo.Server)]
+        private void SubmitCatLookRpc(uint _packed, RpcParams _rpcParams = default)
+        {
+            if (_rpcParams.Receive.SenderClientId != OwnerClientId)
+            {
+                return;
+            }
+            CatLook _look = CatLook.Unpack(_packed);
+            if (_catAppearance != null && _catAppearance.Catalog != null)
+            {
+                _look = _catAppearance.Catalog.Sanitize(_look);
+            }
+            CatLookPacked.Value = _look.Pack();
         }
 
         /// <summary>

@@ -102,6 +102,87 @@ namespace Autoplay
             CatLookStore.Save(_saved);
         }
 
+        /// <summary>
+        /// <c>-autoplay-cat-anims</c>: the customization screen's cat plays every animation of the artist (the game's
+        /// Cat_Avatar Animator, driven like the game drives it): the emotes 1-4 (coucou, crying with tears, accusing
+        /// with the frown, fiery pose), chained then an emote tried while chained (struggle), the tablet. Journals
+        /// <c>catanim.&lt;state&gt; ok|miss</c> (the Animator really reached the state) and captures each.
+        /// </summary>
+        public static IEnumerator RunAnimations(AutoplayVirtualInput _input, AutoplayJournal _journal, AutoplayCapture _capture)
+        {
+            CatCustomizationController _screen = UnityEngine.Object.FindAnyObjectByType<CatCustomizationController>();
+            GameObject _menuCat = GameObject.Find("MenuCanvas/MenuCat");
+            if (_screen == null || _menuCat == null)
+            {
+                _journal.Record("catanim.open", "miss reason=no-screen");
+                yield break;
+            }
+            if (!_screen.IsOpen)
+            {
+                bool _opened = false;
+                yield return AutoplayMenuTour.Click(_input, _journal, "catanim-open", _menuCat, () => _screen.IsOpen, _ok => _opened = _ok);
+                if (!_opened)
+                {
+                    _journal.Record("catanim.open", "miss");
+                    yield break;
+                }
+                yield return Pause(1f);
+            }
+            Animator _animator = _screen.Stage.Animator;
+            if (_animator == null)
+            {
+                _journal.Record("catanim.open", "miss reason=no-animator");
+                yield break;
+            }
+            _screen.Stage.ResetYaw();
+            _journal.Record("catanim.idle", $"{(_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle") ? "ok" : "miss")}");
+            yield return Pause(2f);
+
+            var _emotes = new (int id, string state)[] { (1, "WaveLoop"), (2, "Crying"), (3, "Accused Idle"), (4, "Fiery Idle") };
+            foreach ((int _id, string _state) in _emotes)
+            {
+                _animator.SetInteger("EmoteId", _id);
+                _animator.SetBool("Emoting", true);
+                yield return Pause(3.2f);
+                _journal.Record($"catanim.{_state}", Reached(_animator, _state));
+                _capture.Request($"catanim-{_state}", 0f);
+                yield return Pause(0.8f);
+                _animator.SetBool("Emoting", false);
+                yield return Pause(1.2f);
+            }
+
+            _animator.SetBool("Chained", true);
+            yield return Pause(4.5f);
+            _journal.Record("catanim.Chained Idle", Reached(_animator, "Chained Idle"));
+            _capture.Request("catanim-chained", 0f);
+            _animator.SetInteger("EmoteId", 1);
+            _animator.SetBool("Emoting", true); // an emote tried while chained
+            yield return Pause(0.25f);
+            _journal.Record("catanim.Chained Struggle", Reached(_animator, "Chained Struggle"));
+            _capture.Request("catanim-struggle", 0f);
+            yield return Pause(1.5f);
+            _animator.SetBool("Emoting", false);
+            yield return Pause(1f);
+            _animator.SetBool("Chained", false);
+            yield return Pause(1.5f);
+
+            _animator.SetBool("Tablet", true);
+            yield return Pause(2.5f);
+            _journal.Record("catanim.Look at Tablet Idle", Reached(_animator, "Look at Tablet Idle"));
+            _capture.Request("catanim-tablet", 0f);
+            yield return Pause(1.5f);
+            _animator.SetBool("Tablet", false);
+            yield return Pause(2f);
+            _journal.Record("catanim.back-to-idle", Reached(_animator, "Idle"));
+
+            bool _closed = false;
+            yield return ClickUitk(_input, _journal, "catanim-close", Find(_screen, "cat-back"), () => !_screen.IsOpen, _ok => _closed = _ok);
+            yield return Pause(1f);
+        }
+
+        private static string Reached(Animator _animator, string _state) =>
+            _animator.GetCurrentAnimatorStateInfo(0).IsName(_state) || _animator.GetNextAnimatorStateInfo(0).IsName(_state) ? "ok" : "miss";
+
         private static VisualElement CellOf(CatCustomizationController _screen, CatSlot _slot, byte _id)
         {
             VisualElement _cells = Find(_screen, "cat-cells");

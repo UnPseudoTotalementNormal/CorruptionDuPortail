@@ -8237,6 +8237,7 @@ MonoBehaviour:
   - {fileID: 1455679068}
   - {fileID: 259767583}
   _seatedAvatarScale: 0.75
+  _smartphone: {fileID: 724818885}
 --- !u!1 &875423821
 GameObject:
   m_ObjectHideFlags: 0

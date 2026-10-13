@@ -297,6 +297,12 @@ namespace Autoplay
                 yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
                 yield return AutoplayCatCustomizationTour.Run(realInput, _context.Journal, _context.Capture);
             }
+            if (realInput != null && _context.Config.Flag("cat-anims") && !isClientRole(_context))
+            {
+                LiftLoginScreen(_context);
+                yield return new WaitForSecondsRealtime(0.6f);
+                yield return AutoplayCatCustomizationTour.RunAnimations(realInput, _context.Journal, _context.Capture);
+            }
         }
 
         // -autoplay-cat-look varied: one look per process of a play-net run, from its scenario label (host, client1…).
@@ -995,7 +1001,7 @@ namespace Autoplay
         private void InstallRealInput(AutoplayContext _context)
         {
             bool _control = _context.Config.Flag("real-input-control");
-            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") || (_context.Config.Flag("cat-custo") && !isClientRole(_context)) ||
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") || ((_context.Config.Flag("cat-custo") || _context.Config.Flag("cat-anims")) && !isClientRole(_context)) ||
                   RejoinViaMenu(_context) || Relay(_context)) || realInput != null)
             {
                 return;

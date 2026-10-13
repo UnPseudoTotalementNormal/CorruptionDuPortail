@@ -27,6 +27,12 @@ namespace Avatars.Cosmetics
         [Tooltip("Fur only: the material put on every fur renderer of the catalog.")]
         public Material furMaterial;
 
+        [Tooltip("Fur only, optional: the material of the hair cards (catalog's hairRenderers); empty = furMaterial.")]
+        public Material hairMaterial;
+
+        [Tooltip("Eyes only, optional: the closed-eyes part shown while the cat blinks (CatBlink). Empty = no blink.")]
+        public string blinkPart;
+
         [Tooltip("Outfit / eyes / mouth: names of the renderers this item shows (cat model or cosmetics model). " +
                  "Empty = nothing (« Sans tenue »).")]
         public string[] parts = Array.Empty<string>();
@@ -45,6 +51,13 @@ namespace Avatars.Cosmetics
 
         [Tooltip("Renderers of the base cat model that wear the fur material.")]
         public string[] furRenderers = Array.Empty<string>();
+
+        [Tooltip("Among the fur renderers, the hair cards: they wear the item's hairMaterial when it has one.")]
+        public string[] hairRenderers = Array.Empty<string>();
+
+        [Tooltip("Parts never shown by the dressing itself (replaced by a cosmetic, or shown by another component: " +
+                 "blink, tears).")]
+        public string[] hiddenParts = Array.Empty<string>();
 
         [Tooltip("Ids worn by a player who never customized (and the fallback of an unknown id).")]
         public byte defaultFur;

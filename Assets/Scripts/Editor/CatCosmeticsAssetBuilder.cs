@@ -40,6 +40,9 @@ namespace Avatars.Cosmetics.EditorTools
 
         private static readonly string[] FurRenderers =
             { "Arms", "Arms Fur", "Body", "Body Fur", "Ears", "Ears Fur", "Head", "Head Fur", "Whiskers" };
+        private static readonly string[] HairRenderers = { "Arms Fur", "Body Fur", "Ears Fur", "Head Fur" };
+        // Replaced by "BW Eyes Expressive" (same eyes + the Angry shape key); shown by CatBlink / CatTears.
+        private static readonly string[] HiddenParts = { "BW Eyes Neutral", "BW Eyes Closed", "Tear Emitter" };
 
         [MenuItem("Tools/Cat Cosmetics/Rebuild assets")]
         public static void RebuildAssets()
@@ -48,8 +51,9 @@ namespace Avatars.Cosmetics.EditorTools
             Dictionary<string, Material> materials = BuildMaterials();
             RemapCosmeticsModel(materials);
             CatCosmeticsCatalog catalog = BuildCatalog(materials);
-            WireCatPrefab(catalog);
+            WireCatPrefab(catalog, materials);
             WirePlayerAvatarPrefab();
+            RenderMissingIcons(catalog);
             AssetDatabase.SaveAssets();
             Debug.Log("[CatCosmetics] Assets rebuilt.");
         }
@@ -111,6 +115,10 @@ namespace Avatars.Cosmetics.EditorTools
                     ["mix"] = new CatLook(0, 1, 3, 2),
                     ["bare"] = new CatLook(2, 4, 0, 0),
                 };
+                // And every item alone on the default cat.
+                var catalog = AssetDatabase.LoadAssetAtPath<CatCosmeticsCatalog>(CatalogPath);
+                foreach (CatCosmeticItem item in catalog.items)
+                    looks[$"item-{item.slot}-{item.id}"] = catalog.DefaultLook.With(item.slot, item.id);
                 foreach (KeyValuePair<string, CatLook> look in looks)
                 {
                     stage.Apply(look.Value);
@@ -165,6 +173,19 @@ namespace Avatars.Cosmetics.EditorTools
                 ["Mage Eyes"] = Copy(EyesMaterialPath, "Mage Eyes", "Cat_Mage_Eyes", null),
                 ["Galactic Mouth"] = Mouth(Copy(BodyMaterialPath, "Galactic Mouth", "Cat_Galactic_Mouth", null)),
                 ["Mage Mouth"] = Mouth(Copy(BodyMaterialPath, "Mage Mouth", "Cat_Mage_Mouth", null)),
+                ["Choked Mouth"] = Mouth(Copy(BodyMaterialPath, "Choked Mouth", "Cat_Choked_Mouth", null)),
+                ["Drunk Mouth"] = Mouth(Copy(BodyMaterialPath, "Drunk Mouth", "Cat_Drunk_Mouth", null)),
+                ["Sad Mouth"] = Mouth(Copy(BodyMaterialPath, "Sad Mouth", "Cat_Sad_Mouth", null)),
+                // Galactic hair cards: the body texture without the speckles (the file's "Galactic Fur").
+                ["Galactic Hair"] = Copy(BodyMaterialPath, "Galactic Hair", "Cat_Galactic_Body", null),
+                // The file's flat colours (toon shader RGB nodes); the button texture is missing from the Drive.
+                ["Black Eyes"] = DoubleSided(Flat(EyesMaterialPath, "Black Eyes", new Color(0.02f, 0.02f, 0.02f))),
+                ["Button Eyes"] = DoubleSided(Flat(EyesMaterialPath, "Button Eyes", new Color(0.32f, 0.22f, 0.15f))),
+                ["String"] = DoubleSided(Flat(EyesMaterialPath, "String", new Color(0.05f, 0.03f, 0.03f))),
+                ["Tear"] = Flat(EyesMaterialPath, "Tear", new Color(0.14f, 0.35f, 1f)),
+                // Blink: the round eyes texture darkened (the file mixes it with black).
+                ["BW Eyes Closed"] = Tint(Copy(EyesMaterialPath, "BW Eyes Closed", null, null), new Color(0.12f, 0.12f, 0.12f)),
+                ["BW Eyes Expressive"] = AssetDatabase.LoadAssetAtPath<Material>(EyesMaterialPath),
             };
             return materials;
         }
@@ -185,9 +206,12 @@ namespace Avatars.Cosmetics.EditorTools
                 material.CopyPropertiesFromMaterial(AssetDatabase.LoadAssetAtPath<Material>(templatePath));
             }
             material.SetShaderPassEnabled("MOTIONVECTORS", false); // like the cat's own materials
-            Texture2D baseTexture = Texture(baseMap);
-            material.SetTexture("_BaseMap", baseTexture);
-            material.SetTexture("_MainTex", baseTexture);
+            if (baseMap != null)
+            {
+                Texture2D baseTexture = Texture(baseMap);
+                material.SetTexture("_BaseMap", baseTexture);
+                material.SetTexture("_MainTex", baseTexture);
+            }
             if (emissionMap != null)
             {
                 material.SetTexture("_EmissionMap", Texture(emissionMap));
@@ -195,6 +219,31 @@ namespace Avatars.Cosmetics.EditorTools
                 material.EnableKeyword("_EMISSION");
                 material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             }
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // A flat colour (no texture) on the cat's shader.
+        private static Material Flat(string templatePath, string name, Color color)
+        {
+            Material material = Copy(templatePath, name, null, null);
+            material.SetTexture("_BaseMap", null);
+            material.SetTexture("_MainTex", null);
+            return Tint(material, color);
+        }
+
+        private static Material Tint(Material material, Color color)
+        {
+            material.SetColor("_BaseColor", color);
+            material.SetColor("_Color", color);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // Flat cards seen from both sides (the universal eyes are planes).
+        private static Material DoubleSided(Material material)
+        {
+            material.SetFloat("_Cull", 0f);
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -220,8 +269,12 @@ namespace Avatars.Cosmetics.EditorTools
             var importer = (ModelImporter)AssetImporter.GetAtPath(CosmeticsModelPath);
             importer.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
             importer.importAnimation = false;
+            importer.isReadable = true; // the tear emitter's mesh is the tears' particle shape
+            importer.importBlendShapes = true; // BW Eyes Expressive: the Angry shape key
             foreach (string name in new[] { "Fiery Clothes", "Galactic Bow", "Mage Clothes", "Fiery Eyes", "Galactic Eyes",
-                                             "Mage Eyes", "Galactic Mouth", "Mage Mouth" })
+                                             "Mage Eyes", "Galactic Mouth", "Mage Mouth", "Choked Mouth", "Drunk Mouth",
+                                             "Sad Mouth", "Black Eyes", "Button Eyes", "String", "Tear", "BW Eyes Closed",
+                                             "BW Eyes Expressive" })
             {
                 importer.AddRemap(new AssetImporter.SourceAssetIdentifier(typeof(Material), name), materials[name]);
             }
@@ -238,12 +291,14 @@ namespace Avatars.Cosmetics.EditorTools
             }
             catalog.cosmeticsModel = AssetDatabase.LoadAssetAtPath<GameObject>(CosmeticsModelPath);
             catalog.furRenderers = FurRenderers;
+            catalog.hairRenderers = HairRenderers;
+            catalog.hiddenParts = HiddenParts;
             catalog.defaultFur = catalog.defaultOutfit = catalog.defaultEyes = catalog.defaultMouth = 0;
             catalog.items = new List<CatCosmeticItem>
             {
                 Fur(0, "Noir et blanc", "BlackWhite", materials["Black and White Body"]),
                 Fur(1, "Ardent", "Fiery", materials["Fiery Fur"]),
-                Fur(2, "Galactique", "Galactic", materials["Galactic Fur"]),
+                Hair(Fur(2, "Galactique", "Galactic", materials["Galactic Fur"]), materials["Galactic Hair"]),
                 Fur(3, "Mage", "Mage", materials["Mage Fur"]),
 
                 Parts(CatSlot.Outfit, 0, "Cape et nœud rouge", "Outfit_BlackWhite", "Robe", "Ribbon", "Bell"),
@@ -254,14 +309,20 @@ namespace Avatars.Cosmetics.EditorTools
                     "Mage Cape Bottom", "Mage Cape Top", "Mage Cape Star", "Mage Head Star"),
                 Parts(CatSlot.Outfit, 4, "Sans tenue", null),
 
-                Parts(CatSlot.Eyes, 0, "Yeux de la portée", "Eyes_BlackWhite", "BW Eyes Neutral"),
+                Blink(Parts(CatSlot.Eyes, 0, "Yeux de la portée", "Eyes_BlackWhite", "BW Eyes Expressive"), "BW Eyes Closed"),
                 Parts(CatSlot.Eyes, 1, "Yeux ardents", "Eyes_Fiery", "Fiery Eyes Neutral"),
                 Parts(CatSlot.Eyes, 2, "Yeux galactiques", "Eyes_Galactic", "Galactic Eyes", "Galactic Mid"),
                 Parts(CatSlot.Eyes, 3, "Yeux de mage", "Eyes_Mage", "Mage Eyes", "Mage Cheek Eyes", "Mage Top Eyes"),
+                Parts(CatSlot.Eyes, 4, "Yeux simples", null, "Simple Eyes"),
+                Parts(CatSlot.Eyes, 5, "Yeux blasés", null, "Bored Eyes"),
+                Parts(CatSlot.Eyes, 6, "Yeux boutons", null, "Full Button Eyes"),
 
                 Parts(CatSlot.Mouth, 0, "Sans bouche", null),
                 Parts(CatSlot.Mouth, 1, "Sourire galactique", "Mouth_Galactic", "Galactic Mouth"),
                 Parts(CatSlot.Mouth, 2, "Bouche de mage", "Mouth_Mage", "Mage Mouth"),
+                Parts(CatSlot.Mouth, 3, "Bouche étouffée", null, "Choked Mouth"),
+                Parts(CatSlot.Mouth, 4, "Bouche ivre", null, "Drunk Mouth"),
+                Parts(CatSlot.Mouth, 5, "Bouche triste", null, "Sad Mouth"),
             };
             EditorUtility.SetDirty(catalog);
             return catalog;
@@ -277,15 +338,110 @@ namespace Avatars.Cosmetics.EditorTools
             id = id, slot = slot, displayName = displayName, icon = icon != null ? Icon(icon) : null, parts = parts,
         };
 
+        private static CatCosmeticItem Hair(CatCosmeticItem item, Material hair)
+        {
+            item.hairMaterial = hair;
+            return item;
+        }
+
+        private static CatCosmeticItem Blink(CatCosmeticItem item, string closedPart)
+        {
+            item.blinkPart = closedPart;
+            return item;
+        }
+
+        // Blender-rendered vignettes, else the one RenderMissingIcons wrote for this item (null until then).
         private static Texture2D Icon(string name) => AssetDatabase.LoadAssetAtPath<Texture2D>($"{IconsDir}/CatIcon_{name}.png");
 
-        private static void WireCatPrefab(CatCosmeticsCatalog catalog)
+        // ------------------------------------------------------------------------------------------ icons
+
+        // Items without a Blender vignette (parts assembled at export: universal eyes / mouths) get one rendered here:
+        // the cat dressed with the item, only the item's parts drawn, framed on them, from the front.
+        private static void RenderMissingIcons(CatCosmeticsCatalog catalog)
+        {
+            var cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            var cameraGo = new GameObject("CatIconCamera");
+            var texture = new RenderTexture(256, 240, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4 };
+            try
+            {
+                cat.transform.SetPositionAndRotation(new Vector3(0f, -2000f, 0f), Quaternion.Euler(0f, 180f, 0f));
+                var appearance = cat.GetComponent<CatAppearance>();
+                Camera camera = cameraGo.AddComponent<Camera>();
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+                camera.orthographic = true;
+                camera.targetTexture = texture;
+                var lightGo = new GameObject("Key light");
+                lightGo.transform.SetParent(cameraGo.transform, false);
+                lightGo.transform.localRotation = Quaternion.Euler(20f, -25f, 0f);
+                Light light = lightGo.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 1.2f;
+
+                foreach (CatCosmeticItem item in catalog.items)
+                {
+                    if (item.slot == CatSlot.Fur || item.parts.Length == 0) continue;
+                    string path = $"{IconsDir}/CatIcon_{item.slot}_{item.id}.png";
+                    if (item.icon != null && AssetDatabase.GetAssetPath(item.icon) != path) continue; // Blender's
+                    appearance.Apply(catalog.DefaultLook.With(item.slot, item.id));
+                    var shown = new List<Renderer>();
+                    foreach (Renderer r in cat.GetComponentsInChildren<Renderer>(true))
+                    {
+                        bool mine = System.Array.IndexOf(item.parts, r.name) >= 0;
+                        r.enabled = mine;
+                        if (mine && r.gameObject.activeInHierarchy) shown.Add(r);
+                    }
+                    if (shown.Count == 0) continue;
+                    Bounds bounds = shown[0].bounds;
+                    foreach (Renderer r in shown) bounds.Encapsulate(r.bounds);
+                    camera.transform.SetPositionAndRotation(bounds.center - Vector3.forward * 10f, Quaternion.identity);
+                    camera.orthographicSize = Mathf.Max(bounds.extents.y, bounds.extents.x * 240f / 256f) * 1.15f;
+                    camera.nearClipPlane = 0.01f;
+                    camera.farClipPlane = 50f;
+                    camera.Render();
+                    RenderTexture.active = texture;
+                    var image = new Texture2D(256, 240, TextureFormat.RGBA32, false);
+                    image.ReadPixels(new Rect(0, 0, 256, 240), 0, 0);
+                    image.Apply();
+                    RenderTexture.active = null;
+                    File.WriteAllBytes(path, image.EncodeToPNG());
+                    Object.DestroyImmediate(image);
+                    AssetDatabase.ImportAsset(path);
+                    var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+                    importer.alphaIsTransparency = true;
+                    importer.mipmapEnabled = false;
+                    importer.maxTextureSize = 256;
+                    importer.SaveAndReimport();
+                    item.icon = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                }
+                EditorUtility.SetDirty(catalog);
+            }
+            finally
+            {
+                Object.DestroyImmediate(cat);
+                Object.DestroyImmediate(cameraGo);
+                texture.Release();
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        private static void WireCatPrefab(CatCosmeticsCatalog catalog, Dictionary<string, Material> materials)
         {
             GameObject root = PrefabUtility.LoadPrefabContents(CatPrefabPath);
             try
             {
                 var appearance = root.GetComponent<CatAppearance>() ?? root.AddComponent<CatAppearance>();
                 SetField(appearance, "catalog", catalog);
+                if (root.GetComponent<CatBlink>() == null) root.AddComponent<CatBlink>();
+                var frown = root.GetComponent<CatFrown>() ?? root.AddComponent<CatFrown>();
+                SetField(frown, "animator", root.GetComponent<Animator>());
+                var tears = root.GetComponent<CatTears>() ?? root.AddComponent<CatTears>();
+                SetField(tears, "animator", root.GetComponent<Animator>());
+                SetField(tears, "tearMaterial", materials["Tear"]);
+                Mesh tearMesh = null;
+                foreach (Object sub in AssetDatabase.LoadAllAssetsAtPath(CosmeticsModelPath))
+                    if (sub is Mesh mesh && mesh.name == "Tear Particle") tearMesh = mesh;
+                SetField(tears, "tearMesh", tearMesh);
                 PrefabUtility.SaveAsPrefabAsset(root, CatPrefabPath);
             }
             finally

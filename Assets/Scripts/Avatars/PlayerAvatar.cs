@@ -59,6 +59,11 @@ namespace Avatars
         private const string EmoteIdParam = "EmoteId";
         private const string EmoteTriggerParam = "Emote";
         private const string EmotingParam = "Emoting";
+        // The artist's situational animations (Cat_Avatar Animator): held bools, set on the server, synced by the
+        // NetworkAnimator. Chained: Getting Chained -> Chained Idle (an emote tried while chained plays Chained
+        // Struggle). Tablet: Pulls Tablet Out -> Look at Tablet Idle -> Putting Table Away.
+        private const string ChainedParam = "Chained";
+        private const string TabletParam = "Tablet";
 
         // Seated-ring gaze: the owner's seated head look, RELATIVE to seat facing (deg) — yaw (left/right) +
         // pitch (up/down). Owner-writable so each player publishes WHERE they look during the embodied Vote;
@@ -135,6 +140,42 @@ namespace Avatars
             {
                 _networkAnimator.SetTrigger(EmoteTriggerParam);
             }
+        }
+
+        /// <summary>Server: this body plays the chained animations while <paramref name="_chained"/> (AvatarManager
+        /// follows the seat's character). Null-tolerant.</summary>
+        public void SetChainedServer(bool _chained)
+        {
+            if (!IsServer || _networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            if (_networkAnimator.Animator.GetBool(ChainedParam) != _chained)
+            {
+                _networkAnimator.Animator.SetBool(ChainedParam, _chained);
+                Debug.Log($"[CATANIM] seat {ownerClientId.Value} chained={_chained}");
+            }
+        }
+
+        /// <summary>Owner-only: the player holds their tablet (true) or put it away (false); every peer sees the
+        /// cat take it out, look at it, put it away. No-op on non-owners.</summary>
+        public void SetTabletOut(bool _out)
+        {
+            if (IsOwner)
+            {
+                SetTabletRpc(_out);
+            }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetTabletRpc(bool _out, RpcParams _rpcParams = default)
+        {
+            if (_rpcParams.Receive.SenderClientId != OwnerClientId || _networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            _networkAnimator.Animator.SetBool(TabletParam, _out);
+            Debug.Log($"[CATANIM] seat {ownerClientId.Value} tablet={_out}");
         }
 
         // Server stops a looping emote by clearing the auto-synced Emoting bool. Null-tolerant.

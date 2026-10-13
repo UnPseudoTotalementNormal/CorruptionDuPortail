@@ -252,6 +252,25 @@ namespace Autoplay
             {
                 RejoinSessionStore.Clear();
             }
+            // Each process dresses its own cat (processes of one PC share the saved look): -autoplay-cat-look f.o.e.m.
+            string _catLook = _context.Config.Option("cat-look");
+            if (string.Equals(_catLook, "varied", StringComparison.OrdinalIgnoreCase))
+            {
+                _catLook = VariedCatLook(_context.Config.scenario);
+            }
+            if (!string.IsNullOrEmpty(_catLook))
+            {
+                if (CorruptionDuPortail.Domain.CatLook.TryDecode(_catLook, out CorruptionDuPortail.Domain.CatLook _look))
+                {
+                    Avatars.Cosmetics.CatLookStore.UseForThisSession(_look);
+                    _context.Journal.Record("cat.look", _look.ToString());
+                }
+                else
+                {
+                    _context.Fail($"cat-look '{_catLook}' is not fur.outfit.eyes.mouth");
+                    yield break;
+                }
+            }
             // The menu read the session before this key was set: let it look again (a player's game has one key only).
             UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>()?.RefreshRejoinButton();
 
@@ -272,6 +291,26 @@ namespace Autoplay
                 yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
                 yield return AutoplayRoleBookTour.Run(realInput, _context.Journal, _context.Capture);
             }
+            if (realInput != null && _context.Config.Flag("cat-custo") && !isClientRole(_context))
+            {
+                LiftLoginScreen(_context);
+                yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
+                yield return AutoplayCatCustomizationTour.Run(realInput, _context.Journal, _context.Capture);
+            }
+        }
+
+        // -autoplay-cat-look varied: one look per process of a play-net run, from its scenario label (host, client1…).
+        private static readonly string[] VariedCatLooks = { "0.0.0.0", "1.1.1.0", "2.2.2.1", "3.3.3.2", "1.3.2.2", "2.0.3.1", "3.1.0.0", "0.2.1.2" };
+
+        private static string VariedCatLook(string _scenario)
+        {
+            int _index = 0;
+            string _digits = new string((_scenario ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (_digits.Length > 0 && int.TryParse(_digits, out int _n))
+            {
+                _index = _n;
+            }
+            return VariedCatLooks[_index % VariedCatLooks.Length];
         }
 
         public IEnumerator Host(AutoplayContext _context, ushort _port)
@@ -956,7 +995,7 @@ namespace Autoplay
         private void InstallRealInput(AutoplayContext _context)
         {
             bool _control = _context.Config.Flag("real-input-control");
-            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") ||
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") || (_context.Config.Flag("cat-custo") && !isClientRole(_context)) ||
                   RejoinViaMenu(_context) || Relay(_context)) || realInput != null)
             {
                 return;

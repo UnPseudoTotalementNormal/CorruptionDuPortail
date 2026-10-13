@@ -1,0 +1,37 @@
+/* Mockup pages of Corruption du Portail: the page chrome (dark, readable on a phone) and the 16:9 game screen.
+ * A screen is drawn at 1600 x 900 (.stage) and scaled to the width it gets (mock.js sets --k). */
+
+@font-face { font-family: "Fell"; src: url("../fonts/IMFellEnglish-Regular.ttf"); }
+@font-face { font-family: "Fell"; font-style: italic; src: url("../fonts/IMFellEnglish-Italic.ttf"); }
+@font-face { font-family: "FellSC"; src: url("../fonts/IMFellEnglishSC-Regular.ttf"); }
+
+:root { --bg: #15100d; --card: #221a15; --fg: #efe3d0; --soft: #b9a68c; --line: #3b2e25; --accent: #e8a33c; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, sans-serif; }
+header.page { padding: 18px 16px 6px; max-width: 1100px; margin: 0 auto; }
+header.page h1 { margin: 0 0 6px; font: 26px "Fell", serif; color: var(--accent); }
+header.page p { margin: 4px 0; color: var(--soft); }
+header.page img.ref { width: 100%; max-width: 640px; border: 1px solid var(--line); margin-top: 8px; }
+a { color: var(--accent); }
+a.card { display: block; color: var(--fg); text-decoration: none; padding: 14px 16px; margin: 0 16px 10px; background: var(--card); border: 1px solid var(--line); }
+
+section { max-width: 1100px; margin: 0 auto; padding: 18px 16px 8px; }
+section > h2 { font: 21px "Fell", serif; color: var(--accent); margin: 0 0 4px; }
+section > p { color: var(--soft); margin: 0 0 12px; }
+
+.variant { background: var(--card); border: 1px solid var(--line); padding: 12px; margin-bottom: 18px; }
+.vhead { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.vid { color: var(--accent); font-weight: 700; }
+.vname { font-weight: 600; }
+.vdesc { color: var(--soft); margin: 0 0 10px; }
+
+.screen { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #000; --k: 0.5; }
+.stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform: scale(var(--k)); transform-origin: 0 0; overflow: hidden; }
+
+.vote { display: flex; gap: 8px; margin-top: 10px; }
+.vote button, #send { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 8px 12px; font-size: 15px; cursor: pointer; }
+.vote button.on { border-color: var(--accent); color: var(--accent); }
+textarea { width: 100%; min-height: 54px; margin-top: 8px; background: #1b1511; color: var(--fg); border: 1px solid var(--line); padding: 8px; font: inherit; }
+footer.send { max-width: 1100px; margin: 0 auto; padding: 8px 16px 40px; }
+footer.send label { color: var(--soft); }
+#send { margin-top: 10px; width: 100%; padding: 12px; border-color: var(--accent); }

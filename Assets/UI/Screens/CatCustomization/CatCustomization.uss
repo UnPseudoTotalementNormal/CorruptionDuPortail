@@ -1,0 +1,154 @@
+/* Cat customization screen (main menu). Approved mockup: tools/maquettes/personnalisation v2, C1. Placeholder look,
+ * design-owned: tokens --cdp-color-cat-* (variables.uss), IM FELL English like the role book.
+ * Sizes are at the 1920 x 1080 reference (the panel settings scale with the screen).
+ * Show/hide = cdp-is-hidden fades, cdp-is-collapsed removes layout + input (CatCustomizationController). */
+
+.cat-custo {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--cdp-color-cat-scrim);
+    transition-property: opacity;
+    transition-duration: 220ms;
+    transition-timing-function: ease-out;
+}
+
+.cat-custo.cdp-is-hidden {
+    opacity: 0;
+}
+
+.cat-custo.cdp-is-collapsed {
+    display: none;
+}
+
+/* The cat (RenderTexture 900 x 1100), left half; dragging it turns the cat. */
+.cat-custo__cat {
+    position: absolute;
+    left: 120px;
+    top: 90px;
+    width: 740px;
+    height: 905px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.cat-custo__back {
+    position: absolute;
+    left: 96px;
+    top: 52px;
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Regular.ttf");
+    font-size: 38px;
+    color: var(--cdp-color-cat-text-soft);
+    padding: 4px 10px;
+}
+
+.cat-custo__back:hover {
+    color: var(--cdp-color-cat-text);
+}
+
+.cat-custo__panel {
+    position: absolute;
+    left: 990px;
+    top: 120px;
+    width: 850px;
+    bottom: 60px;
+}
+
+.cat-custo__tabs {
+    flex-direction: row;
+}
+
+.cat-custo__tab {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglishSC-Regular.ttf");
+    font-size: 48px;
+    color: var(--cdp-color-cat-tab);
+    margin: 0 56px 0 0;
+    padding: 0 0 8px 0;
+    border-bottom-width: 3px;
+    border-color: rgba(0, 0, 0, 0);
+}
+
+.cat-custo__tab:hover {
+    color: var(--cdp-color-cat-text-soft);
+}
+
+.cat-custo__tab--on,
+.cat-custo__tab--on:hover {
+    color: var(--cdp-color-cat-text);
+    border-color: var(--cdp-color-book-gold);
+}
+
+.cat-custo__current {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Italic.ttf");
+    font-size: 36px;
+    color: var(--cdp-color-cat-current);
+    margin: 18px 0 22px 0;
+    padding: 0;
+}
+
+.cat-custo__scroll {
+    flex-grow: 1;
+}
+
+.cat-custo__grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+/* A vignette: 4 per row, 4 x (192 + 16) = 832 px inside the 850 px panel minus its ~16 px scroller. */
+.cat-custo__cell {
+    width: 192px;
+    margin: 0 16px 26px 0;
+    align-items: center;
+}
+
+.cat-custo__cell-box {
+    width: 192px;
+    height: 180px;
+    background-color: var(--cdp-color-cat-cell);
+    border-width: 2px;
+    border-color: var(--cdp-color-cat-cell-border);
+    align-items: center;
+    justify-content: center;
+}
+
+.cat-custo__cell-icon {
+    width: 176px;
+    height: 165px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+/* « Sans tenue » / « Sans bouche »: no icon, a dash. */
+.cat-custo__cell-none {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Regular.ttf");
+    font-size: 60px;
+    color: var(--cdp-color-cat-cell-border);
+}
+
+.cat-custo__cell-name {
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Regular.ttf");
+    font-size: 27px;
+    color: var(--cdp-color-cat-text-soft);
+    -unity-text-align: upper-center;
+    white-space: normal;
+    margin: 8px 0 0 0;
+    padding: 0;
+}
+
+.cat-custo__cell:hover .cat-custo__cell-box {
+    border-color: var(--cdp-color-cat-current);
+}
+
+.cat-custo__cell:hover .cat-custo__cell-name {
+    color: var(--cdp-color-cat-text);
+}
+
+.cat-custo__cell--on .cat-custo__cell-box,
+.cat-custo__cell--on:hover .cat-custo__cell-box {
+    border-color: var(--cdp-color-book-gold);
+}
+
+.cat-custo__cell--on .cat-custo__cell-name {
+    color: var(--cdp-color-cat-text);
+}

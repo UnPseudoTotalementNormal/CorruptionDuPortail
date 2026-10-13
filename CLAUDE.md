@@ -14,6 +14,12 @@ Entry point: `_bmad-output/index.md`. **Before writing game code, read `_bmad-ou
 
 Workflow skills kept: `gds-quick-dev` (spec + implement), `gds-investigate` (forensic bug case), `gds-code-review` (adversarial review; required before merging stories tagged `# REVIEW-REQUIRED`). Shipped specs move to `_bmad-output/archive/specs/`. Archive, never delete.
 
+## UI work
+
+Before designing or changing any screen: read Poyo's UI slop list (`~/.claude/ui-slop.md`, outside the repo, kept
+up to date at his request) and show mockups first with the `maquettes` skill (`tools/maquettes/`, served on port
+5198). He answers on the mockup site itself (`<subject>/retours.txt`): read it, never re-ask the same choices.
+
 ## Commits
 
 - **Never** add Claude / AI as a commit author or co-author. No `Co-Authored-By: Claude ...` trailers, no AI attribution in commits or PRs.

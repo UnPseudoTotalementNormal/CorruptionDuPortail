@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- Cat customization screen of the main menu (approved mockup: tools/maquettes/personnalisation v2, C1).
+         The player's cat on the left (CatPreviewStage's RenderTexture, drag to turn it), on the right one tab per part
+         (Pelage, Tenue, Yeux, Bouche), the chosen item's name, then a grid of vignettes that scrolls when a part has
+         many cosmetics. Tabs and cells are built by CatCustomizationController; layout = CatCustomization.uss. -->
+    <ui:Style src="CatCustomization.uss" />
+    <ui:VisualElement name="cat-custo" class="cat-custo cdp-is-hidden cdp-is-collapsed">
+        <ui:VisualElement name="cat-view" class="cat-custo__cat" />
+        <ui:Label name="cat-back" text="Menu" class="cat-custo__back" />
+        <ui:VisualElement name="cat-panel" class="cat-custo__panel" picking-mode="Ignore">
+            <ui:VisualElement name="cat-tabs" class="cat-custo__tabs" picking-mode="Ignore" />
+            <ui:Label name="cat-current" class="cat-custo__current" picking-mode="Ignore" />
+            <ui:ScrollView name="cat-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" class="cat-custo__scroll">
+                <ui:VisualElement name="cat-cells" class="cat-custo__grid" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

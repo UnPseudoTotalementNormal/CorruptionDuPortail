@@ -1,0 +1,149 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0735d3239233ef347b0216197b404ab9, type: 3}
+  m_Name: CatCosmeticsCatalog
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatCosmeticsCatalog
+  cosmeticsModel: {fileID: 919132149155446097, guid: f129661a9cdf7dc45b49c8c07cd32caa, type: 3}
+  furRenderers:
+  - Arms
+  - Arms Fur
+  - Body
+  - Body Fur
+  - Ears
+  - Ears Fur
+  - Head
+  - Head Fur
+  - Whiskers
+  defaultFur: 0
+  defaultOutfit: 0
+  defaultEyes: 0
+  defaultMouth: 0
+  items:
+  - id: 0
+    slot: 0
+    displayName: Noir et blanc
+    icon: {fileID: 2800000, guid: d343d90c57132524f8104162605e57b2, type: 3}
+    furMaterial: {fileID: 2100000, guid: 88acbfa938117174ab3d00ae54f1692a, type: 2}
+    parts: []
+  - id: 1
+    slot: 0
+    displayName: Ardent
+    icon: {fileID: 2800000, guid: 1ab072f6ad8d1664e9cc7ca640b15bd9, type: 3}
+    furMaterial: {fileID: 2100000, guid: 8c9dcc25ca64625448160060bf9e0efd, type: 2}
+    parts: []
+  - id: 2
+    slot: 0
+    displayName: Galactique
+    icon: {fileID: 2800000, guid: 88334e8895494534599507b22c1fe1d2, type: 3}
+    furMaterial: {fileID: 2100000, guid: bdaa25249baa18c48b7a1075f952b692, type: 2}
+    parts: []
+  - id: 3
+    slot: 0
+    displayName: Mage
+    icon: {fileID: 2800000, guid: 73d6ce29c7dcf47429f745bc82a641f0, type: 3}
+    furMaterial: {fileID: 2100000, guid: f77af5e1271da52438dc0d4a0f37f659, type: 2}
+    parts: []
+  - id: 0
+    slot: 1
+    displayName: "Cape et n\u0153ud rouge"
+    icon: {fileID: 2800000, guid: 063fe1ded32dbeb4db77125214210467, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Robe
+    - Ribbon
+    - Bell
+  - id: 1
+    slot: 1
+    displayName: Cape ardente
+    icon: {fileID: 2800000, guid: a98d45176dfb18a4fbc6993983918831, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Fiery Cape
+    - Fiery Cape Top
+    - Fiery Fur Neck
+    - Fiery Medal
+    - Fiery Metal Decorations
+  - id: 2
+    slot: 1
+    displayName: "N\u0153ud galactique"
+    icon: {fileID: 2800000, guid: 6742fd94bcd1d854e8e1bf35d4fa1516, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Galactic Bow
+    - Galactic Bow Mid
+  - id: 3
+    slot: 1
+    displayName: Cape de mage
+    icon: {fileID: 2800000, guid: b76b8ad8b589a8844a860578f9fdb8d4, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Mage Cape Bottom
+    - Mage Cape Top
+    - Mage Cape Star
+    - Mage Head Star
+  - id: 4
+    slot: 1
+    displayName: Sans tenue
+    icon: {fileID: 0}
+    furMaterial: {fileID: 0}
+    parts: []
+  - id: 0
+    slot: 2
+    displayName: "Yeux de la port\xE9e"
+    icon: {fileID: 2800000, guid: 73ff9d4bd93832f4993dc6bd7e86a042, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - BW Eyes Neutral
+  - id: 1
+    slot: 2
+    displayName: Yeux ardents
+    icon: {fileID: 2800000, guid: 8521d077e40621a41a6db169e0d2063f, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Fiery Eyes Neutral
+  - id: 2
+    slot: 2
+    displayName: Yeux galactiques
+    icon: {fileID: 2800000, guid: 78d638974e698fd41a0a50ba2e756513, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Galactic Eyes
+    - Galactic Mid
+  - id: 3
+    slot: 2
+    displayName: Yeux de mage
+    icon: {fileID: 2800000, guid: dee7945bcd743d04faf20cd670e2a923, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Mage Eyes
+    - Mage Cheek Eyes
+    - Mage Top Eyes
+  - id: 0
+    slot: 3
+    displayName: Sans bouche
+    icon: {fileID: 0}
+    furMaterial: {fileID: 0}
+    parts: []
+  - id: 1
+    slot: 3
+    displayName: Sourire galactique
+    icon: {fileID: 2800000, guid: f90470cb31969164ca2e8346ba1bd987, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Galactic Mouth
+  - id: 2
+    slot: 3
+    displayName: Bouche de mage
+    icon: {fileID: 2800000, guid: fc467d69e67c0cb4bad04604d3a355f2, type: 3}
+    furMaterial: {fileID: 0}
+    parts:
+    - Mage Mouth

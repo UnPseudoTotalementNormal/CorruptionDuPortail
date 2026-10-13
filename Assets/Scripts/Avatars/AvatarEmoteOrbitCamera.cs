@@ -176,7 +176,8 @@ namespace Avatars
             bool _any = false;
             foreach (Renderer _renderer in _avatar.GetComponentsInChildren<Renderer>(true))
             {
-                if (_renderer == null)
+                // Cosmetic parts the player does not wear are deactivated GameObjects (CatAppearance): not the body.
+                if (_renderer == null || !_renderer.gameObject.activeInHierarchy)
                 {
                     continue;
                 }

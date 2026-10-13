@@ -121,8 +121,45 @@ namespace Tests.Editor
             {
                 appearance.Apply(CatLook.Default.With(CatSlot.Fur, fur.id));
                 foreach (string name in catalog.furRenderers)
-                    Assert.AreSame(fur.furMaterial, renderers[name].sharedMaterial, $"fur {fur.id} on '{name}'");
+                {
+                    Material expected = fur.hairMaterial != null && catalog.hairRenderers.Contains(name)
+                        ? fur.hairMaterial : fur.furMaterial;
+                    Assert.AreSame(expected, renderers[name].sharedMaterial, $"fur {fur.id} on '{name}'");
+                }
             }
+        }
+
+        [Test]
+        public void HiddenParts_StayHidden_TheBlackAndWhiteEyesBlink_AndKeepTheirAngryShape()
+        {
+            CatCosmeticsCatalog catalog = Catalog;
+            _cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            var appearance = _cat.GetComponent<CatAppearance>();
+            appearance.Apply(CatLook.Default);
+            foreach (string hidden in catalog.hiddenParts)
+            {
+                Assert.IsNotNull(appearance.Part(hidden), $"hidden part '{hidden}' not on the cat");
+                Assert.IsFalse(appearance.Part(hidden).activeInHierarchy, $"'{hidden}' shown");
+            }
+
+            CatCosmeticItem eyes = catalog.Find(CatSlot.Eyes, catalog.DefaultLook.Eyes);
+            Assert.IsTrue(appearance.CanBlink, "the default eyes have no closed variant");
+            appearance.SetBlink(true);
+            Assert.IsTrue(appearance.Part(eyes.blinkPart).activeInHierarchy, "closed eyes not shown while blinking");
+            Assert.IsFalse(appearance.Part(eyes.parts[0]).activeInHierarchy, "open eyes still shown while blinking");
+            appearance.SetBlink(false);
+            Assert.IsFalse(appearance.Part(eyes.blinkPart).activeInHierarchy);
+            Assert.IsTrue(appearance.Part(eyes.parts[0]).activeInHierarchy);
+
+            var skinned = appearance.Part(eyes.parts[0]).GetComponent<SkinnedMeshRenderer>();
+            Assert.IsNotNull(skinned, "the expressive eyes are not a skinned mesh (blend shapes)");
+            int angry = skinned.sharedMesh.GetBlendShapeIndex("Angry");
+            Assert.GreaterOrEqual(angry, 0, "the Angry shape key was lost");
+            appearance.SetAngry(1f);
+            Assert.AreEqual(100f, skinned.GetBlendShapeWeight(angry), 0.01f);
+
+            appearance.Apply(CatLook.Default.With(CatSlot.Eyes, 4));
+            Assert.IsFalse(appearance.CanBlink, "eyes without a closed variant must not blink");
         }
 
         [Test]

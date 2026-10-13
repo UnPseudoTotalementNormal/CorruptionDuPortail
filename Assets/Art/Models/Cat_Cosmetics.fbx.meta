@@ -7,6 +7,36 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: BW Eyes Closed
+    second: {fileID: 2100000, guid: 78d0288387346914cac3df35d4c7efd5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: BW Eyes Expressive
+    second: {fileID: 2100000, guid: 5dbfb3fb179268e46ada2b2a37637589, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Black Eyes
+    second: {fileID: 2100000, guid: 02f209f7d63d8da48b781beab52fffc3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Button Eyes
+    second: {fileID: 2100000, guid: 0dc14363ada376a4f9be01b4e09d5d50, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Choked Mouth
+    second: {fileID: 2100000, guid: c4b9df93c304fbf43bf8cfc18437eb06, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Drunk Mouth
+    second: {fileID: 2100000, guid: 48a09e7beafd05b489dae56ee61274dc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Fiery Clothes
     second: {fileID: 2100000, guid: a1ced6ce1ad1344448ba677e330303ea, type: 2}
   - first:
@@ -44,6 +74,21 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: Mage Mouth
     second: {fileID: 2100000, guid: c4ff92b960812dc44b57a99d041fcbc4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Sad Mouth
+    second: {fileID: 2100000, guid: 76bfb64387d9e5f4bbdd9c2775d326a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: String
+    second: {fileID: 2100000, guid: 7343ae5e210a04c40b122abd92e57611, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tear
+    second: {fileID: 2100000, guid: a50f97dcd93863d498a8f3573bed1a0a, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0
@@ -71,7 +116,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 1

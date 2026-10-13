@@ -25,8 +25,29 @@ principal)", mockups first.
   materials), FBX material remap, catalog, `CatAppearance` on `Cat_Avatar`, `PlayerAvatar._catAppearance`.
   `Wire main menu`: the `CatCustomization` object of `MainMenu.unity`. `Render looks to Temp`: a check without play mode.
 - Missing on the Drive (to ask the artist): the 6 "Jake" mouth frames (lip-sync) used by the Galactic / Mage mouth
-  materials, `Button Texture.png`. Animations of the Drive (`Cat_Animations 2.blend`: Idle, Crying, Accusing, Chained…)
-  are not exported yet: out of scope here.
+  materials, `Button Texture.png`.
+
+## Phase 2: every asset of the Drive (2026-10-13, Poyo: "intègre tous les assets")
+
+Intentions from the artist's asset tracker (`_bmad-output/art-references/cats/`).
+
+- **Animations** (`Cat_Animations_v2.fbx`, 13 takes) in a rebuilt `Cat_Avatar` Animator (`Tools/Cat Cosmetics/Rebuild
+  animations`): Idle = the artist's Idle (AvatarIdleMotion now adds its procedural motion ON TOP of the clip's pose,
+  rest-relative only for bones no clip writes). Emote wheel: Coucou (Wave), Pleurer (Crying + tears), Accuser
+  (Accusing then Accused Idle, eyes frown), Pose ardente (Fiery Idle Test). Chained (server mirrors the seat's
+  character `isChained`, AvatarManager): Getting Chained, Getting Chained 2, Chained Idle; an emote tried while chained
+  plays Chained Struggle (tracker). Tablet (the owner's SmartphoneController open, `SetTabletRpc`): Pulls Tablet Out,
+  Look at Tablet Idle, Putting Table Away. Params synced by the NetworkAnimator (Chained, Tablet).
+- **Expressions**: blink (`BW Eyes Closed`, CatBlink, local), frown (`Angry` shape key kept on `BW Eyes Expressive`,
+  CatFrown on states tagged Angry), tears (CatTears: the file's particle system rebuilt as a Unity ParticleSystem on
+  the Tear Emitter, states tagged Crying).
+- **More cosmetics**: eyes Simple / Blasés / Boutons (universal eyes placed on the face), mouths Étouffée / Ivre /
+  Triste (universal mouth textures), galactic hair without speckles (catalog `hairRenderers`).
+- **Not integrated**: the tablet prop (a grey placeholder cube), the fiery fur collar's hair particles, the revised
+  chaining animation (not delivered), the textures missing from the Drive. The OBJ export and wireframe render are not
+  game assets; references and the tracker are in `_bmad-output/art-references/cats/`.
+- Tests: `CatAnimationsTests` (every clip played, every wheel emote reaches its state, chained first, tablet, synced
+  params, tears / blink / frown wired), catalog tests for hidden parts, blink and the Angry shape. Autoplay `cat-anims`.
 
 ## Code
 

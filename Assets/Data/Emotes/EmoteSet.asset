@@ -18,3 +18,18 @@ MonoBehaviour:
     animatorEmoteId: 1
     loops: 1
     oneShotSeconds: 2
+  - displayName: Pleurer
+    icon: {fileID: 0}
+    animatorEmoteId: 2
+    loops: 1
+    oneShotSeconds: 2
+  - displayName: Accuser
+    icon: {fileID: 0}
+    animatorEmoteId: 3
+    loops: 1
+    oneShotSeconds: 2
+  - displayName: Pose ardente
+    icon: {fileID: 0}
+    animatorEmoteId: 4
+    loops: 1
+    oneShotSeconds: 2

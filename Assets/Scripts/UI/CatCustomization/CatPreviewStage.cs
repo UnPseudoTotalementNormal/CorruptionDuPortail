@@ -43,6 +43,9 @@ namespace UI.CatCustomization
 
         public CatLook Look => _appearance != null ? _appearance.Current : CatLook.Default;
 
+        /// <summary>The menu cat's Animator (the game's Cat_Avatar controller): the autoplay demo plays its animations.</summary>
+        public Animator Animator => _appearance != null ? _appearance.GetComponent<Animator>() : null;
+
         private void Awake()
         {
             Build();
@@ -103,11 +106,13 @@ namespace UI.CatCustomization
             holder.SetActive(false);
             holder.transform.SetParent(_turntable, false);
             GameObject cat = Instantiate(catModelPrefab, holder.transform);
-            // Kept: the dresser and the procedural idle (breathing, ears, whiskers, bow; no network, it falls back to
-            // the model as its root). Everything else needs the game (NetworkAnimator, head look, hops).
+            // Kept: the dresser, its expressions (blink, frown, tears) and the procedural idle (breathing, ears, whiskers,
+            // bow; no network, it falls back to the model as its root). The rest needs the game (NetworkAnimator, head
+            // look, hops).
             foreach (MonoBehaviour behaviour in cat.GetComponentsInChildren<MonoBehaviour>(true))
             {
-                if (!(behaviour is CatAppearance) && !(behaviour is Avatars.AvatarIdleMotion))
+                if (!(behaviour is CatAppearance) && !(behaviour is CatBlink) && !(behaviour is CatFrown)
+                    && !(behaviour is CatTears) && !(behaviour is Avatars.AvatarIdleMotion))
                 {
                     DestroyImmediate(behaviour);
                 }

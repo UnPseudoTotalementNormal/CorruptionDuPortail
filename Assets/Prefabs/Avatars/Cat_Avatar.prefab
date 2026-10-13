@@ -986,6 +986,9 @@ GameObject:
   - component: {fileID: 6249074975222161930}
   - component: {fileID: 1471702584911091322}
   - component: {fileID: 888992499940796453}
+  - component: {fileID: 9033994382041459947}
+  - component: {fileID: 8874405462709290909}
+  - component: {fileID: 4055872417862776525}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1063,7 +1066,14 @@ MonoBehaviour:
     DestinationState: 2050359991
     TransitionDuration: 0.15
     TriggerNameHash: -1434604862
-    TransitionIndex: 0
+    TransitionIndex: 1
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 197392919
+    DestinationState: -272827106
+    TransitionDuration: 0.15
+    TriggerNameHash: -1434604862
+    TransitionIndex: 1
   AnimatorParameterEntries:
     ParameterEntries:
     - name: EmoteId
@@ -1076,6 +1086,14 @@ MonoBehaviour:
       ParameterType: 9
     - name: Emoting
       NameHash: -1348203506
+      Synchronize: 1
+      ParameterType: 4
+    - name: Chained
+      NameHash: -28833968
+      Synchronize: 1
+      ParameterType: 4
+    - name: Tablet
+      NameHash: 495948468
       Synchronize: 1
       ParameterType: 4
   AnimatorParametersExpanded: 0
@@ -1146,6 +1164,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatAppearance
   catalog: {fileID: 11400000, guid: 19321be12ebc6f74d8cef35f394b3fed, type: 2}
+--- !u!114 &9033994382041459947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d367157688641f94b9296656bc271b74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatBlink
+  interval: {x: 2.5, y: 6}
+  closedSeconds: 0.12
+--- !u!114 &8874405462709290909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec4c260afa92fab4bbf76bc0afbe7008, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatTears
+  animator: {fileID: 3870855746124023605}
+  tearMesh: {fileID: -9053575384376508349, guid: f129661a9cdf7dc45b49c8c07cd32caa, type: 3}
+  tearMaterial: {fileID: 2100000, guid: a50f97dcd93863d498a8f3573bed1a0a, type: 2}
+  rate: 120
+--- !u!114 &4055872417862776525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d823094d6ddb35343936489e1614e54c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatFrown
+  animator: {fileID: 3870855746124023605}
+  easeSeconds: 0.2
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

@@ -21,7 +21,10 @@ namespace Avatars.Cosmetics
 
         private readonly Dictionary<string, GameObject> _parts = new();
         private readonly List<Renderer> _furRenderers = new();
+        private readonly HashSet<Renderer> _hairRenderers = new();
         private bool _bound;
+        private bool _blinking;
+        private float _angry;
 
         public CatCosmeticsCatalog Catalog => catalog;
 
@@ -50,9 +53,15 @@ namespace Avatars.Cosmetics
             {
                 foreach (Renderer renderer in _furRenderers)
                 {
-                    renderer.sharedMaterial = fur.furMaterial;
+                    renderer.sharedMaterial = fur.hairMaterial != null && _hairRenderers.Contains(renderer)
+                        ? fur.hairMaterial : fur.furMaterial;
                 }
             }
+            foreach (string hidden in catalog.hiddenParts)
+            {
+                if (_parts.TryGetValue(hidden, out GameObject go) && go.activeSelf) go.SetActive(false);
+            }
+            _blinking = false;
 
             foreach (CatSlot slot in CatLook.Slots)
             {
@@ -74,6 +83,52 @@ namespace Avatars.Cosmetics
                     SetParts(chosen, true);
                 }
             }
+            SetAngry(_angry);
+        }
+
+        // ------------------------------------------------------------------------------------------ expressions
+
+        /// <summary>The part named <paramref name="part"/> once bound (null if the cat has none).</summary>
+        public GameObject Part(string part)
+        {
+            Bind();
+            return _parts.TryGetValue(part, out GameObject go) ? go : null;
+        }
+
+        /// <summary>True when the worn eyes can blink (their item names a closed-eyes part).</summary>
+        public bool CanBlink => BlinkItem() != null;
+
+        /// <summary>Closes / opens the worn eyes (CatBlink). No-op for eyes without a closed variant.</summary>
+        public void SetBlink(bool closed)
+        {
+            CatCosmeticItem eyes = BlinkItem();
+            if (eyes == null || closed == _blinking) return;
+            _blinking = closed;
+            SetParts(eyes, !closed);
+            if (_parts.TryGetValue(eyes.blinkPart, out GameObject lids)) lids.SetActive(closed);
+        }
+
+        /// <summary>Weight 0..1 of the eyes' "Angry" shape (the black and white eyes have one), for later use.</summary>
+        public void SetAngry(float weight)
+        {
+            _angry = Mathf.Clamp01(weight);
+            if (catalog == null) return;
+            CatCosmeticItem eyes = catalog.Find(CatSlot.Eyes, Current.Eyes);
+            if (eyes == null) return;
+            foreach (string part in eyes.parts)
+            {
+                if (!_parts.TryGetValue(part, out GameObject go) || !go.TryGetComponent(out SkinnedMeshRenderer skinned)
+                    || skinned.sharedMesh == null) continue;
+                int index = skinned.sharedMesh.GetBlendShapeIndex("Angry");
+                if (index >= 0) skinned.SetBlendShapeWeight(index, _angry * 100f);
+            }
+        }
+
+        private CatCosmeticItem BlinkItem()
+        {
+            if (catalog == null) return null;
+            CatCosmeticItem eyes = catalog.Find(CatSlot.Eyes, Current.Eyes);
+            return eyes != null && !string.IsNullOrEmpty(eyes.blinkPart) && _parts.ContainsKey(eyes.blinkPart) ? eyes : null;
         }
 
         private void SetParts(CatCosmeticItem item, bool on)
@@ -106,12 +161,14 @@ namespace Avatars.Cosmetics
             Dictionary<string, Transform> bones = BonesUnder(skeleton);
 
             var furNames = new HashSet<string>(catalog.furRenderers);
+            var hairNames = new HashSet<string>(catalog.hairRenderers);
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             {
                 _parts[renderer.name] = renderer.gameObject;
                 if (furNames.Contains(renderer.name))
                 {
                     _furRenderers.Add(renderer);
+                    if (hairNames.Contains(renderer.name)) _hairRenderers.Add(renderer);
                 }
             }
 
@@ -154,7 +211,8 @@ namespace Avatars.Cosmetics
             // 2) The parts: skinned meshes take this skeleton, static ones hang on the same-named bone.
             foreach (Renderer renderer in sourceParts)
             {
-                if (renderer is SkinnedMeshRenderer skinned)
+                // A mesh with blend shapes only (no bones) imports as skinned too: it hangs on its bone like a static one.
+                if (renderer is SkinnedMeshRenderer skinned && skinned.bones.Length > 0)
                 {
                     Transform[] sourceBones = skinned.bones;
                     var mapped = new Transform[sourceBones.Length];
@@ -176,6 +234,11 @@ namespace Avatars.Cosmetics
                          && bones.TryGetValue(renderer.transform.parent.name, out Transform bone))
                 {
                     renderer.transform.SetParent(bone, false);
+                }
+                // A mesh hanging on nothing of the skeleton (the tear card: a particle mesh) is not a part of the cat.
+                if (renderer.transform.IsChildOf(source.transform))
+                {
+                    continue;
                 }
                 _parts[renderer.name] = renderer.gameObject;
                 renderer.gameObject.SetActive(false);

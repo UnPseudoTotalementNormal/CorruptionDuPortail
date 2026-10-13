@@ -81,6 +81,10 @@ namespace Avatars
                  "local avatar keeps its size (its eye anchors the first-person camera). 1 = the prefab's size.")]
         [SerializeField] private float _seatedAvatarScale = 1f;
 
+        [Tooltip("The local player's tablet: while it is open, their cat takes it out and looks at it (every peer " +
+                 "sees it). Wire the GameScene SmartphoneController. Null = no tablet animation.")]
+        [SerializeField] private Smartphone.SmartphoneController _smartphone;
+
         /// <summary>Remote seat ring radius (see the field's tooltip). Settable for autoplay view comparisons.</summary>
         public float RemoteRingRadius
         {
@@ -442,6 +446,60 @@ namespace Avatars
             ResolvedAvatars().FirstOrDefault(_a => _a != null && _a.ownerClientId.Value == _clientId);
 
         public IReadOnlyList<PlayerAvatar> GetAvatars() => ResolvedAvatars();
+
+        // ---- The artist's situational animations: chained (server, from the seat's character), tablet (owner) ----
+        // A chained cat keeps the chained pose; an emote its player tries plays the struggle instead (Animator).
+
+        private const float ChainedPollSeconds = 0.25f;
+        private float _nextChainedPoll;
+        private PlayerAvatar _tabletAvatar;
+        private bool _tabletOut;
+
+        private void Update()
+        {
+            if (!IsSpawned)
+            {
+                return;
+            }
+            if (IsServer && _characterQuery != null && Time.unscaledTime >= _nextChainedPoll)
+            {
+                _nextChainedPoll = Time.unscaledTime + ChainedPollSeconds;
+                UpdateChainedBodies();
+            }
+            if (_smartphone != null)
+            {
+                UpdateLocalTablet();
+            }
+        }
+
+        // isChained is server state: the server mirrors it on each body's Animator (synced by its NetworkAnimator).
+        private void UpdateChainedBodies()
+        {
+            foreach (PlayerAvatar _avatar in ResolvedAvatars())
+            {
+                if (_avatar == null)
+                {
+                    continue;
+                }
+                Character _character = _characterQuery.GetCharacter(_avatar.ownerClientId.Value, false);
+                bool _chained = _character != null && _character.isChained.Value;
+                _avatar.SetChainedServer(_chained);
+            }
+        }
+
+        // The local player's tablet open / closed, told to their own body (sent again to a new body after a rejoin).
+        private void UpdateLocalTablet()
+        {
+            PlayerAvatar _local = GetLocalAvatar();
+            bool _out = _smartphone.IsOpen;
+            if (_local == null || (_local == _tabletAvatar && _out == _tabletOut))
+            {
+                return;
+            }
+            _tabletAvatar = _local;
+            _tabletOut = _out;
+            _local.SetTabletOut(_out);
+        }
 
         public int AvatarCount => ResolvedAvatars().Count;
 

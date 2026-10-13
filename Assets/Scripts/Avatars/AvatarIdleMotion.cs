@@ -10,12 +10,11 @@ namespace Avatars
     /// twitch/sway, a subtle whisker quiver, and a bow spring follow-through driven by the body's angular
     /// velocity (which trails a head/body turn — pairs with the head-look feature).
     ///
-    /// REST-RELATIVE (not `*=` accumulation): each driven bone's REST localRotation is captured at Awake, and
-    /// every frame we write `bone.localRotation = rest * Euler(offset)`. The idle-driven bones (ears, whiskers,
-    /// bow, spine) are NOT keyed by the gameplay clips, so the Animator never re-zeroes them — a per-frame
-    /// `localRotation *= Euler(...)` would COMPOUND and wind the bone to garbage. Writing rest*offset is
-    /// accumulation-free and, since the clip contributes nothing to these bones, is exactly the intended
-    /// "additive over the clip" idle.
+    /// ACCUMULATION-FREE, ADDITIVE OVER THE CLIP: each driven bone's REST localRotation is captured at Awake. Each
+    /// frame the offset goes on top of the bone's pose of THIS frame: the Animator's pose when it wrote the bone
+    /// (the artist's animations key the spine, ears, whiskers and bow), else the rest pose (a bone no clip keys
+    /// keeps what we wrote last frame: `*=` on it would COMPOUND and wind it to garbage). "Did the Animator write
+    /// it?" = its rotation is no longer the one we wrote last frame.
     ///
     /// PIVOT CORRECTNESS: every motion drives the BASE bone of its chain and post-multiplies its rest rotation
     /// (`rest * Euler(offset)`) — the offset is in the bone's LOCAL frame, so it pivots at the bone origin: the
@@ -59,6 +58,8 @@ namespace Avatars
         private readonly List<Quaternion> _earsRest = new();
         private readonly List<Quaternion> _whiskersRest = new();
         private readonly List<Quaternion> _bowRest = new();
+        // What we wrote last frame, per bone (see Drive).
+        private readonly Dictionary<Transform, Quaternion> _written = new();
         private float _seed;
         private float _prevRootYaw;
         private float _bowOffset;   // shared spring offset (deg) for the whole bow chain
@@ -115,14 +116,14 @@ namespace Avatars
             float _breathPer = _spine.Count > 0 ? _breath / _spine.Count : 0f;
             for (int _i = 0; _i < _spine.Count; _i++)
             {
-                _spine[_i].localRotation = _spineRest[_i] * Quaternion.Euler(_breathPer, 0f, 0f);
+                Drive(_spine[_i], _spineRest[_i], Quaternion.Euler(_breathPer, 0f, 0f));
             }
 
             // Whiskers: a faster, smaller quiver riding the breath phase.
             float _whisk = Mathf.Sin((_now * _breathSpeed * 4f + _seed) * 2f * Mathf.PI) * _whiskerAmplitudeDeg;
             for (int _i = 0; _i < _whiskers.Count; _i++)
             {
-                _whiskers[_i].localRotation = _whiskersRest[_i] * Quaternion.Euler(0f, 0f, _whisk);
+                Drive(_whiskers[_i], _whiskersRest[_i], Quaternion.Euler(0f, 0f, _whisk));
             }
 
             // Ears: slow Perlin wander on two DECORRELATED axes (ambient — NOT gaze-driven, per Goal-2 scope).
@@ -131,7 +132,7 @@ namespace Avatars
                 float _off = _seed * 13f + _i * 53.1f;                 // strongly desync left/right ear
                 float _swivel = (Mathf.PerlinNoise(_now * _earSpeed + _off, 137.7f) - 0.5f) * 2f * _earAmplitudeDeg;
                 float _tilt = (Mathf.PerlinNoise(551.3f, _now * _earSpeed + _off) - 0.5f) * 2f * _earAmplitudeDeg;
-                _ears[_i].localRotation = _earsRest[_i] * Quaternion.Euler(_tilt, _swivel, 0f);
+                Drive(_ears[_i], _earsRest[_i], Quaternion.Euler(_tilt, _swivel, 0f));
             }
 
             // Bow follow-through: a shared damped spring perturbed by the body's angular velocity, so a turn
@@ -150,8 +151,18 @@ namespace Avatars
             _bowOffset = Mathf.Clamp(_bowOffset, -_bowMaxDeg, _bowMaxDeg);
             for (int _i = 0; _i < _bow.Count; _i++)
             {
-                _bow[_i].localRotation = _bowRest[_i] * Quaternion.Euler(0f, 0f, _bowOffset);
+                Drive(_bow[_i], _bowRest[_i], Quaternion.Euler(0f, 0f, _bowOffset));
             }
+        }
+
+        // Offset on top of this frame's pose: the Animator's if it wrote the bone since our last write, else rest.
+        private void Drive(Transform _bone, Quaternion _rest, Quaternion _offset)
+        {
+            Quaternion _basis = _written.TryGetValue(_bone, out Quaternion _last) && _bone.localRotation != _last
+                ? _bone.localRotation
+                : _rest;
+            _bone.localRotation = _basis * _offset;
+            _written[_bone] = _bone.localRotation;
         }
 
         private void WarnIfMissing()

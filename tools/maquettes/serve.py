@@ -12,6 +12,7 @@ import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
 PORT = 5198  # one port per project: see the list in the template's variantes.md
+APPLI = "Corruption du Portail"  # title of "/", the name Clawd Code's preview gives this server in its list
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -59,8 +60,8 @@ def contents() -> str:
         new = " <em>nouveau</em>" if i == 0 else ""
         rows.append(f'<a class="card" href="{f.parent.name}/{f.name}"><b>{f.parent.name}/{f.stem}</b> {title}{new}</a>')
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Maquettes</title>
-<link rel="stylesheet" href="common/mock.css"></head><body><header class="page"><h1>Maquettes</h1>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Maquettes {html.escape(APPLI)}</title>
+<link rel="stylesheet" href="common/mock.css"></head><body><header class="page"><h1>Maquettes {html.escape(APPLI)}</h1>
 <p>La plus récente en haut.</p></header>{''.join(rows)}</body></html>"""
 
 

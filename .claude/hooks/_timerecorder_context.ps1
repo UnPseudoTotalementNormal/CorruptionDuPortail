@@ -37,6 +37,14 @@ function Get-OneLine {
 # Prompts the harness submits on its own (a background task finished, a
 # reminder): not typed by a human. Returns $null for a human prompt, else a
 # readable one-line label ("task notification: <summary>").
+# A session opened from Clawd's project screen to edit one of its views (prompt
+# carrying the <vue id=...> block) works on Clawd, not on the game: it is never
+# billed to this project, for as long as the session lives.
+function Test-OffProjectPrompt {
+    param([string]$Prompt)
+    return (-not [string]::IsNullOrWhiteSpace($Prompt)) -and ($Prompt -match '<vue id="[^"]*">')
+}
+
 function Get-SystemPromptLabel {
     param([string]$Prompt)
     if ([string]::IsNullOrWhiteSpace($Prompt)) { return $null }
@@ -91,7 +99,7 @@ function Get-TurnStatePath {
 
 function Read-TurnState {
     param([string]$Dir, [string]$Session)
-    $state = @{ offset = -1; prompt = ''; promptPending = $false; trigger = 'prompt' }
+    $state = @{ offset = -1; prompt = ''; promptPending = $false; trigger = 'prompt'; offProject = $false }
     $path = Get-TurnStatePath -Dir $Dir -Session $Session
     if (-not (Test-Path -LiteralPath $path)) { return $state }
     try {
@@ -100,6 +108,7 @@ function Read-TurnState {
         if ($null -ne $j.prompt) { $state.prompt = [string]$j.prompt }
         if ($null -ne $j.promptPending) { $state.promptPending = [bool]$j.promptPending }
         if ($null -ne $j.trigger) { $state.trigger = [string]$j.trigger }
+        if ($null -ne $j.offProject) { $state.offProject = [bool]$j.offProject }
     } catch { }
     return $state
 }

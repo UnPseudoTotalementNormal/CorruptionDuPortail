@@ -124,6 +124,14 @@ namespace Autoplay
                  "camera height offset, rest pitch, remote seat radius, seated cat scale, round table, standing cards. " +
                  "Missing keys keep the scene's values. Local presentation only, never saved. Empty = off.")]
         public string seatedView;
+        [Tooltip("Seated view surroundings (-autoplay-seated-black 0|1), board task T11: 0 = the room stays visible in first " +
+                 "person, 1 = pitch black around the table (the scene's default). Local presentation only. Empty = off.")]
+        public string seatedBlack;
+        [Tooltip("POV tour (-autoplay-pov-tour): the first vote's seated view head at rest / left / right / up, room shown then " +
+                 "pitch black, each followed by a head sweep (record it with -autoplay-record \"pov\\.sweep:10\").")]
+        public bool povTour;
+        [Tooltip("POV tour: game seconds of the head sweep left to right (then half of it up).")]
+        public float povSweepSeconds = 6f;
     }
 
     /// <summary>
@@ -321,6 +329,7 @@ namespace Autoplay
 
             UpdateTour(_state);
             UpdateCardVisibility(_state);
+            UpdateSurroundings(_state);
 
             switch (_state)
             {

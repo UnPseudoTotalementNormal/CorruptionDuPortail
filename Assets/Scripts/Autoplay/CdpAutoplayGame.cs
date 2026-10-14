@@ -483,6 +483,9 @@ namespace Autoplay
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
+                seatedBlack = _context.Config.Option("seated-black"),
+                povTour = _context.Config.Flag("pov-tour"),
+                povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
             if (!string.IsNullOrEmpty(_options.cardVisibility))
@@ -1186,6 +1189,12 @@ namespace Autoplay
         private static float ParseSeconds(string _text)
             => float.TryParse(_text, NumberStyles.Float, CultureInfo.InvariantCulture, out float _value) ? _value : 0f;
 
+        private static float ParseSweepSeconds(string _text)
+        {
+            float _seconds = ParseSeconds(_text);
+            return _seconds > 0f ? _seconds : 6f;
+        }
+
         private string HolderKind(ulong _id)
             => _id == networkManager.LocalClientId ? "host" : _id >= 100 ? "bot" : "client";
 
@@ -1641,6 +1650,9 @@ namespace Autoplay
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
+                seatedBlack = _context.Config.Option("seated-black"),
+                povTour = _context.Config.Flag("pov-tour"),
+                povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
                 joinedMidPhase = _joinedMidPhase,

@@ -10,10 +10,10 @@ namespace FX
     /// A small lamp on the cork board at night (board task T11, 2026-07-23: "une petite lumière éclaire uniquement le
     /// tableau en liège afin qu'on puisse un minimum suivre l'avancée dans la nuit"), so the roles shown on it can be
     /// followed while the rest of the room stays dark.
-    /// A framing projector, not a pool of light: the spot is placed on the board's normal and its cookie is the
-    /// board's rectangle (<see cref="CorkBoardLampFraming"/>), so the table and the cards in front never catch it, and
-    /// the board's own shadow stops what would go past it. Both are computed from the board at startup: moving or
-    /// resizing the board keeps it framed. Fades in when the night (<see cref="AwakeningState"/>) begins and out when
+    /// A framing projector: the spot is placed on the board's normal and its cookie is a soft pool drawn on the
+    /// board's outline (<see cref="CorkBoardLampFraming"/>), so the table and the cards in front never catch it (unless
+    /// the profile's spill lets a little reach past the edges), and the board's own shadow stops what would go past
+    /// it. Both are computed from the board at startup: moving or resizing the board keeps it framed. Fades in when the night (<see cref="AwakeningState"/>) begins and out when
     /// it ends. Presentation only, every player sees it.
     /// </summary>
     [RequireComponent(typeof(Light))]
@@ -74,7 +74,7 @@ namespace FX
         private void Frame()
         {
             CorkBoardLampFraming.Framing _framing =
-                CorkBoardLampFraming.Frame(_board.transform, _board.sharedMesh.bounds, _distance);
+                CorkBoardLampFraming.Frame(_board.transform, _board.sharedMesh.bounds, _distance, _profile.spill);
             transform.SetPositionAndRotation(_framing.Position, _framing.Rotation);
             _light.type = LightType.Spot;
             _light.spotAngle = _framing.SpotAngle;

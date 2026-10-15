@@ -7526,10 +7526,11 @@ MonoBehaviour:
   _distance: 10
   _illuminance: 1.2
   _profile:
-    endLevel: 0.35
-    bottomLevel: 0.45
-    feather: 0.035
-    inset: 0.01
+    endFade: 2.5
+    edgeFade: 1.1
+    endLevel: 0.75
+    bottomLevel: 0.55
+    spill: 0.6
   _cookieResolution: 1024
   _fadeInDuration: 1.5
   _fadeOutDuration: 1
@@ -7575,8 +7576,8 @@ Light:
   m_Color: {r: 1, g: 0.82, b: 0.6, a: 1}
   m_Intensity: 0
   m_Range: 40
-  m_SpotAngle: 92.43077
-  m_InnerSpotAngle: 92.43077
+  m_SpotAngle: 95.82363
+  m_InnerSpotAngle: 95.82363
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
     m_Type: 2

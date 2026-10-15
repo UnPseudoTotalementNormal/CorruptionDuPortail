@@ -4,23 +4,23 @@ using UnityEngine;
 namespace FX
 {
     /// <summary>
-    /// The geometry of <see cref="CorkBoardLamp"/>, a framing projector: a spot light set on the board's normal whose
-    /// cookie is drawn on the board's own outline, so the beam lights the board and nothing in front of it (the table,
-    /// the cards). The cookie also cancels the spot's own fall-off (inverse square, slant) and replaces it with
-    /// <see cref="Profile"/>: a soft pool brightest at the top middle that fades out before the board's edges, like a
-    /// lamp hung above a picture. Pure: no scene, no light, tested in EditMode.
+    /// The geometry of a <see cref="FramedLamp"/>, a framing projector: a spot light set on the normal of a flat target
+    /// (the cork board, the letters) whose cookie is drawn on the target's own outline, so the beam lights the target and
+    /// nothing around it (the table, the cards). The cookie also cancels the spot's own fall-off (inverse square, slant)
+    /// and replaces it with <see cref="Profile"/>: a soft pool that fades out before the target's edges, like a lamp hung
+    /// above a picture. Pure: no scene, no light, tested in EditMode.
     /// </summary>
-    public static class CorkBoardLampFraming
+    public static class LampFraming
     {
         /// <summary>
-        /// How the light is spread over the board, in fractions of its brightest point. A soft pool, not a frame: full
+        /// How the light is spread over the target, in fractions of its brightest point. A soft pool, not a frame: full
         /// in a core, then fading out over <see cref="endFade"/> towards both ends and <see cref="edgeFade"/> towards
         /// the top and bottom edges, along a curve with no visible step (rounded corners, flat at both ends of the fade).
         /// </summary>
         [Serializable]
         public struct Profile
         {
-            [Tooltip("Length (m) over which the light fades out towards each end of the board.")]
+            [Tooltip("Length (m) over which the light fades out towards each end of the target.")]
             [Min(0.01f)] public float endFade;
             [Tooltip("Length (m) over which the light fades out towards the top and bottom edges.")]
             [Min(0.01f)] public float edgeFade;
@@ -28,25 +28,28 @@ namespace FX
             [Range(0f, 1f)] public float endLevel;
             [Tooltip("Brightness along the bottom edge (the top edge is 1).")]
             [Range(0f, 1f)] public float bottomLevel;
-            [Tooltip("How far (m) the pool may reach past the board's bottom edge and ends, onto the table it stands on " +
-                     "(0 = the board only). Never past the top edge: that light would fly over the board.")]
+            [Tooltip("How far (m) the pool may reach past the target's edges, onto what it stands on (0 = the target only).")]
             [Min(0f)] public float spill;
+            [Tooltip("Off: nothing past the top edge (a standing board: that light would fly over it onto whoever sits " +
+                     "behind). On: the pool spills past the top edge too (a target lying flat).")]
+            public bool spillPastTopEdge;
 
+            /// <summary>The cork board's look (variant C): a pool brighter at the top, a little halo at its foot.</summary>
             public static Profile Default => new Profile
             {
                 endFade = 2.5f, edgeFade = 1.1f, endLevel = 0.75f, bottomLevel = 0.55f, spill = 0.6f,
             };
         }
 
-        /// <summary>Where the light sits and how wide its cone is, for one board.</summary>
+        /// <summary>Where the light sits and how wide its cone is, for one target.</summary>
         public readonly struct Framing
         {
-            /// <summary>Light position: on the board's normal, <see cref="Distance"/> in front of its face.</summary>
+            /// <summary>Light position: on the target's normal, <see cref="Distance"/> in front of its face.</summary>
             public readonly Vector3 Position;
-            /// <summary>Light rotation: looking at the board, its up being the board's up.</summary>
+            /// <summary>Light rotation: looking at the target, its up being the target's up.</summary>
             public readonly Quaternion Rotation;
             public readonly float Distance;
-            /// <summary>Half the board's length and height (world units).</summary>
+            /// <summary>Half the target's length and height (world units).</summary>
             public readonly float HalfLength;
             public readonly float HalfHeight;
             /// <summary>Tangent of the cone's half angle: the cookie's edge, in light space.</summary>
@@ -67,9 +70,9 @@ namespace FX
             public float SpotAngle => 2f * Mathf.Atan(TanHalfAngle) * Mathf.Rad2Deg;
         }
 
-        // The board's ends sit this far inside the cookie: the corners of its rectangle stay inside the cone's circle
-        // and the spot's own angular fade (between inner and outer angle) never reaches them.
-        private const float CookieFill = 0.94f;
+        // The pool's corners sit this far inside the cone's circle (the cookie's square holds that circle): the cone never
+        // cuts them and the spot's own angular fade (between inner and outer angle) never reaches them.
+        private const float CookieFill = 0.96f;
         // Metres kept dark under the top edge, so the cookie's filtering never lets a sliver past it.
         private const float TopEdgeMargin = 0.01f;
 
@@ -85,22 +88,47 @@ namespace FX
             float _halfThickness = Mathf.Abs(_localBounds.extents.z * _scale.z);
             Vector3 _normal = -_board.forward;
             Vector3 _faceCentre = _board.TransformPoint(_localBounds.center) + _normal * _halfThickness;
+            return Frame(_faceCentre, _normal, _board.up, _halfLength, _halfHeight, _distance, _spill);
+        }
+
+        /// <summary>
+        /// Frames something lying flat, of world bounds <paramref name="_worldBounds"/> (a renderer's): the light hangs
+        /// straight above its top face, the pool's length along world X and its height along world Z.
+        /// </summary>
+        public static Framing FrameFromAbove(Bounds _worldBounds, float _distance, float _spill = 0f)
+        {
+            Vector3 _topCentre = new Vector3(_worldBounds.center.x, _worldBounds.max.y, _worldBounds.center.z);
+            return Frame(_topCentre, Vector3.up, Vector3.forward, _worldBounds.extents.x, _worldBounds.extents.z,
+                _distance, _spill);
+        }
+
+        /// <summary>
+        /// Frames a flat rectangle of centre <paramref name="_faceCentre"/> facing <paramref name="_normal"/>, of half size
+        /// <paramref name="_halfLength"/> × <paramref name="_halfHeight"/> (its height along <paramref name="_up"/>).
+        /// </summary>
+        public static Framing Frame(Vector3 _faceCentre, Vector3 _normal, Vector3 _up, float _halfLength, float _halfHeight,
+            float _distance, float _spill = 0f)
+        {
+            _normal = _normal.normalized;
             Vector3 _position = _faceCentre + _normal * _distance;
-            Quaternion _rotation = Quaternion.LookRotation(-_normal, _board.up);
-            float _tanHalfAngle = (_halfLength + Mathf.Max(_spill, 0f)) / (CookieFill * _distance);
+            Quaternion _rotation = Quaternion.LookRotation(-_normal, _up);
+            // The cone is round: it must hold the pool's corners, its diagonal.
+            float _spillOut = Mathf.Max(_spill, 0f);
+            float _cornerReach = new Vector2(_halfLength + _spillOut, _halfHeight + _spillOut).magnitude;
+            float _tanHalfAngle = _cornerReach / (CookieFill * _distance);
             return new Framing(_position, _rotation, _distance, _halfLength, _halfHeight, _tanHalfAngle);
         }
 
         /// <summary>
-        /// The wanted brightness at (<paramref name="_x"/>, <paramref name="_y"/>) metres from the board's centre, along
-        /// its length and its height (up = towards the top edge): the <see cref="Profile"/>. 0 past the pool (the board's
-        /// outline, plus the spill below the bottom edge and past the ends) and above the top edge.
+        /// The wanted brightness at (<paramref name="_x"/>, <paramref name="_y"/>) metres from the target's centre, along
+        /// its length and its height (up = towards the top edge): the <see cref="Profile"/>. 0 past the pool (the target's
+        /// outline plus the spill) and, unless <see cref="Profile.spillPastTopEdge"/>, above the top edge.
         /// </summary>
         public static float Shape(in Framing _framing, in Profile _profile, float _x, float _y)
         {
-            // Cut on the board's own top edge (minus a hair for the cookie's filtering): the step sits on the edge itself,
-            // so it never shows, and nothing flies over the board.
-            if (_y > _framing.HalfHeight - TopEdgeMargin)
+            // Cut on a standing board's own top edge (minus a hair for the cookie's filtering): the step sits on the edge
+            // itself, so it never shows, and nothing flies over the board.
+            if (!_profile.spillPastTopEdge && _y > _framing.HalfHeight - TopEdgeMargin)
             {
                 return 0f;
             }
@@ -126,7 +154,7 @@ namespace FX
         /// <summary>
         /// Light the spot must let through toward light-space direction (<paramref name="_tanX"/>, <paramref name="_tanY"/>),
         /// before normalisation: <see cref="Shape"/> there, times what cancels the inverse square and the slant on the
-        /// board's plane. 0 outside the pool.
+        /// target's plane. 0 outside the pool.
         /// </summary>
         public static float CookieValue(in Framing _framing, in Profile _profile, float _tanX, float _tanY)
         {
@@ -145,7 +173,7 @@ namespace FX
 
         /// <summary>
         /// The cookie (R8, linear, clamped), normalised so its brightest texel is 1. <paramref name="_centreValue"/>:
-        /// its value straight ahead (board centre), to turn a wanted brightness into an intensity
+        /// its value straight ahead (target centre), to turn a wanted brightness into an intensity
         /// (<see cref="Intensity"/>).
         /// </summary>
         public static Texture2D BuildCookie(in Framing _framing, in Profile _profile, int _resolution, out float _centreValue)
@@ -174,7 +202,7 @@ namespace FX
             }
             Texture2D _cookie = new Texture2D(_resolution, _resolution, TextureFormat.R8, false, true)
             {
-                name = "CorkBoardLampCookie",
+                name = "LampCookie",
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
             };
@@ -185,7 +213,7 @@ namespace FX
         }
 
         /// <summary>
-        /// Spot intensity (candela) giving <paramref name="_illuminance"/> (lux) at the board centre, through a cookie
+        /// Spot intensity (candela) giving <paramref name="_illuminance"/> (lux) at the target centre, through a cookie
         /// whose centre lets <paramref name="_centreValue"/> through.
         /// </summary>
         public static float Intensity(float _illuminance, float _distance, float _centreValue) =>

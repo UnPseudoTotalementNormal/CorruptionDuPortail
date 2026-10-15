@@ -3,14 +3,16 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first).
 metadata:
   template: maquettes
-  template-version: 1.1.0
+  template-version: 1.3.0
 ---
 
 # Maquettes (Corruption du Portail)
 
 Poyo chooses on evidence: a new screen is coded only after he picked it on mockups.
 Everything lives in `tools/maquettes/`: one folder per subject (`tools/maquettes/<subject>/`), one page
-per round (`v1.html`, `v2.html`…; a round of edits = a new page, the old one stays). Shared:
+per round (`v1.html`, `v2.html`…; a round of edits = a new page, the old one stays). One subject = one
+precise question (`roles-book`, `cat-cosmetics`), not a whole part of the game: the contents page stays
+readable and two sessions never write in the same folder. Shared:
 `common/mock.css` (page chrome, frames), `common/mock.js` (scaling, `?only=`, votes, sending; **load it
 last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill marketplace
 (`~/Projects/skill-marketplace`, other variants in `templates/maquettes/variantes.md`).
@@ -39,6 +41,13 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   `.vdesc` (what changes and why, one or two sentences), then the `.screen` frame
   (`<div class="screen"><div class="stage">…</div></div>`, drawn at 1600 × 900, variants one under the
   other). Reference page: `personnalisation/v1.html` (interactive layered cat, vignettes, menu mock).
+- Take the round's number right before writing (`ls <subject>/v*.html`, the first free one): never
+  write over an existing `v<N>`, another session may be working on it.
+- The kit's classes are reserved (`page`, `row`, `stack`, `stage`, `variant`, `vhead`, `vid`, `vname`,
+  `vdesc`, `phone`, `screen`, `card`, `toggle`, `vote`, `send`…: see `common/mock.css`): the page's own
+  classes carry a prefix of their own (`rb-page`, not `page`).
+- A question about a rule or a behaviour (when something happens, what if…) is shown too: one concrete
+  scene per variant (what happens, before/after, on the real screen), not a sentence to interpret.
 - Same moment and same data on every frame of a section; real texts, real art, nothing « Lorem ». The
   colors, fonts and images are the game's: no invented palette.
 - Plan for growth: a screen listing content that will grow (cosmetics, roles…) shows it full (real
@@ -53,8 +62,9 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 
 - Server: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5198/`; if it does not answer, start
   `pythonw tools/maquettes/serve.py` detached (Clawd's mockups use 5199).
-- Look at the page in a browser (the agent's Edge, `desktop` `browser_open`, when available), fix what
-  overflows.
+- Look at the whole page, not only the frames: `?only=` captures have neither the header nor the
+  sections, a style clash hides there. One capture without `?only=` at the width he reads it (phone:
+  `--window-size=412,900`), or the agent's Edge (`clawd-use` `browser_open`); fix what overflows.
 - One capture per variant in `<subject>/captures/v<N>/<id>.jpg` (headless Edge, own profile):
   ```bash
   E="/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
@@ -64,11 +74,17 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   ```
   then convert to a 1200 px JPEG (PIL) to keep the repo light. Read them (fix what overflows), put them
   in the answer (`![E1](C:\…\E1.jpg)`, one per line): Poyo often follows from his phone.
+- A sketch of the round, `<subject>/v<N>.svg`: what the feature changes, drawn as a pen sketch.
+  `viewBox="0 0 120 160"`, classes `b` (outline), `a` (what changes, accent colour), `t` (a line of
+  text), no hard-coded colour: the contents page inlines it with the project's colours. No mascot or
+  character unless it plays a part in the feature (then sketched too). It is the round's thumbnail on
+  the contents page; without one, the capture of the liked variant.
 
 ## 4. Show it, then wait for his answers ON THE SITE
 
-- On his phone: in the Clawd Code session, ⋮ › « Aperçu de l'appli » › port 5198 (the root lists every
-  round, newest first). On the PC: `http://127.0.0.1:5198/`.
+- On his phone: in the Clawd Code session, ⋮ › « Aperçu de l'appli » › port 5198. The contents page shows
+  big what waits for his vote (a subject's last round, no feedback yet), then the rest by day, as
+  thumbnails. On the PC: `http://127.0.0.1:5198/`.
 - **The site is the decision channel.** Do NOT ask the same choices again with AskUserQuestion. End the
   turn with the captures + « dis-moi quand tu as envoyé tes retours ». Questions that are not about the
   screens (network, export, scope) go in the page too: a section with text variants, or the `#global`
@@ -76,10 +92,13 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - He votes, writes, taps « Envoyer mes retours à Claude »: it lands in `<subject>/retours.txt` (dated).
   **Before anything else on his next message, read the end of that file**, even if he does not mention it.
 - « Combine E1 et E3 » = a new round (`v<N+1>.html`) built from those variants, not code. Code only when
-  a round has a clear 👍 with no change asked.
+  a round has a clear 👍 with no change asked. A 👍 whose remark says « mais », « plutôt »,
+  « j'imaginais » or brings another idea is a change asked: a new round. « X par défaut, Y à un tap » is a
+  clear choice.
 
 ## 5. Keep the choice
 
+`retours.txt` is a draft, out of git (`tools/maquettes/.gitignore`): the choice is kept as follows.
 <!-- local:garder -->
 - Commit the page and its captures with the task (never a mockup-only commit): they are the spec's
   visual reference. Cite the chosen variants in the spec / memory (« maquettes personnalisation v1 : E2, B2 »).

@@ -13,7 +13,6 @@ header.page h1 { margin: 0 0 6px; font: 26px "Fell", serif; color: var(--accent)
 header.page p { margin: 4px 0; color: var(--soft); }
 header.page img.ref { width: 100%; max-width: 640px; border: 1px solid var(--line); margin-top: 8px; }
 a { color: var(--accent); }
-a.card { display: block; color: var(--fg); text-decoration: none; padding: 14px 16px; margin: 0 16px 10px; background: var(--card); border: 1px solid var(--line); }
 
 section { max-width: 1100px; margin: 0 auto; padding: 18px 16px 8px; }
 section > h2 { font: 21px "Fell", serif; color: var(--accent); margin: 0 0 4px; }

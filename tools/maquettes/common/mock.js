@@ -4,6 +4,7 @@
 // (fit, root...) are never replaced. From the "maquettes" template of the skill marketplace.
 (() => {
   const root = document.documentElement;
+  const pageTheme = root.dataset.theme || "dark";
   const subject = document.body.dataset.subject || "divers";
 
   // ?only=E1 : that variant's frame alone (.phone or .screen; a variant without a frame, whole)
@@ -34,7 +35,7 @@
     document.querySelectorAll(".toggle button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
   }
   document.querySelectorAll(".toggle button").forEach(b => b.onclick = () => setTheme(b.dataset.t));
-  setTheme(localStorage.getItem("mock-theme") || root.dataset.theme || "dark");
+  setTheme(localStorage.getItem("mock-theme") || pageTheme);
 
   if (!only) {
     const key = "mock" + location.pathname;
@@ -70,7 +71,7 @@
       if ((saved._global || "").trim()) lines.push("Général : " + saved._global.trim());
       if (!lines.length) { send.textContent = "Rien à envoyer pour l’instant"; setTimeout(() => send.textContent = label, 2000); return; }
       lines.unshift("Page : " + location.pathname);
-      if (document.querySelector(".toggle")) lines.push("Thème regardé : " + root.dataset.theme);
+      if (document.querySelector(".toggle") && root.dataset.theme !== pageTheme) lines.push("Thème regardé : " + root.dataset.theme);
       try {
         const r = await fetch("/retours?s=" + encodeURIComponent(subject) + "&t=" + encodeURIComponent(lines.join("\n")));
         send.textContent = r.ok ? "Envoyé ✓, dis-le à Claude dans la session" : "Échec de l’envoi";

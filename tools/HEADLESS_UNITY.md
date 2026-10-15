@@ -72,6 +72,12 @@ The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode 
   full game stalls in a batchmode editor, and no screenshot can be taken there.
   ⇒ headless editor = compile, unit/network tests, builds; **complete games and screenshots = a windowed
   Development build** (`tools/autoplay/unityctl.sh build`, then `play-build` / `play-net`, launched without focus).
+- **A still render of a scene works** (lighting, materials, framing; not the game's runtime state): one `eval` opens the
+  scene (`EditorSceneManager.OpenScene`), a second one adds a temporary `Camera` + `UniversalAdditionalCameraData`
+  (`renderPostProcessing = true`) with a `RenderTexture` target, calls `Render()`, `ReadPixels` → `EncodeToPNG`, then
+  destroys the camera. Needs `-batchmode` without `-nographics`. Both calls may answer "Main thread operation timed
+  out after 5000ms" while the work still completes: check the scene path / the PNG files. Put back anything changed
+  for the shot and never save the scene afterwards (UI layout rebuilds dirty prefab instances).
 
 ## 4. Traps (each one was hit)
 

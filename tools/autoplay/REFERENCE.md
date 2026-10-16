@@ -136,6 +136,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `seated-view <k=v,…>` | play a seated day view variant on this process (T16), never saved: `h` camera height above the eye, `pitch` rest pitch (+ = down), `clamp` ± pitch bound, `r` other players' seat radius, `scale` other players' seated cat scale, `round=1` round table, `stand=1` standing cards, `standamt` how far they stand (0..1). Missing keys keep the scene's values; journal `seated.view`. Only real players have a seated cat: judge the cats with `play-net` clients |
 | `seated-black <0\|1>` | seated first-person surroundings on this process (T11, `SeatedSurroundings`): `0` keeps the room, `1` pitch black around the table with the unlit plank floor fading out (the scene's default). Journal `seated.black` |
 | `pov-tour` | T11 captures at the first vote, seated view head at rest / turned left / right (yaw clamp) / up, room shown, pitch black without then with the light per cat (`pov-<room\|black-nocatlights\|black>-<rest\|left\|right\|up>.jpg`), each followed by a head sweep left → right → up (`pov-sweep-seconds`, default 6 game s, journal `pov.sweep`): film it with `record "pov\.sweep:10"` (+ `record-width 1280`). Journal `pov.tour`. Cats only sit for real players: run it with `play-net` clients |
+| `turn-captures` | T21 night parchment (`NightTurnBanner`): clean captures of this process's own seat (not the possessed bot) when it wakes (`turn-mine-d<day>-0` unrolled, `-1` whole, `-burn` burning; the bot waits meanwhile, the host shows its own seat), when it falls asleep (`turn-sleep-d<day>-0` / `-burn`, also at the night's end), and once a night while another layer plays (`turn-other-d<day>-before` / `-after`). Journal `turn.capture` with `banner=<text shown>` (`none` = no parchment). Clients grow their window to 1600 x 900 for full-size captures. Scenario `turn-captures` |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
@@ -210,6 +211,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
+| `turn-captures` | T21 night parchment on real clients: "Vous vous éveillez" when the seat wakes (then burnt), "Vous vous rendormez" when it falls asleep, nothing while another layer plays (`turn.capture … banner=`) |
 | `watchdog-stall` | breakage test: an idle vote over a 10 s budget gives slow → stall → `run.fail watchdog:` with a report, relayed to alerts.log |
 | `watchdog-died` | breakage test: a client dying outside `crash-at` is reported `DIED` and the run aborted within seconds |
 | `client-leaves-at-vote` | a client leaving at the vote gets a reserved seat, chained when the (10 s) grace expires; the game goes on |

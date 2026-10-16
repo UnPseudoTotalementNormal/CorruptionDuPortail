@@ -485,6 +485,7 @@ namespace Autoplay
                 seatedView = _context.Config.Option("seated-view"),
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
+                turnCaptures = _context.Config.Flag("turn-captures"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
@@ -1652,6 +1653,7 @@ namespace Autoplay
                 seatedView = _context.Config.Option("seated-view"),
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
+                turnCaptures = _context.Config.Flag("turn-captures"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),

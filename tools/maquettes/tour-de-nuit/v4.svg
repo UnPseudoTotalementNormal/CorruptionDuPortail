@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160">
+  <!-- the night table, the parchment unrolled across it with its seal -->
+  <rect class="b" x="10" y="20" width="100" height="120" rx="2"/>
+  <rect class="b" x="24" y="36" width="14" height="20"/><rect class="b" x="44" y="36" width="14" height="20"/>
+  <rect class="b" x="64" y="36" width="14" height="20"/><rect class="b" x="84" y="36" width="14" height="20"/>
+  <rect class="a" x="18" y="66" width="84" height="22" rx="2"/>
+  <path class="a" d="M18 64 L18 90 M102 64 L102 90"/>
+  <text class="t" x="56" y="81" text-anchor="middle">vous vous réveillez</text>
+  <circle class="a" cx="88" cy="77" r="5"/>
+  <!-- what stays: the closed roll by your card -->
+  <rect class="a" x="22" y="100" width="20" height="5" rx="2.5"/>
+</svg>

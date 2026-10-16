@@ -9008,6 +9008,79 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: ea6b07f7b59f3befb9fc238541a5b585, type: 3}
   m_PrefabInstance: {fileID: 908037127}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &928808390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 928808392}
+  - component: {fileID: 928808391}
+  m_Layer: 0
+  m_Name: NightTurnBanner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &928808391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928808390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 215c41cba50be274b9a3f4fff6fdbe86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.NightTurnBanner
+  characterManager: {fileID: 1541735909}
+  gameManager: {fileID: 704980999}
+  burnMaterial: {fileID: 2100000, guid: eb37e474210d6834a8ec3b46ee4f60a9, type: 2}
+  parchment: {fileID: 2800000, guid: 7bd1e636fa37c594e8d3abcbab249481, type: 3}
+  seal: {fileID: 2800000, guid: 0ad7ffb0bb937c24b8654b4a5118585b, type: 3}
+  sealColor: {r: 0.55, g: 0.1, b: 0.07, a: 1}
+  font: {fileID: 12800000, guid: ac9db21302609e143885405a30ed6dc7, type: 3}
+  fontSize: 68
+  textColor: {r: 0.227, g: 0.141, b: 0.078, a: 1}
+  rollerColor: {r: 0.79, g: 0.64, b: 0.42, a: 1}
+  wakeText: "Vous vous \xE9veillez"
+  sleepText: Vous vous rendormez
+  wakeWholeSeconds: 2.5
+  sleepWholeSeconds: 1.8
+  sortingOrder: 10
+  unrollSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  burnSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+--- !u!4 &928808392
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928808390}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &935862652
 GameObject:
   m_ObjectHideFlags: 0
@@ -21714,3 +21787,4 @@ SceneRoots:
   - {fileID: 2005486243}
   - {fileID: 1032449286}
   - {fileID: 1359693621}
+  - {fileID: 928808392}

@@ -48,6 +48,14 @@ namespace FMODUnity
 
         public void SetStudioPath(string studioPath)
         {
+            // [CdP patch] A bank whose strings are not in Master.strings.bank has no studio path (FMOD hands back
+            // null): VoteCandle is built alone, Master is never rebuilt from the repo's project (it lacks events the
+            // committed Master.bank holds). The CI's bank refresh threw here and failed the build.
+            if (string.IsNullOrEmpty(studioPath))
+            {
+                StudioPath = "bank:/" + Name;
+                return;
+            }
             string stringCmp;
             stringCmp = System.IO.Path.GetFileName(Name);
             if (!studioPath.Contains(stringCmp))

@@ -13,6 +13,7 @@ import urllib.parse
 HERE = pathlib.Path(__file__).resolve().parent
 PORT = 5198  # one port per project: see the list in the template's variantes.md
 APPLI = "Corruption du Portail"  # title of "/", the name Clawd Code's preview gives this server in its list
+CROQUIS = False  # True (an option of the project): a round's thumbnail is Claude's pen sketch <subject>/v<N>.svg when there is one
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -120,9 +121,9 @@ def url(p: pathlib.Path) -> str:
 
 
 def thumb(r: dict) -> str:
-    """Claude's pen sketch of what the round changes (<subject>/v<N>.svg, inlined to take the page's colours),
-    else the capture of the variant liked first, else the first capture."""
-    if r["sketch"].exists():
+    """The capture of the variant liked first, else the first capture; with CROQUIS, Claude's pen sketch of
+    what the round changes first (<subject>/v<N>.svg, inlined to take the page's colours)."""
+    if CROQUIS and r["sketch"].exists():
         svg = re.sub(r"<\?xml.*?\?>", "", r["sketch"].read_text(encoding="utf-8")).strip()
         return f'<div class="im sk">{svg}</div>'
     liked = [m for text in r["said"] for m in re.findall(r"^([\w-]+) \(.*?\) : 👍", text, re.M)]
@@ -155,7 +156,7 @@ STYLE = """
 
 def contents() -> str:
     """The contents page (maquettes sommaire v1-v4 : S3, G2, D2): the rounds waiting for a vote, big, with
-    their captures; then every other round by day, three by row, each with Claude's sketch or its capture."""
+    their captures; then every other round by day, three by row, each with its capture (or Claude's sketch)."""
     all_rounds = rounds()
     out = []
     for r in (r for r in all_rounds if r.get("todo")):

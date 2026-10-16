@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first).
 metadata:
   template: maquettes
-  template-version: 1.3.0
+  template-version: 1.4.0
 ---
 
 # Maquettes (Corruption du Portail)
@@ -74,11 +74,6 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   ```
   then convert to a 1200 px JPEG (PIL) to keep the repo light. Read them (fix what overflows), put them
   in the answer (`![E1](C:\…\E1.jpg)`, one per line): Poyo often follows from his phone.
-- A sketch of the round, `<subject>/v<N>.svg`: what the feature changes, drawn as a pen sketch.
-  `viewBox="0 0 120 160"`, classes `b` (outline), `a` (what changes, accent colour), `t` (a line of
-  text), no hard-coded colour: the contents page inlines it with the project's colours. No mascot or
-  character unless it plays a part in the feature (then sketched too). It is the round's thumbnail on
-  the contents page; without one, the capture of the liked variant.
 
 ## 4. Show it, then wait for his answers ON THE SITE
 

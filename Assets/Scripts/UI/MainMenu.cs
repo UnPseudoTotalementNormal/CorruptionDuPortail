@@ -45,6 +45,9 @@ namespace UI
         [Tooltip("The role book (UI Toolkit overlay of this scene) opened by the \"Personnages\" button.")]
         [SerializeField] private RoleBook.RoleBookController roleBook;
 
+        [Tooltip("The cat customization screen (UI Toolkit overlay of this scene), opened by clicking the menu's cat.")]
+        [SerializeField] private CatCustomization.CatCustomizationController catCustomization;
+
         private string lobbyCreatingName = "";
 
         // Garde de rentrance pour éviter le double déclenchement Host/Join.
@@ -58,6 +61,7 @@ namespace UI
         {
             CreateRejoinButton();
             CreateRoleBookButton();
+            CreateMenuCat();
             closeHostMenu.onClick.AddListener(OnCloseHostButtonClicked);
             openHostMenu.onClick.AddListener(OnOpenHostButtonClicked);
         
@@ -161,17 +165,76 @@ namespace UI
             var _button = _copy.GetComponent<Button>();
             _button.onClick.RemoveAllListeners();
             _button.onClick.AddListener(roleBook.Open);
-            roleBook.Opened += HideMenuForRoleBook;
-            roleBook.Closed += ShowMenuAfterRoleBook;
+            roleBook.Opened += HideMenuForOverlay;
+            roleBook.Closed += ShowMenuAfterOverlay;
         }
 
-        // The menu's screen-space canvas draws over the UI Toolkit book and would take its clicks: while the book is
-        // open, everything but the menu's background is put away, then brought back as it was.
-        private readonly List<GameObject> _hiddenForRoleBook = new();
+        // ---- The player's cat (customization): standing by the buttons, a click opens the customization screen ----
 
-        private void HideMenuForRoleBook()
+        // Built at runtime like the other added buttons: a RawImage showing the cat stage's texture, a Button on it and
+        // a line under it (approved mockup personnalisation v1, B2). Bottom right, clear of the Host / Join / Quit
+        // column and of the audio panel.
+        private void CreateMenuCat()
         {
-            _hiddenForRoleBook.Clear();
+            if (catCustomization == null || catCustomization.Stage == null || openJoinMenu == null)
+            {
+                return;
+            }
+
+            // Sized on the canvas (approved mockup: the cat stands about 0.42 of the screen high), not on the buttons.
+            var _canvasRect = (RectTransform)openJoinMenu.GetComponentInParent<Canvas>().rootCanvas.transform;
+            float _screenHeight = _canvasRect.rect.height;
+            RenderTexture _texture = catCustomization.Stage.Texture;
+
+            var _cat = new GameObject("MenuCat", typeof(RectTransform), typeof(RawImage), typeof(Button));
+            _cat.transform.SetParent(openJoinMenu.transform.parent, false);
+            var _rect = (RectTransform)_cat.transform;
+            _rect.anchorMin = new Vector2(0.84f, 0f);
+            _rect.anchorMax = new Vector2(0.84f, 0f);
+            _rect.pivot = new Vector2(0.5f, 0f);
+            float _height = _screenHeight * 0.42f;
+            _rect.sizeDelta = new Vector2(_height * _texture.width / _texture.height, _height);
+            _rect.anchoredPosition = new Vector2(0f, _screenHeight * 0.075f);
+            var _image = _cat.GetComponent<RawImage>();
+            _image.texture = _texture;
+            var _button = _cat.GetComponent<Button>();
+            _button.targetGraphic = _image;
+            _button.onClick.AddListener(catCustomization.Open);
+
+            // The line under the cat: the join button's label style (font, colour), on one line.
+            TMP_Text _model = openJoinMenu.GetComponentInChildren<TMP_Text>(true);
+            var _line = new GameObject("MenuCatLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+            _line.transform.SetParent(_cat.transform, false);
+            var _lineRect = (RectTransform)_line.transform;
+            _lineRect.anchorMin = new Vector2(0f, 0f);
+            _lineRect.anchorMax = new Vector2(1f, 0f);
+            _lineRect.pivot = new Vector2(0.5f, 1f);
+            _lineRect.sizeDelta = new Vector2(_rect.sizeDelta.x * 0.4f, _screenHeight * 0.05f);
+            _lineRect.anchoredPosition = Vector2.zero;
+            var _text = _line.GetComponent<TextMeshProUGUI>();
+            _text.text = "Personnaliser mon chat";
+            if (_model != null)
+            {
+                _text.font = _model.font;
+            }
+            _text.fontSize = _screenHeight * 0.036f;
+            _text.color = new Color(0.96f, 0.85f, 0.66f);
+            _text.fontStyle = FontStyles.Italic;
+            _text.alignment = TextAlignmentOptions.Center;
+            _text.enableWordWrapping = false;
+            _text.raycastTarget = false;
+
+            catCustomization.Opened += HideMenuForOverlay;
+            catCustomization.Closed += ShowMenuAfterOverlay;
+        }
+
+        // The menu's screen-space canvas draws over the UI Toolkit screens (role book, cat customization) and would
+        // take their clicks: while one is open, everything but the menu's background is put away, then brought back.
+        private readonly List<GameObject> _hiddenForOverlay = new();
+
+        private void HideMenuForOverlay()
+        {
+            _hiddenForOverlay.Clear();
             foreach (Transform _child in transform)
             {
                 if (_child.name == "Background" || !_child.gameObject.activeSelf)
@@ -179,20 +242,20 @@ namespace UI
                     continue;
                 }
                 _child.gameObject.SetActive(false);
-                _hiddenForRoleBook.Add(_child.gameObject);
+                _hiddenForOverlay.Add(_child.gameObject);
             }
         }
 
-        private void ShowMenuAfterRoleBook()
+        private void ShowMenuAfterOverlay()
         {
-            foreach (GameObject _child in _hiddenForRoleBook)
+            foreach (GameObject _child in _hiddenForOverlay)
             {
                 if (_child != null)
                 {
                     _child.SetActive(true);
                 }
             }
-            _hiddenForRoleBook.Clear();
+            _hiddenForOverlay.Clear();
         }
 
         private void OnDestroy()
@@ -200,8 +263,13 @@ namespace UI
             SteamInvites.JoinRequested -= OnSteamJoinRequested;
             if (roleBook != null)
             {
-                roleBook.Opened -= HideMenuForRoleBook;
-                roleBook.Closed -= ShowMenuAfterRoleBook;
+                roleBook.Opened -= HideMenuForOverlay;
+                roleBook.Closed -= ShowMenuAfterOverlay;
+            }
+            if (catCustomization != null)
+            {
+                catCustomization.Opened -= HideMenuForOverlay;
+                catCustomization.Closed -= ShowMenuAfterOverlay;
             }
         }
 

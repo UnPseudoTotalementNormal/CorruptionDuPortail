@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160">
+  <!-- asleep: the night board with half-shut lids -->
+  <rect class="b" x="10" y="12" width="100" height="58" rx="2"/>
+  <rect class="b" x="30" y="30" width="10" height="14"/><rect class="b" x="45" y="30" width="10" height="14"/>
+  <rect class="b" x="60" y="30" width="10" height="14"/><rect class="b" x="75" y="30" width="10" height="14"/>
+  <path class="a" d="M10 26 Q60 44 110 26"/>
+  <path class="a" d="M10 58 Q60 40 110 58"/>
+  <text class="t" x="60" y="80" text-anchor="middle">vous dormez</text>
+  <!-- your turn: lids open, a line that stays and burns down -->
+  <rect class="b" x="10" y="92" width="100" height="58" rx="2"/>
+  <rect class="b" x="30" y="108" width="10" height="14"/><rect class="b" x="45" y="108" width="10" height="14"/>
+  <rect class="b" x="60" y="108" width="10" height="14"/><rect class="b" x="75" y="108" width="10" height="14"/>
+  <text class="t" x="60" y="136" text-anchor="middle">à vous de jouer</text>
+  <path class="a" d="M42 141 L78 141"/>
+</svg>

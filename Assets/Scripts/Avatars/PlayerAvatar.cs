@@ -1,3 +1,5 @@
+using Avatars.Cosmetics;
+using CorruptionDuPortail.Domain;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -40,6 +42,15 @@ namespace Avatars
         // it on the PlayerAvatar prefab. Null-tolerant — an unwired ref simply makes RequestEmote a no-op.
         [SerializeField] private NetworkAnimator _networkAnimator;
 
+        // Customization: the cat this player picked in the menu (CatLook.Pack: fur, outfit, eyes, mouth). Server-written
+        // (default permission): the owner proposes its saved look with SubmitCatLookRpc when its avatar spawns (a
+        // rejoin spawns a new avatar, so it is sent again), the server sanitizes it against the catalog. Every replica
+        // dresses its cat model from it, late joiners included (full value on spawn).
+        public NetworkVariable<uint> CatLookPacked = new(CatLook.Default.Pack());
+
+        // The cat model's dresser (on the Cat_Avatar child). Null-tolerant: an unwired avatar keeps its default cat.
+        [SerializeField] private CatAppearance _catAppearance;
+
         // Animator wiring for emotes: an integer param selects WHICH emote. LOOP emotes ride the "Emoting" bool
         // (held true → the emote clip loops; false → back to Idle); ONE-SHOT emotes fire the momentary "Emote"
         // trigger (play once → exit-time → Idle). Names must match the Cat_Avatar Animator. Non-trigger params
@@ -48,6 +59,11 @@ namespace Avatars
         private const string EmoteIdParam = "EmoteId";
         private const string EmoteTriggerParam = "Emote";
         private const string EmotingParam = "Emoting";
+        // The artist's situational animations (Cat_Avatar Animator): held bools, set on the server, synced by the
+        // NetworkAnimator. Chained: Getting Chained -> Chained Idle (an emote tried while chained plays Chained
+        // Struggle). Tablet: Pulls Tablet Out -> Look at Tablet Idle -> Putting Table Away.
+        private const string ChainedParam = "Chained";
+        private const string TabletParam = "Tablet";
 
         // Seated-ring gaze: the owner's seated head look, RELATIVE to seat facing (deg) — yaw (left/right) +
         // pitch (up/down). Owner-writable so each player publishes WHERE they look during the embodied Vote;
@@ -126,6 +142,42 @@ namespace Avatars
             }
         }
 
+        /// <summary>Server: this body plays the chained animations while <paramref name="_chained"/> (AvatarManager
+        /// follows the seat's character). Null-tolerant.</summary>
+        public void SetChainedServer(bool _chained)
+        {
+            if (!IsServer || _networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            if (_networkAnimator.Animator.GetBool(ChainedParam) != _chained)
+            {
+                _networkAnimator.Animator.SetBool(ChainedParam, _chained);
+                Debug.Log($"[CATANIM] seat {ownerClientId.Value} chained={_chained}");
+            }
+        }
+
+        /// <summary>Owner-only: the player holds their tablet (true) or put it away (false); every peer sees the
+        /// cat take it out, look at it, put it away. No-op on non-owners.</summary>
+        public void SetTabletOut(bool _out)
+        {
+            if (IsOwner)
+            {
+                SetTabletRpc(_out);
+            }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetTabletRpc(bool _out, RpcParams _rpcParams = default)
+        {
+            if (_rpcParams.Receive.SenderClientId != OwnerClientId || _networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            _networkAnimator.Animator.SetBool(TabletParam, _out);
+            Debug.Log($"[CATANIM] seat {ownerClientId.Value} tablet={_out}");
+        }
+
         // Server stops a looping emote by clearing the auto-synced Emoting bool. Null-tolerant.
         [Rpc(SendTo.Server)]
         private void StopEmoteRpc()
@@ -141,6 +193,56 @@ namespace Avatars
         {
             base.OnNetworkSpawn();
             ApplyAppearance();
+
+            CatLookPacked.OnValueChanged += OnCatLookChanged;
+            ApplyCatLook(CatLookPacked.Value);
+            SubmitLook(CatLookStore.Load());
+        }
+
+        /// <summary>Owner-only: proposes <paramref name="_look"/> to the server (sent at spawn with the saved look).
+        /// No-op on non-owners.</summary>
+        public void SubmitLook(CatLook _look)
+        {
+            if (IsOwner)
+            {
+                SubmitCatLookRpc(_look.Pack());
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            CatLookPacked.OnValueChanged -= OnCatLookChanged;
+            base.OnNetworkDespawn();
+        }
+
+        /// <summary>The cat this avatar wears (as replicated).</summary>
+        public CatLook CatLook => CatLook.Unpack(CatLookPacked.Value);
+
+        private void OnCatLookChanged(uint _previous, uint _current) => ApplyCatLook(_current);
+
+        private void ApplyCatLook(uint _packed)
+        {
+            if (_catAppearance != null)
+            {
+                _catAppearance.Apply(CatLook.Unpack(_packed));
+            }
+        }
+
+        // Owner -> server: the look saved on the owner's PC. Only the avatar's owner may dress it; an unknown id (newer
+        // version, forged value) falls back to the catalog default, so the server never relays something undrawable.
+        [Rpc(SendTo.Server)]
+        private void SubmitCatLookRpc(uint _packed, RpcParams _rpcParams = default)
+        {
+            if (_rpcParams.Receive.SenderClientId != OwnerClientId)
+            {
+                return;
+            }
+            CatLook _look = CatLook.Unpack(_packed);
+            if (_catAppearance != null && _catAppearance.Catalog != null)
+            {
+                _look = _catAppearance.Catalog.Sanitize(_look);
+            }
+            CatLookPacked.Value = _look.Pack();
         }
 
         /// <summary>

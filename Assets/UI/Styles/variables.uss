@@ -90,6 +90,16 @@
     --cdp-color-book-scrim: rgba(6, 4, 2, 0.82);      /* behind the open book */
     --cdp-color-book-gold: rgb(214, 170, 92);         /* tooling / cover lettering */
 
+    /* ---- Cat customization (main menu) ---- From the approved mockups (tools/maquettes/personnalisation v2, C1).
+       PROVISIONAL and design-owned like every block here. */
+    --cdp-color-cat-scrim: rgba(8, 3, 2, 0.93);        /* over the menu (its logo must not show through) */
+    --cdp-color-cat-text: rgb(251, 238, 221);         /* chosen tab, item names on hover */
+    --cdp-color-cat-text-soft: rgb(216, 194, 160);    /* item names, back link */
+    --cdp-color-cat-tab: rgb(168, 138, 104);          /* tabs not chosen */
+    --cdp-color-cat-current: rgb(201, 154, 91);       /* the chosen item's name under the tabs */
+    --cdp-color-cat-cell: rgba(30, 16, 8, 0.82);      /* vignette background */
+    --cdp-color-cat-cell-border: rgb(90, 64, 40);     /* vignette frame */
+
     /* ---- InfoTable (deduction board) — "Dossier" direction, harmonised with the RoleCard gold/dark look.
        PROVISIONAL + design-owned: this block is the ONE place to swap when the real palette lands. Depth is
        faked with bevel tokens (UITK has no gradients/shadows). Sûr/Maybe/SurelyNot kept as swappable tokens. */

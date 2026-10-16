@@ -1,0 +1,55 @@
+{
+  "name": "turn-captures",
+  "goal": "Board task T21 (night parchment, NightTurnBanner): on a real client, the moment its own seat wakes the parchment 'Vous vous éveillez' is unrolled (turn-mine-*-0/1) then burns (turn-mine-*-burn); when the seat falls asleep again 'Vous vous rendormez' shows (turn-sleep-*); while another layer plays, nothing (turn-other-*). Dryade forced on a client (layer 8, several layers sleep before and after it).",
+  "mode": "net",
+  "clients": 3,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-turn-captures",
+    "-autoplay-force-roles",
+    "Dryade",
+    "-autoplay-role-holder",
+    "client",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "turn.capture",
+      "detail": "turn-mine-d1-1 banner=Vous vous éveillez",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "turn.capture",
+      "detail": "turn-sleep-d1-0 banner=Vous vous rendormez",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "turn.capture",
+      "detail": "turn-other-d1-before banner=none",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

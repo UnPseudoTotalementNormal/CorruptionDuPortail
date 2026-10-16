@@ -31,10 +31,16 @@ try {
 
     $dir = Get-TimeRecorderDir
 
-    # AI tracking paused from the Unity calendar window -> accrue nothing and
-    # drop any stale stamp so the gap across the pause is never counted.
+    # AI tracking paused from the Unity calendar window, or a session that is
+    # not work on this project (Clawd view edit) -> accrue nothing and drop any
+    # stale stamp so the gap before it is never counted.
+    $state = Read-TurnState -Dir $dir -Session $sessionId
+    if (-not $state.offProject -and (Test-OffProjectPrompt $prompt)) {
+        $state.offProject = $true
+        Write-TurnState -Dir $dir -Session $sessionId -State $state
+    }
     $pauseFlag = Join-Path $dir 'ai_paused.flag'
-    if (Test-Path $pauseFlag) {
+    if ((Test-Path $pauseFlag) -or $state.offProject) {
         Clear-Activity -Dir $dir -Session $sessionId
         exit 0
     }
@@ -54,7 +60,6 @@ try {
     }
 
     # Remember the prompt for the turn it opens (the Stop hook journals it).
-    $state = Read-TurnState -Dir $dir -Session $sessionId
     $state.prompt = Get-OneLine $prompt $script:TR_PromptChars
     $state.promptPending = $true
     $state.trigger = $trigger

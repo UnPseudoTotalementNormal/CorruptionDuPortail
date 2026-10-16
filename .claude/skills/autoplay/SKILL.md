@@ -5,14 +5,17 @@ description: Play Corruption du Portail automatically with bots (host + simulate
 
 # Autoplay — goal → bots play → evidence → answer
 
-Framework: package `Packages/com.unpseudo.autoplay` (generic: runner, journal, captures + state export, dev-build
-bootstrap, window guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGame`,
+Framework: package `com.unpseudo.autoplay` (own repository, pinned by tag in `Packages/manifest.json`, installed
+read-only in `Library/PackageCache/`; generic: runner, journal, captures + state export, dev-build bootstrap, window
+guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGame`,
 `AutoplayDriver` bot brain, `AutoplaySelectionAutopilot`). R&D + findings:
 `_bmad-output/implementation-artifacts/investigations/autoplay-automated-games-rnd.md`.
 
 - **Every lever, event, capture, check and scenario that exists:** `tools/autoplay/REFERENCE.md`. Look there first.
-- **Adding to the framework:** `Packages/com.unpseudo.autoplay/EXTENDING.md` (generic method, rules, definition of
-  done) + `tools/autoplay/REFERENCE.md` § Extending in this game (where it goes here, backlog recipes).
+- **Package:** docs and tools in `$(tools/autoplay/autoplay-tool.sh --dir)/..`; update it, or change it (clone into
+  `Packages/com.unpseudo.autoplay/`, push + tag there, bump the manifest): `REFERENCE.md` § The package lives in its own
+  repository. Never edit `Library/PackageCache`.
+- **Adding to the framework:** the package's `EXTENDING.md` (generic method, rules, definition of done) + `tools/autoplay/REFERENCE.md` § Extending in this game (where it goes here, backlog recipes).
 - Package README (layout, outputs, hard-won lessons): read once.
 
 ## 1. Turn the request into a goal you can check
@@ -89,9 +92,9 @@ and the user's cursor is never captured; never drive the real cursor from a scri
 
 ### Declarative scenarios — prefer them for anything worth re-running
 
-Write `tools/autoplay/scenarios/<name>.json` (goal, mode, levers, expectations — format in
-`Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`) and run
-`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/run_scenario.py tools/autoplay/scenarios/<name>.json`.
+Write `tools/autoplay/scenarios/<name>.json` (goal, mode, levers, expectations — format in the package's
+`Tools~/run_scenario.py`; an analyzer command reaches package tools with `{tools}`) and run
+`tools/autoplay/autoplay-tool.sh run_scenario.py tools/autoplay/scenarios/<name>.json`.
 A passing scenario stays as a regression test; `tools/autoplay/campaign.sh` replays them all + random games.
 Coverage of targeted powers: `python -X utf8 tools/autoplay/sweep_powers.py` (one forced-role visual run per role →
 `coverage.md`, OK / FAIL / NOT COVERED per power).
@@ -100,7 +103,7 @@ Coverage of targeted powers: `python -X utf8 tools/autoplay/sweep_powers.py` (on
 
 To check that an animation plays right, record it: `-autoplay-record "power.start:1.8"` (trigger on an event BEFORE the
 animation, not on its own start, or the first frames are lost) → `rec-NNN-*/` frames + `tracks.csv`. Look at ONE contact
-sheet (`python -X utf8 Packages/com.unpseudo.autoplay/Tools~/contact_sheet.py <rec-dir> --every 2 --track <name>`), and
+sheet (`tools/autoplay/autoplay-tool.sh contact_sheet.py <rec-dir> --every 2 --track <name>`), and
 assert on the numbers with an `animation` check (thresholds measured on a reference run, never invented). Reference:
 `tools/autoplay/scenarios/picker-animation.json`. A late-started recording or a run stopped mid-burst is an artefact,
 not a game bug — check before concluding.
@@ -172,6 +175,8 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `real-input-big-table` | `real-input-actions` à 14 places : grille réduite (V1) et rangées espacées pour les panneaux de vote (V3), chaque clic réel porte | réseau, 2 clients | PASS 2026-10-08 (graine 780 ; 777 finit la nuit 1) |
 | balayage de visibilité des cartes (`sweep_card_visibility.py`) | chaque carte, bouton « Voter » et compteur de votes vus, cliquables et survolables, vue de dessus et première personne (survolée ou non, réticule joué), 5 à 14 places, par disposition | build (sonde `-autoplay-card-visibility`) | 10/10 tailles PASS 2026-10-08 (préréglages `Centred` + `RaisedLeft`, balise du Technomancien à part) ; disposition d'avant : 16,7 % du compteur visible à 12 places |
 | vues assises du jour (`sweep_seated_view.py`) | variantes de vue 1re personne (hauteur, inclinaison, chats, table ronde, cartes levées) : captures propres + sonde de visibilité, `--clients 3` pour voir les chats | réseau, 3 clients | 2026-10-09 (T16) : +4 m / 35° (choix de Poyo) 100 % à 5 et 11 places ; 8 places : son propre compteur « A voté » survolé lu à 47 % (lettres blanches sur la peinture, lisible sur la capture) ; 14 places : au repos les bords hors champ, survol/clic 100 % |
+| `pov-cat-lights` | T11 : en vue assise du 1er vote, chaque chat d'un autre vrai joueur sous sa lampe (60°, cône large) chez chaque process, tête repos / gauche / droite / haut, comparé à `pov-black-nocatlights` | réseau, 3 clients, Relay | PASS 2026-10-16 (graine 777) |
+| `turn-captures` | T21 : la nuit, chez un vrai client, « Vous vous éveillez » sur parchemin au réveil de son siège puis brûlé, « Vous vous rendormez » quand il se rendort, rien pendant le tour des autres | réseau, 3 clients, Relay | PASS 2026-10-16 (graine 777 ; 1er passage : erreur « message header is corrupted » de la connexion joueur ↔ éditeur sur les 4 process, environnement, absente au 2e) |
 | balayage des pouvoirs (`sweep_powers.py`) | chaque pouvoir ciblé est utilisé et résolu | build | 15/15 OK 2026-10-04 |
 | campagne (`campaign.sh`) | tous les scénarios + parties aléatoires | mixte | 55/57 2026-10-08 (2 échecs = outil : analyseur de rejoin T3 corrigé, `lobby-ready` instable N11) ; 45/48 2026-10-07 |
 | `real-input-actions` | pouvoirs, cartes, vote (réticule), skip du vote et sommeil par le bouton du plateau : vrais clics avec leur effet, sur chaque écran | réseau, 3 clients | PASS 3/3 2026-10-07 après le correctif du clic doublé (réticule + module UI, curseur libre) ; `analyze_duplicate_votes.py` exige un vote par clic (FAIL sur le run d'avant le correctif) ; PASS 3/3 2026-10-08 avec les rangées espacées (V3 : a attrapé 2 premières versions fautives, votes hors de portée puis clics perdus sur la rangée du fond) ; FAIL 3/3 2026-10-09 (T16) sur des clics du sélecteur seulement : infobulle de pouvoir restée sur la carte en haut à gauche (O7, tirage de rôles avec Balises Personnelles chez un client), votes tous en vrais clics ; build Dev c1d9aaa5 PASS 1/1 avec un autre tirage |
@@ -185,7 +190,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 
 When the goal needs something autoplay cannot do yet (bots never chat, nothing stalls a join, targets are random…),
 the default is to **add the lever / event / check**, then prove the goal with a scenario: follow
-`Packages/com.unpseudo.autoplay/EXTENDING.md` (definition of done: compile, scenario PASS on `play-net` if a client is
+the package's `EXTENDING.md` (definition of done: compile, scenario PASS on `play-net` if a client is
 involved, shown able to fail, `REFERENCE.md` updated). Start from the backlog recipes in `tools/autoplay/REFERENCE.md`
 when the gap is listed there. Hand a point to human playtest only when the extension is out of scope for the task,
 and then say which extension would cover it (and add it to the backlog table).

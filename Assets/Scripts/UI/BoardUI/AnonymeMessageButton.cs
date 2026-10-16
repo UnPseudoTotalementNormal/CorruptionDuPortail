@@ -1,6 +1,7 @@
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
+using MessageSystem;
 using UnityEngine;
 
 namespace UI.BoardUI
@@ -8,8 +9,8 @@ namespace UI.BoardUI
     public class AnonymeMessageButton : CustomButton
     {
         private bool isAwakeningState = false;
-        private bool hasMessagesLeft = false;
-        private bool hasNotSentMessageThisTurn = true;
+        private int messagesLeft = 0;
+        private bool hasSentMessageThisTurn = false;
 
         // Story 12.2 lane A: GameManager + CharacterManager injected as scene-wired [SerializeField]s
         // (clears the last §4a-entangled hub reads off both globals). SceneWiringGuard is the wiring control.
@@ -35,8 +36,8 @@ namespace UI.BoardUI
             _subscribedLocalCharacter.messageLeft.OnValueChanged += OnMessageLeftChanged;
 
             isAwakeningState = gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is AwakeningState;
-            hasMessagesLeft = _subscribedLocalCharacter.messageLeft.Value > 0;
-            hasNotSentMessageThisTurn = !_subscribedLocalCharacter.hasSentMessageThisTurn.Value;
+            messagesLeft = _subscribedLocalCharacter.messageLeft.Value;
+            hasSentMessageThisTurn = _subscribedLocalCharacter.hasSentMessageThisTurn.Value;
         }
 
         private void OnDestroy()
@@ -63,19 +64,19 @@ namespace UI.BoardUI
         
         private void OnMessageLeftChanged(int _previousValue, int _newValue)
         {
-            hasMessagesLeft = _newValue > 0;
+            messagesLeft = _newValue;
             UpdateButtonState();
         }
 
         private void OnHasSentMessageThisTurnChanged(bool _previousValue, bool _newValue)
         {
-            hasNotSentMessageThisTurn = !_newValue;
+            hasSentMessageThisTurn = _newValue;
             UpdateButtonState();
         }
 
         private void UpdateButtonState()
         {
-            enabled = isAwakeningState && hasMessagesLeft && hasNotSentMessageThisTurn;
+            enabled = MessageAvailability.CanSend(isAwakeningState, messagesLeft, hasSentMessageThisTurn);
         }
     }
 }

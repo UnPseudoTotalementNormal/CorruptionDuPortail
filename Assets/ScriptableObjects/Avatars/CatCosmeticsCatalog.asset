@@ -1,0 +1,244 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0735d3239233ef347b0216197b404ab9, type: 3}
+  m_Name: CatCosmeticsCatalog
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatCosmeticsCatalog
+  cosmeticsModel: {fileID: 919132149155446097, guid: f129661a9cdf7dc45b49c8c07cd32caa, type: 3}
+  furRenderers:
+  - Arms
+  - Arms Fur
+  - Body
+  - Body Fur
+  - Ears
+  - Ears Fur
+  - Head
+  - Head Fur
+  - Whiskers
+  hairRenderers:
+  - Arms Fur
+  - Body Fur
+  - Ears Fur
+  - Head Fur
+  hiddenParts:
+  - BW Eyes Neutral
+  - BW Eyes Closed
+  - Tear Emitter
+  defaultFur: 0
+  defaultOutfit: 0
+  defaultEyes: 0
+  defaultMouth: 0
+  items:
+  - id: 0
+    slot: 0
+    displayName: Noir et blanc
+    icon: {fileID: 2800000, guid: d343d90c57132524f8104162605e57b2, type: 3}
+    furMaterial: {fileID: 2100000, guid: 88acbfa938117174ab3d00ae54f1692a, type: 2}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts: []
+  - id: 1
+    slot: 0
+    displayName: Ardent
+    icon: {fileID: 2800000, guid: 1ab072f6ad8d1664e9cc7ca640b15bd9, type: 3}
+    furMaterial: {fileID: 2100000, guid: 8c9dcc25ca64625448160060bf9e0efd, type: 2}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts: []
+  - id: 2
+    slot: 0
+    displayName: Galactique
+    icon: {fileID: 2800000, guid: 88334e8895494534599507b22c1fe1d2, type: 3}
+    furMaterial: {fileID: 2100000, guid: bdaa25249baa18c48b7a1075f952b692, type: 2}
+    hairMaterial: {fileID: 2100000, guid: 4c9d2d31a775c424eb2e1c600b88e87f, type: 2}
+    blinkPart: 
+    parts: []
+  - id: 3
+    slot: 0
+    displayName: Mage
+    icon: {fileID: 2800000, guid: 73d6ce29c7dcf47429f745bc82a641f0, type: 3}
+    furMaterial: {fileID: 2100000, guid: f77af5e1271da52438dc0d4a0f37f659, type: 2}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts: []
+  - id: 0
+    slot: 1
+    displayName: "Cape et n\u0153ud rouge"
+    icon: {fileID: 2800000, guid: 063fe1ded32dbeb4db77125214210467, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Robe
+    - Ribbon
+    - Bell
+  - id: 1
+    slot: 1
+    displayName: Cape ardente
+    icon: {fileID: 2800000, guid: a98d45176dfb18a4fbc6993983918831, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Fiery Cape
+    - Fiery Cape Top
+    - Fiery Fur Neck
+    - Fiery Medal
+    - Fiery Metal Decorations
+  - id: 2
+    slot: 1
+    displayName: "N\u0153ud galactique"
+    icon: {fileID: 2800000, guid: 6742fd94bcd1d854e8e1bf35d4fa1516, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Galactic Bow
+    - Galactic Bow Mid
+  - id: 3
+    slot: 1
+    displayName: Cape de mage
+    icon: {fileID: 2800000, guid: b76b8ad8b589a8844a860578f9fdb8d4, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Mage Cape Bottom
+    - Mage Cape Top
+    - Mage Cape Star
+    - Mage Head Star
+  - id: 4
+    slot: 1
+    displayName: Sans tenue
+    icon: {fileID: 0}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts: []
+  - id: 0
+    slot: 2
+    displayName: "Yeux de la port\xE9e"
+    icon: {fileID: 2800000, guid: 73ff9d4bd93832f4993dc6bd7e86a042, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: BW Eyes Closed
+    parts:
+    - BW Eyes Expressive
+  - id: 1
+    slot: 2
+    displayName: Yeux ardents
+    icon: {fileID: 2800000, guid: 8521d077e40621a41a6db169e0d2063f, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Fiery Eyes Neutral
+  - id: 2
+    slot: 2
+    displayName: Yeux galactiques
+    icon: {fileID: 2800000, guid: 78d638974e698fd41a0a50ba2e756513, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Galactic Eyes
+    - Galactic Mid
+  - id: 3
+    slot: 2
+    displayName: Yeux de mage
+    icon: {fileID: 2800000, guid: dee7945bcd743d04faf20cd670e2a923, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Mage Eyes
+    - Mage Cheek Eyes
+    - Mage Top Eyes
+  - id: 4
+    slot: 2
+    displayName: Yeux simples
+    icon: {fileID: 2800000, guid: 3eccce929c7c85d45bf7095ce518b223, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Simple Eyes
+  - id: 5
+    slot: 2
+    displayName: "Yeux blas\xE9s"
+    icon: {fileID: 2800000, guid: 92c67ce5c9f7a5c429231cb8f3e6daa7, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Bored Eyes
+  - id: 6
+    slot: 2
+    displayName: Yeux boutons
+    icon: {fileID: 2800000, guid: 7727172077ee831478a17781d3351093, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Full Button Eyes
+  - id: 0
+    slot: 3
+    displayName: Sans bouche
+    icon: {fileID: 0}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts: []
+  - id: 1
+    slot: 3
+    displayName: Sourire galactique
+    icon: {fileID: 2800000, guid: f90470cb31969164ca2e8346ba1bd987, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Galactic Mouth
+  - id: 2
+    slot: 3
+    displayName: Bouche de mage
+    icon: {fileID: 2800000, guid: fc467d69e67c0cb4bad04604d3a355f2, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Mage Mouth
+  - id: 3
+    slot: 3
+    displayName: "Bouche \xE9touff\xE9e"
+    icon: {fileID: 2800000, guid: f72e5e79511f21641844be9da50a51de, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Choked Mouth
+  - id: 4
+    slot: 3
+    displayName: Bouche ivre
+    icon: {fileID: 2800000, guid: d9fa998245433eb4aaf5f30c8433b129, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Drunk Mouth
+  - id: 5
+    slot: 3
+    displayName: Bouche triste
+    icon: {fileID: 2800000, guid: 736eef794e14d3f49b3a42081e171f08, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Sad Mouth

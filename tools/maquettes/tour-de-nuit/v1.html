@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T21, savoir la nuit si c'est à nous de jouer, tour 1</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  /* the night board, real captures of a client (autoplay, Dryade, 2026-10-16): asleep / awake */
+  .tn-bg { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .9s ease, filter .9s ease; }
+  .tn-awake { opacity: 0; }
+  .st-awake .tn-awake { opacity: 1; }
+
+  /* the game's current wake text, 3 s then gone */
+  .tn-help { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font: 64px Arial, "Liberation Sans", sans-serif;
+             color: #fff; opacity: 0; transform: scale(.2); transition: opacity .6s ease, transform .6s cubic-bezier(.3,1.6,.5,1); }
+  .tn-help.on { opacity: 1; transform: scale(1); }
+
+  /* eyelids: two soft dark lids, half shut while asleep, open while awake */
+  .tn-lid { position: absolute; left: -10%; width: 120%; height: 52%; pointer-events: none;
+            transition: transform 1.3s cubic-bezier(.2,.7,.2,1); }
+  .tn-lid--top { top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%;
+                 background: linear-gradient(to bottom, rgba(4,2,1,.97) 0%, rgba(4,2,1,.93) 62%, rgba(4,2,1,0) 100%); transform: translateY(-36%); }
+  .tn-lid--bot { bottom: 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+                 background: linear-gradient(to top, rgba(4,2,1,.97) 0%, rgba(4,2,1,.93) 62%, rgba(4,2,1,0) 100%); transform: translateY(40%); }
+  .st-awake .tn-lid--top { transform: translateY(-101%); }
+  .st-awake .tn-lid--bot { transform: translateY(101%); }
+  .tn-dim .tn-asleep { filter: saturate(.45) brightness(.8); }
+
+  /* a line that stays: asleep / your turn, with the layer's time burning down */
+  .tn-line { position: absolute; left: 0; right: 0; text-align: center; font: 40px Arial, "Liberation Sans", sans-serif; transition: color .8s, opacity .8s; }
+  .tn-line b { font-weight: normal; }
+  .tn-line .tn-sleep { color: #8d8478; }
+  .tn-line .tn-turn { color: #e6cf8e; display: none; }
+  .st-awake .tn-line .tn-sleep { display: none; }
+  .st-awake .tn-line .tn-turn { display: inline; }
+  .tn-burn { position: absolute; height: 3px; background: #e6cf8e; opacity: 0; transition: opacity .6s; }
+  .st-awake .tn-burn { opacity: .9; }
+
+  /* own card under a lamp while awake */
+  .tn-shade { position: absolute; inset: 0; opacity: 0; transition: opacity 1s;
+              background: radial-gradient(ellipse 230px 270px at 407px 356px, rgba(0,0,0,0) 45%, rgba(0,0,0,.42) 100%); }
+  .st-awake .tn-shade { opacity: 1; }
+  .tn-own { position: absolute; left: 336px; top: 257px; width: 143px; height: 198px; background: url(img/eveille.jpg) -336px -257px / 1600px 900px;
+            opacity: 0; transition: transform 1s cubic-bezier(.2,.8,.2,1), box-shadow 1s, opacity .4s; }
+  .st-awake .tn-own { opacity: 1; transform: translateY(-14px) scale(1.07); box-shadow: 0 18px 30px rgba(0,0,0,.6), 0 0 46px rgba(255,196,110,.55); }
+  .tn-pool { position: absolute; left: 250px; top: 170px; width: 320px; height: 370px; border-radius: 50%; opacity: 0; transition: opacity 1s;
+             background: radial-gradient(ellipse, rgba(255,205,130,.30), rgba(255,190,110,0) 68%); mix-blend-mode: screen; }
+  .st-awake .tn-pool { opacity: 1; }
+
+  /* key moments bar */
+  .tn-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tn-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tn-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tn-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tn-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="tour-de-nuit">
+
+<header class="page">
+  <h1>La nuit : est-ce à moi de jouer ?</h1>
+  <p>Tâche T21 du board (« Noter quand c'est à nous / pas à nous de jouer », Wouh : « Indication »).
+     Aujourd'hui, quand votre rôle s'éveille, le plateau s'éclaire un peu, « Arrêter l'éveil » passe au rouge, un son joue
+     et « Vous vous éveillez... » s'affiche <b>3 secondes</b>. Après, plus rien ne dit que c'est votre tour, et pendant le tour
+     des autres rien ne dit que vous dormez : les deux écrans se ressemblent beaucoup (premier cadre).</p>
+  <p>Fonds = vraies captures d'un client en réseau (autoplay, la Dryade, nuit 1 et 2). Textes dans la police actuelle du
+     jeu ; couleur du texte reprise des noms de cartes, provisoire. Les sons actuels restent dans toutes les variantes.
+     Le jeu en vrai : la vue du dessus ; le joueur peut aussi passer sur le chat, les pouvoirs, le tableau d'infos.</p>
+</header>
+
+<nav class="tn-moments"><div>
+  <button data-at="1000">1. Nuit, pas à vous</button>
+  <button data-at="3600">2. Votre réveil</button>
+  <button data-at="7000">3. Votre tour, plus tard</button>
+  <button data-at="10600">4. Vous vous rendormez</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>Comment le joueur sait que c'est son tour, et que ce n'est pas son tour</h2>
+  <p>Même nuit, mêmes cartes dans chaque cadre. Les moments en haut figent tous les cadres ensemble.</p>
+
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Aujourd'hui (référence)</span></div>
+    <p class="vdesc">Ce que le jeu fait déjà, pour comparer : texte 3 s au réveil, puis seul le plateau un peu plus clair et le bouton rouge.</p>
+    <div class="screen"><div class="stage tn-stage">
+      <img class="tn-bg tn-asleep" src="img/endormi.jpg" alt="">
+      <img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="tn-help">Vous vous éveillez...</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="N1">
+    <div class="vhead"><span class="vid">N1</span><span class="vname">Les paupières</span></div>
+    <p class="vdesc">Endormi : deux paupières sombres mi-closes en haut et en bas de l'écran, couleurs éteintes ; on voit encore
+       le plateau. À votre tour, les yeux s'ouvrent et restent ouverts jusqu'au rendormissement. Aucun texte ; marche aussi
+       dans les autres vues (chat, pouvoirs), c'est sur l'écran et pas sur la table.</p>
+    <div class="screen"><div class="stage tn-stage tn-dim">
+      <img class="tn-bg tn-asleep" src="img/endormi.jpg" alt="">
+      <img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="tn-help">Vous vous éveillez...</div>
+      <div class="tn-lid tn-lid--top"></div><div class="tn-lid tn-lid--bot"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="N2">
+    <div class="vhead"><span class="vid">N2</span><span class="vname">Une ligne qui reste</span></div>
+    <p class="vdesc">Une ligne en bas, à gauche du bouton de pouvoir, là où l'œil va pour agir : « Vous dormez » en gris tant que
+       ce n'est pas votre tour, « À vous de jouer » pendant tout votre tour, avec un trait qui se consume au rythme du temps
+       de votre éveil. Remplace le texte de 3 s.</p>
+    <div class="screen"><div class="stage tn-stage">
+      <img class="tn-bg tn-asleep" src="img/endormi.jpg" alt="">
+      <img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="tn-line" style="left:230px; right:auto; width:440px; top:828px"><b class="tn-sleep">Vous dormez</b><b class="tn-turn">À vous de jouer</b></div>
+      <div class="tn-burn" style="left:290px; top:882px" data-burn="320"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="N3">
+    <div class="vhead"><span class="vid">N3</span><span class="vname">Votre carte sous la lampe</span></div>
+    <p class="vdesc">Dans le décor seulement : à votre tour, votre carte se soulève sous une lampe chaude et le reste de la table
+       s'assombrit ; endormi, la table reste comme aujourd'hui. Le texte de 3 s reste au réveil. Ne se voit que dans la vue du
+       plateau.</p>
+    <div class="screen"><div class="stage tn-stage">
+      <img class="tn-bg tn-asleep" src="img/endormi.jpg" alt="">
+      <img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="tn-shade"></div>
+      <div class="tn-pool"></div>
+      <div class="tn-own"></div>
+      <div class="tn-help">Vous vous éveillez...</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="N4">
+    <div class="vhead"><span class="vid">N4</span><span class="vname">Paupières, puis la ligne</span></div>
+    <p class="vdesc">N1 pendant le tour des autres (paupières mi-closes, sans texte), N2 pendant le vôtre (yeux ouverts,
+       « À vous de jouer » et le trait qui se consume, en haut sous le liège).</p>
+    <div class="screen"><div class="stage tn-stage tn-dim">
+      <img class="tn-bg tn-asleep" src="img/endormi.jpg" alt="">
+      <img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="tn-lid tn-lid--top"></div><div class="tn-lid tn-lid--bot"></div>
+      <div class="tn-line" style="top:200px"><b class="tn-turn">À vous de jouer</b></div>
+      <div class="tn-burn" style="left:640px; top:250px" data-burn="320"></div>
+    </div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Pendant le tour des autres : dire seulement que vous dormez, ou aussi quel rôle joue en ce moment ?
+    (le liège le montre déjà par la barre bleue sous les portraits)</label>
+  <textarea id="global" placeholder="Ta réponse, ou autre chose"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+// One clock for every frame: asleep 0-2.5 s, awake 2.5-9.5 s (the burning line spans the turn), asleep again until 12 s.
+(() => {
+  const LOOP = 12000, WAKE = 2500, SLEEP = 9500, HELP = 2750;
+  const stages = () => document.querySelectorAll(".tn-stage");
+  function show(t) {
+    const awake = t >= WAKE && t < SLEEP;
+    stages().forEach(s => {
+      s.classList.toggle("st-awake", awake);
+      const help = s.querySelector(".tn-help");
+      if (help) help.classList.toggle("on", t >= WAKE + 300 && t < WAKE + HELP);
+      s.querySelectorAll(".tn-burn").forEach(b => {
+        const k = awake ? 1 - (t - WAKE) / (SLEEP - WAKE) : 1;
+        b.style.width = Math.max(0, k * b.dataset.burn) + "px";
+        b.style.marginLeft = ((1 - k) * b.dataset.burn / 2) + "px";
+      });
+    });
+    document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  if (at !== null) { show(+at); return; }
+  document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+  const loopBtn = document.querySelector(".tn-moments button[data-loop]");
+  loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

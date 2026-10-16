@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Avatars;
+using CorruptionDuPortail.Domain;
 using NUnit.Framework;
 using Unity.Netcode;
 using Unity.Netcode.Components;
@@ -179,6 +180,46 @@ namespace Tests.PlayMode.Avatars
                 "Host should own exactly two avatars (the host + one real client).");
             Assert.IsNotNull(_clientManager.GetAvatar(0), "Host avatar (clientId 0) must be visible on the remote.");
             Assert.IsNotNull(_clientManager.GetAvatar(_clientId), $"Avatar for real client {_clientId} must be visible on the remote.");
+        }
+
+        // Cat customization: the owner proposes its look, the server writes the server-owned CatLookPacked and every
+        // replica receives it. Driven from the host (its own avatar), where IsOwner is reliable on this substrate.
+        // A peer that does not own the avatar is refused twice: SubmitLook is a no-op off the owner, and the server
+        // drops an RPC whose sender is not the owner (the client calls it on the host's avatar replica).
+        [UnityTest]
+        public IEnumerator Avatar_CatLook_FromTheOwner_ReplicatesToEveryPeer_AndOthersCannotChangeIt()
+        {
+            ulong _clientId = _clientNm.LocalClientId;
+            AvatarManager _clientManager = AvatarManager.For(_clientNm);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _hostManager.GetAvatar(0) != null && _clientManager.GetAvatar(0) != null
+                      && _hostManager.GetAvatar(_clientId) != null,
+                10f,
+                "Avatars never settled on host + client for the cat look test.");
+
+            var _look = new CatLook(2, 3, 1, 2);
+            _hostManager.GetAvatar(0).SubmitLook(_look);
+
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _hostManager.GetAvatar(0).CatLook == _look && _clientManager.GetAvatar(0).CatLook == _look,
+                10f,
+                "The owner's cat look did not reach the server value and the client replica.");
+
+            // Not the owner: the host's view of the client's avatar.
+            CatLook _clientLook = _hostManager.GetAvatar(_clientId).CatLook;
+            _hostManager.GetAvatar(_clientId).SubmitLook(new CatLook(1, 1, 1, 1));
+
+            // A forged RPC from the client on the host's avatar (sender 1, owner 0).
+            MethodInfo _rpc = typeof(PlayerAvatar).GetMethod("SubmitCatLookRpc", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(_rpc, "PlayerAvatar.SubmitCatLookRpc not found");
+            _rpc.Invoke(_clientManager.GetAvatar(0), new object[] { new CatLook(3, 0, 3, 0).Pack(), default(RpcParams) });
+
+            for (int _frame = 0; _frame < 30; _frame++)
+            {
+                yield return null;
+            }
+            Assert.AreEqual(_look, _hostManager.GetAvatar(0).CatLook, "A peer that is not the owner changed the host's cat.");
+            Assert.AreEqual(_clientLook, _hostManager.GetAvatar(_clientId).CatLook, "A non-owner changed the client's cat.");
         }
 
         [UnityTest]

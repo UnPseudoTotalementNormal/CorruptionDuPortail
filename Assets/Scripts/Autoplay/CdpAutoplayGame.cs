@@ -252,6 +252,25 @@ namespace Autoplay
             {
                 RejoinSessionStore.Clear();
             }
+            // Each process dresses its own cat (processes of one PC share the saved look): -autoplay-cat-look f.o.e.m.
+            string _catLook = _context.Config.Option("cat-look");
+            if (string.Equals(_catLook, "varied", StringComparison.OrdinalIgnoreCase))
+            {
+                _catLook = VariedCatLook(_context.Config.scenario);
+            }
+            if (!string.IsNullOrEmpty(_catLook))
+            {
+                if (CorruptionDuPortail.Domain.CatLook.TryDecode(_catLook, out CorruptionDuPortail.Domain.CatLook _look))
+                {
+                    Avatars.Cosmetics.CatLookStore.UseForThisSession(_look);
+                    _context.Journal.Record("cat.look", _look.ToString());
+                }
+                else
+                {
+                    _context.Fail($"cat-look '{_catLook}' is not fur.outfit.eyes.mouth");
+                    yield break;
+                }
+            }
             // The menu read the session before this key was set: let it look again (a player's game has one key only).
             UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>()?.RefreshRejoinButton();
 
@@ -272,6 +291,32 @@ namespace Autoplay
                 yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
                 yield return AutoplayRoleBookTour.Run(realInput, _context.Journal, _context.Capture);
             }
+            if (realInput != null && _context.Config.Flag("cat-custo") && !isClientRole(_context))
+            {
+                LiftLoginScreen(_context);
+                yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
+                yield return AutoplayCatCustomizationTour.Run(realInput, _context.Journal, _context.Capture);
+            }
+            if (realInput != null && _context.Config.Flag("cat-anims") && !isClientRole(_context))
+            {
+                LiftLoginScreen(_context);
+                yield return new WaitForSecondsRealtime(0.6f);
+                yield return AutoplayCatCustomizationTour.RunAnimations(realInput, _context.Journal, _context.Capture);
+            }
+        }
+
+        // -autoplay-cat-look varied: one look per process of a play-net run, from its scenario label (host, client1…).
+        private static readonly string[] VariedCatLooks = { "0.0.0.0", "1.1.1.0", "2.2.2.1", "3.3.3.2", "1.3.2.2", "2.0.3.1", "3.1.0.0", "0.2.1.2" };
+
+        private static string VariedCatLook(string _scenario)
+        {
+            int _index = 0;
+            string _digits = new string((_scenario ?? string.Empty).Where(char.IsDigit).ToArray());
+            if (_digits.Length > 0 && int.TryParse(_digits, out int _n))
+            {
+                _index = _n;
+            }
+            return VariedCatLooks[_index % VariedCatLooks.Length];
         }
 
         public IEnumerator Host(AutoplayContext _context, ushort _port)
@@ -381,7 +426,18 @@ namespace Autoplay
             {
                 gameManager.RejoinGraceSeconds = rejoinGraceSeconds;
             }
-            int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
+            // T19: a shorter vote, to film its whole last minute (the vote candle) without waiting five minutes. Host
+            // only: the server runs the timer; a client's candle melts from its own copy of the duration.
+            float _voteDuration = ParseSeconds(_context.Config.Option("vote-duration"));
+            if (_voteDuration > 0f)
+            {
+                foreach (VoteState _vote in gameManager.GetGameStates(typeof(VoteState)).OfType<VoteState>())
+                {
+                    _vote.voteDuration = _voteDuration;
+                }
+                _context.Journal.Record("vote.duration", string.Format(CultureInfo.InvariantCulture, "{0:0}s", _voteDuration));
+            }
+            int _clients =_context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             float _spawnDuringLoad = ParseSeconds(_context.Config.Option("spawn-during-load"));
             if (_spawnDuringLoad > 0f)
             {
@@ -438,6 +494,10 @@ namespace Autoplay
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
+                seatedBlack = _context.Config.Option("seated-black"),
+                povTour = _context.Config.Flag("pov-tour"),
+                turnCaptures = _context.Config.Flag("turn-captures"),
+                povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
             if (!string.IsNullOrEmpty(_options.cardVisibility))
@@ -956,7 +1016,7 @@ namespace Autoplay
         private void InstallRealInput(AutoplayContext _context)
         {
             bool _control = _context.Config.Flag("real-input-control");
-            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") ||
+            if (!(_context.Config.Flag("real-input") || _control || _context.Config.Flag("lobby-ui") || _context.Config.Flag("menu-ui") || _context.Config.Flag("role-book") || ((_context.Config.Flag("cat-custo") || _context.Config.Flag("cat-anims")) && !isClientRole(_context)) ||
                   RejoinViaMenu(_context) || Relay(_context)) || realInput != null)
             {
                 return;
@@ -1140,6 +1200,12 @@ namespace Autoplay
 
         private static float ParseSeconds(string _text)
             => float.TryParse(_text, NumberStyles.Float, CultureInfo.InvariantCulture, out float _value) ? _value : 0f;
+
+        private static float ParseSweepSeconds(string _text)
+        {
+            float _seconds = ParseSeconds(_text);
+            return _seconds > 0f ? _seconds : 6f;
+        }
 
         private string HolderKind(ulong _id)
             => _id == networkManager.LocalClientId ? "host" : _id >= 100 ? "bot" : "client";
@@ -1596,6 +1662,10 @@ namespace Autoplay
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
+                seatedBlack = _context.Config.Option("seated-black"),
+                povTour = _context.Config.Flag("pov-tour"),
+                turnCaptures = _context.Config.Flag("turn-captures"),
+                povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
                 joinedMidPhase = _joinedMidPhase,

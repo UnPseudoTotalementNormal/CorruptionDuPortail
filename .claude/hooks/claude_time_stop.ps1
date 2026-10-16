@@ -26,13 +26,14 @@ try {
 
     $dir = Get-TimeRecorderDir
 
-    # AI tracking paused from the Unity calendar window -> accrue nothing and
-    # drop the in-flight stamp (turn that began before the pause).
+    # AI tracking paused from the Unity calendar window, or a session that is
+    # not work on this project (Clawd view edit, see Test-OffProjectPrompt) ->
+    # accrue nothing and drop the in-flight stamp.
     $pauseFlag = Join-Path $dir 'ai_paused.flag'
-    if (Test-Path $pauseFlag) {
+    $state = Read-TurnState -Dir $dir -Session $sessionId
+    if ((Test-Path $pauseFlag) -or $state.offProject) {
         Clear-Activity -Dir $dir -Session $sessionId
-        # Skip the paused turn's tool calls so they never label a later turn.
-        $state = Read-TurnState -Dir $dir -Session $sessionId
+        # Skip the skipped turn's tool calls so they never label a later turn.
         if ($payload -and $payload.transcript_path -and (Test-Path -LiteralPath ([string]$payload.transcript_path))) {
             $state.offset = (Get-Item -LiteralPath ([string]$payload.transcript_path)).Length
         }
@@ -47,7 +48,6 @@ try {
 
     # Advance the transcript cursor every turn, booked or not, so the next turn
     # only sees its own tool calls.
-    $state = Read-TurnState -Dir $dir -Session $sessionId
     $transcript = if ($payload -and $payload.transcript_path) { [string]$payload.transcript_path } else { '' }
     $read = Read-TranscriptSince -Path $transcript -Offset $state.offset
 

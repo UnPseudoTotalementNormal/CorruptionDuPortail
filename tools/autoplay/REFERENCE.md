@@ -1,19 +1,36 @@
 # Autoplay — feature reference (Corruption du Portail)
 
 Everything the autoplay framework can do today, in one place. How to *use* it (goal → run → evidence → answer):
-the `autoplay` skill (`.claude/skills/autoplay/SKILL.md`). How to *add* to it: `Packages/com.unpseudo.autoplay/EXTENDING.md`.
+the `autoplay` skill (`.claude/skills/autoplay/SKILL.md`). How to *add* to it: the package's `EXTENDING.md`.
 Headless editor + Unity CLI workflow: `tools/HEADLESS_UNITY.md`.
 
 Keep this file exact: a lever, event or check that is added, renamed or removed is updated here in the same commit.
+
+## The package lives in its own repository
+
+The game-agnostic part is [`com.unpseudo.autoplay`](https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay), pinned by tag in `Packages/manifest.json`
+(`…com.unpseudo.autoplay.git#vX.Y.Z`). Unity installs it in `Library/PackageCache/com.unpseudo.autoplay@<hash>/`:
+read-only, renamed on every update, **never edit it**. Its docs (`README.md`, `EXTENDING.md`, `CHANGELOG.md`) and
+tools (`Tools~/`) are there; `tools/autoplay/autoplay-tool.sh --dir` prints the tools folder and
+`tools/autoplay/autoplay-tool.sh <tool> [args]` runs one (`run_scenario.py`, `contact_sheet.py`, `compare_runs.py`…).
+Python game tools use `tools/autoplay/autoplay_pkg.py`; a scenario's analyzer command writes `{tools}`.
+
+- **Update**: bump the tag in `Packages/manifest.json` (releases: the package's `CHANGELOG.md`), let Unity resolve
+  (`packages-lock.json` changes too), compile, run the relevant scenarios, commit both files.
+- **Change the package** (anything that works for any game): clone it into `Packages/com.unpseudo.autoplay/`
+  (gitignored here; an embedded package overrides the manifest, and the tools resolve to it), work and test against
+  this game, commit + push there, release a tag (`package.json` version + `CHANGELOG.md` entry), bump the tag here,
+  delete the clone. Anything that knows this game stays in the adapter (`Assets/Scripts/Autoplay`) or `tools/autoplay`.
+- A worktree without `Library` yet borrows the main checkout's tools (the resolver says so on stderr).
 
 ## Layers
 
 | Layer | Where | Owns |
 |---|---|---|
-| Package (game-agnostic) | `Packages/com.unpseudo.autoplay/Runtime` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard, virtual mouse / keyboard (`AutoplayVirtualInput`) |
-| Package tools | `Packages/com.unpseudo.autoplay/Tools~` | `unityctl.sh`, launchers, `run_scenario.py`, `campaign.py`, `compare_runs.py`, `contact_sheet.py` |
+| Package (game-agnostic, [`com.unpseudo.autoplay`](https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay)) | `Runtime/` | runner, journal, captures + state export, animation recorder, command line, dev-build bootstrap, window guard, virtual mouse / keyboard (`AutoplayVirtualInput`) |
+| Package tools | `Tools~/` (`tools/autoplay/autoplay-tool.sh --dir`) | `unityctl.sh`, launchers, `run_scenario.py`, `campaign.py`, `compare_runs.py`, `contact_sheet.py` |
 | Game adapter | `Assets/Scripts/Autoplay` | `CdpAutoplayGame` (levers, host/client roles), `AutoplayDriver` (bot brain; real-input partials `AutoplayDriverRealInput`, `AutoplayDriverTour`, `AutoplayDriverLobby`), `AutoplayUiLocator`, `AutoplayMenuTour`, `AutoplayInputMask`, `AutoplaySelectionAutopilot`, `AutoplayComposition` |
-| Game tools | `tools/autoplay` | `unityctl.sh` wrapper (FMOD guarded files), analyzers, sweep, campaign, `scenarios/*.json` |
+| Game tools | `tools/autoplay` | `unityctl.sh` wrapper (FMOD guarded files), `autoplay-tool.sh` / `autoplay_pkg.py` (package tools finder), analyzers, sweep, campaign, `scenarios/*.json` |
 | Prod seams (dev use only) | `SelectionFlowService.Autopilot` (`ISelectionAutopilot`), read-only `CardPickerManager` accessors | |
 
 ## Commands (`tools/autoplay/unityctl.sh`)
@@ -98,6 +115,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `real-input-tour` | once per process: tooltip, pause menu (button, audio slider on the host only: PlayerPrefs are shared by the processes and always put back, close), tablet (Tab, arrow, chat tab + field, Tab) at night while idle; emote wheel (hold T, mouse, release) at the vote recap. With `quit-at`, a real-input client leaves through the pause menu's Leave button |
 | `menu-ui` | main menu tour (first screen captured, Host / Join panels, audio slider); with `real-input`, a refused join checks the disconnect notification is on top and closes on Dismiss |
 | `role-book` | main menu role book by real input (UGS login screen lifted first): "Personnages" opens it (cover swing), the dog-eared corner turns two pages, the right arrow key one, each faction ribbon opens its chapter, then a turn forward and one back, the close tab closes it. Captures `book-*` after each step |
+| `cat-custo` | (host / solo only) main menu cat customization by real input (UGS login screen lifted first): a click on the menu's cat opens the screen, every tab and every vignette is clicked (the cat changes, `cat.<slot>-<n> ok look=…`), the cat is turned (scripted, no virtual drag) then thrown (`cat.throw ok` = it spun then stopped by itself), « Menu » closes it and the menu's cat wears the new look. The saved look is put back at the end. Captures `cat-*` after each step |
+| `cat-look <f.o.e.m>` | this process's cat (fur.outfit.eyes.mouth ids of the cosmetics catalog), in memory only: processes of one PC share the saved look. Journals `cat.look`. Ex. `3.1.2.2`; `varied` = one preset per process from its scenario label (host, client1, client2…), to see different cats in a `play-net` game |
+| `cat-anims` | (host / solo only) the customization screen's cat plays every animation of the artist through the game's Animator: emotes 1-4 (coucou, crying + tears, accusing + frown, fiery pose), chained then an emote tried while chained (struggle), the tablet. `catanim.<state> ok` = the Animator reached it. Captures `catanim-*` |
 | `role-card-dwell <seconds>` | with `lobby-ui`: how long the lobby's role detail overlay stays open before its close button is clicked (default 0.5; longer for a video) |
 | `real-input-mask <GameObject name>` | breakage test (needs `real-input`, else the run fails): a transparent click-eating overlay covers that object; its clicks must end in `input.miss … hit=…AutoplayMask` |
 | `real-input-control` | diagnostic: virtual devices without disabling the real ones (counts the user's own input events, `realEvents=`) |
@@ -105,6 +125,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `vote-probability <0..1>` | chance a bot votes (else it skips; with `real-input` it clicks the board's skip button, "Passer le vote" during the vote) |
 | `vote-skip <id,id…>` | these seats always skip the vote (no roll): with `vote-probability 1` + `vote-focus`, a scenario chains its target for sure and still exercises Skip |
 | `vote-skip-cast` | a bot that skips the vote (roll failed, `vote-skip`, `vote-probability 0`) casts the Skip vote like the Skip button, instead of abstaining: a vote where everyone skips closes 5 s after the last one instead of waiting out its timer. Off by default (`idle-table` checks the abstention timer) |
+| `vote-duration <s>` | host: every vote lasts this many seconds instead of the scene's 300 (journal `vote.duration`). To film the vote candle's whole last minute (T19) with `vote-probability 0` and `timescale 1`; a client's candle melts from its own copy of the duration |
 | `linger-end <seconds>` | stay that long on the ending screen instead of ending the run when `GameEndingState` starts: journal `ending.linger`, captures `ending-*` (0.5 s, 2 s, end); each capture exports `boardCards` (owner seat of each card on the board) and `winners` (`team:ids` received by this peer, `GameEndingState.WinningTeams`) for `analyze_ending.py` |
 | `host-quit-at <phase text>` | host only (give it in `args`, clients ignore it): the host leaves 1 s after that phase starts, through its pause menu's Leave with `real-input`, else what that button does (`ShutOffGameRpc`, a graceful end for everyone); journal `leave host leaves at …` |
 | `host-crash-at <phase text>` | host only, player builds: the host process is killed 1 s after that phase starts (journal `crash host at …`, capture `host-crash`); the launcher gives the clients 20 s to end on their own; check the host with `"alsoAccept": ["Crashed"]` |
@@ -114,6 +135,9 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `card-visibility-views <list>` | views the probe measures (default `top,top-hover,fps,fps-hover`): `top` board top view, `fps` seated first person with the head turned to each card, `fps-rest` head at rest, `powers`; `-hover` = the card hovered first (vote button out, first-person look-at); `fps-reticle` = played like a player with the real reticle and time running (aim at the card, then its vote button, hold 0.6 s: the reticle must hold that button and the card stay hovered, and looking at the card must not hover something behind it) |
 | `card-layout <RaisedLeft\|Centred\|CentredTop>` | play that board arrangement (`BoardManager.cardGridPreset`) on every process |
 | `seated-view <k=v,…>` | play a seated day view variant on this process (T16), never saved: `h` camera height above the eye, `pitch` rest pitch (+ = down), `clamp` ± pitch bound, `r` other players' seat radius, `scale` other players' seated cat scale, `round=1` round table, `stand=1` standing cards, `standamt` how far they stand (0..1). Missing keys keep the scene's values; journal `seated.view`. Only real players have a seated cat: judge the cats with `play-net` clients |
+| `seated-black <0\|1>` | seated first-person surroundings on this process (T11, `SeatedSurroundings`): `0` keeps the room, `1` pitch black around the table with the unlit plank floor fading out (the scene's default). Journal `seated.black` |
+| `pov-tour` | T11 captures at the first vote, seated view head at rest / turned left / right (yaw clamp) / up, room shown, pitch black without then with the light per cat (`pov-<room\|black-nocatlights\|black>-<rest\|left\|right\|up>.jpg`), each followed by a head sweep left → right → up (`pov-sweep-seconds`, default 6 game s, journal `pov.sweep`): film it with `record "pov\.sweep:10"` (+ `record-width 1280`). Journal `pov.tour`. Cats only sit for real players: run it with `play-net` clients |
+| `turn-captures` | T21 night parchment (`NightTurnBanner`): clean captures of this process's own seat (not the possessed bot) when it wakes (`turn-mine-d<day>-0` unrolled, `-1` whole, `-burn` burning; the bot waits meanwhile, the host shows its own seat), when it falls asleep (`turn-sleep-d<day>-0` / `-burn`, also at the night's end), and once a night while another layer plays (`turn-other-d<day>-before` / `-after`). Journal `turn.capture` with `banner=<text shown>` (`none` = no parchment). Clients grow their window to 1600 x 900 for full-size captures. Scenario `turn-captures` |
 
 ## Journal events (`events.ndjson`, counters in `report.json`)
 
@@ -167,14 +191,21 @@ capture. The runner runs every step as its own coroutine, so a failed run stops 
   powers, picker state, `frostAlpha`, pickable cards, knowledge) and `NNN-label.jpg` (JPEG q85; not in batchmode / `no-png`).
 - Recordings: `rec-NNN-label/` with `f###.png`, `tracks.csv`, `manifest.json`. Tracks: `stateIndex`, `frost`,
   `lifted`, `card0..9` transforms (`.x .y .z` …).
+- A player's-eye capture belongs on a **client**: the host's screen follows the bot it possessed last (its seat, its
+  cards, everything that bot knows), and `GetLocalCharacter` follows it too; find the process's own seat by
+  `ownerClientId == LocalClientId`. Clients start at 640 x 360: a lever that captures for a human grows the window
+  (`Screen.SetResolution`, as `turn-captures` does).
+- `The message header is corrupted and for security reasons connection will be terminated` (after `DisconnectMsg.Process`)
+  on every process at the same instant is the dev player's connection to an editor / profiler, not the game's network:
+  rerun before suspecting a change (seen once, 2026-10-16, absent on the rerun).
 
 ## Scenario checks (`run_scenario.py`)
 
 `outcome` · `event` (kind / detail regex / min / max; `process` any|host|clients = total, all|every-client = each) ·
 `noErrors` (ignore regexes) · `fact` · `roster` · `desync` (net) · `state` (path in capture JSON, op, quantifier) ·
 `leaverChained` (net) · `analyzer` (external command, exit 0 = pass) · `animation` (start / end / reach / change /
-monotonic, `onlyIf`, `window`). Any check takes `"severity": "warn"`. Full syntax: docstring of
-`Packages/com.unpseudo.autoplay/Tools~/run_scenario.py`.
+monotonic, `onlyIf`, `window`). Any check takes `"severity": "warn"`. Full syntax: docstring of the
+package's `Tools~/run_scenario.py`. In an `analyzer` command, `{run}` = the run folder, `{tools}` = the package's `Tools~`.
 
 Scenario keys: `name`, `goal`, `mode` (build|net), `clients`, `seed`, `seedRetries`, `timescale`, `timeout`,
 `visualPicker`, `args`, `clientArgs`, `client1Args`, `client1Relaunch` (`{"after": s, "args": [...]}`: the launcher
@@ -188,6 +219,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
+| `turn-captures` | T21 night parchment on real clients: "Vous vous éveillez" when the seat wakes (then burnt), "Vous vous rendormez" when it falls asleep, nothing while another layer plays (`turn.capture … banner=`) |
 | `watchdog-stall` | breakage test: an idle vote over a 10 s budget gives slow → stall → `run.fail watchdog:` with a report, relayed to alerts.log |
 | `watchdog-died` | breakage test: a client dying outside `crash-at` is reported `DIED` and the run aborted within seconds |
 | `client-leaves-at-vote` | a client leaving at the vote gets a reserved seat, chained when the (10 s) grace expires; the game goes on |
@@ -259,7 +291,8 @@ Add a row whenever a goal turns out not to be covered, with the extension that w
 
 ## Extending in this game
 
-Generic method, rules and definition of done: `Packages/com.unpseudo.autoplay/EXTENDING.md`. Game specifics:
+Generic method, rules and definition of done: the package's `EXTENDING.md` (generic changes go to the package
+repository, see § The package lives in its own repository). Game specifics:
 
 - Levers and process roles: `CdpAutoplayGame` (`AutoplayOptions` carries them to the driver). Bot actions and game
   events: `AutoplayDriver`. Target / card choices: `AutoplaySelectionAutopilot` (plugged into

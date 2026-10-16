@@ -38,6 +38,9 @@ namespace Presentation
         /// <summary>Autoplay before / after captures: false = keep the lights off even in the seated view.</summary>
         public bool Enabled { get; set; } = true;
 
+        /// <summary>Multiplies every cat's light, 1 = as tuned. The vote candle (T19) lowers it as the room goes dark.</summary>
+        public float Dim { get; set; } = 1f;
+
         private void Awake()
         {
             Assert.IsNotNull(_cameraMode, "CatSpotlights._cameraMode not wired");
@@ -100,7 +103,7 @@ namespace Presentation
         private void CopySettings(Light _light)
         {
             _light.color = _template.color;
-            _light.intensity = _template.intensity * _level;
+            _light.intensity = _template.intensity * _level * Dim;
             _light.range = _template.range;
             _light.spotAngle = _template.spotAngle;
             _light.innerSpotAngle = _template.innerSpotAngle;

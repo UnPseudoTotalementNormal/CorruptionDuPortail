@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, la fin du vote : la bougie en jeu (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cd-video { width: 100%; display: block; background: #000; border: 1px solid var(--line); }
+  .cd-note { color: var(--soft); font-size: 13px; margin: 6px 0 0; }
+</style>
+</head>
+<body data-subject="compte-a-rebours">
+
+<header class="page">
+  <h1>La fin du vote : la bougie, dans le jeu (tour 2)</h1>
+  <p>Tes choix du tour 1 : <b>A3</b> la bougie (en 3D, belle flamme, belle fonte, fumée), <b>A4</b> la salle qui
+     s'assombrit avec elle, <b>B1</b> l'horloge qui s'emballe, <b>C2</b> la dernière minute de plus en plus fort.</p>
+  <p>C'est maintenant codé dans le jeu : une vraie bougie 3D sur la table, qui fond pendant tout le vote (coulures,
+     flaque de cire sur le bougeoir), une flamme dessinée par un shader, qui éclaire la table. Dans la dernière minute le
+     tic-tac démarre doucement, la flamme s'agite et la salle s'éteint autour de la table ; les 10 dernières secondes, le
+     tic-tac s'emballe et la flamme sursaute à chaque coup. À zéro : un claquement, la bougie est soufflée, un filet de
+     fumée. La bougie ne se pose jamais sur une carte, quelle que soit la taille de la table.</p>
+  <p>Vidéos : de vraies parties en réseau (hôte + 2 clients + bots), vue de l'hôte. Pour filmer, le vote dure ici 75 s au
+     lieu de 5 min. Les vidéos du jeu sont muettes : le son est remis par-dessus, mêmes fichiers et mêmes instants que
+     dans le jeu. <b>Les sons sont provisoires</b> (fabriqués par moi), à remplacer par de vrais sons.</p>
+</header>
+
+<section>
+  <h2>Dans le jeu</h2>
+  <p>Avec le son.</p>
+
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Le vote va au bout</span></div>
+    <p class="vdesc">L'ouverture du vote (la bougie s'allume, neuve), puis les 30 dernières secondes et la fermeture.</p>
+    <video class="cd-video" src="video/T19-bougie-vote-v1.mp4#t=2" controls playsinline preload="metadata"></video>
+  </div>
+
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Tout le monde a voté</span></div>
+    <p class="vdesc">Le dernier vote tombe : le minuteur passe à 5 secondes et ces 5 secondes sont jouées en plein (tic-tac
+       qui s'emballe, salle qui s'éteint), puis la bougie est soufflée.</p>
+    <video class="cd-video" src="video/T19-bougie-tout-le-monde-a-vote-v2.mp4#t=3" controls playsinline preload="metadata"></video>
+  </div>
+</section>
+
+<section>
+  <h2>La taille de la bougie</h2>
+  <p>Vue assise, au repos.</p>
+  <div class="variant" data-id="T1"><div class="vhead"><span class="vid">T1</span><span class="vname">Comme dans la vidéo</span></div>
+    <p class="vdesc">Une grosse bougie au premier plan, à gauche de tes cartes. Défaut : neuve, elle cache le coin de la
+       carte du fond à gauche (on le voit au début de V2) ; en fondant elle la dégage.</p></div>
+  <div class="variant" data-id="T2"><div class="vhead"><span class="vid">T2</span><span class="vname">Plus petite</span></div>
+    <p class="vdesc">Les deux tiers : plus discrète, elle ne cache plus aucune carte, elle compte surtout par sa lumière.</p></div>
+  <div class="variant" data-id="T3"><div class="vhead"><span class="vid">T3</span><span class="vname">Plus haute et plus fine</span></div>
+    <p class="vdesc">Un cierge : elle a plus de hauteur à perdre, la fonte se voit mieux (mais elle cache encore plus de
+       cartes au début, il faudrait la poser plus à gauche, au bord de la table).</p></div>
+</section>
+
+<section>
+  <h2>Quand tout le monde a voté</h2>
+  <p>Le minuteur tombe à 5 secondes d'un coup. La bougie, elle :</p>
+  <div class="variant" data-id="F1"><div class="vhead"><span class="vid">F1</span><span class="vname">Garde sa hauteur</span></div>
+    <p class="vdesc">Elle fond à son rythme (le temps vraiment passé) ; seules la flamme, la lumière et l'horloge s'emballent
+       (V2).</p></div>
+  <div class="variant" data-id="F2"><div class="vhead"><span class="vid">F2</span><span class="vname">Fond à toute vitesse</span></div>
+    <p class="vdesc">Pendant les 5 secondes, elle fond en accéléré jusqu'au moignon, la cire coule : on voit le temps
+       s'écouler d'un coup.</p></div>
+</section>
+
+<section>
+  <h2>La salle qui s'éteint</h2>
+  <div class="variant" data-id="D1"><div class="vhead"><span class="vid">D1</span><span class="vname">Comme dans la vidéo</span></div>
+    <p class="vdesc">À la fin, la lampe de la salle tombe à environ 12 %, la bougie éclaire la table.</p></div>
+  <div class="variant" data-id="D2"><div class="vhead"><span class="vid">D2</span><span class="vname">Plus fort</span></div>
+    <p class="vdesc">Presque noir hors du halo de la bougie, les cartes du fond tout juste lisibles.</p></div>
+  <div class="variant" data-id="D3"><div class="vhead"><span class="vid">D3</span><span class="vname">Plus doux</span></div>
+    <p class="vdesc">La salle baisse de moitié seulement : la tension vient surtout de la flamme et de l'horloge.</p></div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (la flamme, la fumée, les sons, la place de la bougie) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script src="../common/mock.js"></script>
+</body>
+</html>

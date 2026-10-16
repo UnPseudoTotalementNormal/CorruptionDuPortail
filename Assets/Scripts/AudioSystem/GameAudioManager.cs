@@ -113,6 +113,19 @@ namespace AudioSystem
             EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
             _eventReference.TryPlayOneShot();
         }
+
+        /// <summary>A one-shot at <paramref name="_volume"/> (0..1): the vote clock gets louder as the end nears (T19).</summary>
+        public void PlayOneShot(EventReference _eventReference, float _volume)
+        {
+            if (_eventReference.IsNull)
+            {
+                return;
+            }
+            EventInstance _instance = RuntimeManager.CreateInstance(_eventReference);
+            _instance.setVolume(Mathf.Clamp01(_volume));
+            _instance.start();
+            _instance.release();
+        }
         
         [Rpc(SendTo.SpecifiedInParams)]
         public void PlayEventInstanceRpc(FixedString128Bytes _eventPath, FixedString64Bytes _instanceKey, RpcParams _rpcParams = default)

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, la bougie se refait (tour 4)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cd-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* the candle, drawn at the image's own size then scaled: its foot sits on the chosen place */
+  .cd-c { position: absolute; left: 0; top: 0; width: 480px; height: 956px; transform-origin: 0 0; pointer-events: none; }
+  .cd-c img, .cd-c .cd-rise { position: absolute; left: 0; top: 0; width: 480px; height: 956px; }
+  .cd-rise { overflow: hidden; }
+  .cd-fx { position: absolute; pointer-events: none; mix-blend-mode: screen; }
+  .cd-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .cd-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cd-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .cd-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .cd-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="compte-a-rebours">
+
+<header class="page">
+  <h1>La bougie se refait (tour 4)</h1>
+  <p>Tes choix du tour 3 : <b>ta place</b> (à droite de tes cartes, taille 0,79 : c'est elle ici), <b>B3</b> une bougie
+     neuve à chaque minuteur « mais qu'elle se remette correctement, pas instantané, peut-être un shader », <b>N2</b> la
+     nuit, la flamme seule sans tic-tac.</p>
+  <p>Ta place, B3 et N2 sont codés et tournent en partie (le pied du bougeoir ne passe plus dans la table). Reste à choisir comment le moignon redevient une bougie neuve. Images :
+     la vraie bougie rendue depuis le jeu à ta place (sa vraie fonte, image par image) ; en jeu ce sera un shader sur la
+     bougie 3D.</p>
+</header>
+
+<nav class="cd-moments"><div>
+  <button data-at="700">1. Le moignon, éteint</button>
+  <button data-at="2100">2. Elle se refait</button>
+  <button data-at="2900">2b. Presque</button>
+  <button data-at="3900">3. Neuve</button>
+  <button data-at="5600">4. Allumée</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>Comment elle se refait</h2>
+  <p>Même bougie, même moment sur chaque cadre ; la boucle dure 7 secondes, la reconstruction 1,8 seconde.</p>
+
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Le temps rembobiné</span></div>
+    <p class="vdesc">Sa fonte jouée à l'envers, vite : la cire remonte, les coulures rentrent, la flaque se résorbe. On
+       comprend tout de suite que le temps est remis à zéro.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="rewind"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Elle renaît par le bas, en braise</span></div>
+    <p class="vdesc">Le moignon se défait en cendre pendant qu'une bougie neuve se forme du pied vers le haut, sous une
+       ligne de braise qui monte. En jeu : un shader de dissolution avec un bord incandescent.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="ember"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Elle s'enfonce et repousse</span></div>
+    <p class="vdesc">Le moignon s'enfonce dans le bougeoir comme dans de la cire chaude, puis une bougie neuve en sort et
+       monte jusqu'à sa hauteur.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="sink"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quand elle se refait</h2>
+  <div class="variant" data-id="W1"><div class="vhead"><span class="vid">W1</span><span class="vname">Juste avant de s'allumer</span></div>
+    <p class="vdesc">Le moignon reste sur la table entre deux minuteurs ; quand un minuteur commence (le vote, ton éveil),
+       elle se refait sous tes yeux puis s'allume (comme dans la boucle). Le minuteur démarre pendant ce temps.</p></div>
+  <div class="variant" data-id="W2"><div class="vhead"><span class="vid">W2</span><span class="vname">Juste après s'être éteinte</span></div>
+    <p class="vdesc">Soufflée, elle se refait dans sa fumée et attend, neuve et éteinte, le prochain minuteur ; au début du
+       minuteur elle s'allume tout de suite.</p></div>
+</section>
+
+<section>
+  <h2>La nuit, vue de dessus</h2>
+  <p>Vraie partie (hôte Dryade, ton tour de nuit), bougie à ta place. De nuit la caméra est juste au-dessus de la table :
+     une bougie haute près du bord a l'air couchée (le haut, plus près de la caméra, part vers l'extérieur). Ici le tour
+     a été très court (le bot a joué tout de suite), la flamme se voit à peine.</p>
+  <img src="img/nuit-vue-dessus.jpg" alt="la bougie vue de dessus, la nuit" style="width:100%;border:1px solid var(--line)">
+  <div class="variant" data-id="V1"><div class="vhead"><span class="vid">V1</span><span class="vname">Comme ça</span></div>
+    <p class="vdesc">C'est la vraie perspective, on s'y fera.</p></div>
+  <div class="variant" data-id="V2"><div class="vhead"><span class="vid">V2</span><span class="vname">Une bougie plus trapue</span></div>
+    <p class="vdesc">Même largeur, un tiers moins haute : elle penche moins vue de dessus et cache moins de cartes au vote,
+       mais elle a moins de hauteur à perdre en fondant.</p></div>
+  <div class="variant" data-id="V3"><div class="vhead"><span class="vid">V3</span><span class="vname">Plus près du centre</span></div>
+    <p class="vdesc">Ta place, mais rentrée vers le milieu de la table (près des deux cartes du bas) : elle penche beaucoup
+       moins de nuit, elle reste à droite de tes cartes au vote.</p></div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (la vitesse, un son pendant qu'elle se refait) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const LOOP = 7000, START = 1500, BUILD = 1800, LIT = 4400;
+  const FOOT = { x: 1508, y: 704 }, K = 0.545 * 0.79, AX = 240, AY = 810.3;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const SEQ = ["m10", "m09", "m08", "m07", "m06", "m05", "m04", "m03", "m02", "m01", "m00"];
+  const src = n => "img/seq/" + n + ".webp";
+  [...SEQ, "s1", "s2", "s3", "dish", "lit"].forEach(n => { const i = new Image(); i.src = src(n); });
+
+  const frames = [...document.querySelectorAll(".cd-stage")].map(stage => {
+    const c = document.createElement("div"); c.className = "cd-c";
+    c.style.transform = `translate(${FOOT.x - AX * K}px, ${FOOT.y - AY * K}px) scale(${K})`;
+    c.innerHTML = '<img class="cd-dish" alt=""><img class="cd-old" alt=""><div class="cd-rise"><img class="cd-new" alt=""></div><img class="cd-lit" alt="">';
+    stage.appendChild(c);
+    const pool = document.createElement("div"); pool.className = "cd-fx"; stage.appendChild(pool);
+    const edge = document.createElement("div"); edge.className = "cd-fx"; stage.appendChild(edge);
+    const F = { fx: stage.dataset.fx, c, pool, edge,
+      dish: c.querySelector(".cd-dish"), old: c.querySelector(".cd-old"), rise: c.querySelector(".cd-rise"),
+      nw: c.querySelector(".cd-new"), lit: c.querySelector(".cd-lit") };
+    F.dish.src = src("dish"); F.lit.src = src("lit"); F.nw.src = src("m00");
+    return F;
+  });
+
+  function glow(el, x, y, rx, ry, colour, a) {
+    el.style.left = (x - rx) + "px"; el.style.top = (y - ry) + "px"; el.style.width = 2 * rx + "px"; el.style.height = 2 * ry + "px";
+    el.style.background = `radial-gradient(ellipse, rgba(${colour},${a}) 0%, rgba(${colour},${a * .35}) 45%, rgba(${colour},0) 70%)`;
+  }
+
+  function show(t) {
+    const p = clamp((t - START) / BUILD), e = ease(p);
+    const lit = clamp((t - LIT) / 500);
+    for (const F of frames) {
+      F.old.style.opacity = 1; F.old.style.filter = ""; F.old.style.transform = ""; F.old.style.clipPath = "";
+      F.rise.style.display = "none"; F.nw.style.transform = ""; F.nw.style.webkitMaskImage = F.nw.style.maskImage = "";
+      F.edge.style.opacity = 0;
+      if (F.fx === "rewind") {
+        F.old.src = src(SEQ[Math.round(e * 10)]);
+        F.old.style.filter = p > 0 && p < 1 ? `drop-shadow(0 0 ${18 * Math.sin(p * Math.PI)}px rgba(255,190,120,.8))` : "";
+      } else if (F.fx === "ember") {
+        F.old.src = src("m10");
+        F.old.style.opacity = 1 - clamp(p / 0.45);
+        F.old.style.filter = p > 0 ? `brightness(${1 - .6 * clamp(p / .45)}) sepia(${clamp(p / .3)})` : "";
+        if (p > 0) {
+          F.rise.style.display = "block"; F.rise.style.height = "956px";
+          // reveal from the foot (y = 810) up to the top (y = 0) of the new candle
+          const edgeY = 810 - 820 * e;
+          const m = `linear-gradient(to top, #000 0, #000 ${956 - edgeY - 6}px, transparent ${956 - edgeY + 10}px)`;
+          F.nw.style.webkitMaskImage = F.nw.style.maskImage = m;
+          if (p < 1) {
+            F.edge.style.opacity = 1;
+            glow(F.edge, FOOT.x, FOOT.y + (edgeY - AY) * K, 70 * K * 2.4, 16 * K * 2.4, "255,140,50", .95);
+          }
+        }
+      } else {
+        // sink: the stub goes down into the dish, then the new candle rises out of it
+        const down = clamp(p / 0.4), up = clamp((p - 0.4) / 0.6);
+        F.old.src = src(down < .25 ? "m10" : down < .5 ? "s1" : down < .75 ? "s2" : "s3");
+        F.old.style.opacity = down >= 1 ? 0 : 1;
+        if (up > 0) {
+          F.rise.style.display = "block"; F.rise.style.height = "810px";
+          F.nw.style.transform = `translateY(${(1 - ease(up)) * 760}px)`;
+        }
+      }
+      if (p >= 1) { F.old.style.opacity = 0; F.rise.style.display = "block"; F.rise.style.height = "956px"; F.nw.style.transform = ""; F.nw.style.maskImage = F.nw.style.webkitMaskImage = ""; }
+      F.lit.style.opacity = lit;
+      F.nw.style.opacity = 1 - lit * .999;
+      glow(F.pool, FOOT.x, FOOT.y - 30 * K, 520 * K, 300 * K, "255,150,70", .45 * lit);
+    }
+    document.querySelectorAll(".cd-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  const loopBtn = document.querySelector(".cd-moments button[data-loop]");
+  if (at !== null) { show(+at); return; }
+  document.querySelectorAll(".cd-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+  loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

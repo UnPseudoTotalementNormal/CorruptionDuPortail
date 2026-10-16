@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, la bougie : sa place, toute la partie, la nuit (tour 3)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cd-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* the candle: positioned by the page from the kit's --px / --py (the table point under the candle) */
+  .stage .place.cd-candle { transform: translate(var(--tx), var(--ty)); transform-origin: 0 0; width: var(--cw); }
+  .cd-top { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+  .cd-light { position: absolute; left: 0; top: 0; pointer-events: none; mix-blend-mode: screen; border-radius: 50%; }
+  .cd-hint { position: absolute; left: 24px; bottom: 20px; padding: 8px 14px; background: rgba(21, 16, 13, .8); color: #efe3d0;
+             font: 24px system-ui, sans-serif; border: 1px solid #3b2e25; pointer-events: none; }
+  .cd-label { color: var(--soft); font-size: 13px; margin: 10px 0 4px; }
+</style>
+</head>
+<body data-subject="compte-a-rebours">
+
+<header class="page">
+  <h1>La bougie : sa place, toute la partie, la nuit (tour 3)</h1>
+  <p>Tes demandes : choisir toi-même où la poser sur la table ; qu'elle ne disparaisse pas ; qu'elle serve aussi la nuit,
+     pour le temps d'éveil (avant qu'on se rendorme).</p>
+  <p>La bougie est la vraie, rendue depuis le jeu, posée sur de vraies captures (le vote vu de ta place, et la nuit quand
+     c'est ton tour, vue de dessus). <b>Fais-la glisser</b> sur la capture du vote, règle sa taille dessous : elle se
+     place au même endroit sur la vue de nuit. Ta position part avec tes retours. La bougie ne se pose jamais sur une
+     carte : avec beaucoup de joueurs, le jeu la décalera à la place libre la plus proche.</p>
+  <p>Le tour 2 (les vidéos, la fonte quand tout le monde a voté, la salle qui s'éteint) reste ouvert sur
+     <a href="v2.html">v2</a>.</p>
+</header>
+
+<section>
+  <h2>Sa place sur la table</h2>
+  <p>Ta bougie neuve, allumée. Sur la vue du vote elle cache le coin d'une carte du fond : à toi de trouver le bon
+     endroit et la bonne taille.</p>
+
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Ta place pour la bougie</span></div>
+    <p class="vdesc">Glisse-la du doigt. Taille 1 = celle des vidéos.</p>
+    <p class="cd-label">Le vote, de ta place</p>
+    <div class="screen"><div class="stage cd-pov">
+      <img class="cd-bg" src="img/vote.jpg" alt="">
+      <div class="cd-light cd-pool"></div>
+      <img class="place cd-candle" data-name="bougie" data-x="391" data-y="757" data-scale="1" data-scale-min="0.4" data-scale-max="1.4"
+           src="img/bougie_pov_lit.webp" alt="la bougie">
+      <div class="cd-light cd-halo"></div>
+      <div class="cd-hint">Fais glisser la bougie</div>
+    </div></div>
+    <p class="cd-label">La nuit, à ton tour (vue de dessus) : au même endroit</p>
+    <div class="screen"><div class="stage cd-night">
+      <img class="cd-bg" src="../tour-de-nuit/img/eveille.jpg" alt="">
+      <div class="cd-light cd-pool"></div>
+      <img class="cd-top" src="img/bougie_top_lit.webp" alt="">
+      <div class="cd-light cd-halo"></div>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Une bougie pour combien de temps ?</h2>
+  <p>Elle reste toujours sur la table. Elle brûle pendant le vote (et la nuit, selon la question suivante) ; éteinte
+     entre deux, elle garde sa hauteur.</p>
+  <div class="variant" data-id="B1"><div class="vhead"><span class="vid">B1</span><span class="vname">Une seule bougie pour toute la partie</span></div>
+    <p class="vdesc">Elle fond un peu à chaque fois qu'elle brûle : sa hauteur dit où en est la partie. Quand elle arrive
+       au bout, une neuve la remplace à l'aube. Chaque vote ne la fait fondre que d'une part (elle ne fait plus le moignon
+       à la fin de chaque vote).</p></div>
+  <div class="variant" data-id="B2"><div class="vhead"><span class="vid">B2</span><span class="vname">Une bougie neuve chaque jour</span></div>
+    <p class="vdesc">À l'aube, une bougie neuve. Elle brûle pendant tes éveils de la nuit puis pendant le vote, et finit
+       en moignon au moment de l'enchaînement. Le lendemain, une neuve.</p></div>
+  <div class="variant" data-id="B3"><div class="vhead"><span class="vid">B3</span><span class="vname">Une bougie neuve à chaque minuteur</span></div>
+    <p class="vdesc">Comme dans les vidéos : neuve à l'ouverture du vote, moignon à la fin ; neuve aussi à chacun de tes
+       éveils. Entre deux, la vieille reste éteinte sur la table.</p></div>
+</section>
+
+<section>
+  <h2>La nuit, quand c'est ton tour</h2>
+  <p>Ton temps d'éveil est court (quelques dizaines de secondes) : la « dernière minute » du vote devient la fin de ton
+     temps.</p>
+  <div class="variant" data-id="N1"><div class="vhead"><span class="vid">N1</span><span class="vname">Comme le vote</span></div>
+    <p class="vdesc">Elle s'allume à ton réveil (avec « Vous vous éveillez »), fond pendant ton tour ; sur le dernier
+       tiers le tic-tac démarre et s'emballe, la flamme s'agite ; à la fin elle est soufflée (« Vous vous
+       rendormez »).</p></div>
+  <div class="variant" data-id="N2"><div class="vhead"><span class="vid">N2</span><span class="vname">La flamme seule, sans tic-tac</span></div>
+    <p class="vdesc">Elle s'allume et fond pendant ton tour, la flamme s'agite sur la fin, mais pas de tic-tac ni de salle
+       qui s'éteint : la nuit reste silencieuse, le tic-tac est réservé au vote.</p></div>
+  <div class="variant" data-id="N3"><div class="vhead"><span class="vid">N3</span><span class="vname">Éteinte la nuit</span></div>
+    <p class="vdesc">La bougie ne sert qu'au vote ; la nuit elle est posée, éteinte.</p></div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (la place, la nuit, ce qu'elle devient quand on est enchaîné) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  // The seated vote view, fitted on the real capture (table corners and the candle of the videos): eye, pitch, field.
+  const EYE = [0, -4.1, -15.4], PITCH = 33 * Math.PI / 180, F = 450 / Math.tan(20 * Math.PI / 180), TABLE_Y = -15.025;
+  const fwd = [0, -Math.sin(PITCH), Math.cos(PITCH)], up = [0, Math.cos(PITCH), Math.sin(PITCH)];
+  function povToTable(px, py) {
+    const dx = px - 800, dy = 450 - py;
+    const dir = [dx, up[1] * dy + fwd[1] * F, up[2] * dy + fwd[2] * F];
+    const t = (TABLE_Y - EYE[1]) / dir[1];
+    return { x: EYE[0] + t * dir[0], z: EYE[2] + t * dir[2], depth: t * F };
+  }
+  // The night's top view: linear on the table (camera straight above, measured on the table's corners).
+  const topOf = (x, z) => ({ x: 803 + 51.1 * x, y: 451 - 51.6 * z });
+  // The candle images: size and the pixel under the candle's foot; the image's scale for the game at the videos' place.
+  const POV = { w: 546, ax: 273, ay: 870.1, k: 0.469, flame: 70 }, TOP = { w: 878, ax: 439, ay: 439, k: 0.188 };
+  const refDepth = povToTable(391, 757).depth;
+
+  const pov = document.querySelector(".cd-pov"), night = document.querySelector(".cd-night");
+  const candle = pov.querySelector(".cd-candle"), top = night.querySelector(".cd-top");
+  function light(el, cx, cy, r, colour, a) {
+    el.style.width = el.style.height = (2 * r) + "px";
+    el.style.transform = `translate(${cx - r}px, ${cy - r}px)`;
+    el.style.background = `radial-gradient(circle, rgba(${colour},${a}) 0%, rgba(${colour},${a * .35}) 40%, rgba(${colour},0) 70%)`;
+  }
+  function place(x, y, scale) {
+    const t = povToTable(x, y);
+    const k = POV.k * refDepth / t.depth * scale;
+    candle.style.setProperty("--cw", (POV.w * k) + "px");
+    candle.style.setProperty("--tx", (-POV.ax * k) + "px");
+    candle.style.setProperty("--ty", (-POV.ay * k) + "px");
+    light(pov.querySelector(".cd-pool"), x, y - 20 * k, 520 * k, "255,150,70", .38);
+    light(pov.querySelector(".cd-halo"), x, y - (POV.ay - POV.flame) * k, 190 * k, "255,190,110", .55);
+    const p = topOf(t.x, t.z), kt = TOP.k * scale;
+    top.style.width = (TOP.w * kt) + "px";
+    top.style.transform = `translate(${p.x - TOP.ax * kt}px, ${p.y - TOP.ay * kt}px)`;
+    light(night.querySelector(".cd-pool"), p.x, p.y, 520 * kt, "255,150,70", .4);
+    light(night.querySelector(".cd-halo"), p.x, p.y, 220 * kt, "255,200,120", .45);
+    candle.dataset.info = `table x=${t.x.toFixed(2)} z=${t.z.toFixed(2)}`;
+  }
+  candle.addEventListener("mockplace", e => place(e.detail.x, e.detail.y, e.detail.scale));
+  pov.addEventListener("pointerdown", () => { const h = pov.querySelector(".cd-hint"); if (h) h.remove(); }, { once: true });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

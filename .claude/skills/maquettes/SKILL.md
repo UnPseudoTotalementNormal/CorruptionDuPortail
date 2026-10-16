@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first).
 metadata:
   template: maquettes
-  template-version: 1.4.0
+  template-version: 1.4.1
 ---
 
 # Maquettes (Corruption du Portail)
@@ -63,8 +63,11 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - Server: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5198/`; if it does not answer, start
   `pythonw tools/maquettes/serve.py` detached (Clawd's mockups use 5199).
 - Look at the whole page, not only the frames: `?only=` captures have neither the header nor the
-  sections, a style clash hides there. One capture without `?only=` at the width he reads it (phone:
-  `--window-size=412,900`), or the agent's Edge (`clawd-use` `browser_open`); fix what overflows.
+  sections, a style clash hides there. One capture without `?only=` at the width he reads it. Phone:
+  headless Edge does not go below 492 px (narrower, the capture is cropped and shows a false overflow),
+  so the page in a 412 px iframe, from a local file (`$TEMP/tel.html`: `<body style=margin:0><iframe
+  src="http://127.0.0.1:5198/<subject>/v<N>.html" width=412 height=900 style=border:0>`), captured
+  with `--window-size=412,900`. Fix what overflows.
 - One capture per variant in `<subject>/captures/v<N>/<id>.jpg` (headless Edge, own profile):
   ```bash
   E="/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"

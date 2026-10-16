@@ -38,10 +38,10 @@ namespace CorruptionDuPortail.Domain
         public const double BurnSeconds = 1.0;
 
         /// <summary>
-        /// Last burn front value: a little past 1 so the slowest corner of the noisy field is gone too (the field
-        /// mixes a corner gradient with noise, its values reach slightly above 1).
+        /// Last burn front value: the shader's field (a corner gradient mixed with noise) stays under 1, and the glow
+        /// that hugs the burnt edge reaches a little behind the front, so a little past 1 leaves nothing.
         /// </summary>
-        public const double BurnEnd = 1.12;
+        public const double BurnEnd = 1.04;
 
         /// <param name="elapsed">Seconds since the banner started.</param>
         /// <param name="wholeSeconds">Seconds from the start until it catches fire (unrolling included).</param>

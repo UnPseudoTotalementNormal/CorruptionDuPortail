@@ -30,14 +30,19 @@ Material:
     m_Ints: []
     m_Floats:
     - _Burn: 0
-    - _CharWidth: 0.045
+    - _CharWidth: 0.04
     - _ColorMask: 15
     - _CornerStretch: 0.35
-    - _EmberWidth: 0.012
-    - _NoiseCellLarge: 46
-    - _NoiseCellSmall: 13
-    - _NoiseWeight: 0.18
-    - _ScorchWidth: 0.11
+    - _Crawl: 1.5
+    - _CrawlAmount: 0.012
+    - _EmberWidth: 0.013
+    - _Flicker: 0.35
+    - _GlowStrength: 0.55
+    - _GlowWidth: 0.03
+    - _NoiseCell: 70
+    - _NoiseWeight: 0.22
+    - _ScorchWidth: 0.1
+    - _Sparks: 0.35
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
@@ -47,10 +52,11 @@ Material:
     m_Colors:
     - _BannerSize: {r: 1060, g: 120, b: 0, a: 0}
     - _BurnRect: {r: 0, g: 0, b: 1, a: 1}
-    - _CharColor: {r: 0.23499995, g: 0.10999996, b: 0.046999976, a: 1}
+    - _CharColor: {r: 0.049999982, g: 0.025, b: 0.015, a: 1}
+    - _CharEdge: {r: 0.23999995, g: 0.11999995, b: 0.049999982, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EmberCool: {r: 0.78, g: 0.31, b: 0.08, a: 1}
-    - _EmberHot: {r: 1, g: 0.82, b: 0.47, a: 1}
-    - _ScorchTint: {r: 0.54999995, g: 0.45, b: 0.34999996, a: 1}
+    - _EmberCool: {r: 0.9, g: 0.22, b: 0.03, a: 1}
+    - _EmberHot: {r: 1, g: 0.72, b: 0.22, a: 1}
+    - _ScorchTint: {r: 0.62, g: 0.45, b: 0.29999998, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

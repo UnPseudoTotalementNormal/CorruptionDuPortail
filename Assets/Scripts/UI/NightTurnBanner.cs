@@ -16,8 +16,8 @@ namespace UI
     /// player's turn ends. Replaces the 3 s "Vous vous éveillez..." text of <see cref="AwakeningStateUI"/>.
     ///
     /// Local presentation only, on its own overlay canvas (a state UI fades out with its state, and the turn can end
-    /// with the night). The parchment, its seal and its text share one material (<c>CdP/UI Parchment Burn</c>), so
-    /// one burn front runs through all three; the look of the burn is tuned on that material. Timing:
+    /// with the night). The parchment and its text share one material (<c>CdP/UI Parchment Burn</c>), so one burn
+    /// front runs through both; the look of the burn is tuned on that material. No wax seal (Poyo, 2026-10-16). Timing:
     /// <see cref="ParchmentBannerTimeline"/>.
     /// </summary>
     public class NightTurnBanner : MonoBehaviour
@@ -26,9 +26,6 @@ namespace UI
         private static readonly Vector2 ReferenceResolution = new(1600f, 900f);
         private static readonly Vector2 BannerSize = new(1060f, 120f);
         private const float BannerY = -20f;
-        private const float SealSize = 96f;
-        private const float SealInset = 95f;   // seal centre from the right end
-        private const float TextRightPad = 110f; // the text stays clear of the seal
         private const float RollerWidth = 22f;
         private const float RollerOverhang = 6f;
 
@@ -46,9 +43,6 @@ namespace UI
         [SerializeField] private Material burnMaterial;
         [Tooltip("The role book's parchment; its top band is used.")]
         [SerializeField] private Texture parchment;
-        [Tooltip("The role book's wax seal (white mask, tinted).")]
-        [SerializeField] private Texture seal;
-        [SerializeField] private Color sealColor = new(0.55f, 0.1f, 0.07f, 1f);
         [Tooltip("IM Fell English, the role book's font.")]
         [SerializeField] private Font font;
         [SerializeField] private int fontSize = 68;
@@ -243,7 +237,6 @@ namespace UI
 
             RectTransform _textRect = NewRect("Text", banner);
             Stretch(_textRect);
-            _textRect.offsetMax = new Vector2(-TextRightPad, 0f);
             label = _textRect.gameObject.AddComponent<Text>();
             label.font = font;
             label.fontSize = fontSize;
@@ -253,16 +246,6 @@ namespace UI
             label.verticalOverflow = VerticalWrapMode.Overflow;
             label.material = material;
             label.raycastTarget = false;
-
-            RectTransform _sealRect = NewRect("Seal", banner);
-            _sealRect.sizeDelta = new Vector2(SealSize, SealSize);
-            _sealRect.anchoredPosition = new Vector2(BannerSize.x * 0.5f - SealInset, 0f);
-            _sealRect.localRotation = Quaternion.Euler(0f, 0f, -11.5f);
-            var _seal = _sealRect.gameObject.AddComponent<RawImage>();
-            _seal.texture = seal;
-            _seal.color = sealColor;
-            _seal.material = material;
-            _seal.raycastTarget = false;
 
             leftRoller = NewRoller("RollerLeft");
             rightRoller = NewRoller("RollerRight");

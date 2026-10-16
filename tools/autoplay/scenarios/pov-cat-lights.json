@@ -1,0 +1,25 @@
+{
+  "name": "pov-cat-lights",
+  "goal": "Board task T11: in the seated first-person view of the first vote, every other real player's cat sits under its own light (60° above the table side, wide soft cone holding the ears), on every process, head at rest / left / right / up; turned off (pov-black-nocatlights) the cats fall back to the plain seated view. Real clients, so the cats really sit at the table. Judge the pov-black-* captures against pov-black-nocatlights-*.",
+  "mode": "net",
+  "clients": 3,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 1200,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-pov-tour",
+    "-autoplay-cat-look",
+    "varied",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {"type": "outcome", "value": "Completed", "process": "all"},
+    {"type": "event", "kind": "pov.tour", "detail": "avatars=4", "process": "every-client", "min": 1, "max": 1},
+    {"type": "event", "kind": "pov.tour", "detail": "avatars=4", "process": "host", "min": 1, "max": 1},
+    {"type": "event", "kind": "pov.sweep", "detail": "black-nocatlights", "process": "host", "min": 1, "max": 1},
+    {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+  ]
+}

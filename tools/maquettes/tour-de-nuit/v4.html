@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T21, savoir la nuit si c'est à nous de jouer, tour 4 : le parchemin, réveil et rendormi</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .tn-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tn-awake { opacity: 0; }
+
+  /* the parchment strip; rollers on its two ends (left / right, or top / bottom when it hangs) */
+  .ps { position: absolute; overflow: hidden; background: url(../common/parchment.webp) center / cover;
+        box-shadow: 0 10px 30px rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; }
+  .ps span { font: 68px "Fell", serif; color: #3a2414; white-space: nowrap; }
+  .ps:not(.ps--v):not(.ps--burn) span { margin-right: 110px; }
+  .ps::before, .ps::after { content: ""; position: absolute; background: linear-gradient(90deg, #6b4a2a, #c9a46a 50%, #6b4a2a); }
+  .ps:not(.ps--v)::before, .ps:not(.ps--v)::after { top: 0; bottom: 0; width: 22px; border-radius: 11px; }
+  .ps:not(.ps--v)::before { left: 0; } .ps:not(.ps--v)::after { right: 0; }
+  .ps--v::before, .ps--v::after { left: 0; right: 0; height: 22px; border-radius: 11px; background: linear-gradient(180deg, #6b4a2a, #c9a46a 50%, #6b4a2a); }
+  .ps--v::before { top: 0; } .ps--v::after { bottom: 0; }
+  .ps--v span { font-size: 58px; white-space: normal; text-align: center; line-height: 1.1; padding: 0 30px; }
+  /* burning ends (P3) */
+  .ps--burn::before, .ps--burn::after { width: 26px; border-radius: 4px;
+        background: linear-gradient(90deg, rgba(20,8,2,.95), rgba(150,50,10,.9) 45%, rgba(255,170,60,.9) 70%, rgba(255,200,120,0)); }
+  .ps--burn::after { transform: scaleX(-1); }
+  .ps--burn span { font-size: 30px; }
+
+  /* the wax seal: the book's seal shape, in red wax */
+  .seal { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; opacity: 0;
+          background: radial-gradient(circle at 40% 35%, #c0392b, #7a1712 55%, #4a0d0a 80%);
+          -webkit-mask: url(../common/waxseal.webp) center / contain no-repeat; mask: url(../common/waxseal.webp) center / contain no-repeat; }
+
+  /* P2: the closed scroll resting by your card */
+  .roll { position: absolute; width: 150px; height: 26px; border-radius: 13px; opacity: 0;
+          background: linear-gradient(180deg, #8a6a42, #e2c99a 45%, #9a7a4e); box-shadow: 0 6px 12px rgba(0,0,0,.6); }
+  .roll::after { content: ""; position: absolute; left: 58px; top: -6px; width: 34px; height: 38px; border-radius: 50%;
+                 background: radial-gradient(circle at 40% 35%, #c0392b, #6e1410 70%); }
+
+  .tn-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tn-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tn-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tn-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tn-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="tour-de-nuit">
+
+<header class="page">
+  <h1>La nuit : est-ce à moi de jouer ? (tour 4, le parchemin)</h1>
+  <p>Tes retours du tour 2 : W6, le parchemin, « j'aime bien cette idée, itère ». Les autres (lampe, bouton, caméra,
+     carte, yeux) sont mises de côté.</p>
+  <p>Avant de voter le tour 3, tu as demandé « Vous vous réveillez » et « Vous vous rendormez » : le parchemin vient
+     maintenant aux deux moments, au réveil et quand tu te rendors (même mouvement que le réveil, centré sur la table).</p>
+  <p>Deux questions : comment il apparaît et ce qui en reste pendant ton tour, puis les mots écrits dessus. Endormi,
+     l'écran reste celui d'aujourd'hui. Parchemin et sceau : ceux du livre des personnages. Mêmes vraies captures
+     (client en réseau, la Dryade).</p>
+</header>
+
+<nav class="tn-moments"><div>
+  <button data-at="1000">1. Nuit, pas à toi</button>
+  <button data-at="3600">2. Le réveil</button>
+  <button data-at="7000">3. Ton tour, plus tard</button>
+  <button data-at="10300">4. Tu te rendors</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>1. Le parchemin : comment il vient, ce qui reste</h2>
+  <p>Mêmes mots partout (« Vous vous réveillez », puis « Vous vous rendormez ») ; les mots sont la question 2.</p>
+
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Le sceau, puis plus rien</span></div>
+    <p class="vdesc">W6 avec un sceau de cire qui s'écrase dessus au moment où il finit de se dérouler. Il se ré-enroule
+       après 2 secondes et ne laisse rien ; il revient avec « Vous vous rendormez » quand ton tour finit.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p1">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous vous rendormez">Vous vous réveillez</span></div><div class="seal"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="P2">
+    <div class="vhead"><span class="vid">P2</span><span class="vname">Il se range à côté de ta carte</span></div>
+    <p class="vdesc">Après 2 secondes, il s'enroule en un petit rouleau scellé qui va se poser sous ta carte et y reste
+       tout ton tour : un coup d'œil suffit pour savoir que c'est encore à toi. Quand tu te rendors, il disparaît et le parchemin « Vous vous rendormez » passe.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p2">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous vous rendormez">Vous vous réveillez</span></div><div class="roll"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="P3">
+    <div class="vhead"><span class="vid">P3</span><span class="vname">Il se consume</span></div>
+    <p class="vdesc">Après 2 secondes, il s'affine en une bande au bord de la table, de ton côté, qui brûle par les deux bouts
+       au rythme du temps de ton éveil : c'est aussi ton minuteur. Quand tu te rendors, la bande finit en cendres et le parchemin « Vous vous rendormez » passe.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p3">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous vous rendormez">Vous vous réveillez</span></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="P4">
+    <div class="vhead"><span class="vid">P4</span><span class="vname">Il descend du liège</span></div>
+    <p class="vdesc">Il se déroule vers le bas depuis le liège, comme une bannière qu'on lâche, puis remonte après 2 secondes
+       en ne laissant qu'un bout de parchemin qui pend sous le liège tout ton tour. Quand tu te rendors, il redescend
+       avec « Vous vous rendormez » puis remonte complètement.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p4">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps ps--v"><span data-sleep="Vous vous rendormez">Vous vous réveillez</span></div>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Les mots</h2>
+  <p>Le parchemin de P1, au réveil puis au rendormi (moments 2 et 4, ou en boucle). Le jeu vouvoie (« Arrêter l'éveil »).
+     Le nom du rôle n'est vu que par toi.</p>
+
+    <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">« Vous vous réveillez » / « Vous vous rendormez »</span></div>
+    <p class="vdesc">Ta demande, mot pour mot.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p1">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous vous rendormez">Vous vous réveillez</span></div><div class="seal"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">« Vous vous éveillez » / « Vous vous rendormez »</span></div>
+    <p class="vdesc">Garde « éveil », le mot du jeu (« Arrêter l'éveil », le texte d'aujourd'hui).</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p1">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous vous rendormez">Vous vous éveillez</span></div><div class="seal"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="T3">
+    <div class="vhead"><span class="vid">T3</span><span class="vname">« La Dryade se réveille » / « La Dryade se rendort »</span></div>
+    <p class="vdesc">Le nom de ton rôle : rappelle qui tu joues au moment d'agir.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p1">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="La Dryade se rendort">La Dryade se réveille</span></div><div class="seal"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="T4">
+    <div class="vhead"><span class="vid">T4</span><span class="vname">« Vous ouvrez les yeux » / « Vous fermez les yeux »</span></div>
+    <p class="vdesc">Plus imagé, toujours en vouvoyant.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="p1">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+      <div class="ps"><span data-sleep="Vous fermez les yeux">Vous ouvrez les yeux</span></div><div class="seal"></div>
+    </div></div>
+  </div>
+
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose sur le parchemin (taille, place, son, durée) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+// One clock for every frame: asleep, wake at 2.5 s, awake until 9.5 s, then back to sleep.
+(() => {
+  const LOOP = 13000, WAKE = 2500, SLEEP = 9500;
+  const UNROLL = 450, HOLD = 2500, ROLL = 400;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const ease = x => 1 - Math.pow(1 - x, 3);
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const W = 1060, H = 120, CX = 800, CY = 470;
+
+  function strip(s, w, h, cx, cy, op = 1) {
+    const p = s.querySelector(".ps");
+    p.style.width = w + "px"; p.style.height = h + "px";
+    p.style.left = (cx - w / 2) + "px"; p.style.top = (cy - h / 2) + "px";
+    p.style.opacity = (w < 1 || h < 1) ? 0 : op;
+  }
+  // 0 -> 1 while unrolling, 1 while held, 1 -> 0 while rolling up (k = time since waking)
+  const open = k => k <= 0 ? 0 : k < UNROLL ? ease(k / UNROLL) : k < HOLD ? 1 : 1 - ease(clamp((k - HOLD) / ROLL));
+  const after = k => clamp((k - HOLD) / ROLL);
+
+  function seal(s, k) {
+    const e = s.querySelector(".seal"); if (!e) return;
+    const stamp = clamp((k - UNROLL + 100) / 220);
+    const on = k > UNROLL - 100 && k < HOLD;
+    e.style.left = (CX + W / 2 - 95) + "px"; e.style.top = CY + "px";
+    e.style.opacity = on ? 1 : 0;
+    e.style.transform = `scale(${lerp(1.9, 1, ease(stamp))}) rotate(-12deg)`;
+  }
+
+  const fx = {
+    p1(s, k) { strip(s, W * open(k), H, CX, CY); seal(s, k); },
+    p2(s, k, t) {
+      strip(s, W * open(k), H, CX, CY);
+      const r = s.querySelector(".roll");
+      const a = after(k);
+      const gone = t >= SLEEP ? clamp((t - SLEEP) / 500) : 0;
+      // flies from the centre to under your card (407, 482)
+      const fly = ease(clamp((k - HOLD - ROLL * .6) / 600));
+      r.style.left = (lerp(CX, 407, fly) - 75) + "px"; r.style.top = (lerp(CY, 482, fly) - 13) + "px";
+      r.style.opacity = k > HOLD + ROLL * .6 ? 1 - gone : 0;
+      r.style.transform = `scale(${lerp(1.4, 1, fly) * (1 - gone * .5)})`;
+    },
+    p3(s, k, t) {
+      const p = s.querySelector(".ps");
+      if (k < HOLD) { p.classList.remove("ps--burn"); strip(s, W * open(k), H, CX, CY); return; }
+      p.classList.add("ps--burn");
+      const m = ease(clamp((k - HOLD) / 500));              // to the band at your edge of the table
+      const burn = clamp((k - HOLD - 500) / (SLEEP - WAKE - HOLD - 500));
+      const out = t >= SLEEP ? clamp((t - SLEEP) / 500) : 0;
+      const w = lerp(W, 980, m) * (1 - .9 * burn) * (1 - out);
+      strip(s, w, lerp(H, 42, m), CX, lerp(CY, 792, m));
+    },
+    p4(s, k, t) {
+      const p = s.querySelector(".ps");
+      const full = 300, tab = 46;
+      let h = k <= 0 ? 0 : k < UNROLL ? full * ease(k / UNROLL) : k < HOLD ? full : lerp(full, tab, ease(after(k)));
+      if (t >= SLEEP) h = tab * (1 - ease(clamp((t - SLEEP) / 400)));
+      p.style.width = "430px"; p.style.height = h + "px"; p.style.left = (CX - 215) + "px"; p.style.top = "186px";
+      p.style.opacity = h < 1 ? 0 : 1;
+      p.querySelector("span").style.opacity = h > 120 ? 1 : 0;
+    },
+    still(s) { strip(s, W, H, CX, CY); seal(s, 1000); },
+  };
+
+  // the sleep parchment: same unroll / hold / roll-up, shorter hold, centred (hanging from the cork in P4)
+  const SLEEP_HOLD = 1800;
+  const sleepOpen = q => q <= 0 ? 0 : q < UNROLL ? ease(q / UNROLL) : q < SLEEP_HOLD ? 1 : 1 - ease(clamp((q - SLEEP_HOLD) / ROLL));
+  function sleepStrip(s, t) {
+    const q = t - SLEEP, o = sleepOpen(q), p = s.querySelector(".ps");
+    p.classList.remove("ps--burn");
+    if (p.classList.contains("ps--v")) {
+      p.style.width = "430px"; p.style.height = (300 * o) + "px"; p.style.left = (CX - 215) + "px"; p.style.top = "186px";
+      p.style.opacity = o > 0 ? 1 : 0; p.querySelector("span").style.opacity = o > .4 ? 1 : 0;
+    } else strip(s, W * o, H, CX, CY);
+    const e = s.querySelector(".seal");
+    if (e) {
+      const stamp = clamp((q - UNROLL + 100) / 220);
+      e.style.left = (CX + W / 2 - 95) + "px"; e.style.top = CY + "px";
+      e.style.opacity = q > UNROLL - 100 && q < SLEEP_HOLD ? 1 : 0;
+      e.style.transform = `scale(${lerp(1.9, 1, ease(stamp))}) rotate(-12deg)`;
+    }
+  }
+
+  function show(t) {
+    const awake = t >= WAKE && t < SLEEP;
+    const k = awake ? t - WAKE : (t >= SLEEP ? 99999 : 0);
+    const level = t < WAKE ? 0 : t < SLEEP ? clamp((t - WAKE) / 900) : 1 - clamp((t - SLEEP) / 800);
+    document.querySelectorAll(".tn-stage").forEach(s => {
+      const still = s.dataset.fx === "still";
+      s.querySelector(".tn-awake").style.opacity = still ? 1 : level;
+      const span = s.querySelector(".ps span");
+      if (span && span.dataset.sleep) {
+        if (!span.dataset.wake) span.dataset.wake = span.textContent;
+        span.textContent = t >= SLEEP ? span.dataset.sleep : span.dataset.wake;
+      }
+      fx[s.dataset.fx](s, k, t);
+      if (t >= SLEEP && s.dataset.fx !== "still") sleepStrip(s, t);
+    });
+    document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  if (at !== null) { show(+at); return; }
+  const loopBtn = document.querySelector(".tn-moments button[data-loop]");
+  document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+  loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

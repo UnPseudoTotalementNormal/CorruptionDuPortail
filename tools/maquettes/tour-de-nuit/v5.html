@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T21, savoir la nuit si c'est à nous de jouer, tour 5 : le parchemin qui brûle</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .tn-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tn-awake { opacity: 0; }
+
+  /* the parchment: a canvas (it burns pixel by pixel) inside a box that unrolls between two rollers */
+  .pw { position: absolute; left: 0; top: 0; width: 1060px; height: 120px; transform-origin: 50% 50%; }
+  .pw-clip { position: absolute; top: 0; bottom: 0; left: 50%; overflow: hidden; }
+  .pw-clip canvas { position: absolute; top: 0; left: 50%; margin-left: -530px; width: 1060px; height: 120px; }
+  .pw-shadow { position: absolute; inset: 6px 10px; box-shadow: 0 12px 30px rgba(0,0,0,.7); }
+  .pw-roller { position: absolute; top: -6px; bottom: -6px; width: 22px; border-radius: 11px; margin-left: -11px;
+               background: linear-gradient(90deg, #6b4a2a, #c9a46a 50%, #6b4a2a); }
+
+  .tn-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tn-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tn-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tn-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tn-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="tour-de-nuit">
+
+<header class="page">
+  <h1>La nuit : est-ce à moi de jouer ? (tour 5, il se consume)</h1>
+  <p>Tes retours du tour 4 : les mots <b>T2</b>, « Vous vous éveillez » / « Vous vous rendormez », choisis. <b>P3</b> :
+     « j'aime bien l'idée qu'il se consume mais pas comme ça ».</p>
+  <p>Ici la brûlure est une vraie brûlure : le papier noircit, un liseré de braise avance avec un bord déchiqueté, il ne
+     reste rien derrière. Trois façons de s'en servir. Endormi, l'écran reste celui d'aujourd'hui ; quand ton tour finit,
+     « Vous vous rendormez » se déroule puis s'enroule (comme au tour 4). Mêmes vraies captures (client en réseau, la Dryade).</p>
+</header>
+
+<nav class="tn-moments"><div>
+  <button data-at="1000">1. Nuit, pas à toi</button>
+  <button data-at="3600">2. Le réveil</button>
+  <button data-at="5300">2b. Il prend feu</button>
+  <button data-at="7000">3. Ton tour, plus tard</button>
+  <button data-at="10300">4. Tu te rendors</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>Comment il se consume</h2>
+  <p>Même nuit, mêmes mots partout. À regarder en boucle : la brûlure est un mouvement.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Un billet qui brûle à ta place</span></div>
+    <p class="vdesc">Après 2 secondes, le parchemin se replie en un petit billet posé sur la table de ton côté, près de tes
+       lettres. Il brûle lentement d'un bout à l'autre pendant tout ton tour : ce qui reste, c'est le temps qu'il te reste.
+       Les dernières braises s'éteignent quand tu te rendors.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="note">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">La mèche</span></div>
+    <p class="vdesc">Après 2 secondes, le parchemin se roule en une mèche le long du bord de la table, devant toi. Une braise la
+       remonte de droite à gauche pendant tout ton tour, comme une mèche qui se consume ; quand elle arrive au bout, tu te
+       rendors.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="fuse">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Il brûle tout de suite</span></div>
+    <p class="vdesc">Pas de minuteur : après 2 secondes, le parchemin prend feu par un coin et part en cendres en une seconde, au
+       milieu de la table. « Vous vous rendormez » fait pareil à la fin de ton tour. La brûlure, c'est sa façon de partir.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="flash">
+      <img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt="">
+    </div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (vitesse de la brûlure, place, fumée, son de feu) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const LOOP = 13000, WAKE = 2500, SLEEP = 9500;
+  const UNROLL = 450, HOLD = 2500, ROLL = 400, SLEEP_HOLD = 1800;
+  const PW = 1060, PH = 120, CX = 800, CY = 470;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const ease = x => 1 - Math.pow(1 - x, 3);
+  const lerp = (a, b, k) => a + (b - a) * k;
+
+  // ---- value noise (2 octaves), deterministic
+  function noiseField(w, h, seed) {
+    let s = seed; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const grid = (g) => { const gw = Math.ceil(w / g) + 2, gh = Math.ceil(h / g) + 2, a = new Float32Array(gw * gh);
+      for (let i = 0; i < a.length; i++) a[i] = rnd(); return { g, gw, a }; };
+    const oct = [grid(46), grid(13)];
+    const sm = t => t * t * (3 - 2 * t);
+    const at = (o, x, y) => { const gx = x / o.g, gy = y / o.g, x0 = gx | 0, y0 = gy | 0, fx = sm(gx - x0), fy = sm(gy - y0);
+      const v = (i, j) => o.a[j * o.gw + i];
+      return lerp(lerp(v(x0, y0), v(x0 + 1, y0), fx), lerp(v(x0, y0 + 1), v(x0 + 1, y0 + 1), fx), fy); };
+    const f = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) f[y * w + x] = at(oct[0], x, y) * .7 + at(oct[1], x, y) * .3;
+    return f;
+  }
+
+  // ---- a parchment with text, drawn once, then burnt along a field: v < p gone, ember edge, char, scorch
+  const parchmentImg = new Image(); parchmentImg.src = "../common/parchment.webp";
+  const sealImg = new Image(); sealImg.src = "../common/waxseal.webp";
+
+  function makeSheet(text, withSeal, dir, seed) {
+    const c = document.createElement("canvas"); c.width = PW; c.height = PH;
+    const src = document.createElement("canvas"); src.width = PW; src.height = PH;
+    const noise = noiseField(PW, PH, seed);
+    const field = new Float32Array(PW * PH);
+    for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+      const u = x / PW, v = y / PH;
+      const g = dir === "rl" ? 1 - u : dir === "corner" ? 1 - Math.hypot((1 - u) * 1.0, (1 - v) * .35) / 1.06 : u;
+      field[y * PW + x] = g * .82 + noise[y * PW + x] * .18;
+    }
+    const sheet = { c, src, field, text, withSeal, drawn: false, lastP: -1 };
+    return sheet;
+  }
+  function drawSource(sheet) {
+    const g = sheet.src.getContext("2d");
+    g.clearRect(0, 0, PW, PH);
+    g.drawImage(parchmentImg, 0, 0, 1024, 1024, 0, 0, PW, PW);
+    g.font = '68px "Fell"'; g.fillStyle = "#3a2414"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(sheet.text, PW / 2 - (sheet.withSeal ? 55 : 0), PH / 2 + 4);
+    if (sheet.withSeal) {
+      const t = document.createElement("canvas"); t.width = t.height = 96; const tg = t.getContext("2d");
+      tg.drawImage(sealImg, 0, 0, 96, 96); tg.globalCompositeOperation = "source-in";
+      const rg = tg.createRadialGradient(38, 34, 4, 48, 48, 50); rg.addColorStop(0, "#c0392b"); rg.addColorStop(.55, "#7a1712"); rg.addColorStop(.8, "#4a0d0a");
+      tg.fillStyle = rg; tg.fillRect(0, 0, 96, 96);
+      g.save(); g.translate(PW - 95, PH / 2); g.rotate(-.2); g.drawImage(t, -48, -48); g.restore();
+    }
+    sheet.pixels = g.getImageData(0, 0, PW, PH);
+    sheet.drawn = true;
+  }
+  function burn(sheet, p) {
+    if (!sheet.drawn) return;
+    if (Math.abs(p - sheet.lastP) < .0005) return;
+    sheet.lastP = p;
+    const g = sheet.c.getContext("2d");
+    const out = g.createImageData(PW, PH), s = sheet.pixels.data, d = out.data, f = sheet.field;
+    const E = .012, C = .045, S = .11;
+    for (let i = 0, n = PW * PH; i < n; i++) {
+      const v = f[i] - p, j = i * 4;
+      if (v < 0) { d[j + 3] = 0; continue; }
+      let r = s[j], gg = s[j + 1], b = s[j + 2], a = s[j + 3];
+      if (v < E) { const k = v / E; r = lerp(255, 200, k); gg = lerp(210, 80, k); b = lerp(120, 20, k); }
+      else if (v < C) { const k = (v - E) / (C - E); r = lerp(60, r * .55, k); gg = lerp(28, gg * .45, k); b = lerp(12, b * .35, k); }
+      else if (v < S) { const k = (v - C) / (S - C); r *= lerp(.55, 1, k); gg *= lerp(.45, 1, k); b *= lerp(.35, 1, k); }
+      d[j] = r; d[j + 1] = gg; d[j + 2] = b; d[j + 3] = a;
+    }
+    g.putImageData(out, 0, 0);
+  }
+
+  // ---- a parchment box (rollers + clip) placed on a stage
+  function makeBox(stage, sheet) {
+    const box = document.createElement("div"); box.className = "pw";
+    box.innerHTML = '<div class="pw-shadow"></div><div class="pw-clip"></div><div class="pw-roller"></div><div class="pw-roller"></div>';
+    box.querySelector(".pw-clip").appendChild(sheet.c);
+    stage.appendChild(box);
+    return box;
+  }
+  // open = 0..1 unrolled; rollers shown or not; position by centre, scale (sx, sy)
+  function place(box, open, cx, cy, sx, sy, rollers, visible) {
+    const w = PW * open;
+    const clip = box.querySelector(".pw-clip");
+    clip.style.width = w + "px"; clip.style.marginLeft = (-w / 2) + "px";
+    const [r1, r2] = box.querySelectorAll(".pw-roller");
+    r1.style.left = (PW / 2 - w / 2) + "px"; r2.style.left = (PW / 2 + w / 2) + "px";
+    r1.style.display = r2.style.display = rollers ? "" : "none";
+    box.querySelector(".pw-shadow").style.display = rollers ? "" : "none";
+    box.style.transform = `translate(${cx - PW / 2}px, ${cy - PH / 2}px) scale(${sx}, ${sy})`;
+    box.style.opacity = visible && open > .01 ? 1 : 0;
+  }
+  const unroll = k => k <= 0 ? 0 : k < UNROLL ? ease(k / UNROLL) : 1;
+
+  const frames = [];
+  document.querySelectorAll(".tn-stage").forEach((stage, i) => {
+    const fx = stage.dataset.fx;
+    const wakeSheet = makeSheet("Vous vous éveillez", true, fx === "fuse" ? "rl" : fx === "flash" ? "corner" : "lr", 11 + i);
+    const sleepSheet = makeSheet("Vous vous rendormez", true, "corner", 97 + i);
+    const F = { stage, fx, wakeSheet, sleepSheet, wakeBox: makeBox(stage, wakeSheet), sleepBox: makeBox(stage, sleepSheet) };
+    if (fx === "fuse") { F.cordSheet = makeSheet("", false, "rl", 41 + i); F.cordBox = makeBox(stage, F.cordSheet); }
+    frames.push(F);
+  });
+
+  function show(t) {
+    const awake = t >= WAKE && t < SLEEP;
+    const k = t - WAKE, q = t - SLEEP;
+    const level = t < WAKE ? 0 : t < SLEEP ? clamp(k / 900) : 1 - clamp(q / 800);
+    for (const F of frames) {
+      F.stage.querySelector(".tn-awake").style.opacity = level;
+      const B = F.wakeBox, S = F.wakeSheet;
+      if (F.cordBox && (t < WAKE || k < HOLD)) place(F.cordBox, 0, CX, CY, 1, 1, true, false);
+      if (!awake && t < WAKE) { place(B, 0, CX, CY, 1, 1, true, false); }
+      else if (k < HOLD) { burn(S, 0); place(B, unroll(k), CX, CY, 1, 1, true, true); }
+      else if (F.fx === "note") {
+        // fold into a small note on your side (near your letters), burn over the turn, last embers at sleep
+        const m = ease(clamp((k - HOLD) / 600));
+        const turn = SLEEP - WAKE - HOLD - 600;
+        const p = t < SLEEP ? .9 * clamp((k - HOLD - 600) / turn) : .9 + .25 * clamp(q / 600);
+        burn(S, p);
+        place(B, 1, lerp(CX, 420, m), lerp(CY, 668, m), lerp(1, .36, m), lerp(1, .5, m), m < .5, true);
+      } else if (F.fx === "fuse") {
+        const m = ease(clamp((k - HOLD) / 500));
+        const turn = SLEEP - WAKE - HOLD - 500;
+        const p = t < SLEEP ? clamp((k - HOLD - 500) / turn) : 1.1;
+        // the text fades while the sheet rolls into a plain cord, which then burns
+        place(B, 1, CX, lerp(CY, 795, m), lerp(1, .93, m), lerp(1, .2, m), m < .5, true);
+        B.style.opacity = 1 - clamp(m * 2.5);
+        burn(F.cordSheet, p * .98);
+        place(F.cordBox, 1, CX, lerp(CY, 795, m), lerp(1, .93, m), lerp(1, .2, m), m < .5, true);
+      } else {
+        // flash: catches fire at once, gone in about a second
+        const p = clamp((k - HOLD) / 1000) * 1.12;
+        burn(S, p);
+        place(B, 1, CX, CY, 1, 1, false, p < 1.1);
+      }
+      // the sleep parchment
+      const SB = F.sleepBox, SS = F.sleepSheet;
+      if (t < SLEEP) { place(SB, 0, CX, CY, 1, 1, true, false); continue; }
+      if (F.fx === "flash" && q >= SLEEP_HOLD) {
+        const p = clamp((q - SLEEP_HOLD) / 1000) * 1.12; burn(SS, p); place(SB, 1, CX, CY, 1, 1, false, p < 1.1);
+      } else {
+        burn(SS, 0);
+        const o = q < SLEEP_HOLD ? unroll(q) : 1 - ease(clamp((q - SLEEP_HOLD) / ROLL));
+        place(SB, o, CX, CY, 1, 1, true, true);
+      }
+    }
+    document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+
+  let looping = false, start = 0, ready = false;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  const loopBtn = document.querySelector(".tn-moments button[data-loop]");
+  const go = () => {
+    frames.forEach(F => { [F.wakeSheet, F.sleepSheet, F.cordSheet].forEach(S => { if (S) { drawSource(S); S.lastP = -1; } }); });
+    if (at !== null) { show(+at); return; }
+    document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+    loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+    loopBtn.click();
+  };
+  Promise.all([document.fonts.load('68px "Fell"'),
+    new Promise(r => parchmentImg.complete ? r() : parchmentImg.onload = r),
+    new Promise(r => sealImg.complete ? r() : sealImg.onload = r)]).then(go);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

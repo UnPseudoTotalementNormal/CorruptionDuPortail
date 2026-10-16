@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T21, savoir la nuit si c'est à nous de jouer, tour 2 : un vrai moment, dans le décor</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Fell"; src: url("../fonts/IMFellEnglish-Regular.ttf"); }
+  .tn-world { position: absolute; inset: 0; transform-origin: 50% 62%; }
+  .tn-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tn-awake { opacity: 0; }
+  .tn-crop { position: absolute; background-image: url(img/eveille.jpg); background-size: 1600px 900px; opacity: 0; }
+
+  /* W1: a lamp over your side of the table */
+  .tn-shade { position: absolute; inset: 0; opacity: 0; background: rgba(4, 6, 14, .5); }
+  .tn-pool { position: absolute; left: 100px; top: 380px; width: 1400px; height: 820px; border-radius: 50%; opacity: 0; mix-blend-mode: screen;
+             background: radial-gradient(ellipse, rgba(255,200,120,.55), rgba(255,180,100,.18) 45%, rgba(255,170,90,0) 70%); }
+
+  /* W2: the power button pops up */
+  .tn-btn { left: 701px; top: 802px; width: 112px; height: 112px; border-radius: 50%; background-position: -701px -802px; }
+
+  /* W4: your card stands up toward you */
+  .tn-cardwrap { position: absolute; left: 336px; top: 257px; width: 143px; height: 198px; perspective: 700px; }
+  .tn-card { width: 100%; height: 100%; background-position: -336px -257px; transform-origin: 50% 100%; }
+  .tn-cardshadow { position: absolute; left: 334px; top: 255px; width: 147px; height: 202px; background: #17110d; box-shadow: 0 0 18px 10px #17110d; opacity: 0; }
+
+  /* W5: the eyes on the card backs flare */
+  .tn-eye { position: absolute; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; opacity: 0; mix-blend-mode: screen;
+            background: radial-gradient(circle, rgba(255,70,50,.95), rgba(220,30,30,.45) 30%, rgba(200,20,20,0) 68%); }
+
+  /* W6: a parchment strip unrolls across the table, then rolls up */
+  .tn-scroll { position: absolute; left: 800px; top: 410px; height: 120px; width: 0; transform: translateX(-50%); overflow: hidden;
+               background: url(../common/parchment.webp) center / cover; box-shadow: 0 10px 30px rgba(0,0,0,.7);
+               display: flex; align-items: center; justify-content: center; }
+  .tn-scroll span { font: 68px "Fell", serif; color: #3a2414; white-space: nowrap; }
+  .tn-scroll::before, .tn-scroll::after { content: ""; position: absolute; top: -8px; bottom: -8px; width: 22px; border-radius: 11px;
+               background: linear-gradient(90deg, #6b4a2a, #c9a46a 50%, #6b4a2a); }
+  .tn-scroll::before { left: 0; } .tn-scroll::after { right: 0; }
+
+  .tn-help { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font: 64px Arial, "Liberation Sans", sans-serif; color: #fff; opacity: 0; }
+
+  .tn-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tn-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tn-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tn-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tn-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="tour-de-nuit">
+
+<header class="page">
+  <h1>La nuit : est-ce à moi de jouer ? (tour 2)</h1>
+  <p>Tes retours du tour 1 : aucune ne va ; <b>pas assez marquant</b>, et <b>ne pas cacher la vue</b> de celui qui dort
+     (les paupières : « sympa mais chiant »). Essais <b>sans interface</b>, divers.</p>
+  <p>Donc ici : endormi, l'écran reste celui d'aujourd'hui, rien ne le couvre. Au réveil, un vrai moment (en boucle sur
+     chaque cadre, avec le son de réveil actuel), puis quelque chose dans le décor qui reste tout ton tour. Mêmes vraies
+     captures qu'au tour 1 (client en réseau, la Dryade). Tout utilise ce qui existe déjà dans la scène (lumières, bouton,
+     cartes), sauf W6 qui garde un peu d'interface pour comparer.</p>
+</header>
+
+<nav class="tn-moments"><div>
+  <button data-at="1000">1. Nuit, pas à toi</button>
+  <button data-at="2900">2. Le réveil (le moment)</button>
+  <button data-at="7000">3. Ton tour, plus tard</button>
+  <button data-at="10300">4. Tu te rendors</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>Ce qui marque le réveil, puis reste pendant ton tour</h2>
+  <p>Même nuit, mêmes cartes partout. Le moment 2 fige le milieu de l'animation : regarde-le aussi en boucle.</p>
+
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Aujourd'hui (référence)</span></div>
+    <p class="vdesc">Texte 3 s, plateau un peu plus clair, bouton rouge.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="base">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-help">Vous vous éveillez...</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">La lampe s'allume sur toi</span></div>
+    <p class="vdesc">Au réveil, une lampe au-dessus de ta place grésille deux fois puis s'allume franchement : ton côté de la
+       table (ton bouton, tes lettres) passe au chaud, le reste de la pièce bleuit. Elle reste allumée tout ton tour et
+       s'éteint quand tu te rendors. Même famille que les lampes du liège et des lettres.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="lamp">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-shade"></div><div class="tn-pool"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Le bouton se lève</span></div>
+    <p class="vdesc">Le gros bouton de pouvoir devant toi jaillit vers toi en rebondissant, puis bat doucement en rouge tout ton
+       tour, comme un cœur. Endormi, il reste enfoncé et éteint (comme aujourd'hui). L'œil va droit là où il faut agir.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="button">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-crop tn-btn"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W3">
+    <div class="vhead"><span class="vid">W3</span><span class="vname">Tu te penches sur la table</span></div>
+    <p class="vdesc">Au réveil, la caméra plonge d'un coup vers la table (comme quand on se redresse et se penche), puis se
+       pose un peu plus près que d'habitude tout ton tour ; elle recule quand tu te rendors. Tout le plateau reste visible.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="camera">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W4">
+    <div class="vhead"><span class="vid">W4</span><span class="vname">Ta carte se dresse</span></div>
+    <p class="vdesc">Ta carte de rôle se relève d'un coup vers toi (comme les cartes levées essayées pour le jour) et reste
+       debout tout ton tour ; elle se recouche quand tu te rendors. Endormi, elle est à plat comme aujourd'hui.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="card">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-cardshadow"></div>
+      <div class="tn-cardwrap"><div class="tn-crop tn-card"></div></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W5">
+    <div class="vhead"><span class="vid">W5</span><span class="vname">Les yeux s'allument</span></div>
+    <p class="vdesc">Au réveil, l'œil rouge au dos de chaque carte s'embrase d'un coup, puis reste rougeoyant tout ton tour : la
+       table te regarde, c'est à toi d'agir. Endormi, les yeux restent ternes comme aujourd'hui.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="eyes">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-eye" style="left:565px; top:355px"></div><div class="tn-eye" style="left:722px; top:355px"></div>
+      <div class="tn-eye" style="left:879px; top:355px"></div><div class="tn-eye" style="left:1036px; top:355px"></div>
+      <div class="tn-eye" style="left:1193px; top:355px"></div><div class="tn-eye" style="left:722px; top:632px"></div>
+      <div class="tn-eye" style="left:879px; top:632px"></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="W6">
+    <div class="vhead"><span class="vid">W6</span><span class="vname">Le parchemin (un peu d'interface, pour comparer)</span></div>
+    <p class="vdesc">Au réveil, un parchemin se déroule en travers de la table, « À toi », dans le style du livre des
+       personnages, puis se ré-enroule après 2 secondes. Ensuite il ne reste que le plateau éclairé et le bouton rouge
+       d'aujourd'hui : c'est le moment qui marque, pas la durée.</p>
+    <div class="screen"><div class="stage tn-stage" data-fx="scroll">
+      <div class="tn-world"><img class="tn-bg" src="img/endormi.jpg" alt=""><img class="tn-bg tn-awake" src="img/eveille.jpg" alt=""></div>
+      <div class="tn-scroll"><span>À toi</span></div>
+    </div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Plusieurs peuvent se combiner (ex. la lampe et le bouton) : dis lesquels.</label>
+  <textarea id="global" placeholder="Ta réponse, ou autre chose"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+// One clock for every frame: asleep, wake at 2.5 s (the moment lasts 1.5 s), awake until 9.5 s, then back to sleep.
+(() => {
+  const LOOP = 12000, WAKE = 2500, MOMENT = 1500, SLEEP = 9500, OUT = 800;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const easeOut = x => 1 - Math.pow(1 - x, 3);
+  // a spring that overshoots then settles on 1
+  const spring = x => x <= 0 ? 0 : 1 - Math.exp(-6 * x) * Math.cos(11 * x);
+
+  const fx = {
+    base(s, t, w, level, wakeT) {
+      const help = s.querySelector(".tn-help");
+      if (help) help.style.opacity = (wakeT > 300 && wakeT < 2750) ? 1 : 0;
+    },
+    lamp(s, t, w, level, wakeT) {
+      // two flickers, then on
+      const fl = w <= 0 ? 0 : w < .12 ? 1 : w < .2 ? .1 : w < .3 ? .85 : w < .38 ? .15 : 1;
+      const k = level * (w < 1 && t < SLEEP ? fl : 1);
+      s.querySelector(".tn-pool").style.opacity = k;
+      s.querySelector(".tn-shade").style.opacity = k;
+    },
+    button(s, t, w, level, wakeT) {
+      const b = s.querySelector(".tn-btn");
+      const up = t < SLEEP ? spring(wakeT / 900) : 1 - clamp((t - SLEEP) / 500);
+      const beat = t >= WAKE && t < SLEEP + OUT ? .55 + .45 * Math.max(0, Math.sin((t - WAKE) / 160)) ** 6 : 0;
+      b.style.opacity = level > 0 ? 1 : 0;
+      b.style.transform = `translateY(${-30 * up}px) scale(${1 + .32 * up})`;
+      b.style.boxShadow = `0 ${16 * up}px ${26 * up}px rgba(0,0,0,.7), 0 0 ${70 * beat * level}px rgba(255,40,30,${.85 * beat * level})`;
+    },
+    camera(s, t, w, level, wakeT) {
+      const punch = wakeT > 0 && wakeT < 1200 ? Math.sin(Math.PI * wakeT / 1200) : 0;
+      s.querySelector(".tn-world").style.transform = `scale(${1 + level * .05 + punch * .06})`;
+    },
+    card(s, t, w, level, wakeT) {
+      const c = s.querySelector(".tn-card");
+      const up = t < SLEEP ? spring(wakeT / 800) : 1 - easeOut(clamp((t - SLEEP) / 600));
+      c.style.opacity = up > 0.001 ? 1 : 0;
+      c.style.transform = `translateY(${-6 * up}px) rotateX(${-34 * up}deg) scale(${1 + .08 * up})`;
+      c.style.boxShadow = `0 0 ${40 * up}px rgba(255,200,120,${.5 * up})`;
+      s.querySelector(".tn-cardshadow").style.opacity = Math.min(1, up * 1.2) * .85;
+    },
+    eyes(s, t, w, level, wakeT) {
+      const flare = wakeT <= 0 ? 0 : wakeT < 250 ? wakeT / 250 * 1.4 : 1.4 - .55 * clamp((wakeT - 250) / 900);
+      const pulse = .85 + .15 * Math.sin(t / 420);
+      const k = t < SLEEP ? flare * pulse : level * .85 * pulse;
+      s.querySelectorAll(".tn-eye").forEach(e => { e.style.opacity = Math.min(1, k); e.style.transform = `scale(${.7 + .4 * Math.min(1.4, k)})`; });
+    },
+    scroll(s, t, w, level, wakeT) {
+      const open = wakeT <= 0 ? 0 : wakeT < 450 ? easeOut(wakeT / 450) : wakeT < 2500 ? 1 : 1 - easeOut(clamp((wakeT - 2500) / 400));
+      s.querySelector(".tn-scroll").style.width = (900 * open) + "px";
+    },
+  };
+
+  function show(t) {
+    const wakeT = t >= WAKE && t < SLEEP ? t - WAKE : (t >= SLEEP ? 99999 : 0);
+    const w = clamp(wakeT / MOMENT);
+    const level = t < WAKE ? 0 : t < SLEEP ? clamp((t - WAKE) / 900) : 1 - clamp((t - SLEEP) / OUT);
+    document.querySelectorAll(".tn-stage").forEach(s => {
+      s.querySelector(".tn-awake").style.opacity = level;
+      fx[s.dataset.fx](s, t, t >= SLEEP ? 1 : w, level, t >= SLEEP ? 99999 : wakeT);
+    });
+    document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  if (at !== null) { show(+at); return; }
+  const loopBtn = document.querySelector(".tn-moments button[data-loop]");
+  document.querySelectorAll(".tn-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+  loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

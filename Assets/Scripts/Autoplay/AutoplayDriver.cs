@@ -132,6 +132,9 @@ namespace Autoplay
         public bool povTour;
         [Tooltip("POV tour: game seconds of the head sweep left to right (then half of it up).")]
         public float povSweepSeconds = 6f;
+        [Tooltip("Turn captures (-autoplay-turn-captures), board task T21: clean captures at night when this process's seat " +
+                 "wakes (turn-mine-*) and while it sleeps through another layer (turn-other-*).")]
+        public bool turnCaptures;
     }
 
     /// <summary>
@@ -330,6 +333,7 @@ namespace Autoplay
             UpdateTour(_state);
             UpdateCardVisibility(_state);
             UpdateSurroundings(_state);
+            UpdateTurnCaptures(_state);
 
             switch (_state)
             {

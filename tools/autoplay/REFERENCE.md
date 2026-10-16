@@ -190,6 +190,13 @@ capture. The runner runs every step as its own coroutine, so a failed run stops 
   powers, picker state, `frostAlpha`, pickable cards, knowledge) and `NNN-label.jpg` (JPEG q85; not in batchmode / `no-png`).
 - Recordings: `rec-NNN-label/` with `f###.png`, `tracks.csv`, `manifest.json`. Tracks: `stateIndex`, `frost`,
   `lifted`, `card0..9` transforms (`.x .y .z` …).
+- A player's-eye capture belongs on a **client**: the host's screen follows the bot it possessed last (its seat, its
+  cards, everything that bot knows), and `GetLocalCharacter` follows it too; find the process's own seat by
+  `ownerClientId == LocalClientId`. Clients start at 640 x 360: a lever that captures for a human grows the window
+  (`Screen.SetResolution`, as `turn-captures` does).
+- `The message header is corrupted and for security reasons connection will be terminated` (after `DisconnectMsg.Process`)
+  on every process at the same instant is the dev player's connection to an editor / profiler, not the game's network:
+  rerun before suspecting a change (seen once, 2026-10-16, absent on the rerun).
 
 ## Scenario checks (`run_scenario.py`)
 

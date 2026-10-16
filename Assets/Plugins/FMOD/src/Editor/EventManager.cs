@@ -419,6 +419,11 @@ namespace FMODUnity
 
                         FMOD.GUID guid;
                         eventDesc.getID(out guid);
+                        // [CdP patch] No path without its strings (see EditorBankRef.SetStudioPath): name it by its GUID.
+                        if (result != FMOD.RESULT.OK || string.IsNullOrEmpty(path))
+                        {
+                            path = "event:/" + guid;
+                        }
 
                         EditorEventRef eventRef = eventCache.EditorEvents.Find((x) => string.Compare(x.Path, path, StringComparison.CurrentCultureIgnoreCase) == 0);
                         if (eventRef == null)

@@ -426,7 +426,18 @@ namespace Autoplay
             {
                 gameManager.RejoinGraceSeconds = rejoinGraceSeconds;
             }
-            int _clients = _context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
+            // T19: a shorter vote, to film its whole last minute (the vote candle) without waiting five minutes. Host
+            // only: the server runs the timer; a client's candle melts from its own copy of the duration.
+            float _voteDuration = ParseSeconds(_context.Config.Option("vote-duration"));
+            if (_voteDuration > 0f)
+            {
+                foreach (VoteState _vote in gameManager.GetGameStates(typeof(VoteState)).OfType<VoteState>())
+                {
+                    _vote.voteDuration = _voteDuration;
+                }
+                _context.Journal.Record("vote.duration", string.Format(CultureInfo.InvariantCulture, "{0:0}s", _voteDuration));
+            }
+            int _clients =_context.Config.OptionInt("expect-clients", _context.Config.OptionInt("clients", 0));
             float _spawnDuringLoad = ParseSeconds(_context.Config.Option("spawn-during-load"));
             if (_spawnDuringLoad > 0f)
             {

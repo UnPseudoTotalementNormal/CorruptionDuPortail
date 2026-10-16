@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, la fin du vote : un compte à rebours qui fait monter la tension (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cd-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cd-layer { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; }
+  .cd-multiply { mix-blend-mode: multiply; }
+  .cd-screen { mix-blend-mode: screen; }
+  .cd-today { position: absolute; left: 0; right: 0; top: 18px; text-align: center; color: #fff;
+              font: 50px/1 Arial, sans-serif; }
+  .cd-num { position: absolute; left: 800px; top: 96px; transform-origin: 50% 50%; white-space: nowrap;
+            font-family: "Fell", serif; line-height: 1; }
+
+  .cd-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .cd-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cd-moments button, .cd-play { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .cd-moments button.on, .cd-play.on { border-color: var(--accent); color: var(--accent); }
+  .cd-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+
+  .cd-strip { position: relative; height: 54px; margin: 6px 0 4px; background: #1b1511; border: 1px solid var(--line); }
+  .cd-strip i { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--soft); }
+  .cd-strip i.big { width: 14px; height: 14px; margin: -7px 0 0 -7px; background: var(--accent); }
+  .cd-strip b { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); display: none; }
+  .cd-strip-legend { display: flex; justify-content: space-between; color: var(--soft); font-size: 12px; }
+
+  .cd-line { position: relative; height: 34px; margin: 8px 0 4px; background: #1b1511; border: 1px solid var(--line); }
+  .cd-line .z { position: absolute; top: 0; bottom: 0; }
+  .cd-line .z.soft { background: linear-gradient(90deg, rgba(232,163,60,0), rgba(232,163,60,.55)); }
+  .cd-line .z.hard { background: rgba(224,71,44,.75); }
+  .cd-line .lab { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--fg); padding: 0 6px; white-space: nowrap; }
+  .cd-line-legend { position: relative; height: 16px; color: var(--soft); font-size: 12px; }
+  .cd-line-legend span { position: absolute; top: 0; }
+  .cd-line-legend span:nth-child(2) { left: 80%; transform: translateX(-50%); }
+  .cd-line-legend span:last-child { right: 0; }
+  .cd-case { color: var(--soft); font-size: 13px; margin: 10px 0 0; }
+</style>
+</head>
+<body data-subject="compte-a-rebours">
+
+<header class="page">
+  <h1>La fin du vote : un compte à rebours qui fait monter la tension (tour 1)</h1>
+  <p>Tâche T19, point 1 : « un compte à rebours visible/audible pendant le vote (tic-tac qui s'accélère, lumière qui change) ».
+     Aujourd'hui le vote dure 5 minutes, le temps restant est un nombre blanc en haut de l'écran (« 268 »), et il tombe à
+     5 secondes quand tout le monde a voté. Rien ne change à l'approche de la fin.</p>
+  <p>Fond : vraie capture du 1er vote (vue assise, lumières T11, partie réseau). Le sablier et la bougie sont dessinés
+     ici pour la maquette : en jeu ce seraient de vrais objets 3D posés sur la table. Les sons sont fabriqués par le
+     navigateur, provisoires : les vrais passeront par FMOD.</p>
+  <p>La boucle montre 2 secondes de vote calme (2 min 31 restantes), puis les 10 dernières secondes en temps réel, puis la
+     fin du vote, juste avant l'enchaînement. <b>🔊</b> ajoute le tic-tac de B1 aux cadres.</p>
+</header>
+
+<nav class="cd-moments"><div>
+  <button data-at="1200">1. Vote calme</button>
+  <button data-at="2700">2. 10 s</button>
+  <button data-at="7700">3. 5 s</button>
+  <button data-at="10850">4. 2 s</button>
+  <button data-at="13400">5. Fin du vote</button>
+  <button data-loop>▶ En boucle</button>
+  <button data-sound>🔊 Tic-tac</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>A. Ce qu'on voit</h2>
+  <p>Même vote, même moment sur chaque cadre. Les cartes restent toujours lisibles : rien ne couvre la table.</p>
+
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Aujourd'hui (pour comparer)</span></div>
+    <p class="vdesc">Le nombre de secondes en haut, il descend jusqu'à 0, rien d'autre ne bouge.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="today"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Le chiffre qui enfle</span></div>
+    <p class="vdesc">Le temps reste en haut, mais dans l'écriture du grimoire, discret pendant le vote (« 2:31 »). Sur les 10
+       dernières secondes il grossit, vire au rouge braise et cogne à chaque tic ; les 3 dernières, il tremble.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="num"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Le sablier</span></div>
+    <p class="vdesc">Plus de nombre : un sablier posé sur la table, à ta droite, qui se vide pendant tout le vote. Sur la fin, le
+       sable s'embrase et ne coule plus qu'un grain à chaque tic, qui fait une étincelle en tombant. Le dernier grain tombe
+       quand le vote se ferme.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="sand"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">La bougie</span></div>
+    <p class="vdesc">Plus de nombre : une bougie à ta gauche fond pendant le vote et éclaire un peu la table. Sur la fin, la
+       flamme se tord et sursaute à chaque tic ; à zéro elle s'éteint d'un coup, un filet de fumée, et l'enchaînement
+       commence dans cette pénombre.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="candle"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A4">
+    <div class="vhead"><span class="vid">A4</span><span class="vname">La salle qui s'assombrit</span></div>
+    <p class="vdesc">Le temps reste en haut, petit. Sur les 10 dernières secondes la salle autour de la table s'éteint peu à peu
+       et la table rougit ; la lampe au-dessus du chat d'en face palpite à chaque tic et grésille sur les 3 dernières.
+       La table elle-même reste éclairée.</p>
+    <div class="screen"><div class="stage cd-stage" data-fx="light"><img class="cd-bg" src="img/vote.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>B. Ce qu'on entend</h2>
+  <p>Les 10 dernières secondes, au casque si possible. Chaque point est un coup ; le gros point, la fin du vote.</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Une horloge qui s'emballe</span></div>
+    <p class="vdesc">Un tic-tac de bois, une fois par seconde, qui s'accélère jusqu'à la fin ; un claquement sec ferme le vote.</p>
+    <button class="cd-play" data-snd="clock">▶ Écouter</button>
+    <div class="cd-strip" data-snd="clock"></div>
+    <div class="cd-strip-legend"><span>10 s</span><span>0</span></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Un cœur qui bat</span></div>
+    <p class="vdesc">Un battement sourd, lent au début, de plus en plus rapide ; il s'arrête net à zéro.</p>
+    <button class="cd-play" data-snd="heart">▶ Écouter</button>
+    <div class="cd-strip" data-snd="heart"></div>
+    <div class="cd-strip-legend"><span>10 s</span><span>0</span></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Un tic-tac qui ne s'emballe pas, puis le glas</span></div>
+    <p class="vdesc">Un tic-tac lourd et régulier, qui ne presse pas : c'est l'attente qui pèse. À zéro, une cloche grave.</p>
+    <button class="cd-play" data-snd="knell">▶ Écouter</button>
+    <div class="cd-strip" data-snd="knell"></div>
+    <div class="cd-strip-legend"><span>10 s</span><span>0</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>C. À partir de quand</h2>
+  <p>Le vote dure 5 minutes. Quand la tension commence, et ce qui se passe quand tout le monde a voté (le minuteur tombe
+     alors à 5 secondes, c'est déjà le cas aujourd'hui).</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Les 10 dernières secondes seulement</span></div>
+    <p class="vdesc">4 min 50 de calme, puis tout d'un coup. Si tout le monde a voté, les 5 secondes qui restent sont jouées
+       comme la fin des 10 (on saute le début).</p>
+    <div class="cd-line"><div class="z hard" style="left:96.7%;right:0"></div><span class="lab" style="left:0">calme</span></div>
+    <div class="cd-line-legend"><span>5:00</span><span>1:00</span><span>0</span></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">La dernière minute, de plus en plus fort</span></div>
+    <p class="vdesc">À 1 minute le tic-tac commence, à peine audible, et l'effet visuel s'installe doucement ; il monte
+       jusqu'aux 10 dernières secondes, jouées en plein. Tout le monde a voté : 5 secondes en plein.</p>
+    <div class="cd-line"><div class="z soft" style="left:80%;right:3.3%"></div><div class="z hard" style="left:96.7%;right:0"></div><span class="lab" style="left:0">calme</span></div>
+    <div class="cd-line-legend"><span>5:00</span><span>1:00</span><span>0</span></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Seulement quand tout le monde a voté</span></div>
+    <p class="vdesc">Le vrai moment de tension, c'est quand le dernier a voté : les 5 secondes qui restent deviennent le compte à
+       rebours. Si le vote va au bout des 5 minutes, seulement les 10 dernières secondes, plus discrètes.</p>
+    <div class="cd-line"><div class="z soft" style="left:96.7%;right:0"></div><span class="lab" style="left:0">calme jusqu'au dernier vote</span></div>
+    <div class="cd-line-legend"><span>5:00</span><span>1:00</span><span>0</span></div>
+    <p class="cd-case">Dernier vote à 3:12 : le minuteur tombe à 0:05, et ces 5 secondes sont jouées en plein.</p>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (combiner un visuel et un son, un son que l'équipe a déjà, la durée du vote) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const LOOP = 15000, CALM = 2500, END = 12500, CALM_LEFT = 151;
+  const clamp = x => Math.max(0, Math.min(1, x));
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const ease = x => 1 - Math.pow(1 - x, 3);
+
+  // ---- the 10 last seconds: tick times (ms from 10 s left), accelerating, then the close
+  function schedule(kind) {
+    const out = [];
+    if (kind === "knell") { for (let t = 0; t < 10000; t += 1000) out.push(t); return out; }
+    if (kind === "heart") { let t = 0; while (t < 10000) { out.push(t); t += lerp(860, 330, Math.pow(t / 10000, 1.3)); } return out; }
+    let t = 0; while (t < 10000) { out.push(t); t += 1000 - 720 * Math.pow(t / 10000, 2); } return out;
+  }
+  const TICKS = schedule("clock");
+  function lastTick(cd) { let l = -1e9; for (const x of TICKS) { if (x <= cd) l = x; else break; } return l; }
+
+  // ---- state of the vote at loop time t
+  function state(t) {
+    if (t < CALM) return { phase: "calm", left: CALM_LEFT - t / 1000, T: 0, pulse: 0, cd: -1, end: 0 };
+    if (t < END) {
+      const cd = t - CALM, left = 10 - cd / 1000, lt = lastTick(cd);
+      return { phase: "count", left, T: 1 - left / 10, pulse: Math.exp(-(cd - lt) / 140), cd, since: cd - lt, end: 0 };
+    }
+    return { phase: "end", left: 0, T: 1, pulse: Math.exp(-(t - END) / 160), cd: 10000, since: t - END, end: (t - END) / (LOOP - END) };
+  }
+  const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+
+  // deterministic wobble
+  const wob = (t, s) => Math.sin(t * .011 + s) * .5 + Math.sin(t * .027 + s * 2.3) * .3 + Math.sin(t * .061 + s * 5.1) * .2;
+
+  // ================= A0 : today
+  function mkToday(stage) {
+    const d = document.createElement("div"); d.className = "cd-today"; stage.appendChild(d);
+    return (t, S) => { d.textContent = S.phase === "calm" ? Math.floor(S.left) : S.phase === "count" ? Math.ceil(S.left) : "0"; };
+  }
+
+  // ================= A1 : the swelling number
+  function mkNum(stage) {
+    const d = document.createElement("div"); d.className = "cd-num"; stage.appendChild(d);
+    return (t, S) => {
+      let txt, size, col, glow, sc = 1, dx = 0, dy = 0, op = 1;
+      if (S.phase === "calm") { txt = mmss(S.left); size = 50; col = [233, 220, 195]; glow = 0; }
+      else {
+        txt = S.phase === "count" ? String(Math.ceil(S.left)) : "0";
+        const k = ease(S.T);
+        size = lerp(100, 220, k); col = [lerp(233, 228, k), lerp(220, 74, k), lerp(195, 44, k)]; glow = k;
+        sc = 1 + .22 * S.pulse;
+        if (S.phase === "count" && S.left < 3) { dx = wob(t, 1) * 5; dy = wob(t, 7) * 4; }
+        if (S.phase === "end") { sc = 1 + .5 * ease(clamp(S.since / 700)); op = 1 - clamp(S.since / 700); }
+      }
+      d.textContent = txt;
+      d.style.fontSize = size + "px";
+      d.style.color = `rgb(${col.map(Math.round).join(",")})`;
+      d.style.opacity = op;
+      d.style.textShadow = `0 0 3px rgba(0,0,0,.9), 0 4px 14px rgba(0,0,0,.95), 0 0 ${8 + 50 * glow}px rgba(255,90,30,${.8 * glow})`;
+      d.style.filter = S.phase === "end" ? `blur(${4 * clamp(S.since / 700)}px)` : "";
+      d.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${sc})`;
+    };
+  }
+
+  // ================= A2 : the hourglass
+  function mkSand(stage) {
+    const glow = document.createElement("canvas"); glow.width = 1600; glow.height = 900; glow.className = "cd-layer cd-screen";
+    const c = document.createElement("canvas"); c.width = 1600; c.height = 900; c.className = "cd-layer";
+    stage.appendChild(glow); stage.appendChild(c);
+    const g = c.getContext("2d"), gg = glow.getContext("2d");
+    const SC = .74, OX = 1200, OY = 548, X = 0, Y = 0, cx = X + 130, NECK = Y + 221, TOP = Y + 64, BOT = Y + 378;
+
+    function bulbs(p) {
+      // upper bulb then lower bulb, mirror of each other around the neck
+      p.moveTo(cx - 9, NECK);
+      p.bezierCurveTo(cx - 22, NECK - 26, cx - 86, NECK - 50, cx - 84, NECK - 98);
+      p.bezierCurveTo(cx - 82, NECK - 140, cx - 70, TOP - Y + Y - 4 + 10, cx - 62, TOP);
+      p.lineTo(cx + 62, TOP);
+      p.bezierCurveTo(cx + 70, TOP + 6, cx + 82, NECK - 140, cx + 84, NECK - 98);
+      p.bezierCurveTo(cx + 86, NECK - 50, cx + 22, NECK - 26, cx + 9, NECK);
+      p.bezierCurveTo(cx + 22, NECK + 26, cx + 86, NECK + 50, cx + 84, NECK + 98);
+      p.bezierCurveTo(cx + 82, NECK + 140, cx + 70, BOT - 6, cx + 62, BOT);
+      p.lineTo(cx - 62, BOT);
+      p.bezierCurveTo(cx - 70, BOT - 6, cx - 82, NECK + 140, cx - 84, NECK + 98);
+      p.bezierCurveTo(cx - 86, NECK + 50, cx - 22, NECK + 26, cx - 9, NECK);
+      p.closePath();
+    }
+    const wood = (x0, x1) => { const w = g.createLinearGradient(x0, 0, x1, 0);
+      w.addColorStop(0, "#2a170b"); w.addColorStop(.35, "#7a4a24"); w.addColorStop(.55, "#9b6534"); w.addColorStop(1, "#2a170b"); return w; };
+    function cap(y, rx, ry, th) {
+      g.fillStyle = wood(cx - rx, cx + rx);
+      g.beginPath(); g.ellipse(cx, y + th, rx, ry, 0, 0, Math.PI); g.lineTo(cx - rx, y); g.ellipse(cx, y, rx, ry, 0, Math.PI, 0, true); g.closePath(); g.fill();
+      const top = g.createLinearGradient(0, y - ry, 0, y + ry); top.addColorStop(0, "#a8723f"); top.addColorStop(1, "#6b4020");
+      g.fillStyle = top; g.beginPath(); g.ellipse(cx, y, rx, ry, 0, 0, Math.PI * 2); g.fill();
+    }
+    function post(x) {
+      g.fillStyle = wood(x - 7, x + 7); g.fillRect(x - 6, TOP - 6, 12, BOT - TOP + 12);
+      for (const yy of [TOP + 14, NECK, BOT - 14]) { g.beginPath(); g.ellipse(x, yy, 10, 6, 0, 0, Math.PI * 2); g.fill(); }
+    }
+    return (t, S) => {
+      for (const k of [g, gg]) { k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, 1600, 900); k.setTransform(SC, 0, 0, SC, OX, OY); }
+      const f = S.left / 300;
+      const hot = S.phase === "calm" ? 0 : S.phase === "count" ? ease(S.T) : 1 - clamp(S.since / 1800) * .6;
+      // warm light on the table around the base
+      if (hot > 0) {
+        const r = gg.createRadialGradient(cx, BOT + 10, 10, cx, BOT + 10, 300);
+        const a = .22 * hot + .3 * S.pulse * (S.phase === "end" ? 1.4 : 1);
+        r.addColorStop(0, `rgba(255,120,40,${a})`); r.addColorStop(1, "rgba(255,120,40,0)");
+        gg.fillStyle = r; gg.fillRect(0, 0, 1600, 900);
+      }
+      // shadow on the table
+      g.fillStyle = "rgba(0,0,0,.45)"; g.beginPath(); g.ellipse(cx - 30, BOT + 42, 150, 30, 0, 0, Math.PI * 2); g.fill();
+      cap(BOT + 10, 118, 30, 24);
+      post(cx - 104);
+      // glass
+      g.save(); g.beginPath(); bulbs(g); g.clip();
+      g.fillStyle = "rgba(190,210,220,.10)"; g.fillRect(cx - 100, TOP, 200, BOT - TOP);
+      const sandA = [lerp(222, 255, hot), lerp(186, 130, hot), lerp(122, 50, hot)];
+      const sandB = [lerp(170, 140, hot), lerp(130, 34, hot), lerp(78, 12, hot)];
+      const sand = (a) => `rgba(${sandA.map(Math.round).join(",")},${a})`;
+      const grad = (y0, y1) => { const s = g.createLinearGradient(0, y0, 0, y1); s.addColorStop(0, sand(1)); s.addColorStop(1, `rgb(${sandB.map(Math.round).join(",")})`); return s; };
+      g.shadowColor = `rgba(255,110,30,${.9 * hot})`; g.shadowBlur = 24 * hot;
+      // upper sand: level drops with time, small dip over the neck
+      if (f > 0) {
+        const lv = NECK - (NECK - TOP - 20) * Math.pow(f, .6);
+        g.fillStyle = grad(lv, NECK);
+        g.beginPath(); g.moveTo(cx - 100, lv); g.lineTo(cx - 26, lv); g.quadraticCurveTo(cx, lv + 18, cx + 26, lv); g.lineTo(cx + 100, lv); g.lineTo(cx + 100, NECK + 2); g.lineTo(cx - 100, NECK + 2); g.fill();
+      }
+      // lower pile
+      const h = 20 + (BOT - NECK - 50) * Math.pow(1 - f, .8);
+      const pk = BOT - h;
+      g.fillStyle = grad(pk, BOT);
+      g.beginPath(); g.moveTo(cx - 100, BOT); g.lineTo(cx - 100, BOT - h * .35); g.quadraticCurveTo(cx - 40, BOT - h * .5, cx, pk); g.quadraticCurveTo(cx + 40, BOT - h * .5, cx + 100, BOT - h * .35); g.lineTo(cx + 100, BOT); g.fill();
+      // stream (calm) or one grain per tick (count)
+      if (S.phase === "calm") { g.fillStyle = sand(.9); g.fillRect(cx - 1.5, NECK, 3, pk - NECK); }
+      else if (S.phase === "count") {
+        const k = clamp(S.since / 260);
+        if (k < 1) { const y = NECK + (pk - NECK) * k * k; g.fillStyle = sand(1); g.beginPath(); g.arc(cx, y, 3.5, 0, Math.PI * 2); g.fill(); }
+      }
+      g.shadowBlur = 0;
+      // sparks where the grain lands (the last one lands as the vote closes)
+      const d = S.phase === "count" ? S.since - 260 : S.phase === "end" ? S.since : -1;
+      if (d >= 0 && d < 380) {
+        for (let i = 0; i < 11; i++) {
+          const a = Math.PI * (1.05 + .9 * i / 10), v = .07 + .07 * ((i * 37) % 11) / 11;
+          const x = cx + Math.cos(a) * v * d, y = pk + Math.sin(a) * v * d * .8 + d * d * .0005;
+          g.fillStyle = `rgba(255,${Math.round(220 - d * .3)},90,${1 - d / 380})`; g.beginPath(); g.arc(x, y, 2.4, 0, Math.PI * 2); g.fill();
+        }
+      }
+      // glass highlights
+      const hl = g.createLinearGradient(cx - 84, 0, cx - 40, 0); hl.addColorStop(0, "rgba(255,255,255,0)"); hl.addColorStop(.5, "rgba(255,255,255,.28)"); hl.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = hl; g.fillRect(cx - 84, TOP, 44, BOT - TOP);
+      g.restore();
+      g.strokeStyle = "rgba(230,240,245,.35)"; g.lineWidth = 2; g.beginPath(); bulbs(g); g.stroke();
+      post(cx + 104);
+      cap(TOP - 24, 118, 30, 24);
+    };
+  }
+
+  // ================= A3 : the candle
+  function mkCandle(stage) {
+    const glow = document.createElement("canvas"); glow.width = 1600; glow.height = 900; glow.className = "cd-layer cd-screen";
+    const c = document.createElement("canvas"); c.width = 1600; c.height = 900; c.className = "cd-layer";
+    stage.appendChild(glow); stage.appendChild(c);
+    const g = c.getContext("2d"), gg = glow.getContext("2d");
+    const cx = 330, BASE = 860, RX = 38, RY = 11;
+    return (t, S) => {
+      g.clearRect(0, 0, 1600, 900); gg.clearRect(0, 0, 1600, 900);
+      const f = S.left / 300;
+      const H = 34 + 300 * f, top = BASE - H;
+      // flame: calm, then nervous, jumps at each tick, blown out at the end
+      const nerves = S.phase === "calm" ? .08 : S.phase === "count" ? .15 + .55 * S.T : 0;
+      let fl = 1 + nerves * wob(t, 3) + (S.phase === "count" ? .55 * S.pulse : 0);
+      let lean = (S.phase === "calm" ? .04 : .1 + .35 * S.T) * wob(t, 9);
+      let alive = 1;
+      if (S.phase === "end") { alive = 1 - clamp(S.since / 220); fl = 1.4 * alive; lean = -.5 * (1 - alive); }
+      if (S.phase === "count" && S.left < 1 && S.left > .7) fl *= .55;
+      // light of the flame on the table (screen blend)
+      if (alive > 0) {
+        const L = (.55 + .2 * wob(t * 1.7, 2) * (S.phase === "count" ? 1 + S.T : .5)) * alive;
+        const r = gg.createRadialGradient(cx, top - 40, 10, cx, top - 40, 520);
+        r.addColorStop(0, `rgba(255,170,80,${.42 * L})`); r.addColorStop(.4, `rgba(255,130,50,${.16 * L})`); r.addColorStop(1, "rgba(255,120,40,0)");
+        gg.fillStyle = r; gg.fillRect(0, 0, 1600, 900);
+      }
+      // holder (brass dish)
+      g.fillStyle = "rgba(0,0,0,.5)"; g.beginPath(); g.ellipse(cx + 26, BASE + 22, 120, 24, 0, 0, Math.PI * 2); g.fill();
+      const br = g.createLinearGradient(cx - 100, 0, cx + 100, 0); br.addColorStop(0, "#3a2a12"); br.addColorStop(.4, "#b08a3e"); br.addColorStop(.6, "#e2c27a"); br.addColorStop(1, "#3a2a12");
+      g.fillStyle = br; g.beginPath(); g.ellipse(cx, BASE + 12, 100, 26, 0, 0, Math.PI); g.lineTo(cx - 100, BASE); g.ellipse(cx, BASE, 100, 26, 0, Math.PI, 0, true); g.fill();
+      g.fillStyle = "#6e5424"; g.beginPath(); g.ellipse(cx, BASE, 92, 22, 0, 0, Math.PI * 2); g.fill();
+      // wax body
+      const lit = alive;
+      const wax = g.createLinearGradient(cx - RX, 0, cx + RX, 0);
+      wax.addColorStop(0, `rgb(${lerp(70, 120, lit)},${lerp(60, 98, lit)},${lerp(48, 70, lit)})`);
+      wax.addColorStop(.45, `rgb(${lerp(150, 246, lit)},${lerp(140, 228, lit)},${lerp(118, 190, lit)})`);
+      wax.addColorStop(1, `rgb(${lerp(60, 110, lit)},${lerp(52, 86, lit)},${lerp(40, 60, lit)})`);
+      g.fillStyle = wax;
+      g.beginPath(); g.moveTo(cx - RX, top); g.lineTo(cx - RX, BASE); g.ellipse(cx, BASE, RX, RY, 0, Math.PI, 0, true); g.lineTo(cx + RX, top); g.ellipse(cx, top, RX, RY, 0, 0, Math.PI); g.fill();
+      // drips
+      for (const [dx, len] of [[-30, 38], [-8, 64], [22, 26], [33, 48]]) {
+        const L2 = Math.min(len, H - 10);
+        g.beginPath(); g.moveTo(cx + dx - 5, top + 2); g.lineTo(cx + dx - 4, top + L2); g.arc(cx + dx, top + L2, 4, Math.PI, 0, true); g.lineTo(cx + dx + 5, top + 2); g.fill();
+      }
+      // top: melted pool, glowing near the wick while lit
+      const pool = g.createRadialGradient(cx, top, 2, cx, top, RX);
+      pool.addColorStop(0, `rgba(255,${lerp(200, 236, 1 - lit)},${lerp(120, 200, 1 - lit)},1)`); pool.addColorStop(1, `rgb(${lerp(150, 230, lit)},${lerp(140, 210, lit)},${lerp(110, 160, lit)})`);
+      g.fillStyle = pool; g.beginPath(); g.ellipse(cx, top, RX, RY, 0, 0, Math.PI * 2); g.fill();
+      // wick
+      g.strokeStyle = "#1a120c"; g.lineWidth = 3; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx + lean * 6, top - 14); g.stroke();
+      if (S.phase === "end" && alive === 0) { g.fillStyle = `rgba(255,90,30,${1 - clamp((S.since - 220) / 900)})`; g.beginPath(); g.arc(cx + lean * 6, top - 14, 2.5, 0, Math.PI * 2); g.fill(); }
+      // flame
+      if (fl > .02) {
+        const fh = 62 * fl, fw = 15 * Math.min(1.3, .7 + .3 * fl), fx = cx + lean * 6, fy = top - 12;
+        const tipX = fx + lean * fh;
+        g.save(); g.globalCompositeOperation = "lighter";
+        const halo = g.createRadialGradient(fx, fy - fh * .45, 2, fx, fy - fh * .45, fh * 1.2);
+        halo.addColorStop(0, "rgba(255,180,90,.45)"); halo.addColorStop(1, "rgba(255,140,60,0)");
+        g.fillStyle = halo; g.beginPath(); g.arc(fx, fy - fh * .45, fh * 1.2, 0, Math.PI * 2); g.fill();
+        const shape = (k) => { g.beginPath(); g.moveTo(fx - fw * k, fy - 4); g.bezierCurveTo(fx - fw * k, fy - fh * .5 * k, tipX, fy - fh * .7, tipX, fy - fh * (.55 + .45 * k)); g.bezierCurveTo(tipX, fy - fh * .7, fx + fw * k, fy - fh * .5 * k, fx + fw * k, fy - 4); g.quadraticCurveTo(fx, fy + 6 * k, fx - fw * k, fy - 4); };
+        let fg = g.createLinearGradient(0, fy, 0, fy - fh); fg.addColorStop(0, "rgba(255,120,30,.9)"); fg.addColorStop(.5, "rgba(255,170,60,.85)"); fg.addColorStop(1, "rgba(255,110,30,0)");
+        g.fillStyle = fg; shape(1); g.fill();
+        fg = g.createLinearGradient(0, fy, 0, fy - fh * .7); fg.addColorStop(0, "rgba(120,140,255,.6)"); fg.addColorStop(.25, "rgba(255,240,200,.95)"); fg.addColorStop(1, "rgba(255,230,160,0)");
+        g.fillStyle = fg; shape(.5); g.fill();
+        g.restore();
+      }
+      // smoke after it is blown out
+      if (S.phase === "end" && S.since > 120) {
+        const d = S.since - 120;
+        for (let i = 0; i < 3; i++) {
+          const a = clamp(1 - d / 2000) * (.35 - i * .08), x0 = cx + lean * 6, y0 = top - 16;
+          g.strokeStyle = `rgba(200,200,200,${a})`; g.lineWidth = 3 + i * 3; g.beginPath(); g.moveTo(x0, y0);
+          for (let s = 1; s <= 12; s++) { const yy = y0 - s * (12 + d * .02); g.lineTo(x0 + Math.sin(s * .7 + d * .004 + i) * (4 + s * 2.2), yy); }
+          g.stroke();
+        }
+      }
+    };
+  }
+
+  // ================= A4 : the room goes dark
+  function mkLight(stage) {
+    const num = document.createElement("div"); num.className = "cd-num"; stage.appendChild(num);
+    const dark = document.createElement("canvas"); dark.width = 1600; dark.height = 900; dark.className = "cd-layer";
+    const tint = document.createElement("canvas"); tint.width = 1600; tint.height = 900; tint.className = "cd-layer cd-multiply";
+    const lamp = document.createElement("canvas"); lamp.width = 1600; lamp.height = 900; lamp.className = "cd-layer cd-screen";
+    stage.insertBefore(tint, num); stage.insertBefore(lamp, num); stage.insertBefore(dark, num);
+    const bg = stage.querySelector(".cd-bg");
+    const gd = dark.getContext("2d"), gt = tint.getContext("2d"), gl = lamp.getContext("2d");
+    const table = [[240, 200], [1360, 200], [1720, 900], [-120, 900]];
+    return (t, S) => {
+      num.textContent = S.phase === "calm" ? mmss(S.left) : S.phase === "count" ? String(Math.ceil(S.left)) : "0";
+      num.style.fontSize = "50px"; num.style.color = "rgb(233,220,195)"; num.style.textShadow = "0 3px 10px rgba(0,0,0,.9)";
+      num.style.transform = `translate(-50%,-50%) scale(${1 + .08 * S.pulse})`;
+      const k = S.phase === "calm" ? 0 : S.phase === "count" ? ease(S.T) : 1;
+      // the room around the table goes out (the table polygon is kept, edges soft)
+      gd.clearRect(0, 0, 1600, 900);
+      if (k > 0) {
+        gd.save(); gd.filter = "blur(40px)";
+        gd.fillStyle = `rgba(0,0,0,${(S.phase === "end" ? .92 : .8) * k})`;
+        gd.beginPath(); gd.rect(-100, -100, 1800, 1100);
+        gd.moveTo(...table[0]); for (const p of table.slice(1)) gd.lineTo(...p); gd.closePath();
+        gd.fill("evenodd"); gd.restore();
+      }
+      // the table reddens
+      gt.clearRect(0, 0, 1600, 900);
+      gt.fillStyle = `rgb(255,${Math.round(255 - 70 * k)},${Math.round(255 - 95 * k)})`; gt.fillRect(0, 0, 1600, 900);
+      // the lamp over the cat across the table throbs at each tick
+      gl.clearRect(0, 0, 1600, 900);
+      const p = S.phase === "calm" ? 0 : S.pulse * (S.phase === "end" ? 1.3 : .9);
+      if (p > .01) {
+        const r = gl.createRadialGradient(800, 120, 10, 800, 120, 360);
+        r.addColorStop(0, `rgba(255,215,160,${.55 * p})`); r.addColorStop(1, "rgba(255,200,140,0)");
+        gl.fillStyle = r; gl.fillRect(0, 0, 1600, 900);
+      }
+      // last 3 seconds: the light sputters
+      let dip = 0;
+      if (S.phase === "count" && S.left < 3) { const w = wob(t * 2.2, 4); dip = w > .35 ? .45 : w > .15 ? .2 : 0; }
+      bg.style.filter = dip ? `brightness(${1 - dip})` : "";
+    };
+  }
+
+  const makers = { today: mkToday, num: mkNum, sand: mkSand, candle: mkCandle, light: mkLight };
+  const frames = [...document.querySelectorAll(".cd-stage")].map(s => makers[s.dataset.fx](s));
+
+  // ================= sounds (Web Audio, placeholders)
+  let ac = null;
+  const audio = () => ac || (ac = new (window.AudioContext || window.webkitAudioContext)());
+  function noiseBuf() { const a = audio(), b = a.createBuffer(1, a.sampleRate * .2, a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+  let NB = null;
+  function tick(at, hi, gain = .5) {
+    const a = audio(); NB = NB || noiseBuf();
+    const s = a.createBufferSource(); s.buffer = NB;
+    const f = a.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = hi ? 3200 : 2200; f.Q.value = 9;
+    const g = a.createGain(); g.gain.setValueAtTime(gain, at); g.gain.exponentialRampToValueAtTime(.001, at + .05);
+    s.connect(f).connect(g).connect(a.destination); s.start(at); s.stop(at + .08);
+    const o = a.createOscillator(); o.frequency.value = hi ? 1900 : 1300; const og = a.createGain();
+    og.gain.setValueAtTime(gain * .25, at); og.gain.exponentialRampToValueAtTime(.001, at + .03);
+    o.connect(og).connect(a.destination); o.start(at); o.stop(at + .05);
+  }
+  function thump(at, freq, gain) {
+    const a = audio(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.setValueAtTime(freq * 1.6, at); o.frequency.exponentialRampToValueAtTime(freq, at + .08);
+    g.gain.setValueAtTime(.0001, at); g.gain.exponentialRampToValueAtTime(gain, at + .012); g.gain.exponentialRampToValueAtTime(.001, at + .22);
+    o.connect(g).connect(a.destination); o.start(at); o.stop(at + .3);
+  }
+  function clack(at) { tick(at, false, 1); thump(at, 90, .7); }
+  function bell(at) {
+    const a = audio();
+    for (const [r, v, d] of [[1, .35, 4.5], [2.0, .18, 3], [2.76, .14, 2.4], [5.4, .07, 1.4], [.5, .2, 5]]) {
+      const o = a.createOscillator(), g = a.createGain(); o.frequency.value = 98 * r;
+      g.gain.setValueAtTime(.0001, at); g.gain.exponentialRampToValueAtTime(v, at + .01); g.gain.exponentialRampToValueAtTime(.0005, at + d);
+      o.connect(g).connect(a.destination); o.start(at); o.stop(at + d + .1);
+    }
+  }
+  const SOUNDS = {
+    clock: { times: schedule("clock"), play: (at, i) => tick(at, i % 2 === 0, .45 + .35 * i / 20), end: clack },
+    heart: { times: schedule("heart"), play: (at, i) => { thump(at, 52, .9); thump(at + .14, 48, .6); }, end: () => {} },
+    knell: { times: schedule("knell"), play: (at, i) => { tick(at, i % 2 === 0, .7); thump(at, 70, .35); }, end: bell },
+  };
+
+  // section B: beat strips + listen buttons
+  document.querySelectorAll(".cd-strip").forEach(st => {
+    const S = SOUNDS[st.dataset.snd];
+    st.innerHTML = S.times.map(x => `<i style="left:${2 + 94 * x / 10000}%"></i>`).join("") + `<i class="big" style="left:96%"></i><b></b>`;
+  });
+  document.querySelectorAll(".cd-play").forEach(btn => btn.onclick = () => {
+    const S = SOUNDS[btn.dataset.snd], a = audio(); a.resume();
+    const t0 = a.currentTime + .1;
+    S.times.forEach((x, i) => S.play(t0 + x / 1000, i));
+    S.end(t0 + 10);
+    const head = document.querySelector(`.cd-strip[data-snd="${btn.dataset.snd}"] b`);
+    btn.classList.add("on"); head.style.display = "block";
+    const run = () => { const k = (a.currentTime - t0) / 10; head.style.left = (2 + 94 * clamp(k)) + "%";
+      if (k < 1.15) requestAnimationFrame(run); else { btn.classList.remove("on"); head.style.display = "none"; } };
+    requestAnimationFrame(run);
+  });
+
+  // ================= key moments / loop
+  function show(t) {
+    const S = state(t);
+    frames.forEach(F => F(t, S));
+    document.querySelectorAll(".cd-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+  let looping = false, start = 0, prev = 0, sound = false;
+  function frame(now) {
+    if (!looping) return;
+    const t = (now - start) % LOOP;
+    if (sound && ac) {
+      const a = (prev <= t) ? [prev, t] : [prev, LOOP + t];
+      TICKS.forEach((x, i) => { const at = CALM + x; if (at > a[0] && at <= a[1]) SOUNDS.clock.play(ac.currentTime, i); });
+      if (END > a[0] && END <= a[1]) clack(ac.currentTime);
+    }
+    prev = t; show(t); requestAnimationFrame(frame);
+  }
+  const at = new URLSearchParams(location.search).get("at");
+  const loopBtn = document.querySelector(".cd-moments button[data-loop]");
+  const sndBtn = document.querySelector(".cd-moments button[data-sound]");
+  const go = () => {
+    if (at !== null) { show(+at); return; }
+    document.querySelectorAll(".cd-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+    loopBtn.onclick = () => { looping = true; start = performance.now(); prev = 0; loopBtn.classList.add("on"); requestAnimationFrame(frame); };
+    sndBtn.onclick = () => { sound = !sound; sndBtn.classList.toggle("on", sound); if (sound) audio().resume(); };
+    loopBtn.click();
+  };
+  Promise.all([document.fonts.load('50px "Fell"'), ...[...document.querySelectorAll(".cd-bg")].map(i => i.decode().catch(() => {}))]).then(go);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

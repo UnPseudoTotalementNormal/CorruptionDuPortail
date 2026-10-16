@@ -135,6 +135,24 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 463752
+--- !u!114 &-7793401744650069554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/VoteCandle.bank
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorBankRef
+  Path: Assets/FMODBanks/Desktop/VoteCandle.bank
+  Name: VoteCandle
+  StudioPath: 
+  lastModified: 639277771135037850
+  FileSizes: []
+  Exists: 1
 --- !u!114 &-7703313424830530553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -609,7 +627,7 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639119776071302686
+  lastModified: 639277771269207226
   FileSizes:
   - Name: Desktop
     Value: 13002720
@@ -804,7 +822,7 @@ MonoBehaviour:
   Path: Assets/FMODBanks/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639119776071312738
+  lastModified: 639277771269227356
   FileSizes:
   - Name: Desktop
     Value: 3018
@@ -1472,6 +1490,7 @@ MonoBehaviour:
   EditorBanks:
   - {fileID: -4062503513606897777}
   - {fileID: -4866380843273065656}
+  - {fileID: -7793401744650069554}
   EditorEvents:
   - {fileID: -3910715252851951772}
   - {fileID: 783737210994000027}
@@ -1522,7 +1541,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -4062503513606897777}
   cacheVersion: 131847
-  cacheTime: 639119776071312738
+  cacheTime: 639277771269227356
   SerializableEventsDict:
   - key: event:/Characters/Orpheline/Canalisation
     index: 0

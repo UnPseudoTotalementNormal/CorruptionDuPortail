@@ -55,6 +55,16 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - If the screen reacts (choices, tabs), the mockup reacts. If it moves, the mockup moves: a short looping
   scenario with a **key moments** bar at the top (one button per step, « ▶ En boucle ») that freezes
   every frame at the same instant, and `?at=<ms>` for the captures: comparable at a glance.
+- **Where does it go? Let him place it.** When the question is a place (an object on the table, a button on
+  the screen), don't draw five guesses: give him the object to drag on the real screen. `<img class="place"
+  data-name="bougie" data-x="391" data-y="757" data-scale="1">` inside a `.stage` (x, y = its anchor in stage
+  pixels, bottom centre by default) is dragged with the finger or the mouse; `data-scale` adds a size slider
+  under the frame (`data-scale-min` / `-max`) with « Remettre ». The kit keeps it per page and sends it with
+  the remarks (« P1 placement bougie : x=… y=… taille=… (data-info) »). Each change fires `mockplace` (bubbling,
+  `detail {variant, name, x, y, scale}`): the page listens to it to size the object with the perspective, mirror
+  it in another frame, and write what the code needs into `el.dataset.info` (e.g. the world position under it).
+  An object from the game is rendered from the game with a transparent background (`compte-a-rebours/v3.html`:
+  the real candle, the seated view's camera fitted on the capture, its place mirrored on the night's top view).
 - Bottom: `<textarea id="global">` (a useful open question) and `<button id="send">`.
 - `?only=E1` shows that frame alone (captures).
 
@@ -114,4 +124,19 @@ save as `.webp` to keep the repo light. Shared art lives in `common/` (`menu_bg.
 drivers can force `hide_render` (remove the object's `hide_render` drivers before hiding); to render one
 part alone but correctly occluded, set the other parts `is_holdout = True` (transparent film); textures
 are resolved relative to the `.blend` (keep the Drive's folder layout).
+
+## Rendering a game object from Unity (headless) for a mockup
+
+To place a real 3D object of the game on captures (the vote candle, T19): render it from your own headless editor
+(`tools/HEADLESS_UNITY.md`), same viewpoint as the capture, alone, with a transparent background.
+- Fit the capture's camera first (seated vote view: eye ≈ (0, −4.1, −15.4), pitch 33°, vertical field 40°, fitted on
+  the table corners) so the object lands where the game would draw it.
+- Put the object's parts on a **free layer** (25) and cull to it: layers 29-31 are `Outline_*`, rendering on them adds
+  the hover outline.
+- Transparency: render twice, on black then on white (post-processing on, it is the game's look), alpha =
+  1 − (white − black) / (white₀ − black₀) with the backgrounds' own values (tonemapping keeps white below 1), colour =
+  (black − black₀(1 − alpha)) / alpha. Additive parts (a flame) come out right this way; add their glow in the page
+  (CSS radial gradients, `mix-blend-mode: screen`).
+- Note in the page script the image's scale against the game's (focal ratio) and the pixel under the object's foot: the
+  page sizes it with the depth where it is dropped.
 <!-- /local -->

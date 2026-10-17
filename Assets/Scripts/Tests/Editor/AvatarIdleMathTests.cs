@@ -33,6 +33,30 @@ namespace Tests.Editor.Avatars
         }
 
         [Test]
+        public void IdleBasis_AnimatorPoseCloseToLastWrite_IsStillTheAnimatorPose()
+        {
+            // The shaking cats: the clip's pose this frame is 0.05° from what the idle wrote last frame (a zero
+            // crossing of the breath). Unity's Quaternion == calls them equal; the basis must still be the clip's.
+            Quaternion _rest = Quaternion.identity;
+            Quaternion _clip = Quaternion.Euler(20f, 5f, 0f);
+            Quaternion _lastWritten = _clip * Quaternion.Euler(0.05f, 0f, 0f);
+            Assert.That(_clip == _lastWritten, Is.True, "Precondition: Unity's == is approximate at this angle.");
+
+            Assert.That(AvatarIdleMath.IdleBasis(_clip, _rest, true, _lastWritten), Is.EqualTo(_clip));
+        }
+
+        [Test]
+        public void IdleBasis_UntouchedOrFirstFrame_IsRest()
+        {
+            Quaternion _rest = Quaternion.Euler(0f, 0f, 10f);
+            Quaternion _lastWritten = _rest * Quaternion.Euler(1f, 0f, 0f);
+            Assert.That(AvatarIdleMath.IdleBasis(_lastWritten, _rest, true, _lastWritten), Is.EqualTo(_rest),
+                "A bone no clip keys still holds last frame's write: go back to rest, never compound.");
+            Assert.That(AvatarIdleMath.IdleBasis(_lastWritten, _rest, false, default), Is.EqualTo(_rest),
+                "First frame: rest.");
+        }
+
+        [Test]
         public void DampedSpring_ConvergesToTarget()
         {
             float _current = 8f;

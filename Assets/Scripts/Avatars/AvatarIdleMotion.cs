@@ -158,10 +158,8 @@ namespace Avatars
         // Offset on top of this frame's pose: the Animator's if it wrote the bone since our last write, else rest.
         private void Drive(Transform _bone, Quaternion _rest, Quaternion _offset)
         {
-            Quaternion _basis = _written.TryGetValue(_bone, out Quaternion _last) && _bone.localRotation != _last
-                ? _bone.localRotation
-                : _rest;
-            _bone.localRotation = _basis * _offset;
+            bool _hasWritten = _written.TryGetValue(_bone, out Quaternion _last);
+            _bone.localRotation = AvatarIdleMath.IdleBasis(_bone.localRotation, _rest, _hasWritten, _last) * _offset;
             _written[_bone] = _bone.localRotation;
         }
 

@@ -20,6 +20,18 @@ namespace Avatars
         }
 
         /// <summary>
+        /// The pose an idle offset goes on top of: the bone's current rotation when something (the Animator)
+        /// wrote it since our last write, else its rest rotation. EXACT component compare, never Unity's
+        /// Quaternion `==`: that one calls rotations within ~0.16° equal, so an Animator pose landing that close
+        /// to last frame's write (every zero crossing of a small idle offset) read as "untouched" and the bone
+        /// snapped to rest for a frame, then back to the clip: the whole cat shook.
+        /// </summary>
+        public static Quaternion IdleBasis(Quaternion _current, Quaternion _rest, bool _hasWritten, Quaternion _lastWritten)
+        {
+            return _hasWritten && !_current.Equals(_lastWritten) ? _current : _rest;
+        }
+
+        /// <summary>
         /// One semi-implicit damped-spring step toward <paramref name="_target"/>. Updates <paramref name="_velocity"/>
         /// by ref and returns the new position. Converges to the target; for low damping it overshoots then
         /// settles. Drives the bow follow-through (perturb the velocity by the body's angular velocity, pull to 0).

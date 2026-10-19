@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 6</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Digits"; src: local("Georgia"); unicode-range: U+0030-0039; }
+
+  .ar-ref { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ar-ref img { width: 100%; border: 1px solid var(--line); }
+  .ar-ref figcaption { color: var(--soft); font-size: 13px; }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-panel { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; overflow: hidden; }
+  .ar-panel * { box-sizing: border-box; }
+  .ar-btn { cursor: pointer; user-select: none; }
+  .ar-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #a07a50 transparent; }
+
+  /* v5 F3, as coded (PR #143): parchment page, IM Fell titles, a reading serif for the rest */
+  .pg { --ft: "Digits", "Fell", serif; --fb: Georgia, serif; --red: #8a1010;
+    background: #1a120c url(../common/parchment.webp) 50% 50% / cover; color: #33200f; box-shadow: inset 0 0 70px rgba(70, 40, 10, .6); font-family: var(--fb); }
+  .pg .tabs { position: absolute; left: 26px; right: 26px; top: 12px; display: flex; gap: 30px; font: 22px var(--ft); }
+  .pg .tabs span { padding: 4px 0 6px; color: #8a6a4c; }
+  .pg .tabs span.on { color: #3a1708; }
+  .pg .tally { position: absolute; left: 26px; right: 26px; top: 56px; display: flex; border-bottom: 1px solid rgba(90, 58, 32, .4); padding-bottom: 6px; }
+  .pg .tally .c { flex: 1; padding: 2px 0; }
+  .pg .tally .c + .c { border-left: 1px solid rgba(90, 58, 32, .3); padding-left: 14px; }
+  .pg .tally .k { font-size: 15px; display: flex; align-items: center; gap: 6px; color: #5e4127; }
+  .pg .tally .k img { width: 20px; height: 20px; object-fit: contain; }
+  .pg .tally .v { font-size: 30px; line-height: 34px; color: #2a1608; }
+  .pg .err { color: #a01212 !important; }
+  .pg .b { color: #8a4a1c; }
+  .pg .side { position: absolute; left: 26px; top: 132px; bottom: 60px; width: 200px; padding-right: 16px; border-right: 1px solid rgba(90, 58, 32, .35); }
+  .pg .side h5 { margin: 0 0 6px; font: 20px var(--ft); color: #3a1708; }
+  .pg .side .it { padding: 9px 0 9px 12px; font-size: 17px; color: #5e4127; border-left: 3px solid transparent; }
+  .pg .side .it.on { color: var(--red); border-left-color: var(--red); }
+  .pg .scroll { position: absolute; left: 244px; right: 14px; top: 132px; bottom: 64px; padding-right: 10px; }
+  .pg .fh { display: flex; align-items: center; gap: 8px; font: 22px var(--ft); margin: 4px 0 10px; }
+  .pg .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .pg .grid { display: flex; flex-wrap: wrap; gap: 18px 14px; margin-bottom: 4px; }
+  .pg .u { width: 110px; position: relative; }
+  .pg .crd { position: relative; width: 110px; height: 154px; background: #080607; padding: 4px 4px 0; display: flex; flex-direction: column; box-shadow: 0 3px 8px rgba(40, 20, 5, .55); }
+  .pg .crd .art { flex: 1; background-size: cover; background-position: 50% 20%; }
+  .pg .crd .nm { height: 26px; font: bold 9.5px/11px Georgia, serif; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  .pg .u.out .crd { opacity: .3; filter: sepia(.6); }
+  .pg .ctl { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; margin-top: 4px; color: #5e4127; white-space: nowrap; }
+  .pg .ctl.imp, .pg .ctl.imp .v { color: var(--red); }
+  .pg .ctl .v { display: inline-block; min-width: 14px; text-align: center; font-size: 16px; color: #2a1608; }
+  .pg .ctl .b { padding: 0 4px; font-size: 17px; }
+  .pg .foot { position: absolute; left: 26px; right: 26px; bottom: 12px; height: 44px; display: flex; justify-content: flex-end; align-items: center; gap: 22px; font-size: 17px; color: #5e4127; }
+
+  /* ---------- marks of a guaranteed role ---------- */
+  .g-ribbon .u.g .crd:after { content: ""; position: absolute; right: 10px; top: 4px; width: 24px; height: 66px; background: url(img/ribbon.webp) 0 0 / 100% 100%; filter: drop-shadow(1px 2px 2px rgba(0,0,0,.6)); }
+  .g-frame .u.g .crd { box-shadow: 0 0 0 3px var(--red), 0 3px 8px rgba(40, 20, 5, .55); }
+  .g-bar .u.g .ctls { border-left: 3px solid var(--red); padding-left: 6px; }
+
+  /* ---------- the ready control ---------- */
+  .rd-word .go { font: 24px var(--ft); color: var(--red); padding-bottom: 2px; background: url(img/divider.webp) 50% 100% / 120% 6px no-repeat; }
+  .rd-word .go.on { color: #5e4127; background: none; }
+  .rd-word .undo { font-size: 16px; color: #8a4a1c; margin-left: -10px; }
+
+  .rd-check .go { display: flex; align-items: center; gap: 10px; font: 22px var(--ft); color: #2a1608; }
+  .rd-check .go i { width: 24px; height: 24px; border: 2px solid #3b2615; border-radius: 2px; position: relative; }
+  .rd-check .go.on i:after { content: ""; position: absolute; left: 6px; top: -2px; width: 8px; height: 16px; border: solid var(--red); border-width: 0 3px 3px 0; transform: rotate(40deg); }
+
+  .rd-box .go { font: 22px var(--ft); color: #2a1608; border: 1.5px solid #3b2615; padding: 4px 26px; }
+  .rd-box .go.on { background: #3b2615; color: #f1e2c2; }
+
+  .rd-sign .go { display: flex; align-items: flex-end; gap: 10px; font: 20px var(--ft); color: #5e4127; }
+  .rd-sign .go .line { width: 190px; height: 34px; border-bottom: 1.5px solid #3b2615; text-align: center; font: italic 26px/34px "Fell", serif; color: #1f3b6e; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Choisir les rôles du lobby, tour 6</h1>
+  <p>L'écran codé (PR #143) te va, sauf le bouton « Prêt » et le sceau, que tu n'as jamais aimé (noté : plus de
+    sceau sans que tu le demandes). Deux questions ici, sur l'écran tel qu'il est codé.</p>
+  <div class="ar-ref">
+    <figure style="margin:0"><img src="captures/v5/F3.jpg" alt=""><figcaption>F3 choisi au tour 5</figcaption></figure>
+    <figure style="margin:0"><img src="captures/jeu/jeu2_haut.jpg" alt=""><figcaption>Codé, en jeu (PR #143)</figcaption></figure>
+  </div>
+  <ul>
+    <li>Touche le bouton du bas pour voir les deux états (pas prêt, prêt). Les captures montrent « pas prêt ».</li>
+    <li>Pour le rôle garanti, Va'ahl et Abyss sont garantis ; touche « Au moins ‹ › » d'un élu pour voir la marque
+      apparaître.</li>
+  </ul>
+</header>
+
+<section>
+  <h2>1. Le bouton « Prêt »</h2>
+  <p>Même écran, sans marque sur les cartes garanties (le « Au moins 1 » en rouge suffit), seul le bouton change.</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Le mot, souligné à l'encre</span></div>
+    <p class="vdesc">« Je suis prêt » en rouge, souligné du trait d'encre de la fiche de rôle. Une fois prêt :
+      « Prêt » à l'encre brune, et « ↳ Annuler » pour revenir en arrière.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-word" id="b1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Une case à cocher à l'encre</span></div>
+    <p class="vdesc">Une case tracée à l'encre et « Je suis prêt ». Prêt : la case est cochée en rouge. L'état se lit
+      d'un coup d'œil et on sait qu'on peut décocher.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-check" id="b2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Un vrai bouton, cadre d'encre</span></div>
+    <p class="vdesc">Le seul élément encadré de la page, puisque c'est l'action principale : « Prêt » dans un cadre
+      d'encre. Prêt : le cadre se remplit d'encre, le mot passe en clair.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-box" id="b3"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="B4">
+    <div class="vhead"><span class="vid">B4</span><span class="vname">Signer la page</span></div>
+    <p class="vdesc">Une ligne de signature : la toucher écrit ton pseudo à la plume dessus (on est prêt), la
+      toucher encore l'efface. Le compte devient « 7 signatures sur 8 ».</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-sign" id="b4"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Marquer un rôle garanti (à la place du sceau)</h2>
+  <p>Même écran avec le bouton B3 ; seule la marque des cartes garanties change.</p>
+
+  <div class="variant" data-id="G1">
+    <div class="vhead"><span class="vid">G1</span><span class="vname">Rien sur la carte</span></div>
+    <p class="vdesc">Aucune marque : le « Au moins 1 » en rouge sous la carte dit déjà que le rôle est garanti. Le
+      plus sobre ; il faut lire sous les cartes pour repérer les garantis.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-box" id="g1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="G2">
+    <div class="vhead"><span class="vid">G2</span><span class="vname">Un ruban de livre</span></div>
+    <p class="vdesc">Le ruban rouge du livre des personnages, posé dans le haut de la carte comme un marque-page :
+      ce rôle est « marqué » pour la partie. Se voit de loin, reste dans la carte.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-box g-ribbon" id="g2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="G3">
+    <div class="vhead"><span class="vid">G3</span><span class="vname">Un liseré rouge autour de la carte</span></div>
+    <p class="vdesc">La carte garantie est cernée d'un trait d'encre rouge, de la couleur du « Au moins ». Très
+      lisible, au prix d'un cadre de plus.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-box g-frame" id="g3"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="G4">
+    <div class="vhead"><span class="vid">G4</span><span class="vname">Un trait rouge le long des réglages</span></div>
+    <p class="vdesc">Rien sur la carte ; un trait rouge à gauche de ses deux réglages, comme la composition choisie
+      dans la marge. Discret, cohérent avec la marge.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg rd-box g-bar" id="g4"></div></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (une autre idée de bouton ou de marque, ce que les autres joueurs voient…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7, ME = "Poyo";
+const FAC = {
+  a: { name: "Anomalies", one: "Anomalie", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", one: "Élu", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", one: "Marginal", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"], ["Moork", "Mo'orkn l'Affamé", "a"],
+  ["Repenti", "Le Repenti", "e"], ["Dryade", "La Dryade", "e"], ["DrGloubi", "Dr Gloubi", "e"], ["Technomancien", "Le Technomancien", "e"],
+  ["Croupiere", "Luma, la croupière", "e"], ["Messager", "Le Messager", "e"], ["Orpheline", "L'Orpheline", "e"], ["Uges", "Ugës, l'Imposteur", "e"],
+  ["Incomplet", "L'Incomplet", "e"], ["Gardien", "Le Gardien", "e"], ["Geolier", "Geôlier", "e"], ["Omniscient", "ORIGINE, l'Omniscient", "e"],
+  ["Oracle", "Nara, l'oracle brisée", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+const CLASSIC = { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Uges: [1, 0], Incomplet: [1, 0] };
+const img = id => "img/" + id + ".webp";
+
+function newState() {
+  const st = { roles: ROLES.map(r => ({ ...r })), custom: false, ready: false };
+  st.roles.forEach(r => { const v = CLASSIC[r.id] || [0, 0]; r.max = v[0]; r.forced = v[1]; });
+  return st;
+}
+function tally(st) {
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  st.roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  return t;
+}
+function act(st, t) {
+  const a = t.closest("[data-a]");
+  if (!a) return false;
+  const k = a.dataset.a;
+  if (k === "ready") { st.ready = !st.ready; return true; }
+  if (k === "classic") { const s = newState(); st.roles = s.roles; st.custom = false; return true; }
+  const r = st.roles.find(x => x.id === t.closest("[data-id]").dataset.id);
+  if (k === "max-") r.max = Math.max(0, r.max - 1);
+  if (k === "max+") r.max = Math.min(15, r.max + 1);
+  if (k === "for-") r.forced = Math.max(0, r.forced - 1);
+  if (k === "for+") r.forced = Math.min(r.max, r.forced + 1);
+  if (r.forced > r.max) r.forced = r.max;
+  st.custom = true;
+  return true;
+}
+
+function readyUi(st, kind) {
+  const n = READY + (st.ready ? 1 : 0);
+  const count = kind === "sign" ? n + " signatures sur " + PLAYERS : n + " joueurs prêts sur " + PLAYERS;
+  let btn;
+  if (kind === "word") btn = st.ready ? '<span class="go on">Prêt</span><span class="undo ar-btn" data-a="ready">↳ Annuler</span>' : '<span class="go ar-btn" data-a="ready">Je suis prêt</span>';
+  else if (kind === "check") btn = '<span class="go ar-btn' + (st.ready ? " on" : "") + '" data-a="ready"><i></i>Je suis prêt</span>';
+  else if (kind === "box") btn = '<span class="go ar-btn' + (st.ready ? " on" : "") + '" data-a="ready">Prêt</span>';
+  else btn = '<span class="go ar-btn" data-a="ready">Signature<span class="line">' + (st.ready ? ME : "") + "</span></span>";
+  return "<span>" + count + "</span>" + btn;
+}
+
+function render(el, st, kind) {
+  const sc = el.querySelector(".scroll"), keep = sc ? sc.scrollTop : 0;
+  const t = tally(st);
+  const cell = (k, v, f) => '<div class="c"><div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v">' + v + "</div></div>";
+  let h = '<div class="tabs"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS) + cell("Garantis", t.forced) + cell("Rôles possibles", t.max) +
+    cell("Anomalies", t.a, "a") + cell("Élus", t.e, "e") + cell("Marginaux", t.m, "m") + "</div>";
+  h += '<div class="side"><h5>Compositions</h5><div class="it ar-btn' + (st.custom ? "" : " on") + '" data-a="classic">Classique</div>' + (st.custom ? '<div class="it on">Personnalisée</div>' : "") + "</div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u' + (r.max ? "" : " out") + (r.forced ? " g" : "") + '" data-id="' + r.id + '"><div class="crd ar-btn"><div class="art" style="background-image:url(' + img(r.id) + ')"></div>' +
+        '<div class="nm">' + r.name + '</div></div><div class="ctls">' +
+        '<div class="ctl"><span>Au plus</span><span><span class="b ar-btn" data-a="max-">‹</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">›</span></span></div>' +
+        '<div class="ctl imp"><span>Au moins</span><span><span class="b ar-btn" data-a="for-">‹</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">›</span></span></div></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div><div class="foot">' + readyUi(st, kind) + "</div>";
+  el.innerHTML = h;
+  const n = el.querySelector(".scroll"); if (n) n.scrollTop = keep;
+}
+
+const KIND = { b1: "word", b2: "check", b3: "box", b4: "sign", g1: "box", g2: "box", g3: "box", g4: "box" };
+for (const [id, kind] of Object.entries(KIND)) {
+  const el = document.getElementById(id), st = newState();
+  render(el, st, kind);
+  el.addEventListener("click", e => { if (act(st, e.target)) render(el, st, kind); });
+}
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

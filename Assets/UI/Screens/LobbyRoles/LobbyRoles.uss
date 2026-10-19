@@ -1,5 +1,5 @@
 /* Lobby role attribution on the tablet: a parchment page (the role sheet's paper and ink), mockup
- * tools/maquettes/attribution-roles v5 F3. IM FELL English for titles (tabs, factions, "Compositions", "Prêt"),
+ * tools/maquettes/attribution-roles v5 F3. IM FELL English for titles (tabs, factions, "Compositions", "Je suis prêt"),
  * EB Garamond for everything read in small sizes (labels, numbers, role controls); both SIL OFL
  * (OFL.txt next to each font in Assets/UI/Fonts). No boxes around information: rules of ink only. Sizes are for the 1440x912
  * RenderTexture. Faction inks come from FactionDatabase by code (RoleSheet.InkOf), never from here.
@@ -185,18 +185,6 @@
     margin-right: 22px;
     margin-bottom: 26px;
 }
-/* Wax seal on the portrait of a guaranteed role, inside the card above its name band. */
-.lobby-roles__seal {
-    position: absolute;
-    left: 60px;
-    top: 140px;
-    width: 38px;
-    height: 38px;
-    background-image: url("project://database/Assets/Art/Sprites/Book/WaxSeal.png");
-    -unity-background-scale-mode: scale-to-fit;
-    -unity-background-image-tint-color: rgb(205, 28, 36);
-}
-
 /* ---- the two settings under a card: "Au plus ‹ 1 ›" / "Au moins ‹ 1 ›" ---- */
 .lobby-roles__controls {
     flex-direction: column;
@@ -259,20 +247,32 @@
     flex-direction: row;
     align-items: center;
 }
-.lobby-roles__start-seal {
-    width: 44px;
-    height: 44px;
-    margin-right: 10px;
-    background-image: url("project://database/Assets/Art/Sprites/Book/WaxSeal.png");
-    -unity-background-scale-mode: scale-to-fit;
-    -unity-background-image-tint-color: rgb(205, 28, 36);
+/* The ink checkbox (mockup v6 B2): a box drawn in ink, a red tick once ready. */
+.lobby-roles__start-box {
+    width: 34px;
+    height: 34px;
+    margin-right: 14px;
+    border-width: 3px;
+    border-color: var(--cdp-color-ink);
+    border-radius: 3px;
+}
+.lobby-roles__start-tick {
+    position: absolute;
+    left: 8px;
+    top: -5px;
+    width: 12px;
+    height: 24px;
+    border-right-width: 4px;
+    border-bottom-width: 4px;
+    border-color: rgb(138, 16, 16);
+    rotate: 40deg;
 }
 .lobby-roles__start Label {
     font-size: 32px;
-    color: rgb(138, 16, 16);
+    color: var(--cdp-color-ink);
 }
-.lobby-roles__start:hover Label {
-    color: rgb(90, 8, 8);
+.lobby-roles__start:hover .lobby-roles__start-box {
+    border-color: rgb(138, 16, 16);
 }
 
 /* ---- "Autres options" (host dev controls) ---- */

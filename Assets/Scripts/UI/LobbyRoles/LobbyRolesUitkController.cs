@@ -14,7 +14,7 @@ namespace UI.LobbyRoles
     /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml): a parchment page (mockup
     /// tools/maquettes/attribution-roles v5 F3) with the tabs, six counters, the compositions (presets) in the left
     /// margin and a faction-grouped grid of role cards, each with its two settings below it, "Au plus" (max, the pool
-    /// cap) and "Au moins" (forced, the guaranteed minimum), then the ready status and "Prêt". Built from an
+    /// cap) and "Au moins" (forced, the guaranteed minimum), then the ready status and the "Je suis prêt" checkbox. Built from an
     /// <see cref="ILobbyRolesDataSource"/>. Follows the InfoTable / RoleCardController conventions:
     /// [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start, Q-by-name, dynamic children in C#, BEM
     /// classes, look in USS (faction inks by code from the FactionDatabase).
@@ -54,7 +54,6 @@ namespace UI.LobbyRoles
         private const string SectionIconClass = "lobby-roles__section-icon";
         private const string GridClass = "lobby-roles__grid";
         private const string UnitClass = "lobby-roles__unit";
-        private const string SealClass = "lobby-roles__seal";
         private const string ControlsClass = "lobby-roles__controls";
         private const string CtlClass = "lobby-roles__ctl";
         private const string CtlForcedClass = "lobby-roles__ctl--forced";
@@ -66,7 +65,9 @@ namespace UI.LobbyRoles
         private const string ReasonClass = "lobby-roles__reason";
         private const string ReasonOkClass = "lobby-roles__reason--ok";
         private const string StartBtnClass = "lobby-roles__start";
-        private const string StartSealClass = "lobby-roles__start-seal";
+        private const string StartBoxClass = "lobby-roles__start-box";
+        private const string StartTickClass = "lobby-roles__start-tick";
+        private const string StartOnClass = "lobby-roles__start--on";
         private const string OptionsClass = "lobby-roles__options";
         private const string OptionsTitleClass = "lobby-roles__options-title";
         private const string OptionsBtnClass = "lobby-roles__options-btn";
@@ -365,8 +366,8 @@ namespace UI.LobbyRoles
             return section;
         }
 
-        // A "unit" = the shared card face (portrait, gold name) with a wax seal on it when the role is guaranteed, then
-        // its two settings BELOW it. The card itself stays a reusable pure visual; the chrome lives in the unit.
+        // A "unit" = the shared card face (portrait, gold name), then its two settings BELOW it. A guaranteed role carries
+        // no mark on its card: its red "Au moins" says it (mockup v6 G1). The card stays a reusable pure visual.
         private VisualElement BuildCard(LobbyRoleView role)
         {
             var unit = new VisualElement();
@@ -391,13 +392,6 @@ namespace UI.LobbyRoles
             RoleID clickedId = role.Id;
             card.RegisterCallback<ClickEvent>(_ => OpenDetail(clickedId)); // tap the card face → role detail overlay
             unit.Add(card);
-
-            if (role.Forced > 0)
-            {
-                var seal = new VisualElement { pickingMode = PickingMode.Ignore };
-                seal.AddToClassList(SealClass);
-                unit.Add(seal);
-            }
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
@@ -480,14 +474,22 @@ namespace UI.LobbyRoles
             if (validation.IsValid) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
+            // An ink checkbox (mockup v6 B2): "Je suis prêt", ticked in red once ready; tapping again unticks it.
             bool localReady = _data.GetLocalReady();
             var toggle = new Button(() => _data.RequestSetReady(!localReady));
             toggle.AddToClassList(TextBtnClass);
             toggle.AddToClassList(StartBtnClass);
-            var seal = new VisualElement { pickingMode = PickingMode.Ignore };
-            seal.AddToClassList(StartSealClass);
-            toggle.Add(seal);
-            var text = new Label(localReady ? "Pas prêt" : "Prêt") { pickingMode = PickingMode.Ignore };
+            if (localReady) toggle.AddToClassList(StartOnClass);
+            var box = new VisualElement { pickingMode = PickingMode.Ignore };
+            box.AddToClassList(StartBoxClass);
+            if (localReady)
+            {
+                var tick = new VisualElement { pickingMode = PickingMode.Ignore };
+                tick.AddToClassList(StartTickClass);
+                box.Add(tick);
+            }
+            toggle.Add(box);
+            var text = new Label("Je suis prêt") { pickingMode = PickingMode.Ignore };
             text.AddToClassList(TitleClass);
             toggle.Add(text);
             footer.Add(toggle);

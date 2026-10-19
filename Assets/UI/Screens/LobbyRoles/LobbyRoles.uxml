@@ -5,7 +5,10 @@
 
          The grid is built ENTIRELY at runtime by LobbyRolesUitkController from an ILobbyRolesDataSource: this
          root is just the canvas the controller fills with a tally + faction sections of role cards + a footer.
+         The frame around it is the wooden edge of the cork board (mockup K3).
          Palette is provisional/design-owned — see the proto. Layout is LobbyRoles.uss. -->
     <ui:Style src="LobbyRoles.uss" />
-    <ui:VisualElement name="lobby-roles" class="lobby-roles" />
+    <ui:VisualElement class="lobby-roles-frame">
+        <ui:VisualElement name="lobby-roles" class="lobby-roles" />
+    </ui:VisualElement>
 </ui:UXML>

@@ -71,6 +71,10 @@ namespace UI.LobbyRoles
         private const string OptionsClass = "lobby-roles__options";
         private const string OptionsTitleClass = "lobby-roles__options-title";
         private const string OptionsBtnClass = "lobby-roles__options-btn";
+        private const string CardSlotClass = "lobby-roles__card-slot";
+        private const string PinClass = "lobby-roles__pin";
+        private const string PinShineClass = "lobby-roles__pin-shine";
+        private const string PinShadowClass = "lobby-roles__pin-shadow";
 
         private const int TabAttribution = 0;
         private const int TabOptions = 2;
@@ -262,6 +266,12 @@ namespace UI.LobbyRoles
                 perFactionMax.TryGetValue(faction, out int m);
                 tally.Add(Cell(FactionLabel(faction, true), m, false, FactionIcon(faction), false));
             }
+            int index = 0;
+            foreach (VisualElement cell in tally.Children())
+            {
+                Pin(cell, 50f);
+                Tilt(cell, index++);
+            }
             return tally;
 
             VisualElement Cell(string key, int val, bool bad, Sprite icon, bool first)
@@ -312,6 +322,8 @@ namespace UI.LobbyRoles
                     row.AddToClassList(PresetRowActiveClass);
                     if (presets[i].IsClassic) row.AddToClassList(PresetClassicActiveClass);
                 }
+                Pin(row, 86f);
+                Tilt(row, idx);
                 column.Add(row);
             }
 
@@ -320,6 +332,7 @@ namespace UI.LobbyRoles
                 var custom = new Label("Personnalisée") { pickingMode = PickingMode.Ignore };
                 custom.AddToClassList(PresetRowClass);
                 custom.AddToClassList(PresetRowActiveClass);
+                Pin(custom, 86f);
                 column.Add(custom);
             }
             return column;
@@ -391,7 +404,13 @@ namespace UI.LobbyRoles
 
             RoleID clickedId = role.Id;
             card.RegisterCallback<ClickEvent>(_ => OpenDetail(clickedId)); // tap the card face → role detail overlay
-            unit.Add(card);
+            // A dark slot behind the card: a role out of the pool fades into it, never into the cork.
+            var slot = new VisualElement { pickingMode = PickingMode.Ignore };
+            slot.AddToClassList(CardSlotClass);
+            slot.Add(card);
+            unit.Add(slot);
+            Pin(unit, 50f);
+            Tilt(unit, (int)role.Id);
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
@@ -493,10 +512,37 @@ namespace UI.LobbyRoles
             text.AddToClassList(TitleClass);
             toggle.Add(text);
             footer.Add(toggle);
+            Pin(footer, 4f);
             return footer;
         }
 
         // ---- helpers ----
+
+        // A red pushpin stuck in the top edge of a paper or card, at x% of its width (its shadow under it).
+        // Decoration only: it never takes a click from the element it holds.
+        private static void Pin(VisualElement on, float xPercent)
+        {
+            var shadow = new VisualElement { pickingMode = PickingMode.Ignore };
+            shadow.AddToClassList(PinShadowClass);
+            shadow.style.left = Length.Percent(xPercent);
+            on.Add(shadow);
+
+            var pin = new VisualElement { pickingMode = PickingMode.Ignore };
+            pin.AddToClassList(PinClass);
+            pin.style.left = Length.Percent(xPercent);
+            var shine = new VisualElement { pickingMode = PickingMode.Ignore };
+            shine.AddToClassList(PinShineClass);
+            pin.Add(shine);
+            on.Add(pin);
+        }
+
+        // Pinned papers are never quite straight: a small fixed tilt (-1.1, 0 or +1.1 degree) chosen by index, so a
+        // rebuild never makes them jump.
+        private static void Tilt(VisualElement e, int index)
+        {
+            int step = ((index % 3) + 3) % 3 - 1;
+            e.style.rotate = new Rotate(new Angle(step * 1.1f));
+        }
         private static VisualElement Icon(Sprite sprite, string cssClass)
         {
             var icon = new VisualElement { pickingMode = PickingMode.Ignore };

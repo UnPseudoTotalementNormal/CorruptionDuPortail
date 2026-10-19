@@ -1,22 +1,34 @@
-/* Lobby role attribution on the tablet: a parchment page (the role sheet's paper and ink), mockup
- * tools/maquettes/attribution-roles v5 F3. IM FELL English for titles (tabs, factions, "Compositions", "Je suis prêt"),
+/* Lobby role attribution on the tablet: a cork board in a wooden frame. Everything that is read sits on pinned
+ * paper (one card per counter and per composition, labels, tickets under the role cards); the role cards are pinned
+ * on the cork. Layout and words from mockup tools/maquettes/attribution-roles v5 F3, dressing K3.
+ * IM FELL English for titles (tabs, factions, "Compositions", "Je suis prêt"),
  * EB Garamond for everything read in small sizes (labels, numbers, role controls); both SIL OFL
- * (OFL.txt next to each font in Assets/UI/Fonts). No boxes around information: rules of ink only. Sizes are for the 1440x912
+ * (OFL.txt next to each font in Assets/UI/Fonts). Sizes are for the 1440x912
  * RenderTexture. Faction inks come from FactionDatabase by code (RoleSheet.InkOf), never from here.
  * UITK has no `gap`: spacing uses margins. Labels reset their default margin (project trap: "box in a box"). */
 
-.lobby-roles {
+/* The wooden edge of the board. */
+.lobby-roles-frame {
     width: 100%;
     height: 100%;
+    padding: 18px;
+    background-color: rgb(84, 52, 28);
+    background-image: url("project://database/Assets/Art/Textures/seamless-wood-texture-free-22.jpg");
+    background-repeat: repeat repeat;
+    background-size: 520px 520px;
+    -unity-background-image-tint-color: rgb(120, 79, 48);
+}
+
+/* The cork: the 3D board's texture (DetectiveWall), recomposed to cover the page without a visible seam. */
+.lobby-roles {
+    flex-grow: 1;
     flex-direction: column;
-    padding: 18px 38px 16px 38px;
-    background-color: rgb(26, 18, 12);
-    background-image: url("project://database/Assets/Art/Sprites/Book/Parchment.png");
-    -unity-slice-left: 150;
-    -unity-slice-right: 150;
-    -unity-slice-top: 150;
-    -unity-slice-bottom: 150;
-    -unity-slice-scale: 0.55px;
+    padding: 22px 30px 18px 30px;
+    border-width: 4px;
+    border-color: rgb(52, 30, 14);
+    background-color: rgb(176, 120, 70);
+    background-image: url("project://database/Assets/Art/Textures/CorkTablet.png");
+    background-size: 100% 100%;
     -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond/EBGaramond-Regular.ttf");
     color: var(--cdp-color-ink);
 }
@@ -30,6 +42,55 @@
 /* Titles in the role book's face. */
 .lobby-roles__title {
     -unity-font-definition: url("project://database/Assets/UI/Fonts/IMFellEnglish/IMFellEnglish-Regular.ttf");
+}
+
+/* Paper pinned on the cork. The darker bottom and right edges stand for its shadow. Preset rows are buttons: their
+ * selector is doubled so the paper wins over the text-button reset below. */
+.lobby-roles__tabs,
+.lobby-roles__tally-cell,
+.lobby-roles .lobby-roles__presets-title,
+.lobby-roles .lobby-roles__preset-row,
+.lobby-roles__section-head,
+.lobby-roles__controls,
+.lobby-roles__footer,
+.lobby-roles__options {
+    background-color: rgb(240, 229, 203);
+    border-width: 1px;
+    border-color: rgba(90, 60, 30, 0.35);
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(40, 22, 8, 0.45);
+    border-right-width: 2px;
+    border-right-color: rgba(40, 22, 8, 0.35);
+}
+
+/* A red pushpin and its shadow (Pin() in the controller sets their left edge). */
+.lobby-roles__pin,
+.lobby-roles__pin-shadow {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+}
+.lobby-roles__pin {
+    top: -10px;
+    margin-left: -9px;
+    background-color: rgb(178, 24, 24);
+    border-width: 1px;
+    border-color: rgb(96, 8, 8);
+}
+.lobby-roles__pin-shadow {
+    top: -6px;
+    margin-left: -6px;
+    background-color: rgba(30, 14, 4, 0.45);
+}
+.lobby-roles__pin-shine {
+    position: absolute;
+    left: 4px;
+    top: 3px;
+    width: 6px;
+    height: 5px;
+    border-radius: 3px;
+    background-color: rgba(255, 210, 200, 0.85);
 }
 
 /* A text button: no frame, no fill, no hover box. */
@@ -50,7 +111,10 @@
 /* ---- tabs ---- */
 .lobby-roles__tabs {
     flex-direction: row;
-    margin-bottom: 8px;
+    align-self: flex-start;
+    padding: 4px 4px 2px 22px;
+    margin-bottom: 14px;
+    rotate: -0.6deg;
 }
 .lobby-roles__tab {
     font-size: 32px;
@@ -65,24 +129,17 @@
     color: var(--cdp-color-ink);
 }
 
-/* ---- counters: six columns separated by thin ink rules ---- */
+/* ---- counters: six cards pinned in a row ---- */
 .lobby-roles__tally {
     flex-direction: row;
-    padding-bottom: 8px;
-    border-bottom-width: 1px;
-    border-bottom-color: var(--cdp-color-ink-faint);
+    margin: 0 -8px 0 -8px;
 }
 .lobby-roles__tally-cell {
     flex-grow: 1;
     flex-basis: 0;
     flex-direction: column;
-    padding: 2px 0 0 20px;
-    border-left-width: 1px;
-    border-left-color: var(--cdp-color-ink-faint);
-}
-.lobby-roles__tally-cell--first {
-    padding-left: 0;
-    border-left-width: 0;
+    margin: 0 8px 0 8px;
+    padding: 8px 14px 6px 16px;
 }
 .lobby-roles__tally-key {
     flex-direction: row;
@@ -115,31 +172,35 @@
     min-height: 0;
 }
 
+/* One pinned card per composition; the active one carries a red edge. */
 .lobby-roles__presets {
-    width: 288px;
+    width: 250px;
     flex-shrink: 0;
-    padding-right: 22px;
-    border-right-width: 1px;
-    border-right-color: var(--cdp-color-ink-faint);
 }
 .lobby-roles .lobby-roles__presets-title {
     font-size: 30px;
     color: var(--cdp-color-ink);
-    margin-bottom: 8px;
+    align-self: flex-start;
+    padding: 2px 14px 2px 12px;
+    margin-bottom: 16px;
+    rotate: -1deg;
 }
-.lobby-roles__preset-row {
+/* min-height: a button with children (its pin) no longer measures its text, so it would collapse without it. */
+.lobby-roles .lobby-roles__preset-row {
+    flex-shrink: 0;
+    min-height: 54px;
     font-size: 25px;
     color: var(--cdp-color-ink-soft);
     -unity-text-align: middle-left;
-    padding: 13px 0 13px 16px;
+    padding: 12px 12px 10px 16px;
+    margin-bottom: 16px;
     border-left-width: 4px;
-    border-left-color: rgba(0, 0, 0, 0);
 }
-.lobby-roles__preset-row:hover {
+.lobby-roles .lobby-roles__preset-row:hover {
     color: var(--cdp-color-ink);
 }
-.lobby-roles__preset-row--active,
-.lobby-roles__preset-row--active:hover {
+.lobby-roles .lobby-roles__preset-row--active,
+.lobby-roles .lobby-roles__preset-row--active:hover {
     color: rgb(138, 16, 16);
     border-left-color: rgb(138, 16, 16);
 }
@@ -161,7 +222,10 @@
 .lobby-roles__section-head {
     flex-direction: row;
     align-items: center;
-    margin: 4px 0 14px 0;
+    align-self: flex-start;
+    margin: 4px 0 18px 0;
+    padding: 2px 18px 2px 10px;
+    rotate: -0.8deg;
 }
 .lobby-roles__section-icon {
     width: 38px;
@@ -182,13 +246,19 @@
 .lobby-roles__unit {
     width: 158px;
     flex-direction: column;
-    margin-right: 22px;
-    margin-bottom: 26px;
+    margin-right: 26px;
+    margin-bottom: 30px;
+}
+/* Dark slot behind the card: a role out of the pool fades into it instead of letting the cork through. */
+.lobby-roles__card-slot {
+    background-color: rgb(8, 6, 7);
+    border-radius: 10px;
 }
 /* ---- the two settings under a card: "Au plus ‹ 1 ›" / "Au moins ‹ 1 ›" ---- */
 .lobby-roles__controls {
     flex-direction: column;
-    margin-top: 6px;
+    margin-top: 8px;
+    padding: 2px 8px 2px 8px;
 }
 .lobby-roles__ctl {
     flex-direction: row;
@@ -232,8 +302,10 @@
 .lobby-roles__footer {
     flex-direction: row;
     align-items: center;
-    justify-content: flex-end;
+    align-self: flex-end;
     margin-top: 10px;
+    padding: 6px 20px 6px 22px;
+    rotate: -0.5deg;
 }
 .lobby-roles .lobby-roles__reason {
     font-size: 25px;
@@ -277,7 +349,8 @@
 
 /* ---- "Autres options" (host dev controls) ---- */
 .lobby-roles__options {
-    padding-top: 16px;
+    align-self: flex-start;
+    padding: 16px 28px 18px 22px;
 }
 .lobby-roles .lobby-roles__options-title {
     font-size: 30px;

@@ -66,6 +66,16 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void Night_TheMessagerTalkingToAnAnomaly_IsNotHeardByTheOtherAnomalies()
+        {
+            // The messager (3) inked anomaly 2 instead of seat 4: only 2 hears him, never the other anomaly (1).
+            _membership.Revoke(Ink, 4);
+            _membership.Grant(Ink, 2);
+
+            CollectionAssert.AreEqual(new ulong[] { 2 }, Listeners(3, true, 0, 1, 2, 3, 4, 5));
+        }
+
+        [Test]
         public void Night_ARevokedCorrespondentNoLongerHears()
         {
             _membership.Revoke(Ink, 4);

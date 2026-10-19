@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 8 : le bord du défilement</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+  .ar-moments { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+  .ar-moments button { font: inherit; padding: 6px 12px; border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 4px; cursor: pointer; }
+  .ar-moments button.on { border-color: currentColor; font-weight: bold; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-btn { cursor: pointer; user-select: none; }
+
+  /* The cork board as coded (PR #145), at the tablet's scale (RenderTexture 1440 wide -> 1002 px here). */
+  .k3 { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; padding: 12px;
+    background: #78502f url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; box-sizing: border-box; font-family: "Garamond", Georgia, serif; color: #2e1d10; }
+  .k3 * { box-sizing: border-box; }
+  .k3 .cork { position: absolute; inset: 12px; border: 3px solid #341e0e; background: #b07846 url(img/cork_tablet.webp) 0 0 / 100% 100%; overflow: hidden; }
+  .k3 .paper { background: #f0e5cb; border: 1px solid rgba(90, 60, 30, .35); border-bottom: 2px solid rgba(40, 22, 8, .45); border-right: 1.5px solid rgba(40, 22, 8, .35); position: relative; }
+  .k3 .pin { position: absolute; top: -7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffd2c8 0 18%, #b21818 22%); border: 1px solid #600808; z-index: 3; }
+  .k3 .pin:before { content: ""; position: absolute; left: 2px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(30, 14, 4, .4); z-index: -1; }
+  .k3 .fell { font-family: "Fell", serif; }
+
+  .k3 .tabs { position: absolute; left: 21px; top: 15px; display: flex; gap: 28px; padding: 3px 18px 1px 15px; font: 22px "Fell", serif; transform: rotate(-.6deg); z-index: 2; }
+  .k3 .tabs span { color: #684a2e; } .k3 .tabs span.on { color: #2e1d10; }
+  .k3 .tally { position: absolute; left: 21px; right: 21px; top: 70px; display: flex; gap: 11px; z-index: 2; }
+  .k3 .tally .c { flex: 1; padding: 5px 9px 3px 11px; }
+  .k3 .tally .k { font-size: 15px; color: #684a2e; display: flex; align-items: center; gap: 5px; }
+  .k3 .tally .k img { width: 19px; height: 19px; object-fit: contain; }
+  .k3 .tally .v { font-size: 30px; line-height: 34px; }
+  .k3 .side { position: absolute; left: 21px; top: 160px; width: 174px; z-index: 2; }
+  .k3 .side h5 { display: inline-block; margin: 0 0 11px; padding: 1px 10px 1px 8px; font: 21px "Fell", serif; font-weight: normal; transform: rotate(-1deg); }
+  .k3 .side .it { display: block; min-height: 38px; margin-bottom: 11px; padding: 8px 8px 6px 11px; font-size: 17px; color: #684a2e; border-left: 3px solid transparent; }
+  .k3 .side .it.on { color: #8a1010; border-left-color: #8a1010; }
+
+  .k3 .scroll { position: absolute; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #684a2e transparent; z-index: 1; }
+  .k3 .fh { display: inline-flex; align-items: center; gap: 8px; margin: 3px 0 13px; padding: 1px 12px 1px 7px; font: 22px "Fell", serif; transform: rotate(-.8deg); }
+  .k3 .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .k3 .grid { display: flex; flex-wrap: wrap; gap: 21px 18px; margin-bottom: 8px; }
+  .k3 .u { width: 110px; position: relative; }
+  .k3 .slot { background: #080607; border-radius: 7px; }
+  .k3 .crd { width: 110px; height: 154px; background: #080607; border-radius: 7px; padding: 5px 5px 0; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(30, 14, 4, .55); }
+  .k3 .crd .art { flex: 1; border-radius: 3px; background-size: cover; background-position: 50% 20%; }
+  .k3 .crd .nm { height: 26px; font: bold 9.5px/11px Georgia, serif; color: #e9c57a; text-align: center; padding-top: 3px; overflow: hidden; }
+  .k3 .u.out .crd { opacity: .3; }
+  .k3 .ctls { margin-top: 6px; padding: 1px 6px; }
+  .k3 .ctl { display: flex; justify-content: space-between; align-items: baseline; height: 21px; font-size: 14.5px; color: #684a2e; white-space: nowrap; }
+  .k3 .ctl.imp, .k3 .ctl.imp .v { color: #8a1010; }
+  .k3 .ctl .v { display: inline-block; min-width: 16px; text-align: center; font-size: 16.5px; color: #2e1d10; }
+  .k3 .ctl .b { padding: 0 3px; font-size: 18px; color: #8a4a1c; }
+  .k3 .foot { position: absolute; right: 21px; bottom: 12px; display: flex; align-items: center; gap: 18px; padding: 4px 14px 4px 15px; font-size: 17px; color: #684a2e; transform: rotate(-.5deg); z-index: 2; }
+  .k3 .foot .go { display: flex; align-items: center; gap: 9px; font: 22px "Fell", serif; color: #2e1d10; }
+  .k3 .foot .go i { width: 23px; height: 23px; border: 2px solid #2e1d10; border-radius: 2px; position: relative; }
+  .k3 .foot .go.on i:after { content: ""; position: absolute; left: 5px; top: -4px; width: 8px; height: 16px; border-right: 3px solid #8a1010; border-bottom: 3px solid #8a1010; transform: rotate(40deg); }
+  .k3 .rot0 { transform: rotate(-1.1deg); } .k3 .rot1 { transform: rotate(0deg); } .k3 .rot2 { transform: rotate(1.1deg); }
+
+  /* R1: the rectangle stays, the cards fade into the cork at both edges (no shadow) */
+  .r1 .scroll { left: 216px; right: 10px; top: 150px; bottom: 52px; padding: 18px 8px 26px 0;
+    -webkit-mask-image: linear-gradient(transparent 0, #000 38px, #000 calc(100% - 46px), transparent 100%);
+            mask-image: linear-gradient(transparent 0, #000 38px, #000 calc(100% - 46px), transparent 100%); }
+  /* R2: two wooden laths across the board; the cards pass behind them */
+  .r2 .scroll { left: 216px; right: 10px; top: 158px; bottom: 60px; padding: 14px 8px 18px 0; }
+  .r2 .lath { position: absolute; left: 0; right: 0; height: 18px; z-index: 2; pointer-events: none;
+    background: #6b4426 url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply;
+    border-top: 1px solid rgba(255, 220, 170, .25); border-bottom: 1px solid #2a170a; }
+  .r2 .lath.t { top: 150px; box-shadow: 0 5px 8px rgba(20, 10, 2, .6); }
+  .r2 .lath.b { bottom: 52px; box-shadow: 0 -4px 8px rgba(20, 10, 2, .5); }
+  .r2 .lath i { position: absolute; top: 5px; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #c9b089, #5b4a33); }
+  .r2 .side { top: 176px; }
+  .r2 .foot { bottom: 10px; }
+  .r2 .tally { top: 66px; }
+  /* R3: one faction at a time, chosen on pinned paper tabs; no scrolling at all */
+  .r3 .fsel { position: absolute; left: 216px; top: 152px; display: flex; gap: 12px; z-index: 2; }
+  .r3 .fsel .fh { margin: 0; color: #684a2e; opacity: .75; cursor: pointer; }
+  .r3 .fsel .fh.on { opacity: 1; }
+  .r3 .page { position: absolute; left: 216px; right: 14px; top: 200px; bottom: 56px; }
+  .r3 .grid { gap: 14px 12px; }
+  .r3 .u { width: 84px; }
+  .r3 .crd { width: 84px; height: 118px; padding: 4px 4px 0; }
+  .r3 .crd .nm { height: 21px; font-size: 7.5px; line-height: 8.5px; }
+  .r3 .ctls { padding: 1px 4px; margin-top: 5px; }
+  .r3 .ctl { height: 17px; font-size: 11.5px; }
+  .r3 .ctl .v { font-size: 14px; min-width: 12px; }
+  .r3 .ctl .b { font-size: 15px; padding: 0 2px; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Attribution des rôles, tour 8 : le bord du défilement</h1>
+  <p>Tour 7 : S3 (sous les papiers, avec leur ombre) était le meilleur mais pas fan, S2 (ombre) pas mal mais moche. Trois autres idées, vraiment différentes. Seul ce bord change, le reste du tableau est identique au jeu.</p>
+  <ul>
+    <li>Fais défiler les cartes dans R1 et R2 (molette, doigt), ou utilise les moments clés. R3 ne défile pas : touche les onglets de faction.</li>
+    <li>Données d'une partie à 8 joueurs, composition classique, 7 prêts sur 8.</li>
+  </ul>
+  <div class="ar-moments">
+    <button data-at="0">En haut</button>
+    <button data-at="0.45">Au milieu</button>
+    <button data-at="1">En bas</button>
+    <button data-loop>▶ En boucle</button>
+  </div>
+</header>
+
+<main>
+<section>
+  <h2>Où les cartes disparaissent</h2>
+
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Les cartes s'effacent dans le liège</span></div>
+    <p class="vdesc">Pas d'ombre ni de coupure : en approchant du bord, les cartes deviennent transparentes et se fondent dans le liège.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 r1" id="r1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Deux baguettes de bois</span></div>
+    <p class="vdesc">Deux lattes de bois clouées en travers du tableau, sous les compteurs et au-dessus du pied de page : les cartes glissent derrière, comme sur un vrai panneau.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 r2" id="r2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Une faction à la fois</span></div>
+    <p class="vdesc">Plus de défilement : trois onglets de papier choisissent la faction affichée, et ses cartes tiennent toutes sur le liège. Les cartes sont un peu plus petites ; ça change la façon de naviguer.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 r3" id="r3"></div></div></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <label for="global">Dans S3, qu'est-ce qui te gênait ? Et autre chose sur le tableau ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"], ["Moork", "Mo'orkn l'Affamé", "a"],
+  ["Technomancien", "Le Technomancien", "e"], ["Croupiere", "Luma, la croupière", "e"], ["Orpheline", "L'Orpheline", "e"], ["DrGloubi", "Dr Gloubi", "e"],
+  ["Dryade", "La Dryade", "e"], ["Messager", "Le Messager", "e"], ["Repenti", "Le Repenti", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"],
+  ["Uges", "Ugës, l'Imposteur", "e"], ["Incomplet", "L'Incomplet", "e"], ["Gardien", "Le Gardien", "e"], ["Geolier", "Geôlier", "e"],
+  ["Omniscient", "ORIGINE, l'Omniscient", "e"], ["Oracle", "Nara, l'oracle brisée", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+const CLASSIC = { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Uges: [1, 0], Incomplet: [1, 0] };
+
+function render(el) {
+  const roles = ROLES.map(r => ({ ...r, max: (CLASSIC[r.id] || [0, 0])[0], forced: (CLASSIC[r.id] || [0, 0])[1] }));
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  const pin = x => '<i class="pin" style="left:' + x + '%"></i>';
+  const cell = (k, v, f, i) => '<div class="c paper rot' + (i % 3) + '">' + pin(50) + '<div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v">' + v + "</div></div>";
+  let h = '<div class="cork">';
+  h += '<div class="tabs paper"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS, null, 0) + cell("Garantis", t.forced, null, 1) + cell("Rôles possibles", t.max, null, 2) +
+    cell("Anomalies", t.a, "a", 3) + cell("Élus", t.e, "e", 4) + cell("Marginaux", t.m, "m", 5) + "</div>";
+  h += '<div class="side"><h5 class="paper">Compositions</h5><div class="it paper on rot0">' + pin(86) + 'Classique</div></div>';
+  const r3 = el.classList.contains("r3");
+  const shown = r3 ? [el.dataset.f || "e"] : ["a", "e", "m"];
+  if (r3) h += '<div class="fsel">' + ["a", "e", "m"].map(f => '<span class="fh paper ar-btn' + (shown[0] === f ? " on" : "") + '" data-f="' + f + '" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</span>').join("") + '</div>';
+  h += r3 ? '<div class="page">' : '<div class="scroll">';
+  let k = 0;
+  for (const f of shown) {
+    if (!r3) h += '<div><span class="fh paper" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</span></div>';
+    h += '<div class="grid">';
+    roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u rot' + (k++ % 3) + (r.max ? "" : " out") + '">' + pin(50) + '<div class="slot"><div class="crd"><div class="art" style="background-image:url(img/' + r.id + '.webp)"></div>' +
+        '<div class="nm">' + r.name + '</div></div></div><div class="ctls paper">' +
+        '<div class="ctl"><span>Au plus</span><span><span class="b">‹</span><span class="v">' + r.max + '</span><span class="b">›</span></span></div>' +
+        '<div class="ctl imp"><span>Au moins</span><span><span class="b">‹</span><span class="v">' + r.forced + '</span><span class="b">›</span></span></div></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div>';
+  if (el.classList.contains("r2")) h += ["t", "b"].map(p => '<div class="lath ' + p + '"><i style="left:14px"></i><i style="left:50%"></i><i style="right:14px"></i></div>').join("");
+  h += '<div class="foot paper">' + pin(4) + '<span>' + READY + ' joueurs prêts sur ' + PLAYERS + '</span><span class="go"><i></i>Je suis prêt</span></div>';
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+const boards = ["r1", "r2", "r3"].map(id => document.getElementById(id));
+document.getElementById("r3").addEventListener("click", e => { const t = e.target.closest("[data-f]"); if (!t) return; e.currentTarget.dataset.f = t.dataset.f; render(e.currentTarget); });
+boards.forEach(render);
+const scrolls = () => boards.map(b => b.querySelector(".scroll")).filter(Boolean);
+function setAt(f) { scrolls().forEach(s => { s.scrollTop = f * (s.scrollHeight - s.clientHeight); }); }
+let loop = null;
+document.querySelectorAll(".ar-moments button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".ar-moments button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  if (loop) { cancelAnimationFrame(loop); loop = null; }
+  if (b.hasAttribute("data-loop")) {
+    const t0 = performance.now();
+    const step = now => { const p = ((now - t0) % 8000) / 8000; setAt(p < .5 ? p * 2 : 2 - p * 2); loop = requestAnimationFrame(step); };
+    loop = requestAnimationFrame(step);
+  } else setAt(parseFloat(b.dataset.at));
+}));
+// ?at=<ms> freezes the loop at that instant (captures)
+const at = new URLSearchParams(location.search).get("at");
+if (at !== null) { const p = (parseFloat(at) % 8000) / 8000; requestAnimationFrame(() => setAt(p < .5 ? p * 2 : 2 - p * 2)); }
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

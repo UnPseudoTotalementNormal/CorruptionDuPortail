@@ -5744,6 +5744,7 @@ GameObject:
   - component: {fileID: 607280635}
   - component: {fileID: 607280636}
   - component: {fileID: 607280637}
+  - component: {fileID: 607280638}
   m_Layer: 0
   m_Name: ChatManager
   m_TagString: Untagged
@@ -5837,6 +5838,23 @@ MonoBehaviour:
         Path: event:/Interface/Messages General + Anomaly/MessageMenuSelect Anomaly
   chatWindowNameOverride:
     _serializedList: []
+--- !u!114 &607280638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 607280634}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4583b681a55630149a26781c95f279fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::VoiceSystem.VoiceChatManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  _chatManager: {fileID: 607280637}
+  _gameManager: {fileID: 704980999}
+  _characterManager: {fileID: 1541735909}
+  _pushToTalkKey: 36
 --- !u!1 &621464946
 GameObject:
   m_ObjectHideFlags: 0

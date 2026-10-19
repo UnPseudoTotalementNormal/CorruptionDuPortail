@@ -25,6 +25,7 @@ namespace Tests.PlayMode.Desingleton
         private GameObject _voicePrefabGo, _placeholderGo;
         private NetworkObject _voicePrefabNo;
         private ChatManager _placeholderChat;
+        private VoiceOptions _voiceOptions;
         private VoiceChatManager _hostVoice, _clientVoice;
         private RecordingCodec _hostCodec, _clientCodec;
 
@@ -68,6 +69,9 @@ namespace Tests.PlayMode.Desingleton
             ReflectionHelper.SetPrivateField(_template, "_chatManager", _placeholderChat);
             ReflectionHelper.SetPrivateField(_template, "_gameManager", _placeholderGm);
             ReflectionHelper.SetPrivateField(_template, "_characterManager", _placeholderCm);
+            _voiceOptions = ScriptableObject.CreateInstance<VoiceOptions>();
+            _voiceOptions.SetOpenMic(false, false); // hold-to-talk whatever this PC saved: nobody holds V here
+            ReflectionHelper.SetPrivateField(_template, "_options", _voiceOptions);
             _voicePrefabGo.SetActive(true);
             _templates.Add(_voicePrefabGo);
         }
@@ -101,6 +105,7 @@ namespace Tests.PlayMode.Desingleton
             }
             yield return null;
             if (_placeholderGo != null) Object.Destroy(_placeholderGo);
+            if (_voiceOptions != null) Object.Destroy(_voiceOptions);
             _hostVoice = null;
             _clientVoice = null;
         }

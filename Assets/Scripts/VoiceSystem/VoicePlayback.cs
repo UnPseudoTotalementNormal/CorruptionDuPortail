@@ -102,6 +102,9 @@ namespace VoiceSystem
             }
         }
 
+        /// <summary>Volume of this voice, 0..1 (the master bus still applies).</summary>
+        public void SetVolume(float volume) => _channel.setVolume(volume);
+
         /// <summary>Every frame: clears what the mixer played and pauses once the speaker went quiet.</summary>
         public void Tick()
         {

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T22, le vocal : qui parle, mon micro, le réglage (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .vc-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .vc-fx { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; }
+  .vc-light { position: absolute; pointer-events: none; mix-blend-mode: screen; }
+  .vc-moi { position: absolute; left: 352px; top: 340px; width: 56px; height: 26px; pointer-events: none;
+            font: 700 15px Arial, sans-serif; color: #fff; text-align: center; line-height: 26px; opacity: 0; }
+  .vc-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .vc-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vc-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .vc-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .vc-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+  .vc-key { position: absolute; left: 40px; bottom: 34px; font: 600 20px Arial, sans-serif; color: rgba(255,255,255,.85);
+            background: rgba(0,0,0,.55); padding: 6px 12px; pointer-events: none; }
+
+  /* the pause menu, redrawn in the game's style (black panel, white Arial-like text, grey sliders) */
+  .vc-panel { position: absolute; left: 560px; top: 250px; width: 480px; background: #0b0b0b; color: #fff;
+              font: 28px Arial, "Liberation Sans", sans-serif; padding: 18px 26px 22px; box-sizing: border-box; }
+  .vc-panel h3 { margin: 0 0 12px; font: 32px Arial, sans-serif; text-align: center; font-weight: 400; }
+  .vc-row { display: flex; align-items: center; justify-content: space-between; height: 48px; }
+  .vc-slider { position: relative; width: 170px; height: 6px; background: #ddd; border-radius: 3px; }
+  .vc-slider i { position: absolute; top: -7px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+  .vc-cycle { display: flex; align-items: center; gap: 10px; font-size: 24px; cursor: pointer; user-select: none; }
+  .vc-cycle b { font-weight: 400; color: #aaa; font-size: 28px; }
+  .vc-check { display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; font-size: 26px; }
+  .vc-check u { width: 26px; height: 26px; background: #fff; display: inline-block; position: relative; text-decoration: none; }
+  .vc-check.on u::after { content: "✓"; position: absolute; left: 3px; top: -5px; color: #222; font-size: 26px; }
+  .vc-radio { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 4px 0 8px; font-size: 24px; }
+  .vc-radio label { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .vc-radio u { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: inline-block; text-decoration: none; position: relative; }
+  .vc-radio .on u::after { content: ""; position: absolute; left: 4px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+  .vc-quit { margin: 16px auto 0; width: 270px; text-align: center; background: #3a3a3a; padding: 10px 0; font-size: 24px; }
+  .vc-hint { color: #aaa; font-size: 19px; margin: -4px 0 6px; }
+</style>
+</head>
+<body data-subject="vocal">
+
+<header class="page">
+  <h1>Le vocal (tour 1)</h1>
+  <p>Le vocal Steam marche (PR #142) : tu maintiens <b>V</b> pour parler ; le jour tout le monde t'entend, la nuit
+     seulement les autres anomalies, ou ton correspondant si tu es le messager. Pour l'instant rien ne s'affiche :
+     on ne sait ni qui parle, ni si son propre micro est ouvert. Tu as aussi demandé de pouvoir choisir entre la
+     touche V et un micro toujours ouvert.</p>
+  <p>Images : vraies captures du jeu (vue du jour au vote, nuit vue de dessus, menu pause). Les lueurs sont dessinées
+     ici ; en jeu ce serait une vraie lumière ou un shader sur la carte. La couleur chaude est provisoire (celle des
+     lampes de la table), à toi de la régler.</p>
+</header>
+
+<nav class="vc-moments"><div>
+  <button data-at="300">1. Silence</button>
+  <button data-at="1500">2. Il parle</button>
+  <button data-at="2350">3. Il parle fort</button>
+  <button data-at="3900">4. Il s'est tu</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant. Celui qui parle : Autoplayclient1, le chat en face.</span>
+</div></nav>
+
+<section>
+  <h2>Qui parle</h2>
+  <p>Le jour, assis à la table. Celui qui parle est le chat en face de toi (sa carte : Autoplayclient1). La lueur suit
+     le volume de sa voix.</p>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Sa carte s'éclaire</span></div>
+    <p class="vdesc">Le bord de la carte de celui qui parle s'allume au rythme de sa voix. Marche pour tout le monde,
+       même les chats derrière toi, et de nuit vue de dessus (les cartes sont toujours là).</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="card"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Son chat s'éclaire</span></div>
+    <p class="vdesc">La lumière au-dessus de son chat (celle de T11) monte quand il parle. Très « dans la pièce », mais on
+       ne voit que les chats devant soi : il faut tourner la tête vers une voix, et la nuit vue de dessus, rien ne
+       se voit.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="cat"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Les deux</span></div>
+    <p class="vdesc">Son chat s'éclaire quand on le regarde, sa carte aussi pour ceux qu'on ne voit pas.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="both"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>La nuit, entre anomalies</h2>
+  <p>Ton tour de nuit, vue de dessus. Ton partenaire anomalie (Simulated 1, carte révélée) te parle. Seuls les chats
+     ne se voient pas d'ici.</p>
+
+  <div class="variant" data-id="N1">
+    <div class="vhead"><span class="vid">N1</span><span class="vname">Sa carte s'éclaire, comme le jour</span></div>
+    <p class="vdesc">Même signe que A1 : on sait lequel des complices parle.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="night"><img class="vc-bg" src="img/nuit.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="N2">
+    <div class="vhead"><span class="vid">N2</span><span class="vname">Rien la nuit</span></div>
+    <p class="vdesc">Les anomalies se reconnaissent à la voix ; l'écran de nuit reste comme aujourd'hui.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="none"><img class="vc-bg" src="img/nuit.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Mon micro est ouvert</h2>
+  <p>Cette fois c'est toi qui parles (tu maintiens V pendant les moments 2 et 3). Ta carte est la première à gauche,
+     sous l'onglet « Moi ».</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">L'onglet « Moi » s'allume</span></div>
+    <p class="vdesc">L'onglet déjà posé au-dessus de ta carte devient blanc et lumineux tant que ton micro est ouvert.
+       Rien de nouveau à l'écran, juste un objet qui existe déjà.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="moi" data-self="1"><img class="vc-bg" src="img/jour.jpg" alt=""><div class="vc-moi">Moi</div></div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Ta carte s'éclaire, comme celle des autres</span></div>
+    <p class="vdesc">Le même signe que pour les autres (A1), sur ta propre carte : tu vois exactement ce que les autres
+       voient quand tu parles.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="selfcard" data-self="1"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Rien à l'écran, un petit son</span></div>
+    <p class="vdesc">Un léger clic quand le micro s'ouvre et un autre quand il se ferme (comme une radio), rien de
+       visible. Avec le micro toujours ouvert, il n'y aurait aucun repère.</p>
+    <div class="screen"><div class="stage vc-stage" data-fx="none" data-self="1"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le réglage : touche V ou micro ouvert</h2>
+  <p>Dans le menu pause, panneau « Paramètres audio » (redessiné ici à l'identique, avec une ligne de plus). Touche les
+     réglages, ils réagissent. Avec le micro ouvert, Steam coupe tout seul quand tu te tais.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Une ligne qui défile</span></div>
+    <p class="vdesc">« Micro » et son mode ; un clic passe à l'autre. Une seule ligne, même allure que les curseurs.</p>
+    <div class="screen"><div class="stage"><img class="vc-bg" src="img/pause.jpg" alt="">
+      <div class="vc-panel"><h3>Paramètres audio</h3>
+        <div class="vc-row"><span>Principal</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Musique</span><span class="vc-slider"><i style="left:0"></i></span></div>
+        <div class="vc-row"><span>Sfx</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Voix</span><span class="vc-slider"><i style="left:110px"></i></span></div>
+        <div class="vc-row"><span>Micro</span><span class="vc-cycle" data-cycle><b>‹</b><span>Maintenir V</span><b>›</b></span></div>
+        <div class="vc-quit">Quitter la partie</div>
+      </div></div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Une case à cocher</span></div>
+    <p class="vdesc">« Micro toujours ouvert », décochée par défaut (= maintenir V). Comme les cases « Essais » déjà dans
+       le menu pause.</p>
+    <div class="screen"><div class="stage"><img class="vc-bg" src="img/pause.jpg" alt="">
+      <div class="vc-panel"><h3>Paramètres audio</h3>
+        <div class="vc-row"><span>Principal</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Musique</span><span class="vc-slider"><i style="left:0"></i></span></div>
+        <div class="vc-row"><span>Sfx</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Voix</span><span class="vc-slider"><i style="left:110px"></i></span></div>
+        <div class="vc-row"><span class="vc-check" data-check><u></u>Micro toujours ouvert</span></div>
+        <div class="vc-hint">Sinon : maintenir V pour parler.</div>
+        <div class="vc-quit">Quitter la partie</div>
+      </div></div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Les deux choix visibles</span></div>
+    <p class="vdesc">Les deux modes écrits l'un sous l'autre, on coche celui qu'on veut : on voit tout de suite qu'il y a
+       un choix, et lequel est pris.</p>
+    <div class="screen"><div class="stage"><img class="vc-bg" src="img/pause.jpg" alt="">
+      <div class="vc-panel"><h3>Paramètres audio</h3>
+        <div class="vc-row"><span>Principal</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Musique</span><span class="vc-slider"><i style="left:0"></i></span></div>
+        <div class="vc-row"><span>Sfx</span><span class="vc-slider"><i style="left:60px"></i></span></div>
+        <div class="vc-row"><span>Voix</span><span class="vc-slider"><i style="left:110px"></i></span></div>
+        <div class="vc-row" style="height:40px"><span>Micro</span></div>
+        <div class="vc-radio" data-radio>
+          <label class="on"><u></u>Maintenir V pour parler</label>
+          <label><u></u>Toujours ouvert</label>
+        </div>
+        <div class="vc-quit">Quitter la partie</div>
+      </div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume des voix</h2>
+  <p>Les cadres ci-dessus ont une ligne « Voix » (le volume des autres joueurs, à part de la musique et des effets).</p>
+  <div class="variant" data-id="D1"><div class="vhead"><span class="vid">D1</span><span class="vname">Garder « Voix »</span></div>
+    <p class="vdesc">Un curseur de plus ; utile si un ami parle trop fort par rapport aux sons du jeu.</p></div>
+  <div class="variant" data-id="D2"><div class="vhead"><span class="vid">D2</span><span class="vname">Pas de curseur</span></div>
+    <p class="vdesc">Les voix suivent « Principal », le panneau reste à trois curseurs.</p></div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (une autre touche que V, couper le son d'un joueur, la couleur de la lueur) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const LOOP = 4600, ON = 800, OFF = 3300;
+  // card corners measured on the captures (stage pixels): the speaker's card by day, mine, the anomaly's at night
+  const CARD_DAY = [[820, 372], [968, 372], [994, 530], [808, 530]];
+  const CARD_ME = [[262, 372], [447, 372], [430, 526], [196, 526]];
+  const CARD_NIGHT = [[808, 258], [950, 258], [950, 455], [808, 455]];
+  const CAT = { x: 800, y: 120, rx: 300, ry: 230 };
+
+  // a voice level, deterministic for ?at= captures: 0 outside the speech, a syllable-like wobble inside
+  function level(t) {
+    if (t < ON || t > OFF) return 0;
+    const fade = Math.min(1, (t - ON) / 120, (OFF - t) / 160);
+    const loud = t > 2000 && t < 2700 ? 1 : 0.7;
+    const w = 0.55 + 0.45 * Math.abs(Math.sin(t / 95) * Math.sin(t / 233 + 1));
+    return fade * loud * w;
+  }
+
+  const frames = [...document.querySelectorAll(".vc-stage")].map(stage => {
+    const fx = stage.dataset.fx, self = !!stage.dataset.self;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "vc-fx"); svg.setAttribute("viewBox", "0 0 1600 900");
+    const id = "g" + Math.random().toString(36).slice(2);
+    svg.innerHTML = `<defs><filter id="${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+      <polygon class="halo" fill="none" stroke="rgb(255,196,110)" stroke-width="16" filter="url(#${id})"/>
+      <polygon class="edge" fill="none" stroke="rgb(255,222,160)" stroke-width="3"/>`;
+    stage.appendChild(svg);
+    const corners = fx === "night" ? CARD_NIGHT : (fx === "selfcard" ? CARD_ME : CARD_DAY);
+    svg.querySelectorAll("polygon").forEach(p => p.setAttribute("points", corners.map(c => c.join(",")).join(" ")));
+    const cat = document.createElement("div"); cat.className = "vc-light"; stage.appendChild(cat);
+    cat.style.left = (CAT.x - CAT.rx) + "px"; cat.style.top = (CAT.y - CAT.ry) + "px";
+    cat.style.width = 2 * CAT.rx + "px"; cat.style.height = 2 * CAT.ry + "px";
+    let key = null;
+    if (self) { key = document.createElement("div"); key.className = "vc-key"; key.textContent = "V maintenue"; stage.appendChild(key); }
+    return { fx, svg, cat, key, moi: stage.querySelector(".vc-moi"), halo: svg.querySelector(".halo"), edge: svg.querySelector(".edge") };
+  });
+
+  function show(t) {
+    const v = level(t), talking = t >= ON && t <= OFF;
+    for (const F of frames) {
+      const card = F.fx === "card" || F.fx === "both" || F.fx === "night" || F.fx === "selfcard";
+      const catOn = F.fx === "cat" || F.fx === "both";
+      F.halo.style.opacity = card ? v : 0;
+      F.edge.style.opacity = card ? Math.min(1, v * 1.4) : 0;
+      F.cat.style.opacity = catOn ? v : 0;
+      F.cat.style.background = "radial-gradient(ellipse, rgba(255,190,110,.55) 0%, rgba(255,170,90,.22) 45%, rgba(255,160,80,0) 72%)";
+      if (F.key) F.key.style.opacity = talking ? 1 : 0;
+      if (F.moi) {
+        const on = talking ? 1 : 0;
+        F.moi.style.opacity = on;
+        F.moi.style.background = "rgba(255,240,215,.95)"; F.moi.style.color = "#5a3a1a";
+        F.moi.style.boxShadow = on ? "0 0 22px 6px rgba(255,200,120,.75)" : "none";
+      }
+    }
+    document.querySelectorAll(".vc-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+
+  // settings mock: they react
+  document.querySelectorAll("[data-cycle]").forEach(el => el.onclick = () => {
+    const s = el.querySelector("span"); s.textContent = s.textContent === "Maintenir V" ? "Toujours ouvert" : "Maintenir V";
+  });
+  document.querySelectorAll("[data-check]").forEach(el => el.onclick = () => {
+    el.classList.toggle("on");
+    el.closest(".vc-panel").querySelector(".vc-hint").textContent = el.classList.contains("on")
+      ? "Steam coupe quand tu te tais." : "Sinon : maintenir V pour parler.";
+  });
+  document.querySelectorAll("[data-radio] label").forEach(l => l.onclick = () => {
+    l.parentElement.querySelectorAll("label").forEach(x => x.classList.toggle("on", x === l));
+  });
+
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; show((now - start) % LOOP); requestAnimationFrame(tick); }
+  const at = new URLSearchParams(location.search).get("at");
+  const loopBtn = document.querySelector(".vc-moments button[data-loop]");
+  if (at !== null) { show(+at); return; }
+  document.querySelectorAll(".vc-moments button[data-at]").forEach(b => b.onclick = () => { looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at); });
+  loopBtn.onclick = () => { looping = true; start = performance.now(); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

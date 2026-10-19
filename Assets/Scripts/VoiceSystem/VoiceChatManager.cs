@@ -6,6 +6,8 @@ using System.IO;
 using Characters;
 using ChatSystem;
 using CorruptionDuPortail.Domain;
+using Extensions;
+using FMODUnity;
 using GameLogic;
 using GameLogic.GameStates;
 using TMPro;
@@ -20,7 +22,9 @@ using UnityEngine.InputSystem;
 namespace VoiceSystem
 {
     /// <summary>
-    /// In-game voice between the players (board task T22), carried by Steam Voice. Hold the push-to-talk key to speak.
+    /// In-game voice between the players (board task T22), carried by Steam Voice. Hold the push-to-talk key to speak,
+    /// or keep the microphone open (<see cref="VoiceOptions"/>); a soft click marks it opening and closing (mockups
+    /// vocal v1, B3: nothing on screen).
     /// Each client compresses its microphone with Steam and sends the packets to the server, unreliable; the server
     /// picks the listeners (<see cref="VoiceRouting"/>: everyone by day, at night only the players sharing a private
     /// chat channel, i.e. the anomalies together and the messager with his correspondent) and forwards the packets to
@@ -39,6 +43,9 @@ namespace VoiceSystem
         [SerializeField] private CharacterManager _characterManager;
         [Tooltip("Held to speak.")]
         [SerializeField] private Key _pushToTalkKey = Key.V;
+        [SerializeField] private VoiceOptions _options;
+        [SerializeField] private EventReference _micOpenSound;
+        [SerializeField] private EventReference _micCloseSound;
 
         private IGameStateQuery Query => _gameManager;
 
@@ -67,7 +74,18 @@ namespace VoiceSystem
             Assert.IsNotNull(_chatManager, "VoiceChatManager._chatManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(_gameManager, "VoiceChatManager._gameManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(_characterManager, "VoiceChatManager._characterManager is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(_options, "VoiceChatManager._options is not wired — wire it in GameScene (the composition root).");
             _codec ??= new SteamVoiceCodec();
+            _options.OnChanged += ApplyVolume;
+        }
+
+        public override void OnDestroy()
+        {
+            if (_options != null)
+            {
+                _options.OnChanged -= ApplyVolume;
+            }
+            base.OnDestroy();
         }
 
         /// <summary>Tests: replaces Steam Voice and the FMOD output.</summary>
@@ -105,10 +123,13 @@ namespace VoiceSystem
 
         private bool WantsToTransmit()
         {
-            Keyboard _keyboard = Keyboard.current;
-            if (_keyboard == null || !_keyboard[_pushToTalkKey].isPressed || IsTyping())
+            if (!_options.OpenMic)
             {
-                return false;
+                Keyboard _keyboard = Keyboard.current;
+                if (_keyboard == null || !_keyboard[_pushToTalkKey].isPressed || IsTyping())
+                {
+                    return false;
+                }
             }
             return VoiceRouting.MaySpeak(IsNight(), HasPrivateChannel());
         }
@@ -144,6 +165,10 @@ namespace VoiceSystem
             if (_codec != null && _codec.IsAvailable)
             {
                 _codec.Recording = _transmitting;
+            }
+            if (IsSpawned)
+            {
+                (_transmitting ? _micOpenSound : _micCloseSound).TryPlayOneShot();
             }
             onTransmittingChanged?.Invoke(_transmitting);
         }
@@ -256,9 +281,18 @@ namespace VoiceSystem
             if (!_playbacks.TryGetValue(_speaker, out VoicePlayback _playback))
             {
                 _playback = _createPlayback(_speaker, _codec.SampleRate);
+                _playback?.SetVolume(_options.Volume);
                 _playbacks[_speaker] = _playback; // null stays cached: FMOD failed once, no retry every packet
             }
             return _playback;
+        }
+
+        private void ApplyVolume()
+        {
+            foreach (VoicePlayback _playback in _playbacks.Values)
+            {
+                _playback?.SetVolume(_options.Volume);
+            }
         }
 
         private void TickPlaybacks()

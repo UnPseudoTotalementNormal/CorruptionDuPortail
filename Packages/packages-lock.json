@@ -484,13 +484,13 @@
       "url": "https://packages.unity.com"
     },
     "com.unpseudo.autoplay": {
-      "version": "https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay.git#v0.2.0",
+      "version": "https://github.com/UnPseudoTotalementNormal/com.unpseudo.autoplay.git#v0.2.1",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.inputsystem": "1.7.0"
       },
-      "hash": "e02473e1bdf37046f6767f6341950381090050aa"
+      "hash": "9480d23aa58c326a21b2e96623f1177a84e31a5b"
     },
     "dev.ameye.linework-lite": {
       "version": "file:dev.ameye.linework-lite",

@@ -166,8 +166,12 @@ namespace CorruptionDuPortail.Domain
         public int CardEffectId { get; }
         public int Slot { get; }
         public bool Flag { get; }
+        /// <summary>The player whose board shows the effect. Null = the dispatch's own viewer (the decision's localViewer,
+        /// or the peer running it): set it when one decision marks a card for someone other than that viewer.</summary>
+        public int? ViewerSlot { get; }
         public AddCardEffect(int cardEffectId, int slot, bool flag) { CardEffectId = cardEffectId; Slot = slot; Flag = flag; }
-        protected override IEnumerable<object> EqualityComponents { get { yield return CardEffectId; yield return Slot; yield return Flag; } }
+        public AddCardEffect(int cardEffectId, int slot, bool flag, int viewerSlot) : this(cardEffectId, slot, flag) { ViewerSlot = viewerSlot; }
+        protected override IEnumerable<object> EqualityComponents { get { yield return CardEffectId; yield return Slot; yield return Flag; yield return ViewerSlot; } }
     }
 
     // ---- Chat (ChatManager) -------------------------------------------------------------

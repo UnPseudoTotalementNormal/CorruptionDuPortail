@@ -5038,6 +5038,9 @@ MonoBehaviour:
     - Key: 3
       Value:
         cardEffectPrefab: {fileID: 7796531256758399116, guid: c63f1a4d79d1ff348bc93df51712951c, type: 3}
+    - Key: 4
+      Value:
+        cardEffectPrefab: {fileID: 7796531256758399116, guid: 14c4a0a00c9042f0b0ac10b9d8e1f786, type: 3}
 --- !u!1 &552546343
 GameObject:
   m_ObjectHideFlags: 0

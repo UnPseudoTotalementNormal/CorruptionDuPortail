@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
+using CorruptionDuPortail.Domain.PlayerIcons;
 using NUnit.Framework;
 
 namespace Tests.Editor
@@ -88,7 +89,7 @@ namespace Tests.Editor
             }, o.Effects);
         }
 
-        // LackOfAffection: existing covers (chosen + true-local = both) and (non-chosen + not-local = empty).
+        // LackOfAffection: existing covers (chosen + true-local = both) and (non-chosen + not-local = marks only).
         // These are the two UNcovered crossed combinations.
         [Test]
         public void LackOfAffection_ChosenTarget_NotTrueLocal_RevealsSenderRoleOnly()
@@ -100,6 +101,8 @@ namespace Tests.Editor
             {
                 new RevealInfo(5, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
                 new RevealInfo(5, RevealField.CorruptRevealed, RevealVisibility.Personal, 1, false),
+                new AddPlayerIcon(0, 5, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(0, 1, false, 5),
             }, o.Effects);
         }
 
@@ -113,6 +116,8 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new ChatLocal("Quelqu'un est venu vous voir...", ChatWindows.Server),
+                new AddPlayerIcon(0, 5, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(0, 1, false, 5),
             }, o.Effects);
         }
 

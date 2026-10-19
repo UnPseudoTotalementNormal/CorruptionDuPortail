@@ -49,10 +49,12 @@ namespace UI.LobbyRoles
         private const string PresetClassicActiveClass = "lobby-roles__preset-classic--active";
         private const string ScrollWrapClass = "lobby-roles__scroll-wrap";
         private const string ScrollClass = "lobby-roles__scroll";
-        private const string SectionClass = "lobby-roles__section";
         private const string SectionHeadClass = "lobby-roles__section-head";
         private const string SectionIconClass = "lobby-roles__section-icon";
         private const string GridClass = "lobby-roles__grid";
+        private const string FactionTabsClass = "lobby-roles__faction-tabs";
+        private const string FactionTabClass = "lobby-roles__faction-tab";
+        private const string FactionTabActiveClass = "lobby-roles__faction-tab--active";
         private const string UnitClass = "lobby-roles__unit";
         private const string ControlsClass = "lobby-roles__controls";
         private const string CtlClass = "lobby-roles__ctl";
@@ -79,7 +81,8 @@ namespace UI.LobbyRoles
         private const int TabAttribution = 0;
         private const int TabOptions = 2;
 
-        private const float CardWidth = 158f; // matches .lobby-roles__unit width; the card derives its 5:7 height
+        private const float CardWidth = 120f; // matches .lobby-roles__unit width; the card derives its 5:7 height
+        private const float CardNameSize = 12f; // the name stays on two lines at this card width
 
         // Faction render order (unknown is never shown). Labels fall back to these when no FactionDatabase is wired.
         private static readonly FactionType[] FactionOrder = { FactionType.anomaly, FactionType.chosen, FactionType.marginal };
@@ -110,6 +113,7 @@ namespace UI.LobbyRoles
         private bool _initialized;
         private bool _everBuilt;
         private int _activeTab = TabAttribution;
+        private FactionType _activeFaction = FactionOrder[0]; // the faction whose cards are pinned (mockup v8 R3)
 
         // Last opacity shown per role, so a rebuilt card can animate FROM it TO the new target (a full Rebuild
         // recreates every card, so a fresh element born at the target opacity would otherwise never transition).
@@ -198,8 +202,18 @@ namespace UI.LobbyRoles
             VisualElement presets = BuildPresets();
             if (presets != null) body.Add(presets);
 
+            if (!HasRoles(roles, _activeFaction))
+            {
+                foreach (FactionType faction in FactionOrder)
+                {
+                    if (!HasRoles(roles, faction)) continue;
+                    _activeFaction = faction;
+                    break;
+                }
+            }
             var scrollWrap = new VisualElement { pickingMode = PickingMode.Ignore };
             scrollWrap.AddToClassList(ScrollWrapClass);
+            scrollWrap.Add(BuildFactionTabs(roles));
             _scroll = BuildGrid(roles);
             scrollWrap.Add(_scroll);
             body.Add(scrollWrap);
@@ -338,45 +352,55 @@ namespace UI.LobbyRoles
             return column;
         }
 
-        // ---- the role grid, one section per faction ----
+        // ---- the role grid: one faction at a time (mockup v8 R3), chosen on pinned paper tabs ----
+        // The tabs sit above the grid; only the active faction's cards are built, so they all fit on the cork
+        // without scrolling. The ScrollView stays as a safety net should a faction ever outgrow the page.
+        private VisualElement BuildFactionTabs(IReadOnlyList<LobbyRoleView> roles)
+        {
+            var tabs = new VisualElement { pickingMode = PickingMode.Ignore };
+            tabs.AddToClassList(FactionTabsClass);
+            int index = 0;
+            foreach (FactionType faction in FactionOrder)
+            {
+                if (!HasRoles(roles, faction)) continue;
+                FactionType shown = faction;
+                var tab = new Button(() => { _activeFaction = shown; Rebuild(); });
+                tab.AddToClassList(TextBtnClass);
+                tab.AddToClassList(SectionHeadClass);
+                tab.AddToClassList(FactionTabClass);
+                if (faction == _activeFaction) tab.AddToClassList(FactionTabActiveClass);
+                Sprite icon = FactionIcon(faction);
+                if (icon != null) tab.Add(Icon(icon, SectionIconClass));
+                var name = new Label(FactionLabel(faction, true)) { pickingMode = PickingMode.Ignore };
+                name.AddToClassList(TitleClass);
+                name.style.color = RoleSheet.InkOf(FactionColor(faction));
+                tab.Add(name);
+                Tilt(tab, index++);
+                tabs.Add(tab);
+            }
+            return tabs;
+        }
+
         private ScrollView BuildGrid(IReadOnlyList<LobbyRoleView> roles)
         {
             var scroll = new ScrollView(ScrollViewMode.Vertical);
             scroll.AddToClassList(ScrollClass);
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-
-            foreach (FactionType faction in FactionOrder)
-            {
-                var inFaction = new List<LobbyRoleView>();
-                foreach (LobbyRoleView r in roles)
-                    if (r.Faction == faction) inFaction.Add(r);
-                if (inFaction.Count == 0) continue;
-                scroll.Add(BuildSection(faction, inFaction));
-            }
-            return scroll;
-        }
-
-        private VisualElement BuildSection(FactionType faction, List<LobbyRoleView> roles)
-        {
-            var section = new VisualElement { pickingMode = PickingMode.Ignore };
-            section.AddToClassList(SectionClass);
-
-            Color color = FactionColor(faction);
-            var head = new VisualElement { pickingMode = PickingMode.Ignore };
-            head.AddToClassList(SectionHeadClass);
-            Sprite icon = FactionIcon(faction);
-            if (icon != null) head.Add(Icon(icon, SectionIconClass));
-            var name = new Label(FactionLabel(faction, true)) { pickingMode = PickingMode.Ignore };
-            name.AddToClassList(TitleClass);
-            name.style.color = RoleSheet.InkOf(color);
-            head.Add(name);
-            section.Add(head);
+            scroll.verticalScrollerVisibility = ScrollerVisibility.Auto;
 
             var grid = new VisualElement { pickingMode = PickingMode.Ignore };
             grid.AddToClassList(GridClass);
-            foreach (LobbyRoleView r in roles) grid.Add(BuildCard(r));
-            section.Add(grid);
-            return section;
+            foreach (LobbyRoleView r in roles)
+                if (r.Faction == _activeFaction) grid.Add(BuildCard(r));
+            scroll.Add(grid);
+            return scroll;
+        }
+
+        private static bool HasRoles(IReadOnlyList<LobbyRoleView> roles, FactionType faction)
+        {
+            foreach (LobbyRoleView r in roles)
+                if (r.Faction == faction) return true;
+            return false;
         }
 
         // A "unit" = the shared card face (portrait, gold name), then its two settings BELOW it. A guaranteed role carries
@@ -389,7 +413,7 @@ namespace UI.LobbyRoles
             Sprite portrait = _portraitTable != null
                 ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
                 : null;
-            RoleCardElement card = new RoleCardElement().SetName(role.Name).SetPortrait(portrait).SetWidth(CardWidth);
+            RoleCardElement card = new RoleCardElement().SetName(role.Name).SetPortrait(portrait).SetWidth(CardWidth).SetNameSize(CardNameSize);
 
             // Animate the pool ↔ dimmed opacity. A full Rebuild recreates the card on every stepper click, so a USS
             // transition never fires (no resolved "from" value on a newborn element — see the investigation case

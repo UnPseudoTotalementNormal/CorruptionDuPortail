@@ -730,6 +730,6 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
-  barIcon: {fileID: 21300000, guid: 543077bfedecd36eca0aa48a0a0b575b, type: 3}
+  barIcon: {fileID: 21300000, guid: c4195256576466449923ea013f9b97b6, type: 3}
   powerComponents: []
   idHolderServer: 0

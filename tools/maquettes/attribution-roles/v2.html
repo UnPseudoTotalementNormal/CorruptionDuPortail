@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 2</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  /* IM Fell only has old-style figures (1 reads as I): digits come from Georgia */
+  @font-face { font-family: "Digits"; src: local("Georgia"); unicode-range: U+0030-0039; }
+
+  .ar-ref { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ar-ref img { width: 100%; border: 1px solid var(--line); }
+  .ar-ref figcaption { color: var(--soft); font-size: 13px; }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-panel { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; overflow: hidden; }
+  .ar-panel * { box-sizing: border-box; }
+  .ar-btn { cursor: pointer; user-select: none; }
+  .ar-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #4a3a30 transparent; }
+
+  /* ---------- shared dark look (H1, H2, H3, S5): the game's card gold and faction colours ---------- */
+  .dk { background: #120c0a; color: #e9dcc6; font-family: "Digits", "Fell", serif; }
+  .dk .tabs { position: absolute; left: 26px; right: 26px; top: 12px; display: flex; gap: 28px; font-size: 18px; border-bottom: 1px solid #3a2a22; }
+  .dk .tabs span { padding: 4px 0 7px; color: #8d7a68; }
+  .dk .tabs span.on { color: #e9c57a; border-bottom: 1px solid #e9c57a; margin-bottom: -1px; }
+  .dk .b { color: #e9c57a; padding: 0 6px; font-size: 19px; }
+  .dk .lk { color: #e9c57a; }
+  .dk .err { color: #ff6b5a !important; }
+  .dk .soft { color: #8d7a68; }
+  .dk .go { border: 1px solid #e9c57a; color: #e9c57a; padding: 4px 22px; font-size: 18px; }
+  .dk .foot { position: absolute; left: 26px; right: 26px; bottom: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+  .dk .rd { display: flex; align-items: center; gap: 16px; }
+  .dk .sealn { position: relative; display: inline-block; width: 24px; height: 24px; vertical-align: middle; }
+  .dk .sealn img { width: 24px; position: absolute; inset: 0; }
+  .dk .sealn em { position: absolute; inset: 0; text-align: center; line-height: 24px; font-style: normal; font-size: 12px; color: #ffe9c9; }
+  .dk .crd { position: relative; background: #080607; padding: 4px 4px 0; border: 1.5px solid var(--fc); border-radius: 4px; display: flex; flex-direction: column; }
+  .dk .crd .art { flex: 1; background-size: cover; background-position: 50% 20%; }
+  .dk .crd .nm { height: 24px; font: 10px/11px system-ui, sans-serif; font-weight: 700; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  .dk .fh { display: flex; align-items: center; gap: 8px; font: 18px "FellSC", serif; margin: 8px 0; }
+  .dk .fh img { width: 24px; height: 24px; object-fit: contain; }
+
+  /* ---------- H1 : la table ---------- */
+  .h1 .scroll { position: absolute; left: 26px; right: 14px; top: 54px; bottom: 96px; padding-right: 12px; }
+  .h1 table { width: 100%; border-collapse: collapse; }
+  .h1 th { font: 14px "FellSC", serif; color: #8d7a68; text-align: right; padding: 0 32px 4px 0; position: sticky; top: 0; background: #120c0a; z-index: 1; }
+  .h1 th:first-child { text-align: left; padding: 0 0 4px; }
+  .h1 td { padding: 0; height: 30px; border-bottom: 1px solid #241a15; font-size: 17px; }
+  .h1 td.n { text-align: right; width: 130px; white-space: nowrap; }
+  .h1 td.n .v { display: inline-block; min-width: 22px; text-align: center; font-size: 18px; }
+  .h1 tr.g td { height: 42px; border-bottom: 1px solid #3a2a22; font: 18px "FellSC", serif; vertical-align: bottom; padding-bottom: 4px; }
+  .h1 tr.g td.n { font: 19px "Digits", "Fell", serif; padding-right: 32px; }
+  .h1 tr.g img { width: 24px; height: 24px; object-fit: contain; vertical-align: -6px; margin-right: 8px; }
+  .h1 .rn { display: flex; align-items: center; gap: 10px; }
+  .h1 .rn i { width: 24px; height: 24px; background-size: cover; background-position: 50% 20%; border: 1px solid #3a2a22; }
+  .h1 tr.out td, .h1 tr.out .v { color: #6a5a4c; }
+  .h1 tr.out .rn i { opacity: .35; }
+  .h1 .imp, .h1 .imp .v { color: #e9c57a; }
+  .h1 .total { position: absolute; left: 26px; right: 40px; bottom: 52px; display: flex; align-items: baseline; border-top: 1px solid #e9c57a55; padding-top: 6px; font-size: 18px; }
+  .h1 .total .lab { flex: 1; }
+  .h1 .total .lab b { font-weight: normal; font-size: 22px; }
+  .h1 .total .n { width: 130px; text-align: right; padding-right: 32px; font-size: 22px; }
+
+  /* ---------- H2 : constructeur de deck ---------- */
+  .h2 .tabs { right: 410px; }
+  .h2 .coll { position: absolute; left: 22px; top: 54px; width: 574px; bottom: 14px; }
+  .h2 .fh { font-size: 16px; margin: 4px 0 6px; }
+  .h2 .fh img { width: 20px; height: 20px; }
+  .h2 .grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .h2 .crd { width: 82px; height: 114px; padding: 3px 3px 0; }
+  .h2 .crd .nm { height: 20px; font-size: 9px; line-height: 10px; padding-top: 1px; }
+  .h2 .crd.in { box-shadow: 0 0 0 2px #e9c57a; }
+  .h2 .crd .x { position: absolute; right: 5px; top: 3px; font-size: 16px; color: #f3d48a; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
+  .h2 .deck { position: absolute; right: 0; top: 0; width: 384px; bottom: 0; background: #1a120e; border-left: 1px solid #3a2a22; padding: 16px 18px; }
+  .h2 .deck h4 { margin: 0; font: 22px "Digits", "Fell", serif; color: #e9dcc6; font-weight: normal; }
+  .h2 .deck h4 small { font-size: 16px; color: #8d7a68; font-style: italic; }
+  .h2 .bar { display: flex; height: 8px; margin: 10px 0 5px; background: #2a1e18; }
+  .h2 .bar i { display: block; height: 100%; }
+  .h2 .legend { display: flex; gap: 14px; font-size: 14px; color: #b9a68c; }
+  .h2 .legend span { display: flex; align-items: center; gap: 4px; }
+  .h2 .legend img { width: 15px; height: 15px; object-fit: contain; }
+  .h2 .list { margin-top: 8px; max-height: 340px; }
+  .h2 .ln { display: flex; align-items: center; height: 29px; border-bottom: 1px solid #2a1e18; font-size: 16px; }
+  .h2 .ln i { width: 22px; height: 22px; background-size: cover; background-position: 50% 20%; margin-right: 8px; border-left: 3px solid var(--fc); }
+  .h2 .ln .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h2 .ln .ct { width: 66px; display: flex; justify-content: space-between; align-items: center; }
+  .h2 .ln .sl { width: 32px; text-align: center; }
+  .h2 .ln .sl .ring { display: inline-block; width: 18px; height: 18px; border: 1px dashed #8d7a68; border-radius: 50%; vertical-align: middle; }
+  .h2 .key { font-size: 13px; font-style: italic; color: #8d7a68; margin-top: 4px; }
+  .h2 .dfoot { position: absolute; left: 18px; right: 18px; bottom: 12px; font-size: 15px; }
+  .h2 .dfoot .rd { justify-content: space-between; margin-top: 6px; }
+
+  /* ---------- H3 : chiffres sur la carte ---------- */
+  .h3 .sum { position: absolute; left: 26px; right: 26px; top: 54px; display: flex; gap: 28px; align-items: baseline; font-size: 17px; }
+  .h3 .sum .v { font-size: 24px; margin-left: 6px; color: #e9dcc6; }
+  .h3 .sum .pre { margin-left: auto; font-size: 15px; }
+  .h3 .scroll { position: absolute; left: 26px; right: 14px; top: 92px; bottom: 54px; padding-right: 10px; }
+  .h3 .fh .v { font: 18px "Digits", "Fell", serif; color: #e9dcc6; margin-left: 4px; }
+  .h3 .grid { display: flex; flex-wrap: wrap; gap: 14px 12px; }
+  .h3 .crd { width: 108px; height: 152px; }
+  .h3 .crd.out { opacity: .25; }
+  .h3 .crd .cnt { position: absolute; left: 8px; bottom: 30px; font: 26px/26px "Digits", "Fell", serif; color: #f3d48a; text-shadow: 0 1px 4px #000, 0 0 8px #000; }
+  .h3 .crd .cnt small { font-size: 15px; }
+  .h3 .crd .sealn { position: absolute; right: 8px; bottom: 30px; width: 30px; height: 30px; }
+  .h3 .crd .sealn img { width: 30px; }
+  .h3 .crd .sealn em { line-height: 30px; font-size: 14px; }
+  .h3 .crd.sel { box-shadow: 0 0 0 2px #e9c57a; opacity: 1; }
+  .h3 .ov { position: absolute; left: 4px; right: 4px; top: 4px; bottom: 28px; background: rgba(8, 6, 7, .84); display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 6px; font-size: 14px; }
+  .h3 .ov .r { display: flex; justify-content: space-between; align-items: center; }
+  .h3 .ov .r .v { font-size: 18px; }
+  .h3 .ov .lk { text-align: center; font-size: 14px; margin-top: 2px; }
+
+  /* ---------- S5 : l'original, sans le look web ---------- */
+  .s5 .tally { position: absolute; left: 26px; right: 26px; top: 56px; display: flex; border-top: 1px solid #3a2a22; border-bottom: 1px solid #3a2a22; }
+  .s5 .tally div { flex: 1; padding: 6px 14px 4px; border-left: 1px solid #2a1e18; }
+  .s5 .tally div:first-child { border-left: 0; padding-left: 2px; }
+  .s5 .tally .k { font: 13px "FellSC", serif; letter-spacing: 1px; color: #8d7a68; display: flex; align-items: center; gap: 5px; }
+  .s5 .tally .k img { width: 16px; height: 16px; object-fit: contain; }
+  .s5 .tally .v { font-size: 26px; line-height: 30px; }
+  .s5 .pre { position: absolute; left: 26px; top: 144px; font-size: 16px; }
+  .s5 .scroll { position: absolute; left: 26px; right: 14px; top: 172px; bottom: 58px; padding-right: 10px; }
+  .s5 .grid { display: flex; flex-wrap: wrap; gap: 16px 14px; }
+  .s5 .u { width: 104px; }
+  .s5 .crd { width: 104px; height: 146px; transition: opacity .2s; }
+  .s5 .u.out .crd { opacity: .25; }
+  .s5 .ctl { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; color: #8d7a68; margin-top: 3px; }
+  .s5 .ctl .v { color: #e9dcc6; font-size: 17px; }
+  .s5 .ctl.imp span:first-child, .s5 .ctl.imp .v { color: #e9c57a; }
+
+  /* ---------- L2 : liège, même plan que l'original ---------- */
+  .cork { background: url(img/wood.webp) 0 0 / 500px; font-family: "Digits", "Fell", serif; color: #3b2615; }
+  .cork .board { position: absolute; inset: 12px; background: url(img/cork.webp) 0 0 / 300px; box-shadow: inset 0 0 70px rgba(40, 20, 5, .75), inset 0 0 8px rgba(0,0,0,.6); }
+  .cork .paper { background: url(../common/parchment.webp) 50% 50% / 700px; box-shadow: 1px 3px 6px rgba(0,0,0,.45); position: relative; }
+  .cork .pin { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a7a, #b1121c 55%, #5a0508); box-shadow: 1px 3px 3px rgba(0,0,0,.5); z-index: 3; left: 50%; top: -5px; margin-left: -6px; }
+  .cork .err { color: #a01212; }
+  .cork .lk { color: #7a3d14; }
+  .cork .b { color: #7a3d14; font-size: 19px; padding: 0 5px; }
+  .cork .stamp { display: flex; align-items: center; gap: 6px; color: #8a1010; font-size: 19px; }
+  .cork .stamp img { width: 34px; }
+  .cork .pol { position: relative; background: #f2e6cf; padding: 4px 4px 0; box-shadow: 2px 5px 7px rgba(0,0,0,.55); transition: opacity .2s, filter .2s; }
+  .cork .pol .art { height: 112px; background-size: cover; background-position: 50% 22%; }
+  .cork .pol .nm { text-align: center; font-size: 13px; line-height: 14px; height: 30px; padding-top: 2px; color: #2a1608; overflow: hidden; }
+  .cork .pol .seal { position: absolute; left: 50%; top: 78px; width: 26px; margin-left: -13px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+  .cork .unit { width: 112px; }
+  .cork .unit.out .pol { opacity: .42; filter: grayscale(.85); box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+  .cork .unit.out .pol .pin { display: none; }
+  .cork .tag { margin-top: 6px; padding: 3px 6px 2px; font-size: 14px; }
+  .cork .tag .r { display: flex; justify-content: space-between; align-items: center; height: 20px; }
+  .cork .tag .r span:first-child { color: #5a3a20; }
+  .cork .tag .r.imp span:first-child { color: #8a1010; }
+  .cork .tag .v { display: inline-block; min-width: 14px; text-align: center; font-size: 16px; }
+  .cork .unit.out .tag { opacity: .75; }
+  .l2 .tabs { position: absolute; left: 30px; top: 22px; display: flex; gap: 10px; }
+  .l2 .tabs .paper { padding: 5px 16px; font-size: 18px; }
+  .l2 .tabs .off { opacity: .6; transform: translateY(3px); }
+  .l2 .tally { position: absolute; left: 30px; right: 30px; top: 66px; display: flex; gap: 10px; }
+  .l2 .tally .paper { flex: 1; padding: 6px 12px 4px; }
+  .l2 .tally .k { font: 12px "FellSC", serif; letter-spacing: 1px; color: #6a4a2c; display: flex; align-items: center; gap: 6px; }
+  .l2 .tally .k img { width: 22px; height: 22px; object-fit: contain; }
+  .l2 .tally .v { font-size: 26px; line-height: 30px; }
+  .l2 .preset { position: absolute; left: 30px; top: 140px; padding: 5px 14px; font-size: 16px; }
+  .l2 .scroll { position: absolute; left: 30px; right: 18px; top: 182px; bottom: 62px; padding: 4px 12px 10px 4px; scrollbar-color: #7a5634 transparent; }
+  .l2 .fh { display: flex; align-items: center; gap: 8px; font: 18px "FellSC", serif; color: #2a1608; margin: 4px 0 8px; text-shadow: 0 0 6px rgba(255, 220, 170, .8); }
+  .l2 .fh img { width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+  .l2 .grid { display: flex; flex-wrap: wrap; gap: 14px 16px; margin-bottom: 8px; }
+  .l2 .foot { position: absolute; right: 30px; bottom: 18px; display: flex; align-items: center; gap: 14px; padding: 6px 14px; font-size: 17px; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Choisir les rôles du lobby, tour 2</h1>
+  <p>Tes retours du tour 1 : le fonctionnel de l'original est clair et doit rester ; le liège (L1) te plaît, mais on
+    y perdait des infos ; et le look « IA » ne vient sans doute pas de la matière. Donc ici <b>toutes les infos de
+    l'original restent affichées</b> (les 6 compteurs, le préréglage et son état, Max et Imposé de chaque rôle,
+    les onglets, les prêts, la raison d'un refus), et ce qui change, c'est la <b>mise en page</b>.</p>
+  <div class="ar-ref">
+    <figure style="margin:0"><img src="img/actuel_haut.jpg" alt=""><figcaption>L'original, en haut</figcaption></figure>
+    <figure style="margin:0"><img src="img/actuel_elus.jpg" alt=""><figcaption>L'original, défilé jusqu'aux élus</figcaption></figure>
+  </div>
+  <ul>
+    <li>Même partie partout : 8 joueurs, composition classique (11 rôles, Va'ahl et Abyss imposés), les 18 rôles.</li>
+    <li>Tout réagit : « − / + », compteurs, erreurs (règles du lobby), « Revenir à la classique ».</li>
+  </ul>
+</header>
+
+<section>
+  <h2>1. D'où vient le look « IA » ?</h2>
+  <p>Mes hypothèses sur l'original. 👍 = « oui, c'est ça qui fait IA », 👎 = « non, ça c'est bien ». Ça guidera le
+    tour suivant plus sûrement que mes goûts.</p>
+  <div class="variant qcard" data-id="Q1">
+    <div class="vhead"><span class="vid">Q1</span><span class="vname">Les tuiles de compteurs</span></div>
+    <p class="vdesc">Six boîtes égales « petit libellé gris, gros chiffre » (Joueurs 8, Imposés 2, Pool max 11…) :
+      le tableau de bord type de toute appli générée. L'info est utile, la forme est générique.</p>
+  </div>
+  <div class="variant qcard" data-id="Q2">
+    <div class="vhead"><span class="vid">Q2</span><span class="vname">Des boîtes dans des boîtes</span></div>
+    <p class="vdesc">Tout est encadré et arrondi : le panneau, chaque tuile, chaque carte, chaque bloc de réglages,
+      chaque bouton « − » et « + ». Rien n'est posé directement, tout flotte dans un cadre.</p>
+  </div>
+  <div class="variant qcard" data-id="Q3">
+    <div class="vhead"><span class="vid">Q3</span><span class="vname">Les mêmes réglages répétés 18 fois</span></div>
+    <p class="vdesc">« Max − 1 + / Imposé − 1 + » sous chaque carte : 36 boutons qui se ressemblent, même pour les
+      rôles hors partie. L'œil voit d'abord les réglages, pas les personnages.</p>
+  </div>
+  <div class="variant qcard" data-id="Q4">
+    <div class="vhead"><span class="vid">Q4</span><span class="vname">Les mots</span></div>
+    <p class="vdesc">« ★ Preset classique » avec son étoile, la pastille « ● Classique », « Pool max »,
+      « Imposés (min) », « prêt(s) », les titres en capitales espacées (A N O M A L I E) : le vocabulaire et la
+      typo d'un logiciel, pas d'un jeu.</p>
+  </div>
+  <div class="variant qcard" data-id="Q5">
+    <div class="vhead"><span class="vid">Q5</span><span class="vname">Police système et vert</span></div>
+    <p class="vdesc">La police par défaut et le vert « valider » sur fond gris-brun : rien ne rappelle le reste du
+      jeu (le livre, la fiche en parchemin, les cartes dorées).</p>
+  </div>
+  <div class="variant qcard" data-id="Q6">
+    <div class="vhead"><span class="vid">Q6</span><span class="vname">Tout a le même poids</span></div>
+    <p class="vdesc">Compteurs, préréglage, cartes et boutons ont à peu près la même taille et la même intensité :
+      rien ne dit ce qui compte (la composition de la partie, et si on peut démarrer).</p>
+  </div>
+</section>
+
+<section>
+  <h2>2. Le contenu de la tablette</h2>
+  <p>Cinq mises en page, toutes avec les infos de l'original. Une seule (L2) est en liège.</p>
+
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">Une table, les totaux là où ils se lisent</span></div>
+    <p class="vdesc">Une ligne par rôle, deux colonnes de chiffres (Max, Imposé). Plus de tuiles de compteurs : le
+      total d'une faction est sur sa ligne de titre, le total général en bas des colonnes, à côté du nombre de
+      joueurs. Les rôles hors partie sont à l'encre pâle. Toucher un nom ouvre sa fiche. Défile au-delà de ~16 lignes.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel dk h1" id="h1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">Comme un constructeur de deck</span></div>
+    <p class="vdesc">À gauche tous les rôles (la collection), à droite la partie (le deck) : les rôles choisis avec
+      leur nombre et leur sceau d'imposé, au-dessus le total pour 8 joueurs et une barre de la part de chaque
+      faction. Toucher une carte de la collection l'ajoute ; « − » dans la liste la retire. Les réglages ne sont que
+      sur les rôles choisis.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel dk h2" id="h2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="H3">
+    <div class="vhead"><span class="vid">H3</span><span class="vname">Les chiffres sur la carte</span></div>
+    <p class="vdesc">La grille de l'original, mais Max et Imposé sont écrits sur la carte (gros chiffre doré, sceau
+      numéroté) au lieu de deux blocs de boutons dessous : les portraits redeviennent le sujet. Toucher une carte
+      fait apparaître ses « − / + » sur elle (ici Le Repenti) ; la fiche s'ouvre par « Lire ». Totaux par faction à
+      côté des titres.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel dk h3" id="h3"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S5">
+    <div class="vhead"><span class="vid">S5</span><span class="vname">L'original, sans les détails web</span></div>
+    <p class="vdesc">Exactement l'original (mêmes blocs, même défilement), seulement débarrassé des détails :
+      compteurs séparés par de fins traits au lieu de tuiles, préréglage en texte au lieu du bouton vert et de la
+      pastille, chiffres nus « ‹ 1 › » au lieu des boîtes, police du livre, or des cartes au lieu du vert.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel dk s5" id="s5"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="L2">
+    <div class="vhead"><span class="vid">L2</span><span class="vname">Le liège, même plan que l'original</span></div>
+    <p class="vdesc">L1 du tour 1 sans perte d'info : chaque élément de l'original à sa place, mais punaisé. Les
+      onglets et les 6 compteurs sont des étiquettes, chaque rôle un portrait avec son nom, et sous lui une étiquette
+      « Max / Imposé » toujours visible. Défile comme aujourd'hui.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel cork l2" id="l2"></div></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (une info de l'original encore absente, une autre cause du look « IA », mélanger deux mises en page…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", one: "Anomalie", logo: "img/LogoAnomalie.webp", col: "#ff3131" },
+  e: { name: "Élus", one: "Élu", logo: "img/LogoElu.webp", col: "#7ed957" },
+  m: { name: "Marginaux", one: "Marginal", logo: "img/LogoMarginaux.webp", col: "#ffbd59" },
+};
+// The 18 roles of the game, classic composition for 8 players (Preset_Classique_8).
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a", 1, 1],
+  ["Abyss", "Abyss, L'Extension du Néant", "a", 1, 1],
+  ["Moork", "Mo'orkn l'Affamé", "a", 0, 0],
+  ["Repenti", "Le Repenti", "e", 1, 0],
+  ["Dryade", "La Dryade", "e", 1, 0],
+  ["DrGloubi", "Dr Gloubi", "e", 1, 0],
+  ["Technomancien", "Le Technomancien", "e", 1, 0],
+  ["Croupiere", "Luma, la croupière", "e", 1, 0],
+  ["Messager", "Le Messager", "e", 1, 0],
+  ["Orpheline", "L'Orpheline", "e", 1, 0],
+  ["Uges", "Ugës, l'Imposteur", "e", 1, 0],
+  ["Incomplet", "L'Incomplet", "e", 1, 0],
+  ["Gardien", "Le Gardien", "e", 0, 0],
+  ["Geolier", "Geôlier", "e", 0, 0],
+  ["Omniscient", "ORIGINE, l'Omniscient", "e", 0, 0],
+  ["Oracle", "Nara, l'oracle brisée", "e", 0, 0],
+  ["Traqueuse", "La Chasseuse de Prime", "e", 0, 0],
+  ["Robot", "Le Robot", "m", 0, 0],
+].map(([id, name, f, max, forced]) => ({ id, name, f, max, forced }));
+const CLASSIC = JSON.stringify(ROLES.map(r => [r.max, r.forced]));
+const img = id => "img/" + id + ".webp";
+const pl = (n, one, many) => n + " " + (n > 1 ? many : one);
+const tilt = i => ((i * 37) % 7 - 3) * 0.6;
+
+function newState() { return { roles: ROLES.map(r => ({ ...r })), sel: null }; }
+function isClassic(st) { return JSON.stringify(st.roles.map(r => [r.max, r.forced])) === CLASSIC; }
+function resetClassic(st) { st.roles.forEach((r, i) => { r.max = ROLES[i].max; r.forced = ROLES[i].forced; }); }
+function setMax(r, v) { r.max = Math.max(0, Math.min(15, v)); if (r.forced > r.max) r.forced = r.max; }
+function setForced(r, v) { r.forced = Math.max(0, Math.min(r.max, v)); }
+function tally(st) {
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  st.roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  return t;
+}
+// Same order and wording as CompositionValidator (imposé instead of forcé, real plurals).
+function check(st) {
+  const t = tally(st);
+  if (t.max < PLAYERS) return { ok: false, msg: "Pas assez de rôles : " + pl(t.max, "rôle", "rôles") + " pour " + PLAYERS + " joueurs." };
+  for (const f of ["a", "e"]) if (t[f] === 0) return { ok: false, msg: "Aucun rôle " + FAC[f].one + " dans la partie (il en faut au moins 1)." };
+  if (t.forced > PLAYERS) return { ok: false, msg: "Trop de rôles imposés : " + t.forced + " pour " + PLAYERS + " joueurs. Retire un imposé ou ajoute un joueur." };
+  return { ok: true };
+}
+// shared click handling: [data-a] = action, the nearest [data-id] = the role
+function act(st, t) {
+  const a = t.closest("[data-a]");
+  if (!a) return false;
+  if (a.dataset.a === "classic") { resetClassic(st); return true; }
+  const u = t.closest("[data-id]"); if (!u) return false;
+  const r = st.roles.find(x => x.id === u.dataset.id);
+  const k = a.dataset.a;
+  if (k === "max-") setMax(r, r.max - 1);
+  else if (k === "max+") setMax(r, r.max + 1);
+  else if (k === "for-") setForced(r, r.forced - 1);
+  else if (k === "for+") setForced(r, r.forced + 1);
+  else if (k === "add") setMax(r, r.max + 1);
+  else if (k === "seal") setForced(r, r.forced >= r.max ? 0 : r.forced + 1);
+  else if (k === "pick") st.sel = st.sel === r.id ? null : r.id;
+  else return false;
+  return true;
+}
+
+// ---------------- shared dark bits ----------------
+const status = c => c.ok ? READY + " / " + PLAYERS + " prêts" : '<span class="err">' + c.msg + "</span>";
+const sealN = n => '<span class="sealn"><img src="img/seal.webp">' + (n > 1 ? "<em>" + n + "</em>" : "") + "</span>";
+const TABS = '<div class="tabs"><span class="on">Attribution de rôle</span><span>Autres options</span></div>';
+const presetDk = st => isClassic(st) ? '<span class="soft">Composition classique pour 8</span>'
+  : '<span class="soft">Composition modifiée</span> <span class="lk ar-btn" data-a="classic">↳ Revenir à la classique</span>';
+const card = (r, extra) => '<div class="art" style="background-image:url(' + img(r.id) + ')"></div><div class="nm">' + r.name + "</div>" + (extra || "");
+const keepScroll = (el, fn) => { const s = el.querySelector(".scroll"), y = s ? s.scrollTop : 0; fn(); const n = el.querySelector(".scroll"); if (n) n.scrollTop = y; };
+
+// ---------------- H1 : la table ----------------
+function renderH1(el, st) {
+  const t = tally(st), c = check(st);
+  const num = (k, v) => '<span class="b ar-btn" data-a="' + k + '-">‹</span><span class="v">' + v + '</span><span class="b ar-btn" data-a="' + k + '+">›</span>';
+  let h = TABS + '<div class="scroll ar-scroll"><table><tr><th>Rôle</th><th>Max</th><th>Imposé</th></tr>';
+  for (const f of ["a", "e", "m"]) {
+    const rs = st.roles.filter(r => r.f === f), tf = rs.reduce((a, r) => a + r.forced, 0);
+    h += '<tr class="g"><td style="color:' + FAC[f].col + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</td><td class="n' + (!t[f] && f !== "m" ? " err" : "") + '">' + t[f] + '</td><td class="n imp">' + tf + "</td></tr>";
+    rs.forEach(r => {
+      h += '<tr class="' + (r.max ? "" : "out") + '" data-id="' + r.id + '"><td><span class="rn ar-btn"><i style="background-image:url(' + img(r.id) + ')"></i>' + r.name + (r.forced ? " " + sealN(r.forced) : "") + "</span></td>" +
+        '<td class="n">' + num("max", r.max) + '</td><td class="n imp">' + num("for", r.forced) + "</td></tr>";
+    });
+  }
+  h += "</table></div>";
+  const fakes = t.max - PLAYERS;
+  h += '<div class="total"><span class="lab">Pour <b>' + PLAYERS + '</b> joueurs <span class="soft">(' + (fakes >= 0 ? (fakes > 1 ? fakes + " rôles factices" : fakes + " rôle factice") : "pas assez de rôles") + ")</span></span>" +
+    '<span class="n' + (t.max < PLAYERS ? " err" : "") + '">' + t.max + '</span><span class="n imp' + (t.forced > PLAYERS ? " err" : "") + '">' + t.forced + "</span></div>";
+  h += '<div class="foot"><span>' + presetDk(st) + '</span><span class="rd">' + status(c) + '<span class="go ar-btn">Prêt</span></span></div>';
+  keepScroll(el, () => el.innerHTML = h);
+}
+
+// ---------------- H2 : constructeur de deck ----------------
+function renderH2(el, st) {
+  const t = tally(st), c = check(st);
+  let h = TABS + '<div class="coll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].col + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="crd ar-btn' + (r.max ? " in" : "") + '" data-id="' + r.id + '" data-a="add" style="--fc:' + FAC[r.f].col + '88">' + card(r, r.max ? '<span class="x">×' + r.max + "</span>" : "") + "</div>";
+    });
+    h += "</div>";
+  }
+  h += "</div>";
+  const fakes = t.max - PLAYERS;
+  h += '<div class="deck"><h4>' + pl(t.max, "rôle", "rôles") + " pour " + PLAYERS + " joueurs<br><small>" + (fakes >= 0 ? (fakes > 1 ? fakes + " resteront factices" : fakes + " restera factice") + ", " : "") + t.forced + " imposé" + (t.forced > 1 ? "s" : "") + "</small></h4>";
+  h += '<div class="bar">' + ["a", "e", "m"].map(f => '<i style="width:' + (t.max ? 100 * t[f] / t.max : 0) + "%;background:" + FAC[f].col + '"></i>').join("") + "</div>";
+  h += '<div class="legend">' + ["a", "e", "m"].map(f => '<span' + (!t[f] && f !== "m" ? ' class="err"' : "") + '><img src="' + FAC[f].logo + '">' + FAC[f].name + " " + t[f] + "</span>").join("") + "</div>";
+  h += '<div class="list ar-scroll">';
+  st.roles.filter(r => r.max).forEach(r => {
+    h += '<div class="ln" data-id="' + r.id + '" style="--fc:' + FAC[r.f].col + '"><i style="background-image:url(' + img(r.id) + ')"></i><span class="nm ar-btn">' + r.name + "</span>" +
+      '<span class="ct"><span class="b ar-btn" data-a="max-">−</span>' + r.max + '<span class="b ar-btn" data-a="max+">+</span></span>' +
+      '<span class="sl ar-btn" data-a="seal">' + (r.forced ? sealN(r.forced) : '<span class="ring"></span>') + "</span></div>";
+  });
+  h += '</div><div class="key">Toucher le rond impose le rôle (sceau) : il ira forcément à un vrai joueur.</div>';
+  h += '<div class="dfoot">' + presetDk(st) + '<div class="rd">' + status(c) + '<span class="go ar-btn">Prêt</span></div></div></div>';
+  el.innerHTML = h;
+}
+
+// ---------------- H3 : chiffres sur la carte ----------------
+function renderH3(el, st) {
+  const t = tally(st), c = check(st);
+  let h = TABS + '<div class="sum"><span class="soft">Joueurs<span class="v">' + PLAYERS + '</span></span>' +
+    '<span class="soft">Rôles en jeu<span class="v' + (t.max < PLAYERS ? " err" : "") + '">' + t.max + "</span></span>" +
+    '<span class="soft">Imposés<span class="v' + (t.forced > PLAYERS ? " err" : "") + '">' + t.forced + '</span></span><span class="pre">' + presetDk(st) + "</span></div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].col + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '<span class="v' + (!t[f] && f !== "m" ? " err" : "") + '">' + t[f] + '</span></div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      const sel = st.sel === r.id;
+      let extra = "";
+      if (sel) extra = '<div class="ov"><div class="r">Max<span><span class="b ar-btn" data-a="max-">−</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">+</span></span></div>' +
+        '<div class="r" style="color:#e9c57a">Imposé<span><span class="b ar-btn" data-a="for-">−</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">+</span></span></div><span class="lk ar-btn">Lire</span></div>';
+      else if (r.max) extra = '<span class="cnt"><small>×</small>' + r.max + "</span>" + (r.forced ? sealN(r.forced) : "");
+      h += '<div class="crd ar-btn' + (r.max ? "" : " out") + (sel ? " sel" : "") + '" data-id="' + r.id + '" data-a="pick" style="--fc:' + FAC[r.f].col + '88">' + card(r, extra) + "</div>";
+    });
+    h += "</div>";
+  }
+  h += '</div><div class="foot"><span></span><span class="rd">' + status(c) + '<span class="go ar-btn">Prêt</span></span></div>';
+  keepScroll(el, () => el.innerHTML = h);
+}
+
+// ---------------- S5 : l'original sans les détails web ----------------
+function renderS5(el, st) {
+  const t = tally(st), c = check(st);
+  const cell = (k, v, bad, logo) => '<div><div class="k">' + (logo ? '<img src="' + logo + '">' : "") + k + '</div><div class="v' + (bad ? " err" : "") + '">' + v + "</div></div>";
+  let h = TABS + '<div class="tally">' + cell("Joueurs", PLAYERS) + cell("Imposés (min)", t.forced, t.forced > PLAYERS) + cell("Rôles en jeu", t.max, t.max < PLAYERS) +
+    cell("Anomalies", t.a, !t.a, FAC.a.logo) + cell("Élus", t.e, !t.e, FAC.e.logo) + cell("Marginaux", t.m, false, FAC.m.logo) + "</div>";
+  h += '<div class="pre">' + (isClassic(st) ? '<span class="lk">Composition classique pour 8</span>' : presetDk(st)) + "</div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].col + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u' + (r.max ? "" : " out") + '" data-id="' + r.id + '"><div class="crd ar-btn" style="--fc:' + FAC[r.f].col + '88">' + card(r) + "</div>" +
+        '<div class="ctl"><span>Max</span><span><span class="b ar-btn" data-a="max-">‹</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">›</span></span></div>' +
+        '<div class="ctl imp"><span>Imposé</span><span><span class="b ar-btn" data-a="for-">‹</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">›</span></span></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div><div class="foot"><span></span><span class="rd">' + status(c) + '<span class="go ar-btn">Prêt</span></span></div>';
+  keepScroll(el, () => el.innerHTML = h);
+}
+
+// ---------------- L2 : liège, même plan que l'original ----------------
+const stepper = (cls, label, v, k) => '<div class="r ' + cls + '"><span>' + label + '</span><span><span class="b ar-btn" data-a="' + k + '-">−</span><span class="v">' + v + '</span><span class="b ar-btn" data-a="' + k + '+">+</span></span></div>';
+const unit = (r, i) => '<div class="unit' + (r.max ? "" : " out") + '" data-id="' + r.id + '"><div class="pol ar-btn" style="transform:rotate(' + tilt(i) + 'deg)"><i class="pin"></i>' +
+  '<div class="art" style="background-image:url(' + img(r.id) + ')"></div>' + (r.forced ? '<img class="seal" src="img/seal.webp">' : "") +
+  '<div class="nm">' + r.name + '</div></div><div class="paper tag">' + stepper("", "Max", r.max, "max") + stepper("imp", "Imposé", r.forced, "for") + "</div></div>";
+function renderL2(el, st) {
+  const t = tally(st), c = check(st);
+  const cell = (k, v, bad, logo) => '<div class="paper"><i class="pin"></i><div class="k">' + (logo ? '<img src="' + logo + '">' : "") + k + '</div><div class="v' + (bad ? " err" : "") + '">' + v + "</div></div>";
+  let h = '<div class="board"></div>';
+  h += '<div class="tabs"><div class="paper">Attribution de rôle</div><div class="paper off">Autres options</div></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS) + cell("Imposés (min)", t.forced, t.forced > PLAYERS) + cell("Rôles en jeu", t.max, t.max < PLAYERS) +
+    cell("Anomalies", t.a, !t.a, FAC.a.logo) + cell("Élus", t.e, !t.e, FAC.e.logo) + cell("Marginaux", t.m, false, FAC.m.logo) + "</div>";
+  h += '<div class="paper preset"><i class="pin"></i>' + (isClassic(st) ? "Composition classique pour 8" : 'Composition modifiée <span class="lk ar-btn" data-a="classic">↳ Revenir à la classique</span>') + "</div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.forEach((r, i) => { if (r.f === f) h += unit(r, i); });
+    h += "</div>";
+  }
+  h += "</div>";
+  h += '<div class="paper foot"><i class="pin"></i>' + status(c) + '<span class="stamp ar-btn"><img src="img/seal.webp">Prêt</span></div>';
+  keepScroll(el, () => el.innerHTML = h);
+}
+
+const V = { h1: renderH1, h2: renderH2, h3: renderH3, s5: renderS5, l2: renderL2 };
+for (const [id, render] of Object.entries(V)) {
+  const el = document.getElementById(id), st = newState();
+  if (id === "h3") st.sel = "Repenti";
+  render(el, st);
+  el.addEventListener("click", e => { if (act(st, e.target)) render(el, st); });
+}
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

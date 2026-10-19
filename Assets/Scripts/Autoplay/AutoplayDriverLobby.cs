@@ -15,8 +15,8 @@ namespace Autoplay
 {
     /// <summary>
     /// Real-input lobby (<c>-autoplay-lobby-ui</c>, implied by <c>-autoplay-real-input</c>): the composition is set on the
-    /// lobby tablet with the mouse (UI Toolkit drawn into a RenderTexture: "★ Preset classique", then Max "+" and
-    /// Imposé "+" per forced role), each seat with a screen clicks "Prêt", and the game starts by itself
+    /// lobby tablet with the mouse (UI Toolkit drawn into a RenderTexture: the "Classique" composition in the margin,
+    /// then "Au plus" "›" and "Au moins" "›" per forced role), each seat with a screen clicks "Prêt", and the game starts by itself
     /// (<c>LobbyState.TryAutoStart</c>). Journals <c>lobby.preset</c>, <c>lobby.force</c>, <c>lobby.ready</c> with
     /// <c>via=click|direct</c> next to <c>input.click</c> / <c>input.miss</c>.
     /// </summary>
@@ -139,7 +139,7 @@ namespace Autoplay
             }
         }
 
-        /// <summary>Host: "★ Preset classique".</summary>
+        /// <summary>Host: the "Classique" composition in the margin.</summary>
         public async UniTask<bool> LobbyApplyClassicPreset()
         {
             await AcquireInput();
@@ -182,7 +182,7 @@ namespace Autoplay
             return _ctl?.Query<Button>(className: "lobby-roles__step-btn").ToList().ElementAtOrDefault(1);
         }
 
-        /// <summary>Host: guarantee one role in the composition (Max "+" if needed, then Imposé "+").</summary>
+        /// <summary>Host: guarantee one role in the composition ("Au plus" "›" if needed, then "Au moins" "›").</summary>
         public async UniTask<bool> LobbyForceRole(string _fragment)
         {
             await AcquireInput();

@@ -11,55 +11,53 @@ using UnityEngine.UIElements.Experimental;
 namespace UI.LobbyRoles
 {
     /// <summary>
-    /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml). Builds a faction-grouped grid of role cards
-    /// from an <see cref="ILobbyRolesDataSource"/>, each card carrying two steppers — Max (pool cap) and Forcé
-    /// (guaranteed minimum) — plus a preset bar, tabs (Attribution / Autres options), a live composition tally
-    /// and a gated "Démarrer" read. Follows the InfoTable /
-    /// RoleCardController conventions: [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start,
-    /// Q-by-name, dynamic children in C#, BEM classes, tokens in USS.
+    /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml): a parchment page (mockup
+    /// tools/maquettes/attribution-roles v5 F3) with the tabs, six counters, the compositions (presets) in the left
+    /// margin and a faction-grouped grid of role cards, each with its two settings below it, "Au plus" (max, the pool
+    /// cap) and "Au moins" (forced, the guaranteed minimum), then the ready status and the "Je suis prêt" checkbox. Built from an
+    /// <see cref="ILobbyRolesDataSource"/>. Follows the InfoTable / RoleCardController conventions:
+    /// [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start, Q-by-name, dynamic children in C#, BEM
+    /// classes, look in USS (faction inks by code from the FactionDatabase).
     ///
-    /// Rendered into a RenderTexture by <see cref="LobbyRolesRtPresenter"/> and shown on a tablet RawImage. Design
-    /// polish (portraits, faction art, final palette) is provisional — see the design proto. The root is
-    /// pickingMode=Ignore (never block the tablet's world input at the root; children pick per-element).
+    /// Rendered into a RenderTexture by <see cref="LobbyRolesRtPresenter"/> and shown on a tablet RawImage. The root is
+    /// pickingMode=Ignore (never block the tablet's world input at the root; children pick per-element). The autoplay
+    /// lobby driver finds its targets by these class names (unit, ctl/--forced, step-btn/val, preset-classic, footer,
+    /// start, reason): keep them when changing the layout.
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public class LobbyRolesUitkController : MonoBehaviour
     {
         private const string RootName = "lobby-roles";
-        private const string TopBarClass = "lobby-roles__topbar";
-        private const string PresetClassicClass = "lobby-roles__preset-classic";
-        private const string PresetClassicActiveClass = "lobby-roles__preset-classic--active";
-        private const string PresetWrapClass = "lobby-roles__preset-wrap";
-        private const string PresetOpenerClass = "lobby-roles__preset-opener";
-        private const string PresetPopoverClass = "lobby-roles__preset-popover";
-        private const string PresetRowClass = "lobby-roles__preset-row";
-        private const string PresetRowActiveClass = "lobby-roles__preset-row--active";
-        private const string PresetNameClass = "lobby-roles__preset-name";
-        private const string PresetDescClass = "lobby-roles__preset-desc";
-        private const string PresetStatusClass = "lobby-roles__preset-status";
-        private const string PresetStatusCustomClass = "lobby-roles__preset-status--custom";
+        private const string TitleClass = "lobby-roles__title";
+        private const string TextBtnClass = "lobby-roles__text-btn";
         private const string TabsClass = "lobby-roles__tabs";
         private const string TabClass = "lobby-roles__tab";
         private const string TabActiveClass = "lobby-roles__tab--active";
-        private const string TabBadgeClass = "lobby-roles__tab-badge";
         private const string TallyClass = "lobby-roles__tally";
         private const string TallyCellClass = "lobby-roles__tally-cell";
+        private const string TallyCellFirstClass = "lobby-roles__tally-cell--first";
         private const string TallyKeyClass = "lobby-roles__tally-key";
+        private const string TallyIconClass = "lobby-roles__tally-icon";
         private const string TallyValClass = "lobby-roles__tally-val";
+        private const string StateBadClass = "lobby-roles__tally-val--bad";
+        private const string BodyClass = "lobby-roles__body";
+        private const string PresetsClass = "lobby-roles__presets";
+        private const string PresetsTitleClass = "lobby-roles__presets-title";
+        private const string PresetRowClass = "lobby-roles__preset-row";
+        private const string PresetRowActiveClass = "lobby-roles__preset-row--active";
+        private const string PresetClassicClass = "lobby-roles__preset-classic";
+        private const string PresetClassicActiveClass = "lobby-roles__preset-classic--active";
+        private const string ScrollWrapClass = "lobby-roles__scroll-wrap";
+        private const string ScrollClass = "lobby-roles__scroll";
         private const string SectionClass = "lobby-roles__section";
         private const string SectionHeadClass = "lobby-roles__section-head";
+        private const string SectionIconClass = "lobby-roles__section-icon";
         private const string GridClass = "lobby-roles__grid";
-        private const string ScrollClass = "lobby-roles__scroll";
-        private const string ScrollWrapClass = "lobby-roles__scroll-wrap";
         private const string UnitClass = "lobby-roles__unit";
-        private const string CardClass = "lobby-roles__card";
-        private const string CardActiveClass = "lobby-roles__card--active";
-        private const string CardArtClass = "lobby-roles__card-art";
-        private const string CardNameClass = "lobby-roles__card-name";
         private const string ControlsClass = "lobby-roles__controls";
         private const string CtlClass = "lobby-roles__ctl";
-        private const string CtlLabelClass = "lobby-roles__ctl-label";
         private const string CtlForcedClass = "lobby-roles__ctl--forced";
+        private const string CtlLabelClass = "lobby-roles__ctl-label";
         private const string StepperClass = "lobby-roles__stepper";
         private const string StepBtnClass = "lobby-roles__step-btn";
         private const string StepValClass = "lobby-roles__step-val";
@@ -67,12 +65,17 @@ namespace UI.LobbyRoles
         private const string ReasonClass = "lobby-roles__reason";
         private const string ReasonOkClass = "lobby-roles__reason--ok";
         private const string StartBtnClass = "lobby-roles__start";
-        private const string StateBadClass = "lobby-roles__tally-val--bad";
+        private const string StartBoxClass = "lobby-roles__start-box";
+        private const string StartTickClass = "lobby-roles__start-tick";
+        private const string StartOnClass = "lobby-roles__start--on";
+        private const string OptionsClass = "lobby-roles__options";
+        private const string OptionsTitleClass = "lobby-roles__options-title";
+        private const string OptionsBtnClass = "lobby-roles__options-btn";
 
         private const int TabAttribution = 0;
         private const int TabOptions = 2;
 
-        private const float CardWidth = 200f; // matches .lobby-roles__unit width; the card derives its 5:7 height
+        private const float CardWidth = 158f; // matches .lobby-roles__unit width; the card derives its 5:7 height
 
         // Faction render order (unknown is never shown). Labels fall back to these when no FactionDatabase is wired.
         private static readonly FactionType[] FactionOrder = { FactionType.anomaly, FactionType.chosen, FactionType.marginal };
@@ -82,8 +85,8 @@ namespace UI.LobbyRoles
         [Tooltip("A MonoBehaviour implementing ILobbyRolesDataSource (GameLobbyRolesDataSource / DemoLobbyRolesDataSource).")]
         [SerializeField] private MonoBehaviour _dataSourceBehaviour;
 
-        [Tooltip("Optional SHARED FactionDatabase asset — the single source of faction labels/colours (never duplicate " +
-                 "these into USS). If null, fallback labels/colours are used (harness).")]
+        [Tooltip("Optional SHARED FactionDatabase asset — the single source of faction labels/colours/icons (never " +
+                 "duplicate these into USS). If null, fallback labels/colours are used (harness).")]
         [SerializeField] private FactionDatabase _factionDatabase;
 
         [Tooltip("Resolves a role's portrait (CharacterPortraits) -> Sprite for the card face. Wire the shared " +
@@ -94,12 +97,11 @@ namespace UI.LobbyRoles
         [SerializeField] private RoleCardController _roleCardOverlay;
 
         private const float PoolOpacity = 1f;
-        private const float DimOpacity = 0.22f;  // roles out of the pool read as clearly muted at a glance
-        private const int CardFadeMs = 200;      // opacity transition when a role enters/leaves the pool
+        private const float DimOpacity = 0.3f;  // roles out of the pool read as clearly muted at a glance
+        private const int CardFadeMs = 200;     // opacity transition when a role enters/leaves the pool
 
         private VisualElement _root;
         private ScrollView _scroll;
-        private Texture2D _fadeTex;
         private ILobbyRolesDataSource _data;
         private bool _initialized;
         private bool _everBuilt;
@@ -123,7 +125,6 @@ namespace UI.LobbyRoles
         private void OnDisable()
         {
             if (_data != null) _data.OnChanged -= Rebuild;
-            if (_fadeTex != null) { Destroy(_fadeTex); _fadeTex = null; }
             _initialized = false;
         }
 
@@ -163,6 +164,7 @@ namespace UI.LobbyRoles
             // recreating the ScrollView would otherwise snap the grid back to the top).
             float savedScrollY = _scroll != null ? _scroll.scrollOffset.y : 0f;
             _root.Clear();
+            _scroll = null;
 
             int players = _data.GetPlayerCount();
             IReadOnlyList<LobbyRoleView> roles = _data.GetRoles();
@@ -179,160 +181,31 @@ namespace UI.LobbyRoles
 
             _root.Add(BuildTabs());
 
-            // The tally + preset bar belong to the "Attribution de rôle" tab only (the other tabs stay bare).
-            if (_activeTab == TabAttribution)
+            if (_activeTab == TabOptions)
             {
-                _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
-                VisualElement presetBar = BuildPresetBar();
-                if (presetBar != null) _root.Add(presetBar);
+                _root.Add(BuildOptions());
+                return;
             }
 
-            VisualElement content = BuildContent(roles);
-            _scroll = content as ScrollView;
+            _root.Add(BuildTally(players, totalForced, totalMax, perFactionMax));
 
-            // Wrap the ScrollView so short top/bottom fade overlays can sit fixed over its edges (cards dissolve
-            // into the panel instead of a hard cut). The overlays don't scroll and never eat clicks.
-            var scrollWrap = new VisualElement();
+            var body = new VisualElement { pickingMode = PickingMode.Ignore };
+            body.AddToClassList(BodyClass);
+            VisualElement presets = BuildPresets();
+            if (presets != null) body.Add(presets);
+
+            var scrollWrap = new VisualElement { pickingMode = PickingMode.Ignore };
             scrollWrap.AddToClassList(ScrollWrapClass);
-            scrollWrap.Add(content);
-            scrollWrap.Add(MakeEdgeFade(true));
-            scrollWrap.Add(MakeEdgeFade(false));
-            _root.Add(scrollWrap);
+            _scroll = BuildGrid(roles);
+            scrollWrap.Add(_scroll);
+            body.Add(scrollWrap);
+            _root.Add(body);
 
-            if (_scroll != null)
-            {
-                float y = savedScrollY;
-                _scroll.schedule.Execute(() => { if (_scroll != null) _scroll.scrollOffset = new Vector2(_scroll.scrollOffset.x, y); }).ExecuteLater(0);
-            }
+            float y = savedScrollY;
+            ScrollView scroll = _scroll;
+            scroll.schedule.Execute(() => scroll.scrollOffset = new Vector2(scroll.scrollOffset.x, y)).ExecuteLater(0);
 
-            _root.Add(BuildFooter(players, totalForced, totalMax, roles));
-        }
-
-        // ---- scroll edge fades ----
-
-        // A tiny vertical alpha ramp of the panel colour (opaque at the texture top → transparent at the bottom),
-        // generated once so no gradient asset is needed. The top fade uses it as-is; the bottom fade mirrors it
-        // with a -1 vertical scale.
-        private Texture2D FadeTexture()
-        {
-            if (_fadeTex != null) return _fadeTex;
-            const int h = 48;
-            var tex = new Texture2D(1, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            for (int y = 0; y < h; y++)
-            {
-                float a = (float)y / (h - 1);
-                tex.SetPixel(0, y, new Color(0.039f, 0.027f, 0.031f, a)); // panel bg rgb(10,7,8)
-            }
-            tex.Apply();
-            _fadeTex = tex;
-            return tex;
-        }
-
-        private VisualElement MakeEdgeFade(bool top)
-        {
-            var fade = new VisualElement { pickingMode = PickingMode.Ignore };
-            fade.style.position = Position.Absolute;
-            fade.style.left = 0;
-            fade.style.right = 0;
-            fade.style.height = 22;
-            fade.style.backgroundImage = new StyleBackground(FadeTexture());
-            fade.style.unityBackgroundScaleMode = ScaleMode.StretchToFill;
-            if (top)
-            {
-                fade.style.top = 0;
-            }
-            else
-            {
-                fade.style.bottom = 0;
-                fade.style.scale = new Scale(new Vector3(1f, -1f, 1f)); // mirror so the opaque edge is at the bottom
-            }
-            return fade;
-        }
-
-        // ---- preset bar ----
-        private VisualElement BuildPresetBar()
-        {
-            IReadOnlyList<LobbyPresetView> presets = _data.GetPresets();
-            if (presets == null || presets.Count == 0) return null;
-
-            int active = _data.GetActivePresetIndex(); // -1 = pool hand-edited ("Personnalisé")
-
-            var bar = new VisualElement();
-            bar.AddToClassList(TopBarClass);
-
-            int classicIndex = 0;
-            for (int i = 0; i < presets.Count; i++) { if (presets[i].IsClassic) { classicIndex = i; break; } }
-
-            int ci = classicIndex;
-            var classic = new Button(() => _data.ApplyPreset(ci)) { text = "★ Preset classique" };
-            classic.AddToClassList(PresetClassicClass);
-            if (active == classicIndex) classic.AddToClassList(PresetClassicActiveClass); // outline the applied preset
-            bar.Add(classic);
-
-            // Other presets live in a dropdown, shown ONLY when there's more than one preset for this count.
-            if (presets.Count > 1)
-            {
-                var wrap = new VisualElement();
-                wrap.AddToClassList(PresetWrapClass);
-
-                // The popover lives on the ROOT (not the top bar) and is brought to front on open, so it paints
-                // ABOVE the tabs/tally instead of being covered by later siblings. Positioned under the opener.
-                var popover = new VisualElement();
-                popover.AddToClassList(PresetPopoverClass);
-                popover.style.display = DisplayStyle.None;
-                _root.Add(popover);
-
-                for (int i = 0; i < presets.Count; i++)
-                {
-                    if (i == classicIndex) continue;
-                    int idx = i;
-                    var row = new Button(() => _data.ApplyPreset(idx)); // apply → OnChanged → Rebuild closes the popover
-                    row.AddToClassList(PresetRowClass);
-                    if (active == idx) row.AddToClassList(PresetRowActiveClass);
-
-                    // Two lines per row: name (bold) + description (small, grey) — the description is READABLE here,
-                    // unlike a UITK tooltip which doesn't render inside the RenderTexture panel.
-                    var name = new Label(presets[i].Name) { pickingMode = PickingMode.Ignore };
-                    name.AddToClassList(PresetNameClass);
-                    row.Add(name);
-                    if (!string.IsNullOrEmpty(presets[i].Description))
-                    {
-                        var desc = new Label(presets[i].Description) { pickingMode = PickingMode.Ignore };
-                        desc.AddToClassList(PresetDescClass);
-                        row.Add(desc);
-                    }
-                    popover.Add(row);
-                }
-
-                var isOpen = new[] { false };
-                var opener = new Button { text = "Autres presets… ▾" };
-                opener.AddToClassList(PresetOpenerClass);
-                opener.clicked += () =>
-                {
-                    isOpen[0] = !isOpen[0];
-                    if (!isOpen[0]) { popover.style.display = DisplayStyle.None; return; }
-                    Rect ob = opener.worldBound;
-                    Rect rb = _root.worldBound;
-                    popover.style.left = ob.x - rb.x;
-                    popover.style.top = ob.yMax - rb.y + 4f;
-                    popover.style.display = DisplayStyle.Flex;
-                    popover.BringToFront();
-                };
-
-                wrap.Add(opener);
-                bar.Add(wrap);
-            }
-
-            // Status chip: names the applied preset, or "Personnalisé" once a stepper diverges from it.
-            var status = new Label(active >= 0 && active < presets.Count ? "● " + presets[active].Name : "○ Personnalisé")
-            {
-                pickingMode = PickingMode.Ignore
-            };
-            status.AddToClassList(PresetStatusClass);
-            if (active < 0) status.AddToClassList(PresetStatusCustomClass);
-            bar.Add(status);
-
-            return bar;
+            _root.Add(BuildFooter(players, roles));
         }
 
         // ---- tabs ----
@@ -340,54 +213,124 @@ namespace UI.LobbyRoles
         {
             var tabs = new VisualElement();
             tabs.AddToClassList(TabsClass);
-            tabs.Add(Tab("Attribution de rôle", TabAttribution));
-            tabs.Add(Tab("Autres options…", TabOptions));
+            tabs.Add(Tab("Rôles", TabAttribution));
+            tabs.Add(Tab("Autres options", TabOptions));
             return tabs;
 
             VisualElement Tab(string label, int index)
             {
                 var tab = new Button(() => { _activeTab = index; Rebuild(); }) { text = label };
+                tab.AddToClassList(TextBtnClass);
+                tab.AddToClassList(TitleClass);
                 tab.AddToClassList(TabClass);
                 if (_activeTab == index) tab.AddToClassList(TabActiveClass);
                 return tab;
             }
         }
 
-        // ---- content per tab ----
-        private VisualElement BuildContent(IReadOnlyList<LobbyRoleView> roles)
+        // ---- "Autres options": the host-only dev "Démarrage forcé" (skips the all-ready condition; the server still
+        // re-validates the composition). Non-host tablets show the page empty.
+        private VisualElement BuildOptions()
         {
-            // A vertical ScrollView takes the remaining height and scrolls when the sections exceed the fixed
-            // panel height — the fix for the section overlap (a fixed-height column with no scroll compresses its
-            // overflowing children via the default flex-shrink, so siblings paint on top). The pinned bands
-            // (preset bar / tabs / tally / footer) keep their height via flex-shrink:0 in the USS.
-            var content = new ScrollView(ScrollViewMode.Vertical);
-            content.AddToClassList(ScrollClass);
-            content.style.flexGrow = 1;
-            content.style.flexShrink = 1;
+            var options = new VisualElement();
+            options.AddToClassList(OptionsClass);
+            if (!_data.IsHost()) return options;
 
-            if (_activeTab == TabOptions)
+            var title = new Label("Options de développement");
+            title.AddToClassList(TitleClass);
+            title.AddToClassList(OptionsTitleClass);
+            options.Add(title);
+
+            var force = new Button(() => _data.RequestForceStart()) { text = "Démarrage forcé" };
+            force.AddToClassList(TextBtnClass);
+            force.AddToClassList(OptionsBtnClass);
+            options.Add(force);
+            return options;
+        }
+
+        // ---- counters ----
+        private VisualElement BuildTally(int players, int totalForced, int totalMax, Dictionary<FactionType, int> perFactionMax)
+        {
+            var tally = new VisualElement { pickingMode = PickingMode.Ignore };
+            tally.AddToClassList(TallyClass);
+
+            tally.Add(Cell("Joueurs", players, false, null, true));
+            tally.Add(Cell("Garantis", totalForced, totalForced > players, null, false));
+            tally.Add(Cell("Rôles possibles", totalMax, totalMax < players, null, false));
+            foreach (FactionType faction in FactionOrder)
             {
-                // Dev-only "Démarrage forcé": skips the all-ready condition (still gated by the composition rules
-                // server-side). Host-only — non-host tablets don't show it.
-                if (_data.IsHost())
-                {
-                    var options = new VisualElement();
-                    options.style.paddingTop = 16;
-                    options.style.paddingLeft = 12;
-                    options.style.paddingRight = 12;
-
-                    var label = new Label("Options développeur");
-                    label.AddToClassList(ReasonClass);
-                    options.Add(label);
-
-                    var force = new Button(() => _data.RequestForceStart()) { text = "Démarrage forcé (dev)" };
-                    force.AddToClassList(StartBtnClass);
-                    options.Add(force);
-
-                    content.Add(options);
-                }
-                return content; // otherwise "Autres options…" stays bare
+                perFactionMax.TryGetValue(faction, out int m);
+                tally.Add(Cell(FactionLabel(faction, true), m, false, FactionIcon(faction), false));
             }
+            return tally;
+
+            VisualElement Cell(string key, int val, bool bad, Sprite icon, bool first)
+            {
+                var cell = new VisualElement { pickingMode = PickingMode.Ignore };
+                cell.AddToClassList(TallyCellClass);
+                if (first) cell.AddToClassList(TallyCellFirstClass);
+
+                var keyRow = new VisualElement { pickingMode = PickingMode.Ignore };
+                keyRow.AddToClassList(TallyKeyClass);
+                if (icon != null) keyRow.Add(Icon(icon, TallyIconClass));
+                keyRow.Add(new Label(key) { pickingMode = PickingMode.Ignore });
+                cell.Add(keyRow);
+
+                var v = new Label(val.ToString()) { pickingMode = PickingMode.Ignore };
+                v.AddToClassList(TallyValClass);
+                if (bad) v.AddToClassList(StateBadClass);
+                cell.Add(v);
+                return cell;
+            }
+        }
+
+        // ---- compositions (presets) in the left margin ----
+        private VisualElement BuildPresets()
+        {
+            IReadOnlyList<LobbyPresetView> presets = _data.GetPresets();
+            if (presets == null || presets.Count == 0) return null;
+
+            int active = _data.GetActivePresetIndex(); // -1 = pool hand-edited ("Personnalisée")
+
+            var column = new VisualElement();
+            column.AddToClassList(PresetsClass);
+
+            var title = new Label("Compositions") { pickingMode = PickingMode.Ignore };
+            title.AddToClassList(TitleClass);
+            title.AddToClassList(PresetsTitleClass);
+            column.Add(title);
+
+            for (int i = 0; i < presets.Count; i++)
+            {
+                int idx = i;
+                var row = new Button(() => _data.ApplyPreset(idx)) { text = presets[i].Name }; // apply → OnChanged → Rebuild
+                row.AddToClassList(TextBtnClass);
+                row.AddToClassList(PresetRowClass);
+                if (presets[i].IsClassic) row.AddToClassList(PresetClassicClass);
+                if (active == idx)
+                {
+                    row.AddToClassList(PresetRowActiveClass);
+                    if (presets[i].IsClassic) row.AddToClassList(PresetClassicActiveClass);
+                }
+                column.Add(row);
+            }
+
+            if (active < 0)
+            {
+                var custom = new Label("Personnalisée") { pickingMode = PickingMode.Ignore };
+                custom.AddToClassList(PresetRowClass);
+                custom.AddToClassList(PresetRowActiveClass);
+                column.Add(custom);
+            }
+            return column;
+        }
+
+        // ---- the role grid, one section per faction ----
+        private ScrollView BuildGrid(IReadOnlyList<LobbyRoleView> roles)
+        {
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.AddToClassList(ScrollClass);
+            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
             foreach (FactionType faction in FactionOrder)
             {
@@ -395,72 +338,45 @@ namespace UI.LobbyRoles
                 foreach (LobbyRoleView r in roles)
                     if (r.Faction == faction) inFaction.Add(r);
                 if (inFaction.Count == 0) continue;
-                content.Add(BuildSection(faction, inFaction));
+                scroll.Add(BuildSection(faction, inFaction));
             }
-            return content;
-        }
-
-        private VisualElement BuildTally(int players, int totalForced, int totalMax, Dictionary<FactionType, int> perFactionMax)
-        {
-            var tally = new VisualElement();
-            tally.AddToClassList(TallyClass);
-            tally.pickingMode = PickingMode.Ignore;
-
-            tally.Add(Cell("Joueurs", players.ToString(), false));
-            tally.Add(Cell("Imposés (min)", totalForced.ToString(), totalForced > players));
-            tally.Add(Cell("Pool max", totalMax.ToString(), totalMax < players));
-            foreach (FactionType faction in FactionOrder)
-            {
-                if (!perFactionMax.TryGetValue(faction, out int m)) continue;
-                tally.Add(Cell(FactionLabel(faction), m.ToString(), false));
-            }
-            return tally;
-
-            VisualElement Cell(string key, string val, bool bad)
-            {
-                var cell = new VisualElement();
-                cell.AddToClassList(TallyCellClass);
-                cell.pickingMode = PickingMode.Ignore;
-                var k = new Label(key); k.AddToClassList(TallyKeyClass);
-                var v = new Label(val); v.AddToClassList(TallyValClass);
-                if (bad) v.AddToClassList(StateBadClass);
-                cell.Add(k); cell.Add(v);
-                return cell;
-            }
+            return scroll;
         }
 
         private VisualElement BuildSection(FactionType faction, List<LobbyRoleView> roles)
         {
-            var section = new VisualElement();
+            var section = new VisualElement { pickingMode = PickingMode.Ignore };
             section.AddToClassList(SectionClass);
-            section.pickingMode = PickingMode.Ignore;
 
-            var head = new Label(FactionLabel(faction).ToUpperInvariant());
+            Color color = FactionColor(faction);
+            var head = new VisualElement { pickingMode = PickingMode.Ignore };
             head.AddToClassList(SectionHeadClass);
-            Color c = FactionColor(faction);
-            head.style.color = c;
+            Sprite icon = FactionIcon(faction);
+            if (icon != null) head.Add(Icon(icon, SectionIconClass));
+            var name = new Label(FactionLabel(faction, true)) { pickingMode = PickingMode.Ignore };
+            name.AddToClassList(TitleClass);
+            name.style.color = RoleSheet.InkOf(color);
+            head.Add(name);
             section.Add(head);
 
-            var grid = new VisualElement();
+            var grid = new VisualElement { pickingMode = PickingMode.Ignore };
             grid.AddToClassList(GridClass);
-            grid.pickingMode = PickingMode.Ignore;
-            foreach (LobbyRoleView r in roles) grid.Add(BuildCard(r, c));
+            foreach (LobbyRoleView r in roles) grid.Add(BuildCard(r));
             section.Add(grid);
             return section;
         }
 
-        // A "unit" = the pure 5:7 portrait card (art fills the face, name overlaid at the bottom, forced tag) with
-        // the Max/Forcé steppers BELOW it — the card itself stays a reusable pure-visual, controls live outside.
-        private VisualElement BuildCard(LobbyRoleView role, Color factionColor)
+        // A "unit" = the shared card face (portrait, gold name), then its two settings BELOW it. A guaranteed role carries
+        // no mark on its card: its red "Au moins" says it (mockup v6 G1). The card stays a reusable pure visual.
+        private VisualElement BuildCard(LobbyRoleView role)
         {
             var unit = new VisualElement();
             unit.AddToClassList(UnitClass);
 
-            // THE reusable card face (portrait fills, gold name, faction frame) — one component, uniform everywhere.
             Sprite portrait = _portraitTable != null
                 ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
                 : null;
-            RoleCardElement card = RoleCardElement.Create(role.Name, portrait, factionColor).SetWidth(CardWidth);
+            RoleCardElement card = new RoleCardElement().SetName(role.Name).SetPortrait(portrait).SetWidth(CardWidth);
 
             // Animate the pool ↔ dimmed opacity. A full Rebuild recreates the card on every stepper click, so a USS
             // transition never fires (no resolved "from" value on a newborn element — see the investigation case
@@ -479,10 +395,10 @@ namespace UI.LobbyRoles
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
-            controls.Add(Stepper("Max", role.Max, role.Max <= 0, role.Max >= 15, false,
+            controls.Add(Stepper("Au plus", role.Max, role.Max <= 0, role.Max >= 15, false,
                 () => _data.RequestSetMax(role.Id, role.Max - 1),
                 () => _data.RequestSetMax(role.Id, role.Max + 1)));
-            controls.Add(Stepper("Imposé", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
+            controls.Add(Stepper("Au moins", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
                 () => _data.RequestSetForced(role.Id, role.Forced - 1),
                 () => _data.RequestSetForced(role.Id, role.Forced + 1)));
             unit.Add(controls);
@@ -503,21 +419,23 @@ namespace UI.LobbyRoles
             ctl.AddToClassList(CtlClass);
             if (forced) ctl.AddToClassList(CtlForcedClass);
 
-            var lbl = new Label(label);
+            var lbl = new Label(label) { pickingMode = PickingMode.Ignore };
             lbl.AddToClassList(CtlLabelClass);
             ctl.Add(lbl);
 
             var stepper = new VisualElement();
             stepper.AddToClassList(StepperClass);
 
-            var minus = new Button(onMinus) { text = "−" };
+            var minus = new Button(onMinus) { text = "‹" };
+            minus.AddToClassList(TextBtnClass);
             minus.AddToClassList(StepBtnClass);
             minus.SetEnabled(!minusDisabled);
 
-            var val = new Label(value.ToString());
+            var val = new Label(value.ToString()) { pickingMode = PickingMode.Ignore };
             val.AddToClassList(StepValClass);
 
-            var plus = new Button(onPlus) { text = "+" };
+            var plus = new Button(onPlus) { text = "›" };
+            plus.AddToClassList(TextBtnClass);
             plus.AddToClassList(StepBtnClass);
             plus.SetEnabled(!plusDisabled);
 
@@ -526,7 +444,8 @@ namespace UI.LobbyRoles
             return ctl;
         }
 
-        private VisualElement BuildFooter(int players, int totalForced, int totalMax, IReadOnlyList<LobbyRoleView> roles)
+        // ---- footer ----
+        private VisualElement BuildFooter(int players, IReadOnlyList<LobbyRoleView> roles)
         {
             var footer = new VisualElement();
             footer.AddToClassList(FooterClass);
@@ -542,46 +461,69 @@ namespace UI.LobbyRoles
             CompositionValidation validation = CompositionValidator.Validate(
                 new CompositionSnapshot(players, snapshotRoles), _data.GetFactionMinimums());
 
-            // Composition-invalid → show WHY the game can't start; composition-valid → show ready progress.
+            // Composition-invalid → the reason it can't start, in the status's place; valid → ready progress.
             // There is no start button: the server auto-starts once every player is ready and the composition is
             // valid (both re-checked server-side). Each player readies only themselves via the toggle below.
             int readyCount = _data.GetReadyCount();
-            string status;
-            bool statusOk;
-            if (!validation.IsValid)
-            {
-                status = validation.FirstReason; // names the offending faction / the fix (Samus's readable rule)
-                statusOk = false;
-            }
-            else
-            {
-                status = $"{readyCount} / {players} prêt(s)";
-                statusOk = players > 0 && readyCount >= players;
-            }
+            string status = validation.IsValid
+                ? $"{readyCount} {(readyCount > 1 ? "joueurs prêts" : "joueur prêt")} sur {players}"
+                : validation.FirstReason;
 
-            var reason = new Label(status);
+            var reason = new Label(status) { pickingMode = PickingMode.Ignore };
             reason.AddToClassList(ReasonClass);
-            if (statusOk) reason.AddToClassList(ReasonOkClass);
+            if (validation.IsValid) reason.AddToClassList(ReasonOkClass);
             footer.Add(reason);
 
+            // An ink checkbox (mockup v6 B2): "Je suis prêt", ticked in red once ready; tapping again unticks it.
             bool localReady = _data.GetLocalReady();
-            var toggle = new Button(() => _data.RequestSetReady(!localReady)) { text = localReady ? "Pas prêt" : "Prêt" };
+            var toggle = new Button(() => _data.RequestSetReady(!localReady));
+            toggle.AddToClassList(TextBtnClass);
             toggle.AddToClassList(StartBtnClass);
+            if (localReady) toggle.AddToClassList(StartOnClass);
+            var box = new VisualElement { pickingMode = PickingMode.Ignore };
+            box.AddToClassList(StartBoxClass);
+            if (localReady)
+            {
+                var tick = new VisualElement { pickingMode = PickingMode.Ignore };
+                tick.AddToClassList(StartTickClass);
+                box.Add(tick);
+            }
+            toggle.Add(box);
+            var text = new Label("Je suis prêt") { pickingMode = PickingMode.Ignore };
+            text.AddToClassList(TitleClass);
+            toggle.Add(text);
             footer.Add(toggle);
             return footer;
         }
 
-        private string FactionLabel(FactionType faction)
+        // ---- helpers ----
+        private static VisualElement Icon(Sprite sprite, string cssClass)
         {
+            var icon = new VisualElement { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList(cssClass);
+            icon.style.backgroundImage = new StyleBackground(sprite);
+            return icon;
+        }
+
+        private Sprite FactionIcon(FactionType faction)
+            => _factionDatabase != null && _factionDatabase.TryGet(faction, out FactionData data) ? data.icon : null;
+
+        // The tablet speaks of a faction in the plural ("Anomalies", "Élus", "Marginaux"); the database holds the
+        // singular display name, which the reasons use.
+        private string FactionLabel(FactionType faction, bool plural)
+        {
+            if (plural)
+            {
+                switch (faction)
+                {
+                    case FactionType.anomaly: return "Anomalies";
+                    case FactionType.chosen: return "Élus";
+                    case FactionType.marginal: return "Marginaux";
+                }
+            }
             if (_factionDatabase != null && _factionDatabase.TryGet(faction, out FactionData data) && !string.IsNullOrEmpty(data.displayName))
                 return data.displayName;
-            switch (faction)
-            {
-                case FactionType.anomaly: return "Anomalies";
-                case FactionType.chosen: return "Élus";
-                case FactionType.marginal: return "Marginaux";
-                default: return faction.ToString();
-            }
+            return faction.ToString();
         }
 
         private Color FactionColor(FactionType faction)

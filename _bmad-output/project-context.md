@@ -151,6 +151,8 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - In the player build, the main menu's screen-space overlay uGUI canvas drew OVER the UI Toolkit role book (book
   PanelSettings sort order 10 > canvas 0) and its buttons took the clicks: hide the menu's content while a full-screen
   UITK screen is open there (`MainMenu` + `RoleBookController.Opened/Closed`). Check it in a build, not the editor.
+- A `*/` inside a USS comment (e.g. a path `Fonts/*/OFL.txt`) ends it early: the whole sheet is then ignored with
+  no console error (the lobby tablet rendered unstyled). Never write `*/` in a comment.
 - Faction colours come from `FactionDatabase` SO, never new USS tokens. UI visuals are placeholder and design-owned: don't invent palettes.
 
 ## 3D interaction

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 3</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  /* IM Fell only has old-style figures (1 reads as I): digits come from Georgia */
+  @font-face { font-family: "Digits"; src: local("Georgia"); unicode-range: U+0030-0039; }
+
+  .ar-ref { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ar-ref img { width: 100%; border: 1px solid var(--line); }
+  .ar-ref figcaption { color: var(--soft); font-size: 13px; }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+  .ar-words { margin: 6px 0 0; padding: 8px 12px; background: #1b1511; border-left: 2px solid var(--line); font: 16px/1.6 "Fell", serif; color: var(--fg); }
+  .ar-words b { font-weight: normal; color: var(--accent); }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-panel { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; overflow: hidden; font-family: "Digits", "Fell", serif; }
+  .ar-panel * { box-sizing: border-box; }
+  .ar-btn { cursor: pointer; user-select: none; }
+  .ar-scroll { overflow-y: auto; scrollbar-width: thin; }
+
+  /* ---------- one layout (S5 = the original's), three skins ---------- */
+  .sx .tabs { position: absolute; left: 26px; right: 26px; top: 12px; display: flex; gap: 28px; font-size: 19px; }
+  .sx .tabs span { padding: 4px 0 6px; }
+  .sx .tally { position: absolute; left: 26px; right: 26px; top: 52px; display: flex; }
+  .sx .tally .c { flex: 1; padding: 4px 0 2px; }
+  .sx .tally .k { font: 14px "FellSC", serif; letter-spacing: .5px; display: flex; align-items: center; gap: 5px; }
+  .sx .tally .k img { width: 17px; height: 17px; object-fit: contain; }
+  .sx .tally .v { font-size: 28px; line-height: 32px; }
+  .sx .pre { position: absolute; left: 26px; top: 126px; font-size: 17px; }
+  .sx .scroll { position: absolute; left: 26px; right: 14px; top: 160px; bottom: 60px; padding-right: 10px; }
+  .sx .fh { display: flex; align-items: center; gap: 8px; font: 19px "FellSC", serif; margin: 8px 0 10px; }
+  .sx .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .sx .grid { display: flex; flex-wrap: wrap; gap: 18px 16px; margin-bottom: 4px; }
+  .sx .u { width: 104px; position: relative; }
+  .sx .crd { position: relative; width: 104px; height: 146px; background: #080607; padding: 4px 4px 0; display: flex; flex-direction: column; transition: opacity .2s; }
+  .sx .crd .art { flex: 1; background-size: cover; background-position: 50% 20%; }
+  .sx .crd .nm { height: 24px; font: 10px/11px system-ui, sans-serif; font-weight: 700; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  .sx .crd .seal { position: absolute; left: 50%; bottom: 30px; width: 26px; margin-left: -13px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+  .sx .u.out .crd { opacity: .25; }
+  .sx .ctl { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; margin-top: 3px; }
+  .sx .ctl .v { display: inline-block; min-width: 14px; text-align: center; font-size: 17px; }
+  .sx .ctl .b { padding: 0 5px; font-size: 18px; }
+  .sx .foot { position: absolute; left: 26px; right: 26px; bottom: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 18px; font-size: 18px; }
+  .sx .go { display: flex; align-items: center; gap: 7px; font-size: 20px; }
+  .sx .go img { width: 30px; }
+  .sx .pin { display: none; }
+
+  /* S6 : sombre, plus aucun cadre */
+  .s6 { background: #120c0a; color: #e9dcc6; }
+  .s6 .tabs span { color: #7d6a58; }
+  .s6 .tabs span.on { color: #e9c57a; }
+  .s6 .tally .k { color: #8d7a68; }
+  .s6 .pre, .s6 .soft { color: #8d7a68; }
+  .s6 .lk, .s6 .b, .s6 .go { color: #e9c57a; }
+  .s6 .ctl { color: #8d7a68; }
+  .s6 .ctl.imp, .s6 .ctl.imp .v { color: #e9c57a; }
+  .s6 .err { color: #ff6b5a !important; }
+  .s6 .scroll { scrollbar-color: #4a3a30 transparent; }
+
+  /* S7 : le liège (l'idée de L2), sans étiquette par info */
+  .s7 { background: url(img/wood.webp) 0 0 / 500px; color: #2a1608; }
+  .s7 .board { position: absolute; inset: 12px; background: url(img/cork.webp) 0 0 / 300px; box-shadow: inset 0 0 70px rgba(40, 20, 5, .75), inset 0 0 8px rgba(0,0,0,.6); }
+  .s7 .strip { position: absolute; left: 22px; right: 22px; top: 22px; height: 132px; background: url(../common/parchment.webp) 50% 50% / 900px; box-shadow: 1px 4px 8px rgba(0,0,0,.5); transform: rotate(-.3deg); }
+  .s7 .tabs { top: 26px; left: 44px; }
+  .s7 .tabs span { color: #8a6a4c; }
+  .s7 .tabs span.on { color: #2a1608; }
+  .s7 .tally { top: 62px; left: 44px; right: 44px; }
+  .s7 .tally .k { color: #6a4a2c; }
+  .s7 .pre { top: 166px; left: 30px; padding: 3px 12px; background: url(../common/parchment.webp) 50% 50% / 500px; box-shadow: 1px 3px 6px rgba(0,0,0,.45); transform: rotate(.4deg); }
+  .s7 .scroll { top: 204px; bottom: 66px; scrollbar-color: #7a5634 transparent; }
+  .s7 .fh { color: #2a1608; text-shadow: 0 0 6px rgba(255, 220, 170, .85); }
+  .s7 .pin { display: block; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a7a, #b1121c 55%, #5a0508); box-shadow: 1px 3px 3px rgba(0,0,0,.5); z-index: 3; left: 50%; top: -5px; margin-left: -6px; }
+  .s7 .crd { box-shadow: 2px 5px 8px rgba(0,0,0,.6); }
+  .s7 .u.out .pin { display: none; }
+  .s7 .ctls { margin-top: 5px; padding: 1px 6px; background: url(../common/parchment.webp) 50% 50% / 400px; box-shadow: 1px 2px 4px rgba(0,0,0,.4); }
+  .s7 .u.out .ctls { opacity: .7; }
+  .s7 .ctl { color: #5a3a20; margin: 0; font-size: 14px; white-space: nowrap; }
+  .s7 .ctl .b { padding: 0 3px; font-size: 16px; }
+  .s7 .ctl .v { font-size: 15px; }
+  .s7 .ctl.imp, .s7 .ctl.imp .v { color: #8a1010; }
+  .s7 .b, .s7 .lk { color: #7a3d14; }
+  .s7 .go { color: #8a1010; }
+  .s7 .foot { bottom: 22px; right: 22px; left: auto; padding: 5px 14px; background: url(../common/parchment.webp) 50% 50% / 500px; box-shadow: 1px 3px 6px rgba(0,0,0,.45); }
+  .s7 .soft { color: #6a4a2c; }
+  .s7 .err { color: #a01212 !important; }
+
+  /* S8 : la page de parchemin (comme la fiche de rôle qui s'ouvre au toucher) */
+  .s8 { background: #1a120c url(../common/parchment.webp) 50% 50% / cover; color: #3b2615; box-shadow: inset 0 0 70px rgba(70, 40, 10, .6); }
+  .s8 .tabs span { color: #8a6a4c; }
+  .s8 .tabs span.on { color: #4a1d0c; }
+  .s8 .tally .k { color: #7a5a3c; }
+  .s8 .tally .c + .c { border-left: 1px solid rgba(90, 58, 32, .25); padding-left: 14px; }
+  .s8 .tally { border-bottom: 1px solid rgba(90, 58, 32, .35); padding-bottom: 6px; }
+  .s8 .pre, .s8 .soft { color: #7a5a3c; }
+  .s8 .lk, .s8 .b { color: #8a4a1c; }
+  .s8 .crd { box-shadow: 0 3px 8px rgba(40, 20, 5, .55); }
+  .s8 .u.out .crd { opacity: .3; filter: sepia(.6); }
+  .s8 .ctl { color: #6a4a2c; }
+  .s8 .ctl.imp, .s8 .ctl.imp .v { color: #8a1010; }
+  .s8 .go { color: #8a1010; }
+  .s8 .err { color: #a01212 !important; }
+  .s8 .scroll { scrollbar-color: #a07a50 transparent; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Choisir les rôles du lobby, tour 3</h1>
+  <p>Tes votes du tour 2 : ce qui fait IA, ce sont <b>les boîtes dans des boîtes</b> (Q2), <b>les mots</b> (Q4),
+    <b>la police système et le vert</b> (Q5) ; les compteurs, pas vraiment (Q1). S5 (l'original sans les détails
+    web) est « déjà mieux », et l'idée du liège (L2) te plaît. Donc ici : la mise en page de S5, toutes les infos de
+    l'original, et je pousse sur ces trois causes.</p>
+  <div class="ar-ref">
+    <figure style="margin:0"><img src="img/actuel_haut.jpg" alt=""><figcaption>L'original</figcaption></figure>
+    <figure style="margin:0"><img src="captures/v2/S5.jpg" alt=""><figcaption>S5 du tour 2, « déjà mieux »</figcaption></figure>
+  </div>
+  <ul>
+    <li>Plus aucun cadre autour des infos : ni tuile, ni bloc de réglages, ni bouton encadré. Les cartes restent les
+      cartes du jeu (fond noir, nom doré).</li>
+    <li>Police du livre des personnages (IM Fell, déjà dans le jeu), plus de vert ; l'or des cartes et le rouge des
+      sceaux à la place.</li>
+    <li>Les mots de la section 2 sont appliqués aux trois écrans avec W1 ; touche les « ‹ › » pour voir les
+      compteurs et les erreurs bouger.</li>
+  </ul>
+</header>
+
+<section>
+  <h2>1. L'écran</h2>
+  <p>Même plan, même infos, trois fonds : la différence est la matière et ce qu'elle remplace.</p>
+
+  <div class="variant" data-id="S6">
+    <div class="vhead"><span class="vid">S6</span><span class="vname">S5 sans aucun cadre</span></div>
+    <p class="vdesc">S5 poussé au bout : les compteurs n'ont plus de traits, les onglets plus de soulignement, les
+      cartes plus de bordure de couleur (la faction est dite par le titre de la section), « Prêt » est un mot avec
+      un sceau au lieu d'un bouton. Un rôle imposé porte son sceau sur la carte.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel sx s6" id="s6"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S7">
+    <div class="vhead"><span class="vid">S7</span><span class="vname">S5 sur le liège</span></div>
+    <p class="vdesc">L'idée de L2 sans ses défauts : au lieu de six étiquettes pour les compteurs, une seule bande de
+      papier punaisée en haut (onglets et compteurs écrits dessus) ; les cartes du jeu punaisées telles quelles, et
+      sous chacune un seul papier avec ses deux réglages. Hors partie : carte grisée, sans punaise.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel sx s7" id="s7"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S8">
+    <div class="vhead"><span class="vid">S8</span><span class="vname">S5 sur une page de parchemin</span></div>
+    <p class="vdesc">La tablette affiche une page du même parchemin que la fiche de rôle qui s'ouvre quand on touche
+      une carte : encre brune, titres en petites capitales, traits d'encre fins entre les compteurs. Le passage de
+      la liste à la fiche devient continu.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel sx s8" id="s8"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Les mots</h2>
+  <p>Les libellés de l'original, et deux autres façons de dire la même chose. Les écrans au-dessus utilisent W1.</p>
+
+  <div class="variant qcard" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Les termes actuels, nettoyés</span></div>
+    <p class="vdesc">On garde Max et Imposé (déjà connus des joueurs), on enlève le jargon et les parenthèses.</p>
+    <div class="ar-words">Onglets : <b>Rôles</b>, <b>Autres options</b><br>
+      Compteurs : <b>Joueurs 8</b>, <b>Imposés 2</b>, <b>Rôles en jeu 11</b>, <b>Anomalies 2</b>…<br>
+      Sous une carte : <b>Max ‹ 1 ›</b>, <b>Imposé ‹ 1 ›</b><br>
+      Préréglage : <b>Composition classique pour 8</b> ; modifiée : <b>Composition modifiée ↳ Revenir à la classique</b><br>
+      Bas : <b>7 joueurs prêts sur 8</b>, <b>Prêt</b><br>
+      Erreur : <b>Trop de rôles imposés : 9 pour 8 joueurs. Retire un imposé ou ajoute un joueur.</b></div>
+  </div>
+  <div class="variant qcard" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Dire ce que ça fait</span></div>
+    <p class="vdesc">Chaque réglage dit son effet, sans avoir à connaître le système.</p>
+    <div class="ar-words">Compteurs : <b>Joueurs 8</b>, <b>Rôles possibles 11</b>, <b>Garantis 2</b>…<br>
+      Sous une carte : <b>Au plus ‹ 1 ›</b>, <b>Au moins ‹ 1 ›</b><br>
+      Bas : <b>3 rôles resteront factices.</b> <b>7 joueurs prêts sur 8</b></div>
+  </div>
+  <div class="variant qcard" data-id="W3">
+    <div class="vhead"><span class="vid">W3</span><span class="vname">Le vocabulaire des cartes</span></div>
+    <p class="vdesc">Les rôles sont des cartes dans le jeu : on compose un paquet, certaines cartes sont garanties
+      (jamais factices).</p>
+    <div class="ar-words">Compteurs : <b>Joueurs 8</b>, <b>Cartes dans le paquet 11</b>, <b>Garanties 2</b>…<br>
+      Sous une carte : <b>Exemplaires ‹ 1 ›</b>, <b>Garanties ‹ 1 ›</b><br>
+      Préréglage : <b>Paquet classique pour 8</b><br>
+      Bas : <b>3 cartes resteront factices.</b> <b>7 joueurs prêts sur 8</b></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (une info encore absente, un mot qui ne va pas, le fond à garder…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", one: "Anomalie", logo: "img/LogoAnomalie.webp", col: "#ff3131", ink: "#8e1616" },
+  e: { name: "Élus", one: "Élu", logo: "img/LogoElu.webp", col: "#7ed957", ink: "#2c5f22" },
+  m: { name: "Marginaux", one: "Marginal", logo: "img/LogoMarginaux.webp", col: "#ffbd59", ink: "#8a4d0e" },
+};
+// The 18 roles of the game, classic composition for 8 players (Preset_Classique_8).
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a", 1, 1],
+  ["Abyss", "Abyss, L'Extension du Néant", "a", 1, 1],
+  ["Moork", "Mo'orkn l'Affamé", "a", 0, 0],
+  ["Repenti", "Le Repenti", "e", 1, 0],
+  ["Dryade", "La Dryade", "e", 1, 0],
+  ["DrGloubi", "Dr Gloubi", "e", 1, 0],
+  ["Technomancien", "Le Technomancien", "e", 1, 0],
+  ["Croupiere", "Luma, la croupière", "e", 1, 0],
+  ["Messager", "Le Messager", "e", 1, 0],
+  ["Orpheline", "L'Orpheline", "e", 1, 0],
+  ["Uges", "Ugës, l'Imposteur", "e", 1, 0],
+  ["Incomplet", "L'Incomplet", "e", 1, 0],
+  ["Gardien", "Le Gardien", "e", 0, 0],
+  ["Geolier", "Geôlier", "e", 0, 0],
+  ["Omniscient", "ORIGINE, l'Omniscient", "e", 0, 0],
+  ["Oracle", "Nara, l'oracle brisée", "e", 0, 0],
+  ["Traqueuse", "La Chasseuse de Prime", "e", 0, 0],
+  ["Robot", "Le Robot", "m", 0, 0],
+].map(([id, name, f, max, forced]) => ({ id, name, f, max, forced }));
+const CLASSIC = JSON.stringify(ROLES.map(r => [r.max, r.forced]));
+const img = id => "img/" + id + ".webp";
+const pl = (n, one, many) => n + " " + (n > 1 ? many : one);
+const tilt = i => ((i * 37) % 7 - 3) * 0.5;
+
+function newState() { return { roles: ROLES.map(r => ({ ...r })) }; }
+function isClassic(st) { return JSON.stringify(st.roles.map(r => [r.max, r.forced])) === CLASSIC; }
+function resetClassic(st) { st.roles.forEach((r, i) => { r.max = ROLES[i].max; r.forced = ROLES[i].forced; }); }
+function setMax(r, v) { r.max = Math.max(0, Math.min(15, v)); if (r.forced > r.max) r.forced = r.max; }
+function setForced(r, v) { r.forced = Math.max(0, Math.min(r.max, v)); }
+function tally(st) {
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  st.roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  return t;
+}
+// Same order and wording as CompositionValidator (imposé instead of forcé, real plurals).
+function check(st) {
+  const t = tally(st);
+  if (t.max < PLAYERS) return { ok: false, msg: "Pas assez de rôles : " + pl(t.max, "rôle", "rôles") + " pour " + PLAYERS + " joueurs." };
+  for (const f of ["a", "e"]) if (t[f] === 0) return { ok: false, msg: "Aucun rôle " + FAC[f].one + " dans la partie (il en faut au moins 1)." };
+  if (t.forced > PLAYERS) return { ok: false, msg: "Trop de rôles imposés : " + t.forced + " pour " + PLAYERS + " joueurs. Retire un imposé ou ajoute un joueur." };
+  return { ok: true };
+}
+function act(st, t) {
+  const a = t.closest("[data-a]");
+  if (!a) return false;
+  if (a.dataset.a === "classic") { resetClassic(st); return true; }
+  const r = st.roles.find(x => x.id === t.closest("[data-id]").dataset.id);
+  const k = a.dataset.a;
+  if (k === "max-") setMax(r, r.max - 1);
+  else if (k === "max+") setMax(r, r.max + 1);
+  else if (k === "for-") setForced(r, r.forced - 1);
+  else if (k === "for+") setForced(r, r.forced + 1);
+  return true;
+}
+
+// One layout for every skin: the original's blocks (tabs, counters, preset, faction grids, footer), W1 words.
+function render(el, st, skin) {
+  const sc = el.querySelector(".scroll"), keep = sc ? sc.scrollTop : 0;
+  const t = tally(st), c = check(st);
+  const ink = f => skin === "s6" ? FAC[f].col : FAC[f].ink;
+  const cell = (k, v, bad, f) => '<div class="c"><div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v' + (bad ? " err" : "") + '">' + v + "</div></div>";
+  let h = skin === "s7" ? '<div class="board"></div><div class="strip"><i class="pin" style="left:20%"></i><i class="pin" style="left:80%"></i></div>' : "";
+  h += '<div class="tabs"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS) + cell("Imposés", t.forced, t.forced > PLAYERS) + cell("Rôles en jeu", t.max, t.max < PLAYERS) +
+    cell("Anomalies", t.a, !t.a, "a") + cell("Élus", t.e, !t.e, "e") + cell("Marginaux", t.m, false, "m") + "</div>";
+  h += '<div class="pre">' + (isClassic(st) ? "Composition classique pour 8" : 'Composition modifiée <span class="lk ar-btn" data-a="classic">↳ Revenir à la classique</span>') + "</div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + ink(f) + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.forEach((r, i) => {
+      if (r.f !== f) return;
+      const rot = skin === "s7" ? ' style="transform:rotate(' + tilt(i) + 'deg)"' : "";
+      h += '<div class="u' + (r.max ? "" : " out") + '" data-id="' + r.id + '"><div class="crd ar-btn"' + rot + '><i class="pin"></i><div class="art" style="background-image:url(' + img(r.id) + ')"></div>' +
+        (r.forced ? '<img class="seal" src="img/seal.webp">' : "") + '<div class="nm">' + r.name + "</div></div>" +
+        '<div class="ctls"><div class="ctl"><span>Max</span><span><span class="b ar-btn" data-a="max-">‹</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">›</span></span></div>' +
+        '<div class="ctl imp"><span>Imposé</span><span><span class="b ar-btn" data-a="for-">‹</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">›</span></span></div></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div><div class="foot">' + (c.ok ? '<span class="soft">' + READY + " joueurs prêts sur " + PLAYERS + "</span>" : '<span class="err">' + c.msg + "</span>") +
+    '<span class="go ar-btn"><img src="img/seal.webp">Prêt</span></div>';
+  el.innerHTML = h;
+  const n = el.querySelector(".scroll"); if (n) n.scrollTop = keep;
+}
+
+for (const skin of ["s6", "s7", "s8"]) {
+  const el = document.getElementById(skin), st = newState();
+  render(el, st, skin);
+  el.addEventListener("click", e => { if (act(st, e.target)) render(el, st, skin); });
+}
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

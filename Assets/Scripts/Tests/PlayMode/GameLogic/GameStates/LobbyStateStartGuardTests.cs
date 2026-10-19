@@ -139,14 +139,14 @@ namespace Tests.PlayMode
         public IEnumerator OnStartGameButtonPressed_MorePlayersThanRoles_WarnsAndDoesNotAdvance()
         {
             // 4 players, only 3 total roles to attribute → the coverage rule (Σmax ≥ players) must fail. The gate
-            // now delegates to CompositionValidator; the warning carries the "Pool trop petit" reason.
+            // now delegates to CompositionValidator; the warning carries the "Pas assez de rôles possibles" reason.
             Character c1 = _characterManager.AddNewCharacter(1);
             Character c2 = _characterManager.AddNewCharacter(2);
             Character c3 = _characterManager.AddNewCharacter(3);
             Character c4 = _characterManager.AddNewCharacter(4);
             yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(c1, c2, c3, c4);
 
-            LogAssert.Expect(LogType.Warning, new Regex("invalid composition: Pool trop petit"));
+            LogAssert.Expect(LogType.Warning, new Regex("invalid composition: Pas assez de rôles possibles"));
             _lobbyState.OnStartGameButtonPressed();
 
             // The warning expectation alone proves the early-return branch ran; an unmet expectation fails the test.

@@ -138,6 +138,15 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - A Steam client start path passes the typed lobby password to `ClientConnectionPayload.Apply` (Steam lobbies have no
   password; the host checks it at approval).
 
+## Playtest logs (`Diagnostics/Logs`, spec `spec-online-playtest-logs.md`)
+
+- A new gameplay action / decision / refusal gets a `GameLog.Info|Warn("cat", "event.name", "key", value…)` where it
+  happens (server side for game state). Never per frame, never in Domain (pure).
+- `CDP_PLAYTEST_LOGS` is added **only** by `CdpBuild` (CI playtest builds). Never in ProjectSettings: the Editor would
+  compile the calls in. Code that needs the runtime (Firebase, file) stays inside `#if CDP_PLAYTEST_LOGS`; the facade's
+  `[Conditional]` entry points strip the call sites elsewhere.
+- `GameManager.logGameId` is declared in every build (same NetworkVariable layout Editor ↔ playtest build).
+
 ## UI Toolkit gotchas
 
 - Tablet = screen-space UITK → RenderTexture → uGUI `RawImage`. RT panels need `PanelInputConfiguration` on the EventSystem; presenters **clone** `PanelSettings`, never mutate the shared asset.

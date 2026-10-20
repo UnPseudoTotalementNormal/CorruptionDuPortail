@@ -131,3 +131,6 @@ BackupToolkit/
 # Autoplay package (own repository, pinned in Packages/manifest.json). A local clone here overrides it while
 # working on the package: see tools/autoplay/REFERENCE.md.
 /Packages/com.unpseudo.autoplay/
+
+# Playtest logs reader cache (tools/logs/logs.py): immutable chunks downloaded from Firestore.
+/tools/logs/.cache/

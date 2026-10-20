@@ -8,6 +8,7 @@ using Characters.WinningConditions;
 using Cysharp.Threading.Tasks;
 using Network;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -26,6 +27,7 @@ namespace GameLogic.GameStates
             var _winnersArray = _winningTeams
                 .Select(kvp => new KeyValuePair<WinningTeam, ulong[]>(kvp.Key, kvp.Value.ToArray()))
                 .ToArray();
+            GameLog.Snapshot("game.end", "winners", _winnersArray.Select(_kvp => $"{_kvp.Key}: {string.Join(",", _kvp.Value)}").ToList());
         
             gameManager.DoStateMethodRpc(typeof(GameEndingState).FullName, nameof(SetWinnersClientRpc),
                 new NetworkSerializableObject[]

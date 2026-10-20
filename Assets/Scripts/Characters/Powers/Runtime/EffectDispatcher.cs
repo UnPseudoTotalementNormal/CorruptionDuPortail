@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CorruptionDuPortail.Domain;
+using Diagnostics.Logs;
 
 namespace Characters.Powers.Runtime
 {
@@ -27,6 +28,7 @@ namespace Characters.Powers.Runtime
                     throw new NotSupportedException(
                         $"EffectDispatcher: no executor registered for '{effect.GetType().Name}'.");
                 }
+                GameLog.Info("power", "effect", "effect", effect.ToString(), "viewer", runtime.LocalViewer);
                 executor.Execute(effect, runtime);
             }
         }

@@ -6,6 +6,7 @@ using FMODUnity;
 using UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -75,6 +76,7 @@ namespace Board.UI
 
         public void OnPointerClick(PointerEventData _eventData)
         {
+            GameLog.Info("ui", "button3d.click", "name", name);
             Activate();
         }
 

@@ -307,3 +307,7 @@ Constats réels mais **non causés** par ce chantier, ou hors de son périmètre
   (lobby deleted / service state after the game started?) before ignoring it in Relay scenarios.
   **Resolved 2026-10-08** (bug hunt L1): transient failure inside the SDK; polling + heartbeat now retry, no player
   notification during a running session (`bug-hunt-2026-10-08-night.md`).
+
+## 2026-10-20 — from spec-online-playtest-logs (split, second goal)
+
+- **F8 « Signaler un bug »**: key opens a small window "Qu'est-ce qui s'est passé ?", takes a screenshot, marks the instant in the log (`GameLog.Mark("bug.report")`), uploads the capture to Firebase Storage (`corruption-du-portail`) and a Cloud Function posts an alert (summary + timeline command + capture) to a hidden Discord channel with the bot token kept server-side. Same alert on crash recovery. UI after Poyo picks a mockup (`maquettes` skill). Depends on the logs spec shipping first.

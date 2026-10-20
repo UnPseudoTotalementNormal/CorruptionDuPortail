@@ -5,6 +5,7 @@ using DG.Tweening;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -47,6 +48,7 @@ public class StateUI : NetworkBehaviour
 
     public virtual void ShowStateUI(bool instant = false)
     {
+        GameLog.Verbose("ui", "screen.show", "screen", GetType().Name);
         canvasGroup.DOKill(true);
         
         if (instant)
@@ -65,6 +67,7 @@ public class StateUI : NetworkBehaviour
     
     public virtual void HideStateUI(bool instant = false)
     {
+        GameLog.Verbose("ui", "screen.hide", "screen", GetType().Name);
         canvasGroup.DOKill(true);
         
         if (instant)

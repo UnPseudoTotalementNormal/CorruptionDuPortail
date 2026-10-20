@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Playtest logs (Assets/Scripts/Diagnostics/Logs, read with tools/logs/logs.py).
+// A game client signs in anonymously and may only write its own sessions. Nobody reads logs from a client:
+// Claude reads them with gcloud credentials (admin access bypasses these rules).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Remote switch: { json: "{\"enabled\":true,...}" }. Read-only for players.
+    match /config/{doc} {
+      allow read: if request.auth != null;
+    }
+
+    match /sessions/{sid} {
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sid == sid;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+
+      match /chunks/{seq} {
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/sessions/$(sid)).data.uid == request.auth.uid
+          && request.resource.data.lines is string
+          && request.resource.data.lines.size() <= 1000000;
+      }
+    }
+  }
+}

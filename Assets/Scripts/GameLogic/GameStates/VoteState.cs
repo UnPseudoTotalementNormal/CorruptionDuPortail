@@ -14,6 +14,7 @@ using Network;
 using UI.SelectPanels;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -88,6 +89,7 @@ namespace GameLogic.GameStates
                 votesForPlayer[_votedPlayerId] = new List<ulong>();
             }
             votesForPlayer[_votedPlayerId].Add(_senderId);
+            GameLog.Info("vote", "vote.cast", "from", _senderId, "to", _votedPlayerId, "skip", _votedPlayerId == SKIP_VOTE_ID);
 
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnRefreshPlayerVotesRpc), 
                 new NetworkSerializableObject[]
@@ -243,6 +245,8 @@ namespace GameLogic.GameStates
 
             ulong _winner = new VoteTally().Resolve(_votes, SKIP_VOTE_ID);
             mostVotedPlayer = _winner;
+            GameLog.Snapshot("vote.result", "winner", _winner, "skip", _winner == SKIP_VOTE_ID,
+                "votes", votesForPlayer.Select(_kvp => $"{_kvp.Key}<-{string.Join(",", _kvp.Value)}").ToList());
             if (_winner != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);

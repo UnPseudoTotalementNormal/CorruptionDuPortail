@@ -17,10 +17,13 @@ namespace Diagnostics.Logs
     /// Playtest builds only (<c>CDP_PLAYTEST_LOGS</c>, added by CdpBuild). Collects <see cref="GameLog"/> events and
     /// every Unity log, writes them to <c>persistentDataPath/logs/&lt;session&gt;.ndjson</c>, and streams the file to
     /// Firestore (project corruption-du-portail) in chunks while the remote switch <c>config/logging</c> says
-    /// <c>enabled</c>. Switch off = no upload within a minute and the waiting lines are dropped (the local file stays).
-    /// Never runs in the Editor; an autoplay run logs locally and uploads only with <c>-playtest-logs-upload</c>.
-    /// A session that did not end cleanly (crash, killed) is uploaded at the next launch, marked crashed.
-    /// Read the logs with <c>tools/logs/logs.py</c>.
+    /// <c>enabled</c>. Switch off, missing or unreadable for long = no upload within a minute, and what was waiting is
+    /// dropped when it says off (the local file stays). Never runs in the Editor; an autoplay run logs locally and
+    /// uploads only with <c>-playtest-logs-upload</c>. A session that did not end cleanly (crash, killed) is uploaded at
+    /// the next launch, marked crashed. Read the logs with <c>tools/logs/logs.py</c>.
+    /// Upload invariants: one pass at a time (lock shared with the quit upload); the byte range of a chunk is saved
+    /// before it is sent and sent again unchanged after a lost answer, so the cursor only moves over bytes that are
+    /// online; a range that can never be accepted is skipped and logged instead of blocking the session.
     /// </summary>
     internal sealed class PlaytestLogRuntime : MonoBehaviour
     {
@@ -28,24 +31,33 @@ namespace Diagnostics.Logs
         // Same switch as Unpseudo.Autoplay.AutoplayCommandLine, whose code is compiled out of non-development builds.
         private const string AutoplaySwitch = "-autoplay";
         private const int KeptSessions = 10;
+        private const int MaxKeptUnsentSessions = 30;
         private const int ExpireDays = 60;
-        private const float ConfigPollSeconds = 60f;
+        private const float ConfigPollSeconds = 50f;
+        private const float ConfigStaleSeconds = 180f;
         private const float PerfSampleSeconds = 30f;
         private const int MaxChunksPerPass = 6;
+        private const int MaxBackoffSeconds = 300;
+        private const int MaxRecoveryFailures = 5;
 
         [Serializable]
         private sealed class SessionMeta
         {
             public string sid;
+            public string uid;
             public long startMs;
             public long cursor;
             public int seq;
+            /// <summary>Byte length of the chunk being sent (0 = none): sent again unchanged if its answer was lost.</summary>
+            public long pendingLength;
             public bool ended;
             public bool crashed;
             public bool autoplay;
+            public bool uploadAllowed;
             public string player;
             public string playerFull;
             public string steamId;
+            public string ugsId;
             public string version;
             public string flavor;
             public bool host;
@@ -55,6 +67,16 @@ namespace Diagnostics.Logs
             public long lines;
         }
 
+        private enum Outcome
+        {
+            /// <summary>Everything sent (or nothing more can ever be sent).</summary>
+            Done,
+            /// <summary>Chunks went up, more remain for the next pass.</summary>
+            Progress,
+            /// <summary>Stopped by a passing failure (network, server, auth).</summary>
+            Failed,
+        }
+
         private sealed class Session
         {
             public SessionMeta meta;
@@ -62,9 +84,8 @@ namespace Diagnostics.Logs
             public string metaPath;
             public bool current;
             public int failures;
+            public bool dead;
         }
-
-        private const int MaxRecoveryFailures = 3;
 
         private static PlaytestLogRuntime s_running;
 
@@ -75,16 +96,22 @@ namespace Diagnostics.Logs
         private FirestoreLogClient _client;
         private RemoteLogConfig _config;
         private float _nextConfigPoll;
+        private float _lastConfigOk = -9999f;
         private bool _uploadAllowed;
         private bool _quitUploadDone;
+        private readonly SemaphoreSlim _uploadLock = new(1, 1);
         private readonly List<Session> _recovered = new();
         private readonly HashSet<string> _gameIds = new();
         private CancellationTokenSource _cts;
+        private int _failedPasses;
 
         private int _frames;
         private float _frameTime;
         private float _worstFrame;
         private float _nextPerfSample;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => s_running = null;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Boot()
@@ -121,6 +148,7 @@ namespace Diagnostics.Logs
                         sid = _sid,
                         startMs = NowMs(),
                         autoplay = _autoplay,
+                        uploadAllowed = _uploadAllowed,
                         version = Application.version,
                         flavor = GameFlavor.IsSteam ? "steam" : "relay",
                     },
@@ -220,14 +248,14 @@ namespace Diagnostics.Logs
             while (!_ct.IsCancellationRequested)
             {
                 await UniTask.Delay(1000, DelayType.Realtime, PlayerLoopTiming.Update, _ct).SuppressCancellationThrow();
-                FlushToFile();
+                FlushToFile(false);
             }
         }
 
-        private void FlushToFile()
+        private void FlushToFile(bool _all)
         {
             if (_file == null) return;
-            List<string> _lines = _buffer.Drain(NowMs());
+            List<string> _lines = _buffer.Drain(NowMs(), _all);
             if (_lines.Count == 0) return;
             try
             {
@@ -250,6 +278,7 @@ namespace Diagnostics.Logs
             _meta.player = _info.playerName.ToString();
             _meta.playerFull = _info.playerFullName.ToString();
             _meta.steamId = _info.playerSteamId != 0 ? _info.playerSteamId.ToString() : null;
+            _meta.ugsId = UgsPlayerId() ?? _meta.ugsId;
             _meta.host = GameLog.IsHost;
             if (!string.IsNullOrEmpty(GameLog.GameId) && _gameIds.Add(GameLog.GameId))
             {
@@ -260,6 +289,20 @@ namespace Diagnostics.Logs
             _meta.lines = _buffer.Lines;
         }
 
+        private static string UgsPlayerId()
+        {
+            try
+            {
+                if (Unity.Services.Core.UnityServices.State != Unity.Services.Core.ServicesInitializationState.Initialized) return null;
+                var _auth = Unity.Services.Authentication.AuthenticationService.Instance;
+                return _auth.IsSignedIn ? _auth.PlayerId : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         // ---- upload ----
 
         private async UniTaskVoid UploadLoop(CancellationToken _ct)
@@ -267,9 +310,18 @@ namespace Diagnostics.Logs
             await UniTask.Delay(3000, DelayType.Realtime, PlayerLoopTiming.Update, _ct).SuppressCancellationThrow();
             while (!_ct.IsCancellationRequested)
             {
+                bool _ok = false;
                 try
                 {
-                    await UploadPass(_ct);
+                    await _uploadLock.WaitAsync(_ct);
+                    try
+                    {
+                        _ok = await UploadPass(_ct);
+                    }
+                    finally
+                    {
+                        _uploadLock.Release();
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -279,103 +331,191 @@ namespace Diagnostics.Logs
                 {
                     GameLog.Warn("log", "log.upload.error", "error", _e.Message);
                 }
+                _failedPasses = _ok ? 0 : Math.Min(_failedPasses + 1, 8);
                 int _seconds = _config?.flushSeconds ?? 20;
+                if (_failedPasses > 0)
+                {
+                    _seconds = Math.Min(MaxBackoffSeconds, _seconds << Math.Min(_failedPasses, 4)); // offline: back off
+                }
                 await UniTask.Delay(_seconds * 1000, DelayType.Realtime, PlayerLoopTiming.Update, _ct).SuppressCancellationThrow();
             }
         }
 
-        private async UniTask UploadPass(CancellationToken _ct)
+        /// <summary>True when the pass did what it could (nothing failed for a passing reason).</summary>
+        private async UniTask<bool> UploadPass(CancellationToken _ct)
         {
-            if (Time.realtimeSinceStartup >= _nextConfigPoll)
-            {
-                _nextConfigPoll = Time.realtimeSinceStartup + ConfigPollSeconds;
-                if (await _client.EnsureAuth(_ct))
-                {
-                    string _json = await _client.ReadConfig(_ct);
-                    RemoteLogConfig _fresh = RemoteLogConfig.Parse(_json);
-                    if (_fresh != null)
-                    {
-                        if (_config == null || _config.enabled != _fresh.enabled)
-                        {
-                            GameLog.Info("log", "log.switch", "enabled", _fresh.enabled);
-                        }
-                        _config = _fresh;
-                        _buffer.CapPerMinute = _fresh.capPerMinute;
-                    }
-                }
-            }
-
-            FlushToFile();
+            FlushToFile(false);
             RefreshCurrentMeta();
             SaveMeta(_session);
-            if (_config == null)
+            await PollConfigIfDue(_ct);
+            if (!UploadEnabled())
             {
-                return; // switch unknown: keep everything local, the cursor waits
-            }
-            if (!_config.enabled)
-            {
-                DropPending(_session);
-                foreach (Session _old in _recovered) DropPending(_old);
-                _recovered.Clear();
-                return;
+                return true;
             }
             if (!await _client.EnsureAuth(_ct))
             {
-                return;
+                return false;
             }
 
-            await UploadSession(_session, _ct);
+            bool _ok = await UploadSession(_session, _ct) != Outcome.Failed;
             for (int _i = _recovered.Count - 1; _i >= 0; _i--)
             {
-                if (await UploadSession(_recovered[_i], _ct))
+                Session _old = _recovered[_i];
+                Outcome _outcome = await UploadSession(_old, _ct);
+                if (_outcome == Outcome.Done || (_outcome == Outcome.Failed && ++_old.failures >= MaxRecoveryFailures))
                 {
                     _recovered.RemoveAt(_i);
                 }
             }
+            return _ok;
         }
 
-        /// <summary>Sends the index then every complete line after the cursor. True when the file is fully sent.</summary>
-        private async UniTask<bool> UploadSession(Session _target, CancellationToken _ct)
+        /// <summary>Unknown (never read, or unreachable for minutes) and off both mean: nothing goes online.</summary>
+        private bool UploadEnabled() => _config != null && _config.enabled;
+
+        private async UniTask PollConfigIfDue(CancellationToken _ct)
         {
-            if (!await _client.UpsertSession(_target.meta.sid, IndexFields(_target, _client.Uid), _ct))
+            if (Time.realtimeSinceStartup < _nextConfigPoll) return;
+            _nextConfigPoll = Time.realtimeSinceStartup + ConfigPollSeconds;
+            FirestoreLogClient.ConfigStatus _status = FirestoreLogClient.ConfigStatus.Unreachable;
+            string _json = null;
+            if (await _client.EnsureAuth(_ct))
             {
-                // An old session written under another anonymous id (auth file lost) can never be updated: give up.
-                return !_target.current && ++_target.failures >= MaxRecoveryFailures;
+                (_status, _json) = await _client.ReadConfig(_ct);
             }
-            bool _verbose = _config.IsVerbose(_target.meta.player, _target.meta.steamId, _target.meta.sid);
+            RemoteLogConfig _fresh;
+            switch (_status)
+            {
+                case FirestoreLogClient.ConfigStatus.Ok:
+                    _fresh = RemoteLogConfig.Parse(_json) ?? new RemoteLogConfig { enabled = false }; // garbage = off
+                    _lastConfigOk = Time.realtimeSinceStartup;
+                    break;
+                case FirestoreLogClient.ConfigStatus.Missing:
+                    _fresh = new RemoteLogConfig { enabled = false };
+                    _lastConfigOk = Time.realtimeSinceStartup;
+                    break;
+                default:
+                    if (Time.realtimeSinceStartup - _lastConfigOk > ConfigStaleSeconds && _config != null)
+                    {
+                        GameLog.Warn("log", "log.switch.unknown");
+                        _config = null; // unreadable for too long: back to local only
+                    }
+                    return;
+            }
+            if (_config == null || _config.enabled != _fresh.enabled)
+            {
+                GameLog.Info("log", "log.switch", "enabled", _fresh.enabled);
+            }
+            _config = _fresh;
+            _buffer.CapPerMinute = _fresh.capPerMinute;
+            if (!_fresh.enabled)
+            {
+                DropPending(_session);
+                foreach (Session _old in _recovered) DropPending(_old);
+                _recovered.Clear();
+            }
+        }
+
+        /// <summary>Sends the index then the complete lines after the cursor (a few chunks per pass).</summary>
+        private async UniTask<Outcome> UploadSession(Session _target, CancellationToken _ct)
+        {
+            if (_target.dead) return Outcome.Done;
+            SessionMeta _meta = _target.meta;
+            if (!string.IsNullOrEmpty(_meta.uid) && _meta.uid != _client.Uid)
+            {
+                // Written under another anonymous account (lost auth file): the rules will never let us update it.
+                _target.dead = true;
+                GameLog.Warn("log", "log.session.orphan", "sid", _meta.sid);
+                return Outcome.Done;
+            }
+            FirestoreLogClient.Result _index = await _client.UpsertSession(_meta.sid, IndexFields(_target, _client.Uid), _ct);
+            if (_index == FirestoreLogClient.Result.Rejected)
+            {
+                _target.dead = true;
+                GameLog.Warn("log", "log.session.rejected", "sid", _meta.sid);
+                return Outcome.Done;
+            }
+            if (_index != FirestoreLogClient.Result.Ok) return Outcome.Failed;
+            if (_meta.uid != _client.Uid)
+            {
+                _meta.uid = _client.Uid;
+                SaveMeta(_target);
+            }
+
+            bool _verbose = _config.IsVerbose(_meta.player, _meta.steamId, _meta.ugsId, _meta.sid);
             for (int _pass = 0; _pass < MaxChunksPerPass; _pass++)
             {
+                await PollConfigIfDue(_ct);
+                if (!UploadEnabled()) return Outcome.Done; // switched off mid-pass: stop now
+
                 byte[] _bytes;
                 int _count;
+                bool _windowFull;
                 try
                 {
-                    using var _read = new FileStream(_target.logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    if (_target.meta.cursor >= _read.Length) return true;
-                    _read.Seek(_target.meta.cursor, SeekOrigin.Begin);
-                    _bytes = new byte[(int)Math.Min(_read.Length - _target.meta.cursor, LogChunk.MaxChunkBytes * 2L)];
+                    using var _read = new FileStream(_target.logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    if (_meta.cursor >= _read.Length)
+                    {
+                        _meta.pendingLength = 0;
+                        return Outcome.Done;
+                    }
+                    _read.Seek(_meta.cursor, SeekOrigin.Begin);
+                    _bytes = new byte[(int)Math.Min(_read.Length - _meta.cursor, LogChunk.MaxChunkBytes * 2L)];
                     _count = _read.Read(_bytes, 0, _bytes.Length);
+                    _windowFull = _count == LogChunk.MaxChunkBytes * 2;
                 }
                 catch (Exception)
                 {
-                    return !_target.current; // an unreadable old file is given up
+                    if (!_target.current) _target.dead = true; // an unreadable old file is given up
+                    return _target.current ? Outcome.Failed : Outcome.Done;
                 }
-                int _length = LogChunk.CompleteLinesLength(_bytes, _count);
-                if (_length == 0) return !_target.current;
+
+                LogChunk.RangeKind _kind = LogChunk.NextRange(_bytes, _count, _windowFull, _meta.pendingLength, out int _length);
+                if (_kind == LogChunk.RangeKind.None)
+                {
+                    if (!_target.current) _target.dead = true; // an unfinished last line of a dead session: done
+                    return Outcome.Done;
+                }
+                if (_kind == LogChunk.RangeKind.Skip)
+                {
+                    GameLog.Warn("log", "log.range.skipped", "sid", _meta.sid, "bytes", _length);
+                    Advance(_target, _length, false);
+                    continue;
+                }
 
                 LogChunk _chunk = LogChunk.Build(Encoding.UTF8.GetString(_bytes, 0, _length),
                     (_lv, _cat) => _config.Uploads(_lv, _cat, _verbose));
-                if (_chunk.lineCount > 0)
+                if (_chunk.lineCount == 0)
                 {
-                    if (!await _client.CreateChunk(_target.meta.sid, _target.meta.seq, ChunkFields(_target, _chunk), _ct))
-                    {
-                        return false;
-                    }
-                    _target.meta.seq++;
+                    Advance(_target, _length, false);
+                    continue;
                 }
-                _target.meta.cursor += _length;
-                SaveMeta(_target);
+                _meta.pendingLength = _length;
+                SaveMeta(_target); // the range is fixed before the request leaves
+                FirestoreLogClient.Result _sent = await _client.CreateChunk(_meta.sid, _meta.seq, ChunkFields(_target, _chunk), _ct);
+                switch (_sent)
+                {
+                    case FirestoreLogClient.Result.Ok:
+                    case FirestoreLogClient.Result.AlreadyExists:
+                        Advance(_target, _length, true);
+                        break;
+                    case FirestoreLogClient.Result.Rejected:
+                        GameLog.Warn("log", "log.chunk.rejected", "sid", _meta.sid, "seq", _meta.seq, "bytes", _length);
+                        Advance(_target, _length, true); // never accepted as is: step over, keep the session going
+                        break;
+                    default:
+                        return Outcome.Failed; // pendingLength kept: the same range goes again next time
+                }
             }
-            return false;
+            return Outcome.Progress;
+        }
+
+        private static void Advance(Session _target, int _length, bool _usedSeq)
+        {
+            _target.meta.cursor += _length;
+            _target.meta.pendingLength = 0;
+            if (_usedSeq) _target.meta.seq++;
+            SaveMeta(_target);
         }
 
         private static void DropPending(Session _target)
@@ -383,6 +523,7 @@ namespace Diagnostics.Logs
             try
             {
                 _target.meta.cursor = new FileInfo(_target.logPath).Length;
+                _target.meta.pendingLength = 0;
                 SaveMeta(_target);
             }
             catch (Exception)
@@ -394,13 +535,13 @@ namespace Diagnostics.Logs
         private static FirestoreFields IndexFields(Session _target, string _uid)
         {
             SessionMeta _m = _target.meta;
-            long _now = NowMs();
             var _fields = new FirestoreFields()
                 .String("uid", _uid)
                 .String("sid", _m.sid)
                 .String("player", _m.player)
                 .String("playerFull", _m.playerFull)
                 .String("steamId", _m.steamId)
+                .String("ugsId", _m.ugsId)
                 .String("version", _m.version)
                 .String("flavor", _m.flavor)
                 .Bool("autoplay", _m.autoplay)
@@ -415,7 +556,8 @@ namespace Diagnostics.Logs
                 .Timestamp("expireAt", _m.startMs + ExpireDays * 86400000L);
             if (_target.current)
             {
-                _fields.Timestamp("lastSeen", _now)
+                // A recovered session keeps what its own run wrote (last seen, machine).
+                _fields.Timestamp("lastSeen", NowMs())
                     .String("os", SystemInfo.operatingSystem)
                     .String("gpu", SystemInfo.graphicsDeviceName);
             }
@@ -447,7 +589,8 @@ namespace Diagnostics.Logs
                 try
                 {
                     var _meta = JsonUtility.FromJson<SessionMeta>(File.ReadAllText(_metaPath));
-                    if (_meta == null || _meta.sid == _session.meta.sid) continue;
+                    if (_meta == null || string.IsNullOrEmpty(_meta.sid) || _meta.sid == _session.meta.sid) continue;
+                    if (!_meta.uploadAllowed) continue; // a local-only run (autoplay) never goes online, even later
                     string _logPath = Path.Combine(_directory, _meta.sid + ".ndjson");
                     if (!File.Exists(_logPath) || IsWrittenByAnotherProcess(_logPath)) continue;
                     if (_meta.cursor >= new FileInfo(_logPath).Length && _meta.ended) continue;
@@ -468,6 +611,8 @@ namespace Diagnostics.Logs
             }
         }
 
+        // Keeps the newest sessions, and older ones still waiting to go online (up to a hard cap, so an offline PC
+        // does not fill its disk).
         private void PruneOldSessions()
         {
             try
@@ -477,6 +622,7 @@ namespace Diagnostics.Logs
                 {
                     if (IsWrittenByAnotherProcess(_logs[_i])) continue;
                     string _sid = Path.GetFileNameWithoutExtension(_logs[_i]);
+                    if (_i < MaxKeptUnsentSessions && _recovered.Any(_s => _s.meta.sid == _sid)) continue;
                     _recovered.RemoveAll(_s => _s.meta.sid == _sid);
                     File.Delete(_logs[_i]);
                     File.Delete(Path.Combine(_directory, _sid + ".meta.json"));
@@ -502,11 +648,15 @@ namespace Diagnostics.Logs
             }
         }
 
+        // Atomic: a crash while saving never leaves a truncated meta (the crashed session is the one that matters).
         private static void SaveMeta(Session _target)
         {
             try
             {
-                File.WriteAllText(_target.metaPath, JsonUtility.ToJson(_target.meta));
+                string _tmp = _target.metaPath + ".tmp";
+                File.WriteAllText(_tmp, JsonUtility.ToJson(_target.meta));
+                if (File.Exists(_target.metaPath)) File.Replace(_tmp, _target.metaPath, null);
+                else File.Move(_tmp, _target.metaPath);
             }
             catch (Exception)
             {
@@ -524,11 +674,15 @@ namespace Diagnostics.Logs
             }
             _quitUploadDone = true;
             GameLog.Info("session", "session.end");
-            FlushToFile();
+            FlushToFile(true);
             RefreshCurrentMeta();
             _session.meta.ended = true;
             SaveMeta(_session);
-            if (!_uploadAllowed || _config == null || !_config.enabled)
+            if (_config != null && !_config.enabled)
+            {
+                DropPending(_session); // logged while off: never online, not even at the next launch
+            }
+            if (!_uploadAllowed || !UploadEnabled())
             {
                 return true;
             }
@@ -538,10 +692,22 @@ namespace Diagnostics.Logs
 
         private async UniTaskVoid FinalUploadThenQuit()
         {
-            using var _timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            _cts.Cancel(); // the regular pass stops at its next await and releases the lock (its range stays pending)
+            using var _timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             try
             {
-                await UploadSession(_session, _timeout.Token);
+                await _uploadLock.WaitAsync(_timeout.Token);
+                try
+                {
+                    if (await _client.EnsureAuth(_timeout.Token))
+                    {
+                        await UploadSession(_session, _timeout.Token);
+                    }
+                }
+                finally
+                {
+                    _uploadLock.Release();
+                }
             }
             catch (Exception)
             {
@@ -556,12 +722,16 @@ namespace Diagnostics.Logs
             _cts?.Cancel();
             Application.logMessageReceivedThreaded -= OnUnityLog;
             Application.wantsToQuit -= OnWantsToQuit;
-            FlushToFile();
+            FlushToFile(true);
             if (_session != null)
             {
                 RefreshCurrentMeta();
                 _session.meta.ended = true;
                 SaveMeta(_session);
+                if (_config != null && !_config.enabled)
+                {
+                    DropPending(_session); // the shutdown lines were logged while off: never online, even next launch
+                }
             }
             GameLog.Sink = null;
             _file?.Dispose();

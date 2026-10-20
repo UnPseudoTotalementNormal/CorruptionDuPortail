@@ -22,8 +22,11 @@ namespace Diagnostics.Logs
         public string p;
         /// <summary>Stack trace (errors and exceptions).</summary>
         public string st;
-        /// <summary>Local seat, -1 when unknown.</summary>
-        public long s;
+        /// <summary>Local seat (bots >= 100, fake characters near ulong.MaxValue); valid when <see cref="hasSeat"/>.</summary>
+        public ulong s;
+        public bool hasSeat;
+        /// <summary>Local role, when known.</summary>
+        public string ro;
         /// <summary>Current phase (game state type name).</summary>
         public string ph;
         /// <summary>Current day (1-based), 0 outside a game.</summary>
@@ -34,13 +37,16 @@ namespace Diagnostics.Logs
 
     /// <summary>
     /// Thread-safe collector between the game (any thread: Unity's threaded log callback) and the local file.
-    /// Merges consecutive identical lines (<c>"r":n</c>) and caps each category per minute so a log storm can't flood
-    /// the file or the upload; the number of dropped lines is reported as a <c>log.dropped</c> line.
+    /// Merges identical lines that follow each other within <see cref="RepeatWindowMs"/> into one line with
+    /// <c>"r":n</c> (the last line is held back while it can still grow, so a storm spread over several drains still
+    /// gives one line). Caps each category per minute so a log storm can't flood the file or the upload; errors are
+    /// never capped. The number of dropped lines is reported as a <c>log.dropped</c> line.
     /// </summary>
     public sealed class LogBuffer
     {
         public const int MaxMessageChars = 2000;
         public const int MaxStackChars = 4000;
+        public const int MaxParamsChars = 8000;
         public const long RepeatWindowMs = 5000;
 
         private sealed class Pending
@@ -48,6 +54,8 @@ namespace Diagnostics.Logs
             public LogRecord record;
             public int repeat = 1;
             public long lastT;
+            /// <summary>A report written by the buffer itself (log.dropped): nothing merges into it, never held back.</summary>
+            public bool report;
         }
 
         private readonly object _lock = new();
@@ -74,6 +82,15 @@ namespace Diagnostics.Logs
         {
             _record.m = Truncate(_record.m, MaxMessageChars);
             _record.st = Truncate(_record.st, MaxStackChars);
+            if (_record.p != null && _record.p.Length > MaxParamsChars)
+            {
+                // Still a valid JSON object: the beginning of the parameters, as text.
+                var _sb = new StringBuilder(MaxParamsChars + 32);
+                _sb.Append("{\"_truncated\":");
+                LogJson.AppendString(_sb, _record.p.Substring(0, MaxParamsChars));
+                _sb.Append('}');
+                _record.p = _sb.ToString();
+            }
             lock (_lock)
             {
                 if (_record.lv == 'E') _errors++;
@@ -84,7 +101,8 @@ namespace Diagnostics.Logs
                 if (_pending.Count > 0)
                 {
                     Pending _last = _pending[_pending.Count - 1];
-                    if (_record.t - _last.lastT <= RepeatWindowMs && SameContent(_last.record, _record))
+                    long _dt = _record.t - _last.lastT;
+                    if (!_last.report && _dt >= 0 && _dt <= RepeatWindowMs && SameContent(_last.record, _record))
                     {
                         _last.repeat++;
                         _last.lastT = _record.t;
@@ -92,35 +110,46 @@ namespace Diagnostics.Logs
                     }
                 }
 
-                string _category = _record.c ?? string.Empty;
-                _countThisMinute.TryGetValue(_category, out int _count);
-                if (_count >= CapPerMinute)
+                if (_record.lv != 'E')
                 {
-                    _droppedThisMinute.TryGetValue(_category, out int _dropped);
-                    _droppedThisMinute[_category] = _dropped + 1;
-                    return;
+                    string _category = _record.c ?? string.Empty;
+                    _countThisMinute.TryGetValue(_category, out int _count);
+                    if (_count >= CapPerMinute)
+                    {
+                        _droppedThisMinute.TryGetValue(_category, out int _dropped);
+                        _droppedThisMinute[_category] = _dropped + 1;
+                        return;
+                    }
+                    _countThisMinute[_category] = _count + 1;
                 }
-                _countThisMinute[_category] = _count + 1;
                 _pending.Add(new Pending { record = _record, lastT = _record.t });
             }
         }
 
-        /// <summary>Takes every pending line, serialized as NDJSON lines (no trailing newline), oldest first.</summary>
-        public List<string> Drain(long _nowMs)
+        /// <summary>
+        /// Takes the pending lines, serialized as NDJSON lines (no trailing newline), oldest first. The last line stays
+        /// pending while identical lines could still merge into it, unless <paramref name="_all"/> (quit, final flush).
+        /// </summary>
+        public List<string> Drain(long _nowMs, bool _all = false)
         {
             var _out = new List<string>();
             lock (_lock)
             {
                 RollMinute(_nowMs);
+                int _count = _pending.Count;
+                if (!_all && _count > 0 && !_pending[_count - 1].report && _nowMs - _pending[_count - 1].lastT < RepeatWindowMs)
+                {
+                    _count--;
+                }
                 var _sb = new StringBuilder(256);
-                foreach (Pending _item in _pending)
+                for (int _i = 0; _i < _count; _i++)
                 {
                     _sb.Clear();
-                    Serialize(_sb, _item.record, _item.repeat);
+                    Serialize(_sb, _pending[_i].record, _pending[_i].repeat);
                     _out.Add(_sb.ToString());
                 }
-                _lines += _pending.Count;
-                _pending.Clear();
+                _lines += _count;
+                _pending.RemoveRange(0, _count);
             }
             return _out;
         }
@@ -131,7 +160,8 @@ namespace Diagnostics.Logs
             _sb.Append(",\"lv\":\"").Append(_r.lv).Append('"');
             AppendField(_sb, "c", _r.c);
             AppendField(_sb, "e", _r.e);
-            if (_r.s >= 0) _sb.Append(",\"s\":").Append(_r.s.ToString(CultureInfo.InvariantCulture));
+            if (_r.hasSeat) _sb.Append(",\"s\":").Append(_r.s.ToString(CultureInfo.InvariantCulture));
+            AppendField(_sb, "ro", _r.ro);
             AppendField(_sb, "ph", _r.ph);
             if (_r.d > 0) _sb.Append(",\"d\":").Append(_r.d.ToString(CultureInfo.InvariantCulture));
             AppendField(_sb, "g", _r.g);
@@ -149,11 +179,12 @@ namespace Diagnostics.Logs
             LogJson.AppendString(_sb, _value);
         }
 
-        // Caller holds the lock.
+        // Caller holds the lock. Only moves forward: a record stamped just before another thread rolled the minute
+        // (or a clock set back) never resets the counters.
         private void RollMinute(long _t)
         {
             long _now = _t / 60000;
-            if (_now == _minute) return;
+            if (_now <= _minute) return;
             if (_minute >= 0)
             {
                 foreach (KeyValuePair<string, int> _drop in _droppedThisMinute)
@@ -162,10 +193,11 @@ namespace Diagnostics.Logs
                     {
                         record = new LogRecord
                         {
-                            t = _t, lv = 'W', c = "log", e = "log.dropped", s = -1,
+                            t = _t, lv = 'W', c = "log", e = "log.dropped",
                             p = LogJson.Object(new object[] { "cat", _drop.Key, "n", _drop.Value }),
                         },
                         lastT = _t,
+                        report = true,
                     });
                 }
             }
@@ -175,12 +207,13 @@ namespace Diagnostics.Logs
         }
 
         private static bool SameContent(LogRecord _a, LogRecord _b) =>
-            _a.lv == _b.lv && _a.s == _b.s && _a.d == _b.d
+            _a.lv == _b.lv && _a.s == _b.s && _a.hasSeat == _b.hasSeat && _a.d == _b.d
             && string.Equals(_a.c, _b.c, StringComparison.Ordinal)
             && string.Equals(_a.e, _b.e, StringComparison.Ordinal)
             && string.Equals(_a.m, _b.m, StringComparison.Ordinal)
             && string.Equals(_a.p, _b.p, StringComparison.Ordinal)
             && string.Equals(_a.st, _b.st, StringComparison.Ordinal)
+            && string.Equals(_a.ro, _b.ro, StringComparison.Ordinal)
             && string.Equals(_a.ph, _b.ph, StringComparison.Ordinal)
             && string.Equals(_a.g, _b.g, StringComparison.Ordinal);
 

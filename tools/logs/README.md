@@ -6,6 +6,8 @@ europe-west1). Code: `Assets/Scripts/Diagnostics/Logs/` (`GameLog` facade, `Play
 
 ## Investigating a report (Claude's recipe)
 
+Claude: use the `playtest-logs` skill (`.claude/skills/playtest-logs/SKILL.md`), it carries the full recipe.
+
 ```bash
 python tools/logs/logs.py list --since 24h --player Wouh   # his sessions: version, crash, error counts, game ids
 python tools/logs/logs.py games --since 2d                  # games and who played them
@@ -28,13 +30,23 @@ python tools/logs/logs.py switch on --verbose Wouh   # + Debug lines of one play
 python tools/logs/logs.py switch --debug-cat ui net  # + Debug lines of some categories for everyone
 ```
 
-Public build: CI passes `-cdpLogs off` to `CdpBuild` (Build.yml `customParameters`): the define `CDP_PLAYTEST_LOGS` is
-not set, every `GameLog` call, the Firebase URL and key are compiled out. Logs expire after 60 days (Firestore TTL).
+The switch is checked every ~50 s and before each chunk. Missing, unreadable content or unreachable for 3 minutes =
+off (local file only). Lines logged while it is off never go online, not even later.
+
+Builds: `CdpBuild` requires `-cdpLogs on` (playtest: define `CDP_PLAYTEST_LOGS`) or `-cdpLogs off` (public: every
+`GameLog` call, the Firebase URL and key are compiled out); anything else fails the build. CI (Build.yml) passes
+`-cdpLogs on` today: a public build job must pass `-cdpLogs off`. Logs expire after 60 days (Firestore TTL).
+
+Security rules (`firebase/firestore.rules`): a player writes only its own session (known fields, bounded sizes, expiry
+≤ 61 days), chunks are write-once (a resent chunk answers ALREADY_EXISTS), nothing is readable but `config/logging`.
+Check them against the live project with `python tools/logs/check_rules.py`.
 
 ## Where things are
 
-- Player PC: `%USERPROFILE%/AppData/LocalLow/<company>/<product>/logs/<session>.ndjson` (last 10 sessions) + `.meta.json`
-  (upload cursor). A session that did not end cleanly uploads at the next launch, marked crashed.
+- Player PC: `%USERPROFILE%/AppData/LocalLow/<company>/<product>/logs/<session>.ndjson` (last 10 sessions, up to 30
+  while some still wait to go online) + `.meta.json` (upload cursor, chunk in flight, anonymous uid) + `auth.json` (one
+  anonymous account per PC, shared by every copy of the game). A session that did not end cleanly uploads at the next
+  launch, marked crashed; a local-only run (autoplay) never does.
 - Firestore: `sessions/{sid}` (index: player, version, flavor, host, gameIds, errors, crashed…) and
   `sessions/{sid}/chunks/{seq}` (`lines` = NDJSON). Rules and indexes: `firebase/` (`firebase deploy --only firestore`).
 - The Editor never logs online; an autoplay run uploads only with `-playtest-logs-upload` (sessions marked autoplay,

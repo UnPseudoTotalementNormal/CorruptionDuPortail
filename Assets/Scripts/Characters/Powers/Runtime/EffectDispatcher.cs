@@ -28,7 +28,7 @@ namespace Characters.Powers.Runtime
                     throw new NotSupportedException(
                         $"EffectDispatcher: no executor registered for '{effect.GetType().Name}'.");
                 }
-                GameLog.Info("power", "effect", "effect", effect.ToString(), "viewer", runtime.LocalViewer);
+                GameLog.Guarded(() => GameLog.Info("power", "effect", "effect", effect.ToString(), "viewer", runtime.LocalViewer));
                 executor.Execute(effect, runtime);
             }
         }

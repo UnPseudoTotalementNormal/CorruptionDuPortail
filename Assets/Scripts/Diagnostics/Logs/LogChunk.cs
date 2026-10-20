@@ -45,6 +45,42 @@ namespace Diagnostics.Logs
             return 0;
         }
 
+        public enum RangeKind
+        {
+            /// <summary>No complete line to send yet.</summary>
+            None,
+            /// <summary>Send these lines as the next chunk.</summary>
+            Lines,
+            /// <summary>Can never fit in a document (one line over the cap): step over it.</summary>
+            Skip,
+        }
+
+        /// <summary>
+        /// The next byte range to upload from the cursor. <paramref name="_pendingLength"/> &gt; 0 = a chunk was being
+        /// sent when the answer was lost: the same range is sent again, so an <c>ALREADY_EXISTS</c> answer really means
+        /// "these bytes are online" (never a longer range rebuilt later). <paramref name="_windowFull"/> = the read
+        /// window was full, so a range with no newline at all is one giant line, skipped.
+        /// </summary>
+        public static RangeKind NextRange(byte[] _bytes, int _count, bool _windowFull, long _pendingLength, out int _length)
+        {
+            if (_pendingLength > 0 && _pendingLength <= _count)
+            {
+                _length = (int)_pendingLength;
+                return _length > MaxChunkBytes ? RangeKind.Skip : RangeKind.Lines;
+            }
+            _length = CompleteLinesLength(_bytes, _count);
+            if (_length == 0)
+            {
+                if (_windowFull)
+                {
+                    _length = _count;
+                    return RangeKind.Skip;
+                }
+                return RangeKind.None;
+            }
+            return _length > MaxChunkBytes ? RangeKind.Skip : RangeKind.Lines;
+        }
+
         /// <summary>Keeps the lines <paramref name="_keep"/> accepts and summarizes them.</summary>
         public static LogChunk Build(string _text, Func<char, string, bool> _keep)
         {

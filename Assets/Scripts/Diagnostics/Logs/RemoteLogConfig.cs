@@ -22,6 +22,7 @@ namespace Diagnostics.Logs
         public int capPerMinute = 300;
 
         public const int MinFlushSeconds = 5;
+        public const int MaxFlushSeconds = 60;
 
         /// <summary>Null when the text is not a usable config (the caller then keeps logs local).</summary>
         public static RemoteLogConfig Parse(string _json)
@@ -36,8 +37,8 @@ namespace Diagnostics.Logs
                 if (_config == null) return null;
                 _config.verbosePlayers ??= Array.Empty<string>();
                 _config.debugCategories ??= Array.Empty<string>();
-                if (_config.flushSeconds < MinFlushSeconds) _config.flushSeconds = MinFlushSeconds;
-                if (_config.capPerMinute <= 0) _config.capPerMinute = 300;
+                _config.flushSeconds = Math.Max(MinFlushSeconds, Math.Min(MaxFlushSeconds, _config.flushSeconds));
+                _config.capPerMinute = _config.capPerMinute <= 0 ? 300 : Math.Max(50, Math.Min(5000, _config.capPerMinute));
                 if (string.IsNullOrEmpty(_config.minLevel)) _config.minLevel = "I";
                 return _config;
             }

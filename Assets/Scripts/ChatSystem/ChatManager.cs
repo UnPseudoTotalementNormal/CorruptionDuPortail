@@ -240,8 +240,8 @@ namespace ChatSystem
                 return;
             }
 
-            GameLog.Info("chat", "chat.message", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId,
-                "public", _membership.IsPublic(_chatMessage.chatId), "text", _chatMessage.message.ToString());
+            GameLog.Guarded(() => GameLog.Info("chat", "chat.message", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId,
+                "public", _membership.IsPublic(_chatMessage.chatId), "text", _chatMessage.message.ToString()));
             if (_membership.IsPublic(_chatMessage.chatId))
             {
                 ReceiveChatMessageRpc(_chatMessage);

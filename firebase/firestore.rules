@@ -1,29 +1,59 @@
 rules_version = '2';
 
 // Playtest logs (Assets/Scripts/Diagnostics/Logs, read with tools/logs/logs.py).
-// A game client signs in anonymously and may only write its own sessions. Nobody reads logs from a client:
-// Claude reads them with gcloud credentials (admin access bypasses these rules).
+// A game client signs in anonymously and may only write its own sessions, with the known fields, bounded sizes and an
+// expiry (TTL) of at most ~60 days. Nobody reads logs from a client: Claude reads them with gcloud credentials (admin
+// access bypasses these rules). The Web API key ships in playtest builds only (never in a public build): anyone holding
+// one can still create sessions; the remote switch (config/logging) and the TTL bound the damage.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // Remote switch: { json: "{\"enabled\":true,...}" }. Read-only for players.
-    match /config/{doc} {
+    match /config/logging {
       allow read: if request.auth != null;
     }
 
+    function shortText(d, key) {
+      return !(key in d) || (d[key] is string && d[key].size() <= 300);
+    }
+
+    function boundedExpiry(d) {
+      return d.expireAt is timestamp && d.expireAt <= request.time + duration.value(61, 'd');
+    }
+
+    function validSession(sid) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['uid', 'sid', 'player', 'playerFull', 'steamId', 'ugsId', 'version', 'flavor', 'autoplay',
+                               'host', 'gameIds', 'errors', 'warnings', 'lines', 'ended', 'crashed', 'startedAt',
+                               'lastSeen', 'expireAt', 'os', 'gpu'])
+        && d.uid == request.auth.uid
+        && d.sid == sid
+        && boundedExpiry(d)
+        && shortText(d, 'player') && shortText(d, 'playerFull') && shortText(d, 'steamId') && shortText(d, 'ugsId')
+        && shortText(d, 'version') && shortText(d, 'flavor') && shortText(d, 'os') && shortText(d, 'gpu')
+        && (!('gameIds' in d) || (d.gameIds is list && d.gameIds.size() <= 200));
+    }
+
     match /sessions/{sid} {
-      allow create: if request.auth != null
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.sid == sid;
+      allow create: if request.auth != null && validSession(sid);
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
-        && request.resource.data.uid == request.auth.uid;
+        && validSession(sid);
 
+      // Chunks are write-once: a retry of a chunk that already went up is answered ALREADY_EXISTS.
       match /chunks/{seq} {
         allow create: if request.auth != null
           && get(/databases/$(database)/documents/sessions/$(sid)).data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['sid', 'player', 'seq', 't0', 't1', 'gameIds', 'lineCount', 'errors',
+                                                   'warnings', 'lines', 'expireAt'])
+          && request.resource.data.sid == sid
+          && request.resource.data.seq is int
+          && int(seq) == request.resource.data.seq
           && request.resource.data.lines is string
-          && request.resource.data.lines.size() <= 1000000;
+          && request.resource.data.lines.size() <= 1000000
+          && boundedExpiry(request.resource.data)
+          && shortText(request.resource.data, 'player')
+          && (!('gameIds' in request.resource.data) || request.resource.data.gameIds.size() <= 200);
       }
     }
   }

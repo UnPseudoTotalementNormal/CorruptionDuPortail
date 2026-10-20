@@ -6,6 +6,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -237,6 +238,7 @@ namespace Network
             s_expectedShutdown = false; // fresh session (domain reload is disabled — never trust a stale flag)
             _handlingLoss = false;
             Debug.Log($"{LogTag} Client started (pureClient={_localWasPureClient}).");
+            GameLog.Info("net", "client.started", "pureClient", _localWasPureClient);
         }
 
         private void OnClientStopped(bool _wasHost)
@@ -260,6 +262,8 @@ namespace Network
             bool _joining = s_joinHandshakeInProgress;
             bool _shouldNotify = HostDropPolicy.ShouldNotifyHostLoss(_localWasPureClient, _expected, _joining);
             Debug.Log($"{LogTag} {_source}: pureClient={_localWasPureClient} expected={_expected} joining={_joining} -> notify={_shouldNotify}");
+            GameLog.Warn("net", "client.stopped", "source", _source, "pureClient", _localWasPureClient, "expected", _expected,
+                "joining", _joining, "notify", _shouldNotify);
 
             // One-shot: consume the expected flag no matter which path we take.
             s_expectedShutdown = false;

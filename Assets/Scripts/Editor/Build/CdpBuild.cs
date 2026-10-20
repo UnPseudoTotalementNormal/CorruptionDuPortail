@@ -11,8 +11,9 @@ using UnityEngine;
 /// Player builds of both online flavors (<see cref="GameFlavor"/>): Relay (UGS + Unity Relay, several copies on
 /// one PC) and Steam (Steam lobbies + Steam Datagram Relay). The Steam build only adds the CDP_STEAM define, for
 /// this build alone: ProjectSettings keep no flavor, so the Editor and the autoplay builds stay Relay.
-/// CI builds are playtest builds: they also get CDP_PLAYTEST_LOGS (online logs, Diagnostics/Logs/GameLog), which a
-/// public build must drop with <c>-cdpLogs off</c> (no log code, URL or key is then compiled in).
+/// The command line must say <c>-cdpLogs on</c> (playtest build: CDP_PLAYTEST_LOGS, online logs,
+/// Diagnostics/Logs/GameLog) or <c>-cdpLogs off</c> (public build: no log code, URL or key compiled in). Anything else
+/// fails the build, so a public build can never ship the logs by omission or typo.
 /// CI (Build.yml) calls <see cref="BuildFromCommandLine"/> through game-ci's <c>buildMethod</c>.
 /// </summary>
 public static class CdpBuild
@@ -27,7 +28,14 @@ public static class CdpBuild
     {
         Dictionary<string, string> _args = ParseArgs(Environment.GetCommandLineArgs());
         bool _steam = _args.TryGetValue("cdpFlavor", out string _flavor) && _flavor.Equals("steam", StringComparison.OrdinalIgnoreCase);
-        bool _playtestLogs = !(_args.TryGetValue("cdpLogs", out string _logs) && _logs.Equals("off", StringComparison.OrdinalIgnoreCase));
+        _args.TryGetValue("cdpLogs", out string _logs);
+        bool _playtestLogs = string.Equals(_logs, "on", StringComparison.OrdinalIgnoreCase);
+        if (!_playtestLogs && !string.Equals(_logs, "off", StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogError($"[BUILD] -cdpLogs must be 'on' (playtest) or 'off' (public), got '{_logs ?? "nothing"}'.");
+            EditorApplication.Exit(1);
+            return;
+        }
 
         if (!_args.TryGetValue("customBuildPath", out string _path) || string.IsNullOrEmpty(_path))
         {

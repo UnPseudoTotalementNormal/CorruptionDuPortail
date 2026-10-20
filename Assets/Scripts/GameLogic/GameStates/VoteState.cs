@@ -245,8 +245,8 @@ namespace GameLogic.GameStates
 
             ulong _winner = new VoteTally().Resolve(_votes, SKIP_VOTE_ID);
             mostVotedPlayer = _winner;
-            GameLog.Snapshot("vote.result", "winner", _winner, "skip", _winner == SKIP_VOTE_ID,
-                "votes", votesForPlayer.Select(_kvp => $"{_kvp.Key}<-{string.Join(",", _kvp.Value)}").ToList());
+            GameLog.Guarded(() => GameLog.Snapshot("vote.result", "winner", _winner, "skip", _winner == SKIP_VOTE_ID,
+                "votes", votesForPlayer.Select(_kvp => $"{_kvp.Key}<-{string.Join(",", _kvp.Value)}").ToList()));
             if (_winner != SKIP_VOTE_ID)
             {
                 Character _votedCharacter = CharacterQuery.GetCharacters().Find(_character => _character.ownerClientId.Value == _winner);

@@ -2,7 +2,7 @@
 title: 'Online playtest logs: structured game log streamed live to Firestore, remote kill switch, Claude reader'
 type: 'feature'
 created: '2026-10-20'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'bee0938763fb8ac3bb194d2b4455a77792c24fdc'
 context: ['{project-root}/_bmad-output/project-context.md']
 ---
@@ -72,6 +72,40 @@ context: ['{project-root}/_bmad-output/project-context.md']
 - Given a CI playtest build in a 3-player game, when it ends, then `logs.py timeline <game>` shows all three players' events interleaved with phase snapshots, votes, powers (incl. refusals and reasons), chat, connections.
 - Given a build without `CDP_PLAYTEST_LOGS`, when inspected, then no `GameLog` call site, Firebase URL or API key is in the player assemblies.
 - Given the Editor or an autoplay run, when played, then nothing reaches Firestore.
+
+## Spec Change Log
+
+### 2026-10-20 — review round 1 (blind hunter, edge case hunter, acceptance auditor), all findings patched
+
+- Upload integrity: the byte range of a chunk is saved (`pendingLength`) before sending and resent unchanged after a
+  lost answer, so `ALREADY_EXISTS` (409, verified on the live rules) really covers those bytes; one upload pass at a
+  time (`SemaphoreSlim` shared with the quit upload, which cancels the loop first); a range that can never be accepted
+  (one line over the cap, a `Rejected` chunk) is skipped and logged instead of blocking the session; meta saved
+  atomically; recovered sessions retried only on passing failures; pruning keeps unsent sessions (up to 30).
+- Auth: one anonymous account per PC (sign-up behind a lock file, `auth.json` replaced atomically), a new account only
+  when the refresh token is really dead (400 INVALID_REFRESH_TOKEN…), 403 no longer drops the token, a session written
+  under another uid is given up (`log.session.orphan`).
+- Switch: missing doc or unreadable content = off; unreachable 3 min = unknown (local only); polled every ~50 s and
+  before each chunk; off at quit drops the session's waiting lines; `flushSeconds` 5..60, `capPerMinute` 50..5000;
+  backoff on failures (up to 300 s).
+- Autoplay: a session's `uploadAllowed` is stored, a local-only run is never recovered by a later launch.
+- Game safety: snapshot/context/argument computation wrapped in `GameLog.Guarded` (a logging bug can never abort
+  `SwitchGameState`); context = seat (ulong, fakes whole), role, phase, day (also on clients: refreshed on
+  `onNewDayPassed`), game id set before the phase on spawn, declared before `currentGameStateIndex`, cleared when back in
+  the lobby and on despawn; seat refreshed on rejoin / possession; client-side `client.started/stopped`.
+- Buffer: errors never capped; identical lines merge across drains (last line held back while it can grow); minute
+  never rolls back; parameters capped (still JSON).
+- Build: `-cdpLogs on|off` mandatory (anything else fails), Build.yml passes `on`.
+- Rules: field allow-lists, sizes, bounded expiry, seq/path match, chunks write-once, only `config/logging` readable;
+  `tools/logs/check_rules.py` checks them live.
+- logs.py: lobby lines in game timelines, clock-skew correction, `--utc`, midnight-safe `around`, paginated sessions,
+  incremental cache + `batchGet`, `tail` queries only new chunks, token refresh, `switch` on a missing doc / clearing
+  lists, `list --game`, role in the line label.
+- Added `GameLog.Mark` (for F8) and the `playtest-logs` skill.
+- KEEP: `[Conditional]` facade + `#if` runtime (verified: no log string, URL or key in a build without the define).
+- Open, human decision: `-playtest-logs-upload` lets an autoplay run upload (used to verify the pipeline end to end;
+  sessions marked autoplay, hidden from `list`). The frozen Never says autoplay never uploads: keep the switch or drop it.
+- Tests live in `Assets/Scripts/Tests/Editor/PlaytestLogs` (the project's EditMode folder).
 
 ## Design Notes
 

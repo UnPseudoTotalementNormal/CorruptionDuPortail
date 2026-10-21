@@ -13,6 +13,7 @@ missing ones are downloaded.
     python tools/logs/logs.py grep <regex> [--since 24h] [--player NAME]                  raw search in every line
     python tools/logs/logs.py tail <player | session id>                                  follow a live session
     python tools/logs/logs.py switch [on|off] [--verbose NAME ...] [--debug-cat CAT ...] [--min-level D|I|W|E]
+    python tools/logs/logs.py reports [--since 7d] [--player NAME] [--download DIR]  F8 reports and crash alerts
 
 Filters (timeline / around): --level W (minimum level), --cat vote,power (categories), --player Wouh,
 --grep REGEX, --stack (stack traces), --full (no truncation, every state picture), --json (raw lines),
@@ -233,8 +234,20 @@ def session_players(sids):
 def parse(chunks):
     out = []
     names = session_players(c["sid"] for c in chunks) if chunks else {}
+    labels = {}
     for c in chunks:
-        who = names.get(c["sid"]) or c.get("player") or c["sid"][-6:]
+        labels.setdefault(c["sid"], names.get(c["sid"]) or c.get("player") or c["sid"][-6:])
+    # Two sessions with the same pseudo (the same tester running two copies of the game): tell them apart by the end
+    # of their session id ("Wouh~3f2a", "Wouh~9b1c").
+    taken = {}
+    for sid, label in labels.items():
+        taken.setdefault(label, []).append(sid)
+    for label, sids in taken.items():
+        if len(sids) > 1:
+            for sid in sids:
+                labels[sid] = f"{label}~{sid[-4:]}"
+    for c in chunks:
+        who = labels[c["sid"]]
         for raw in (c.get("lines") or "").splitlines():
             try:
                 line = json.loads(raw)
@@ -373,7 +386,7 @@ def apply_filters(lines, a):
     for l in lines:
         if LEVELS.find(l.get("lv", "I")) < lv: continue
         if cats and l.get("c") not in cats and not (l.get("c") == "phase"): continue
-        if players and l["_who"].lower() not in players: continue
+        if players and l["_who"].lower() not in players and l["_who"].split("~")[0].lower() not in players: continue
         if rx and not rx.search(json.dumps(l, ensure_ascii=False)): continue
         out.append(l)
     return out
@@ -513,6 +526,65 @@ def cmd_tail(a):
         time.sleep(10)
 
 
+GAME_RX = re.compile(r"\d{8}-\d{4}-[0-9a-f]{4}")
+REPORT_RX = re.compile(r"\d{8}-\d{6}-[0-9a-f]{6}")
+
+
+def report_command(r):
+    """The command that prints the reported moment (same as in the Discord alert), built only from ids in their exact
+    formats: a planted report can never turn it into another command."""
+    when = ts(r.get("t"))
+    if GAME_RX.fullmatch(r.get("gameId") or "") and when:
+        return f"python tools/logs/logs.py around {r['gameId']} {shown(when).strftime('%H:%M:%S')} --window 90"
+    if SID_RX.fullmatch(r.get("sid") or ""):
+        return f"python tools/logs/logs.py timeline {r['sid']} --level W"
+    return "(invalid ids: no command)"
+
+
+def cmd_reports(a):
+    since = since_arg(a.since).strftime("%Y-%m-%dT%H:%M:%SZ")
+    docs = run_query({
+        "from": [{"collectionId": "reports"}],
+        "where": {"fieldFilter": {"field": {"fieldPath": "t"}, "op": "GREATER_THAN_OR_EQUAL",
+                                  "value": {"timestampValue": since}}},
+        "orderBy": [{"field": {"fieldPath": "t"}, "direction": "DESCENDING"}],
+        "limit": 200,
+    })
+    rows = [fields(d) for d in docs]
+    rows = [r for r in rows if r.get("player") != "RulesCheck"]  # tools/logs/check_rules.py test documents
+    if a.player:
+        rows = [r for r in rows if a.player.lower() in (r.get("player") or "").lower()]
+    if not rows:
+        print("No report.")
+        return
+    for r in rows:
+        when = ts(r.get("t"))
+        where = ", ".join(x for x in (r.get("phase"), f"day {r['day']}" if r.get("day") else None, r.get("role")) if x)
+        kind = "CRASH " if r.get("kind") == "crash" else ""
+        print(f"{hm(when, '%d/%m %H:%M:%S')}  {kind}{r.get('player') or '?'}  v{r.get('version')} {r.get('flavor') or ''}"
+              f"  {where or 'out of game'}")
+        if r.get("text"):
+            print(f"    « {r['text']} »")
+        if r.get("postError"):
+            print(f"    Discord: {r['postError']}")
+        print(f"    {report_command(r)}")
+        if r.get("capture"):
+            if a.download and REPORT_RX.fullmatch(r.get("id") or "") and r["capture"] == f"reports/{r['id']}.jpg":
+                out = Path(a.download) / f"{r['id']}.jpg"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                url = (f"https://storage.googleapis.com/storage/v1/b/{PROJECT}.firebasestorage.app/o/"
+                       f"{urllib.parse.quote(r['capture'], safe='')}?alt=media")
+                req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token()}"})
+                try:
+                    with urllib.request.urlopen(req, timeout=60) as resp:
+                        out.write_bytes(resp.read())
+                    print(f"    capture: {out}")
+                except urllib.error.URLError as e:
+                    print(f"    capture missing ({getattr(e, 'code', e)})")
+            else:
+                print(f"    capture: {r['capture']} (--download DIR to save it)")
+
+
 def cmd_switch(a):
     url = f"{BASE}/config/logging"
     try:
@@ -558,6 +630,8 @@ def main():
     p.add_argument("--stack", action="store_true"); p.add_argument("--full", action="store_true"); p.set_defaults(f=cmd_grep)
     p = sub.add_parser("tail"); p.add_argument("target"); p.add_argument("--stack", action="store_true")
     p.add_argument("--full", action="store_true"); p.set_defaults(f=cmd_tail)
+    p = sub.add_parser("reports"); p.add_argument("--since", default="7d"); p.add_argument("--player")
+    p.add_argument("--download", help="folder where the captures are saved"); p.set_defaults(f=cmd_reports)
     p = sub.add_parser("switch"); p.add_argument("state", nargs="?", choices=["on", "off"])
     p.add_argument("--verbose", nargs="*", help="players whose Debug lines go online (none = clear)")
     p.add_argument("--debug-cat", nargs="*", help="categories whose Debug lines go online (none = clear)")

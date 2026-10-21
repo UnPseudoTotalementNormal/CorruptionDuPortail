@@ -21,6 +21,17 @@ python tools/logs/logs.py tail Wouh                          # follow a live ses
 Read narrow first (`--level W`, `--cat`, `around`), widen only when needed. `state` lines are the host's picture at each
 phase start (seats, roles, factions, chained/awake/left); `unity` lines are the game's own `Debug.Log`, `[TAG]` as event.
 
+## F8 bug reports
+
+Playtest builds: F8 (or « Signaler un bug » in the pause menu) captures the screen and opens « Qu'est-ce qui s'est
+passé ? » (mockups `tools/maquettes/signaler-un-bug`, B2 + C1 + K2). Envoyer marks the moment (`bug.report`), sends the
+waiting log lines, uploads the capture (Storage `reports/<id>.jpg`) and the report (Firestore `reports/<id>`); the Cloud
+Function `firebase/functions` posts it to the hidden Discord channel « rapports-de-bug » (bot token in Secret Manager).
+A crashed session found at the next launch posts a « Crash » alert. Offline / switch off: the report waits in
+`logs/reports/` and goes at a later launch. `python tools/logs/logs.py reports --download DIR` lists them and saves the
+captures. Test switch for autoplay runs: `-playtest-bug-report-at <seconds>`. Function tests: `node firebase/functions/test.js`.
+Deploy everything: `cd firebase && firebase deploy --only firestore,storage,functions`.
+
 ## Switch (instant, no rebuild)
 
 ```bash

@@ -310,6 +310,64 @@ namespace Tests.Editor.PlaytestLogs
             StringAssert.DoesNotContain("screen.show", _chunk.lines);
         }
 
+        // ---- BugReport (F8) ----
+
+        [Test]
+        public void BugReport_IdIsSortableAndMatchesTheStorageRule()
+        {
+            string _id = BugReport.NewId(new DateTime(2026, 10, 20, 21, 40, 12, DateTimeKind.Utc));
+
+            StringAssert.IsMatch("^20261020-214012-[0-9a-f]{6}$", _id, "storage.rules accepts only this shape");
+        }
+
+        [Test]
+        public void BugReport_TextIsTrimmedAndCapped()
+        {
+            Assert.AreEqual("vote perdu", BugReport.CleanText("  vote perdu \n"));
+            Assert.AreEqual(string.Empty, BugReport.CleanText(null));
+            Assert.AreEqual(BugReport.MaxTextChars, BugReport.CleanText(new string('x', 5000)).Length);
+        }
+
+        [Test]
+        public void BugReport_RateLimit()
+        {
+            Assert.AreEqual(0, BugReport.WaitBeforeNext(0, 1000), "first report: no wait");
+            Assert.AreEqual(15000, BugReport.WaitBeforeNext(1000, 6000));
+            Assert.AreEqual(0, BugReport.WaitBeforeNext(1000, 1000 + BugReport.MinIntervalMs));
+        }
+
+        [Test]
+        public void BugReport_CaptureIsDownscaledNeverUpscaled()
+        {
+            Assert.AreEqual((1280, 720), BugReport.CaptureSize(1920, 1080));
+            Assert.AreEqual((1280, 800), BugReport.CaptureSize(2560, 1600));
+            Assert.AreEqual((1024, 576), BugReport.CaptureSize(1024, 576));
+        }
+
+        [Test]
+        public void BugReport_FieldsMatchTheRulesAllowList()
+        {
+            var _report = new BugReport
+            {
+                id = "20261020-214012-a3f9c2", sid = "S", gameId = "G", player = "Wouh", seat = "3", role = "Abyss",
+                phase = "VoteState", day = 2, text = "Élu \"perdu\"", t = 0, version = "1.0.3", flavor = "steam", hasCapture = true,
+            };
+
+            FirestoreFields _fields = _report.ToFields("uid1", 0);
+            string _json = _fields.ToJson();
+
+            CollectionAssert.AreEquivalent(new[]
+            {
+                "uid", "id", "kind", "sid", "gameId", "player", "seat", "role", "phase", "day", "text", "t", "version", "flavor",
+                "capture", "expireAt",
+            }, _fields.Names);
+            StringAssert.Contains("\"capture\":{\"stringValue\":\"reports/20261020-214012-a3f9c2.jpg\"}", _json);
+            StringAssert.Contains("\"kind\":{\"stringValue\":\"report\"}", _json);
+            StringAssert.Contains("Élu \\\"perdu\\\"", _json);
+            StringAssert.Contains("\"capture\":{\"stringValue\":\"\"}", new BugReport { id = "x" }.ToFields("u", 0).ToJson(),
+                "no capture: empty path (rules accept '' or the report's own file)");
+        }
+
         // ---- FirestoreFields ----
 
         [Test]

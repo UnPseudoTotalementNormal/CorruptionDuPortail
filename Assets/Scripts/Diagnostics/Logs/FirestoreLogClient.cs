@@ -22,6 +22,7 @@ namespace Diagnostics.Logs
         // Firebase Web API key: identifies the project, not a secret (access is ruled by the security rules).
         private const string ApiKey = "AIzaSyD72okoz-olxXghpFhNaT6XjiWHTVzzVxM";
         private const string DocumentsUrl = "https://firestore.googleapis.com/v1/projects/" + ProjectId + "/databases/(default)/documents";
+        private const string StorageUploadUrl = "https://firebasestorage.googleapis.com/v0/b/" + ProjectId + ".firebasestorage.app/o";
         private const int TimeoutSeconds = 20;
         private const double SignUpLockSeconds = 60;
 
@@ -189,6 +190,22 @@ namespace Diagnostics.Logs
             return Classify(_code, _text);
         }
 
+        /// <summary>Uploads a report's capture to Storage <c>reports/&lt;id&gt;.jpg</c>.</summary>
+        public async UniTask<Result> UploadCapture(string _reportId, byte[] _jpg, CancellationToken _ct)
+        {
+            string _url = StorageUploadUrl + "?uploadType=media&name=" + Uri.EscapeDataString("reports/" + _reportId + ".jpg");
+            (long _code, string _text) = await SendBytes("POST", _url, _jpg, "image/jpeg", _ct);
+            return Classify(_code, _text);
+        }
+
+        /// <summary>Creates the report document (create-only: a retry of a report that went up answers AlreadyExists).</summary>
+        public async UniTask<Result> CreateReport(string _reportId, FirestoreFields _fields, CancellationToken _ct)
+        {
+            string _url = DocumentsUrl + "/reports?documentId=" + Uri.EscapeDataString(_reportId);
+            (long _code, string _text) = await Send("POST", _url, _fields.ToJson(), "application/json", true, _ct);
+            return Classify(_code, _text);
+        }
+
         private static Result Classify(long _code, string _text)
         {
             if (_code >= 200 && _code < 300) return Result.Ok;
@@ -233,13 +250,21 @@ namespace Diagnostics.Logs
             }
         }
 
-        private async UniTask<(long code, string text)> Send(string _method, string _url, string _body, string _contentType,
+        private UniTask<(long code, string text)> Send(string _method, string _url, string _body, string _contentType,
+            bool _authed, CancellationToken _ct) =>
+            Request(_method, _url, _body != null ? Encoding.UTF8.GetBytes(_body) : null, _contentType, _authed, _ct);
+
+        private UniTask<(long code, string text)> SendBytes(string _method, string _url, byte[] _body, string _contentType,
+            CancellationToken _ct) =>
+            Request(_method, _url, _body, _contentType, true, _ct);
+
+        private async UniTask<(long code, string text)> Request(string _method, string _url, byte[] _body, string _contentType,
             bool _authed, CancellationToken _ct)
         {
             using var _request = new UnityWebRequest(_url, _method);
             if (_body != null)
             {
-                _request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(_body));
+                _request.uploadHandler = new UploadHandlerRaw(_body);
                 _request.SetRequestHeader("Content-Type", _contentType);
             }
             _request.downloadHandler = new DownloadHandlerBuffer();

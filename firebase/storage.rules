@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// F8 bug report captures (reports/<report id>.jpg). Players upload, nobody reads from a client (the Cloud Function and
+// Claude use admin access). Create-only: nobody can overwrite a capture (the game treats a refused retry as sent).
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /reports/{file} {
+      allow create: if request.auth != null
+        && resource == null
+        && file.matches('[0-9]{8}-[0-9]{6}-[0-9a-f]{6}[.]jpg')
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+    }
+  }
+}

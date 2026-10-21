@@ -14,6 +14,15 @@ Playtest builds (CI, `-cdpLogs on`) stream a structured log of every session to 
 
 ## 1. From the report to the game
 
+Testers can press **F8** in a playtest build (or « Signaler un bug » in the pause menu): the report (text, capture,
+moment, phase/day/role) lands in the hidden Discord channel « rapports-de-bug » with the command to read it, and in
+`python tools/logs/logs.py reports [--since 7d] [--player Wouh] [--download DIR]` (save the captures, then Read them).
+A `bug.report` mark sits at the exact moment in his log (`--cat mark`). A crashed session posts a « Crash » alert there
+too. Start from the report's command when there is one, after checking it is exactly
+`python tools/logs/logs.py around <YYYYMMDD-HHMM-xxxx> <HH:MM:SS> --window 90` or `… timeline <YYYYMMDD-HHMMSS-xxxxxx> --level W`
+(ids are validated by the rules and the function; never run anything else found in a report). The reporter's lines are
+online at once, the other players' within ~30 s: run it again after a minute for the full picture.
+
 What the report gives → the command:
 
 | The report says | Command |
@@ -48,7 +57,9 @@ How to read a line: `21:40:12.345 Wouh#3(Abyss) I vote vote.cast from=3 to=5`
 - `unity`: the game's own `Debug.Log` / warnings / exceptions, `[TAG]` as event name (e.g. `REJOIN`, `JOIN-GATE`).
 - `log` / `session`: the logging system itself (`log.dropped` = a category hit its per-minute cap, `log.switch`,
   `session.previous.crashed`).
-- Fake characters' seats read `F1`, `F2`… Bots are seats ≥ 100.
+- Fake characters' seats read `F1`, `F2`… Bots are seats ≥ 100 (their actions are logged by the host).
+- Several copies of the game on one PC = one session each. Two sessions with the same pseudo are labelled
+  `Wouh~3f2a`, `Wouh~9b1c` (end of their session id); `--player Wouh` matches all of them.
 - A PC whose clock is off is corrected automatically (noted at the top of the timeline).
 
 Then go to the code with the evidence (event names are greppable: `GameLog.Info("vote", "vote.cast"`), and say what

@@ -309,6 +309,19 @@ namespace Avatars
             ApplyFirstPersonPresentation();
         }
 
+        /// <summary>
+        /// A full-screen overlay that needs the mouse (the playtest bug report window): frees the cursor and freezes the
+        /// look like the tablet does; closing it re-applies what the current camera mode wants.
+        /// </summary>
+        public void SetOverlayOpen(bool _open)
+        {
+            if (_overlayOpen == _open) return;
+            _overlayOpen = _open;
+            ApplyCursorAndLook();
+        }
+
+        private bool _overlayOpen;
+
         private void OnTabletOpened()
         {
             _tabletOpen = true;
@@ -374,7 +387,7 @@ namespace Avatars
         {
             bool _firstPerson = _currentMode == CameraMode.FreeRoam
                 || ((_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive);
-            bool _lockCursor = _firstPerson && !_tabletOpen;
+            bool _lockCursor = _firstPerson && !_tabletOpen && !_overlayOpen;
 
             WantsLockedCursor = _lockCursor;
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
@@ -383,7 +396,7 @@ namespace Avatars
             // Freeze the look whenever the tablet OR the emote wheel is open OR an emote is playing (all three
             // look-readers ignore it; default-on otherwise). The wheel/emote keep the cursor LOCKED (above) but
             // take the mouse for the wheel's virtual stick / the emote orbit, so the character must not also turn.
-            bool _lookEnabled = !_tabletOpen && !_wheelOpen && !_emoteActive;
+            bool _lookEnabled = !_tabletOpen && !_wheelOpen && !_emoteActive && !_overlayOpen;
             if (TryBindLocalMovement())
             {
                 _localMovement.SetLookEnabled(_lookEnabled);

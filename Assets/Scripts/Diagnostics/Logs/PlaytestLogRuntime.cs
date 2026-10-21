@@ -39,6 +39,8 @@ namespace Diagnostics.Logs
         private const int MaxChunksPerPass = 6;
         private const int MaxBackoffSeconds = 300;
         private const int MaxRecoveryFailures = 5;
+        private const int MaxReportAttempts = 10;
+        private const int ReportMaxAgeDays = 3;
 
         [Serializable]
         private sealed class SessionMeta
@@ -104,6 +106,8 @@ namespace Diagnostics.Logs
         private readonly HashSet<string> _gameIds = new();
         private CancellationTokenSource _cts;
         private int _failedPasses;
+        private string _reportsDir;
+        private long _lastReportMs;
 
         private int _frames;
         private float _frameTime;
@@ -179,6 +183,9 @@ namespace Diagnostics.Logs
 
             _nextPerfSample = Time.unscaledTime + PerfSampleSeconds; // the loading frame would read as 0.3 fps
             _client = new FirestoreLogClient(_directory);
+            _reportsDir = Path.Combine(_directory, "reports");
+            try { Directory.CreateDirectory(_reportsDir); } catch (Exception) { /* reports then stay unsent */ }
+            BugReportWindow.Create(this, _args);
             FindRecoverableSessions();
             PruneOldSessions();
             FlushLoop(_cts.Token).Forget();
@@ -367,6 +374,7 @@ namespace Diagnostics.Logs
                     _recovered.RemoveAt(_i);
                 }
             }
+            _ok &= await SendQueuedReports(_ct, null);
             return _ok;
         }
 
@@ -580,6 +588,264 @@ namespace Diagnostics.Logs
                 .Timestamp("expireAt", _target.meta.startMs + ExpireDays * 86400000L);
         }
 
+        // ---- bug reports (F8 window) and crash alerts ----
+
+        [Serializable]
+        private sealed class LastLine
+        {
+            public long t;
+            public string ph;
+            public int d;
+            public string g;
+            public string ro;
+        }
+
+        /// <summary>Milliseconds before the next report may be sent (anti-spam).</summary>
+        internal long ReportWaitMs() => BugReport.WaitBeforeNext(_lastReportMs, NowMs());
+
+        /// <summary>
+        /// The F8 window's Envoyer, step 1 (instant): marks the moment in the log and stores the report until it is
+        /// online. Null = it will never go online (local-only run, or it could not be saved).
+        /// </summary>
+        internal string QueueReport(string _text, byte[] _jpg)
+        {
+            var _report = new BugReport
+            {
+                id = BugReport.NewId(DateTime.UtcNow),
+                kind = BugReport.KindReport,
+                sid = _session.meta.sid,
+                gameId = GameLog.GameId,
+                player = LocalPlayerInfoHolder.playerInfo.playerName.ToString(),
+                seat = GameLog.Seat?.ToString(),
+                role = GameLog.Role,
+                phase = GameLog.Phase,
+                day = GameLog.Day,
+                text = BugReport.CleanText(_text),
+                t = NowMs(),
+                version = Application.version,
+                flavor = _session.meta.flavor,
+                hasCapture = _jpg != null && _jpg.Length > 0,
+            };
+            GameLog.Mark("bug.report", "id", _report.id, "text", _report.text);
+            _lastReportMs = _report.t;
+            if (!_uploadAllowed || !SaveReport(_report, _jpg))
+            {
+                return null; // a local-only run (autoplay) keeps only the mark in its local log
+            }
+            return _report.id;
+        }
+
+        /// <summary>
+        /// Step 2: sends the waiting log lines and the report now, giving up after <paramref name="_seconds"/> (the
+        /// report then stays queued for the regular passes). Never blocks the game: the window is already closed.
+        /// </summary>
+        internal async UniTask<bool> TrySendNow(string _reportId, float _seconds)
+        {
+            if (string.IsNullOrEmpty(_reportId)) return false;
+            using var _limit = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            _limit.CancelAfter(TimeSpan.FromSeconds(_seconds));
+            try
+            {
+                await _uploadLock.WaitAsync(_limit.Token);
+                try
+                {
+                    _nextConfigPoll = 0f; // the switch may have changed since the last poll
+                    await PollConfigIfDue(_limit.Token);
+                    if (!UploadEnabled() || !await _client.EnsureAuth(_limit.Token))
+                    {
+                        return false;
+                    }
+                    FlushToFile(true); // the marked moment and what led to it go online first
+                    await UploadSession(_session, _limit.Token);
+                    var _sent = new HashSet<string>();
+                    await SendQueuedReports(_limit.Token, _sent, _reportId);
+                    return _sent.Contains(_reportId);
+                }
+                finally
+                {
+                    _uploadLock.Release();
+                }
+            }
+            catch (Exception)
+            {
+                return false; // timeout or offline: queued, the next pass sends it
+            }
+        }
+
+        private void QueueCrashReport(SessionMeta _meta, string _logPath)
+        {
+            if (_meta.autoplay) return; // killed autoplay processes are not crashes worth an alert
+            LastLine _last = ReadLastLine(_logPath);
+            SaveReport(new BugReport
+            {
+                // The crashed session's id: copies launched together all spot the same crash, the rules keep one.
+                id = _meta.sid,
+                kind = BugReport.KindCrash,
+                sid = _meta.sid,
+                gameId = _last?.g ?? (_meta.gameIds != null && _meta.gameIds.Length > 0 ? _meta.gameIds[_meta.gameIds.Length - 1] : null),
+                player = _meta.player,
+                role = _last?.ro,
+                phase = _last?.ph,
+                day = _last?.d ?? 0,
+                text = string.Empty,
+                t = _last != null && _last.t > 0 ? _last.t : _meta.startMs,
+                version = _meta.version,
+                flavor = _meta.flavor,
+            }, null);
+        }
+
+        private static LastLine ReadLastLine(string _logPath)
+        {
+            try
+            {
+                using var _read = new FileStream(_logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                long _start = Math.Max(0, _read.Length - 16384);
+                _read.Seek(_start, SeekOrigin.Begin);
+                var _bytes = new byte[_read.Length - _start];
+                int _count = _read.Read(_bytes, 0, _bytes.Length);
+                string[] _lines = Encoding.UTF8.GetString(_bytes, 0, _count).Split('\n');
+                for (int _i = _lines.Length - 1; _i >= 0; _i--)
+                {
+                    if (_lines[_i].StartsWith("{") && _lines[_i].EndsWith("}"))
+                    {
+                        return JsonUtility.FromJson<LastLine>(_lines[_i]);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // No context: the alert still says who crashed.
+            }
+            return null;
+        }
+
+        private bool SaveReport(BugReport _report, byte[] _jpg)
+        {
+            try
+            {
+                if (File.Exists(Path.Combine(_reportsDir, _report.id + ".json"))) return true; // already queued
+                _report.queuedAt = NowMs();
+                if (_report.hasCapture) File.WriteAllBytes(Path.Combine(_reportsDir, _report.id + ".jpg"), _jpg);
+                string _path = Path.Combine(_reportsDir, _report.id + ".json");
+                File.WriteAllText(_path + ".tmp", JsonUtility.ToJson(_report));
+                File.Move(_path + ".tmp", _path);
+                return true;
+            }
+            catch (Exception _e)
+            {
+                GameLog.Warn("log", "log.report.unsaved", "error", _e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends the queued reports (capture first, then the document that triggers the Discord alert), the given one
+        /// first. Each report is on its own: one that keeps failing never blocks the others, and is dropped after
+        /// <see cref="MaxReportAttempts"/> passes or <see cref="ReportMaxAgeDays"/> days (its moment's logs would be gone).
+        /// False = stopped by passing failures.
+        /// </summary>
+        private async UniTask<bool> SendQueuedReports(CancellationToken _ct, HashSet<string> _sent, string _first = null)
+        {
+            string[] _files;
+            try { _files = Directory.GetFiles(_reportsDir, "*.json"); }
+            catch (Exception) { return true; }
+            Array.Sort(_files, StringComparer.Ordinal);
+            if (_first != null)
+            {
+                int _index = Array.FindIndex(_files, _f => Path.GetFileNameWithoutExtension(_f) == _first);
+                if (_index > 0) (_files[0], _files[_index]) = (_files[_index], _files[0]);
+            }
+            int _failuresInARow = 0;
+            foreach (string _file in _files)
+            {
+                _ct.ThrowIfCancellationRequested();
+                if (_failuresInARow >= 3) return false; // offline: do not hammer, the next pass retries
+                bool? _ok;
+                try
+                {
+                    _ok = await SendReport(_file, _ct, _sent);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception _e)
+                {
+                    GameLog.Warn("log", "log.report.error", "file", Path.GetFileName(_file), "error", _e.Message);
+                    _ok = false;
+                }
+                _failuresInARow = _ok == false ? _failuresInARow + 1 : 0;
+            }
+            return _failuresInARow == 0;
+        }
+
+        /// <summary>True = sent (or dropped for good), false = passing failure (kept for later), null = nothing to do.</summary>
+        private async UniTask<bool?> SendReport(string _file, CancellationToken _ct, HashSet<string> _sent)
+        {
+            BugReport _report;
+            try { _report = JsonUtility.FromJson<BugReport>(File.ReadAllText(_file)); }
+            catch (Exception) { _report = null; }
+            string _jpgPath = Path.ChangeExtension(_file, ".jpg");
+            if (_report == null || string.IsNullOrEmpty(_report.id))
+            {
+                TryDelete(_file);
+                TryDelete(_jpgPath);
+                return null;
+            }
+            if (_report.attempts >= MaxReportAttempts
+                || (_report.queuedAt > 0 && NowMs() - _report.queuedAt > ReportMaxAgeDays * 86400000L))
+            {
+                GameLog.Warn("log", "log.report.dropped", "id", _report.id, "attempts", _report.attempts);
+                TryDelete(_file);
+                TryDelete(_jpgPath);
+                return true;
+            }
+            _report.attempts++;
+            File.WriteAllText(_file, JsonUtility.ToJson(_report));
+
+            if (_report.hasCapture && !_report.captureSent)
+            {
+                bool _triedBefore = _report.captureTried;
+                _report.captureTried = true;
+                File.WriteAllText(_file, JsonUtility.ToJson(_report));
+                FirestoreLogClient.Result _capture = File.Exists(_jpgPath)
+                    ? await _client.UploadCapture(_report.id, File.ReadAllBytes(_jpgPath), _ct)
+                    : FirestoreLogClient.Result.Rejected;
+                if (_capture == FirestoreLogClient.Result.Failed) return false;
+                if (_capture == FirestoreLogClient.Result.Rejected && !_triedBefore)
+                {
+                    _report.hasCapture = false; // never accepted: the text still goes
+                }
+                else
+                {
+                    // Ok, or refused on a retry: the rules allow create only, so the first try did get it online.
+                    _report.captureSent = true;
+                }
+                File.WriteAllText(_file, JsonUtility.ToJson(_report));
+            }
+            FirestoreLogClient.Result _doc = await _client.CreateReport(_report.id,
+                _report.ToFields(_client.Uid, _report.t + ExpireDays * 86400000L), _ct);
+            if (_doc == FirestoreLogClient.Result.Failed) return false;
+            if (_doc == FirestoreLogClient.Result.Rejected)
+            {
+                GameLog.Warn("log", "log.report.rejected", "id", _report.id);
+            }
+            else
+            {
+                _sent?.Add(_report.id);
+                GameLog.Info("log", "log.report.sent", "id", _report.id, "kind", _report.kind);
+            }
+            TryDelete(_file);
+            TryDelete(_jpgPath);
+            return true;
+        }
+
+        private static void TryDelete(string _path)
+        {
+            try { if (File.Exists(_path)) File.Delete(_path); }
+            catch (Exception) { /* next pass */ }
+        }
+
         // ---- previous sessions ----
 
         private void FindRecoverableSessions()
@@ -598,6 +864,7 @@ namespace Diagnostics.Logs
                     {
                         _meta.crashed = true;
                         GameLog.Warn("session", "session.previous.crashed", "sid", _meta.sid);
+                        QueueCrashReport(_meta, _logPath);
                     }
                     _meta.ended = true;
                     var _old = new Session { meta = _meta, logPath = _logPath, metaPath = _metaPath };

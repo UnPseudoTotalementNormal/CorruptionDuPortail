@@ -34,6 +34,33 @@ service cloud.firestore {
         && (!('gameIds' in d) || (d.gameIds is list && d.gameIds.size() <= 200));
     }
 
+    // F8 bug reports and crash alerts: create-only, tied to a session of the same account, every field typed and
+    // bounded; ids in their exact formats (a report's command line is built from them). A Cloud Function posts each
+    // new one to Discord.
+    match /reports/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid', 'id', 'kind', 'sid', 'gameId', 'player', 'seat', 'role', 'phase',
+                                                 'day', 'text', 't', 'version', 'flavor', 'capture', 'expireAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.id == id
+        && id.matches('[0-9]{8}-[0-9]{6}-[0-9a-f]{6}')
+        && request.resource.data.kind in ['report', 'crash']
+        && request.resource.data.sid is string && request.resource.data.sid.matches('[0-9]{8}-[0-9]{6}-[0-9a-f]{6}')
+        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sid)).data.uid == request.auth.uid
+        && request.resource.data.gameId is string && request.resource.data.gameId.matches('([0-9]{8}-[0-9]{4}-[0-9a-f]{4})?')
+        && request.resource.data.seat is string && request.resource.data.seat.matches('[0-9]{0,20}')
+        && request.resource.data.flavor in ['relay', 'steam', '']
+        && request.resource.data.day is int && request.resource.data.day >= 0 && request.resource.data.day <= 10000
+        && request.resource.data.t is timestamp
+        && request.resource.data.t > request.time - duration.value(30, 'd')
+        && request.resource.data.t < request.time + duration.value(1, 'h')
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000
+        && (request.resource.data.capture == '' || request.resource.data.capture == 'reports/' + id + '.jpg')
+        && boundedExpiry(request.resource.data)
+        && shortText(request.resource.data, 'player') && shortText(request.resource.data, 'role')
+        && shortText(request.resource.data, 'phase') && shortText(request.resource.data, 'version');
+    }
+
     match /sessions/{sid} {
       allow create: if request.auth != null && validSession(sid);
       allow update: if request.auth != null

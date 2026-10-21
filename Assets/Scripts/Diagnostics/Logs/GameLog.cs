@@ -32,6 +32,10 @@ namespace Diagnostics.Logs
 
         public static string GameId => s_gameId;
         public static bool IsHost => s_isHost;
+        public static ulong? Seat => s_hasSeat ? s_seat : (ulong?)null;
+        public static string Role => s_role;
+        public static string Phase => s_phase;
+        public static int Day => s_day;
 
         [Conditional(Define)]
         public static void Verbose(string _category, string _event, params object[] _keyValues) => Write('D', _category, _event, null, _keyValues);

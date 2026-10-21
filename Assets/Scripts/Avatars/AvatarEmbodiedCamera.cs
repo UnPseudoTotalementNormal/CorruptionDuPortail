@@ -103,6 +103,14 @@ namespace Avatars
             set => _pitchClamp = value;
         }
 
+        /// <summary>The seated view's vertical field (degrees).</summary>
+        public float FieldOfView => _camera != null ? _camera.Lens.FieldOfView : 60f;
+
+        /// <summary>The eye's height above the player's seat (metres), or null before the player's cat is bound.</summary>
+        public float? EyeHeightAboveSeat => _boundAvatar != null && _boundAvatar.EyePivot != null && _manager != null
+            ? _boundAvatar.EyePivot.position.y + _heightOffset - _manager.GetSeatPose(_localId).Position.y
+            : (float?)null;
+
         /// <summary>Pitch the look starts at on each entry (degrees, + = down). Settable for autoplay comparisons.</summary>
         public float RestPitch
         {

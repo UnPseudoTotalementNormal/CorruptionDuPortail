@@ -46,9 +46,6 @@ namespace Presentation
         [SerializeField] private float _catHeightAtScale1 = 4.4f;
         [Tooltip("Its feet this far above the floor once lifted.")]
         [SerializeField] private float _liftShare = 0.18f;
-        [Tooltip("Share of the screen's height the cat takes at most (mockups v4 D2): nearer would overflow, so the cat is " +
-                 "pushed back from the middle of the circle until it fits.")]
-        [SerializeField] private float _screenShare = 0.68f;
         [Tooltip("A seated cat's height, for a seat with no cat at the table (a bot): its card alone.")]
         [SerializeField] private float _fallbackCatHeight = 14.85f;
 
@@ -107,7 +104,8 @@ namespace Presentation
             AvatarHopMotion _hop = _avatar != null ? _avatar.GetComponentInChildren<AvatarHopMotion>() : null;
             bool _self = _avatar != null && _avatar.IsOwner;
 
-            // ---- where: on the line from this player's eye to the middle of the circle, as far as it needs to fit
+            // ---- where: the middle of the circle (the day's circle is sized for it, Poyo 2026-10-21); still around the
+            // table, on the line from this player's eye to the middle, as far as it needs to fit
             Vector3 _eye = _camera.transform.position;
             Vector3 _centre = _manager.RingCenter ?? _eye + _camera.transform.forward * 20f;
             Vector3 _toCentre = _centre - _eye;
@@ -117,7 +115,9 @@ namespace Presentation
             // The player's own cat is drawn bigger than the others (its seat is nearer the middle): it flies at their size.
             float _scale = _self ? _manager.SeatedAvatarScale : 1f;
             float _catHeight = _avatar != null ? _catHeightAtScale1 * _avatar.transform.lossyScale.y * _scale : _fallbackCatHeight;
-            float _distance = ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _screenShare);
+            float _distance = _manager.DayRingActive
+                ? _ringDistance
+                : ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _manager.DayScreenShare);
             float _floor = _avatar != null ? _avatar.transform.position.y : _centre.y;
             Vector3 _hover = new Vector3(_eye.x, _floor, _eye.z) + _ahead * _distance;
             Quaternion _facing = Quaternion.LookRotation(-_ahead, Vector3.up);

@@ -4,6 +4,7 @@ using System.Threading;
 using Avatars;
 using Cysharp.Threading.Tasks;
 using FX.Candle;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -13,9 +14,10 @@ namespace Presentation
     /// <summary>
     /// T23, the day in first person (mockups jour-pov v1, choices in memory "T23"). When the day starts (the seated
     /// Embodied mode: the chainings, the vote and its recap) the cards fly from the table to the screen (<see cref="DayScreenRows"/>),
-    /// then the dark swallows the table (T3): under the black the table and the cork disappear, the vote candle goes
-    /// down to the floor; when the cats' lights come back only the players are left, in a circle, and the view rises
-    /// from the table to them (K2). When the day ends the dark brings the table back, then the cards fly back onto it.
+    /// then the dark swallows the table (T3): under the black the table and the cork disappear, the players move to the
+    /// day's bigger circle (<see cref="AvatarManager.SetDayRing"/>), the vote candle goes down to the floor; when the cats'
+    /// lights come back only the players are left, in a circle, and the view rises from the table to its middle (K2).
+    /// When the day ends the dark brings the table back, then the cards fly back onto it.
     /// Local presentation only; reacts to the camera mode the arbiter broadcasts.
     /// </summary>
     public class DayTableTransition : MonoBehaviour
@@ -28,8 +30,6 @@ namespace Presentation
         [SerializeField] private List<GameObject> _tableParts = new();
         [Tooltip("World UI lying on the table that would float without it (the powers bar, the skip button).")]
         [SerializeField] private List<GameObject> _tableUi = new();
-        [Tooltip("Mockups jour-pov v1 K2: the seated view's rest pitch once the table is gone (degrees, + = down).")]
-        [SerializeField] private float _dayRestPitch = 20f;
         [Tooltip("Seconds for the view to rise to the cats.")]
         [SerializeField] private float _riseSeconds = 1.2f;
         [Tooltip("Seconds the cards fly before the dark comes.")]
@@ -39,6 +39,8 @@ namespace Presentation
         [SerializeField] private float _fromBlackSeconds = 0.6f;
         [Tooltip("Sorting order of the black overlay (above the game's HUD, under the pause menu).")]
         [SerializeField] private int _overlaySortingOrder = 40;
+        [Tooltip("The eye's height above the seat (metres) if the player's cat is not there to measure it.")]
+        [SerializeField] private float _nightEyeHeight = 16.4f;
 
         private readonly Dictionary<Renderer, bool> _renderers = new();
         private readonly Dictionary<Collider, bool> _colliders = new();
@@ -130,7 +132,8 @@ namespace Presentation
             ShowTable(false);
             if (!await Wait(_blackHoldSeconds, _run, _alive)) return;
             if (!await Fade(0f, _fromBlackSeconds, _run, _alive)) return;
-            _embodiedCamera.SetRestPitch(_dayRestPitch, _riseSeconds);
+            AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
+            _embodiedCamera.SetRestPitch(_manager != null ? _manager.DayRestPitch : _nightRestPitch, _riseSeconds);
         }
 
         private async UniTaskVoid EndDay(int _run, CancellationToken _alive)
@@ -214,6 +217,12 @@ namespace Presentation
                 _renderers.Clear();
                 _colliders.Clear();
                 _uiActive.Clear();
+            }
+            // The day's circle, under the same black (the candle below stands by the player's new seat).
+            AvatarManager _avatars = AvatarManager.For(NetworkManager.Singleton);
+            if (_avatars != null && _embodiedCamera != null)
+            {
+                _avatars.SetDayRing(!_show, _embodiedCamera.FieldOfView, _embodiedCamera.EyeHeightAboveSeat ?? _nightEyeHeight);
             }
             if (_voteCandle != null)
             {

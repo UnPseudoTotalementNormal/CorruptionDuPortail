@@ -4277,7 +4277,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
   m_LocalPosition: {x: 0.003348127, y: -21.930084, z: -0.790795}
-  m_LocalScale: {x: 100, y: 100, z: 1}
+  m_LocalScale: {x: 160, y: 160, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1191799188}
@@ -17696,7 +17696,7 @@ MonoBehaviour:
       Data3: 391520415
       Data4: 1447034896
     Path: event:/Interface/VoteCandleIgnite
-  _floorSpot: {x: 3, y: -21.94, z: 2}
+  _floorSpot: {x: 3, y: -21.94, z: 16.8}
 --- !u!1 &1259611660
 GameObject:
   m_ObjectHideFlags: 0
@@ -19964,7 +19964,6 @@ MonoBehaviour:
   _tableUi:
   - {fileID: 129913597}
   - {fileID: 1237554685}
-  _dayRestPitch: 20
   _riseSeconds: 1.2
   _cardsFlightSeconds: 1.1
   _toBlackSeconds: 0.35
@@ -22506,7 +22505,6 @@ MonoBehaviour:
     Path: event:/Interface/ChainSplat
   _catHeightAtScale1: 4.4
   _liftShare: 0.18
-  _screenShare: 0.68
   _fallbackCatHeight: 14.85
   _cardHeightShare: 0.5
   _cardUpShare: 0.38

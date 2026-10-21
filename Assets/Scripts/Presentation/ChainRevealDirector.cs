@@ -156,6 +156,12 @@ namespace Presentation
                     _clipTime = ChainRevealTimeline.ClipTime(_t);
                     Darken(ChainRevealTimeline.Darkness(_t), _feet, _catHeight);
 
+                    if (_hasCard && _t >= ChainRevealTimeline.CardBack)
+                    {
+                        // Back in its row: it goes down with the rows while the cat falls.
+                        _hasCard = false;
+                        _dayRows.EndSpotlight();
+                    }
                     if (_hasCard)
                     {
                         Vector3 _anchor = _hover + Vector3.up * (_cardUpShare * _catHeight + (_feet.y - _floor)) - _ahead * (_cardForwardShare * _catHeight);

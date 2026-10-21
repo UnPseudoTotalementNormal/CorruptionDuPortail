@@ -29,6 +29,9 @@ namespace Presentation
     public class DayScreenRows : MonoBehaviour, ICardLayoutOverride
     {
         private const string TransformLayer = "Transform";
+        // The cards' and the roles bar's lit UI shaders (Shader Graphs/UI_LitImage*): 0 = lit by the room (the table), 1 =
+        // their own colours, evenly, like screen UI (Poyo 2026-10-21: the cards in the rows were dark).
+        private static readonly int CardUiLitId = Shader.PropertyToID("_CardUiLit");
 
         [SerializeField] private BoardManager _boardManager;
         [Tooltip("The cork's characters bar (the roles of the game, grouped by side): row 2.")]
@@ -62,6 +65,8 @@ namespace Presentation
         private ulong? _raisedSeat;
         private ulong? _litSeat;
         private Card _spotlit;
+        private float _uiLit;
+        private Tween _uiLitTween;
 
         /// <summary>Whether the day rows are up (between <see cref="Enter"/> and <see cref="Exit"/>).</summary>
         public bool IsActive { get; private set; }
@@ -109,6 +114,7 @@ namespace Presentation
             _boardManager.cardLayoutOverride = this;
             PlaceCards(_boardManager.visibleCards);
             LiftRoles();
+            FadeUiLit(1f);
             Diagnostics.Logs.GameLog.Info("ui", "day.rows.enter", "cards", _boardManager.visibleCards.Count);
         }
 
@@ -155,6 +161,20 @@ namespace Presentation
                 SlerpToIdentity(_layer, _flySeconds);
             }
             LowerRoles();
+            FadeUiLit(0f);
+        }
+
+        // The light eases from the room's to the screen's while the cards fly (no cut when they enter the rows).
+        private void FadeUiLit(float _to)
+        {
+            _uiLitTween?.Kill();
+            _uiLitTween = DOTween.To(() => _uiLit, SetUiLit, _to, _flySeconds).SetEase(Ease.InOutSine).SetLink(gameObject);
+        }
+
+        private void SetUiLit(float _value)
+        {
+            _uiLit = _value;
+            Shader.SetGlobalFloat(CardUiLitId, _value);
         }
 
         /// <summary>Keys 1 / 2: open or close a row.</summary>
@@ -612,6 +632,8 @@ namespace Presentation
 
         private void OnDestroy()
         {
+            _uiLitTween?.Kill();
+            Shader.SetGlobalFloat(CardUiLitId, 0f);
             RestoreGraphics();
             if (_boardManager != null && ReferenceEquals(_boardManager.cardLayoutOverride, this))
             {

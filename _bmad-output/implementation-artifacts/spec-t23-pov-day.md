@@ -8,13 +8,17 @@ Board task T23 (Wouh, Haute Priorité). Reference: the team's Canva board "Proto
 
 - **Day = the seated Embodied mode** (the vote and its recap) **and the chaining that follows** (the table stays away
   until the night; Poyo, 2026-10-21). The night does not change.
-- **The chaining = the chained cat, no card (T19 points 2 to 4, shipped in the same PR, Poyo 2026-10-21).** Mockups
-  `tools/maquettes/enchainement/` (v1: S2, F2, Y1; v2: E1): a camera in front of the chained cat, the same for everyone,
-  the room black around it; a force lifts it slowly while the "Getting Chained" animation plays, lets it fall back on
-  its seat; the sound is sucked out just before the splatch and the flattest pose is frozen half a second with the
-  camera jumped in. The card that used to turn over on the table afterwards is gone (Poyo, 2026-10-21: "on abandonne
-  l'animation avec la carte"); the chained player's own card shows its role. The day's rows leave the screen during the
-  shot. Both chainings of the loop (ChainingState, ChainingState2) play it.
+- **The chaining, seen seated by everyone (T19 points 2 to 4, redesigned by Poyo on 2026-10-21, shipped in the same PR).**
+  Mockups `tools/maquettes/enchainement/v4.html`: D2 + Y1. Both chainings are day: the morning one too (the table goes
+  before it), and the victory check between it and the vote keeps the seated view. Everyone stays in their seat, the
+  chained player too (their own body, hidden in first person, is seen leaving). A force lifts the cat slowly while
+  carrying it to the middle of the circle (easing in); on each screen it turns to face that player. Its real card leaves
+  the row, comes in front of it and turns over on its role (its own player knows it: no turn); the card goes back, the
+  cat falls to the floor, its flattest pose held half a second, it gets up, and under the day's black it is back on its
+  seat. The room's lights go down, one light follows the cat. Heads stay free. No sucked-out sound.
+  Where it floats: on the line from each player's eye to the middle of the circle, the middle itself unless the cat
+  would not fit the screen (your seat is 14 m from the middle, a cat is about 15 m high): then pushed back until it
+  takes 68 % of the screen's height (D2 today; D1 if the circle grows, Poyo).
 - **The table goes away (T3).** The cards fly from the table to the screen first, then the dark swallows the table:
   under the black the table, its board, the cork wall (and the round-table trial) disappear, with the world UI lying
   on it (powers bar, skip button). The vote candle goes down to the floor, ahead of the player. When the cats' lights
@@ -54,11 +58,11 @@ Board task T23 (Wouh, Haute Priorité). Reference: the team's Canva board "Proto
 | Options | `VoteState.anonymousVote`, `VoteState.voteOnCats` |
 | Keys / hints | `TabletToggleInput` (T), `EmoteWheelInput` (E), `KeyHints` + `KeyHintsHud` |
 | Smaller hooks | `AvatarEmbodiedCamera.SetRestPitch`, `VoteCandle.SetOnFloor`, `CatSpotlights.Boosted`, `VoteCanvas.ActivateVoteCanvas(bool)`, `CardVisualComponents.inScreenRow`, `AvatarCameraArbiter` (no board nav by day) |
-| Chaining shot (T19) | `Domain/ChainRevealTimeline.cs` (+ tests), `Presentation/ChainRevealDirector.cs` (via `ChainingManager.RevealDirector`, played by `ChainingState`), `AvatarHopMotion.LiftWorld`, `AvatarVisibilityController.SetFeatured`, `SeatedSurroundings.ForceBlack`, `GameAudioManager.SetMuffle/ClearMuffle/SetBusVolume`, `DayScreenRows.SetAway`; temporary sounds ChainLift / ChainSplat in the FMOD bank `ChainReveal` (`tools/fmod/t19-chain-reveal.js`) |
+| Chaining moment (T19) | `Domain/ChainRevealTimeline.cs` (+ tests), `Presentation/ChainRevealDirector.cs` (via `ChainingManager.RevealDirector`, played by `ChainingState`; samples the artist's chained clips itself), `AvatarHopMotion.SetWorldPose`, `AvatarVisibilityController.SetFeatured`, `CatSpotlights.Darken/Lifted`, `DayScreenRows` spotlight (`BeginSpotlight`, `TryGetSlot`, `SetSpotlightPose`, `EndSpotlight`), `DayTableTransition.DaySettled/BlackOutAsync`, `AvatarManager.RingCenter`; `AvatarCameraModePolicy` (chainings seated, a victory check keeps the view); temporary sounds ChainLift / ChainSplat in the FMOD bank `ChainReveal` (`tools/fmod/t19-chain-reveal.js`) |
 | Autoplay real-input vote | `AutoplayDriverRealInput.VoteByInput` aims at the cat |
 
 Scene: `---GameVisuals---/DayPresentation` holds the three presenters, `---GameVisuals---/ChainRevealDirector` the
-chaining shot (its Cinemachine camera, priority 300 while it plays, and its spot light); lane A, wired.
+chaining moment (and the light that follows the cat); lane A, wired.
 
 ## Open
 

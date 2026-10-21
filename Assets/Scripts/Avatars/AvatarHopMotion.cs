@@ -54,11 +54,26 @@ namespace Avatars
         private float _amplitude;
         private bool _initialized;
 
+        private bool _hasWorldPose;
+        private Vector3 _worldPosition;
+        private Quaternion _worldFacing;
+        private float _worldScale = 1f;
+
         /// <summary>
-        /// Extra height (world units) the visual root is held above its seat, on top of the hop: the force that lifts
-        /// a cat while it is chained (T19, <c>ChainRevealDirector</c>). 0 = on its seat.
+        /// Holds the cat away from its seat (T19, <c>ChainRevealDirector</c>: the force that carries a chained cat to the
+        /// middle of the circle): its feet at <paramref name="_position"/>, facing <paramref name="_facing"/>, its size
+        /// times <paramref name="_scale"/>. The hop stops meanwhile. <see cref="ClearWorldPose"/> puts it back.
         /// </summary>
-        public float LiftWorld { get; set; }
+        public void SetWorldPose(Vector3 _position, Quaternion _facing, float _scale = 1f)
+        {
+            _hasWorldPose = true;
+            _worldPosition = _position;
+            _worldFacing = _facing;
+            _worldScale = _scale;
+        }
+
+        /// <summary>Back on its seat (the next LateUpdate).</summary>
+        public void ClearWorldPose() => _hasWorldPose = false;
 
         private void Awake()
         {
@@ -120,14 +135,23 @@ namespace Avatars
             float _target = _speed >= _moveSpeedThreshold ? 1f : 0f;
             _amplitude = AvatarHopMath.EaseAmplitude(_amplitude, _target, _amplitudeEaseSpeed, _dt);
 
+            if (_hasWorldPose)
+            {
+                // The base offset is in the root's space: carried along with the facing and the size.
+                Vector3 _parentScale = _visual.parent != null ? _visual.parent.lossyScale : Vector3.one;
+                _visual.SetPositionAndRotation(
+                    _worldPosition + _worldFacing * Vector3.Scale(_baseLocalPos, _parentScale) * _worldScale,
+                    _worldFacing * _baseLocalRot);
+                _visual.localScale = _baseLocalScale * _worldScale;
+                return;
+            }
+
             float _arc = AvatarHopMath.Arc(_phase) * _amplitude;
             float _ss = AvatarHopMath.SquashStretch(_phase) * _amplitude;
 
             // Single writer on the visual-root transform, relative to the captured base (accumulation-free).
             float _sxz = Mathf.Max(0.01f, 1f - _squash * _ss);  // clamp ≥0 so a mis-tuned squash can't invert
-            // The lift is given in world units: the parent (the networked root) is scaled.
-            float _parentScale = _visual.parent != null ? Mathf.Max(1e-4f, _visual.parent.lossyScale.y) : 1f;
-            _visual.localPosition = _baseLocalPos + new Vector3(0f, _hopHeight * _arc + LiftWorld / _parentScale, 0f);
+            _visual.localPosition = _baseLocalPos + new Vector3(0f, _hopHeight * _arc, 0f);
             _visual.localScale = Vector3.Scale(_baseLocalScale, new Vector3(_sxz, 1f + _stretch * _ss, _sxz));
             _visual.localRotation = _baseLocalRot * Quaternion.Euler(_upBeatPitchDeg * _arc, 0f, 0f);
         }

@@ -29,10 +29,6 @@ namespace Presentation
         /// <summary>Off = the room stays visible in first person too (autoplay before / after captures).</summary>
         public bool Enabled { get; set; } = true;
 
-        /// <summary>The black surroundings outside the seated first person too (T19: the chained cat filmed from the
-        /// front). Call <see cref="Apply"/> after changing it.</summary>
-        public bool ForceBlack { get; set; }
-
         private void Awake()
         {
             Assert.IsNotNull(_cameraMode, "SeatedSurroundings._cameraMode not wired");
@@ -60,7 +56,7 @@ namespace Presentation
         private void OnSeatedLiveChanged(bool _live) => Apply();
 
         /// <summary>Re-evaluate after <see cref="Enabled"/> changed.</summary>
-        public void Apply() => SetBlack(Enabled && (ForceBlack || (_cameraMode != null && _cameraMode.SeatedFirstPersonLive)));
+        public void Apply() => SetBlack(Enabled && _cameraMode != null && _cameraMode.SeatedFirstPersonLive);
 
         private void SetBlack(bool _black)
         {

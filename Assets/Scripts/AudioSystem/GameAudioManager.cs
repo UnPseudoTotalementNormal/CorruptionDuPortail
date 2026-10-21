@@ -127,76 +127,6 @@ namespace AudioSystem
             _instance.release();
         }
         
-        // ---- T19: the sound sucked out before the chained cat's splatch (local presentation, ChainRevealDirector)
-
-        private FMOD.DSP _muffle;
-        private bool _hasMuffle;
-
-        /// <summary>
-        /// Everything at <paramref name="_volume"/> (0..1) through a low-pass at <paramref name="_cutoffHz"/>: the
-        /// master bus, muffled and quieter. <see cref="ClearMuffle"/> takes it off. No-op without FMOD.
-        /// </summary>
-        public void SetMuffle(float _volume, float _cutoffHz)
-        {
-            if (!RuntimeManager.IsInitialized)
-            {
-                return;
-            }
-            if (RuntimeManager.StudioSystem.getBus("bus:/", out Bus _master) == FMOD.RESULT.OK)
-            {
-                _master.setVolume(Mathf.Clamp01(_volume));
-            }
-            if (!_hasMuffle)
-            {
-                if (RuntimeManager.CoreSystem.createDSPByType(FMOD.DSP_TYPE.MULTIBAND_EQ, out _muffle) != FMOD.RESULT.OK)
-                {
-                    return;
-                }
-                _muffle.setParameterInt((int)FMOD.DSP_MULTIBAND_EQ.A_FILTER, (int)FMOD.DSP_MULTIBAND_EQ_FILTER_TYPE.LOWPASS_24DB);
-                if (RuntimeManager.CoreSystem.getMasterChannelGroup(out FMOD.ChannelGroup _group) == FMOD.RESULT.OK)
-                {
-                    _group.addDSP(0, _muffle);
-                }
-                _hasMuffle = true;
-            }
-            _muffle.setParameterFloat((int)FMOD.DSP_MULTIBAND_EQ.A_FREQUENCY, Mathf.Clamp(_cutoffHz, 20f, 22000f));
-        }
-
-        /// <summary>Takes the muffle off: full volume, no low-pass.</summary>
-        public void ClearMuffle()
-        {
-            if (!RuntimeManager.IsInitialized)
-            {
-                return;
-            }
-            if (RuntimeManager.StudioSystem.getBus("bus:/", out Bus _master) == FMOD.RESULT.OK)
-            {
-                _master.setVolume(1f);
-            }
-            if (_hasMuffle)
-            {
-                if (RuntimeManager.CoreSystem.getMasterChannelGroup(out FMOD.ChannelGroup _group) == FMOD.RESULT.OK)
-                {
-                    _group.removeDSP(_muffle);
-                }
-                _muffle.release();
-                _hasMuffle = false;
-            }
-        }
-
-        /// <summary>The volume (0..1) of one mixer bus, e.g. <c>bus:/Music</c>. No-op without FMOD or that bus.</summary>
-        public void SetBusVolume(string _busPath, float _volume)
-        {
-            if (!RuntimeManager.IsInitialized)
-            {
-                return;
-            }
-            if (RuntimeManager.StudioSystem.getBus(_busPath, out Bus _bus) == FMOD.RESULT.OK)
-            {
-                _bus.setVolume(Mathf.Clamp01(_volume));
-            }
-        }
-
         [Rpc(SendTo.SpecifiedInParams)]
         public void PlayEventInstanceRpc(FixedString128Bytes _eventPath, FixedString64Bytes _instanceKey, RpcParams _rpcParams = default)
         {
@@ -254,7 +184,6 @@ namespace AudioSystem
         public override void OnDestroy()
         {
             base.OnDestroy();
-            ClearMuffle();
             
             foreach (var _music in activeMusicInstances)
             {

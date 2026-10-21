@@ -61,12 +61,14 @@ namespace Presentation
         private float _cardScale = 1f;
         private ulong? _raisedSeat;
         private ulong? _litSeat;
+        private Card _spotlit;
 
         /// <summary>Whether the day rows are up (between <see cref="Enter"/> and <see cref="Exit"/>).</summary>
         public bool IsActive { get; private set; }
         public bool CardsOpen { get; private set; } = true;
         public bool RolesOpen { get; private set; } = true;
-        /// <summary>Both rows sent off screen for a moment, whatever the keys say (T19: the chained cat's shot).</summary>
+        /// <summary>Both rows sent under the screen for a moment, whatever the keys say (T19: the chained cat falls to
+        /// the floor, which the rows would hide).</summary>
         public bool Away { get; private set; }
         private bool CardsShown => CardsOpen && !Away;
         private bool RolesShown => RolesOpen && !Away;
@@ -102,6 +104,7 @@ namespace Presentation
             CardsOpen = true;
             RolesOpen = true;
             Away = false;
+            _spotlit = null;
             _raisedSeat = null;
             _boardManager.cardLayoutOverride = this;
             PlaceCards(_boardManager.visibleCards);
@@ -117,6 +120,7 @@ namespace Presentation
                 return;
             }
             IsActive = false;
+            _spotlit = null;
             SetLitSeat(null);
             _raisedSeat = null;
             if (ReferenceEquals(_boardManager.cardLayoutOverride, this))
@@ -167,7 +171,9 @@ namespace Presentation
             PlaceRoles(_slideSeconds);
         }
 
-        /// <summary>Sends both rows off screen (true) or brings back the open ones (false).</summary>
+        // ---- T19: one card leaves its row (the chained player's, to the front of its cat) and comes back
+
+        /// <summary>Sends both rows under the screen (true) or brings the open ones back (false).</summary>
         public void SetAway(bool _away)
         {
             if (Away == _away)
@@ -177,6 +183,61 @@ namespace Presentation
             Away = _away;
             Relayout(_slideSeconds);
             PlaceRoles(_slideSeconds);
+        }
+
+        /// <summary>Takes <paramref name="_seat"/>'s card out of the row's layout; false when it has none here.</summary>
+        public bool BeginSpotlight(ulong _seat)
+        {
+            Card _card = IsActive ? CardOf(_seat) : null;
+            if (_card == null)
+            {
+                return false;
+            }
+            _spotlit = _card;
+            _card.visualComponents.compositor.GetLayer(TransformLayer).DOKill();
+            return true;
+        }
+
+        /// <summary>Where <paramref name="_seat"/>'s card sits in its row: centre and height, in screen half-heights.</summary>
+        public bool TryGetSlot(ulong _seat, out Vector2 _centre, out float _height)
+        {
+            _centre = default;
+            _height = 0f;
+            int _index = _cards.IndexOf(CardOf(_seat));
+            if (!IsActive || _index < 0)
+            {
+                return false;
+            }
+            float _cardAspect = _cardModelSize.x / _cardModelSize.y;
+            _height = ScreenRowLayout.CardHeightFor(_cards.Count, _aspect, _cardAspect);
+            ScreenRowSlot _slot = ScreenRowLayout.CardSlots(_cards.Count, _aspect, _cardAspect, CardsOpen, RolesOpen)[_index];
+            _centre = new Vector2(_slot.X, _slot.Y);
+            return true;
+        }
+
+        /// <summary>Puts the taken card at <paramref name="_centre"/>, <paramref name="_height"/> high (screen half-heights).</summary>
+        public void SetSpotlightPose(Vector2 _centre, float _height)
+        {
+            if (_spotlit == null || !IsActive)
+            {
+                return;
+            }
+            var _layer = _spotlit.visualComponents.compositor.GetLayer(TransformLayer);
+            float _rowHeight = Mathf.Max(1e-4f, _cardScale * _cardModelSize.y);
+            _layer.localPosition = new Vector3(_centre.x / _cardScale, 0f, _centre.y / _cardScale);
+            _layer.localScale = Vector3.one * (_height / _rowHeight);
+            _layer.localRotation = Quaternion.identity;
+        }
+
+        /// <summary>The taken card goes back to its slot.</summary>
+        public void EndSpotlight()
+        {
+            if (_spotlit == null)
+            {
+                return;
+            }
+            _spotlit = null;
+            Relayout(_slideSeconds);
         }
 
         /// <summary>My vote (mockups jour-pov v2 M2): my voted player's card stays raised. Null = none.</summary>
@@ -292,7 +353,7 @@ namespace Presentation
             for (int _i = 0; _i < _cards.Count; _i++)
             {
                 Card _card = _cards[_i];
-                if (_card == null)
+                if (_card == null || _card == _spotlit)
                 {
                     continue;
                 }

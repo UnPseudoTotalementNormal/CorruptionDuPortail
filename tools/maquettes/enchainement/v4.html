@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, l'enchaînement en vue assise (tour 4)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .en-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .en-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .en-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .en-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .en-frame { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+  .en-black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 9; }
+  .en-card { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; z-index: 6; perspective: 1400px; }
+  .en-card .en-flip { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .en-card img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; backface-visibility: hidden; box-shadow: 0 8px 22px rgba(0,0,0,.7); }
+  .en-card img.en-front { transform: rotateY(180deg); }
+  .en-rowcard { position: absolute; border-radius: 6px; box-shadow: 0 6px 14px rgba(0,0,0,.6); z-index: 4; }
+  .en-row2 { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; align-items: flex-end; gap: 22px; z-index: 4; }
+  .en-grp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .en-grp .en-logo { width: 34px; height: 34px; }
+  .en-grp .en-ports { display: flex; gap: 4px; }
+  .en-grp .en-ports img { width: 50px; height: 66px; object-fit: cover; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+  .en-count { width: 96px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+</style>
+</head>
+<body data-subject="enchainement">
+
+<header class="page">
+  <h1>L'enchaînement en vue assise (tour 4)</h1>
+  <p>Ta nouvelle version : tout le monde reste assis, l'enchaîné aussi. Son chat s'envole lentement vers le centre du
+     cercle en montant (ralenti à l'arrivée), se tourne face à toi (chacun le voit de face sur son écran), sa vraie carte
+     quitte la rangée du bas, vient devant lui et se retourne ; la carte repart, il s'écrase au sol, reste figé une
+     demi-seconde, se relève, puis le même noir que celui qui fait partir la table : il est revenu à sa place.
+     La pièce s'assombrit, une lumière le suit. Pas de son aspiré.</p>
+  <p>Ce qui coince : ta place est plus près du centre que celles des autres (14 m contre 23 m, pour que la table ne
+     les coupe pas). Un chat fait environ 15 m de haut : au vrai centre, il est trop près de toi et déborde de l'écran.
+     D'où la question 1. Images rendues depuis le jeu (vrais chats, vraie animation d'enchaînement) ; ici la tête du
+     joueur suit le chat, comme quelqu'un qui le regarde.</p>
+</header>
+
+<nav class="en-moments"><div>
+  <button data-at="0">Assis</button>
+  <button data-at="1300">Il s'envole</button>
+  <button data-at="2800">Sa carte arrive</button>
+  <button data-at="4200">Son rôle</button>
+  <button data-at="5000">La carte repart</button>
+  <button data-at="5650">Au sol</button>
+  <button data-at="6100">Figé</button>
+  <button data-at="7000">Il se relève</button>
+  <button data-at="8050">Noir</button>
+  <button data-at="9200">À sa place</button>
+  <button data-loop>▶ En boucle</button>
+</div></nav>
+
+<section>
+  <h2>1. Où il flotte</h2>
+  <p>Brandon est enchaîné ; tu es Poyo. Même moment sur chaque cadre.</p>
+
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">Au vrai centre</span></div>
+    <p class="vdesc">Au milieu du cercle, à 14 m de toi : il est énorme et sort de l'écran, sa carte aussi.</p>
+    <div class="screen"><div class="stage en-stage" data-view="D1"></div></div>
+  </div>
+
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Plus loin, de l'autre côté du centre</span></div>
+    <p class="vdesc">Sur la ligne entre toi et le centre, mais à 30 m : il tient en entier avec sa carte. Chacun le voit
+       à cette distance sur son écran, donc pas au même endroit du cercle pour tout le monde.</p>
+    <div class="screen"><div class="stage en-stage" data-view="D2"></div></div>
+  </div>
+
+  <div class="variant" data-id="D3">
+    <div class="vhead"><span class="vid">D3</span><span class="vname">Au vrai centre, il rapetisse</span></div>
+    <p class="vdesc">Il va bien au milieu du cercle, et rétrécit en volant (moitié de sa taille) pour tenir à l'écran ;
+       il garde cette taille jusqu'au noir.</p>
+    <div class="screen"><div class="stage en-stage" data-view="D3"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Vu par l'enchaîné</h2>
+  <div class="variant" data-id="Y1">
+    <div class="vhead"><span class="vid">Y1</span><span class="vname">Brandon se voit partir</span></div>
+    <p class="vdesc">Sa vue reste à sa place ; son propre chat (caché d'habitude, on est dans ses yeux) apparaît sous
+       lui, part vers le centre et se tourne vers lui. Sa carte, il la connaît déjà : elle vient devant lui sans se
+       retourner. Ici avec la distance de D2.</p>
+    <div class="screen"><div class="stage en-stage" data-view="Y"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque ? (par exemple : la durée de chaque moment, la taille de la carte)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(async () => {
+  const IMG = "img/v4/";
+  const N = 93, STEP = 100, LOOP = 9600;
+  const T = { fly0: 2500, fly1: 3100, flip1: 3850, back0: 4750, back1: 5200, b0: 7600, b1: 7950, b2: 8200, b3: 8800 };
+  const views = ["D1", "D2", "D3", "Y"];
+  const PROJ = {};
+  for (const v of views) PROJ[v] = await (await fetch(IMG + v + "/proj.json")).json();
+  // preload every frame
+  const frames = {};
+  for (const v of views) frames[v] = [...Array(N).keys()].map(k => { const i = new Image(); i.src = IMG + v + "/" + String(k).padStart(3, "0") + ".webp"; return i; });
+
+  // the two rows of the day (T23, mockups jour-pov R3: big cards, roles below)
+  const CW = 132, CH = 184, GAP = 14, R2H = 132;
+  const slot = i => { const total = 8 * CW + 7 * GAP, x0 = (1600 - total) / 2, bottom = 900 - 22 - R2H - 14; return { x: x0 + i * (CW + GAP), y: bottom - CH }; };
+  const grp = (logo, ps) => '<div class="en-grp"><img class="en-logo" src="' + IMG + logo + '.webp"><div class="en-ports">'
+    + ps.map(p => '<img src="' + IMG + "p_" + p + '.webp">').join("") + "</div></div>";
+  const row2 = '<div class="en-row2">' + grp("LogoElu", ["DrGloubi", "Messager", "Orpheline", "Technomancien", "Geolier"]) + grp("LogoAnomalie", ["Vahal", "Moork"])
+    + grp("LogoMarginaux", ["Robot"]) + '<div style="display:flex;flex-direction:column;gap:6px;margin-left:10px"><img class="en-count" src="' + IMG + 'count_robot.webp"><img class="en-count" src="' + IMG + 'count_corr.webp"></div></div>';
+
+  const lerp = (a, b, u) => a + (b - a) * u;
+  const c01 = u => Math.max(0, Math.min(1, u));
+  const eout = u => 1 - Math.pow(1 - c01(u), 3);
+  const eio = u => { u = c01(u); return u * u * (3 - 2 * u); };
+
+  document.querySelectorAll(".en-stage").forEach(stage => {
+    const v = stage.dataset.view, self = v === "Y";
+    const mine = self ? 0 : 3;                    // the chained player's card in the row
+    const back = self ? "card_0.webp" : "card_3.webp", front = "brandon_dryade.webp";
+    let h = '<img class="en-frame" src="' + frames[v][0].src + '">';
+    for (let i = 0; i < 8; i++) {
+      if (i === mine) continue;
+      let src = "card_" + i + ".webp";
+      if (self && i === 3) src = "back_poyo.webp";
+      const s = slot(i);
+      h += '<img class="en-rowcard" src="' + IMG + src + '" style="left:' + s.x + "px;top:" + s.y + "px;width:" + CW + "px;height:" + CH + 'px">';
+    }
+    h += '<div class="en-card"><div class="en-flip"><img class="en-back" src="' + IMG + (self ? front : back) + '"><img class="en-front" src="' + IMG + front + '"></div></div>';
+    h += row2 + '<div class="en-black"></div>';
+    stage.innerHTML = h;
+  });
+
+  function draw(ms) {
+    const k = Math.min(N - 1, Math.floor(ms / STEP));
+    document.querySelectorAll(".en-stage").forEach(stage => {
+      const v = stage.dataset.view, self = v === "Y";
+      stage.querySelector(".en-frame").src = frames[v][k].src;
+      const p = PROJ[v][k], s = slot(self ? 0 : 3);
+      // the card: from its slot to the front of the cat, turned over (not for its own player), back to its slot
+      let x = s.x + CW / 2, y = s.y + CH / 2, ch = CH, flip = 0;
+      if (ms >= T.fly0 && ms < T.back1) {
+        const go = eout((ms - T.fly0) / (T.fly1 - T.fly0)), back = eio((ms - T.back0) / (T.back1 - T.back0));
+        const u = ms < T.back0 ? go : 1 - back;
+        x = lerp(x, p.x, u); y = lerp(y, p.y, u); ch = lerp(CH, p.h, u);
+      }
+      if (!self) flip = ms < T.fly1 ? 0 : ms < T.flip1 ? eio((ms - T.fly1) / (T.flip1 - T.fly1)) * 180 : 180;
+      const cw = ch * 358 / 498;
+      const card = stage.querySelector(".en-card");
+      card.style.cssText = "width:" + cw + "px;height:" + ch + "px;transform:translate(" + (x - cw / 2) + "px," + (y - ch / 2) + "px)";
+      card.querySelector(".en-flip").style.transform = "rotateY(" + flip + "deg)";
+      let b = 0;
+      if (ms >= T.b0 && ms < T.b1) b = eio((ms - T.b0) / (T.b1 - T.b0));
+      else if (ms >= T.b1 && ms < T.b2) b = 1;
+      else if (ms >= T.b2 && ms < T.b3) b = 1 - eio((ms - T.b2) / (T.b3 - T.b2));
+      stage.querySelector(".en-black").style.opacity = b;
+    });
+  }
+
+  // key moments + loop (?at=<ms> freezes every frame at the same instant)
+  const at = new URLSearchParams(location.search).get("at");
+  let start = performance.now(), frozen = at !== null ? +at : null;
+  const buttons = document.querySelectorAll(".en-moments button");
+  buttons.forEach(btn => btn.addEventListener("click", () => {
+    buttons.forEach(b => b.classList.remove("on")); btn.classList.add("on");
+    if (btn.hasAttribute("data-loop")) { frozen = null; start = performance.now(); } else frozen = +btn.dataset.at;
+  }));
+  if (frozen === null) document.querySelector("[data-loop]").classList.add("on");
+  const tick = now => { draw(frozen !== null ? frozen : (now - start) % LOOP); requestAnimationFrame(tick); };
+  draw(frozen !== null ? frozen : 0);
+  requestAnimationFrame(tick);
+
+  const sc = document.createElement("script"); sc.src = "../common/mock.js"; document.body.appendChild(sc);
+})();
+</script>
+</body>
+</html>

@@ -12,7 +12,7 @@ namespace Presentation
 {
     /// <summary>
     /// T23, the day in first person (mockups jour-pov v1, choices in memory "T23"). When the day starts (the seated
-    /// Embodied mode: the vote and its recap) the cards fly from the table to the screen (<see cref="DayScreenRows"/>),
+    /// Embodied mode: the chainings, the vote and its recap) the cards fly from the table to the screen (<see cref="DayScreenRows"/>),
     /// then the dark swallows the table (T3): under the black the table and the cork disappear, the vote candle goes
     /// down to the floor; when the cats' lights come back only the players are left, in a circle, and the view rises
     /// from the table to them (K2). When the day ends the dark brings the table back, then the cards fly back onto it.
@@ -21,8 +21,6 @@ namespace Presentation
     public class DayTableTransition : MonoBehaviour
     {
         [SerializeField] private CameraModeChannel _cameraMode;
-        [Tooltip("The game loop: the chaining that follows the vote is still day (the table stays away, Poyo 2026-10-21).")]
-        [SerializeField] private GameLogic.GameManager _gameManager;
         [SerializeField] private DayScreenRows _rows;
         [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
         [SerializeField] private VoteCandle _voteCandle;
@@ -54,24 +52,48 @@ namespace Presentation
         /// <summary>Whether the table is hidden right now (by day, once the dark has passed).</summary>
         public bool TableHidden => _tableHidden;
 
+        /// <summary>The day is set: the table gone and the dark over (T19 waits for it before the chained cat flies).</summary>
+        public bool DaySettled => _day && _tableHidden && (_black == null || _black.color.a <= 0f);
+
         private void Awake()
         {
             Assert.IsNotNull(_cameraMode, "DayTableTransition._cameraMode is not wired — wire the CameraModeChannel asset.");
-            Assert.IsNotNull(_gameManager, "DayTableTransition._gameManager is not wired — wire the GameManager in GameScene.");
             Assert.IsNotNull(_rows, "DayTableTransition._rows is not wired — wire the DayScreenRows in GameScene.");
             Assert.IsNotNull(_embodiedCamera, "DayTableTransition._embodiedCamera is not wired — wire the AvatarEmbodiedCamera.");
             _nightRestPitch = _embodiedCamera != null ? _embodiedCamera.RestPitch : 35f;
             BuildOverlay();
         }
 
-        // The day: the seated vote and its recap (Embodied), and the chaining that follows them (Poyo, 2026-10-21: the table
-        // stays away during the chaining; the chaining sequence itself is left as it is). It ends when the night starts.
+        // The day: the seated phases (Embodied: the morning chaining, the vote, its recap, the chaining after it). It
+        // ends when the night starts.
         private void Update()
         {
-            bool _embodied = _cameraMode != null && _cameraMode.Current == CameraMode.Embodied;
-            bool _chainingAfterVote = _day && _gameManager != null && _gameManager.IsSpawned
-                && _gameManager.GetGameState(_gameManager.currentGameStateIndex.Value) is GameLogic.GameStates.ChainingState;
-            OnDayChanged(_embodied || _chainingAfterVote);
+            OnDayChanged(_cameraMode != null && _cameraMode.Current == CameraMode.Embodied);
+        }
+
+        /// <summary>
+        /// The day's own dark, for a moment inside the day (T19: the chained cat goes back to its seat under it): to
+        /// black, <paramref name="_underBlack"/>, a short hold, back. Ends early (light back) if the day ends meanwhile.
+        /// </summary>
+        public async UniTask BlackOutAsync(Action _underBlack, CancellationToken _ct)
+        {
+            int _run = _epoch;
+            bool _done = false;
+            try
+            {
+                if (!await Fade(1f, _toBlackSeconds, _run, _ct)) return;
+                _underBlack?.Invoke();
+                _done = true;
+                if (!await Wait(_blackHoldSeconds, _run, _ct)) return;
+                await Fade(0f, _fromBlackSeconds, _run, _ct);
+            }
+            finally
+            {
+                if (!_done)
+                {
+                    _underBlack?.Invoke();
+                }
+            }
         }
 
         private void OnDestroy()

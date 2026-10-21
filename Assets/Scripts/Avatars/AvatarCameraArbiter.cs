@@ -211,7 +211,7 @@ namespace Avatars
             // A game-state change is a camera change → end any running emote (restores FP + hides the local body).
             _emotePlayback?.End();
 
-            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue), _currentMode);
             _currentMode = _newMode;
 
             // The seated first-person is the default camera ONLY in Embodied (day) — there the embodied camera

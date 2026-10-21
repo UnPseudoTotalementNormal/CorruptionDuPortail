@@ -50,6 +50,12 @@ namespace Presentation
         /// <summary>Multiplies every cat's light, 1 = as tuned. The vote candle (T19) lowers it as the room goes dark.</summary>
         public float Dim { get; set; } = 1f;
 
+        /// <summary>Multiplies every cat's light too: the room going dark around a chained cat (T19), 1 = as tuned.</summary>
+        public float Darken { get; set; } = 1f;
+
+        /// <summary>A cat lifted off its seat (T19): its light stays off, the chaining's own light follows it. Null = none.</summary>
+        public PlayerAvatar Lifted { get; set; }
+
         private void Awake()
         {
             Assert.IsNotNull(_cameraMode, "CatSpotlights._cameraMode not wired");
@@ -83,7 +89,7 @@ namespace Presentation
             IReadOnlyList<PlayerAvatar> _live = _manager.GetAvatars();
             for (int _i = 0; _i < _live.Count; _i++)
             {
-                if (_live[_i] != null && !_live[_i].IsOwner)
+                if (_live[_i] != null && !_live[_i].IsOwner && _live[_i] != Lifted)
                 {
                     _avatars.Add(_live[_i]);
                 }
@@ -123,7 +129,7 @@ namespace Presentation
         private void CopySettings(Light _light)
         {
             _light.color = _template.color;
-            _light.intensity = _template.intensity * _level * Dim;
+            _light.intensity = _template.intensity * _level * Dim * Darken;
             _light.range = _template.range;
             _light.spotAngle = _template.spotAngle;
             _light.innerSpotAngle = _template.innerSpotAngle;

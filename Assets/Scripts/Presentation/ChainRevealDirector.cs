@@ -1,10 +1,10 @@
 using System.Threading;
 using AudioSystem;
 using Avatars;
+using Board;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using FMODUnity;
-using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -12,57 +12,73 @@ using UnityEngine.Assertions;
 namespace Presentation
 {
     /// <summary>
-    /// The chained cat's moment (board task T19, points 2 to 4; maquettes enchainement v2: E1 + S2 + F2 + Y1; the card
-    /// that followed it is gone since the first-person day, T23). A camera in front of the chained cat, the same for everyone (its own player too), the room
-    /// dark around it; the artist's « Getting Chained » animation plays while a force lifts the cat slowly, then lets
-    /// it fall back on its seat: the sound is sucked out just before the splatch, and the flattest pose stays frozen
-    /// half a second with the camera jumped in (<see cref="ChainRevealTimeline"/>).
-    /// <para>Local presentation only: the animation itself is the networked one (the server sets the chained cat's
-    /// Animator); every client follows the clip's own progress on its copy, so lag only delays the shot.</para>
+    /// The chained cat's moment, seen seated by everyone, its own player too (board task T19, maquettes enchainement
+    /// v4: D2 + Y1, Poyo 2026-10-21). A force lifts the cat slowly while carrying it to the middle of the circle; on each
+    /// screen it turns to face that player. Its real card leaves the row at the bottom of the screen, comes in front of
+    /// it and turns over on its role; the card goes back, the cat falls to the floor, its flattest pose held half a
+    /// second, it gets up, and under the day's black (<see cref="DayTableTransition"/>) it is back on its seat. The room
+    /// goes dark around it, a light follows it. Timings: <see cref="ChainRevealTimeline"/>.
+    /// <para>Local presentation only, the same on every client from its own seat: the cat's place is computed from this
+    /// player's eye (the middle of the circle, pushed back until it fits the screen), and its pose is sampled locally
+    /// from the artist's clips, so the server's own chained animation (the Animator) is simply covered meanwhile.</para>
     /// Lane A (scene-wired), played by <c>ChainingState</c> through <c>ChainingManager.RevealDirector</c>.
     /// </summary>
+    [DefaultExecutionOrder(210)] // after the hop (160) and the head look (200): the sampled pose is the last word
     public class ChainRevealDirector : MonoBehaviour
     {
         private const string GettingChained = "Getting Chained";
         private const string GettingChained2 = "Getting Chained 2";
         private const string ChainedIdle = "Chained Idle";
 
-        [SerializeField] private CinemachineCamera _camera;
         [SerializeField] private AvatarVisibilityController _visibility;
-        [SerializeField] private SeatedSurroundings _surroundings;
-        [Tooltip("The day's screen rows (T23): they leave the screen during the shot. Optional.")]
+        [Tooltip("The day's rows (T23): the chained player's card leaves its row for the moment.")]
         [SerializeField] private DayScreenRows _dayRows;
-        [Tooltip("The light over the chained cat (the room is dark). Off outside the moment.")]
+        [Tooltip("The day's table transition: the moment waits for the table to be gone, and ends under its black.")]
+        [SerializeField] private DayTableTransition _day;
+        [SerializeField] private CatSpotlights _spotlights;
+        [Tooltip("The light that follows the chained cat (the room is dark). Off outside the moment.")]
         [SerializeField] private Light _light;
         [SerializeField] private EventReference _liftSound;
         [SerializeField] private EventReference _splatSound;
 
-        [Header("Camera (in cat heights, from its seat toward the table)")]
+        [Header("Where it floats (in cat heights)")]
         [Tooltip("Height of the cat model at scale 1 (the avatar's scale multiplies it).")]
         [SerializeField] private float _catHeightAtScale1 = 4.4f;
-        [SerializeField] private float _cameraBack = 2.2f;
-        [SerializeField] private float _cameraSide = 0.5f;
-        [SerializeField] private float _cameraUp = 1.8f;
-        [SerializeField] private float _aimUp = 0.55f;
-        [SerializeField] private float _aimForward = 0.41f;
-        [SerializeField] private float _fieldOfView = 50f;
-        [Tooltip("The camera's jump at the splatch (F2): the field of view shrinks by this share.")]
-        [SerializeField] private float _punchIn = 0.12f;
-        [SerializeField] private int _activePriority = 300;
-        [SerializeField] private int _inactivePriority = -100;
+        [Tooltip("Its feet this far above the floor once lifted.")]
+        [SerializeField] private float _liftShare = 0.18f;
+        [Tooltip("Share of the screen's height the cat takes at most (mockups v4 D2): nearer would overflow, so the cat is " +
+                 "pushed back from the middle of the circle until it fits.")]
+        [SerializeField] private float _screenShare = 0.68f;
+        [Tooltip("A seated cat's height, for a seat with no cat at the table (a bot): its card alone.")]
+        [SerializeField] private float _fallbackCatHeight = 14.85f;
 
-        [Header("Timing")]
-        [Tooltip("How long to wait for the cat's animation to start (the server sets it a moment after the state).")]
-        [SerializeField] private float _maxWaitSeconds = 2f;
-        [Tooltip("The shot stays on the chained cat this long after the freeze.")]
-        [SerializeField] private float _afterSeconds = 1.2f;
-        [SerializeField] private float _lightIntensity = 1800f;
+        [Header("Its card")]
+        [SerializeField] private float _cardHeightShare = 0.5f;
+        [Tooltip("The card's centre above the cat's feet.")]
+        [SerializeField] private float _cardUpShare = 0.38f;
+        [Tooltip("The card's centre in front of the cat, toward the player.")]
+        [SerializeField] private float _cardForwardShare = 0.35f;
+
+        [Header("The dark")]
+        [Tooltip("The other cats' lights at the darkest (share of their light).")]
+        [SerializeField] private float _darkenTo = 0.2f;
+        [SerializeField] private float _lightIntensity = 2600f;
+        [Tooltip("How long to wait for the table to be gone (the morning chaining starts the day).")]
+        [SerializeField] private float _maxWaitSeconds = 5f;
+
+        // The pose sampled every LateUpdate while the moment plays (after the Animator, the hop and the head look).
+        private Animator _animator;
+        private AnimationClip _clip1;
+        private AnimationClip _clip2;
+        private AnimationClip _idleClip;
+        private float _clipTime = -1f;
 
         private void Awake()
         {
-            Assert.IsNotNull(_camera, "ChainRevealDirector._camera not wired");
             Assert.IsNotNull(_visibility, "ChainRevealDirector._visibility not wired");
-            _camera.Priority = _inactivePriority;
+            Assert.IsNotNull(_dayRows, "ChainRevealDirector._dayRows not wired");
+            Assert.IsNotNull(_day, "ChainRevealDirector._day not wired");
+            Assert.IsNotNull(_spotlights, "ChainRevealDirector._spotlights not wired");
             if (_light != null)
             {
                 _light.enabled = false;
@@ -70,196 +86,220 @@ namespace Presentation
         }
 
         /// <summary>
-        /// Plays the moment for the chained player of seat <paramref name="_seat"/>, and returns once the shot is over. Returns at once when that seat has no cat at the table (a bot, a player who left).
+        /// Plays the moment for the chained player of seat <paramref name="_seat"/>. A seat with no cat at the table (a
+        /// bot) shows its card alone in the middle.
         /// </summary>
         public async UniTask PlayAsync(ulong _seat, CancellationToken _ct)
         {
+            // The morning chaining starts the day: the cards fly to the screen and the table goes first.
+            for (float _waited = 0f; !_day.DaySettled && _waited < _maxWaitSeconds; _waited += Time.unscaledDeltaTime)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, _ct);
+            }
+
+            Camera _camera = Camera.main;
             AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
-            PlayerAvatar _avatar = _manager != null ? _manager.GetAvatar(_seat) : null;
-            Animator _animator = _avatar != null ? _avatar.GetComponentInChildren<Animator>() : null;
-            if (_animator == null)
+            if (_camera == null || _manager == null)
             {
                 return;
             }
-            AvatarHopMotion _hop = _avatar.GetComponentInChildren<AvatarHopMotion>();
-            float _catHeight = _catHeightAtScale1 * _avatar.transform.lossyScale.y;
+            PlayerAvatar _avatar = _manager.GetAvatar(_seat);
+            AvatarHopMotion _hop = _avatar != null ? _avatar.GetComponentInChildren<AvatarHopMotion>() : null;
+            bool _self = _avatar != null && _avatar.IsOwner;
 
-            Frame(_avatar.transform, _catHeight);
-            _camera.Priority = _activePriority;
-            _visibility.SetFeatured(_avatar);
-            SetDark(true);
-            if (_dayRows != null)
-            {
-                _dayRows.SetAway(true);
-            }
-            Debug.Log($"[CHAINREVEAL] seat {_seat}: shot on the chained cat");
+            // ---- where: on the line from this player's eye to the middle of the circle, as far as it needs to fit
+            Vector3 _eye = _camera.transform.position;
+            Vector3 _centre = _manager.RingCenter ?? _eye + _camera.transform.forward * 20f;
+            Vector3 _toCentre = _centre - _eye;
+            _toCentre.y = 0f;
+            float _ringDistance = _toCentre.magnitude;
+            Vector3 _ahead = _ringDistance > 1e-3f ? _toCentre / _ringDistance : Vector3.forward;
+            // The player's own cat is drawn bigger than the others (its seat is nearer the middle): it flies at their size.
+            float _scale = _self ? _manager.SeatedAvatarScale : 1f;
+            float _catHeight = _avatar != null ? _catHeightAtScale1 * _avatar.transform.lossyScale.y * _scale : _fallbackCatHeight;
+            float _distance = ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _screenShare);
+            float _floor = _avatar != null ? _avatar.transform.position.y : _centre.y;
+            Vector3 _hover = new Vector3(_eye.x, _floor, _eye.z) + _ahead * _distance;
+            Quaternion _facing = Quaternion.LookRotation(-_ahead, Vector3.up);
+            Vector3 _seatPosition = _avatar != null ? _avatar.transform.position : _hover;
+            Quaternion _seatRotation = _avatar != null ? _avatar.transform.rotation : _facing;
+            float _lift = _liftShare * _catHeight;
 
+            // ---- its card, out of its row
+            Card _card = _dayRows.CardOf(_seat);
+            bool _hasCard = _card != null && _dayRows.BeginSpotlight(_seat);
+            Vector2 _slotCentre = Vector2.zero;
+            float _slotHeight = 0f;
+            _hasCard = _hasCard && _dayRows.TryGetSlot(_seat, out _slotCentre, out _slotHeight);
+            bool _revealed = _self; // its own player knows its role already: the card comes without turning over
+
+            float _end = _avatar != null ? ChainRevealTimeline.BlackOut : ChainRevealTimeline.CardBack;
+            Debug.Log($"[CHAINREVEAL] seat {_seat}: {(_avatar != null ? "cat" : "card only")}{(_self ? " (mine)" : "")}, {_distance:F1} m away");
             GameAudioManager _audio = GameAudioManager.instance;
             try
             {
-                float _t = -1f;
-                for (float _waited = 0f; _waited < _maxWaitSeconds; _waited += Time.deltaTime)
+                if (_avatar != null)
                 {
-                    if (TryClipTime(_animator, out _t))
-                    {
-                        break;
-                    }
-                    await UniTask.Yield(PlayerLoopTiming.Update, _ct);
+                    BeginCat(_avatar, _self);
+                    _audio?.PlayOneShot(_liftSound);
                 }
-                if (_t < 0f || _t >= ChainRevealTimeline.Impact)
+                bool _splatched = false;
+                for (float _t = 0f; _t < _end; _t += Time.deltaTime)
                 {
-                    // Already chained when the shot came (a late client) or no animation: just show it.
-                    Debug.Log($"[CHAINREVEAL] seat {_seat}: animation {(_t < 0f ? "not seen" : "already past")}, plain shot");
-                    await UniTask.Delay(System.TimeSpan.FromSeconds(_afterSeconds), cancellationToken: _ct);
-                    return;
-                }
-
-                float _end = ChainRevealTimeline.Flat + ChainRevealTimeline.FreezeSeconds + _afterSeconds;
-                bool _lifting = false, _splatched = false;
-                while (_t < _end)
-                {
-                    if (!_lifting && _t >= ChainRevealTimeline.LiftStart)
-                    {
-                        _lifting = true;
-                        _audio?.PlayOneShot(_liftSound);
-                    }
+                    float _travel = ChainRevealTimeline.Travel(_t);
+                    Vector3 _feet = Vector3.Lerp(_seatPosition, _hover, _travel);
+                    _feet.y = _floor + ChainRevealTimeline.Height(_t) * _lift;
                     if (_hop != null)
                     {
-                        _hop.LiftWorld = ChainRevealTimeline.Lift(_t) * ChainRevealTimeline.LiftShare * _catHeight;
+                        _hop.SetWorldPose(_feet, Quaternion.Slerp(_seatRotation, _facing, _travel), Mathf.Lerp(1f, _scale, _travel));
                     }
-                    if (!_splatched && _t >= ChainRevealTimeline.Impact)
+                    _clipTime = ChainRevealTimeline.ClipTime(_t);
+                    Darken(ChainRevealTimeline.Darkness(_t), _feet, _catHeight);
+
+                    if (_hasCard)
+                    {
+                        Vector3 _anchor = _hover + Vector3.up * (_cardUpShare * _catHeight + (_feet.y - _floor)) - _ahead * (_cardForwardShare * _catHeight);
+                        PlaceCard(_camera, _anchor, _cardHeightShare * _catHeight, ChainRevealTimeline.CardFlight(_t), _slotCentre, _slotHeight);
+                    }
+                    if (!_revealed && _t >= ChainRevealTimeline.CardArrived)
+                    {
+                        _revealed = true;
+                        if (_card != null)
+                        {
+                            _ = _card.ShowPseudoWithRevealedInfo(true);
+                        }
+                    }
+                    // The rows go down while it falls: it lands where they would hide it (the head stays free).
+                    if (_avatar != null && _t >= ChainRevealTimeline.Release)
+                    {
+                        _dayRows.SetAway(true);
+                    }
+                    if (!_splatched && _avatar != null && _t >= ChainRevealTimeline.Impact)
                     {
                         _splatched = true;
-                        _audio?.ClearMuffle();
                         _audio?.PlayOneShot(_splatSound);
                         Debug.Log($"[CHAINREVEAL] seat {_seat}: splatch");
                     }
-                    else if (!_splatched && _t >= ChainRevealTimeline.SuckStart)
-                    {
-                        _audio?.SetMuffle(ChainRevealTimeline.SuckVolume(_t), ChainRevealTimeline.SuckCutoff(_t));
-                    }
-                    _audio?.SetBusVolume("bus:/Music", ChainRevealTimeline.MusicVolume(_t));
-                    _animator.speed = ChainRevealTimeline.IsFrozen(_t) ? 0f : 1f;
-                    _camera.Lens.FieldOfView = _fieldOfView * (1f - _punchIn * ChainRevealTimeline.PunchIn(_t));
-
                     await UniTask.Yield(PlayerLoopTiming.Update, _ct);
-                    _t += Time.deltaTime;
+                }
+                if (_avatar != null)
+                {
+                    await _day.BlackOutAsync(() => EndCat(_hop, _seat), _ct);
                 }
             }
             finally
             {
-                if (_animator != null)
+                EndCat(_hop, _seat);
+                if (_hasCard)
                 {
-                    _animator.speed = 1f;
+                    _dayRows.EndSpotlight();
                 }
-                if (_hop != null)
+                if (!_revealed && _card != null)
                 {
-                    _hop.LiftWorld = 0f;
-                }
-                _audio?.ClearMuffle();
-                _audio?.SetBusVolume("bus:/Music", 1f);
-                // Back to the board in a cut: a blend from here swings the camera through the room, lit again.
-                CinemachineBrain _brain = Camera.main != null ? Camera.main.GetComponent<CinemachineBrain>() : null;
-                CinemachineBlendDefinition _blend = _brain != null ? _brain.DefaultBlend : default;
-                if (_brain != null)
-                {
-                    _brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.Cut, 0f);
-                }
-                _camera.Priority = _inactivePriority;
-                _camera.Lens.FieldOfView = _fieldOfView;
-                _visibility.SetFeatured(null);
-                SetDark(false);
-                if (_dayRows != null)
-                {
-                    _dayRows.SetAway(false);
-                }
-                if (_brain != null)
-                {
-                    RestoreBlendNextFrame(_brain, _blend).Forget();
+                    _ = _card.ShowPseudoWithRevealedInfo(false);
                 }
             }
         }
 
-        private static async UniTaskVoid RestoreBlendNextFrame(CinemachineBrain _brain, CinemachineBlendDefinition _blend)
+        private void BeginCat(PlayerAvatar _avatar, bool _self)
         {
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, _brain.GetCancellationTokenOnDestroy());
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, _brain.GetCancellationTokenOnDestroy());
-            _brain.DefaultBlend = _blend;
-        }
-
-        // Seconds since « Getting Chained » started, from the Animator (the next state while it cross-fades into it).
-        private static bool TryClipTime(Animator _animator, out float _t)
-        {
-            AnimatorStateInfo _info = _animator.IsInTransition(0)
-                ? _animator.GetNextAnimatorStateInfo(0)
-                : _animator.GetCurrentAnimatorStateInfo(0);
-            if (_info.IsName(GettingChained))
+            _animator = _avatar.GetComponentInChildren<Animator>();
+            _clip1 = _clip2 = _idleClip = null;
+            if (_animator != null && _animator.runtimeAnimatorController != null)
             {
-                _t = _info.normalizedTime * _info.length;
-                return true;
-            }
-            if (_info.IsName(GettingChained2))
-            {
-                // Its predecessor's length, from the clip itself (0.708 s in the artist's file).
-                _t = FirstClipLength(_animator) + _info.normalizedTime * _info.length;
-                return true;
-            }
-            if (_info.IsName(ChainedIdle))
-            {
-                _t = float.MaxValue;
-                return true;
-            }
-            _t = -1f;
-            return false;
-        }
-
-        private static float FirstClipLength(Animator _animator)
-        {
-            RuntimeAnimatorController _controller = _animator.runtimeAnimatorController;
-            if (_controller != null)
-            {
-                foreach (AnimationClip _clip in _controller.animationClips)
+                foreach (AnimationClip _clip in _animator.runtimeAnimatorController.animationClips)
                 {
-                    if (_clip != null && _clip.name == GettingChained)
-                    {
-                        return _clip.length;
-                    }
+                    if (_clip == null) continue;
+                    if (_clip.name == GettingChained) _clip1 = _clip;
+                    else if (_clip.name == GettingChained2) _clip2 = _clip;
+                    else if (_clip.name == ChainedIdle) _idleClip = _clip;
                 }
             }
-            return 0.708f;
+            // The player's own body is hidden in first person: this once, it is seen leaving.
+            if (_self)
+            {
+                _visibility.SetFeatured(_avatar);
+            }
+            _spotlights.Lifted = _avatar;
         }
 
-        // In front of the cat, a little to the side and above, looking at its body (room for the lift above it).
-        private void Frame(Transform _cat, float _catHeight)
+        // Back on its seat (idempotent: under the black, then again in finally).
+        private void EndCat(AvatarHopMotion _hop, ulong _seat)
         {
-            Vector3 _seat = _cat.position;
-            Vector3 _toTable = _cat.forward;
-            _toTable.y = 0f;
-            _toTable = _toTable.sqrMagnitude > 1e-4f ? _toTable.normalized : Vector3.forward;
-            Vector3 _side = Vector3.Cross(Vector3.up, _toTable);
-            Vector3 _eye = _seat + (_toTable * _cameraBack + _side * _cameraSide + Vector3.up * _cameraUp) * _catHeight;
-            Vector3 _aim = _seat + (Vector3.up * _aimUp + _toTable * _aimForward) * _catHeight;
-            _camera.transform.SetPositionAndRotation(_eye, Quaternion.LookRotation(_aim - _eye, Vector3.up));
-            _camera.Lens.FieldOfView = _fieldOfView;
+            if (_hop != null)
+            {
+                _hop.ClearWorldPose();
+            }
+            if (_clipTime >= 0f)
+            {
+                Debug.Log($"[CHAINREVEAL] seat {_seat}: back on its seat");
+            }
+            _clipTime = -1f;
+            _animator = null;
+            _visibility.SetFeatured(null);
+            _dayRows.SetAway(false);
+            _spotlights.Lifted = null;
+            _spotlights.Darken = 1f;
             if (_light != null)
             {
-                _light.transform.position = _seat + (Vector3.up * 2.2f + _toTable * 1.7f) * _catHeight;
-                _light.transform.LookAt(_seat + Vector3.up * (0.3f * _catHeight));
-                _light.range = 5f * _catHeight;
+                _light.enabled = false;
             }
         }
 
-        private void SetDark(bool _dark)
+        // The room's lights go down, one light stays on the cat (above it, on the player's side).
+        private void Darken(float _darkness, Vector3 _feet, float _catHeight)
         {
-            if (_surroundings != null)
+            _spotlights.Darken = Mathf.Lerp(1f, _darkenTo, _darkness);
+            if (_light == null)
             {
-                _surroundings.ForceBlack = _dark;
-                _surroundings.Apply();
+                return;
             }
-            if (_light != null)
+            Camera _camera = Camera.main;
+            Vector3 _toEye = _camera != null ? _camera.transform.position - _feet : Vector3.back;
+            _toEye.y = 0f;
+            _toEye = _toEye.sqrMagnitude > 1e-4f ? _toEye.normalized : Vector3.back;
+            Vector3 _middle = _feet + Vector3.up * (0.5f * _catHeight);
+            Vector3 _from = _middle + Vector3.up * (1.6f * _catHeight) + _toEye * (1.2f * _catHeight);
+            _light.transform.SetPositionAndRotation(_from, Quaternion.LookRotation(_middle - _from, Vector3.up));
+            _light.range = 6f * _catHeight;
+            _light.intensity = _lightIntensity * _darkness;
+            _light.enabled = _darkness > 0f;
+        }
+
+        // The card between its row slot (flight 0) and the front of the cat (flight 1), in screen half-heights.
+        private void PlaceCard(Camera _camera, Vector3 _anchor, float _worldHeight, float _flight, Vector2 _slotCentre, float _slotHeight)
+        {
+            Vector3 _mid = _camera.WorldToViewportPoint(_anchor);
+            Vector3 _top = _camera.WorldToViewportPoint(_anchor + Vector3.up * (_worldHeight / 2f));
+            Vector3 _bottom = _camera.WorldToViewportPoint(_anchor - Vector3.up * (_worldHeight / 2f));
+            Vector2 _target = _slotCentre;
+            float _height = _slotHeight;
+            if (_mid.z > 0f)
             {
-                _light.intensity = _lightIntensity;
-                _light.enabled = _dark;
+                _target = new Vector2((_mid.x * 2f - 1f) * _camera.aspect, _mid.y * 2f - 1f);
+                _height = Mathf.Abs(_top.y - _bottom.y) * 2f;
+            }
+            _dayRows.SetSpotlightPose(Vector2.LerpUnclamped(_slotCentre, _target, _flight), Mathf.LerpUnclamped(_slotHeight, _height, _flight));
+        }
+
+        private void LateUpdate()
+        {
+            if (_clipTime < 0f || _animator == null)
+            {
+                return;
+            }
+            GameObject _target = _animator.gameObject;
+            if (_clipTime < ChainRevealTimeline.FirstClipLength)
+            {
+                if (_clip1 != null) _clip1.SampleAnimation(_target, _clipTime);
+            }
+            else if (_clipTime < ChainRevealTimeline.ClipEnd)
+            {
+                if (_clip2 != null) _clip2.SampleAnimation(_target, _clipTime - ChainRevealTimeline.FirstClipLength);
+            }
+            else if (_idleClip != null)
+            {
+                _idleClip.SampleAnimation(_target, Mathf.Repeat(_clipTime - ChainRevealTimeline.ClipEnd, _idleClip.length));
             }
         }
     }

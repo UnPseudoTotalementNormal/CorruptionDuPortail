@@ -397,6 +397,9 @@ namespace Avatars
         /// everywhere (gaze-preserving). Null-tolerant: returns the front pose / identity if no ring center
         /// is wired (warns once) — never crashes.
         /// </summary>
+        /// <summary>The centre of the seats' circle (on the floor), or null when it is not wired.</summary>
+        public Vector3? RingCenter => _ringCenter != null ? _ringCenter.position : (Vector3?)null;
+
         public SeatPose GetSeatPose(ulong _clientId)
         {
             if (_ringCenter == null)

@@ -34,11 +34,30 @@ namespace UI.LobbyRoles
         [SerializeField] private UIDocument _document;
 
         private Network.LobbyPlayerInfoHolder _lobby;
+        // The lobby screen's CanvasGroup (LobbyUI): a state UI hides by fading it to 0, which a UIDocument ignores, so
+        // the board copies its alpha (it stayed on screen for the whole game otherwise).
+        private CanvasGroup _screenGroup;
+        private float _shownAlpha = -1f;
+        private VisualElement _shownRoot;
 
         private void Start()
         {
             if (_document == null) _document = GetComponent<UIDocument>();
+            _screenGroup = GetComponentInParent<CanvasGroup>(true);
             ResolveWhenReadyAsync(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        private void LateUpdate()
+        {
+            VisualElement docRoot = _document != null ? _document.rootVisualElement : null;
+            if (docRoot == null) return;
+            float alpha = _screenGroup != null ? _screenGroup.alpha : 1f;
+            // A re-enabled UIDocument builds a new root: apply again then.
+            if (docRoot == _shownRoot && Mathf.Approximately(alpha, _shownAlpha)) return;
+            _shownRoot = docRoot;
+            _shownAlpha = alpha;
+            docRoot.style.opacity = alpha;
+            docRoot.style.display = alpha > 0.001f ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private async UniTaskVoid ResolveWhenReadyAsync(CancellationToken _token)

@@ -1,0 +1,78 @@
+/* The lobby's players board: the tablet's wood and cork (LobbyRoles.uss) on a narrow board at the left of the screen,
+ * where the old "Connected Players" panel stood, its top and bottom on the tablet's cork. One kraft label per player
+ * (only read, like the tablet's counters), a red ink tick once ready. Sizes are for the 1920x1080 reference of
+ * PS_ScreenOverlay; fourteen players (the maximum) fit. */
+
+.lobby-players-frame {
+    position: absolute;
+    left: 22px;
+    top: 14.8%;
+    width: 264px;
+    height: 70.4%;
+    padding: 12px;
+    background-color: rgb(84, 52, 28);
+    background-image: url("project://database/Assets/Art/Textures/seamless-wood-texture-free-22.jpg");
+    background-repeat: repeat repeat;
+    background-size: 520px 520px;
+    -unity-background-image-tint-color: rgb(120, 79, 48);
+}
+
+.lobby-players {
+    flex-grow: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 10px 8px 12px;
+    overflow: hidden;
+    border-width: 4px;
+    border-color: rgb(52, 30, 14);
+    background-color: rgb(176, 120, 70);
+    background-image: url("project://database/Assets/Art/Textures/CorkTablet.png");
+    background-size: cover;
+    -unity-background-image-tint-color: rgb(214, 212, 210);
+    -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond/EBGaramond-Regular.ttf");
+    color: var(--cdp-color-ink);
+}
+
+.lobby-players Label {
+    margin: 0;
+    padding: 0;
+}
+
+.lobby-players__tag {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 144px;
+    max-width: 214px;
+    margin: 0 0 10px 6px;
+    padding: 5px 32px 3px 12px;
+    background-color: rgb(220, 195, 156);
+    border-width: 1px;
+    border-color: rgba(90, 60, 30, 0.35);
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(40, 22, 8, 0.45);
+    border-right-width: 2px;
+    border-right-color: rgba(40, 22, 8, 0.35);
+}
+
+.lobby-players .lobby-players__name {
+    flex-shrink: 1;
+    font-size: 20px;
+    color: var(--cdp-color-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The same red ink tick as "Je suis prêt" on the tablet. */
+.lobby-players__tick {
+    position: absolute;
+    right: 12px;
+    top: 3px;
+    width: 9px;
+    height: 18px;
+    border-right-width: 3px;
+    border-bottom-width: 3px;
+    border-color: rgb(138, 16, 16);
+    rotate: 40deg;
+}

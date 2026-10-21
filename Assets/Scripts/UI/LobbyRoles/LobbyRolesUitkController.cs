@@ -14,7 +14,9 @@ namespace UI.LobbyRoles
     /// Drives the UITK lobby role-attribution app (LobbyRoles.uxml): a parchment page (mockup
     /// tools/maquettes/attribution-roles v5 F3) with the tabs, six counters, the compositions (presets) in the left
     /// margin and a faction-grouped grid of role cards, each with its two settings below it, "Au plus" (max, the pool
-    /// cap) and "Au moins" (forced, the guaranteed minimum), then the ready status and the "Je suis prêt" checkbox. Built from an
+    /// cap) and "Au moins" (forced, the guaranteed minimum), then the ready status and the "Je suis prêt" checkbox. What is
+    /// only read sits on kraft paper, what can be clicked on cream paper, and every paper hangs a little crooked and
+    /// straightens under the pointer (mockup v9/v10: C1 + A1, K1). Built from an
     /// <see cref="ILobbyRolesDataSource"/>. Follows the InfoTable / RoleCardController conventions:
     /// [RequireComponent(UIDocument)], guarded TryInitialize in OnEnable+Start, Q-by-name, dynamic children in C#, BEM
     /// classes, look in USS (faction inks by code from the FactionDatabase).
@@ -74,9 +76,18 @@ namespace UI.LobbyRoles
         private const string OptionsTitleClass = "lobby-roles__options-title";
         private const string OptionsBtnClass = "lobby-roles__options-btn";
         private const string CardSlotClass = "lobby-roles__card-slot";
-        private const string PinClass = "lobby-roles__pin";
-        private const string PinShineClass = "lobby-roles__pin-shine";
-        private const string PinShadowClass = "lobby-roles__pin-shadow";
+        private const string ReadPaperClass = "lobby-roles__paper--read";
+        private const string StatusClass = "lobby-roles__status";
+        private const string LiftClass = "lobby-roles__lift";
+
+        // Stable scatter keys (PinnedPaper): one range per kind of paper, so a rebuild gives each the same look.
+        private const int KeyTally = 0;
+        private const int KeyCard = 100;
+        private const int KeyPreset = 40;
+        private const int KeyCustomPreset = 48;
+        private const int KeyFactionTab = 50;
+        private const int KeyStatus = 60;
+        private const int KeyReady = 61;
 
         private const int TabAttribution = 0;
         private const int TabOptions = 2;
@@ -118,6 +129,10 @@ namespace UI.LobbyRoles
         // Last opacity shown per role, so a rebuilt card can animate FROM it TO the new target (a full Rebuild
         // recreates every card, so a fresh element born at the target opacity would otherwise never transition).
         private readonly Dictionary<RoleID, float> _cardOpacity = new();
+
+        // The paper under the pointer, carried over a rebuild (a stepper click rebuilds everything) so it does not
+        // drop back crooked and rise again under a still pointer.
+        private int? _liftedKey;
 
         private void OnEnable() => TryInitialize();
         private void Start() => TryInitialize();
@@ -280,11 +295,11 @@ namespace UI.LobbyRoles
                 perFactionMax.TryGetValue(faction, out int m);
                 tally.Add(Cell(FactionLabel(faction, true), m, false, FactionIcon(faction), false));
             }
-            int index = 0;
+            int index = KeyTally;
             foreach (VisualElement cell in tally.Children())
             {
-                Pin(cell, 50f);
-                Tilt(cell, index++);
+                PinnedPaper.Pin(cell, PinnedPaper.PinX(index));
+                PinnedPaper.Rest(cell, index++);
             }
             return tally;
 
@@ -292,6 +307,7 @@ namespace UI.LobbyRoles
             {
                 var cell = new VisualElement { pickingMode = PickingMode.Ignore };
                 cell.AddToClassList(TallyCellClass);
+                cell.AddToClassList(ReadPaperClass);
                 if (first) cell.AddToClassList(TallyCellFirstClass);
 
                 var keyRow = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -322,6 +338,7 @@ namespace UI.LobbyRoles
             var title = new Label("Compositions") { pickingMode = PickingMode.Ignore };
             title.AddToClassList(TitleClass);
             title.AddToClassList(PresetsTitleClass);
+            title.AddToClassList(ReadPaperClass);
             column.Add(title);
 
             for (int i = 0; i < presets.Count; i++)
@@ -336,8 +353,8 @@ namespace UI.LobbyRoles
                     row.AddToClassList(PresetRowActiveClass);
                     if (presets[i].IsClassic) row.AddToClassList(PresetClassicActiveClass);
                 }
-                Pin(row, 86f);
-                Tilt(row, idx);
+                PinnedPaper.Pin(row, PinnedPaper.PinX(KeyPreset + idx));
+                Lift(row, KeyPreset + idx);
                 column.Add(row);
             }
 
@@ -346,7 +363,8 @@ namespace UI.LobbyRoles
                 var custom = new Label("Personnalisée") { pickingMode = PickingMode.Ignore };
                 custom.AddToClassList(PresetRowClass);
                 custom.AddToClassList(PresetRowActiveClass);
-                Pin(custom, 86f);
+                PinnedPaper.Pin(custom, PinnedPaper.PinX(KeyCustomPreset));
+                PinnedPaper.Rest(custom, KeyCustomPreset);
                 column.Add(custom);
             }
             return column;
@@ -359,7 +377,6 @@ namespace UI.LobbyRoles
         {
             var tabs = new VisualElement { pickingMode = PickingMode.Ignore };
             tabs.AddToClassList(FactionTabsClass);
-            int index = 0;
             foreach (FactionType faction in FactionOrder)
             {
                 if (!HasRoles(roles, faction)) continue;
@@ -375,7 +392,7 @@ namespace UI.LobbyRoles
                 name.AddToClassList(TitleClass);
                 name.style.color = RoleSheet.InkOf(FactionColor(faction));
                 tab.Add(name);
-                Tilt(tab, index++);
+                Lift(tab, KeyFactionTab + (int)faction);
                 tabs.Add(tab);
             }
             return tabs;
@@ -433,8 +450,8 @@ namespace UI.LobbyRoles
             slot.AddToClassList(CardSlotClass);
             slot.Add(card);
             unit.Add(slot);
-            Pin(unit, 50f);
-            Tilt(unit, (int)role.Id);
+            PinnedPaper.Pin(unit, PinnedPaper.PinX(KeyCard + (int)role.Id));
+            Lift(unit, KeyCard + (int)role.Id);
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
@@ -490,7 +507,7 @@ namespace UI.LobbyRoles
         // ---- footer ----
         private VisualElement BuildFooter(int players, IReadOnlyList<LobbyRoleView> roles)
         {
-            var footer = new VisualElement();
+            var footer = new VisualElement { pickingMode = PickingMode.Ignore };
             footer.AddToClassList(FooterClass);
 
             // Mirror of the server gate: the SAME pure CompositionValidator LobbyState delegates to — coverage
@@ -512,10 +529,18 @@ namespace UI.LobbyRoles
                 ? $"{readyCount} {(readyCount > 1 ? "joueurs prêts" : "joueur prêt")} sur {players}"
                 : validation.FirstReason;
 
+            // Two papers: the status is only read (kraft), the checkbox is clicked (cream). The label sits in its own
+            // paper: a label with children (the pin) would no longer measure its text.
+            var statusPaper = new VisualElement { pickingMode = PickingMode.Ignore };
+            statusPaper.AddToClassList(StatusClass);
+            statusPaper.AddToClassList(ReadPaperClass);
             var reason = new Label(status) { pickingMode = PickingMode.Ignore };
             reason.AddToClassList(ReasonClass);
             if (validation.IsValid) reason.AddToClassList(ReasonOkClass);
-            footer.Add(reason);
+            statusPaper.Add(reason);
+            PinnedPaper.Pin(statusPaper, PinnedPaper.PinX(KeyStatus));
+            PinnedPaper.Rest(statusPaper, KeyStatus);
+            footer.Add(statusPaper);
 
             // An ink checkbox (mockup v6 B2): "Je suis prêt", ticked in red once ready; tapping again unticks it.
             bool localReady = _data.GetLocalReady();
@@ -535,38 +560,36 @@ namespace UI.LobbyRoles
             var text = new Label("Je suis prêt") { pickingMode = PickingMode.Ignore };
             text.AddToClassList(TitleClass);
             toggle.Add(text);
+            PinnedPaper.Pin(toggle, PinnedPaper.PinX(KeyReady));
+            Lift(toggle, KeyReady);
             footer.Add(toggle);
-            Pin(footer, 4f);
             return footer;
         }
 
         // ---- helpers ----
 
-        // A red pushpin stuck in the top edge of a paper or card, at x% of its width (its shadow under it).
-        // Decoration only: it never takes a click from the element it holds.
-        private static void Pin(VisualElement on, float xPercent)
+        // A clickable paper hangs crooked at rest and straightens, lifted, under the pointer (mockup v9 A1: the hint
+        // that it can be clicked). Inline styles + the USS transition on LiftClass; a paper rebuilt under the pointer
+        // starts lifted (_liftedKey) instead of snapping crooked.
+        private void Lift(VisualElement e, int key)
         {
-            var shadow = new VisualElement { pickingMode = PickingMode.Ignore };
-            shadow.AddToClassList(PinShadowClass);
-            shadow.style.left = Length.Percent(xPercent);
-            on.Add(shadow);
-
-            var pin = new VisualElement { pickingMode = PickingMode.Ignore };
-            pin.AddToClassList(PinClass);
-            pin.style.left = Length.Percent(xPercent);
-            var shine = new VisualElement { pickingMode = PickingMode.Ignore };
-            shine.AddToClassList(PinShineClass);
-            pin.Add(shine);
-            on.Add(pin);
+            e.AddToClassList(LiftClass);
+            if (_liftedKey == key) PinnedPaper.Raise(e, key);
+            else PinnedPaper.Rest(e, key);
+            e.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                _liftedKey = key;
+                PinnedPaper.Raise(e, key);
+            });
+            e.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                // A paper torn down by a rebuild leaves too: its successor keeps the lift.
+                if (e.panel == null) return;
+                if (_liftedKey == key) _liftedKey = null;
+                PinnedPaper.Rest(e, key);
+            });
         }
 
-        // Pinned papers are never quite straight: a small fixed tilt (-1.1, 0 or +1.1 degree) chosen by index, so a
-        // rebuild never makes them jump.
-        private static void Tilt(VisualElement e, int index)
-        {
-            int step = ((index % 3) + 3) % 3 - 1;
-            e.style.rotate = new Rotate(new Angle(step * 1.1f));
-        }
         private static VisualElement Icon(Sprite sprite, string cssClass)
         {
             var icon = new VisualElement { pickingMode = PickingMode.Ignore };

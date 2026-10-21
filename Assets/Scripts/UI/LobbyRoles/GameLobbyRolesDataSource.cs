@@ -58,7 +58,7 @@ namespace UI.LobbyRoles
             _rolePool = (RoleAttributionState)CompositionRoot.For(_nm).GameManager
                 .GetGameStates(typeof(RoleAttributionState)).First();
 
-            // Count + live-refresh source is the replicated player census (mirrors ConnectedPlayerPanel), NOT
+            // Count + live-refresh source is the replicated player census (as LobbyPlayersBoard), NOT
             // NGO ConnectedClientsIds: simulated bots (clientId >= 100) enter playerInfos via AddDebugPlayer but
             // never register as NGO clients, so ConnectedClientsIds undercounts them and never fires connect.
             _manager.OnSettingsChanged += Raise;

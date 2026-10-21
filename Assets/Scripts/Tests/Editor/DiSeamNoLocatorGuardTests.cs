@@ -83,7 +83,7 @@ namespace Tests.Editor
             // Story 10.4 (Epic 10 / D4): LobbyPlayerInfoHolder injected into the 4 player-name powers (Power
             // base field) + Character (lane C). Singleton (no .For(nm)) — lock the qualified instance form.
             // The root serves it (SceneWiredOnly, never source-scanned); recorded non-registered survivors
-            // keep the global: PlayerButtonObject / ConnectedPlayerPanel / ChatPanel (UI → 12.2),
+            // keep the global: PlayerButtonObject / ChatPanel (UI → 12.2),
             // UlongExtensions (static ext → 10.5), CharacterManager.AddDebugPlayer (debug). The holder itself
             // is now registered (NoLocatorOnly) and uses the bare `instance` self-ref, so the lock does not bite it.
             "LobbyPlayerInfoHolder.instance",

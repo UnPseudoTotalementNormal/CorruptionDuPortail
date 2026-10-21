@@ -1,6 +1,8 @@
 /* Lobby role attribution on the tablet: a cork board in a wooden frame. Everything that is read sits on pinned
  * paper (one card per counter and per composition, labels, tickets under the role cards); the role cards are pinned
- * on the cork. Layout and words from mockup tools/maquettes/attribution-roles v5 F3, dressing K3.
+ * on the cork. Layout and words from mockup tools/maquettes/attribution-roles v5 F3, dressing K3. What can be clicked
+ * is cream paper, what is only read is kraft, on a slightly darkened cork (v9 C1, v10 K1); every paper hangs a little
+ * crooked and straightens under the pointer (v9 A1, PinnedPaper).
  * IM FELL English for titles (tabs, factions, "Compositions", "Je suis prêt"),
  * EB Garamond for everything read in small sizes (labels, numbers, role controls); both SIL OFL
  * (OFL.txt next to each font in Assets/UI/Fonts). Sizes are for the 1440x912
@@ -29,6 +31,7 @@
     background-color: rgb(176, 120, 70);
     background-image: url("project://database/Assets/Art/Textures/CorkTablet.png");
     background-size: 100% 100%;
+    -unity-background-image-tint-color: rgb(214, 212, 210);
     -unity-font-definition: url("project://database/Assets/UI/Fonts/EBGaramond/EBGaramond-Regular.ttf");
     color: var(--cdp-color-ink);
 }
@@ -52,7 +55,8 @@
 .lobby-roles .lobby-roles__preset-row,
 .lobby-roles .lobby-roles__faction-tab,
 .lobby-roles__controls,
-.lobby-roles__footer,
+.lobby-roles__status,
+.lobby-roles .lobby-roles__start,
 .lobby-roles__options {
     background-color: rgb(240, 229, 203);
     border-width: 1px;
@@ -61,6 +65,22 @@
     border-bottom-color: rgba(40, 22, 8, 0.45);
     border-right-width: 2px;
     border-right-color: rgba(40, 22, 8, 0.35);
+}
+
+/* Kraft: the papers that are only read (counters, "Compositions", the ready status). Ink stays dark on it. */
+.lobby-roles .lobby-roles__paper--read {
+    background-color: rgb(220, 195, 156);
+}
+.lobby-roles__paper--read .lobby-roles__tally-key Label,
+.lobby-roles__paper--read .lobby-roles__reason--ok {
+    color: var(--cdp-color-ink);
+}
+
+/* A clickable paper straightens and lifts under the pointer (PinnedPaper.Raise sets the values inline). */
+.lobby-roles__lift {
+    transition-property: rotate, translate, scale;
+    transition-duration: 0.14s, 0.14s, 0.14s;
+    transition-timing-function: ease-out, ease-out, ease-out;
 }
 
 /* A red pushpin and its shadow (Pin() in the controller sets their left edge). */
@@ -243,11 +263,11 @@
     font-size: 32px;
 }
 
-/* padding-top: room for the pins of the first row, which stick out above the cards. */
+/* padding-top: room for the pins of the first row, which stick out above the cards, even with a card lifted. */
 .lobby-roles__grid {
     flex-direction: row;
     flex-wrap: wrap;
-    padding-top: 12px;
+    padding-top: 22px;
 }
 
 /* One role = the shared card face (RoleCardElement, 120 wide: seven to a row, a faction's cards all fit on the
@@ -307,19 +327,23 @@
     color: var(--cdp-color-ink);
 }
 
-/* ---- footer: status (or the reason the game can't start) + "Prêt" ---- */
+/* ---- footer: two papers, the status (or the reason the game can't start) on kraft, then "Je suis prêt" ---- */
 .lobby-roles__footer {
     flex-direction: row;
     align-items: center;
     align-self: flex-end;
     margin-top: 10px;
-    padding: 6px 20px 6px 22px;
-    rotate: -0.5deg;
+}
+.lobby-roles__status {
+    margin-right: 14px;
+    padding: 8px 20px 6px 22px;
+}
+.lobby-roles .lobby-roles__start {
+    padding: 6px 20px 6px 18px;
 }
 .lobby-roles .lobby-roles__reason {
     font-size: 25px;
     color: rgb(160, 18, 18);
-    margin-right: 28px;
 }
 .lobby-roles .lobby-roles__reason--ok {
     color: var(--cdp-color-ink-soft);

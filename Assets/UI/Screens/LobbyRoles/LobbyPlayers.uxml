@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <!-- The lobby's players on a small cork board, left of the tablet (mockup tools/maquettes/attribution-roles v9 J1,
+         kraft of v10 K1). Filled at runtime by LobbyPlayersBoard: one pinned kraft label per player, a red tick when
+         ready. Pins come from LobbyRoles.uss (shared with the tablet), the board from LobbyPlayers.uss. -->
+    <ui:Style src="LobbyRoles.uss" />
+    <ui:Style src="LobbyPlayers.uss" />
+    <ui:VisualElement class="lobby-players-frame" picking-mode="Ignore">
+        <ui:VisualElement name="lobby-players" class="lobby-players" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

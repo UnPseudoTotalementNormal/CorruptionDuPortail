@@ -33,7 +33,7 @@ Board task T23 (Wouh, Haute Priorité). Reference: the team's Canva board "Proto
     outline (M3).
 - **Skip the vote = a key (P)** by day: the board's "Passer le vote" button lay on the table (Poyo, 2026-10-21).
 - **Keys by day:** 1, 2, **P**, **T** (opens the tablet straight on the players' table; Tab is unchanged), **E** (the emote
-  wheel, was T). The arrows no longer leave the seat by day (no board overview: first person only). The key hints in
+  wheel, was T). No camera switching with the arrows at all (Poyo, 2026-10-21): first person by day, the top view at night. The key hints in
   the corner show 1, 2, T and P by day (new drawings: `tools/ui/gen_day_key_icons.py`).
 
 ## Code

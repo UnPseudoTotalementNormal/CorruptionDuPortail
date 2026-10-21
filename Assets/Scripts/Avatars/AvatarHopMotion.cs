@@ -54,6 +54,12 @@ namespace Avatars
         private float _amplitude;
         private bool _initialized;
 
+        /// <summary>
+        /// Extra height (world units) the visual root is held above its seat, on top of the hop: the force that lifts
+        /// a cat while it is chained (T19, <c>ChainRevealDirector</c>). 0 = on its seat.
+        /// </summary>
+        public float LiftWorld { get; set; }
+
         private void Awake()
         {
             _visual = transform;
@@ -119,7 +125,9 @@ namespace Avatars
 
             // Single writer on the visual-root transform, relative to the captured base (accumulation-free).
             float _sxz = Mathf.Max(0.01f, 1f - _squash * _ss);  // clamp ≥0 so a mis-tuned squash can't invert
-            _visual.localPosition = _baseLocalPos + new Vector3(0f, _hopHeight * _arc, 0f);
+            // The lift is given in world units: the parent (the networked root) is scaled.
+            float _parentScale = _visual.parent != null ? Mathf.Max(1e-4f, _visual.parent.lossyScale.y) : 1f;
+            _visual.localPosition = _baseLocalPos + new Vector3(0f, _hopHeight * _arc + LiftWorld / _parentScale, 0f);
             _visual.localScale = Vector3.Scale(_baseLocalScale, new Vector3(_sxz, 1f + _stretch * _ss, _sxz));
             _visual.localRotation = _baseLocalRot * Quaternion.Euler(_upBeatPitchDeg * _arc, 0f, 0f);
         }

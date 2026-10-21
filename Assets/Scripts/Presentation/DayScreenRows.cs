@@ -66,6 +66,10 @@ namespace Presentation
         public bool IsActive { get; private set; }
         public bool CardsOpen { get; private set; } = true;
         public bool RolesOpen { get; private set; } = true;
+        /// <summary>Both rows sent off screen for a moment, whatever the keys say (T19: the chained cat's shot).</summary>
+        public bool Away { get; private set; }
+        private bool CardsShown => CardsOpen && !Away;
+        private bool RolesShown => RolesOpen && !Away;
 
         private struct SavedPose
         {
@@ -97,6 +101,7 @@ namespace Presentation
             IsActive = true;
             CardsOpen = true;
             RolesOpen = true;
+            Away = false;
             _raisedSeat = null;
             _boardManager.cardLayoutOverride = this;
             PlaceCards(_boardManager.visibleCards);
@@ -158,6 +163,18 @@ namespace Presentation
         public void ToggleRoles()
         {
             RolesOpen = !RolesOpen;
+            Relayout(_slideSeconds);
+            PlaceRoles(_slideSeconds);
+        }
+
+        /// <summary>Sends both rows off screen (true) or brings back the open ones (false).</summary>
+        public void SetAway(bool _away)
+        {
+            if (Away == _away)
+            {
+                return;
+            }
+            Away = _away;
             Relayout(_slideSeconds);
             PlaceRoles(_slideSeconds);
         }
@@ -270,7 +287,7 @@ namespace Presentation
             UpdateCardScale();
             float _cardAspect = _cardModelSize.x / _cardModelSize.y;
             float _height = ScreenRowLayout.CardHeightFor(_cards.Count, _aspect, _cardAspect);
-            ScreenRowSlot[] _slots = ScreenRowLayout.CardSlots(_cards.Count, _aspect, _cardAspect, CardsOpen, RolesOpen);
+            ScreenRowSlot[] _slots = ScreenRowLayout.CardSlots(_cards.Count, _aspect, _cardAspect, CardsShown, RolesShown);
             float _scale = _cardScale; // positions are in anchor units, i.e. screen half-heights / _cardScale
             for (int _i = 0; _i < _cards.Count; _i++)
             {
@@ -282,7 +299,7 @@ namespace Presentation
                 var _layer = _card.visualComponents.compositor.GetLayer(TransformLayer);
                 // Anchor space: x = screen right, z = screen up (the anchor is turned so the cards face the camera); the
                 // layer's position is in root units, hence the division by the root's scale.
-                float _raise = CardsOpen && _raisedSeat != null && SeatOf(_card) == _raisedSeat
+                float _raise = CardsShown && _raisedSeat != null && SeatOf(_card) == _raisedSeat
                     ? ScreenRowLayout.RaisedShare * _height
                     : 0f;
                 _layer.DOKill();
@@ -376,7 +393,7 @@ namespace Presentation
             float _total = _barWidth + (_countersWidth > 0f ? _gap + _countersWidth : 0f);
             float _fit = Mathf.Min(1f, ScreenRowLayout.MaxWidthShare * 2f * _aspect / Mathf.Max(0.001f, _total));
             float _left = -_total * _fit / 2f;
-            float _y = ScreenRowLayout.RolesCentreY(RolesOpen);
+            float _y = ScreenRowLayout.RolesCentreY(RolesShown);
 
             MoveRect(_rolesBar, new Vector2(_left + _barWidth * _fit / 2f, _y), _barScale * _fit, _seconds);
             float _counterX = _left + (_barWidth + _gap + _countersWidth / 2f) * _fit;

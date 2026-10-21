@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, l'enchaînement en jeu (tour 3)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .en-shot { width: 100%; display: block; border: 1px solid var(--line); }
+  .en-pair { display: flex; gap: 10px; flex-wrap: wrap; }
+  .en-pair figure { flex: 1 1 300px; margin: 0; }
+  .en-pair figcaption { color: var(--soft); font-size: 13px; margin-top: 4px; }
+</style>
+</head>
+<body data-subject="enchainement">
+
+<header class="page">
+  <h1>L'enchaînement, en jeu (tour 3)</h1>
+  <p>Tes choix codés : <b>E1</b> il retombe à sa place, <b>S2</b> le son aspiré, <b>F2</b> figé une demi-seconde avec la
+     caméra qui se rapproche, <b>Y1</b> le même plan pour tous ; et ta remarque : la carte <b>après</b> le chat, comme
+     avant, un peu plus vite (0,75 s par mouvement au lieu de 1 s).</p>
+  <p>Ce sont de vraies parties (autoplay, 3 joueurs en réseau, la Dryade enchaînée), filmées sans le son. Le son
+     aspiré et le « splatch » sont des sons provisoires, à remplacer par de vrais sons.</p>
+</header>
+
+<section>
+  <h2>La séquence</h2>
+  <div class="variant" data-id="J1">
+    <div class="vhead"><span class="vid">J1</span><span class="vname">Vu par un autre joueur</span></div>
+    <p class="vdesc">Caméra en face du chat, la pièce dans le noir et une lumière sur lui. Il s'élève, est lâché,
+       s'écrase à sa place, reste figé une demi-seconde, se relève enchaîné ; coupe sur la table, sa carte se retourne
+       comme avant.</p>
+    <img class="en-shot" src="img/enjeu-autre.webp" alt="la séquence vue par un autre joueur">
+  </div>
+  <div class="variant" data-id="J2">
+    <div class="vhead"><span class="vid">J2</span><span class="vname">Vu par le joueur enchaîné (Y1)</span></div>
+    <p class="vdesc">Le même plan : il se voit s'écraser. Le cadrage dépend de sa place à table (ici vu de côté, la
+       table devant).</p>
+    <img class="en-shot" src="img/enjeu-soi.webp" alt="la séquence vue par le joueur enchaîné">
+  </div>
+  <div class="en-pair">
+    <figure><img class="en-shot" src="img/enjeu-autre-fige.jpg" alt=""><figcaption>Figé, vu par un autre joueur</figcaption></figure>
+    <figure><img class="en-shot" src="img/enjeu-soi-fige.jpg" alt=""><figcaption>Figé, vu par lui-même</figcaption></figure>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">À retoucher (cadrage, lumière, hauteur, durée du gel, vitesse de la carte) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+<script src="../common/mock.js"></script>
+</body>
+</html>

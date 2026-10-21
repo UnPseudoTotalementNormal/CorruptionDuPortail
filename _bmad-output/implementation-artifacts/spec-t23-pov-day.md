@@ -7,8 +7,14 @@ Board task T23 (Wouh, Haute Priorité). Reference: the team's Canva board "Proto
 ## Decisions
 
 - **Day = the seated Embodied mode** (the vote and its recap) **and the chaining that follows** (the table stays away
-  until the night; Poyo, 2026-10-21). The chaining sequence itself is untouched; its card animation is abandoned (T19).
-  The night does not change.
+  until the night; Poyo, 2026-10-21). The night does not change.
+- **The chaining = the chained cat, no card (T19 points 2 to 4, shipped in the same PR, Poyo 2026-10-21).** Mockups
+  `tools/maquettes/enchainement/` (v1: S2, F2, Y1; v2: E1): a camera in front of the chained cat, the same for everyone,
+  the room black around it; a force lifts it slowly while the "Getting Chained" animation plays, lets it fall back on
+  its seat; the sound is sucked out just before the splatch and the flattest pose is frozen half a second with the
+  camera jumped in. The card that used to turn over on the table afterwards is gone (Poyo, 2026-10-21: "on abandonne
+  l'animation avec la carte"); the chained player's own card shows its role. The day's rows leave the screen during the
+  shot. Both chainings of the loop (ChainingState, ChainingState2) play it.
 - **The table goes away (T3).** The cards fly from the table to the screen first, then the dark swallows the table:
   under the black the table, its board, the cork wall (and the round-table trial) disappear, with the world UI lying
   on it (powers bar, skip button). The vote candle goes down to the floor, ahead of the player. When the cats' lights
@@ -48,12 +54,15 @@ Board task T23 (Wouh, Haute Priorité). Reference: the team's Canva board "Proto
 | Options | `VoteState.anonymousVote`, `VoteState.voteOnCats` |
 | Keys / hints | `TabletToggleInput` (T), `EmoteWheelInput` (E), `KeyHints` + `KeyHintsHud` |
 | Smaller hooks | `AvatarEmbodiedCamera.SetRestPitch`, `VoteCandle.SetOnFloor`, `CatSpotlights.Boosted`, `VoteCanvas.ActivateVoteCanvas(bool)`, `CardVisualComponents.inScreenRow`, `AvatarCameraArbiter` (no board nav by day) |
+| Chaining shot (T19) | `Domain/ChainRevealTimeline.cs` (+ tests), `Presentation/ChainRevealDirector.cs` (via `ChainingManager.RevealDirector`, played by `ChainingState`), `AvatarHopMotion.LiftWorld`, `AvatarVisibilityController.SetFeatured`, `SeatedSurroundings.ForceBlack`, `GameAudioManager.SetMuffle/ClearMuffle/SetBusVolume`, `DayScreenRows.SetAway`; temporary sounds ChainLift / ChainSplat in the FMOD bank `ChainReveal` (`tools/fmod/t19-chain-reveal.js`) |
 | Autoplay real-input vote | `AutoplayDriverRealInput.VoteByInput` aims at the cat |
 
-Scene: `---GameVisuals---/DayPresentation` holds the three presenters (lane A, wired).
+Scene: `---GameVisuals---/DayPresentation` holds the three presenters, `---GameVisuals---/ChainRevealDirector` the
+chaining shot (its Cinemachine camera, priority 300 while it plays, and its spot light); lane A, wired.
 
 ## Open
 
 - Playtest: the flight, the black, the rows' size on other screens, the "A voté" panel under a card in the row.
 - The lobby option for the anonymous vote (menu).
 - How the closed tablet (lying behind the cork) looks once the table is gone.
+- T19: real sounds for the lift and the splatch (the bank `ChainReveal` holds synthesized placeholders).

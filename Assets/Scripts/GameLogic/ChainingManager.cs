@@ -38,6 +38,10 @@ namespace GameLogic
         private ICharacterQuery Query => characterManager;
         private ICharacterCommand Command => characterManager;
         [SerializeField] private GameInfoRevealer gameInfoRevealer;
+        // T19: the chained cat's moment (local presentation). Null-tolerant like the two above: a bare test
+        // ChainingManager has none, and the chaining then just waits.
+        [SerializeField] private Presentation.ChainRevealDirector revealDirector;
+        public Presentation.ChainRevealDirector RevealDirector => revealDirector;
 
         private void Awake()
         {

@@ -551,6 +551,7 @@ MonoBehaviour:
   MasterBanks:
   - Master
   Banks:
+  - ChainReveal
   - VoteCandle
   BanksToLoad: []
   LiveUpdatePort: 9264

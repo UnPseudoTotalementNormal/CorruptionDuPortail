@@ -64,5 +64,51 @@ namespace Tests.Editor
             Assert.IsFalse(RejoinSessionStore.TryLoad(out _), "a session older than a game can last is ignored");
             Assert.AreEqual(string.Empty, RejoinSessionStore.TokenForConnection());
         }
+
+        [Test]
+        public void Session_NotKeptAlive_PastTheSeatGrace_IsIgnored()
+        {
+            // The host left (or the seat expired) a while ago: the token was handed long before, the connection last
+            // seen longer ago than a seat stays reserved. Nothing to rejoin, the menu must not offer it.
+            long _now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var _gone = new RejoinSessionStore.Session
+            {
+                token = "gone",
+                hostKind = "relay",
+                savedAtUnixSeconds = _now - 3600,
+                lastSeenUnixSeconds = _now - (long)RejoinSessionStore.FreshSeconds - 1,
+            };
+            PlayerPrefs.SetString("cdp.rejoin.session" + Suffix, JsonUtility.ToJson(_gone));
+
+            Assert.IsFalse(RejoinSessionStore.TryLoad(out _));
+            Assert.AreEqual(string.Empty, RejoinSessionStore.TokenForConnection());
+        }
+
+        [Test]
+        public void KeepAlive_KeepsAnOldTokenOpen_WhileConnected()
+        {
+            long _now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var _seated = new RejoinSessionStore.Session
+            {
+                token = "seated",
+                hostKind = "relay",
+                savedAtUnixSeconds = _now - (long)RejoinSessionStore.FreshSeconds + 5,
+            };
+            PlayerPrefs.SetString("cdp.rejoin.session" + Suffix, JsonUtility.ToJson(_seated));
+
+            RejoinSessionStore.KeepAlive();
+
+            Assert.IsTrue(RejoinSessionStore.TryLoad(out RejoinSessionStore.Session _session));
+            Assert.That(_session.lastSeenUnixSeconds, Is.GreaterThanOrEqualTo(_now));
+            Assert.AreEqual("seated", _session.token);
+        }
+
+        [Test]
+        public void KeepAlive_WithoutASession_SavesNothing()
+        {
+            RejoinSessionStore.KeepAlive();
+
+            Assert.IsFalse(RejoinSessionStore.TryLoad(out _));
+        }
     }
 }

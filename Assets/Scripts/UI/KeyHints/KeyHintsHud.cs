@@ -35,6 +35,10 @@ namespace UI.KeyHints
         [SerializeField] private VoiceChatManager _voice;
         [SerializeField] private EmoteWheelInput _emoteWheel;
         [SerializeField] private PauseMenuInput _pauseMenu;
+        [Tooltip("T23: the day's screen rows (keys 1 and 2). Missing = their hints never show.")]
+        [SerializeField] private Presentation.DayScreenRows _dayRows;
+        [Tooltip("T23: the day's vote on the cats (its skip key). Missing = the skip hint never shows.")]
+        [SerializeField] private Presentation.DayCatVoting _dayVoting;
         [SerializeField] private Font _font;
         // The game blends in linear space: a CanvasGroup alpha of 0.5 looks far brighter than the mockup's 50 % (a CSS
         // blend in sRGB). 0.5^2.2 = 0.22 gives the mockup's look over the dark corner.
@@ -51,6 +55,10 @@ namespace UI.KeyHints
         [SerializeField] private Sprite _emotesIcon;
         [SerializeField] private Sprite _menuIcon;
         [SerializeField] private Sprite _reportBugIcon;
+        [SerializeField] private Sprite _playersRowIcon;
+        [SerializeField] private Sprite _rolesRowIcon;
+        [SerializeField] private Sprite _spreadsheetIcon;
+        [SerializeField] private Sprite _skipVoteIcon;
 
         private readonly Dictionary<KeyHintAction, Hint> _hints = new();
         private readonly List<KeyHintAction> _shown = new();
@@ -112,7 +120,10 @@ namespace UI.KeyHints
                 canSpeak: _voice != null && _voice.PushToTalkReady,
                 emotesReachable: _emoteWheel != null && _emoteWheel.isActiveAndEnabled && _emoteWheel.IsReachable,
                 menuAvailable: true,
-                bugReportAvailable: _bugReportAvailable);
+                bugReportAvailable: _bugReportAvailable,
+                dayRowsAvailable: _dayRows != null && _dayRows.IsActive,
+                spreadsheetAvailable: _tabletToggle.SpreadsheetReachable,
+                skipVoteAvailable: _dayVoting != null && _dayVoting.SkipReachable);
         }
 
         private bool SameAsShown()
@@ -169,6 +180,10 @@ namespace UI.KeyHints
             _fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             // Keys are read when a hint shows (the tablet's action binds in its own Awake).
+            AddHint(_row, KeyHintAction.PlayersRow, _playersRowIcon, () => Key.Digit1);
+            AddHint(_row, KeyHintAction.RolesRow, _rolesRowIcon, () => Key.Digit2);
+            AddHint(_row, KeyHintAction.Spreadsheet, _spreadsheetIcon, () => _tabletToggle.SpreadsheetKey);
+            AddHint(_row, KeyHintAction.SkipVote, _skipVoteIcon, () => _dayVoting.SkipKey);
             AddHint(_row, KeyHintAction.OpenTablet, _openTabletIcon, () => _tabletToggle.ToggleKey);
             AddHint(_row, KeyHintAction.CloseTablet, _closeTabletIcon, () => _tabletToggle.ToggleKey);
             AddHint(_row, KeyHintAction.PreviousScreen, _previousScreenIcon, () => Key.LeftArrow);

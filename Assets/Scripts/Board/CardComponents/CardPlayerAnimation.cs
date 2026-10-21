@@ -61,7 +61,7 @@ namespace Board.CardComponents
             var _channel = visualComponents.cameraModeChannel;
             Camera _cam = Camera.main;
             bool _firstPerson = _channel != null && _channel.Current == Avatars.CameraMode.Embodied
-                                && _channel.SeatedFirstPersonLive && _cam != null;
+                                && _channel.SeatedFirstPersonLive && _cam != null && !visualComponents.inScreenRow;
 
             if (_firstPerson && TryArmFpsPose(hoverLayer, _cam, false))
             {
@@ -110,7 +110,7 @@ namespace Board.CardComponents
             _cam = Camera.main;
             var _channel = visualComponents.cameraModeChannel;
             var _options = visualComponents.seatedViewOptions;
-            return _options != null && _options.CardsStand && _channel != null
+            return _options != null && _options.CardsStand && _channel != null && !visualComponents.inScreenRow
                    && _channel.Current == Avatars.CameraMode.Embodied && _channel.SeatedFirstPersonLive && _cam != null;
         }
 
@@ -153,7 +153,8 @@ namespace Board.CardComponents
             var _channel = visualComponents != null ? visualComponents.cameraModeChannel : null;
             Transform _root = visualComponents != null ? visualComponents.transform : null;
             if (_channel == null || _channel.Current != Avatars.CameraMode.Embodied || !_channel.SeatedFirstPersonLive
-                || _root == null || visualComponents.compositor == null || _hoverLayerRef == null)
+                || _root == null || visualComponents.compositor == null || _hoverLayerRef == null
+                || visualComponents.inScreenRow)
             {
                 DisarmFpsHover();
                 return;

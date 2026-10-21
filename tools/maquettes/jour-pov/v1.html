@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le jour en vue assise : la table part, les deux rangées, le vote sur les chats (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .jp-bg { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  .jp-bg canvas, canvas.jp-bg { display: block; }
+  .jp-black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+  .jp-fly { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; z-index: 3; }
+  .jp-card { position: absolute; display: block; border-radius: 6px; box-shadow: 0 6px 14px rgba(0,0,0,.6); transition: transform .18s, filter .18s; }
+  .jp-row1 .jp-card { cursor: pointer; }
+  .jp-row1 .jp-card.lift { transform: translateY(-18px); }
+  .jp-row1 .jp-card.lit { filter: brightness(1.45); }
+  .jp-row2 { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-end; gap: 22px; z-index: 3; transition: transform .35s; }
+  .jp-row1 { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; z-index: 4; pointer-events: none; }
+  .jp-row1 .jp-card { pointer-events: auto; transition: transform .35s, filter .18s, top .35s; }
+  .jp-grp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .jp-grp .jp-logo { width: 34px; height: 34px; }
+  .jp-grp .jp-ports { display: flex; gap: 4px; }
+  .jp-grp .jp-ports img { width: 50px; height: 66px; object-fit: cover; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+  .jp-count { width: 118px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+  .jp-strip { height: 104px; box-shadow: 0 4px 12px rgba(0,0,0,.7); border-radius: 4px; }
+  /* key hints: the shipped look (touches v2: small drawing + key, half lit, bottom left) */
+  .jp-hints { position: absolute; left: 26px; bottom: 22px; display: grid; grid-template-columns: repeat(3, 62px); gap: 10px 8px; opacity: .5; z-index: 5; }
+  .jp-h { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+  .jp-h svg { width: 42px; height: 34px; filter: drop-shadow(0 1px 3px #000); }
+  .jp-h span { font: 18px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; }
+  /* a cat's silhouette (rendered from the game, one per cat and view) */
+  .jp-sil { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; -webkit-mask-size: 1600px 900px; mask-size: 1600px 900px; opacity: 0; transition: opacity .18s; z-index: 2; }
+  .jp-glow { filter: drop-shadow(0 0 2px #f6e7c1) drop-shadow(0 0 2px #f6e7c1) drop-shadow(0 0 5px rgba(246,231,193,.8)); position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .jp-name { position: absolute; transform: translate(-50%, -100%); font: 36px Garamond, serif; color: #fff6e2; text-shadow: 0 2px 6px #000, 0 0 2px #000; opacity: 0; transition: opacity .18s; pointer-events: none; z-index: 3; white-space: nowrap; }
+  svg.jp-threads { position: absolute; inset: 0; width: 1600px; height: 900px; z-index: 2; pointer-events: none; overflow: visible; }
+  .jp-ctl { display: flex; gap: 8px; margin-top: 8px; align-items: center; color: var(--soft); font-size: 14px; flex-wrap: wrap; }
+  .jp-ctl button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; cursor: pointer; }
+  .jp-ctl button.on { border-color: var(--accent); color: var(--accent); }
+  .jp-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .jp-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .jp-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .jp-moments button.on { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body data-subject="jour-pov">
+
+<header class="page">
+  <h1>Le jour en vue assise (T23, tour 1)</h1>
+  <p>Ce qu'on s'est dit : au jour, la table disparaît et il ne reste que les chats en cercle. Les cartes de la table
+     s'envolent jusqu'à l'écran (touche 1, les joueurs) et les rôles de la partie avec les deux compteurs les rejoignent
+     (touche 2). Les deux rangées sont ouvertes d'office, empilées. On vote en cliquant un chat, et le vote se voit sur
+     les chats. T ouvre la tablette sur le tableau, E les emotes, Tab reste. La nuit ne change pas.</p>
+  <p>Tout est rendu depuis le jeu (la scène, les chats et leur lumière, la table, les cartes) ; les chats sont figés
+     dans une pose, et les cartes sont recomposées avec les images du jeu. Ce qui est à choisir : les mouvements, les
+     places, les marques. Les sections 4 et 5 sont en vue relevée (K2) pour bien voir les chats.</p>
+</header>
+
+<nav class="jp-moments"><div>
+  <button data-at="400">1. Fin de la nuit</button>
+  <button data-at="1700">2. Les cartes s'envolent</button>
+  <button data-at="3300">3. La table s'en va</button>
+  <button data-at="6200">4. Le jour</button>
+  <button data-loop>▶ En boucle</button>
+</div></nav>
+
+<section>
+  <h2>1. Comment la table s'en va</h2>
+  <p>Les cartes partent d'abord vers l'écran, puis la table s'en va. Seule la façon dont la table part change.</p>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Elle s'enfonce dans le sol</span></div>
+    <p class="vdesc">La table descend sous le plancher, le liège avec elle.</p>
+    <div class="screen"><div class="stage jp-anim" data-table="sink" data-view="35"></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Elle se défait</span></div>
+    <p class="vdesc">La table se dissout par plaques irrégulières, sur place (un shader de dissolution).</p>
+    <div class="screen"><div class="stage jp-anim" data-table="dissolve" data-view="35"></div></div>
+  </div>
+  <div class="variant" data-id="T3">
+    <div class="vhead"><span class="vid">T3</span><span class="vname">Le noir l'avale</span></div>
+    <p class="vdesc">Tout s'éteint un instant ; quand les lumières des chats reviennent, la table n'est plus là.</p>
+    <div class="screen"><div class="stage jp-anim" data-table="black" data-view="35"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. La vue une fois la table partie</h2>
+  <p>Assis, la tête repose baissée vers la table (35°). Sans table, on regarde le plancher.</p>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">La tête reste baissée</span></div>
+    <p class="vdesc">Rien ne bouge : on voit le bas des chats en haut de l'écran, on relève la tête à la souris pour les voir.</p>
+    <div class="screen"><div class="stage jp-anim" data-table="sink" data-view="35"></div></div>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">La vue se relève sur les chats</span></div>
+    <p class="vdesc">Quand la table est partie, la tête se relève doucement (35° vers 20°) : les chats sont en face.</p>
+    <div class="screen"><div class="stage jp-anim" data-table="sink" data-view="rise"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Les deux rangées</h2>
+  <p>Appuie sur 1 ou 2 (ou touche leur signe en bas à gauche) : la rangée glisse hors de l'écran par le bas, et revient.
+     Les flèches tournent la tête : les rangées restent en place.</p>
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">La copie du liège</span></div>
+    <p class="vdesc">Rangée 2 = la bande du liège telle qu'elle est sur la table, les deux compteurs à droite.</p>
+    <div class="screen"><div class="stage jp-rows" data-rows="liege"></div></div>
+  </div>
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Recomposée, serrée</span></div>
+    <p class="vdesc">Les portraits par camp sous le logo du camp, plus petits ; les cartes des joueurs plus petites aussi.</p>
+    <div class="screen"><div class="stage jp-rows" data-rows="tight"></div></div>
+  </div>
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Grandes cartes</span></div>
+    <p class="vdesc">Les cartes des joueurs en grand (on lit tout), les rôles recomposés en dessous.</p>
+    <div class="screen"><div class="stage jp-rows" data-rows="big"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4. Le vote se voit sur les chats</h2>
+  <p>Même moment partout : Steve, Brandon et Kiwi votent Uptn, Mathis vote Kiwi. Clique un chat pour voter toi aussi.</p>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Un fil du chat qui vote au chat voté</span></div>
+    <p class="vdesc">Un fil rouge tendu de tête à tête ; les fils des chats hors de vue entrent par les bords.</p>
+    <div class="screen"><div class="stage jp-vote" data-vote="thread"></div></div>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Les poses d'accusation du jeu</span></div>
+    <p class="vdesc">Le chat qui vote prend la pose « Accusing », le chat voté « Accused Idle » (animations déjà faites).</p>
+    <div class="screen"><div class="stage jp-vote" data-vote="pose"></div></div>
+  </div>
+  <div class="variant" data-id="V3">
+    <div class="vhead"><span class="vid">V3</span><span class="vname">Le voté rougit</span></div>
+    <p class="vdesc">Plus un chat a de votes, plus sa lumière tourne au rouge ; on ne voit pas qui vote.</p>
+    <div class="screen"><div class="stage jp-vote" data-vote="glow"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>5. Survol : le chat et sa carte</h2>
+  <p>Passe sur un chat ou sur une carte de la rangée 1 : l'autre s'allume aussi. Au repos, Uptn est survolé.</p>
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">Un contour, la carte se lève</span></div>
+    <p class="vdesc">Le chat prend un contour clair, sa carte sort de la rangée.</p>
+    <div class="screen"><div class="stage jp-hover" data-hover="outline"></div></div>
+  </div>
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">La lumière</span></div>
+    <p class="vdesc">Le spot du chat s'intensifie, sa carte s'éclaire ; pas de contour.</p>
+    <div class="screen"><div class="stage jp-hover" data-hover="light"></div></div>
+  </div>
+  <div class="variant" data-id="H3">
+    <div class="vhead"><span class="vid">H3</span><span class="vname">Son nom au-dessus de lui</span></div>
+    <p class="vdesc">Le pseudo s'affiche au-dessus du chat (comme sa plaque de nom), sa carte se lève.</p>
+    <div class="screen"><div class="stage jp-hover" data-hover="name"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ? (par exemple : les cartes doivent-elles garder « N'a pas voté » maintenant
+    que le vote se voit sur les chats ?)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(async () => {
+  const IMG = "img/";
+  const NAMES = ["Poyo", "Wouh", "Steve", "Brandon", "Uptn", "Kiwi", "Nox", "Mathis"];
+  const PROJ = await (await fetch("proj.json")).json();
+  const YAWS = { "-50": [1, 2, 3], "0": [3, 4, 5], "50": [5, 6, 7] };
+  const LOOP = 8000, FLY0 = 1000, FLY1 = 2600, TAB0 = 2700, TAB1 = 4600, RISE0 = 4700, RISE1 = 5900;
+  const at = new URLSearchParams(location.search).get("at");
+
+  // ---------------------------------------------------------------- images, preloaded
+  const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(i); i.src = src; });
+  const SINK = await Promise.all([...Array(11).keys()].map(k => load(IMG + "sink_" + k + ".webp")));
+  const RISE = await Promise.all([...Array(7).keys()].map(k => load(IMG + "rise_" + k + ".webp")));
+  const V35 = await load(IMG + "vide35_y0.webp");
+  const NOISE = await load(IMG + "bruit.png");
+
+  // ---------------------------------------------------------------- projective mapping (card on the table -> screen)
+  function adj(m) { return [m[4]*m[8]-m[5]*m[7], m[2]*m[7]-m[1]*m[8], m[1]*m[5]-m[2]*m[4], m[5]*m[6]-m[3]*m[8], m[0]*m[8]-m[2]*m[6], m[2]*m[3]-m[0]*m[5], m[3]*m[7]-m[4]*m[6], m[1]*m[6]-m[0]*m[7], m[0]*m[4]-m[1]*m[3]]; }
+  function mul(a, b) { const c = Array(9); for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { let s = 0; for (let k = 0; k < 3; k++) s += a[3*i+k] * b[3*k+j]; c[3*i+j] = s; } return c; }
+  function mulv(m, v) { return [m[0]*v[0]+m[1]*v[1]+m[2]*v[2], m[3]*v[0]+m[4]*v[1]+m[5]*v[2], m[6]*v[0]+m[7]*v[1]+m[8]*v[2]]; }
+  function basis(p) { const m = [p[0][0], p[1][0], p[2][0], p[0][1], p[1][1], p[2][1], 1, 1, 1]; const v = mulv(adj(m), [p[3][0], p[3][1], 1]); return mul(m, [v[0], 0, 0, 0, v[1], 0, 0, 0, v[2]]); }
+  function matrix(w, h, q) {
+    const t = mul(basis(q), adj(basis([[0, 0], [w, 0], [w, h], [0, h]])));
+    for (let i = 0; i < 9; i++) t[i] /= t[8];
+    return "matrix3d(" + [t[0], t[3], 0, t[6], t[1], t[4], 0, t[7], 0, 0, 1, 0, t[2], t[5], 0, t[8]].join(",") + ")";
+  }
+  const lerp = (a, b, u) => a + (b - a) * u;
+  const ease = u => u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u);
+  const clamp01 = u => Math.max(0, Math.min(1, u));
+
+  // ---------------------------------------------------------------- the two rows (layouts)
+  const LAYOUT = {
+    liege: { cw: 104, ch: 145, gap: 12, r2h: 132 },
+    tight: { cw: 88, ch: 123, gap: 10, r2h: 132 },
+    big:   { cw: 132, ch: 184, gap: 14, r2h: 132 },
+  };
+  function slots(L, row2Open) {
+    const total = 8 * L.cw + 7 * L.gap, x0 = (1600 - total) / 2;
+    const bottom = row2Open ? 900 - 22 - L.r2h - 14 : 900 - 22;
+    return [...Array(8).keys()].map(i => ({ x: x0 + i * (L.cw + L.gap), y: bottom - L.ch, w: L.cw, h: L.ch }));
+  }
+  function row2Html(kind) {
+    if (kind === "liege") return '<img class="jp-strip" src="' + IMG + '../../compte-a-rebours/img/../../jour-pov/img/strip.webp" alt="">'
+      + '<div style="display:flex;flex-direction:column;gap:6px"><img class="jp-count" src="' + IMG + 'count_robot.webp"><img class="jp-count" src="' + IMG + 'count_corr.webp"></div>';
+    const grp = (logo, ps) => '<div class="jp-grp"><img class="jp-logo" src="' + IMG + logo + '.webp"><div class="jp-ports">'
+      + ps.map(p => '<img src="' + IMG + "p_" + p + '.webp">').join("") + "</div></div>";
+    return grp("LogoElu", ["DrGloubi", "Messager", "Orpheline", "Technomancien", "Geolier"]) + grp("LogoAnomalie", ["Vahal", "Moork"])
+      + grp("LogoMarginaux", ["Robot"])
+      + '<div style="display:flex;flex-direction:column;gap:6px;margin-left:10px"><img class="jp-count" style="width:96px" src="' + IMG + 'count_robot.webp"><img class="jp-count" style="width:96px" src="' + IMG + 'count_corr.webp"></div>';
+  }
+
+  // ---------------------------------------------------------------- key hints (day: what works now)
+  const ICON = {
+    one: '<rect x="5" y="9" width="12" height="18" rx="1.5" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="17" y="9" width="12" height="18" rx="1.5" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="29" y="9" width="12" height="18" rx="1.5" fill="none" stroke="#eadcbf" stroke-width="2.2"/>',
+    two: '<rect x="5" y="17" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="15" y="17" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="25" y="17" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><circle cx="19" cy="9" r="4" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="35" y="17" width="7" height="11" fill="rgba(234,220,191,.4)"/>',
+    t: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M11 13 h24 M11 19 h24 M11 25 h24 M20 9 v19" stroke="#eadcbf" stroke-width="1.6"/>',
+    e: '<circle cx="23" cy="19" r="14" fill="none" stroke="#eadcbf" stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    v: '<rect x="18" y="4" width="10" height="18" rx="5" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M12 16 a11 11 0 0 0 22 0 M23 27 v6 M17 34 h12" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+  };
+  const hints = () => '<div class="jp-hints">' + [["one", "1"], ["two", "2"], ["t", "T"], ["e", "E"], ["tab", "Tab"], ["v", "V"]]
+    .map(([i, k]) => '<div class="jp-h" data-key="' + k + '"><svg viewBox="0 0 46 38">' + ICON[i] + "</svg><span>" + k + "</span></div>").join("") + "</div>";
+
+  // ---------------------------------------------------------------- section 1 + 2: the transition, on the shared clock
+  const anims = [];
+  document.querySelectorAll(".jp-anim").forEach(stage => {
+    const table = stage.dataset.table, rise = stage.dataset.view === "rise";
+    const L = LAYOUT.liege, S = slots(L, true);
+    stage.innerHTML = '<canvas class="jp-bg" width="1600" height="900"></canvas><div class="jp-black"></div>'
+      + [...Array(8).keys()].map(i => '<img class="jp-fly" data-i="' + i + '" src="' + IMG + "card_" + i + '.webp" width="' + L.cw + '" height="' + L.ch + '">').join("")
+      + '<div class="jp-row2" style="bottom:22px">' + row2Html("liege") + "</div>" + hints();
+    const cv = stage.querySelector("canvas"), g = cv.getContext("2d"), black = stage.querySelector(".jp-black");
+    const flies = [...stage.querySelectorAll(".jp-fly")], row2 = stage.querySelector(".jp-row2"), hint = stage.querySelector(".jp-hints");
+    let tmp = null;
+    function dissolve(u) {
+      // table (sink_0) over the empty floor, eaten where the noise is under the threshold
+      if (!tmp) { tmp = document.createElement("canvas"); tmp.width = 800; tmp.height = 450; }
+      const t = tmp.getContext("2d");
+      t.globalCompositeOperation = "source-over"; t.clearRect(0, 0, 800, 450); t.drawImage(NOISE, 0, 0, 800, 450);
+      const d = t.getImageData(0, 0, 800, 450), p = d.data, thr = u * 255;
+      for (let k = 0; k < p.length; k += 4) { const v = p[k]; p[k + 3] = v > thr + 10 ? 255 : v > thr ? (v - thr) * 25 : 0; }
+      t.putImageData(d, 0, 0);
+      t.globalCompositeOperation = "source-in"; t.drawImage(SINK[0], 0, 0, 800, 450);
+      g.drawImage(V35, 0, 0); g.drawImage(tmp, 0, 0, 1600, 900);
+    }
+    function draw(ms) {
+      const tu = clamp01((ms - TAB0) / (TAB1 - TAB0));
+      black.style.opacity = 0;
+      if (ms < TAB0) g.drawImage(SINK[0], 0, 0);
+      else if (table === "sink") g.drawImage(SINK[Math.round(ease(tu) * 10)], 0, 0);
+      else if (table === "dissolve") { if (tu >= 1) g.drawImage(V35, 0, 0); else dissolve(ease(tu)); }
+      else { g.drawImage(tu < .5 ? SINK[0] : V35, 0, 0); black.style.opacity = tu < .5 ? ease(tu * 2) : 1 - ease((tu - .5) * 2); }
+      if (rise && ms >= RISE0) g.drawImage(RISE[Math.round(ease((ms - RISE0) / (RISE1 - RISE0)) * 6)], 0, 0);
+      flies.forEach((f, i) => {
+        const u = ease((ms - FLY0 - i * 90) / (FLY1 - FLY0 - 700));
+        const q0 = PROJ.avant.cards[i], s = S[i];
+        const q1 = [[s.x, s.y], [s.x + s.w, s.y], [s.x + s.w, s.y + s.h], [s.x, s.y + s.h]];
+        const lift = Math.sin(Math.PI * u) * 70;
+        const q = q0.map((p, k) => [lerp(p[0], q1[k][0], u), lerp(p[1], q1[k][1], u) - lift]);
+        f.style.transform = matrix(L.cw, L.ch, q);
+        f.style.boxShadow = u > 0 ? "0 6px 14px rgba(0,0,0,.6)" : "none";
+      });
+      const r2 = ease((ms - FLY1 + 500) / 700);
+      row2.style.transform = "translateY(" + ((1 - r2) * 160) + "px)";
+      hint.style.display = ms >= TAB1 ? "" : "none";
+    }
+    anims.push(draw);
+  });
+  let looping = false, timer = null;
+  function setTime(ms) {
+    anims.forEach(d => d(ms));
+    document.querySelectorAll(".jp-moments button[data-at]").forEach(b => b.classList.remove("on"));
+    if (!looping) { const bs = [...document.querySelectorAll(".jp-moments button[data-at]")]; const b = bs.filter(x => +x.dataset.at <= ms + 1).pop(); if (b) b.classList.add("on"); }
+  }
+  function stopLoop() { looping = false; cancelAnimationFrame(timer); document.querySelector("[data-loop]").classList.remove("on"); }
+  document.querySelectorAll(".jp-moments button[data-at]").forEach(b => b.onclick = () => { stopLoop(); setTime(+b.dataset.at); });
+  document.querySelector("[data-loop]").onclick = e => {
+    if (looping) { stopLoop(); return; }
+    looping = true; e.target.classList.add("on");
+    const t0 = performance.now();
+    const step = () => { if (!looping) return; setTime((performance.now() - t0) % LOOP); timer = requestAnimationFrame(step); };
+    step();
+  };
+  setTime(at !== null ? +at : 6200);
+
+  // ---------------------------------------------------------------- shared: a scene with cats you can point at
+  const maskCache = {};
+  async function maskData(view, i) {
+    const key = view + "_" + i;
+    if (!maskCache[key]) {
+      const im = await load(IMG + "m_" + view + "_" + i + ".webp");
+      const c = document.createElement("canvas"); c.width = 800; c.height = 450;
+      const x = c.getContext("2d"); x.drawImage(im, 0, 0, 800, 450);
+      maskCache[key] = x.getImageData(0, 0, 800, 450).data;
+    }
+    return maskCache[key];
+  }
+  async function catAt(view, cats, sx, sy) {
+    const px = Math.floor(sx / 2), py = Math.floor(sy / 2);
+    for (const i of cats) { const d = await maskData(view, i); if (d[(py * 800 + px) * 4 + 3] > 100) return i; }
+    return 0;
+  }
+  const stagePoint = (stage, e) => { const r = stage.getBoundingClientRect(), k = r.width / 1600; return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; };
+  function silhouette(view, i, extra) {
+    return '<div class="jp-sil" data-cat="' + i + '" style="-webkit-mask-image:url(' + IMG + "m_" + view + "_" + i + ".webp);mask-image:url(" + IMG + "m_" + view + "_" + i + '.webp);' + (extra || "") + '"></div>';
+  }
+  function cardsRow(L, open1, open2) {
+    const S = slots(L, open2);
+    return '<div class="jp-row1">' + S.map((s, i) => '<img class="jp-card" data-i="' + i + '" src="' + IMG + "card_" + i + '.webp" style="left:' + s.x + "px;top:" + (open1 ? s.y : 960) + "px;width:" + s.w + "px;height:" + s.h + 'px">').join("") + "</div>";
+  }
+
+  // ---------------------------------------------------------------- section 3: rows, keys 1 / 2, head turning
+  const rowStages = [...document.querySelectorAll(".jp-rows")];
+  let open1 = true, open2 = true, yaw = "0";
+  function drawRows() {
+    rowStages.forEach(stage => {
+      const kind = stage.dataset.rows, L = LAYOUT[kind];
+      stage.innerHTML = '<img class="jp-bg" src="' + IMG + "vide35_y" + yaw + '.webp">' + cardsRow(L, open1, open2)
+        + '<div class="jp-row2" style="bottom:22px;transform:translateY(' + (open2 ? 0 : 170) + 'px)">' + row2Html(kind) + "</div>" + hints();
+      stage.querySelectorAll(".jp-h").forEach(h => h.onclick = () => key(h.dataset.key));
+    });
+    document.querySelectorAll(".jp-yaw").forEach(b => b.classList.toggle("on", b.dataset.yaw === yaw));
+  }
+  function key(k) {
+    if (k === "1") open1 = !open1;
+    if (k === "2") open2 = !open2;
+    if (k === "1" || k === "2") drawRows();
+  }
+  rowStages.forEach(stage => {
+    const ctl = document.createElement("div"); ctl.className = "jp-ctl";
+    ctl.innerHTML = 'Tourner la tête : <button class="jp-yaw" data-yaw="-50">Gauche</button><button class="jp-yaw" data-yaw="0">En face</button><button class="jp-yaw" data-yaw="50">Droite</button>'
+      + ' <button data-k="1">1</button><button data-k="2">2</button>';
+    stage.closest(".screen").after(ctl);
+    ctl.querySelectorAll(".jp-yaw").forEach(b => b.onclick = () => { yaw = b.dataset.yaw; drawRows(); });
+    ctl.querySelectorAll("[data-k]").forEach(b => b.onclick = () => key(b.dataset.k));
+  });
+  drawRows();
+  document.addEventListener("keydown", e => {
+    if (/TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+    if (e.key === "1" || e.key === "2") key(e.key);
+    if (e.key === "ArrowLeft") { yaw = yaw === "50" ? "0" : "-50"; drawRows(); }
+    if (e.key === "ArrowRight") { yaw = yaw === "-50" ? "0" : "50"; drawRows(); }
+  });
+
+  // ---------------------------------------------------------------- section 4: votes on the cats
+  const VOTES = { 2: 4, 3: 4, 5: 4, 7: 5 };   // voter cat -> voted cat (Steve, Brandon, Kiwi -> Uptn ; Mathis -> Kiwi)
+  let myVote = 0;
+  const view20 = "vide20_y0", heads = PROJ[view20].heads, feet = PROJ[view20].feet;
+  const anchor = i => { const h = heads[i - 1], f = feet[i - 1]; return [lerp(h[0], f[0], .32), lerp(h[1], f[1], .32)]; };
+  function drawVotes() {
+    document.querySelectorAll(".jp-vote").forEach(stage => {
+      const kind = stage.dataset.vote;
+      const counts = {}; Object.values(VOTES).forEach(v => counts[v] = (counts[v] || 0) + 1); if (myVote) counts[myVote] = (counts[myVote] || 0) + 1;
+      let h = '<img class="jp-bg" src="' + IMG + (kind === "pose" ? "vote20_y0" : view20) + '.webp">';
+      if (kind === "thread") {
+        h += '<svg class="jp-threads" viewBox="0 0 1600 900">';
+        const line = (a, b) => { const mx = (a[0] + b[0]) / 2, my = Math.min(a[1], b[1]) - 90;
+          return '<path d="M' + a[0] + " " + a[1] + " Q" + mx + " " + my + " " + b[0] + " " + b[1] + '" fill="none" stroke="#c42a22" stroke-width="4" stroke-linecap="round" opacity=".9"/>'
+            + '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="7" fill="#c42a22"/>'; };
+        Object.entries(VOTES).forEach(([v, t]) => {
+          let a = anchor(+v); if (Math.abs(a[0]) > 5000) return;
+          h += line(a, anchor(t));
+        });
+        if (myVote) h += line([800, 980], anchor(myVote));
+        h += "</svg>";
+      }
+      if (kind === "glow") {
+        [3, 4, 5].forEach(i => { const c = counts[i] || 0; if (!c) return;
+          h += silhouette(view20, i, "opacity:" + Math.min(.85, .22 * c) + ";background:#d8321f;mix-blend-mode:overlay"); });
+      }
+      if (kind === "pose" && myVote && myVote !== 4) h += silhouette(view20, myVote, "opacity:.22;background:#c42a22;mix-blend-mode:multiply");
+      h += cardsRow(LAYOUT.liege, true, true) + '<div class="jp-row2" style="bottom:22px">' + row2Html("liege") + "</div>" + hints();
+      stage.innerHTML = h;
+    });
+  }
+  document.querySelectorAll(".jp-vote").forEach(stage => stage.addEventListener("click", async e => {
+    const [x, y] = stagePoint(stage, e); const i = await catAt(view20, [3, 4, 5], x, y);
+    if (i) { myVote = myVote === i ? 0 : i; drawVotes(); }
+  }));
+  drawVotes();
+
+  // ---------------------------------------------------------------- section 5: hover, cat <-> card
+  let hovered = 4;
+  function drawHover() {
+    document.querySelectorAll(".jp-hover").forEach(stage => {
+      const kind = stage.dataset.hover;
+      let h = '<img class="jp-bg" src="' + IMG + view20 + '.webp">';
+      [3, 4, 5].forEach(i => {
+        const on = i === hovered ? 1 : 0;
+        if (kind === "outline") h += '<div class="jp-glow" style="opacity:' + on + '">' + silhouette(view20, i, "opacity:1;background:#f6e7c1") + "</div>"
+          + '<div style="position:absolute;inset:0;z-index:2;opacity:' + on + '">' + silhouette(view20, i, "opacity:1;background:url(" + IMG + view20 + ".webp) 0 0/1600px 900px") + "</div>";
+        if (kind === "light") h += silhouette(view20, i, "opacity:" + (on ? .8 : 0) + ";background:radial-gradient(circle at 50% 25%, #ffe9c4, #8a6a3c);mix-blend-mode:soft-light");
+        if (kind === "name") { const a = heads[i - 1]; h += '<div class="jp-name" style="left:' + a[0] + "px;top:" + (a[1] - 20) + "px;opacity:" + on + '">' + NAMES[i] + "</div>"; }
+      });
+      h += cardsRow(LAYOUT.liege, true, true) + '<div class="jp-row2" style="bottom:22px">' + row2Html("liege") + "</div>" + hints();
+      stage.innerHTML = h;
+      const card = stage.querySelector('.jp-card[data-i="' + hovered + '"]');
+      if (card) card.classList.add(kind === "light" ? "lit" : "lift");
+      stage.querySelectorAll(".jp-card").forEach(c => c.onmouseenter = () => { if (+c.dataset.i !== hovered) { hovered = +c.dataset.i; drawHover(); } });
+    });
+  }
+  document.querySelectorAll(".jp-hover").forEach(stage => stage.addEventListener("mousemove", async e => {
+    if (e.target.classList.contains("jp-card")) return;
+    const [x, y] = stagePoint(stage, e); const i = await catAt(view20, [3, 4, 5], x, y);
+    if (i && i !== hovered) { hovered = i; drawHover(); }
+  }));
+  drawHover();
+
+  const s = document.createElement("script"); s.src = "../common/mock.js"; document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

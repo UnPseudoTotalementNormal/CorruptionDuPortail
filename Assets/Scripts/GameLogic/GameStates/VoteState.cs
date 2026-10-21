@@ -26,6 +26,17 @@ namespace GameLogic.GameStates
     {
         public Dictionary<ulong, List<ulong>> votesForPlayer = new();
         public float voteDuration;
+
+        // T23 (mockups jour-pov v1 V2 + v2): anonymous vote = everyone sees WHO has voted ("A voté" on the cards) but
+        // not for whom; off = a cat that voted takes the game's accusing pose (AvatarManager). A lobby option later
+        // (no menu yet, Poyo 2026-10-21): the asset's value, the same on every peer, on by default. Read by the server.
+        [Tooltip("Anonymous vote (default on): nobody sees who voted for whom. Off: a cat that voted points (accusing pose).")]
+        public bool anonymousVote = true;
+
+        // T23: by day the vote is cast by clicking a cat (DayCatVoting); the cards in the screen row are only to look
+        // at, their vote button is hidden. Off = the old vote buttons on the cards.
+        [Tooltip("Vote by clicking the cats (T23, default on). Off: the vote buttons on the cards.")]
+        public bool voteOnCats = true;
         
         [HideInInspector] public float voteTimer;
 
@@ -46,6 +57,22 @@ namespace GameLogic.GameStates
             OnPlayerVoted(_card.characterInfo.ownerClientId.Value);
         }
         
+        /// <summary>Client: whether <paramref name="_playerId"/> has cast a vote (from the last refresh the server sent).</summary>
+        public bool HasVoted(ulong _playerId) => votesForPlayer.Values.Any(_voters => _voters.Contains(_playerId));
+
+        /// <summary>Client: the player <paramref name="_voterId"/> voted for, or null.</summary>
+        public ulong? VotedFor(ulong _voterId)
+        {
+            foreach (KeyValuePair<ulong, List<ulong>> _bucket in votesForPlayer)
+            {
+                if (_bucket.Value.Contains(_voterId))
+                {
+                    return _bucket.Key;
+                }
+            }
+            return null;
+        }
+
         public void OnPlayerVoted(ulong _playerId)
         {
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
@@ -294,8 +321,11 @@ namespace GameLogic.GameStates
                     VoteCanvas _voteCanvas = _c.voteCanvas;
                     _voteCanvas.SetVoteState(this);
                     _voteCanvas.ResetVoteText();
-                    _voteCanvas.ActivateVoteCanvas();
-                    _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
+                    _voteCanvas.ActivateVoteCanvas(!voteOnCats);
+                    if (!voteOnCats)
+                    {
+                        _voteCanvas.onVoteButtonClicked += OnVoteButtonClicked;
+                    }
                 }
             }
             catch (OperationCanceledException)

@@ -13,6 +13,11 @@ namespace CorruptionDuPortail.Domain
         Emotes,
         Menu,
         ReportBug,
+        // T23, the day's keys (mockups jour-pov): the players' row (1), the roles' row (2), the tablet's table (T).
+        PlayersRow,
+        RolesRow,
+        Spreadsheet,
+        SkipVote,
     }
 
     /// <summary>What the player can do with a key right now, read off the live game by the presenter.</summary>
@@ -26,9 +31,16 @@ namespace CorruptionDuPortail.Domain
         public readonly bool EmotesReachable;
         public readonly bool MenuAvailable;
         public readonly bool BugReportAvailable;
+        /// <summary>By day: the two screen rows answer their keys (1 and 2).</summary>
+        public readonly bool DayRowsAvailable;
+        /// <summary>By day: T opens the tablet on the players' table.</summary>
+        public readonly bool SpreadsheetAvailable;
+        /// <summary>By day, during the vote, before voting: the skip key (the board's skip button went with the table).</summary>
+        public readonly bool SkipVoteAvailable;
 
         public KeyHintContext(bool tabletAvailable, bool tabletOpen, bool hasPreviousScreen, bool hasNextScreen,
-            bool canSpeak, bool emotesReachable, bool menuAvailable, bool bugReportAvailable)
+            bool canSpeak, bool emotesReachable, bool menuAvailable, bool bugReportAvailable,
+            bool dayRowsAvailable = false, bool spreadsheetAvailable = false, bool skipVoteAvailable = false)
         {
             TabletAvailable = tabletAvailable;
             TabletOpen = tabletOpen;
@@ -38,6 +50,9 @@ namespace CorruptionDuPortail.Domain
             EmotesReachable = emotesReachable;
             MenuAvailable = menuAvailable;
             BugReportAvailable = bugReportAvailable;
+            DayRowsAvailable = dayRowsAvailable;
+            SpreadsheetAvailable = spreadsheetAvailable;
+            SkipVoteAvailable = skipVoteAvailable;
         }
     }
 
@@ -53,6 +68,14 @@ namespace CorruptionDuPortail.Domain
         public static void For(KeyHintContext context, List<KeyHintAction> hints)
         {
             hints.Clear();
+            // The day's own keys come first (mockups jour-pov: 1, 2, T, then the others).
+            if (context.DayRowsAvailable)
+            {
+                hints.Add(KeyHintAction.PlayersRow);
+                hints.Add(KeyHintAction.RolesRow);
+            }
+            if (context.SpreadsheetAvailable && !context.TabletOpen) hints.Add(KeyHintAction.Spreadsheet);
+            if (context.SkipVoteAvailable) hints.Add(KeyHintAction.SkipVote);
             if (context.TabletAvailable)
             {
                 if (!context.TabletOpen)
@@ -83,6 +106,8 @@ namespace CorruptionDuPortail.Domain
             {
                 case "Tab": return "Tab";
                 case "Escape": return "Échap";
+                case "Digit1": case "Numpad1": return "1";
+                case "Digit2": case "Numpad2": return "2";
                 case "Enter": return "Entrée";
                 case "Space": return "Espace";
                 case "LeftArrow": return "←";

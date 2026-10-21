@@ -31,9 +31,18 @@ namespace Presentation
         [Tooltip("Seconds to fade the lights in when the seated view starts, and out when it ends.")]
         [SerializeField] private float _fadeSeconds = 0.4f;
 
+        [Tooltip("T23 (mockups jour-pov v1 H2): the light of the cat the player points at is this many times stronger.")]
+        [SerializeField] private float _hoverBoost = 1.8f;
+        [Tooltip("Seconds for a pointed cat's light to swell / settle.")]
+        [SerializeField] private float _hoverBoostSeconds = 0.15f;
+
         private readonly List<Light> _lights = new();
         private readonly List<PlayerAvatar> _avatars = new();
+        private readonly Dictionary<PlayerAvatar, float> _boostLevels = new();
         private float _level;
+
+        /// <summary>The cat whose light swells (the one the player points at, or whose card), null = none.</summary>
+        public PlayerAvatar Boosted { get; set; }
 
         /// <summary>Autoplay before / after captures: false = keep the lights off even in the seated view.</summary>
         public bool Enabled { get; set; } = true;
@@ -94,9 +103,20 @@ namespace Presentation
                     _elevation, _distance);
                 Light _light = _lights[_i];
                 CopySettings(_light);
+                _light.intensity *= 1f + (_hoverBoost - 1f) * BoostLevel(_avatar);
                 _light.transform.SetPositionAndRotation(_pose.position, _pose.rotation);
             }
             ShowLights(_avatars.Count);
+        }
+
+        // Eases the pointed cat's light up and the others back down.
+        private float BoostLevel(PlayerAvatar _avatar)
+        {
+            _boostLevels.TryGetValue(_avatar, out float _boost);
+            float _step = _hoverBoostSeconds > 0f ? Time.unscaledDeltaTime / _hoverBoostSeconds : 1f;
+            _boost = Mathf.MoveTowards(_boost, _avatar == Boosted ? 1f : 0f, _step);
+            _boostLevels[_avatar] = _boost;
+            return _boost;
         }
 
         // Keep each copy in step with the template (tuned live in the editor), times the fade.

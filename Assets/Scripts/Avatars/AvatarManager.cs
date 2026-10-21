@@ -465,6 +465,7 @@ namespace Avatars
             {
                 _nextChainedPoll = Time.unscaledTime + ChainedPollSeconds;
                 UpdateChainedBodies();
+                UpdateVotePoses();
             }
             if (_smartphone != null)
             {
@@ -485,6 +486,47 @@ namespace Avatars
                 bool _chained = _character != null && _character.isChained.Value;
                 _avatar.SetChainedServer(_chained);
             }
+        }
+
+        // T23 (V2): when the vote is not anonymous, a cat that voted holds the accusing pose for the rest of the day (vote
+        // and recap). The votes are server state (VoteState.votesForPlayer); the pose rides each body's NetworkAnimator.
+        private readonly HashSet<ulong> _voters = new();
+
+        private void UpdateVotePoses()
+        {
+            _voters.Clear();
+            GameLogic.GameStates.VoteState _vote = DayVote();
+            if (_vote != null && !_vote.anonymousVote)
+            {
+                foreach (List<ulong> _bucket in _vote.votesForPlayer.Values)
+                {
+                    _voters.UnionWith(_bucket);
+                }
+            }
+            foreach (PlayerAvatar _avatar in ResolvedAvatars())
+            {
+                if (_avatar != null)
+                {
+                    _avatar.SetAccusingServer(_voters.Contains(_avatar.ownerClientId.Value));
+                }
+            }
+        }
+
+        // The vote whose votes stand right now: during the vote itself and its recap, else none.
+        private GameLogic.GameStates.VoteState DayVote()
+        {
+            if (_rejoinSource == null || !_rejoinSource.IsSpawned)
+            {
+                return null;
+            }
+            GameState _state = _rejoinSource.GetGameState(_rejoinSource.currentGameStateIndex.Value);
+            if (_state is GameLogic.GameStates.VoteState _vote)
+            {
+                return _vote;
+            }
+            return _state is GameLogic.GameStates.VoteRecapState
+                ? _rejoinSource.GetGameStates(typeof(GameLogic.GameStates.VoteState)).OfType<GameLogic.GameStates.VoteState>().FirstOrDefault()
+                : null;
         }
 
         // The local player's tablet open / closed, told to their own body (sent again to a new body after a rejoin).

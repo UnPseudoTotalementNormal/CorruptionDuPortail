@@ -157,6 +157,33 @@ namespace Avatars
             }
         }
 
+        // T23 (mockups jour-pov v1 V2): the "Accuser" emote of the Cat_Avatar Animator (Accusing, then held in Accused
+        // Idle while Emoting stays true), shown by a cat that voted when the vote is not anonymous.
+        private const int AccuseEmoteId = 3;
+        private bool _accusing;
+
+        /// <summary>Server: this body holds the accusing pose while <paramref name="_accuse"/> (AvatarManager follows
+        /// the vote). Ends only the pose it started: an emote the player chose meanwhile is left alone. Null-tolerant.</summary>
+        public void SetAccusingServer(bool _accuse)
+        {
+            if (!IsServer || _accuse == _accusing || _networkAnimator == null || _networkAnimator.Animator == null)
+            {
+                return;
+            }
+            _accusing = _accuse;
+            Animator _animator = _networkAnimator.Animator;
+            if (_accuse)
+            {
+                _animator.SetInteger(EmoteIdParam, AccuseEmoteId);
+                _animator.SetBool(EmotingParam, true);
+            }
+            else if (_animator.GetInteger(EmoteIdParam) == AccuseEmoteId)
+            {
+                _animator.SetBool(EmotingParam, false);
+            }
+            Debug.Log($"[CATANIM] seat {ownerClientId.Value} accusing={_accuse}");
+        }
+
         /// <summary>Owner-only: the player holds their tablet (true) or put it away (false); every peer sees the
         /// cat take it out, look at it, put it away. No-op on non-owners.</summary>
         public void SetTabletOut(bool _out)

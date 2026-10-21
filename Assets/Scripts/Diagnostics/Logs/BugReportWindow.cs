@@ -183,7 +183,7 @@ namespace Diagnostics.Logs
             _savedLock = Cursor.lockState;
             _savedVisible = Cursor.visible;
             _arbiter = FindAnyObjectByType<AvatarCameraArbiter>();
-            _arbiter?.SetOverlayOpen(true);
+            _arbiter?.SetOverlayOpen(this, true);
             _input.text = string.Empty;
             _note.SetActive(false);
             _send.interactable = true;
@@ -199,7 +199,7 @@ namespace Diagnostics.Logs
             _root.SetActive(false);
             if (_arbiter != null)
             {
-                _arbiter.SetOverlayOpen(false); // the camera re-applies what its current mode wants
+                _arbiter.SetOverlayOpen(this, false); // the camera re-applies what its current mode wants
                 _arbiter = null;
             }
             else

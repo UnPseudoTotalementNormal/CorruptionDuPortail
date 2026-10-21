@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Board.BoardCameraSystem;
 using GameLogic;
 using Reticle;
@@ -310,17 +311,24 @@ namespace Avatars
         }
 
         /// <summary>
-        /// A full-screen overlay that needs the mouse (the playtest bug report window): frees the cursor and freezes the
-        /// look like the tablet does; closing it re-applies what the current camera mode wants.
+        /// A full-screen overlay that needs the mouse (the pause menu, the playtest bug report window): frees the cursor
+        /// and freezes the look like the tablet does; once the last one closes, the current camera mode is re-applied.
+        /// Each overlay passes itself: the bug report window opens over the pause menu, closing it must not lock the
+        /// cursor under the menu.
         /// </summary>
-        public void SetOverlayOpen(bool _open)
+        public void SetOverlayOpen(object _holder, bool _open)
         {
-            if (_overlayOpen == _open) return;
-            _overlayOpen = _open;
-            ApplyCursorAndLook();
+            bool _changed = _open ? _overlayHolders.Add(_holder) : _overlayHolders.Remove(_holder);
+            if (_changed) ApplyCursorAndLook();
         }
 
-        private bool _overlayOpen;
+        /// <summary>Whether an overlay other than <paramref name="_holder"/> holds the cursor (the pause menu ignores Escape
+        /// while the bug report window, which closes on Escape, is up).</summary>
+        public bool IsOverlayOpenBesides(object _holder) =>
+            _overlayHolders.Count > (_overlayHolders.Contains(_holder) ? 1 : 0);
+
+        private readonly HashSet<object> _overlayHolders = new();
+        private bool _overlayOpen => _overlayHolders.Count > 0;
 
         private void OnTabletOpened()
         {

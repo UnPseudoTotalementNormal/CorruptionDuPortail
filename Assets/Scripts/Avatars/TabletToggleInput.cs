@@ -2,6 +2,7 @@ using Smartphone;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace Avatars
 {
@@ -34,6 +35,12 @@ namespace Avatars
             _toggleAction.performed += OnTogglePressed;
             _playerMap.Enable();
         }
+
+        /// <summary>The key bound to ToggleTablet (Tab), shown by the key hints.</summary>
+        public Key ToggleKey =>
+            _toggleAction != null && _toggleAction.controls.Count > 0 && _toggleAction.controls[0] is KeyControl _key
+                ? _key.keyCode
+                : Key.Tab;
 
         private void OnDestroy()
         {

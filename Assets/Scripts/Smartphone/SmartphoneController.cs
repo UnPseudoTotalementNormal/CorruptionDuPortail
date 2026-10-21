@@ -121,24 +121,26 @@ namespace Smartphone
             {
                 return;
             }
-            
-            SmartphoneApp nextApp = currentApp.GetNeighborApp(swipeDirection);
-            if (nextApp == null)
-            {
-                return;
-            }
-            while (!nextApp.isActive)
-            {
-                nextApp = nextApp.GetNeighborApp(swipeDirection);
-                if (nextApp == null)
-                {
-                    break;
-                }
-            }
+
+            SmartphoneApp nextApp = FindNeighborApp(swipeDirection);
             if (nextApp != null)
             {
                 GoToApp(nextApp, swipeDirection);
             }
+        }
+
+        /// <summary>Whether a swipe that way would reach another screen (the key hints show its arrow only then).</summary>
+        public bool HasNeighborApp(SwipeDirection swipeDirection) => FindNeighborApp(swipeDirection) != null;
+
+        // The first active app that way, skipping the inactive ones (the lobby's settings screen during a game).
+        private SmartphoneApp FindNeighborApp(SwipeDirection swipeDirection)
+        {
+            SmartphoneApp nextApp = currentApp != null ? currentApp.GetNeighborApp(swipeDirection) : null;
+            while (nextApp != null && !nextApp.isActive)
+            {
+                nextApp = nextApp.GetNeighborApp(swipeDirection);
+            }
+            return nextApp;
         }
 
         public void TryClosePanel()

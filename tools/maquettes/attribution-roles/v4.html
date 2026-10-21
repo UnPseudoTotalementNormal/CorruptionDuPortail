@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 4</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  /* IM Fell only has old-style figures (1 reads as I): digits come from Georgia */
+  @font-face { font-family: "Digits"; src: local("Georgia"); unicode-range: U+0030-0039; }
+
+  .ar-ref { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ar-ref img { width: 100%; border: 1px solid var(--line); }
+  .ar-ref figcaption { color: var(--soft); font-size: 13px; }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+  .ar-words-bar { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; color: var(--soft); }
+  .ar-words-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .ar-words-bar button.on { border-color: var(--accent); color: var(--accent); }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-panel { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; overflow: hidden; font-family: "Digits", "Fell", serif; }
+  .ar-panel * { box-sizing: border-box; }
+  .ar-btn { cursor: pointer; user-select: none; }
+  .ar-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #a07a50 transparent; }
+
+  /* ---------- S8 (tour 3) : la page de parchemin ---------- */
+  .s8 { background: #1a120c url(../common/parchment.webp) 50% 50% / cover; color: #3b2615; box-shadow: inset 0 0 70px rgba(70, 40, 10, .6); }
+  .s8 .tabs { position: absolute; left: 26px; right: 26px; top: 12px; display: flex; gap: 28px; font-size: 19px; }
+  .s8 .tabs span { padding: 4px 0 6px; color: #8a6a4c; }
+  .s8 .tabs span.on { color: #4a1d0c; }
+  .s8 .tally { position: absolute; left: 26px; right: 26px; top: 52px; display: flex; border-bottom: 1px solid rgba(90, 58, 32, .35); padding-bottom: 6px; }
+  .s8 .tally .c { flex: 1; padding: 4px 0 2px; }
+  .s8 .tally .c + .c { border-left: 1px solid rgba(90, 58, 32, .25); padding-left: 14px; }
+  .s8 .tally .k { font: 14px "FellSC", serif; letter-spacing: .5px; display: flex; align-items: center; gap: 5px; color: #7a5a3c; }
+  .s8 .tally .k img { width: 17px; height: 17px; object-fit: contain; }
+  .s8 .tally .v { font-size: 28px; line-height: 32px; }
+  .s8 .soft { color: #7a5a3c; }
+  .s8 .lk, .s8 .b { color: #8a4a1c; }
+  .s8 .err { color: #a01212 !important; }
+  .s8 .scroll { position: absolute; left: 26px; right: 14px; top: 166px; bottom: 60px; padding-right: 10px; }
+  .s8 .fh { display: flex; align-items: center; gap: 8px; font: 19px "FellSC", serif; margin: 8px 0 10px; }
+  .s8 .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .s8 .grid { display: flex; flex-wrap: wrap; gap: 18px 16px; margin-bottom: 4px; }
+  .s8 .u { width: 104px; position: relative; }
+  .s8 .crd { position: relative; width: 104px; height: 146px; background: #080607; padding: 4px 4px 0; display: flex; flex-direction: column; box-shadow: 0 3px 8px rgba(40, 20, 5, .55); transition: opacity .2s; }
+  .s8 .crd .art { flex: 1; background-size: cover; background-position: 50% 20%; }
+  .s8 .crd .nm { height: 24px; font: 10px/11px system-ui, sans-serif; font-weight: 700; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  .s8 .crd .seal { position: absolute; left: 50%; bottom: 30px; width: 26px; margin-left: -13px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+  .s8 .u.out .crd { opacity: .3; filter: sepia(.6); }
+  .s8 .ctl { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; margin-top: 3px; color: #6a4a2c; white-space: nowrap; }
+  .s8 .ctl.imp, .s8 .ctl.imp .v { color: #8a1010; }
+  .s8 .ctl .v { display: inline-block; min-width: 14px; text-align: center; font-size: 17px; }
+  .s8 .ctl .b { padding: 0 5px; font-size: 18px; }
+  .s8 .foot { position: absolute; left: 26px; right: 26px; bottom: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 18px; font-size: 18px; }
+  .s8 .go { display: flex; align-items: center; gap: 7px; font-size: 20px; color: #8a1010; }
+  .s8 .go img { width: 30px; }
+
+  /* ---------- P1 : une ligne, une liste qui se déroule ---------- */
+  .p1 .pre { position: absolute; left: 26px; top: 128px; font-size: 18px; display: flex; gap: 10px; align-items: baseline; }
+  .p1 .pre .cur { color: #3b2615; border-bottom: 1px dotted #8a4a1c; }
+  .p1 .menu { position: absolute; left: 20px; top: 158px; width: 440px; z-index: 5; background: #e9d6b0 url(../common/parchment.webp) 50% 50% / 700px; box-shadow: 0 6px 18px rgba(40, 20, 5, .55); padding: 6px 0; }
+  .p1 .menu .it { padding: 7px 18px; border-bottom: 1px solid rgba(90, 58, 32, .2); }
+  .p1 .menu .it:last-child { border-bottom: 0; }
+  .p1 .menu .it b { font-weight: normal; font-size: 19px; }
+  .p1 .menu .it i { display: block; font-size: 14px; color: #7a5a3c; }
+  .p1 .menu .it.on b { color: #8a1010; }
+  .p1 .menu .it.on b:after { content: "  en cours"; font-style: italic; font-size: 14px; color: #8a1010; }
+
+  /* ---------- P2 : les compositions en sommaire sur une ligne ---------- */
+  .p2 .pre { position: absolute; left: 26px; right: 26px; top: 126px; display: flex; gap: 22px; align-items: baseline; font-size: 18px; }
+  .p2 .pre .it { color: #8a6a4c; padding-bottom: 2px; }
+  .p2 .pre .it.on { color: #3b2615; border-bottom: 1px solid #3b2615; }
+  .p2 .pre .it.custom { font-style: italic; }
+  .p2 .pre .desc { margin-left: auto; font-size: 15px; font-style: italic; color: #7a5a3c; }
+
+  /* ---------- P3 : les compositions dans la marge ---------- */
+  .p3 .side { position: absolute; left: 26px; top: 128px; bottom: 60px; width: 196px; padding-right: 16px; border-right: 1px solid rgba(90, 58, 32, .3); }
+  .p3 .side h5 { margin: 0 0 8px; font: 15px "FellSC", serif; color: #7a5a3c; letter-spacing: .5px; }
+  .p3 .side .it { padding: 6px 0 7px; border-bottom: 1px solid rgba(90, 58, 32, .15); }
+  .p3 .side .it b { font-weight: normal; font-size: 18px; color: #6a4a2c; }
+  .p3 .side .it i { display: block; font-size: 13px; color: #8a6a4c; line-height: 15px; margin-top: 1px; }
+  .p3 .side .it.on b { color: #8a1010; }
+  .p3 .side .it.on { border-left: 2px solid #8a1010; padding-left: 8px; margin-left: -10px; }
+  .p3 .side .it.custom b { font-style: italic; }
+  .p3 .scroll { left: 240px; top: 128px; }
+  .p3 .grid { gap: 16px 14px; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Choisir les rôles du lobby, tour 4</h1>
+  <p>Tes votes du tour 3 : S8 (le parchemin) 👍, mais il manquait l'interface des <b>compositions prédéfinies</b>
+    (l'ancien « ★ Preset classique » et sa liste « Autres presets… ») ; les mots W1 et W2 👍, W3 👎.</p>
+  <div class="ar-ref">
+    <figure style="margin:0"><img src="img/actuel_haut.jpg" alt=""><figcaption>L'original : bouton + pastille + liste</figcaption></figure>
+    <figure style="margin:0"><img src="captures/v3/S8.jpg" alt=""><figcaption>S8 du tour 3</figcaption></figure>
+  </div>
+  <ul>
+    <li>Ici, trois façons de montrer et de choisir une composition, toutes sur S8. Ce qu'elles font, comme dans le
+      jeu : choisir une composition remplace les réglages ; toucher un « ‹ › » ensuite la fait passer en
+      « Personnalisée » ; on peut revenir à une composition à tout moment.</li>
+    <li>Aujourd'hui le jeu n'a qu'une composition par nombre de joueurs (Classique). <b>« Débutants » et « Chaos »
+      sont des exemples</b> pour voir la liste quand il y en aura plusieurs ; noms et contenus à fixer par le game
+      design.</li>
+    <li>Les mots : W1 et W2 t'ont plu tous les deux. Le bouton ci-dessous change les mots de tous les écrans, pour
+      les comparer en place (vote en section 2).</li>
+  </ul>
+  <div class="ar-words-bar">Mots :<button data-w="w1" class="on">W1 Max / Imposé</button><button data-w="w2">W2 Au plus / Au moins</button></div>
+</header>
+
+<section>
+  <h2>1. Les compositions prédéfinies</h2>
+  <p>Touche le nom de la composition (P1), une composition (P2, P3), puis un « ‹ › » pour voir « Personnalisée ».</p>
+
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Une ligne, la liste se déroule</span></div>
+    <p class="vdesc">Sous les compteurs, une seule ligne : « Composition : Classique ▾ ». La toucher déroule la liste
+      des compositions pour ce nombre de joueurs, chacune avec sa phrase de description (lisible, contrairement à
+      une infobulle). Le plus discret, et le plus proche de l'original. La liste est ouverte sur la capture.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel s8 p1" id="p1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="P2">
+    <div class="vhead"><span class="vid">P2</span><span class="vname">Les compositions en sommaire</span></div>
+    <p class="vdesc">Toutes les compositions écrites sur une ligne, comme un sommaire ; la choisie est soulignée à
+      l'encre, sa description à droite. Un toucher pour changer. « Personnalisée » apparaît au bout dès qu'on touche
+      un réglage. Tient jusqu'à 4 ou 5 compositions.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel s8 p2" id="p2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="P3">
+    <div class="vhead"><span class="vid">P3</span><span class="vname">Les compositions dans la marge</span></div>
+    <p class="vdesc">Une colonne à gauche de la page, comme une marge de livre : les compositions l'une sous l'autre
+      avec leur description, la choisie marquée d'un trait rouge. Toujours visible, sans menu ; la grille perd une
+      colonne de cartes (6 au lieu de 8).</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel s8 p3" id="p3"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Les mots</h2>
+  <p>Compare avec le bouton « Mots » en haut de la page.</p>
+  <div class="variant qcard" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Max / Imposé</span></div>
+    <p class="vdesc">Compteurs « Imposés », « Rôles en jeu » ; sous une carte « Max », « Imposé ». Les termes que
+      les joueurs connaissent déjà.</p>
+  </div>
+  <div class="variant qcard" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Au plus / Au moins</span></div>
+    <p class="vdesc">Compteurs « Garantis », « Rôles possibles » ; sous une carte « Au plus », « Au moins » ; en bas
+      « 3 rôles resteront factices. ».</p>
+  </div>
+  <div class="variant qcard" data-id="W4">
+    <div class="vhead"><span class="vid">W4</span><span class="vname">W1, plus la phrase des factices de W2</span></div>
+    <p class="vdesc">Les termes de W1 partout, et en bas « 3 rôles resteront factices. » à côté des joueurs prêts.</p>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (ce qu'une composition devrait afficher, où mettre « Revenir à… », une info encore absente…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", one: "Anomalie", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", one: "Élu", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", one: "Marginal", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"], ["Moork", "Mo'orkn l'Affamé", "a"],
+  ["Repenti", "Le Repenti", "e"], ["Dryade", "La Dryade", "e"], ["DrGloubi", "Dr Gloubi", "e"], ["Technomancien", "Le Technomancien", "e"],
+  ["Croupiere", "Luma, la croupière", "e"], ["Messager", "Le Messager", "e"], ["Orpheline", "L'Orpheline", "e"], ["Uges", "Ugës, l'Imposteur", "e"],
+  ["Incomplet", "L'Incomplet", "e"], ["Gardien", "Le Gardien", "e"], ["Geolier", "Geôlier", "e"], ["Omniscient", "ORIGINE, l'Omniscient", "e"],
+  ["Oracle", "Nara, l'oracle brisée", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+// Compositions for 8 players. Only "Classique" exists in the game (Preset_Classique_8); the other two are examples.
+const PRESETS = [
+  { name: "Classique", desc: "La composition officielle à 8 joueurs.",
+    roles: { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Uges: [1, 0], Incomplet: [1, 0] } },
+  { name: "Débutants", desc: "Exemple : des rôles simples pour une première partie.",
+    roles: { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Gardien: [1, 0], Geolier: [1, 0], Technomancien: [1, 0] } },
+  { name: "Chaos", desc: "Exemple : beaucoup de rôles, trois anomalies, le Robot.",
+    roles: { MageOcculte: [1, 1], Abyss: [1, 0], Moork: [1, 0], Uges: [1, 0], Croupiere: [1, 0], Incomplet: [1, 0], Robot: [1, 0], Oracle: [1, 0], Omniscient: [1, 0], Traqueuse: [1, 0], Repenti: [1, 0] } },
+];
+const WORDS = {
+  w1: { max: "Max", forced: "Imposé", tForced: "Imposés", tMax: "Rôles en jeu", fakes: false },
+  w2: { max: "Au plus", forced: "Au moins", tForced: "Garantis", tMax: "Rôles possibles", fakes: true },
+};
+let words = "w1";
+const img = id => "img/" + id + ".webp";
+const pl = (n, one, many) => n + " " + (n > 1 ? many : one);
+
+function apply(st, i) {
+  st.preset = i;
+  st.roles.forEach(r => { const v = PRESETS[i].roles[r.id] || [0, 0]; r.max = v[0]; r.forced = v[1]; });
+}
+function newState() { const st = { roles: ROLES.map(r => ({ ...r })), preset: 0, open: false }; apply(st, 0); return st; }
+function setMax(r, v) { r.max = Math.max(0, Math.min(15, v)); if (r.forced > r.max) r.forced = r.max; }
+function setForced(r, v) { r.forced = Math.max(0, Math.min(r.max, v)); }
+function tally(st) {
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  st.roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  return t;
+}
+// Same order and wording as CompositionValidator (imposé instead of forcé, real plurals).
+function check(st) {
+  const t = tally(st), w = WORDS[words];
+  if (t.max < PLAYERS) return { ok: false, msg: "Pas assez de rôles : " + pl(t.max, "rôle", "rôles") + " pour " + PLAYERS + " joueurs." };
+  for (const f of ["a", "e"]) if (t[f] === 0) return { ok: false, msg: "Aucun rôle " + FAC[f].one + " dans la partie (il en faut au moins 1)." };
+  if (t.forced > PLAYERS) return { ok: false, msg: "Trop de rôles " + w.tForced.toLowerCase() + " : " + t.forced + " pour " + PLAYERS + " joueurs. " + (words === "w1" ? "Retire un imposé" : "Retire un rôle garanti") + " ou ajoute un joueur." };
+  return { ok: true, fakes: t.max - PLAYERS };
+}
+function act(st, t) {
+  const a = t.closest("[data-a]");
+  if (!a) { if (st.open) { st.open = false; return true; } return false; }
+  const k = a.dataset.a;
+  if (k === "open") { st.open = !st.open; return true; }
+  if (k === "preset") { apply(st, +a.dataset.i); st.open = false; return true; }
+  const r = st.roles.find(x => x.id === t.closest("[data-id]").dataset.id);
+  if (k === "max-") setMax(r, r.max - 1);
+  else if (k === "max+") setMax(r, r.max + 1);
+  else if (k === "for-") setForced(r, r.forced - 1);
+  else if (k === "for+") setForced(r, r.forced + 1);
+  st.preset = -1; // any hand edit = custom
+  return true;
+}
+
+function presetUi(st, kind) {
+  const cur = st.preset >= 0 ? PRESETS[st.preset] : null;
+  if (kind === "p1") {
+    let h = '<div class="pre"><span class="soft">Composition :</span><span class="cur ar-btn" data-a="open">' + (cur ? cur.name : "Personnalisée") + " ▾</span>" +
+      (cur ? '<span class="soft" style="font-size:15px;font-style:italic">' + cur.desc + "</span>" : "") + "</div>";
+    if (st.open) h += '<div class="menu">' + PRESETS.map((p, i) => '<div class="it ar-btn' + (i === st.preset ? " on" : "") + '" data-a="preset" data-i="' + i + '"><b>' + p.name + "</b><i>" + p.desc + "</i></div>").join("") + "</div>";
+    return h;
+  }
+  if (kind === "p2") {
+    return '<div class="pre"><span class="soft">Composition :</span>' + PRESETS.map((p, i) => '<span class="it ar-btn' + (i === st.preset ? " on" : "") + '" data-a="preset" data-i="' + i + '">' + p.name + "</span>").join("") +
+      (cur ? "" : '<span class="it on custom">Personnalisée</span>') + '<span class="desc">' + (cur ? cur.desc : "Modifiée à la main.") + "</span></div>";
+  }
+  return '<div class="side"><h5>Compositions pour 8</h5>' + PRESETS.map((p, i) => '<div class="it ar-btn' + (i === st.preset ? " on" : "") + '" data-a="preset" data-i="' + i + '"><b>' + p.name + "</b><i>" + p.desc + "</i></div>").join("") +
+    (cur ? "" : '<div class="it on custom"><b>Personnalisée</b><i>Modifiée à la main ; touche une composition pour y revenir.</i></div>') + "</div>";
+}
+
+function render(el, st, kind) {
+  const sc = el.querySelector(".scroll"), keep = sc ? sc.scrollTop : 0;
+  const t = tally(st), c = check(st), w = WORDS[words];
+  const cell = (k, v, bad, f) => '<div class="c"><div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v' + (bad ? " err" : "") + '">' + v + "</div></div>";
+  let h = '<div class="tabs"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS) + cell(w.tForced, t.forced, t.forced > PLAYERS) + cell(w.tMax, t.max, t.max < PLAYERS) +
+    cell("Anomalies", t.a, !t.a, "a") + cell("Élus", t.e, !t.e, "e") + cell("Marginaux", t.m, false, "m") + "</div>";
+  h += presetUi(st, kind);
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u' + (r.max ? "" : " out") + '" data-id="' + r.id + '"><div class="crd ar-btn"><div class="art" style="background-image:url(' + img(r.id) + ')"></div>' +
+        (r.forced ? '<img class="seal" src="img/seal.webp">' : "") + '<div class="nm">' + r.name + "</div></div>" +
+        '<div class="ctl"><span>' + w.max + '</span><span><span class="b ar-btn" data-a="max-">‹</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">›</span></span></div>' +
+        '<div class="ctl imp"><span>' + w.forced + '</span><span><span class="b ar-btn" data-a="for-">‹</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">›</span></span></div></div>';
+    });
+    h += "</div>";
+  }
+  const fakes = c.ok && w.fakes ? '<span class="soft">' + (c.fakes > 1 ? c.fakes + " rôles resteront factices." : c.fakes === 1 ? "1 rôle restera factice." : "Aucun rôle factice.") + "</span>" : "";
+  h += '</div><div class="foot">' + (c.ok ? fakes + '<span class="soft">' + READY + " joueurs prêts sur " + PLAYERS + "</span>" : '<span class="err">' + c.msg + "</span>") +
+    '<span class="go ar-btn"><img src="img/seal.webp">Prêt</span></div>';
+  el.innerHTML = h;
+  const n = el.querySelector(".scroll"); if (n) n.scrollTop = keep;
+}
+
+const frames = [];
+for (const kind of ["p1", "p2", "p3"]) {
+  const el = document.getElementById(kind), st = newState();
+  if (kind === "p1") st.open = true; // the capture shows the list open
+  frames.push(() => render(el, st, kind));
+  el.addEventListener("click", e => { if (act(st, e.target)) render(el, st, kind); });
+}
+frames.forEach(f => f());
+document.querySelectorAll(".ar-words-bar button").forEach(b => b.onclick = () => {
+  words = b.dataset.w;
+  document.querySelectorAll(".ar-words-bar button").forEach(x => x.classList.toggle("on", x === b));
+  frames.forEach(f => f());
+});
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

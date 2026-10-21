@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 5</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  /* IM Fell only has old-style figures (1 reads as I): digits come from Georgia */
+  @font-face { font-family: "Digits"; src: local("Georgia"); unicode-range: U+0030-0039; }
+  @font-face { font-family: "Liberation"; src: url("../fonts/LiberationSans.ttf"); }
+
+  .ar-ref { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ar-ref img { width: 100%; border: 1px solid var(--line); }
+  .ar-ref figcaption { color: var(--soft); font-size: 13px; }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-panel { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; overflow: hidden; }
+  .ar-panel * { box-sizing: border-box; }
+  .ar-btn { cursor: pointer; user-select: none; }
+  .ar-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #a07a50 transparent; }
+
+  /* P3 of round 4 on the parchment page; --ft = titles, --fb = everything else (labels, numbers, names) */
+  .pg { background: #1a120c url(../common/parchment.webp) 50% 50% / cover; color: #33200f; box-shadow: inset 0 0 70px rgba(70, 40, 10, .6); font-family: var(--fb); }
+  .pg .tabs { position: absolute; left: 26px; right: 26px; top: 12px; display: flex; gap: 30px; font: 22px var(--ft); }
+  .pg .tabs span { padding: 4px 0 6px; color: #8a6a4c; }
+  .pg .tabs span.on { color: #3a1708; }
+  .pg .tally { position: absolute; left: 26px; right: 26px; top: 56px; display: flex; border-bottom: 1px solid rgba(90, 58, 32, .4); padding-bottom: 6px; }
+  .pg .tally .c { flex: 1; padding: 2px 0; }
+  .pg .tally .c + .c { border-left: 1px solid rgba(90, 58, 32, .3); padding-left: 14px; }
+  .pg .tally .k { font-size: var(--lab); display: flex; align-items: center; gap: 6px; color: #5e4127; }
+  .pg .tally .k img { width: 20px; height: 20px; object-fit: contain; }
+  .pg .tally .v { font-size: 30px; line-height: 34px; color: #2a1608; }
+  .pg .err { color: #a01212 !important; }
+  .pg .b { color: #8a4a1c; }
+  .pg .side { position: absolute; left: 26px; top: 132px; bottom: 60px; width: 200px; padding-right: 16px; border-right: 1px solid rgba(90, 58, 32, .35); }
+  .pg .side h5 { margin: 0 0 6px; font: 20px var(--ft); color: #3a1708; }
+  .pg .side .it { padding: 9px 0 9px 12px; font-size: var(--item); color: #5e4127; border-left: 3px solid transparent; }
+  .pg .side .it.on { color: #8a1010; border-left-color: #8a1010; }
+  .pg .scroll { position: absolute; left: 244px; right: 14px; top: 132px; bottom: 60px; padding-right: 10px; }
+  .pg .fh { display: flex; align-items: center; gap: 8px; font: 22px var(--ft); margin: 4px 0 10px; }
+  .pg .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .pg .grid { display: flex; flex-wrap: wrap; gap: 18px 14px; margin-bottom: 4px; }
+  .pg .u { width: 110px; position: relative; }
+  .pg .crd { position: relative; width: 110px; height: 154px; background: #080607; padding: 4px 4px 0; display: flex; flex-direction: column; box-shadow: 0 3px 8px rgba(40, 20, 5, .55); }
+  .pg .crd .art { flex: 1; background-size: cover; background-position: 50% 20%; }
+  .pg .crd .nm { height: 26px; font: 10.5px/11.5px system-ui, sans-serif; font-weight: 700; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  .pg .crd .seal { position: absolute; left: 50%; bottom: 32px; width: 26px; margin-left: -13px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+  .pg .u.out .crd { opacity: .3; filter: sepia(.6); }
+  .pg .ctl { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--ctl); margin-top: 4px; color: #5e4127; white-space: nowrap; }
+  .pg .ctl.imp, .pg .ctl.imp .v { color: #8a1010; }
+  .pg .ctl .v { display: inline-block; min-width: 14px; text-align: center; font-size: calc(var(--ctl) + 2px); color: #2a1608; }
+  .pg .ctl .b { padding: 0 4px; font-size: calc(var(--ctl) + 3px); }
+  .pg .foot { position: absolute; left: 26px; right: 26px; bottom: 14px; display: flex; justify-content: flex-end; align-items: center; gap: 18px; font-size: var(--item); color: #5e4127; }
+  .pg .go { display: flex; align-items: center; gap: 7px; font: 22px var(--ft); color: #8a1010; }
+  .pg .go img { width: 30px; }
+
+  /* F1 : IM Fell partout, en grand, sans petites capitales ni italique */
+  .f1 { --ft: "Digits", "Fell", serif; --fb: "Digits", "Fell", serif; --lab: 17px; --item: 20px; --ctl: 16px; }
+  /* F2 : IM Fell pour les titres, Liberation Sans (déjà dans le jeu) pour le reste */
+  .f2 { --ft: "Digits", "Fell", serif; --fb: "Liberation", Arial, sans-serif; --lab: 15px; --item: 17px; --ctl: 14px; }
+  /* F3 : IM Fell pour les titres, un serif de lecture pour le reste (Georgia ici, à remplacer par une police libre) */
+  .f3 { --ft: "Digits", "Fell", serif; --fb: Georgia, serif; --lab: 15px; --item: 17px; --ctl: 14px; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Choisir les rôles du lobby, tour 5</h1>
+  <p>Tes votes du tour 4 : P3 (les compositions dans la marge) 👍 mais police peu lisible ; les mots W2 (Au plus /
+    Au moins) 👍 ; et les petites explications semées à des endroits au hasard font IA (noté en mémoire et dans ta
+    liste de UI slop).</p>
+  <div class="ar-ref">
+    <figure style="margin:0"><img src="img/actuel_haut.jpg" alt=""><figcaption>L'original</figcaption></figure>
+    <figure style="margin:0"><img src="captures/v4/P3.jpg" alt=""><figcaption>P3 du tour 4</figcaption></figure>
+  </div>
+  <ul>
+    <li>Plus aucune petite explication : les compositions n'ont plus de description, plus de « restera factice »,
+      plus d'italique. Il reste les libellés, les chiffres, et la raison d'un refus à la place du « prêts » (sa
+      place prévue).</li>
+    <li>Mots W2 partout : « Garantis », « Rôles possibles », « Au plus », « Au moins ».</li>
+    <li>La lisibilité venait surtout des petites tailles en IM Fell (petites capitales à 14 px, italique à 13 px) :
+      trois réglages de police ci-dessous, même écran, mêmes données. « Débutants » et « Chaos » restent des exemples.</li>
+  </ul>
+</header>
+
+<section>
+  <h2>1. La police</h2>
+  <p>Touche une composition, ou un « ‹ › » pour voir « Personnalisée » apparaître.</p>
+
+  <div class="variant" data-id="F1">
+    <div class="vhead"><span class="vid">F1</span><span class="vname">IM Fell partout, en plus grand</span></div>
+    <p class="vdesc">La police du livre des personnages partout, mais aucun texte sous 16 px, plus de petites
+      capitales pour les libellés ni d'italique. Le plus « livre », mais Fell reste une police d'imprimerie ancienne,
+      un peu irrégulière.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg f1" id="f1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="F2">
+    <div class="vhead"><span class="vid">F2</span><span class="vname">Fell pour les titres, Liberation Sans pour le reste</span></div>
+    <p class="vdesc">Les titres (onglets, factions, « Compositions », « Prêt ») en IM Fell ; les libellés, chiffres et
+      réglages dans la police sans empattement déjà dans le jeu. Le plus net en petit, mais le corps du texte
+      retrouve un air d'interface.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg f2" id="f2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="F3">
+    <div class="vhead"><span class="vid">F3</span><span class="vname">Fell pour les titres, un serif de lecture pour le reste</span></div>
+    <p class="vdesc">Même partage que F2, mais le reste dans un serif fait pour lire (Georgia sur la maquette ; dans
+      le jeu il faudrait ajouter une police libre du même genre, EB Garamond par exemple). Garde l'esprit livre et
+      reste net en petit.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-panel pg f3" id="f3"></div></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (une taille encore trop petite, un libellé, la marge des compositions…)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", one: "Anomalie", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", one: "Élu", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", one: "Marginal", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"], ["Moork", "Mo'orkn l'Affamé", "a"],
+  ["Repenti", "Le Repenti", "e"], ["Dryade", "La Dryade", "e"], ["DrGloubi", "Dr Gloubi", "e"], ["Technomancien", "Le Technomancien", "e"],
+  ["Croupiere", "Luma, la croupière", "e"], ["Messager", "Le Messager", "e"], ["Orpheline", "L'Orpheline", "e"], ["Uges", "Ugës, l'Imposteur", "e"],
+  ["Incomplet", "L'Incomplet", "e"], ["Gardien", "Le Gardien", "e"], ["Geolier", "Geôlier", "e"], ["Omniscient", "ORIGINE, l'Omniscient", "e"],
+  ["Oracle", "Nara, l'oracle brisée", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+// Compositions for 8 players. Only "Classique" exists in the game (Preset_Classique_8); the other two are examples.
+const PRESETS = [
+  { name: "Classique", roles: { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Uges: [1, 0], Incomplet: [1, 0] } },
+  { name: "Débutants", roles: { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Gardien: [1, 0], Geolier: [1, 0], Technomancien: [1, 0] } },
+  { name: "Chaos", roles: { MageOcculte: [1, 1], Abyss: [1, 0], Moork: [1, 0], Uges: [1, 0], Croupiere: [1, 0], Incomplet: [1, 0], Robot: [1, 0], Oracle: [1, 0], Omniscient: [1, 0], Traqueuse: [1, 0], Repenti: [1, 0] } },
+];
+const img = id => "img/" + id + ".webp";
+const pl = (n, one, many) => n + " " + (n > 1 ? many : one);
+
+function apply(st, i) { st.preset = i; st.roles.forEach(r => { const v = PRESETS[i].roles[r.id] || [0, 0]; r.max = v[0]; r.forced = v[1]; }); }
+function newState() { const st = { roles: ROLES.map(r => ({ ...r })), preset: 0 }; apply(st, 0); return st; }
+function setMax(r, v) { r.max = Math.max(0, Math.min(15, v)); if (r.forced > r.max) r.forced = r.max; }
+function setForced(r, v) { r.forced = Math.max(0, Math.min(r.max, v)); }
+function tally(st) {
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  st.roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  return t;
+}
+// Same order as CompositionValidator, W2 words, real plurals.
+function check(st) {
+  const t = tally(st);
+  if (t.max < PLAYERS) return { ok: false, msg: "Pas assez de rôles : " + pl(t.max, "rôle possible", "rôles possibles") + " pour " + PLAYERS + " joueurs." };
+  for (const f of ["a", "e"]) if (t[f] === 0) return { ok: false, msg: "Aucun rôle " + FAC[f].one + " dans la partie (il en faut au moins 1)." };
+  if (t.forced > PLAYERS) return { ok: false, msg: "Trop de rôles garantis : " + t.forced + " pour " + PLAYERS + " joueurs. Retire un rôle garanti ou ajoute un joueur." };
+  return { ok: true };
+}
+function act(st, t) {
+  const a = t.closest("[data-a]");
+  if (!a) return false;
+  const k = a.dataset.a;
+  if (k === "preset") { apply(st, +a.dataset.i); return true; }
+  const r = st.roles.find(x => x.id === t.closest("[data-id]").dataset.id);
+  if (k === "max-") setMax(r, r.max - 1);
+  else if (k === "max+") setMax(r, r.max + 1);
+  else if (k === "for-") setForced(r, r.forced - 1);
+  else if (k === "for+") setForced(r, r.forced + 1);
+  st.preset = -1; // any hand edit = custom
+  return true;
+}
+
+function render(el, st) {
+  const sc = el.querySelector(".scroll"), keep = sc ? sc.scrollTop : 0;
+  const t = tally(st), c = check(st);
+  const cell = (k, v, bad, f) => '<div class="c"><div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v' + (bad ? " err" : "") + '">' + v + "</div></div>";
+  let h = '<div class="tabs"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS) + cell("Garantis", t.forced, t.forced > PLAYERS) + cell("Rôles possibles", t.max, t.max < PLAYERS) +
+    cell("Anomalies", t.a, !t.a, "a") + cell("Élus", t.e, !t.e, "e") + cell("Marginaux", t.m, false, "m") + "</div>";
+  h += '<div class="side"><h5>Compositions</h5>' + PRESETS.map((p, i) => '<div class="it ar-btn' + (i === st.preset ? " on" : "") + '" data-a="preset" data-i="' + i + '">' + p.name + "</div>").join("") +
+    (st.preset < 0 ? '<div class="it on">Personnalisée</div>' : "") + "</div>";
+  h += '<div class="scroll ar-scroll">';
+  for (const f of ["a", "e", "m"]) {
+    h += '<div class="fh" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</div><div class="grid">';
+    st.roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u' + (r.max ? "" : " out") + '" data-id="' + r.id + '"><div class="crd ar-btn"><div class="art" style="background-image:url(' + img(r.id) + ')"></div>' +
+        (r.forced ? '<img class="seal" src="img/seal.webp">' : "") + '<div class="nm">' + r.name + "</div></div>" +
+        '<div class="ctl"><span>Au plus</span><span><span class="b ar-btn" data-a="max-">‹</span><span class="v">' + r.max + '</span><span class="b ar-btn" data-a="max+">›</span></span></div>' +
+        '<div class="ctl imp"><span>Au moins</span><span><span class="b ar-btn" data-a="for-">‹</span><span class="v">' + r.forced + '</span><span class="b ar-btn" data-a="for+">›</span></span></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div><div class="foot">' + (c.ok ? READY + " joueurs prêts sur " + PLAYERS : '<span class="err">' + c.msg + "</span>") +
+    '<span class="go ar-btn"><img src="img/seal.webp">Prêt</span></div>';
+  el.innerHTML = h;
+  const n = el.querySelector(".scroll"); if (n) n.scrollTop = keep;
+}
+
+for (const id of ["f1", "f2", "f3"]) {
+  const el = document.getElementById(id), st = newState();
+  render(el, st);
+  el.addEventListener("click", e => { if (act(st, e.target)) render(el, st); });
+}
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

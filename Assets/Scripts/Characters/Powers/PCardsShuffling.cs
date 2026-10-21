@@ -94,6 +94,10 @@ namespace Characters.Powers
                 // Rôle élu absent de la partie : Luma copie temporairement (one-shot) un de ses pouvoirs actifs.
                 GrantCopyFromFakeRole(_character);
                 discoveredClientIds.Add(_clientIdClicked);
+                // Luma now knows nobody plays this role: same knowledge as the anomalies' start-of-game hint, so the
+                // top bar greys it for her and its role card says « rôle factice ».
+                gameInfoRevealer.SendRevealLevelRpc(_clientIdClicked, nameof(CharacterInfoReveal.isFakeRevealed),
+                    RevealLevel.Personal, ownerClientId.Value, false);
                 OnUsed();
                 return; // carte fausse : la copie remplace l'ancien cul-de-sac, rien d'autre à faire
             }

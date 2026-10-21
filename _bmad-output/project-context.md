@@ -137,6 +137,10 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   must filter on the `cdp_game` tag (`SteamLobbyBackend`), or the browser lists strangers' lobbies.
 - A Steam client start path passes the typed lobby password to `ClientConnectionPayload.Apply` (Steam lobbies have no
   password; the host checks it at approval).
+- **In-game voice (T22) = Steam Voice**, idle without a Steam client (Relay build). The server routes every packet
+  (`VoiceChatManager` → `VoiceRouting`): by day to everyone, at night only to the co-members of the speaker's
+  **private chat channels** (server `ChatMembership`). A new private chat channel therefore also opens a night voice
+  channel between its members: give it a voice exception if the GD does not want that.
 
 ## Playtest logs (`Diagnostics/Logs`, spec `spec-online-playtest-logs.md`)
 
@@ -160,6 +164,8 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - In the player build, the main menu's screen-space overlay uGUI canvas drew OVER the UI Toolkit role book (book
   PanelSettings sort order 10 > canvas 0) and its buttons took the clicks: hide the menu's content while a full-screen
   UITK screen is open there (`MainMenu` + `RoleBookController.Opened/Closed`). Check it in a build, not the editor.
+- A `*/` inside a USS comment (e.g. a path `Fonts/*/OFL.txt`) ends it early: the whole sheet is then ignored with
+  no console error (the lobby tablet rendered unstyled). Never write `*/` in a comment.
 - Faction colours come from `FactionDatabase` SO, never new USS tokens. UI visuals are placeholder and design-owned: don't invent palettes.
 
 ## 3D interaction

@@ -2,6 +2,7 @@
 
 using System;
 using UnityEngine;
+using Board;
 using Characters.Powers.Target;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
@@ -35,6 +36,10 @@ namespace Characters.Powers
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            // Opaque identities for the visit marks: the client resolves the icon id back to this power's bar
+            // sprite (same pattern as PTargetedByReport), and the card effect id back to CardEffectID.
+            _decision.IconId = NetworkObjectId;
+            _decision.VisitCardEffectId = (int)CardEffectID.OrphelineVisit;
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
         }
 

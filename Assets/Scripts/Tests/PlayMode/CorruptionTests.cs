@@ -342,6 +342,40 @@ namespace Tests.PlayMode
                 _revealer.GetCharacterInfo(clicked.ownerClientId.Value, owner.ownerClientId.Value).isRoleRevealed,
                 "CardsShuffling correct guess should reveal the clicked target's role to the owner.");
         }
+
+        // Board T2 (GD, 2026-10-18): a factice Luma lands on must turn grey in her top bar like the anomalies'
+        // factices, i.e. she gets isFakeRevealed on it (and nobody else does).
+        [UnityTest]
+        public IEnumerator PCardsShuffling_FakeRolePickedTellsOwnerItIsFake()
+        {
+            Character owner = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character other = _characterManager.AddNewCharacter(1122);
+            Character fake = _characterManager.AddNewCharacter(GameValues.FAKE_CLIENT_ID);
+            yield return NetworkTestHelper.WaitUntilAllSpawnedOrTimeout(owner, other, fake);
+
+            fake.role = new Role { roleID = RoleID.Omniscient, roleName = "Omni", factionType = FactionType.chosen };
+            Assert.IsTrue(fake.isFake, "Test setup: the FAKE_CLIENT_ID character should be a factice.");
+
+            GameObject powerGo = new GameObject("CardsShuffling");
+            var power = powerGo.AddComponent<PCardsShuffling>();
+            power.ownerClientId.Value = _networkManager.LocalClientId;
+            powerGo.AddComponent<NetworkObject>().Spawn();
+            yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(power);
+            // The harness root does not serve the ChatManager; the "nothing to copy" message goes through it.
+            ReflectionHelper.SetPrivateField(power, "chatManager", Object.FindFirstObjectByType<ChatManager>());
+
+            ReflectionHelper.InvokePrivateMethod(power, "OnCharacterBarObjectClickedRpc", fake.ownerClientId.Value);
+            yield return null;
+
+            Assert.IsTrue(power.discoveredClientIds.Contains(fake.ownerClientId.Value),
+                "CardsShuffling on a factice should record it as discovered.");
+            Assert.AreEqual(RevealLevel.Personal,
+                _revealer.GetCharacterInfo(fake.ownerClientId.Value, owner.ownerClientId.Value).isFakeRevealed,
+                "CardsShuffling on a factice should tell the owner the role is fake.");
+            Assert.AreEqual(RevealLevel.False,
+                _revealer.GetCharacterInfo(fake.ownerClientId.Value, other.ownerClientId.Value).isFakeRevealed,
+                "Only the owner learns the role is fake.");
+        }
 [UnityTest]
 public IEnumerator PBlessing_MakesTargetUntargetableForCorruption()
 {

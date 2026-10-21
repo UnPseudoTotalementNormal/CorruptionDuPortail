@@ -15,8 +15,8 @@ namespace Autoplay
 {
     /// <summary>
     /// Real-input lobby (<c>-autoplay-lobby-ui</c>, implied by <c>-autoplay-real-input</c>): the composition is set on the
-    /// lobby tablet with the mouse (UI Toolkit drawn into a RenderTexture: "★ Preset classique", then Max "+" and
-    /// Imposé "+" per forced role), each seat with a screen clicks "Prêt", and the game starts by itself
+    /// lobby tablet with the mouse (UI Toolkit drawn into a RenderTexture: the "Classique" composition in the margin,
+    /// then "Au plus" "›" and "Au moins" "›" per forced role), each seat with a screen clicks "Prêt", and the game starts by itself
     /// (<c>LobbyState.TryAutoStart</c>). Journals <c>lobby.preset</c>, <c>lobby.force</c>, <c>lobby.ready</c> with
     /// <c>via=click|direct</c> next to <c>input.click</c> / <c>input.miss</c>.
     /// </summary>
@@ -139,7 +139,7 @@ namespace Autoplay
             }
         }
 
-        /// <summary>Host: "★ Preset classique".</summary>
+        /// <summary>Host: the "Classique" composition in the margin.</summary>
         public async UniTask<bool> LobbyApplyClassicPreset()
         {
             await AcquireInput();
@@ -167,6 +167,32 @@ namespace Autoplay
                 _unit.Query<Label>().ToList().Any(_l => !string.IsNullOrEmpty(_l.text) &&
                                                          _l.text.IndexOf(_fragment, StringComparison.OrdinalIgnoreCase) >= 0));
 
+        // The tablet shows one faction at a time: open the tab whose cards hold the role (the other tabs, in order).
+        private async UniTask<bool> ShowLobbyRole(string _fragment)
+        {
+            if (LobbyUnit(LobbyRoot(), _fragment) != null)
+            {
+                return true;
+            }
+            Func<VisualElement, int, Button> _tab = (_root, _index) =>
+                _root?.Query<Button>(className: "lobby-roles__faction-tab").ToList().ElementAtOrDefault(_index);
+            System.Collections.Generic.List<Button> _tabs = LobbyRoot()?.Query<Button>(className: "lobby-roles__faction-tab").ToList()
+                ?? new System.Collections.Generic.List<Button>();
+            int _start = Math.Max(0, _tabs.FindIndex(_t => _t.ClassListContains("lobby-roles__faction-tab--active")));
+            for (int _step = 1; _step < _tabs.Count; _step++)
+            {
+                int _index = (_start + _step) % _tabs.Count;
+                Func<bool> _active = () => _tab(LobbyRoot(), _index)?.ClassListContains("lobby-roles__faction-tab--active") == true;
+                bool _clicked = await ClickLobbyElement(_root => _tab(_root, _index), $"lobby-faction {_index}", _active);
+                Journal.Record("lobby.faction", $"{_index} via={(_clicked ? "click" : "missed")} for={_fragment}");
+                if (LobbyUnit(LobbyRoot(), _fragment) != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static int StepperValue(VisualElement _unit, bool _forced)
         {
             VisualElement _ctl = _unit?.Query<VisualElement>(className: "lobby-roles__ctl").ToList()
@@ -182,13 +208,13 @@ namespace Autoplay
             return _ctl?.Query<Button>(className: "lobby-roles__step-btn").ToList().ElementAtOrDefault(1);
         }
 
-        /// <summary>Host: guarantee one role in the composition (Max "+" if needed, then Imposé "+").</summary>
+        /// <summary>Host: guarantee one role in the composition ("Au plus" "›" if needed, then "Au moins" "›").</summary>
         public async UniTask<bool> LobbyForceRole(string _fragment)
         {
             await AcquireInput();
             try
             {
-                if (LobbyUnit(LobbyRoot(), _fragment) == null)
+                if (!await ShowLobbyRole(_fragment))
                 {
                     Journal.Record("input.miss", $"lobby-force {_fragment} reason=not-found");
                     return false;

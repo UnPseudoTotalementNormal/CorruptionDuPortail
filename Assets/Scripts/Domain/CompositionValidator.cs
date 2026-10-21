@@ -108,7 +108,7 @@ namespace CorruptionDuPortail.Domain
             {
                 failures.Add(new CompositionFailure(
                     "coverage",
-                    $"Pool trop petit : {totalMax} rôle(s) pour {players} joueur(s).",
+                    $"Pas assez de rôles possibles : {totalMax} pour {Players(players)}.",
                     null));
             }
 
@@ -152,8 +152,8 @@ namespace CorruptionDuPortail.Domain
                         failures.Add(new CompositionFailure(
                             "faction-capacity",
                             factionMax == 0
-                                ? $"Aucun rôle {Label(fm.Faction)} dans la partie (minimum {fm.Min})."
-                                : $"Pas assez de rôles {Label(fm.Faction)} : {factionMax} disponible(s) pour un minimum de {fm.Min}.",
+                                ? $"Aucun rôle {Label(fm.Faction)} dans la partie (il en faut au moins {fm.Min})."
+                                : $"Pas assez de rôles {Label(fm.Faction)} : {factionMax} pour un minimum de {fm.Min}.",
                             fm.Faction));
                     }
 
@@ -183,11 +183,11 @@ namespace CorruptionDuPortail.Domain
                 }
 
                 string hint = worst.HasValue
-                    ? $"Baisse le forcé {Label(worst.Value)} ou ajoute un joueur."
-                    : "Baisse un forcé ou ajoute un joueur.";
+                    ? $"Retire un rôle {Label(worst.Value)} garanti ou ajoute un joueur."
+                    : "Retire un rôle garanti ou ajoute un joueur.";
                 failures.Add(new CompositionFailure(
                     "guaranteed-fit",
-                    $"Trop de rôles garantis : {guaranteed} pour {players} joueur(s). {hint}",
+                    $"Trop de rôles garantis : {guaranteed} pour {Players(players)}. {hint}",
                     worst));
             }
 
@@ -206,6 +206,9 @@ namespace CorruptionDuPortail.Domain
 
             return forced > role.Max ? role.Max : forced;
         }
+
+        // "1 joueur" / "8 joueurs": player-facing reasons use real plurals, never "joueur(s)".
+        private static string Players(int count) => count > 1 ? $"{count} joueurs" : $"{count} joueur";
 
         // Domain-level fallback labels for logs/reasons. The UI mirror may localise via FactionDatabase.
         private static string Label(FactionType faction)

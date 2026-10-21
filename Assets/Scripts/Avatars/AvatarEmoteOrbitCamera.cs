@@ -41,6 +41,10 @@ namespace Avatars
                  "fixed values above. Robust to the model's scale — the raw root pivot sits at the FEET and a " +
                  "fixed radius can end up INSIDE the model.")]
         [SerializeField] private bool _autoFrame = true;
+        [Tooltip("Names of the renderers measured for the auto-framing: the cat's own body and head. The other parts " +
+                 "(arms, ears, fur shells, cosmetics, nameplate) carry loose skinned bounds that pushed the orbit " +
+                 "past the far side of the table. Empty, or no match = every active renderer.")]
+        [SerializeField] private string[] _frameRenderers = { "Body", "Head" };
         [Tooltip("Orbit radius as a multiple of the avatar's bounding radius. ~2.5 frames the whole body.")]
         [SerializeField] private float _distanceMultiplier = 2.5f;
         [Tooltip("Floor for the auto radius (m) — never get closer than this whatever the bounds say.")]
@@ -74,6 +78,9 @@ namespace Avatars
 
         /// <summary>Whether the emote orbit camera is currently outranking the other cameras.</summary>
         public bool IsActive => _active;
+
+        /// <summary>Orbit radius measured by the last <see cref="MeasureAutoFrame"/> (tests).</summary>
+        internal float AutoDistance => _autoDistance;
 
         private void Awake()
         {
@@ -164,20 +171,43 @@ namespace Avatars
         }
 
         /// <summary>
-        /// Measure the avatar's combined RENDERER bounds once and derive the framing from it: the pivot height is
+        /// Measure the avatar's combined RENDERER bounds once (the <see cref="_frameRenderers"/>, else every renderer)
+        /// and derive the framing from it: the pivot height is
         /// the vertical centre of the visible body (the root pivot sits at the FEET), and the orbit radius is a
         /// multiple of the bounding radius (a fixed radius ends up INSIDE a larger model). Falls back to the manual
         /// values if the avatar has no renderers. Bounds are read from renderers even while disabled, so this is
         /// valid whether or not the local body has been revealed yet this frame.
         /// </summary>
-        private void MeasureAutoFrame(PlayerAvatar _avatar)
+        internal void MeasureAutoFrame(PlayerAvatar _avatar)
         {
-            Bounds _bounds = default;
+            Renderer[] _renderers = _avatar.GetComponentsInChildren<Renderer>(true);
+            bool _any = TryEncapsulate(_renderers, true, out Bounds _bounds)
+                || TryEncapsulate(_renderers, false, out _bounds);
+
+            if (!_any)
+            {
+                _autoPivotHeight = _pivotHeight;
+                _autoDistance = _distance;
+                return;
+            }
+
+            _autoPivotHeight = (_bounds.center.y - _avatar.transform.position.y) + _heightBias;
+            _autoDistance = Mathf.Max(_minDistance, _bounds.extents.magnitude * _distanceMultiplier);
+        }
+
+        // Union of the active renderers' bounds, only those named in _frameRenderers when _named.
+        private bool TryEncapsulate(Renderer[] _renderers, bool _named, out Bounds _bounds)
+        {
+            _bounds = default;
             bool _any = false;
-            foreach (Renderer _renderer in _avatar.GetComponentsInChildren<Renderer>(true))
+            foreach (Renderer _renderer in _renderers)
             {
                 // Cosmetic parts the player does not wear are deactivated GameObjects (CatAppearance): not the body.
                 if (_renderer == null || !_renderer.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                if (_named && System.Array.IndexOf(_frameRenderers, _renderer.name) < 0)
                 {
                     continue;
                 }
@@ -191,16 +221,7 @@ namespace Avatars
                     _bounds.Encapsulate(_renderer.bounds);
                 }
             }
-
-            if (!_any)
-            {
-                _autoPivotHeight = _pivotHeight;
-                _autoDistance = _distance;
-                return;
-            }
-
-            _autoPivotHeight = (_bounds.center.y - _avatar.transform.position.y) + _heightBias;
-            _autoDistance = Mathf.Max(_minDistance, _bounds.extents.magnitude * _distanceMultiplier);
+            return _any;
         }
 
         // Resolve the local owned avatar (mirror AvatarEmbodiedCamera.TryBind). On the first bind, seed the

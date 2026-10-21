@@ -16,8 +16,8 @@ namespace Tests.PlayMode.Avatars
     /// Story 13.3 — proves the <see cref="AvatarCameraArbiter"/> REACTS to
     /// <c>currentGameStateIndex</c> changes and drives the three local presentation toggles per
     /// resolved <see cref="CameraMode"/>: the <see cref="AvatarFollowCamera"/> active flag (on iff
-    /// FreeRoam) and the <see cref="BoardCameraManager"/> <c>Avatar</c> input source (true in Board AND
-    /// Embodied/Vote — the Vote navigates the board cameras with the seated first-person wired in as a node).
+    /// FreeRoam) and the <see cref="BoardCameraManager"/> <c>Avatar</c> input source (always off since T23: no camera
+    /// switching with the arrows, first person by day, top view at night).
     ///
     /// Harness: a single StartHost (host == server, RTT 0) — the same faithful substrate as
     /// GameLoopTransitionOrderingTests — with a GameManager seeded with three STUB states whose TYPES
@@ -220,21 +220,22 @@ namespace Tests.PlayMode.Avatars
         [UnityTest]
         public IEnumerator Arbiter_DrivesCameraAndBoardSource_AcrossModes()
         {
-            // Primed at index 0 (Board): follow cam stands down, board arrow-nav source ON.
-            yield return AssertModeEffects("Board(prime)", _expectFollowActive: false, _expectAvatarSource: true);
+            // Primed at index 0 (Board): follow cam stands down, board arrow-nav source OFF (T23: no arrows at all).
+            yield return AssertModeEffects("Board(prime)", _expectFollowActive: false, _expectAvatarSource: false);
 
             // → Lobby (FreeRoam): follow cam outranks the board cams, board arrow-nav source OFF.
             _gameManager.currentGameStateIndex.Value = LobbyIndex;
             yield return AssertModeEffects("FreeRoam", _expectFollowActive: true, _expectAvatarSource: false);
 
-            // → Vote (Embodied): follow cam stands down; arrow-nav is now ON — the Vote navigates the board
-            // cameras with the seated first-person wired in as a node (its default starting camera).
+            // → Vote (Embodied): follow cam stands down; arrow-nav OFF — T23, the day is first person only (the
+            // table and its overview cameras are gone by day).
             _gameManager.currentGameStateIndex.Value = VoteIndex;
-            yield return AssertModeEffects("Embodied", _expectFollowActive: false, _expectAvatarSource: true);
+            yield return AssertModeEffects("Embodied", _expectFollowActive: false, _expectAvatarSource: false);
 
-            // → back to a board state: follow cam down, board arrow-nav source back ON (untouched-phase parity).
+            // → back to a board state: follow cam down, arrow-nav still OFF — T23, no camera switching with the arrows:
+            // the night stays on the top view.
             _gameManager.currentGameStateIndex.Value = BoardIndex;
-            yield return AssertModeEffects("Board", _expectFollowActive: false, _expectAvatarSource: true);
+            yield return AssertModeEffects("Board", _expectFollowActive: false, _expectAvatarSource: false);
         }
 
         [Test]

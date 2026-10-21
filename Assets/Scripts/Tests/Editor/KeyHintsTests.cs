@@ -73,6 +73,53 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new[] { KeyHintAction.Menu }, _hints);
         }
 
+        [Test]
+        public void Day_RowsAndSpreadsheetFirst()
+        {
+            var _hints = new List<KeyHintAction>();
+            CorruptionDuPortail.Domain.KeyHints.For(
+                new KeyHintContext(true, false, false, false, true, true, true, false, dayRowsAvailable: true, spreadsheetAvailable: true),
+                _hints);
+            CollectionAssert.AreEqual(
+                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.Spreadsheet, KeyHintAction.OpenTablet,
+                        KeyHintAction.Speak, KeyHintAction.Emotes, KeyHintAction.Menu },
+                _hints);
+        }
+
+        [Test]
+        public void Day_TabletOpen_NoSpreadsheetHint()
+        {
+            var _hints = new List<KeyHintAction>();
+            CorruptionDuPortail.Domain.KeyHints.For(
+                new KeyHintContext(true, true, false, false, false, false, true, false, dayRowsAvailable: true, spreadsheetAvailable: true),
+                _hints);
+            CollectionAssert.DoesNotContain(_hints, KeyHintAction.Spreadsheet);
+            CollectionAssert.Contains(_hints, KeyHintAction.PlayersRow);
+        }
+
+        [Test]
+        public void DayVote_SkipKeyAfterTheDayKeys()
+        {
+            var _hints = new List<KeyHintAction>();
+            CorruptionDuPortail.Domain.KeyHints.For(
+                new KeyHintContext(true, false, false, false, false, false, true, false, dayRowsAvailable: true,
+                    spreadsheetAvailable: true, skipVoteAvailable: true),
+                _hints);
+            CollectionAssert.AreEqual(
+                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.Spreadsheet, KeyHintAction.SkipVote,
+                        KeyHintAction.OpenTablet, KeyHintAction.Menu },
+                _hints);
+        }
+
+        [Test]
+        public void Night_NoDayKeys()
+        {
+            CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.PlayersRow);
+            CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.Spreadsheet);
+        }
+
+        [TestCase("Digit1", "&", "1")] // AZERTY prints & on the 1 key
+        [TestCase("Digit2", "é", "2")]
         [TestCase("Tab", "Tab", "Tab")]
         [TestCase("Escape", "Esc", "Échap")]
         [TestCase("RightArrow", "Right Arrow", "→")]

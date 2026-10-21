@@ -211,7 +211,7 @@ namespace Avatars
             // A game-state change is a camera change → end any running emote (restores FP + hides the local body).
             _emotePlayback?.End();
 
-            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue), _currentMode);
             _currentMode = _newMode;
 
             // The seated first-person is the default camera ONLY in Embodied (day) — there the embodied camera
@@ -242,8 +242,10 @@ namespace Avatars
             // touches the GameState source or removes/disables any board camera (NFR1); order vs the board
             // manager's own subscriber is irrelevant (AND is order-independent). .instance is a recorded census
             // survivor / opt-out (sanctioned, NOT a locator to remove); null-tolerant for headless / early-boot.
-            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar,
-                _currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied);
+            // T23 (Poyo, 2026-10-21): no more switching cameras with the arrows. By day the player stays in the seated
+            // first person (the vote opens on it), at night in the top view (the board's starting camera, restored when
+            // the day ends). The phases still pick their camera themselves; only the player's arrows are cut, everywhere.
+            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar, false);
 
             // Avatar movement input: enabled ONLY in FreeRoam (the Lobby), locked in every other state.
             ApplyMovementEnabled();

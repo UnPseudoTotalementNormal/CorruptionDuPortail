@@ -31,15 +31,30 @@ namespace Presentation
         [Tooltip("Seconds to fade the lights in when the seated view starts, and out when it ends.")]
         [SerializeField] private float _fadeSeconds = 0.4f;
 
+        [Tooltip("T23 (mockups jour-pov v1 H2): the light of the cat the player points at is this many times stronger.")]
+        [SerializeField] private float _hoverBoost = 1.8f;
+        [Tooltip("Seconds for a pointed cat's light to swell / settle.")]
+        [SerializeField] private float _hoverBoostSeconds = 0.15f;
+
         private readonly List<Light> _lights = new();
         private readonly List<PlayerAvatar> _avatars = new();
+        private readonly Dictionary<PlayerAvatar, float> _boostLevels = new();
         private float _level;
+
+        /// <summary>The cat whose light swells (the one the player points at, or whose card), null = none.</summary>
+        public PlayerAvatar Boosted { get; set; }
 
         /// <summary>Autoplay before / after captures: false = keep the lights off even in the seated view.</summary>
         public bool Enabled { get; set; } = true;
 
         /// <summary>Multiplies every cat's light, 1 = as tuned. The vote candle (T19) lowers it as the room goes dark.</summary>
         public float Dim { get; set; } = 1f;
+
+        /// <summary>Multiplies every cat's light too: the room going dark around a chained cat (T19), 1 = as tuned.</summary>
+        public float Darken { get; set; } = 1f;
+
+        /// <summary>A cat lifted off its seat (T19): its light stays off, the chaining's own light follows it. Null = none.</summary>
+        public PlayerAvatar Lifted { get; set; }
 
         private void Awake()
         {
@@ -74,7 +89,7 @@ namespace Presentation
             IReadOnlyList<PlayerAvatar> _live = _manager.GetAvatars();
             for (int _i = 0; _i < _live.Count; _i++)
             {
-                if (_live[_i] != null && !_live[_i].IsOwner)
+                if (_live[_i] != null && !_live[_i].IsOwner && _live[_i] != Lifted)
                 {
                     _avatars.Add(_live[_i]);
                 }
@@ -94,16 +109,27 @@ namespace Presentation
                     _elevation, _distance);
                 Light _light = _lights[_i];
                 CopySettings(_light);
+                _light.intensity *= 1f + (_hoverBoost - 1f) * BoostLevel(_avatar);
                 _light.transform.SetPositionAndRotation(_pose.position, _pose.rotation);
             }
             ShowLights(_avatars.Count);
+        }
+
+        // Eases the pointed cat's light up and the others back down.
+        private float BoostLevel(PlayerAvatar _avatar)
+        {
+            _boostLevels.TryGetValue(_avatar, out float _boost);
+            float _step = _hoverBoostSeconds > 0f ? Time.unscaledDeltaTime / _hoverBoostSeconds : 1f;
+            _boost = Mathf.MoveTowards(_boost, _avatar == Boosted ? 1f : 0f, _step);
+            _boostLevels[_avatar] = _boost;
+            return _boost;
         }
 
         // Keep each copy in step with the template (tuned live in the editor), times the fade.
         private void CopySettings(Light _light)
         {
             _light.color = _template.color;
-            _light.intensity = _template.intensity * _level * Dim;
+            _light.intensity = _template.intensity * _level * Dim * Darken;
             _light.range = _template.range;
             _light.spotAngle = _template.spotAngle;
             _light.innerSpotAngle = _template.innerSpotAngle;

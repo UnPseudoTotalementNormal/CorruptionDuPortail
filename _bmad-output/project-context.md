@@ -174,6 +174,11 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
 - Animating the scale of a non-convex `MeshCollider` re-cooks it every frame → raycast dropouts. Put the collider on an unscaled parent or use a primitive.
 - **The UI raycast ranks canvases by sorting order before distance.** A world-space canvas BEHIND a card with a higher order takes the cursor's and the seated reticle's hover / click (the characters bar's portraits at order 0 over cards at −1: looking at the top of a far card hovered a portrait, 2026-10-08). Keep world-space interactables that can sit behind cards at an order ≤ the cards' (−1); equal orders fall back to distance.
+- **A card's root is driven by its `TransformCompositorComponent`**: every frame it composes the layers (Transform, Hover,
+  Flip, Punch) into the root's local transform, and folds any outside change of the root back into the Transform layer.
+  A tween on the root fights it (the T23 screen row stacked every card at the centre, back side out). Move a card through
+  its Transform layer only; after a `SetParent` call `ApplyComposedTransform()` before tweening; put a size on the PARENT
+  (the flip lifts a card 4 parent units, so it must keep the table's proportions).
 - **Board card layout values are measured, never guessed** (`CardLayout.GridFor`). Free band of the top view at 1600 × 900: z ≈ +9.8 (characters bar) to −13.6 (bottom HUD / skip button); a hovered card grows ~1.1× and its vote count text slides to 6.89 × scale under the card's centre. Each guess so far hid something (V3 spacing 10.3: near-line panels under the bottom HUD at 12 seats). Any change: `CardLayoutTests` constraints, then `tools/autoplay/sweep_card_visibility.py` (every size, PASS with `--effects-see-through`).
 
 ## Code organization

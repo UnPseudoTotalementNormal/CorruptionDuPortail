@@ -239,24 +239,44 @@ namespace Autoplay
             try
             {
                 await PrepareSeat(_id);
-                // At vote start the board cards are shown again with an animation: wait for the target's card.
-                float _cardDeadline = Time.realtimeSinceStartup + 3f;
-                while (BoardCardOf(_targetId) == null && Time.realtimeSinceStartup < _cardDeadline)
+                if (CurrentState is VoteState _cats && _cats.voteOnCats)
                 {
-                    await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+                    // T23: by day the vote is cast on the cats (the reticle on the target's cat, click); the cards on
+                    // screen have no vote button.
+                    GameObject _cat = CatTargetOf(_targetId);
+                    if (_cat != null)
+                    {
+                        // The day's dark passes first (the table goes): aim once the view has settled on the cats.
+                        await UniTask.Delay(TimeSpan.FromSeconds(3), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                        capture.Request($"vote-aim-{_id}-{_targetId}", 0f);
+                        _clicked = await ClickTarget(_cat, $"vote {_id} -> {_targetId}", () => HasVoted(_id));
+                    }
+                    else
+                    {
+                        Journal.Record("input.miss", $"vote {_id} -> {_targetId} target=cat:{_targetId} reason=not-found");
+                    }
                 }
-                Card _card = BoardCardOf(_targetId);
-                var _panel = _card ? _card.GetComponentInChildren<Board.UI.VoteCanvas.VoteCanvas>(true) : null;
-                if (_panel != null && await HoverTarget(_card.gameObject, $"vote {_id} -> {_targetId}", 0.5f))
+                else
                 {
-                    // The hovered card's vote panel, as the voter sees it (is it covered by the next line of cards?).
-                    capture.Request($"vote-hover-{_id}-{_targetId}", 0f);
-                    _clicked = await ClickTarget(_panel.voteButton ? _panel.voteButton.gameObject : null, $"vote {_id} -> {_targetId}",
-                        () => HasVoted(_id));
-                }
-                else if (_panel == null)
-                {
-                    Journal.Record("input.miss", $"vote {_id} -> {_targetId} target=card:{_targetId} reason=not-found");
+                    // At vote start the board cards are shown again with an animation: wait for the target's card.
+                    float _cardDeadline = Time.realtimeSinceStartup + 3f;
+                    while (BoardCardOf(_targetId) == null && Time.realtimeSinceStartup < _cardDeadline)
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+                    }
+                    Card _card = BoardCardOf(_targetId);
+                    var _panel = _card ? _card.GetComponentInChildren<Board.UI.VoteCanvas.VoteCanvas>(true) : null;
+                    if (_panel != null && await HoverTarget(_card.gameObject, $"vote {_id} -> {_targetId}", 0.5f))
+                    {
+                        // The hovered card's vote panel, as the voter sees it (is it covered by the next line of cards?).
+                        capture.Request($"vote-hover-{_id}-{_targetId}", 0f);
+                        _clicked = await ClickTarget(_panel.voteButton ? _panel.voteButton.gameObject : null, $"vote {_id} -> {_targetId}",
+                            () => HasVoted(_id));
+                    }
+                    else if (_panel == null)
+                    {
+                        Journal.Record("input.miss", $"vote {_id} -> {_targetId} target=card:{_targetId} reason=not-found");
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -299,9 +319,20 @@ namespace Autoplay
             try
             {
                 await PrepareSeat(_id);
-                SkipButton _button = FindAnyObjectByType<SkipButton>(FindObjectsInactive.Include);
-                _clicked = await ClickTarget(_button ? _button.gameObject : null, $"vote-skip {_id}",
-                    () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
+                Presentation.DayCatVoting _day = FindAnyObjectByType<Presentation.DayCatVoting>();
+                if (CurrentState is VoteState _vote && _vote.voteOnCats && _day != null)
+                {
+                    // T23: by day the board's skip button went with the table; skipping is a key (P).
+                    await UniTask.Delay(TimeSpan.FromSeconds(3), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    await VirtualInput.PressKey(_day.SkipKey).WithCancellation(Cancel);
+                    _clicked = await WaitForEffect($"vote-skip {_id}", $"key={_day.SkipKey}", () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
+                }
+                else
+                {
+                    SkipButton _button = FindAnyObjectByType<SkipButton>(FindObjectsInactive.Include);
+                    _clicked = await ClickTarget(_button ? _button.gameObject : null, $"vote-skip {_id}",
+                        () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
+                }
             }
             catch (OperationCanceledException)
             {
@@ -357,6 +388,15 @@ namespace Autoplay
         {
             BoardManager _board = BoardManager.instance;
             return _board == null ? null : _board.visibleCards.FirstOrDefault(_c => _c && _c.characterInfo && _c.characterInfo.ownerClientId.Value == _ownerId);
+        }
+
+        // T23: the seated cat of a player, as something to point at (its CatPointerTarget's trigger capsule).
+        private static GameObject CatTargetOf(ulong _seat)
+        {
+            Avatars.AvatarManager _avatars = Avatars.AvatarManager.For(Unity.Netcode.NetworkManager.Singleton);
+            Avatars.PlayerAvatar _avatar = _avatars != null ? _avatars.GetAvatar(_seat) : null;
+            Avatars.CatPointerTarget _target = _avatar != null ? _avatar.GetComponentInChildren<Avatars.CatPointerTarget>(true) : null;
+            return _target != null ? _target.gameObject : null;
         }
 
         private bool HasVoted(ulong _voterId, ulong? _forId = null)

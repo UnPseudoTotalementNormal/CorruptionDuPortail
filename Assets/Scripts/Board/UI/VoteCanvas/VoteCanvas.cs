@@ -38,10 +38,15 @@ namespace Board.UI.VoteCanvas
             voteState = _voteState;
         }
 
-        public void ActivateVoteCanvas()
+        /// <summary>
+        /// Shows the panel under the card. <paramref name="_withVoteButton"/> false (T23: by day the vote is cast on the
+        /// cats, the cards are only to look at): the panel keeps its text ("A voté" / "N'a pas voté") but not its button.
+        /// </summary>
+        public void ActivateVoteCanvas(bool _withVoteButton = true)
         {
             isChainedOnVoteStart = card.characterInfo.isChained.Value;
             isEliminatedOnVoteStart = card.characterInfo.isEliminated.Value;
+            voteButton.gameObject.SetActive(_withVoteButton);
             ShowCanvas();
             card.onCardHovered += OnCardHovered;
             card.onCardUnhovered += OnCardUnhovered;
@@ -56,7 +61,7 @@ namespace Board.UI.VoteCanvas
             {
                 voteButton.GetComponentInChildren<TMP_Text>().text = "Enchaîné";
             }
-            else
+            else if (_withVoteButton)
             {
                 voteButton.onButtonClicked += OnVoteButtonClicked;
             }
@@ -70,6 +75,7 @@ namespace Board.UI.VoteCanvas
         public void DeactivateVoteCanvas()
         {
             HideCanvas();
+            voteButton.gameObject.SetActive(true);
             card.onCardHovered -= OnCardHovered;
             card.onCardUnhovered -= OnCardUnhovered;
             voteButton.onButtonClicked -= OnVoteButtonClicked;

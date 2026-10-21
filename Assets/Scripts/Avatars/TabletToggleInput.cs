@@ -21,6 +21,43 @@ namespace Avatars
         [SerializeField] private SmartphoneController _smartphone;
         [SerializeField] private InputActionAsset _inputActions;
 
+        // T23: by day, T opens the tablet straight on the players' table ("Tableur : T", the day's keys are 1, 2, T, E).
+        [Tooltip("The tablet's table of players and roles, opened by the spreadsheet key by day.")]
+        [SerializeField] private SmartphoneApp _spreadsheetApp;
+        [Tooltip("Gates the spreadsheet key to the day (the seated Embodied mode).")]
+        [SerializeField] private CameraModeChannel _cameraMode;
+        [SerializeField] private Key _spreadsheetKey = Key.T;
+
+        /// <summary>The spreadsheet key (T), shown by the key hints.</summary>
+        public Key SpreadsheetKey => _spreadsheetKey;
+
+        /// <summary>Whether the spreadsheet key works right now (by day, the table app wired).</summary>
+        public bool SpreadsheetReachable =>
+            _spreadsheetApp != null && _cameraMode != null && _cameraMode.Current == CameraMode.Embodied;
+
+        private void Update()
+        {
+            Keyboard _keyboard = Keyboard.current;
+            if (_keyboard == null || !SpreadsheetReachable || !_keyboard[_spreadsheetKey].wasPressedThisFrame
+                || Presentation.DayScreenRows.IsTyping())
+            {
+                return;
+            }
+            if (!_smartphone.IsOpen)
+            {
+                _smartphone.TryOpenPanel();
+                _smartphone.GoToApp(_spreadsheetApp);
+            }
+            else if (_smartphone.currentApp != _spreadsheetApp)
+            {
+                _smartphone.GoToApp(_spreadsheetApp);
+            }
+            else
+            {
+                _smartphone.TryClosePanel();
+            }
+        }
+
         private InputActionAsset _runtimeActions;
         private InputAction _toggleAction;
 

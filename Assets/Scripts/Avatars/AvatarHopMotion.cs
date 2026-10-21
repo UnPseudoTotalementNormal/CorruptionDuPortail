@@ -54,6 +54,27 @@ namespace Avatars
         private float _amplitude;
         private bool _initialized;
 
+        private bool _hasWorldPose;
+        private Vector3 _worldPosition;
+        private Quaternion _worldFacing;
+        private float _worldScale = 1f;
+
+        /// <summary>
+        /// Holds the cat away from its seat (T19, <c>ChainRevealDirector</c>: the force that carries a chained cat to the
+        /// middle of the circle): its feet at <paramref name="_position"/>, facing <paramref name="_facing"/>, its size
+        /// times <paramref name="_scale"/>. The hop stops meanwhile. <see cref="ClearWorldPose"/> puts it back.
+        /// </summary>
+        public void SetWorldPose(Vector3 _position, Quaternion _facing, float _scale = 1f)
+        {
+            _hasWorldPose = true;
+            _worldPosition = _position;
+            _worldFacing = _facing;
+            _worldScale = _scale;
+        }
+
+        /// <summary>Back on its seat (the next LateUpdate).</summary>
+        public void ClearWorldPose() => _hasWorldPose = false;
+
         private void Awake()
         {
             _visual = transform;
@@ -113,6 +134,17 @@ namespace Avatars
             // Ease amplitude toward 1 while moving / 0 while stopped → rest flat on the ground (no float).
             float _target = _speed >= _moveSpeedThreshold ? 1f : 0f;
             _amplitude = AvatarHopMath.EaseAmplitude(_amplitude, _target, _amplitudeEaseSpeed, _dt);
+
+            if (_hasWorldPose)
+            {
+                // The base offset is in the root's space: carried along with the facing and the size.
+                Vector3 _parentScale = _visual.parent != null ? _visual.parent.lossyScale : Vector3.one;
+                _visual.SetPositionAndRotation(
+                    _worldPosition + _worldFacing * Vector3.Scale(_baseLocalPos, _parentScale) * _worldScale,
+                    _worldFacing * _baseLocalRot);
+                _visual.localScale = _baseLocalScale * _worldScale;
+                return;
+            }
 
             float _arc = AvatarHopMath.Arc(_phase) * _amplitude;
             float _ss = AvatarHopMath.SquashStretch(_phase) * _amplitude;

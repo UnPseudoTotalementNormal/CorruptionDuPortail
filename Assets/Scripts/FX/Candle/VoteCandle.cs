@@ -425,8 +425,34 @@ namespace FX.Candle
 
         // ---- where it stands: its own place by the player's cards, or the nearest free one (never on a card)
 
+        [Tooltip("T23: where the candle stands by day, when the table is gone, from the player's seat (metres): x to the " +
+                 "right, z ahead; y is the floor's height. On the floor ahead of the player: in sight when looking down.")]
+        [SerializeField] private Vector3 _floorSpot = new Vector3(3f, -21.94f, 16.8f);
+        private bool _onFloor;
+
+        /// <summary>T23: by day the table disappears; the candle goes down to the floor (Poyo, 2026-10-21) and back on
+        /// the table at night.</summary>
+        public void SetOnFloor(bool _floor)
+        {
+            if (_floor == _onFloor)
+            {
+                return;
+            }
+            _onFloor = _floor;
+            PlaceOnTable();
+        }
+
         private void PlaceOnTable()
         {
+            if (_onFloor)
+            {
+                Avatars.AvatarManager _avatars = Avatars.AvatarManager.For(Unity.Netcode.NetworkManager.Singleton);
+                Avatars.SeatPose _seat = _avatars != null ? _avatars.GetLocalSeatPose() : new Avatars.SeatPose(Vector3.zero, Quaternion.identity);
+                Vector3 _floor = _seat.Position + _seat.Rotation * new Vector3(_floorSpot.x, 0f, _floorSpot.z);
+                transform.position = new Vector3(_floor.x, _floorSpot.y, _floor.z);
+                transform.localScale = Vector3.one * _baseScale;
+                return;
+            }
             if (_boardManager == null || _table == null)
             {
                 return;

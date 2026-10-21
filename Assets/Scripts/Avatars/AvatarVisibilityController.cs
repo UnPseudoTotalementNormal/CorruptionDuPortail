@@ -41,6 +41,7 @@ namespace Avatars
         // camera, so the normally-hidden owner body must be revealed. Arbiter-driven; overrides the "hide the
         // local first-person body" rule for the owner only, and only outside Board (night stays fully hidden).
         private bool _localBodyOverride;
+        private PlayerAvatar _featured;
         // Cached renderer arrays per avatar (GetComponentsInChildren allocates — do it once, not per frame).
         private readonly Dictionary<PlayerAvatar, Renderer[]> _renderers = new();
         // Reused scratch for evicting despawned avatars from _renderers: a despawned PlayerAvatar key is never
@@ -58,6 +59,12 @@ namespace Avatars
         /// <summary>Arbiter contract: reveal the local (owner) body while emoting so the third-person orbit
         /// camera can show it. Only takes effect outside Board (night hides everyone). Applied next LateUpdate.</summary>
         public void SetLocalBodyVisibleOverride(bool _revealLocalBody) => _localBodyOverride = _revealLocalBody;
+
+        /// <summary>
+        /// One avatar shown whatever the mode, the local one too (T19: the chained cat, filmed from the front during
+        /// the chaining while the others stay hidden). Null = none.
+        /// </summary>
+        public void SetFeatured(PlayerAvatar _avatar) => _featured = _avatar;
 
         /// <summary>
         /// Pure visibility policy (EditMode-testable): is an avatar's body shown in <paramref name="_mode"/>?
@@ -92,6 +99,10 @@ namespace Avatars
                 // during the day" rule is preserved for OTHERS (non-owners stay hidden); the emoting player just
                 // sees their own cat instead of orbiting empty space.
                 if (_avatar.IsOwner && _localBodyOverride)
+                {
+                    _visible = true;
+                }
+                if (_featured != null && _avatar == _featured)
                 {
                     _visible = true;
                 }

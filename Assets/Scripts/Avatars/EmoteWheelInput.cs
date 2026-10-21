@@ -37,7 +37,7 @@ namespace Avatars
 
         [Header("Feel — placeholder defaults, Poyo-tuned")]
         [Tooltip("Key held to open the wheel (release to play the highlighted emote).")]
-        [SerializeField] private Key openKey = Key.T;
+        [SerializeField] private Key openKey = Key.E;
 
         [Tooltip("Mouse-delta -> virtual-stick gain while the cursor is locked.")]
         [SerializeField] private float stickSensitivity = 1f;

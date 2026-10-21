@@ -396,12 +396,12 @@ namespace Autoplay
             }
         }
 
-        // Hold T, turn the virtual stick with mouse deltas, release (T is released even when cancelled).
+        // Hold the wheel's key (E), turn the virtual stick with mouse deltas, release (the key is released even when cancelled).
         private async UniTask EmoteWheelGesture(EmoteWheelInput _wheel)
         {
             try
             {
-                await VirtualInput.KeyDown(Key.T).WithCancellation(Cancel);
+                await VirtualInput.KeyDown(_wheel.OpenKey).WithCancellation(Cancel);
                 float _deadline = Time.realtimeSinceStartup + 1f;
                 while (!_wheel.IsOpen && Time.realtimeSinceStartup < _deadline)
                 {
@@ -435,7 +435,7 @@ namespace Autoplay
             }
             finally
             {
-                VirtualInput.ReleaseKey(Key.T);
+                VirtualInput.ReleaseKey(_wheel.OpenKey);
             }
         }
 

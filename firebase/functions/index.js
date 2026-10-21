@@ -14,7 +14,8 @@ const { getFirestore, FieldValue, Timestamp } = require("firebase-admin/firestor
 initializeApp();
 
 const botToken = defineSecret("DISCORD_BOT_TOKEN");
-const channelId = defineString("DISCORD_REPORTS_CHANNEL_ID");
+// Channel « rapports-de-bug » (hidden, created 2026-10-20); firebase/functions/.env may override it locally.
+const channelId = defineString("DISCORD_REPORTS_CHANNEL_ID", { default: "1562180825305448578" });
 
 const { buildMessage } = require("./message");
 

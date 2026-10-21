@@ -63,6 +63,15 @@ namespace VoiceSystem
         /// <summary>The local microphone is open and its voice is being sent.</summary>
         public bool IsTransmitting { get; private set; }
 
+        /// <summary>The key held to speak, shown by the key hints.</summary>
+        public Key PushToTalkKey => _pushToTalkKey;
+
+        /// <summary>Holding <see cref="PushToTalkKey"/> would open the microphone now: voice available (Steam), push to
+        /// talk (not the always-open mic) and the player may speak at this moment (by day, or a private channel at night).</summary>
+        public bool PushToTalkReady =>
+            IsSpawned && _codec != null && _codec.IsAvailable && !_options.OpenMic
+            && VoiceRouting.MaySpeak(IsNight(), HasPrivateChannel());
+
         /// <summary>Raised when the local microphone opens / closes.</summary>
         public event Action<bool> onTransmittingChanged;
 

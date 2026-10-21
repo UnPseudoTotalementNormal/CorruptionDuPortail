@@ -1,0 +1,83 @@
+{
+  "name": "key-hints-tour",
+  "goal": "Key hints in the bottom left corner (mockups touches v2 L2 + B1 + K5): on a real client, filmed, the real-input tour presses the keys the hints show and each one does what its drawing says: at night Tab opens the tablet (the hint turns into Tab close + the arrow towards the next screen), the arrow swipes, Tab closes it; Escape opens and closes the pause menu (hints hidden while it is open); at the vote recap T held opens the emote wheel (its hint is there in the seated view). The video is the evidence for the look; the events prove every key had its effect. Filmed on every process (the host's window is 1280 x 720, clients 640 x 360); -autoplay-tour-dwell keeps each state 1.5 s on screen.",
+  "mode": "net",
+  "clients": 1,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 1200,
+  "video": true,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-tour-dwell",
+    "1.5",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "tour.tablet-open",
+      "detail": "^ok",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.tablet-swipe",
+      "detail": "^ok",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.tablet-close",
+      "detail": "^ok",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.pause-escape-open",
+      "detail": "^ok",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.pause-escape-close",
+      "detail": "^ok",
+      "process": "clients",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.emote",
+      "detail": "^ok",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

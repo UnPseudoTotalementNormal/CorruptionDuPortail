@@ -58,6 +58,12 @@ namespace Avatars
         /// stick without also turning the camera. The cursor stays locked (the stick needs the delta).</summary>
         public bool IsOpen => _open;
 
+        /// <summary>The key held to open the wheel, shown by the key hints.</summary>
+        public Key OpenKey => openKey;
+
+        /// <summary>Pressing <see cref="OpenKey"/> would open the wheel now (the player looks through their own eyes).</summary>
+        public bool IsReachable => IsFirstPersonLive();
+
         /// <summary>Raised when the wheel opens / closes — the arbiter subscribes to gate the look (tablet-style).</summary>
         public event System.Action Opened;
         public event System.Action Closed;

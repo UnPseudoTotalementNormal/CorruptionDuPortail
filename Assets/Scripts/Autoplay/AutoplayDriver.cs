@@ -88,6 +88,8 @@ namespace Autoplay
         [NonSerialized] public AutoplayVirtualInput lobbyInput;
         [Tooltip("Real-input tour (-autoplay-real-input-tour): tooltip, pause menu, tablet, chat app, emote wheel, once per game.")]
         public bool realInputTour;
+        [Tooltip("Real-input tour (-autoplay-tour-dwell <real seconds>): extra time each tablet / pause menu state stays on screen, for a video. 0 = none.")]
+        public float tourDwellSeconds;
         [Tooltip("This peer starts in the middle of a phase (a rejoin): no state hash for that first phase, the host sampled it before the peer was back.")]
         public bool joinedMidPhase;
         [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]

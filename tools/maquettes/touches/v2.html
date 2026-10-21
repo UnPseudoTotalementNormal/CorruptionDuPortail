@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les touches cachées : dessin éteint, flèches, quelles touches (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .tk-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tk-bg.open { opacity: 0; }
+  .tk-stage.is-open .tk-bg.open { opacity: 1; }
+  .tk-stage.is-open .tk-bg.closed { opacity: 0; }
+  .tk-layer { position: absolute; inset: 0; pointer-events: none; }
+  .tk-when-open { display: none; }
+  .tk-stage.is-open .tk-when-open { display: block; }
+  .tk-stage.is-open .tk-when-closed { display: none; }
+
+  /* the chosen look (tour 1 A3 + A4): a small drawing, the key under it, no word, half lit */
+  .tk-row { position: absolute; display: flex; gap: 26px; align-items: flex-end; pointer-events: auto; cursor: pointer; opacity: var(--dim, .72); }
+  .tk-h { display: flex; flex-direction: column; align-items: center; gap: 5px; white-space: nowrap; }
+  svg.tk-i { width: 46px; height: 38px; filter: drop-shadow(0 1px 3px #000); }
+  .tk-k { font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; letter-spacing: .5px; }
+
+  /* tablet open: the arrows on its sides (where the grey squares are) or the screens named under it */
+  .tk-hide-sq { position: absolute; top: 427px; width: 46px; height: 46px; background: #141210; }
+  .tk-side { position: absolute; top: 416px; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: var(--dim, .72); }
+  .tk-side .tk-w { font: 22px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; }
+  .tk-bar { position: absolute; left: 0; right: 0; top: 768px; display: flex; justify-content: center; align-items: center; gap: 28px; opacity: var(--dim, .72); }
+  .tk-bar .tk-tab { font: 25px Garamond, serif; color: rgba(234,220,191,.55); text-shadow: 0 1px 3px #000; padding-bottom: 2px; }
+  .tk-bar .tk-tab.on { color: #fff3da; border-bottom: 2px solid #eadcbf; }
+  .tk-bar svg.tk-i { width: 34px; height: 28px; }
+
+  /* K: night and vote side by side, same game */
+  .tk-duo { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #0a0806; padding: 215px 10px; box-sizing: border-box; }
+  .tk-q { position: relative; overflow: hidden; }
+  .tk-q .tk-mini { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform: scale(.4925); transform-origin: 0 0; }
+  .tk-q .tk-cap { position: absolute; left: 0; right: 0; top: 0; padding: 8px 14px; font: 24px Garamond, serif; color: #fff3da;
+    background: linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,0)); }
+
+  .tk-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tk-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tk-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tk-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tk-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="touches">
+
+<header class="page">
+  <h1>Les touches cachées (tour 2)</h1>
+  <p>Tour 1 : A3 (le petit dessin et la touche) 👍, avec A4 « un peu éteint comme ça » ; C1 (toujours là) 👍. Les deux
+     sont réunis partout ici. K2, K3 et K4 ont tous eu 👍 : ils se contredisent (tout, toujours, ou seulement ce qui
+     marche), donc une dernière manche pour trancher, avec un mélange des deux (K5).</p>
+  <p>Les flèches (B) étaient invisibles : la tablette était fermée tant qu'on ne touchait pas « Tablette ouverte ».
+     Cette fois les cadres B sont ouverts d'office.</p>
+</header>
+
+<nav class="tk-moments"><div>
+  <button data-at="0">1. Tablette fermée</button>
+  <button data-at="3000">2. Tablette ouverte</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Pour la première section. Tab marche aussi.</span>
+</div></nav>
+
+<section>
+  <h2>Combien éteint</h2>
+  <p>Le dessin et la touche, sans mot, dans le coin bas gauche. Seule la lumière change.</p>
+
+  <div class="variant" data-id="L1">
+    <div class="vhead"><span class="vid">L1</span><span class="vname">Éteint comme A4</span></div>
+    <p class="vdesc">Le même voile qu'au tour 1 : lisible d'un coup d'œil, sans attirer le regard.</p>
+    <div class="screen"><div class="stage tk-stage" data-place="corner" style="--dim:.72"></div></div>
+  </div>
+
+  <div class="variant" data-id="L2">
+    <div class="vhead"><span class="vid">L2</span><span class="vname">Plus éteint encore</span></div>
+    <p class="vdesc">À moitié visible : on le trouve quand on le cherche.</p>
+    <div class="screen"><div class="stage tk-stage" data-place="corner" style="--dim:.5"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Où vont les flèches, tablette ouverte</h2>
+  <p>Tablette ouverte sur le tableau, le premier écran : rien à gauche, le Chat à droite.</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Tout dans le coin</span></div>
+    <p class="vdesc">La flèche rejoint Tab dans le coin. La tablette ne change pas, les carrés gris restent.</p>
+    <div class="screen"><div class="stage tk-stage" data-place="corner" data-open="1"></div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Sur les côtés de la tablette</span></div>
+    <p class="vdesc">Les carrés gris deviennent la flèche, la touche et le nom de l'écran d'à côté. Tab reste dans le coin.</p>
+    <div class="screen"><div class="stage tk-stage" data-place="sides" data-open="1"></div></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Les écrans nommés sous la tablette</span></div>
+    <p class="vdesc">Les noms des écrans sous la tablette, celui qu'on regarde souligné, les flèches aux deux bouts.</p>
+    <div class="screen"><div class="stage tk-stage" data-place="bar" data-open="1"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quelles touches montrer</h2>
+  <p>Une même partie : ton tour de nuit à gauche, le vote assis à droite. Tablette fermée.</p>
+
+  <div class="variant" data-id="K3">
+    <div class="vhead"><span class="vid">K3</span><span class="vname">Tout, toujours</span></div>
+    <p class="vdesc">Les cinq touches partout, même T la nuit où la roue des émotes ne s'ouvre pas.</p>
+    <div class="screen"><div class="stage" data-duo="tab,v,t,esc,f8|tab,v,t,esc,f8"></div></div>
+  </div>
+
+  <div class="variant" data-id="K4">
+    <div class="vhead"><span class="vid">K4</span><span class="vname">Ce qui marche, sans Échap ni F8</span></div>
+    <p class="vdesc">Tab et V ; T s'ajoute au vote. Le menu et le signalement se découvrent autrement.</p>
+    <div class="screen"><div class="stage" data-duo="tab,v|tab,v,t"></div></div>
+  </div>
+
+  <div class="variant" data-id="K5">
+    <div class="vhead"><span class="vid">K5</span><span class="vname">Tout ce qui marche à ce moment</span></div>
+    <p class="vdesc">Le mélange : Échap et F8 toujours là, T seulement au vote.</p>
+    <div class="screen"><div class="stage" data-duo="tab,v,esc,f8|tab,v,t,esc,f8"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Autre chose à changer avant que je code ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  const LOOP = 6000, OPEN_AT = 3000;
+  const IMG = { closed: "img/ferme.jpg", open: "img/ouvert.jpg", vote: "../signaler-un-bug/img/jour.jpg" };
+
+  // small drawings (46 x 38, cream line), as in tour 1 A3
+  const ICON = {
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    close: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M17 12 l12 12 M29 12 l-12 12" stroke="#eadcbf" stroke-width="2.5"/>',
+    right: '<rect x="4" y="7" width="22" height="22" rx="2" fill="none" stroke="#eadcbf" stroke-width="2"/><path d="M30 18 h12 m-5 -5 l5 5 l-5 5" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    arrowR: '<path d="M8 19 h28 m-9 -9 l9 9 l-9 9" fill="none" stroke="#eadcbf" stroke-width="3"/>',
+    arrowL: '<path d="M38 19 h-28 m9 -9 l-9 9 l9 9" fill="none" stroke="#eadcbf" stroke-width="3"/>',
+    v: '<rect x="18" y="4" width="10" height="18" rx="5" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M12 16 a11 11 0 0 0 22 0 M23 27 v6 M17 34 h12" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    t: '<circle cx="23" cy="19" r="14" fill="none" stroke="#eadcbf" stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    esc: '<path d="M8 9 h30 M8 19 h30 M8 29 h30" stroke="#eadcbf" stroke-width="3"/>',
+    f8: '<ellipse cx="23" cy="21" rx="9" ry="11" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M23 10 v22 M14 16 l-6 -3 M32 16 l6 -3 M14 26 l-6 3 M32 26 l6 3" stroke="#eadcbf" stroke-width="2.2"/>',
+  };
+  const KEYS = {
+    tab:   { k: "Tab",   i: "tab" },
+    close: { k: "Tab",   i: "close" },
+    right: { k: "→",     i: "right" },
+    v:     { k: "V",     i: "v" },
+    t:     { k: "T",     i: "t" },
+    esc:   { k: "Échap", i: "esc" },
+    f8:    { k: "F8",    i: "f8" },
+  };
+  const svg = (i, cls) => '<svg class="tk-i' + (cls || "") + '" viewBox="0 0 46 38">' + ICON[i] + "</svg>";
+  const hint = id => '<div class="tk-h">' + svg(KEYS[id].i) + '<span class="tk-k">' + KEYS[id].k + "</span></div>";
+  const row = (ids, style) => '<div class="tk-row" style="' + style + '">' + ids.map(hint).join("") + "</div>";
+
+  // the corner: bottom left, under the letters
+  const CORNER = "left:28px; bottom:26px;";
+
+  let isOpen = false, looping = false, timer = null;
+  function build(stage) {
+    const place = stage.dataset.place;
+    let h = '<img class="tk-bg closed" src="' + IMG.closed + '" alt=""><img class="tk-bg open" src="' + IMG.open + '" alt="">';
+    h += '<div class="tk-layer"><div class="tk-when-closed">' + row(["tab", "v"], CORNER) + "</div>";
+    if (place === "corner") {
+      h += '<div class="tk-when-open">' + row(["close", "right", "v"], CORNER) + "</div>";
+    } else if (place === "sides") {
+      h += '<div class="tk-when-open">' + row(["close", "v"], CORNER)
+        + '<div class="tk-hide-sq" style="left:246px"></div><div class="tk-hide-sq" style="left:1308px"></div>'
+        + '<div class="tk-side" style="left:1304px">' + svg("arrowR") + '<span class="tk-k">→</span><span class="tk-w">Chat</span></div></div>';
+    } else if (place === "bar") {
+      h += '<div class="tk-when-open">' + row(["close", "v"], CORNER)
+        + '<div class="tk-hide-sq" style="left:246px"></div><div class="tk-hide-sq" style="left:1308px"></div>'
+        + '<div class="tk-bar"><span style="opacity:.3">' + svg("arrowL") + '</span><span class="tk-tab on">Tableau</span>'
+        + '<span class="tk-tab">Chat</span>' + svg("arrowR") + "</div></div>";
+    }
+    stage.innerHTML = h + "</div>";
+    stage.querySelectorAll(".tk-row").forEach(r => r.addEventListener("click", () => { if (!stage.dataset.open) setOpen(!isOpen); }));
+  }
+  const stages = [...document.querySelectorAll(".tk-stage")];
+  stages.forEach(build);
+
+  // K: night (left) and vote (right) of one game, the keys of each side
+  document.querySelectorAll("[data-duo]").forEach(stage => {
+    const sides = stage.dataset.duo.split("|").map(s => s.split(","));
+    const parts = [["Ton tour de nuit", IMG.closed], ["Le vote, assis", IMG.vote]];
+    let h = '<div class="tk-duo">';
+    parts.forEach(([cap, src], i) => {
+      h += '<div class="tk-q"><div class="tk-mini"><img class="tk-bg" style="opacity:1" src="' + src + '" alt="">'
+        + '<div class="tk-layer">' + row(sides[i], CORNER) + '</div></div><div class="tk-cap">' + cap + "</div></div>";
+    });
+    stage.innerHTML = h + "</div>";
+  });
+
+  // open / closed, shared by the first section's frames; data-open frames stay open; ?at=<ms> freezes it
+  function setOpen(o) {
+    isOpen = o;
+    stages.forEach(s => s.classList.toggle("is-open", o || !!s.dataset.open));
+    document.querySelectorAll(".tk-moments button[data-at]").forEach(b =>
+      b.classList.toggle("on", !looping && (+b.dataset.at >= OPEN_AT) === o));
+  }
+  function stopLoop() { looping = false; clearInterval(timer); document.querySelector("[data-loop]").classList.remove("on"); }
+  document.querySelectorAll(".tk-moments button[data-at]").forEach(b => b.onclick = () => { stopLoop(); setOpen(+b.dataset.at >= OPEN_AT); });
+  document.querySelector("[data-loop]").onclick = e => {
+    if (looping) { stopLoop(); return; }
+    looping = true; e.target.classList.add("on");
+    const t0 = performance.now();
+    timer = setInterval(() => setOpen(((performance.now() - t0) % LOOP) >= OPEN_AT), 100);
+  };
+  document.addEventListener("keydown", e => {
+    if (e.key === "Tab" && !/TEXTAREA|INPUT/.test(document.activeElement.tagName)) { e.preventDefault(); stopLoop(); setOpen(!isOpen); }
+  });
+  const at = new URLSearchParams(location.search).get("at");
+  setOpen(at !== null && +at >= OPEN_AT);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

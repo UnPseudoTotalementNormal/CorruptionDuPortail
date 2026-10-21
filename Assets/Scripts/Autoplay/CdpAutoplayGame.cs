@@ -490,6 +490,7 @@ namespace Autoplay
                 voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
                 voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
+                tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourAudioSlider = true,
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
@@ -1659,6 +1660,7 @@ namespace Autoplay
                 voteSkipIds = ParseIds(_context.Config.Option("vote-skip")),
                 voteSkipCast = _context.Config.Flag("vote-skip-cast"),
                 realInputTour = _context.Config.Flag("real-input-tour"),
+                tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),

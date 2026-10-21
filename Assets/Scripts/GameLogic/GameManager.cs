@@ -722,6 +722,8 @@ namespace GameLogic
             // ClientDisconnectHandler.OnClientStopped does NOT mistake this for an abrupt host loss and pop
             // the "host connection lost" notification. Runs on Everyone (host + clients); harmless on the host.
             Network.ClientDisconnectHandler.NotifyExpectedShutdown();
+            // Rejoin: the host ended the game, there is nothing left to come back to.
+            Network.RejoinSessionStore.Clear();
 
             // Clean up the cloud lobby on a graceful end: the host DELETES the whole lobby (so it does not
             // linger for the remaining members until Unity's ~30s no-heartbeat expiry), each client just

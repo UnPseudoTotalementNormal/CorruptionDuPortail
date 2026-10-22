@@ -87,7 +87,7 @@ namespace Avatars
                  "The player sits as far from the middle as that needs.")]
         [SerializeField] private float _dayScreenShare = 0.6f;
         [Tooltip("The chained cat's height on screen while it floats (metres: its pose, legs hanging, ears up; measured).")]
-        [SerializeField] private float _dayCatHeight = 16.8f;
+        [SerializeField] private float _dayCatHeight = 16.2f;
         [Tooltip("A seated cat's click shape (its PointerTarget capsule, seated scale): radius and height in metres.")]
         [SerializeField] private float _dayCatRadius = 4.4f;
         [SerializeField] private float _dayClickHeight = 17.6f;
@@ -97,8 +97,9 @@ namespace Avatars
                  "with the number of players until it does.")]
         [SerializeField] private float _dayMinVisibleShare = 0.5f;
         [Tooltip("The view's rest pitch by day aims at the middle of the circle this high (share of the chained cat's height): " +
-                 "the floating chained cat's middle (measured), so it shows centred.")]
-        [SerializeField] private float _dayAimShare = 0.52f;
+                 "a little under the floating chained cat's middle, so it shows high above the floor and the far cats' feet " +
+                 "stay clear of the rows of cards.")]
+        [SerializeField] private float _dayAimShare = 0.8f;
 
         [Tooltip("The local player's tablet: while it is open, their cat takes it out and looks at it (every peer " +
                  "sees it). Wire the GameScene SmartphoneController. Null = no tablet animation.")]

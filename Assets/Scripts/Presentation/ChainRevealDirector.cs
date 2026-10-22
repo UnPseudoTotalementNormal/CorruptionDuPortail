@@ -45,16 +45,17 @@ namespace Presentation
         [Tooltip("Height of the cat model at scale 1 (the avatar's scale multiplies it).")]
         [SerializeField] private float _catHeightAtScale1 = 4.4f;
         [Tooltip("Its feet this far above the floor once lifted.")]
-        [SerializeField] private float _liftShare = 0.18f;
+        [SerializeField] private float _liftShare = 0.6f;
         [Tooltip("A seated cat's height, for a seat with no cat at the table (a bot): its card alone.")]
         [SerializeField] private float _fallbackCatHeight = 14.85f;
 
         [Header("Its card")]
-        [SerializeField] private float _cardHeightShare = 0.5f;
-        [Tooltip("The card's centre above the cat's feet.")]
-        [SerializeField] private float _cardUpShare = 0.38f;
-        [Tooltip("The card's centre in front of the cat, toward the player.")]
-        [SerializeField] private float _cardForwardShare = 0.35f;
+        [SerializeField] private float _cardHeightShare = 0.46f;
+        [Tooltip("The card's centre above the cat's feet: held against its torso, under its head (Poyo 2026-10-22).")]
+        [SerializeField] private float _cardUpShare = 0.22f;
+        [Tooltip("The card's centre in front of the cat, toward the player: clear of the whole cat (its big head comes down to " +
+                 "the card and reaches 0.38 of a cat's height forward in the chained pose, measured), so it never clips.")]
+        [SerializeField] private float _cardForwardShare = 0.42f;
 
         [Header("The dark")]
         [Tooltip("The other cats' lights at the darkest (share of their light).")]
@@ -125,7 +126,8 @@ namespace Presentation
             Quaternion _seatRotation = _avatar != null ? _avatar.transform.rotation : _facing;
             float _lift = _liftShare * _catHeight;
 
-            // ---- its card, out of its row
+            // ---- its card, out of its row (the roles' row goes down first: its slot is where the cards' row is going)
+            _dayRows.SetRolesAway(true);
             Card _card = _dayRows.CardOf(_seat);
             bool _hasCard = _card != null && _dayRows.BeginSpotlight(_seat);
             Vector2 _slotCentre = Vector2.zero;
@@ -244,6 +246,7 @@ namespace Presentation
             _animator = null;
             _visibility.SetFeatured(null);
             _dayRows.SetAway(false);
+            _dayRows.SetRolesAway(false);
             _spotlights.Lifted = null;
             _spotlights.Darken = 1f;
             if (_light != null)
@@ -272,20 +275,28 @@ namespace Presentation
             _light.enabled = _darkness > 0f;
         }
 
-        // The card between its row slot (flight 0) and the front of the cat (flight 1), in screen half-heights.
+        // The card between its row slot (flight 0) and the cat's torso (flight 1). On screen it slides and grows evenly
+        // (screen half-heights) while it goes from the rows' depth into the scene (evenly in log depth): at the end it is
+        // a real card in front of the cat, in its light (Poyo 2026-10-22), and it comes back the same way.
         private void PlaceCard(Camera _camera, Vector3 _anchor, float _worldHeight, float _flight, Vector2 _slotCentre, float _slotHeight)
         {
-            Vector3 _mid = _camera.WorldToViewportPoint(_anchor);
-            Vector3 _top = _camera.WorldToViewportPoint(_anchor + Vector3.up * (_worldHeight / 2f));
-            Vector3 _bottom = _camera.WorldToViewportPoint(_anchor - Vector3.up * (_worldHeight / 2f));
+            float _rowDepth = Mathf.Max(0.01f, _dayRows.RowDistance);
+            float _tan = Mathf.Tan(_camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            Vector3 _view = _camera.WorldToViewportPoint(_anchor);
             Vector2 _target = _slotCentre;
-            float _height = _slotHeight;
-            if (_mid.z > 0f)
+            float _targetHeight = _slotHeight;
+            float _targetDepth = _rowDepth;
+            if (_view.z > _rowDepth)
             {
-                _target = new Vector2((_mid.x * 2f - 1f) * _camera.aspect, _mid.y * 2f - 1f);
-                _height = Mathf.Abs(_top.y - _bottom.y) * 2f;
+                _target = new Vector2((_view.x * 2f - 1f) * _camera.aspect, _view.y * 2f - 1f);
+                _targetHeight = _worldHeight / (_view.z * _tan);
+                _targetDepth = _view.z;
             }
-            _dayRows.SetSpotlightPose(Vector2.LerpUnclamped(_slotCentre, _target, _flight), Mathf.LerpUnclamped(_slotHeight, _height, _flight));
+            Vector2 _centre = Vector2.LerpUnclamped(_slotCentre, _target, _flight);
+            float _height = Mathf.LerpUnclamped(_slotHeight, _targetHeight, _flight);
+            float _depth = _rowDepth * Mathf.Pow(_targetDepth / _rowDepth, Mathf.Clamp01(_flight));
+            Vector3 _world = _camera.ViewportToWorldPoint(new Vector3((_centre.x / _camera.aspect + 1f) * 0.5f, (_centre.y + 1f) * 0.5f, _depth));
+            _dayRows.SetSpotlightWorldPose(_world, _height * _depth * _tan);
         }
 
         private void LateUpdate()

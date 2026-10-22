@@ -75,8 +75,11 @@ namespace Presentation
         /// <summary>Both rows sent under the screen for a moment, whatever the keys say (T19: the chained cat falls to
         /// the floor, which the rows would hide).</summary>
         public bool Away { get; private set; }
+        /// <summary>The roles' row alone sent under the screen, whatever key 2 says (T19, Poyo 2026-10-22: from the start
+        /// of a chaining, so the chained cat is seen rising from the floor).</summary>
+        public bool RolesAway { get; private set; }
         private bool CardsShown => CardsOpen && !Away;
-        private bool RolesShown => RolesOpen && !Away;
+        private bool RolesShown => RolesOpen && !Away && !RolesAway;
 
         private struct SavedPose
         {
@@ -109,6 +112,7 @@ namespace Presentation
             CardsOpen = true;
             RolesOpen = true;
             Away = false;
+            RolesAway = false;
             _spotlit = null;
             _raisedSeat = null;
             _boardManager.cardLayoutOverride = this;
@@ -205,6 +209,18 @@ namespace Presentation
             PlaceRoles(_slideSeconds);
         }
 
+        /// <summary>Sends the roles' row under the screen (true) or brings it back if it is open (false).</summary>
+        public void SetRolesAway(bool _away)
+        {
+            if (RolesAway == _away)
+            {
+                return;
+            }
+            RolesAway = _away;
+            Relayout(_slideSeconds);
+            PlaceRoles(_slideSeconds);
+        }
+
         /// <summary>Takes <paramref name="_seat"/>'s card out of the row's layout; false when it has none here.</summary>
         public bool BeginSpotlight(ulong _seat)
         {
@@ -230,22 +246,29 @@ namespace Presentation
             }
             float _cardAspect = _cardModelSize.x / _cardModelSize.y;
             _height = ScreenRowLayout.CardHeightFor(_cards.Count, _aspect, _cardAspect);
-            ScreenRowSlot _slot = ScreenRowLayout.CardSlots(_cards.Count, _aspect, _cardAspect, CardsOpen, RolesOpen)[_index];
+            ScreenRowSlot _slot = ScreenRowLayout.CardSlots(_cards.Count, _aspect, _cardAspect, CardsOpen, RolesShown)[_index];
             _centre = new Vector2(_slot.X, _slot.Y);
             return true;
         }
 
-        /// <summary>Puts the taken card at <paramref name="_centre"/>, <paramref name="_height"/> high (screen half-heights).</summary>
-        public void SetSpotlightPose(Vector2 _centre, float _height)
+        /// <summary>How far in front of the camera the rows are (metres).</summary>
+        public float RowDistance => _distance;
+
+        /// <summary>
+        /// Puts the taken card at <paramref name="_world"/>, <paramref name="_worldHeight"/> metres high, facing the camera
+        /// like the rows: anywhere between its row and the scene (T19: in front of the chained cat, where it takes the
+        /// room's light, see the card shaders' CardUiLitByDistance).
+        /// </summary>
+        public void SetSpotlightWorldPose(Vector3 _world, float _worldHeight)
         {
-            if (_spotlit == null || !IsActive)
+            if (_spotlit == null || !IsActive || _cardAnchor == null)
             {
                 return;
             }
             var _layer = _spotlit.visualComponents.compositor.GetLayer(TransformLayer);
-            float _rowHeight = Mathf.Max(1e-4f, _cardScale * _cardModelSize.y);
-            _layer.localPosition = new Vector3(_centre.x / _cardScale, 0f, _centre.y / _cardScale);
-            _layer.localScale = Vector3.one * (_height / _rowHeight);
+            float _modelHeight = Mathf.Max(1e-4f, _cardModelSize.y * _cardAnchor.lossyScale.y);
+            _layer.localPosition = _cardAnchor.InverseTransformPoint(_world);
+            _layer.localScale = Vector3.one * (_worldHeight / _modelHeight);
             _layer.localRotation = Quaternion.identity;
         }
 

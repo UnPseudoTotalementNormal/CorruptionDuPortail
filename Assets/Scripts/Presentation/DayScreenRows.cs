@@ -51,6 +51,10 @@ namespace Presentation
 
         private readonly List<Card> _cards = new();
         private readonly Dictionary<Graphic, Color> _dimmedGraphics = new();
+        // The taken card's pointer targets, off while it is out of its row (T19: under the mouse in front of the chained
+        // cat, its hover zoom made it grow, Poyo 2026-10-22).
+        private readonly List<Behaviour> _spotlitRaycasters = new();
+        private readonly List<Collider> _spotlitColliders = new();
         private readonly List<Graphic> _graphicsBuffer = new();
         private readonly List<SavedPose> _saved = new();
         private Camera _camera;
@@ -113,6 +117,7 @@ namespace Presentation
             RolesOpen = true;
             Away = false;
             RolesAway = false;
+            SetSpotlitPointable(true);
             _spotlit = null;
             _raisedSeat = null;
             _boardManager.cardLayoutOverride = this;
@@ -130,6 +135,7 @@ namespace Presentation
                 return;
             }
             IsActive = false;
+            SetSpotlitPointable(true);
             _spotlit = null;
             SetLitSeat(null);
             _raisedSeat = null;
@@ -231,6 +237,7 @@ namespace Presentation
             }
             _spotlit = _card;
             _card.visualComponents.compositor.GetLayer(TransformLayer).DOKill();
+            SetSpotlitPointable(false);
             return true;
         }
 
@@ -279,9 +286,50 @@ namespace Presentation
             {
                 return;
             }
+            SetSpotlitPointable(true);
             _spotlit = null;
             Relayout(_slideSeconds);
         }
+
+        // Off: the taken card stops answering the pointer (the card unzooms itself once the pointer has left). On: back.
+        private void SetSpotlitPointable(bool _on)
+        {
+            if (!_on)
+            {
+                _spotlit.GetComponentsInChildren(false, _raycasterBuffer);
+                foreach (GraphicRaycaster _raycaster in _raycasterBuffer)
+                {
+                    if (_raycaster.enabled)
+                    {
+                        _raycaster.enabled = false;
+                        _spotlitRaycasters.Add(_raycaster);
+                    }
+                }
+                _spotlit.GetComponentsInChildren(false, _colliderBuffer);
+                foreach (Collider _collider in _colliderBuffer)
+                {
+                    if (_collider.enabled)
+                    {
+                        _collider.enabled = false;
+                        _spotlitColliders.Add(_collider);
+                    }
+                }
+                return;
+            }
+            foreach (Behaviour _raycaster in _spotlitRaycasters)
+            {
+                if (_raycaster != null) _raycaster.enabled = true;
+            }
+            foreach (Collider _collider in _spotlitColliders)
+            {
+                if (_collider != null) _collider.enabled = true;
+            }
+            _spotlitRaycasters.Clear();
+            _spotlitColliders.Clear();
+        }
+
+        private readonly List<GraphicRaycaster> _raycasterBuffer = new();
+        private readonly List<Collider> _colliderBuffer = new();
 
         /// <summary>My vote (mockups jour-pov v2 M2): my voted player's card stays raised. Null = none.</summary>
         public void SetRaisedSeat(ulong? _seat)

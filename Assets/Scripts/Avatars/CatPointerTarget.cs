@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using FX;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -21,9 +21,6 @@ namespace Avatars
         [SerializeField] private Transform _visualRoot;
 
         private Collider _collider;
-        private readonly List<Renderer> _renderers = new();
-        private readonly Dictionary<Renderer, int> _layers = new();
-        private bool _outlined;
 
         public PlayerAvatar Avatar => _avatar;
 
@@ -47,40 +44,12 @@ namespace Avatars
             }
         }
 
-        /// <summary>Outlines the cat with the game's highlight outline (the Outline_Highlight layer), or gives each part
-        /// its own layer back. The parts are listed when the outline starts: the cosmetics switch parts on and off.</summary>
+        /// <summary>Outlines the whole cat (every part, cosmetics included) while it carries the local player's vote.</summary>
         public void SetOutlined(bool _on)
         {
-            if (_on == _outlined || _visualRoot == null)
+            if (_visualRoot != null)
             {
-                return;
-            }
-            _outlined = _on;
-            if (_on)
-            {
-                int _outline = LayerMask.NameToLayer("Outline_Highlight");
-                if (_outline < 0)
-                {
-                    return;
-                }
-                _visualRoot.GetComponentsInChildren(true, _renderers);
-                _layers.Clear();
-                foreach (Renderer _renderer in _renderers)
-                {
-                    _layers[_renderer] = _renderer.gameObject.layer;
-                    _renderer.gameObject.layer = _outline;
-                }
-            }
-            else
-            {
-                foreach (KeyValuePair<Renderer, int> _entry in _layers)
-                {
-                    if (_entry.Key != null)
-                    {
-                        _entry.Key.gameObject.layer = _entry.Value;
-                    }
-                }
-                _layers.Clear();
+                _visualRoot.gameObject.SetOutline(_on ? OutlineState.Selected : OutlineState.None);
             }
         }
 

@@ -34,9 +34,9 @@ TagManager:
   - 
   - 
   - 
-  - Outline_Used
-  - Outline_Highlight
-  - Outline_Hover
+  - 
+  - 
+  - 
   m_SortingLayers:
   - name: Default
     uniqueID: 0
@@ -50,4 +50,8 @@ TagManager:
   - Light Layer 5
   - Light Layer 6
   - Light Layer 7
+  - Outline Available
+  - Outline Hover
+  - Outline Active
+  - Outline Selected
   m_MigratedRenderPipelines: []

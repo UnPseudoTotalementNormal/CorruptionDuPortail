@@ -131,8 +131,8 @@ To place a real 3D object of the game on captures (the vote candle, T19): render
 (`tools/HEADLESS_UNITY.md`), same viewpoint as the capture, alone, with a transparent background.
 - Fit the capture's camera first (seated vote view: eye ≈ (0, −4.1, −15.4), pitch 33°, vertical field 40°, fitted on
   the table corners) so the object lands where the game would draw it.
-- Put the object's parts on a **free layer** (25) and cull to it: layers 29-31 are `Outline_*`, rendering on them adds
-  the hover outline.
+- Put the object's parts on a **free layer** (25) and cull to it. An outline (hover, vote…) comes from the
+  renderers' rendering layer bits, not the GameObject layer: `gameObject.SetOutline(OutlineState.Hover)` to show it.
 - Transparency: render twice, on black then on white (post-processing on, it is the game's look), alpha =
   1 − (white − black) / (white₀ − black₀) with the backgrounds' own values (tonemapping keeps white below 1), colour =
   (black − black₀(1 − alpha)) / alpha. Additive parts (a flame) come out right this way; add their glow in the page

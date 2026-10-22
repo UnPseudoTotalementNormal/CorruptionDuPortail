@@ -2,6 +2,8 @@ using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using System.Linq;
+using CorruptionDuPortail.Domain.PlayerIcons;
 using NUnit.Framework;
 
 namespace Tests.Editor
@@ -488,23 +490,50 @@ namespace Tests.Editor
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1 } };
             roster.Factions[1] = Characters.FactionType.chosen; roster.RoleNames[0] = "Marginal";
-            var outcome = new LackOfAffectionDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: true, roster: roster));
+            var decision = new LackOfAffectionDecision { IconId = 42, VisitCardEffectId = 4 };
+            var outcome = decision.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: true, roster: roster));
 
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new RevealInfo(0, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
                 new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 1, false),
                 new ChatLocal("Marginal est venu(e) vous voir...", -1),
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(4, 1, false, 0),
             }, outcome.Effects);
         }
 
         [Test]
-        public void LackOfAffection_NonChosen_NotTrueLocal_Empty()
+        public void LackOfAffection_NonChosen_NotTrueLocal_OnlyTheVisitMarks()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1 } };
             roster.Factions[1] = Characters.FactionType.anomaly;
-            var outcome = new LackOfAffectionDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: false, roster: roster));
-            Assert.AreEqual(0, outcome.Effects.Count);
+            var decision = new LackOfAffectionDecision { IconId = 42, VisitCardEffectId = 4 };
+            var outcome = decision.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, isTrueLocalTarget: false, roster: roster));
+            CollectionAssert.AreEqual(new EffectDescriptor[]
+            {
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(4, 1, false, 0),
+            }, outcome.Effects);
+        }
+
+        // The visit marks run the opposite way to the Orpheline's passive: the TARGET sees her icon on HER
+        // thumbnail (an anomaly learns she came), and she marks the target's CARD, never its role thumbnail.
+        [Test]
+        public void LackOfAffection_VisitMarks_TargetSeesOrphelineIcon_OrphelineMarksTargetCard()
+        {
+            var roster = new FakeRoster { Slots = new[] { 3, 7 } };
+            roster.Factions[7] = Characters.FactionType.anomaly;
+            var decision = new LackOfAffectionDecision { IconId = 42, VisitCardEffectId = 4 };
+            var outcome = decision.Decide(new PowerContext(ownerSlot: 3, targetSlot: 7, isTrueLocalTarget: true, roster: roster));
+
+            var icon = outcome.Effects.OfType<AddPlayerIcon>().Single();
+            Assert.AreEqual(3, icon.MarkedSlot, "the icon sits on the Orpheline's thumbnail");
+            Assert.AreEqual(7, icon.ViewerSlot, "only the visited player sees it");
+
+            var card = outcome.Effects.OfType<AddCardEffect>().Single();
+            Assert.AreEqual(7, card.Slot, "the mark sits on the visited player's card");
+            Assert.AreEqual(3, card.ViewerSlot, "only the Orpheline sees it");
         }
 
         [Test]

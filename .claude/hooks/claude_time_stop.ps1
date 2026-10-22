@@ -63,6 +63,14 @@ try {
             -SessionDir $sessionDir -Prompt $prompt -Activity $activity)
     }
 
+    # Remember the autoplay runs this turn left going in the background, so the
+    # start hook recognises their notification and drops the wait before it.
+    $launched = @(Get-AutoplayBackgroundIds -Entries $read.entries)
+    if ($launched.Count -gt 0) {
+        $all = @($state.autoplayTasks) + $launched
+        $state.autoplayTasks = @($all | Select-Object -Last $script:TR_MaxAutoplayTasks)
+    }
+
     $state.offset = $read.offset
     $state.promptPending = $false
     Write-TurnState -Dir $dir -Session $sessionId -State $state

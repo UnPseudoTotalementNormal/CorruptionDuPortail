@@ -11,6 +11,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Random = UnityEngine.Random;
+using Diagnostics.Logs;
 
 namespace Characters
 {
@@ -129,6 +130,7 @@ namespace Characters
         {
             _localSeatId = _seatId == NetworkManager.LocalClientId ? null : _seatId;
             Debug.Log($"[REJOIN] This peer plays seat {_seatId} (connection {NetworkManager.LocalClientId}).");
+            GameLog.SetLocalSeat(GetLocalClientId(), IsServer);
             onLocalIdentityChanged?.Invoke();
             _cacheDirty = true;
             onCharactersListUpdated?.Invoke(_characters);
@@ -459,6 +461,7 @@ namespace Characters
         public void SetPossessedIdentity(ulong? _id)
         {
             _debugPossessedId = _id;
+            GameLog.SetLocalSeat(GetLocalClientId(), IsServer);
             onLocalIdentityChanged?.Invoke();
         }
 

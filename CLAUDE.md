@@ -72,6 +72,9 @@ never comes): complete games run in a windowed dev build via autoplay. Full reci
 The autoplay framework is the package `com.unpseudo.autoplay`, its own repository pinned by tag in
 `Packages/manifest.json`: generic changes go there (never edit `Library/PackageCache`), see `tools/autoplay/REFERENCE.md`.
 
+Playtest bug reports (Wouh on Discord…): read what the game recorded online first, with the `playtest-logs` skill
+(`tools/logs/logs.py`, Firestore project `corruption-du-portail`).
+
 After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
 
 ## AI working time

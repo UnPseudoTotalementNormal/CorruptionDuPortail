@@ -11,6 +11,8 @@ using Characters;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
+using Diagnostics.Logs;
+using Extensions;
 using GameLogic.GameStates;
 using Network;
 using Network.Action;
@@ -96,6 +98,14 @@ namespace GameLogic
     
         public SerializedDictionary<GameState, GameStateSettings> gameStates = new();
 
+        /// <summary>
+        /// Playtest logs: one id per game, shared by the host and every client so their logs merge into one timeline
+        /// (tools/logs/logs.py). Written by the server when the game leaves the lobby, cleared when it is back in the
+        /// lobby. Always declared, even in builds without CDP_PLAYTEST_LOGS, so an Editor and a playtest build keep the
+        /// same NetworkVariable layout. Declared before currentGameStateIndex so a client applies it first.
+        /// </summary>
+        public NetworkVariable<FixedString64Bytes> logGameId { get; private set; } = new();
+
         public NetworkVariable<int> currentGameStateIndex { get; private set; } = new();
 
         [HideInInspector] public bool ignoreGameLoop = false;
@@ -135,7 +145,11 @@ namespace GameLogic
             // Per-instance wiring: this mutates per-instance state (gameLoopCount),
             // not a static, so it must run on EVERY replica - keep it outside the
             // claim guard.
-            onNewDayPassed += () => gameLoopCount++;
+            onNewDayPassed += () =>
+            {
+                gameLoopCount++;
+                LogContext();
+            };
         }
 
         public override void OnNetworkSpawn()
@@ -173,6 +187,10 @@ namespace GameLogic
             s_byNetworkManager[_networkManager] = this;
 
             SetupGameStates();
+            currentGameStateIndex.OnValueChanged += OnStateIndexChangedForLog;
+            logGameId.OnValueChanged += OnLogGameIdChanged;
+            GameLog.SetGameId(logGameId.Value.ToString());
+            LogContext();
         
             if (IsServer)
             {
@@ -198,6 +216,12 @@ namespace GameLogic
 
         public override void OnNetworkDespawn()
         {
+            currentGameStateIndex.OnValueChanged -= OnStateIndexChangedForLog;
+            logGameId.OnValueChanged -= OnLogGameIdChanged;
+            if (instance == this)
+            {
+                GameLog.ClearContext(); // the session's lines no longer belong to this game
+            }
             if (IsServer)
             {
                 NetworkManager.OnClientDisconnectCallback -= HandlePlayerLeft;
@@ -397,16 +421,78 @@ namespace GameLogic
             // barrier OnEnd/OnStartStateClient ran on remote clients with stale NetworkVariables (including
             // currentGameStateIndex, which drives StateUpdateClient).
             var _oldGameState = GetGameState(currentGameStateIndex.Value);
+            if (_oldGameState is LobbyState)
+            {
+                logGameId.Value = new FixedString64Bytes(
+                    DateTime.UtcNow.ToString("yyyyMMdd-HHmm") + "-" + Guid.NewGuid().ToString("N").Substring(0, 4));
+            }
+            else if (GetGameState(newGameStateIndex) is LobbyState)
+            {
+                logGameId.Value = default; // back in the lobby: the next lines belong to no game
+            }
             _oldGameState.OnEndStateServer();
             Network.NetworkVariableFlush.TryFlush(NetworkManager);
             DoStateMethodRpc(_oldGameState.GetType().FullName, nameof(_oldGameState.OnEndStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
 
             currentGameStateIndex.Value = newGameStateIndex;
             var _newGameState = GetGameState(currentGameStateIndex.Value);
+            // Before OnStartStateServer: a state that advances at once (nested SwitchGameState) must not log its
+            // picture after the next ones.
+            LogStateSnapshot(_newGameState);
             _newGameState.OnStartStateServer();
             Network.NetworkVariableFlush.TryFlush(NetworkManager);
             DoStateMethodRpc(_newGameState.GetType().FullName, nameof(_newGameState.OnStartStateClient), new CustomRpcParams(CustomRpcParams.RpcTargetType.clients));
         }
+
+        // ---- Playtest logs (calls compiled only with CDP_PLAYTEST_LOGS) ----
+
+        private void OnStateIndexChangedForLog(int _previous, int _current) => LogContext();
+
+        private void OnLogGameIdChanged(FixedString64Bytes _previous, FixedString64Bytes _current) => GameLog.SetGameId(_current.ToString());
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogContext() => GameLog.Guarded(() =>
+        {
+            int _index = currentGameStateIndex.Value;
+            if (gameStates.Count == 0 || _index < 0 || _index >= gameStates.Count)
+            {
+                return;
+            }
+            if (characterManager != null)
+            {
+                GameLog.SetLocalSeat(characterManager.GetLocalClientId(), IsServer);
+                Character _local = characterManager.GetLocalCharacter(false);
+                RoleID? _roleId = _local != null && _local.role != null ? _local.role.roleID : (RoleID?)null;
+                // Before the deal the role is an empty default (roleID 0): no role yet.
+                GameLog.SetLocalRole(_roleId.HasValue && Enum.IsDefined(typeof(RoleID), _roleId.Value) ? _roleId.Value.ToString() : null);
+            }
+            GameState _state = GetGameState(_index);
+            GameLog.SetPhase(_state.GetType().Name, _state is LobbyState ? 0 : currentDay);
+        });
+
+        /// <summary>Host, each phase start: who is where, with which role, in which condition.</summary>
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogStateSnapshot(GameState _state) => GameLog.Guarded(() =>
+        {
+            if (characterManager == null)
+            {
+                return;
+            }
+            var _players = new List<string>();
+            foreach (Character _character in characterManager.GetCharacters(false))
+            {
+                ulong _seat = _character.ownerClientId.Value;
+                Role _role = _character.role;
+                string _flags = (_character.isChained.Value ? " chained" : "")
+                                + (_character.isEliminated.Value ? " eliminated" : "")
+                                + (_character.isAwakened.Value ? " awake" : "")
+                                + (_character.isFake ? " fake" : "")
+                                + (_seat < 100 && HasClientLeft(_seat) ? " left" : "");
+                _players.Add($"{_seat} {(_character.isFake ? "-" : _seat.GetPlayerName())} | " +
+                             $"{(_role != null ? _role.roleID + "/" + _role.factionType : "?")}{_flags}");
+            }
+            GameLog.Snapshot("state.phase", "phase", _state.GetType().Name, "day", currentDay, "players", _players);
+        });
 
         public GameState GetGameState(int index)
         {
@@ -636,6 +722,8 @@ namespace GameLogic
             // ClientDisconnectHandler.OnClientStopped does NOT mistake this for an abrupt host loss and pop
             // the "host connection lost" notification. Runs on Everyone (host + clients); harmless on the host.
             Network.ClientDisconnectHandler.NotifyExpectedShutdown();
+            // Rejoin: the host ended the game, there is nothing left to come back to.
+            Network.RejoinSessionStore.Clear();
 
             // Clean up the cloud lobby on a graceful end: the host DELETES the whole lobby (so it does not
             // linger for the remaining members until Unity's ~30s no-heartbeat expiry), each client just
@@ -778,6 +866,7 @@ namespace GameLogic
                 }
             }
             RejoinCatchUpRpc(gameLoopCount, _toNewConnection);
+            GameLog.Guarded(() => GameLog.Info("net", "player.rejoined", "seat", _seat, "connection", _connectionId, "name", _seat.GetPlayerName()));
             onGameStarted.InvokeFor(_connectionId);
             onPlayerRejoinedServer?.Invoke(_seat, _connectionId);
         }
@@ -887,6 +976,9 @@ namespace GameLogic
             {
                 return;
             }
+            ulong _leftSeat = _clientId;
+            GameLog.Guarded(() => GameLog.Warn("net", "player.left", "seat", _leftSeat, "name", _leftSeat.GetPlayerName(),
+                "phase", GetGameState(currentGameStateIndex.Value).GetType().Name));
 
             // Phase signal: the current game state is a LobbyState iff we are still in the lobby (index 0,
             // pre-start); mid-game it is any other state. The LobbyState check is the precise phase signal —

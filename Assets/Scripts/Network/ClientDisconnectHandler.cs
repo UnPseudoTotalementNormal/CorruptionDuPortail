@@ -6,6 +6,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -83,6 +84,7 @@ namespace Network
         private bool _lobbySubscribed;
         private bool _localWasPureClient; // captured while connected (client && !server)
         private bool _handlingLoss;        // idempotency vs OnClientStopped + OnTransportFailure double fire
+        private double _nextRejoinKeepAlive; // real time of the next rejoin session refresh while connected
 
         // RAW placeholder notification UI (built in code). Colors below are neutral debug values, NOT a design palette.
         private Canvas _canvas;
@@ -184,6 +186,16 @@ namespace Network
                 }
             }
 
+            // Rejoin: while connected to a host, keep this PC's session fresh. Once the host is gone (shut down, crashed) or
+            // this client dropped for longer than its seat stays reserved, the session goes stale and the menu stops
+            // offering "Rejoindre la partie en cours".
+            if (_nm != null && _nm.IsConnectedClient && !_nm.IsServer &&
+                Time.realtimeSinceStartupAsDouble >= _nextRejoinKeepAlive)
+            {
+                _nextRejoinKeepAlive = Time.realtimeSinceStartupAsDouble + RejoinSessionStore.KeepAlivePeriodSeconds;
+                RejoinSessionStore.KeepAlive();
+            }
+
             // LobbyManager is a DDoL singleton created lazily in the menu. Wire OnLobbyError once it exists.
             if (!_lobbySubscribed && LobbyManager.instance != null)
             {
@@ -237,6 +249,7 @@ namespace Network
             s_expectedShutdown = false; // fresh session (domain reload is disabled — never trust a stale flag)
             _handlingLoss = false;
             Debug.Log($"{LogTag} Client started (pureClient={_localWasPureClient}).");
+            GameLog.Info("net", "client.started", "pureClient", _localWasPureClient);
         }
 
         private void OnClientStopped(bool _wasHost)
@@ -260,6 +273,8 @@ namespace Network
             bool _joining = s_joinHandshakeInProgress;
             bool _shouldNotify = HostDropPolicy.ShouldNotifyHostLoss(_localWasPureClient, _expected, _joining);
             Debug.Log($"{LogTag} {_source}: pureClient={_localWasPureClient} expected={_expected} joining={_joining} -> notify={_shouldNotify}");
+            GameLog.Warn("net", "client.stopped", "source", _source, "pureClient", _localWasPureClient, "expected", _expected,
+                "joining", _joining, "notify", _shouldNotify);
 
             // One-shot: consume the expected flag no matter which path we take.
             s_expectedShutdown = false;

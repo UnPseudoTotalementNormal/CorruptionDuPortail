@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 9 : les retours de Wouh</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+  .ar-moments { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+  .ar-moments button { font: inherit; padding: 6px 12px; border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 4px; cursor: pointer; }
+  .ar-moments button.on { border-color: currentColor; font-weight: bold; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby_noir.jpg) 0 0 / 1600px 900px; }
+  .ar-btn { cursor: pointer; user-select: none; }
+
+  /* The cork board as coded (PR #145 + #146, one faction at a time), at the tablet's scale. */
+  .k3 { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; padding: 12px;
+    background: #78502f url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; box-sizing: border-box; font-family: "Garamond", Georgia, serif; color: #2e1d10; }
+  .k3 *, .ar-pl * { box-sizing: border-box; }
+  .k3 .cork { position: absolute; inset: 12px; border: 3px solid #341e0e; background: #b07846 url(img/cork_tablet.webp) 0 0 / 100% 100%; overflow: hidden; }
+  .paper { background: #f0e5cb; border: 1px solid rgba(90, 60, 30, .35); border-bottom: 2px solid rgba(40, 22, 8, .45); border-right: 1.5px solid rgba(40, 22, 8, .35); position: relative; }
+  .pin { position: absolute; top: -7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffd2c8 0 18%, #b21818 22%); border: 1px solid #600808; z-index: 3; }
+  .pin:before { content: ""; position: absolute; left: 2px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(30, 14, 4, .4); z-index: -1; }
+  .screw { position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #d9c08f, #5b4a33); box-shadow: 0 1px 1px rgba(0, 0, 0, .6); }
+  .screw:after { content: ""; position: absolute; left: 1px; right: 1px; top: 3.5px; height: 1px; background: #3a2c1a; transform: rotate(35deg); }
+
+  .k3 .tabs { position: absolute; left: 21px; top: 15px; display: flex; gap: 28px; padding: 3px 18px 1px 15px; font: 22px "Fell", serif; z-index: 2; }
+  .k3 .tabs span { color: #684a2e; } .k3 .tabs span.on { color: #2e1d10; }
+  .k3 .tally { position: absolute; left: 21px; right: 21px; top: 65px; display: flex; gap: 11px; z-index: 2; }
+  .k3 .tally .c { flex: 1; padding: 5px 9px 3px 11px; }
+  .k3 .tally .k { font-size: 15px; color: #684a2e; display: flex; align-items: center; gap: 5px; }
+  .k3 .tally .k img { width: 19px; height: 19px; object-fit: contain; }
+  .k3 .tally .v { font-size: 30px; line-height: 34px; }
+  .k3 .side { position: absolute; left: 21px; top: 149px; width: 174px; z-index: 2; }
+  .k3 .side h5 { display: inline-block; margin: 0 0 13px; padding: 1px 10px 1px 8px; font: 21px "Fell", serif; font-weight: normal; }
+  .k3 .side .it { display: block; min-height: 38px; margin-bottom: 11px; padding: 8px 8px 6px 11px; font-size: 17px; color: #684a2e; border-left: 3px solid transparent; }
+  .k3 .side .it.on { color: #8a1010; border-left-color: #8a1010; }
+  .k3 .fsel { position: absolute; left: 216px; top: 149px; display: flex; gap: 12px; z-index: 2; }
+  .k3 .fh { display: inline-flex; align-items: center; gap: 8px; padding: 1px 12px 1px 7px; font: 22px "Fell", serif; color: #684a2e; opacity: .75; cursor: pointer; }
+  .k3 .fh.on { opacity: 1; }
+  .k3 .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .k3 .page { position: absolute; left: 216px; right: 14px; top: 200px; bottom: 56px; z-index: 1; }
+  .k3 .grid { display: flex; flex-wrap: wrap; gap: 14px 13px; }
+  .k3 .u { width: 82px; position: relative; }
+  .k3 .slot { background: #080607; border-radius: 7px; }
+  .k3 .crd { width: 82px; height: 116px; background: #080607; border-radius: 7px; padding: 4px 4px 0; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(30, 14, 4, .55); }
+  .k3 .crd .art { flex: 1; border-radius: 3px; background-size: cover; background-position: 50% 20%; }
+  .k3 .crd .nm { height: 21px; font: bold 7.5px/8.5px Georgia, serif; color: #e9c57a; text-align: center; padding-top: 3px; overflow: hidden; }
+  .k3 .u.out .crd { opacity: .3; }
+  .k3 .ctls { margin-top: 5px; padding: 1px 4px; }
+  .k3 .ctl { display: flex; justify-content: space-between; align-items: baseline; height: 17px; font-size: 11.5px; color: #684a2e; white-space: nowrap; }
+  .k3 .ctl.imp, .k3 .ctl.imp .v { color: #8a1010; }
+  .k3 .ctl .v { display: inline-block; min-width: 12px; text-align: center; font-size: 14px; color: #2e1d10; }
+  .k3 .ctl .b { padding: 0 2px; font-size: 15px; color: #8a4a1c; }
+  .k3 .foot { position: absolute; right: 21px; bottom: 12px; display: flex; align-items: center; gap: 0; z-index: 2; }
+  .k3 .foot .st, .k3 .foot .go { display: flex; align-items: center; padding: 4px 14px 4px 15px; font-size: 17px; color: #684a2e; }
+  .k3 .foot .go { gap: 9px; font: 22px "Fell", serif; color: #2e1d10; }
+  .k3 .foot .go .box { width: 23px; height: 23px; border: 2px solid #2e1d10; border-radius: 2px; position: relative; }
+  .k3 .foot .go.on .box:after { content: ""; position: absolute; left: 5px; top: -4px; width: 8px; height: 16px; border-right: 3px solid #8a1010; border-bottom: 3px solid #8a1010; transform: rotate(40deg); }
+  .k3 .foot.split { gap: 10px; }
+
+  /* Every pinned thing carries its own tilt and offset (set by the script); hover styles below change it. */
+  .tlt { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--a, 0deg)); transform-origin: var(--px, 50%) 0; }
+
+  /* ---- Section 1: what can be clicked stays light, what is only read goes brown ---- */
+  /* C1 kraft: the read-only papers are kraft card */
+  .c1 .info { background: #cdb08a; border-color: rgba(70, 40, 15, .5); border-bottom-color: rgba(40, 22, 8, .6); color: #2e1d10; }
+  .c1 .info .k, .c1 .foot .st.info { color: #4e3119; }
+  /* C2 dark card: the read-only papers are dark brown card, light ink */
+  .c2 .info { background: #4b301c; border-color: rgba(20, 10, 2, .6); border-bottom-color: rgba(10, 5, 0, .8); color: #f0e2c4; }
+  .c2 .info .k, .c2 .foot .st.info { color: #c9a77c; }
+  /* C3 wooden plaques: what is read is engraved on screwed wooden plaques, no paper, no pin */
+  .c3 .info { background: #5e3c21 url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; border: 1px solid #2a170a; border-top-color: rgba(255, 220, 170, .25); color: #ecd6ab; text-shadow: 0 -1px 0 #1c0f05; }
+  .c3 .info .k, .c3 .foot .st.info { color: #cdae80; }
+  .c3 .tally { gap: 0; }
+  .c3 .tally .c { border-left: none; border-right: none; padding-left: 22px; }
+  .c3 .tally .c + .c { box-shadow: inset 1px 0 0 rgba(20, 10, 2, .55); }
+  .c3 .side h5.info { padding: 2px 22px 2px 20px; }
+  .c3 .foot .st.info { padding-left: 24px; padding-right: 24px; }
+
+  /* ---- Section 2: the players, on their own cork board where the black panel was ---- */
+  .ar-pl { position: absolute; left: 18px; top: 133px; width: 220px; height: 634px; padding: 10px;
+    background: #78502f url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; font-family: "Garamond", Georgia, serif; color: #2e1d10; }
+  .ar-pl .cork { position: absolute; inset: 10px; border: 3px solid #341e0e; background: #b07846 url(img/cork_tablet.webp) 30% 0 / 900px 600px; overflow: hidden; }
+  .ar-pl .list { position: absolute; left: 0; right: 0; top: 18px; bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; }
+  .ar-pl .ok { color: #8a1010; font: bold 19px Georgia, serif; line-height: 1; }
+  /* J1 paper tags, one under the other */
+  .j1 .tag { margin: 0 0 var(--gap) 12px; padding: 4px 26px 2px 10px; min-width: 120px; max-width: 158px; font-size: 16.5px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .j1 .tag .ok { position: absolute; right: 7px; top: 4px; }
+  /* J2 luggage tags hanging from their pin on a string */
+  .j2 .list { top: 8px; }
+  .j2 .hang { position: relative; margin: 0 0 var(--gap) 0; padding-left: 26px; height: var(--row); }
+  .j2 .hang .pin { left: 14px; top: 5px; margin-left: -6px; }
+  .j2 .hang .str { position: absolute; left: 14px; top: 11px; width: 26px; height: 1.5px; background: #e8dcc0; transform-origin: 0 50%; transform: rotate(18deg); box-shadow: 0 1px 1px rgba(0, 0, 0, .4); }
+  .j2 .lug { position: absolute; left: 32px; top: 4px; padding: 3px 24px 2px 20px; min-width: 100px; max-width: 148px; font: 16px "Fell", serif; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: #c9a271; border: none; clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 70%, 0 30%); transform-origin: 0 50%; }
+  .j2 .lug:before { content: ""; position: absolute; left: 7px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #5b3a20; box-shadow: 0 0 0 1.5px #e8dcc0; }
+  .j2 .lug .ok { position: absolute; right: 6px; top: 3px; }
+  /* J3 embossed label tape stuck straight on the cork */
+  .j3 .list { align-items: flex-start; padding-left: 10px; }
+  .j3 .tape { position: relative; margin: 0 0 var(--gap); padding: 3px 9px 2px; max-width: 150px; background: linear-gradient(#262321, #121010); border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+    font: bold 12.5px/18px "Consolas", "Courier New", monospace; letter-spacing: 1.5px; text-transform: uppercase; color: #f2efe6; text-shadow: 0 1px 0 #000, 0 -1px 0 rgba(255, 255, 255, .35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .j3 .row { display: flex; align-items: center; gap: 6px; }
+  .j3 .row .ok { margin-bottom: var(--gap); }
+
+  /* ---- Section 3: asymmetry and the hover ---- */
+  .hovk .hk { transition: transform .14s ease-out, box-shadow .14s; }
+  /* A1 straightens and lifts */
+  .a1 .hk.hv { transform: translate(var(--dx, 0px), calc(var(--dy, 0px) - 4px)) rotate(0deg) scale(1.05); z-index: 5; }
+  .a1 .u.hv .crd { box-shadow: 0 9px 14px rgba(30, 14, 4, .6); }
+  /* A2 leans toward the mouse */
+  .a2 .hk.hv { transform: translate(var(--dx, 0px), calc(var(--dy, 0px) - 3px)) rotate(calc(var(--a, 0deg) + var(--h, 0deg))) scale(1.04); z-index: 5; }
+  .a2 .u.hv .crd { box-shadow: 0 7px 12px rgba(30, 14, 4, .6); }
+  /* A3 swings on its pin, then stays a little crooked */
+  .a3 .hk { transition: none; }
+  .a3 .hk.hv { animation: ar-swing .9s ease-out forwards; z-index: 5; }
+  .a3 .hk.hv.frozen { animation: none; transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--a, 0deg) + 2.5deg)); }
+  @keyframes ar-swing {
+    0% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--a, 0deg)); }
+    22% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--a, 0deg) + 6deg)); }
+    48% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--a, 0deg) - 1.5deg)); }
+    72% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--a, 0deg) + 3.5deg)); }
+    100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--a, 0deg) + 2.5deg)); }
+  }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Attribution des rôles, tour 9 : les retours de Wouh</h1>
+  <p>Retours de Wouh sur le liège R3 (fil T6) : distinguer ce qui se clique, les joueurs en étiquettes sur le liège, un tableau moins droit avec une carte qui s'incline sous la souris. Une question par section ; le reste du tableau est celui du jeu.</p>
+  <ul>
+    <li>Partie à 8 joueurs, composition classique, 7 prêts sur 8 (toi pas encore). Les pseudos sont des exemples.</li>
+    <li>Le tableau réagit : onglets de faction, et dans la section 3, passe la souris sur les cartes et les papiers.</li>
+    <li>Pas encore traité : le tableau au mur d'une pièce et la balade dans le lobby (quand il y aura une pièce).</li>
+  </ul>
+</header>
+
+<main>
+<section>
+  <h2>1. Ce qui se clique, ce qui se lit</h2>
+  <p>Clair = on peut cliquer (onglets, compositions, réglages, Je suis prêt). Le reste passe en brun.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Papier kraft</span></div>
+    <p class="vdesc">Les compteurs, le titre Compositions et le nombre de prêts sont sur du papier kraft. Le clair reste au papier crème actuel.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 c1" data-col="1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Carton brun foncé</span></div>
+    <p class="vdesc">Même idée, plus marquée : un carton brun foncé écrit en clair. L'écart avec le cliquable se voit de loin.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 c2" data-col="2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Plaques de bois</span></div>
+    <p class="vdesc">Ce qui se lit n'est plus du papier : des plaques de bois gravées, vissées sur le liège, sans punaise. Seul le papier se manipule.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 c3" data-col="3"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Les joueurs</h2>
+  <p>À la place du panneau noir, au même endroit. Une coche rouge = prêt.</p>
+  <div class="ar-moments" id="ar-count">
+    <button data-n="8" class="on">8 joueurs</button>
+    <button data-n="14">14 joueurs (le maximum)</button>
+  </div>
+
+  <div class="variant" data-id="J1">
+    <div class="vhead"><span class="vid">J1</span><span class="vname">Fiches punaisées</span></div>
+    <p class="vdesc">Un petit liège à part, une fiche de papier par joueur, comme les compositions.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-pl j1"></div><div class="k3" data-col="0"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="J2">
+    <div class="vhead"><span class="vid">J2</span><span class="vname">Étiquettes à bagage</span></div>
+    <p class="vdesc">Des étiquettes en carton, pendues à leur punaise par une ficelle, un peu de travers.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-pl j2"></div><div class="k3" data-col="0"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="J3">
+    <div class="vhead"><span class="vid">J3</span><span class="vname">Ruban à étiqueter</span></div>
+    <p class="vdesc">Le pseudo frappé en relief sur du ruban noir, collé sur le liège, comme un dossier d'enquête.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="ar-pl j3"></div><div class="k3" data-col="0"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Moins droit, et la carte sous la souris</h2>
+  <p>Chaque papier garde toujours le même angle et la même punaise (rien ne saute quand le tableau se redessine).</p>
+  <div class="ar-moments" id="ar-hover">
+    <button data-h="0" class="on">Au repos</button>
+    <button data-h="1">Souris sur Le Messager</button>
+  </div>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Un peu de désordre, la carte se redresse</span></div>
+    <p class="vdesc">Angles et punaises varient un peu. Sous la souris, la carte se remet droite et se soulève.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 hovk a1" data-col="0" data-asym="1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Franchement de travers, la carte penche vers la souris</span></div>
+    <p class="vdesc">Plus d'écarts, des punaises n'importe où, parfois deux. Sous la souris, la carte penche du côté où est le pointeur et suit son mouvement.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 hovk a2" data-col="0" data-asym="2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Les papiers de travers, la carte se balance</span></div>
+    <p class="vdesc">Les cartes restent presque droites, les papiers sont plus penchés. Sous la souris, la carte se balance sur sa punaise puis reste un peu de biais.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 hovk a3" data-col="0" data-asym="3"></div></div></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <label for="global">Le tableau au mur d'une pièce, la balade dans le lobby : tu veux que je les prépare pour un prochain tour ? Autre chose ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const READY_OF = { 8: 7, 14: 11 };
+let PLAYERS = 8;
+const NAMES = ["UPTNButButter", "Wouh", "Mistigri", "CapitaineCroquette_du_67", "Nyx", "pomme2terre", "Kaelan", "Mamie Ronron",
+  "Zorglub", "Lilou", "Fennec", "Bastien", "LaGrosseMoustache", "Hibou"];
+const FAC = {
+  a: { name: "Anomalies", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+// The roles the lobby shows today (game capture of 2026-10-19).
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"],
+  ["Technomancien", "Le Technomancien", "e"], ["Croupiere", "Luma, la croupière", "e"], ["Orpheline", "L'Orpheline", "e"], ["DrGloubi", "Dr Gloubi", "e"],
+  ["Dryade", "La Dryade", "e"], ["Messager", "Le Messager", "e"], ["Repenti", "Le Repenti", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"],
+  ["Uges", "Ugës, l'Imposteur", "e"], ["Incomplet", "L'Incomplet", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+const CLASSIC = { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 1], Uges: [1, 0], Incomplet: [1, 0] };
+
+// Fixed pseudo-random per element: the same paper always gets the same tilt.
+const rnd = (k, s) => { const x = Math.sin(k * 12.9898 + s * 78.233) * 43758.5453; return x - Math.floor(x); };
+const span = (k, s, lo, hi) => lo + (hi - lo) * rnd(k, s);
+// Tilt, offset and pins of the k-th pinned thing; kind = card | paper.
+function look(mode, k, kind, defPin) {
+  if (mode === 0) return { a: ((k % 3) - 1) * 1.1, dx: 0, dy: 0, pins: [defPin] };
+  if (mode === 1) return { a: span(k, 1, -2.2, 2.2), dx: span(k, 2, -3, 3), dy: span(k, 3, -3, 3), pins: [Math.round(span(k, 4, 30, 70))] };
+  if (mode === 2) {
+    const two = rnd(k, 5) < .22;
+    return { a: span(k, 1, -4, 4), dx: span(k, 2, -6, 6), dy: span(k, 3, -6, 6), pins: two ? [12, 88] : [Math.round(span(k, 4, 12, 88))] };
+  }
+  const card = kind === "card";
+  return { a: card ? span(k, 1, -1.2, 1.2) : span(k, 1, -3.2, 3.2), dx: span(k, 2, -2, 2), dy: span(k, 3, -4, 4), pins: [Math.round(span(k, 4, 22, 78))] };
+}
+function tilt(mode, k, kind, defPin, cls, inner, extraStyle) {
+  const l = look(mode, k, kind, defPin);
+  const style = "--a:" + l.a.toFixed(2) + "deg;--dx:" + l.dx.toFixed(1) + "px;--dy:" + l.dy.toFixed(1) + "px;--px:" + l.pins[0] + "%;" + (extraStyle || "");
+  const pins = cls.includes("noPin") ? "" : l.pins.map(p => '<i class="pin" style="left:' + p + '%"></i>').join("");
+  return '<div class="' + cls + ' tlt" style="' + style + '">' + pins + inner + "</div>";
+}
+
+function render(el) {
+  const col = +el.dataset.col, mode = +(el.dataset.asym || 0), f = el.dataset.f || "e";
+  const hk = mode ? " hk" : "";
+  const roles = ROLES.map(r => ({ ...r, max: (CLASSIC[r.id] || [0, 0])[0], forced: (CLASSIC[r.id] || [0, 0])[1] }));
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  const info = col ? " info" : "", plaque = col === 3;
+  const screws = '<i class="screw" style="left:7px"></i><i class="screw" style="right:7px"></i>';
+  let k = 0;
+  const cell = (key, v, fac) => {
+    const inner = '<div class="k">' + (fac ? '<img src="' + FAC[fac].logo + '">' : "") + key + '</div><div class="v">' + v + "</div>";
+    if (plaque) return '<div class="c paper info">' + inner + "</div>";
+    return tilt(mode, k++, "paper", 50, "c paper" + info, inner);
+  };
+  let h = '<div class="cork">';
+  h += tilt(mode, 90, "paper", 50, "tabs paper noPin", '<span class="on">Rôles</span><span>Autres options</span>', "--a:-0.6deg;");
+  const tally = cell("Joueurs", PLAYERS) + cell("Garantis", t.forced) + cell("Rôles possibles", t.max) + cell("Anomalies", t.a, "a") + cell("Élus", t.e, "e") + cell("Marginaux", t.m, "m");
+  h += plaque ? '<div class="tally"><div class="paper info" style="display:flex;flex:1;padding:0 8px">' + tally + screws + "</div></div>" : '<div class="tally">' + tally + "</div>";
+  h += '<div class="side">' + (plaque ? '<h5 class="paper info">Compositions' + screws + "</h5>" : tilt(mode, 91, "paper", 50, "noPin", '<h5 class="paper' + info + '" style="transform:rotate(-1deg)">Compositions</h5>')) +
+    tilt(mode, 92, "paper", 86, "it paper on" + hk, "Classique") + tilt(mode, 93, "paper", 86, "it paper" + hk, "Personnalisée") + "</div>";
+  h += '<div class="fsel">' + ["a", "e", "m"].map((x, i) => tilt(mode, 95 + i, "paper", 50, "fh paper noPin ar-btn" + hk + (f === x ? " on" : ""), '<img src="' + FAC[x].logo + '">' + FAC[x].name, "color:" + FAC[x].ink + ";" + (mode ? "" : "--a:-0.8deg;")).replace("<div", '<div data-f="' + x + '"')).join("") + "</div>";
+  h += '<div class="page"><div class="grid">';
+  roles.filter(r => r.f === f).forEach((r, i) => {
+    const inner = '<div class="slot"><div class="crd"><div class="art" style="background-image:url(img/' + r.id + '.webp)"></div><div class="nm">' + r.name + '</div></div></div><div class="ctls paper">' +
+      '<div class="ctl"><span>Au plus</span><span><span class="b">‹</span><span class="v">' + r.max + '</span><span class="b">›</span></span></div>' +
+      '<div class="ctl imp"><span>Au moins</span><span><span class="b">‹</span><span class="v">' + r.forced + '</span><span class="b">›</span></span></div></div>';
+    h += tilt(mode, 20 + ROLES.indexOf(r), "card", 50, "u" + hk + (r.max ? "" : " out"), inner).replace("<div", '<div data-r="' + r.id + '"');
+  });
+  h += "</div></div>";
+  const ready = READY_OF[PLAYERS] + " joueurs prêts sur " + PLAYERS;
+  if (col) {
+    const st = plaque ? '<span class="st paper info" style="position:relative">' + ready + screws + "</span>" : tilt(mode, 98, "paper", 8, "st paper info", ready);
+    h += '<div class="foot split">' + st + tilt(mode, 99, "paper", 50, "go paper", "<b class=\"box\"></b>Je suis prêt") + "</div>";
+  } else {
+    h += tilt(mode, 98, "paper", 4, "foot paper" + hk, '<span class="st">' + ready + '</span><span class="go"><b class=\"box\"></b>Je suis prêt</span>', "--a:-0.5deg;");
+  }
+  h += "</div>";
+  el.innerHTML = h;
+}
+
+// Players board: one label per player, ready ones carry a red tick.
+function renderPlayers(el) {
+  const kind = el.classList.contains("j1") ? 1 : el.classList.contains("j2") ? 2 : 3;
+  const n = PLAYERS, ready = READY_OF[n];
+  const row = Math.floor(596 / n);
+  const tagH = kind === 3 ? 23 : 27;
+  el.style.setProperty("--row", Math.min(44, row - 4) + "px");
+  el.style.setProperty("--gap", kind === 2 ? "4px" : Math.min(18, Math.max(4, row - tagH)) + "px");
+  let h = '<div class="cork"><div class="list">';
+  NAMES.slice(0, n).forEach((name, i) => {
+    const ok = i > 0 && i <= ready ? '<span class="ok">✓</span>' : "";
+    const a = span(i, 7, -2.5, 2.5).toFixed(2), dx = span(i, 8, 0, 9).toFixed(0);
+    if (kind === 1) h += '<div class="tag paper" style="transform:translateX(' + dx + 'px) rotate(' + a + 'deg)"><i class="pin" style="left:' + Math.round(span(i, 9, 30, 70)) + '%"></i>' + name + ok + "</div>";
+    if (kind === 2) h += '<div class="hang" style="transform:translateX(' + dx + 'px)"><i class="pin"></i><i class="str"></i><div class="lug paper" style="transform:rotate(' + span(i, 7, -6, 9).toFixed(1) + 'deg)">' + name + ok + "</div></div>";
+    if (kind === 3) h += '<div class="row" style="transform:translateX(' + dx + 'px) rotate(' + (a * .6).toFixed(2) + 'deg)"><span class="tape">' + name + "</span>" + ok + "</div>";
+  });
+  el.innerHTML = h + "</div></div>";
+}
+
+const boards = [...document.querySelectorAll(".k3")];
+const players = [...document.querySelectorAll(".ar-pl")];
+function renderAll() { boards.forEach(render); players.forEach(renderPlayers); applyHover(); }
+
+boards.forEach(b => b.addEventListener("click", e => {
+  const t = e.target.closest("[data-f]"); if (!t) return;
+  b.dataset.f = t.dataset.f; render(b); applyHover();
+}));
+
+// Hover: live with the mouse, or forced on Le Messager for every frame of section 3.
+let forced = new URLSearchParams(location.search).get("hover") === "1";
+function applyHover() {
+  boards.filter(b => b.dataset.asym).forEach(b => {
+    b.querySelectorAll(".hk.hv").forEach(x => x.classList.remove("hv", "frozen"));
+    if (!forced) return;
+    const m = b.querySelector('[data-r="Messager"]');
+    if (!m) return;
+    m.style.setProperty("--h", "2.6deg");
+    m.classList.add("hv");
+    if (new URLSearchParams(location.search).get("hover") === "1") m.classList.add("frozen");
+  });
+}
+boards.filter(b => b.dataset.asym).forEach(b => {
+  b.addEventListener("mouseover", e => {
+    const t = e.target.closest(".hk"); if (!t || t.classList.contains("hv")) return;
+    b.querySelectorAll(".hk.hv").forEach(x => x.classList.remove("hv", "frozen"));
+    t.classList.add("hv");
+  });
+  b.addEventListener("mousemove", e => {
+    const t = e.target.closest(".hk.hv"); if (!t) return;
+    const r = t.getBoundingClientRect();
+    t.style.setProperty("--h", (((e.clientX - r.left) / r.width - .5) * 7).toFixed(2) + "deg");
+  });
+  b.addEventListener("mouseleave", () => { if (!forced) b.querySelectorAll(".hk.hv").forEach(x => x.classList.remove("hv", "frozen")); });
+});
+
+document.querySelectorAll("#ar-hover button").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("#ar-hover button").forEach(x => x.classList.toggle("on", x === btn));
+  forced = btn.dataset.h === "1"; applyHover();
+}));
+document.querySelectorAll("#ar-count button").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("#ar-count button").forEach(x => x.classList.toggle("on", x === btn));
+  PLAYERS = +btn.dataset.n; renderAll();
+}));
+const qn = new URLSearchParams(location.search).get("players");
+if (qn) PLAYERS = +qn;
+renderAll();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

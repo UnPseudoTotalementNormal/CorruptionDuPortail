@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les touches cachées : des signes dans les coins (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  @font-face { font-family: "LibSans"; src: url("../fonts/LiberationSans.ttf"); }
+  .tk-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tk-bg.open { opacity: 0; }
+  .tk-stage.is-open .tk-bg.open { opacity: 1; }
+  .tk-stage.is-open .tk-bg.closed { opacity: 0; }
+  .tk-layer { position: absolute; inset: 0; pointer-events: none; }
+  .tk-when-open { display: none; }
+  .tk-stage.is-open .tk-when-open { display: block; }
+  .tk-stage.is-open .tk-when-closed { display: none; }
+
+  /* one hint = a key + (maybe) a word; the style is the frame's (data-look) */
+  .tk-row { position: absolute; display: flex; align-items: center; gap: 30px; pointer-events: auto; cursor: pointer; }
+  .tk-h { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .tk-w { font: 25px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000, 0 0 10px rgba(0,0,0,.9); }
+
+  /* cap: a real keyboard key, the game's dark brown */
+  [data-look="cap"] .tk-k { min-width: 38px; height: 36px; box-sizing: border-box; padding: 0 9px; display: inline-flex;
+    align-items: center; justify-content: center; font: 700 17px LibSans, Arial, sans-serif; color: #efe2c8;
+    background: linear-gradient(#3b2f26, #261c16); border: 1px solid #6a5747; border-bottom: 4px solid #120c08;
+    border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,.7); }
+
+  /* paper: a kraft slip pinned in the corner, written in ink (the lobby's papers) */
+  [data-look="paper"] .tk-h { position: relative; background: #e6d2ae; padding: 6px 14px 5px; transform: rotate(var(--a, -1.5deg));
+    box-shadow: 0 3px 7px rgba(0,0,0,.6); }
+  [data-look="paper"] .tk-h:nth-child(2) { --a: 1.2deg; }
+  [data-look="paper"] .tk-h:nth-child(3) { --a: -.6deg; }
+  [data-look="paper"] .tk-k { font: 25px Garamond, serif; color: #2b1a0e; border-bottom: 2px solid #2b1a0e; line-height: 1; padding: 0 2px 1px; }
+  [data-look="paper"] .tk-w { color: #3d2818; text-shadow: none; }
+  .pin { position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffd2c8 0 18%, #b21818 22%); border: 1px solid #600808; }
+
+  /* icon: a small drawing of what the key does, the key under it, no word */
+  [data-look="icon"] .tk-row { gap: 26px; align-items: flex-end; }
+  [data-look="icon"] .tk-h { flex-direction: column; gap: 5px; }
+  [data-look="icon"] .tk-w { display: none; }
+  [data-look="icon"] svg.tk-i { width: 46px; height: 38px; filter: drop-shadow(0 1px 3px #000); }
+  [data-look="icon"] .tk-k { font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; letter-spacing: .5px; }
+
+  /* text: words only, no box, half lit */
+  [data-look="text"] .tk-row { opacity: .72; gap: 34px; }
+  [data-look="text"] .tk-k { font: 25px Garamond, serif; color: #fff3da; font-variant: small-caps; text-shadow: 0 1px 3px #000, 0 0 10px rgba(0,0,0,.9); }
+
+  /* placement B2: the arrows sit on the tablet's sides, where the grey squares are today */
+  .tk-side { position: absolute; top: 426px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .tk-hide-sq { position: absolute; top: 427px; width: 46px; height: 46px; background: #141210; }
+  .tk-bar { position: absolute; left: 0; right: 0; top: 770px; display: flex; justify-content: center; align-items: center; gap: 28px; }
+  .tk-bar .tk-tab { font: 25px Garamond, serif; color: rgba(234,220,191,.5); text-shadow: 0 1px 3px #000; padding-bottom: 2px; }
+  .tk-bar .tk-tab.on { color: #fff3da; border-bottom: 2px solid #eadcbf; }
+
+  /* C: four moments of one game, side by side */
+  .tk-quad { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; background: #0a0806; padding: 10px; box-sizing: border-box; }
+  .tk-q { position: relative; overflow: hidden; }
+  .tk-q .tk-mini { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform: scale(.4925); transform-origin: 0 0; }
+  .tk-q .tk-cap { position: absolute; left: 0; right: 0; top: 0; padding: 8px 14px; font: 24px Garamond, serif; color: #fff3da;
+    background: linear-gradient(rgba(0,0,0,.85), rgba(0,0,0,0)); }
+
+  .tk-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tk-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tk-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tk-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tk-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="touches">
+
+<header class="page">
+  <h1>Les touches cachées (tour 1)</h1>
+  <p>Aujourd'hui rien ne dit qu'on ouvre la tablette avec <b>Tab</b>, qu'on change d'écran avec <b>← →</b> (Tableau,
+     puis Chat), qu'on parle en maintenant <b>V</b>, que <b>T</b> ouvre la roue des émotes au vote, ni que <b>F8</b>
+     signale un bug. Les seuls repères sont les deux carrés gris sur les côtés de la tablette ouverte.</p>
+  <p>Images : vraies captures (tour de nuit éveillé ; tablette ouverte sur le tableau, capture du 5 octobre, avant le
+     fond noir). Les signes sont dessinés ici. En jeu, les lettres suivraient le clavier du joueur (AZERTY ou QWERTY).
+     Appuie sur <b>Tab</b> (ou touche un signe) pour ouvrir et fermer la tablette dans tous les cadres.</p>
+</header>
+
+<nav class="tk-moments"><div>
+  <button data-at="0">1. Tablette fermée</button>
+  <button data-at="3000">2. Tablette ouverte</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant. Tab marche aussi.</span>
+</div></nav>
+
+<section>
+  <h2>À quoi ressemble le signe</h2>
+  <p>Même place pour tous (coin bas gauche, sous les lettres) ; seule l'allure change. Fermée : la touche pour l'ouvrir.
+     Ouverte : la touche pour la refermer et celle pour passer au Chat (le tableau est le premier écran, rien à gauche).</p>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Une vraie touche de clavier</span></div>
+    <p class="vdesc">Une touche en relief, brun sombre, et un mot à côté. Le repère habituel des jeux PC : on la reconnaît
+       sans lire.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner"></div></div>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Une étiquette punaisée</span></div>
+    <p class="vdesc">Un bout de kraft punaisé, écrit à l'encre, comme les fiches du lobby. Reste dans le monde du liège.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="paper" data-place="corner"></div></div>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Un petit dessin et la touche</span></div>
+    <p class="vdesc">Pas de mot : le dessin de la tablette (ou des flèches) et la touche en dessous. Le plus discret.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="icon" data-place="corner"></div></div>
+  </div>
+
+  <div class="variant" data-id="A4">
+    <div class="vhead"><span class="vid">A4</span><span class="vname">Du texte seul, à demi éteint</span></div>
+    <p class="vdesc">La touche en petites capitales et le mot, sans aucun cadre, un peu transparent.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="text" data-place="corner"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Où vont les flèches, tablette ouverte</h2>
+  <p>Allure A1 partout pour comparer. Passe sur « 2. Tablette ouverte ».</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Tout dans le coin</span></div>
+    <p class="vdesc">Les touches de la tablette restent ensemble dans le coin bas gauche. La tablette ne change pas.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner"></div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Sur les côtés de la tablette</span></div>
+    <p class="vdesc">Les carrés gris deviennent les touches ← et →, avec le nom de l'écran d'à côté. Rien à gauche du tableau.
+       Tab reste dans le coin.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="sides"></div></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Les écrans nommés sous la tablette</span></div>
+    <p class="vdesc">Sous la tablette, les noms des écrans, celui qu'on regarde souligné, les flèches aux deux bouts. On voit
+       combien il y a d'écrans.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="bar"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quelles touches montrer</h2>
+  <p>Tablette fermée, même coin, allure A1.</p>
+
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">La tablette seulement</span></div>
+    <p class="vdesc">Tab, et les flèches une fois ouverte. Le reste se découvre autrement.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner" data-keys="tab"></div></div>
+  </div>
+
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Tablette et vocal</span></div>
+    <p class="vdesc">On ajoute V : sans lui, personne ne sait qu'on peut parler.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner" data-keys="tab,v"></div></div>
+  </div>
+
+  <div class="variant" data-id="K3">
+    <div class="vhead"><span class="vid">K3</span><span class="vname">Tout, toujours</span></div>
+    <p class="vdesc">Tab, V, Échap et F8 en permanence, sur une ligne.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner" data-keys="tab,v,esc,f8"></div></div>
+  </div>
+
+  <div class="variant" data-id="K4">
+    <div class="vhead"><span class="vid">K4</span><span class="vname">Ce qui marche à ce moment</span></div>
+    <p class="vdesc">La nuit Tab et V comme K2 ; au vote, assis, T s'ajoute (la roue des émotes n'existe qu'au vote). Ici, le vote.</p>
+    <div class="screen"><div class="stage tk-stage" data-look="cap" data-place="corner" data-keys="tab,v,t" data-bg="vote"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Combien de temps il reste</h2>
+  <p>Une même partie en quatre moments, allure A1, tablette et vocal (K2).</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Toujours là</span></div>
+    <p class="vdesc">Le signe ne bouge jamais, de la première nuit à la fin.</p>
+    <div class="screen"><div class="stage" data-quad="1,1,1,1"></div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Il s'en va une fois appris</span></div>
+    <p class="vdesc">Chaque signe disparaît après trois usages de sa touche (V après trois prises de parole). Un joueur qui
+       n'a jamais ouvert la tablette le garde.</p>
+    <div class="screen"><div class="stage" data-quad="1,1,0,0"></div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Discret, il s'allume quand ça sert</span></div>
+    <p class="vdesc">Toujours là mais très éteint ; il s'allume quelques secondes quand l'action devient possible (début de ton
+       tour de nuit, arrivée au vote), puis redescend.</p>
+    <div class="screen"><div class="stage" data-quad="1,.3,1,.3"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="D'autres touches à montrer (le menu Échap, les flèches de la vue d'ensemble) ? Une place dans un autre coin ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  const LOOP = 6000, OPEN_AT = 3000;
+  const IMG = { closed: "img/ferme.jpg", open: "img/ouvert.jpg", vote: "../signaler-un-bug/img/jour.jpg" };
+
+  // small drawings for the icon look (46 x 38, cream line)
+  const ICON = {
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    close: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M17 12 l12 12 M29 12 l-12 12" stroke="#eadcbf" stroke-width="2.5"/>',
+    right: '<rect x="4" y="7" width="22" height="22" rx="2" fill="none" stroke="#eadcbf" stroke-width="2"/><path d="M30 18 h12 m-5 -5 l5 5 l-5 5" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    v: '<rect x="18" y="4" width="10" height="18" rx="5" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M12 16 a11 11 0 0 0 22 0 M23 27 v6 M17 34 h12" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    t: '<circle cx="23" cy="19" r="14" fill="none" stroke="#eadcbf" stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+    esc: '<path d="M8 9 h30 M8 19 h30 M8 29 h30" stroke="#eadcbf" stroke-width="3"/>',
+    f8: '<ellipse cx="23" cy="21" rx="9" ry="11" fill="none" stroke="#eadcbf" stroke-width="2.5"/><path d="M23 10 v22 M14 16 l-6 -3 M32 16 l6 -3 M14 26 l-6 3 M32 26 l6 3" stroke="#eadcbf" stroke-width="2.2"/>',
+  };
+  const KEYS = {
+    tab:   { k: "Tab",   w: "Tablette", i: "tab" },
+    close: { k: "Tab",   w: "Fermer",   i: "close" },
+    right: { k: "→",     w: "Chat",     i: "right" },
+    v:     { k: "V",     w: "Parler",   i: "v" },
+    t:     { k: "T",     w: "Émotes",   i: "t" },
+    esc:   { k: "Échap", w: "Menu",     i: "esc" },
+    f8:    { k: "F8",    w: "Signaler un bug", i: "f8" },
+  };
+  function hint(id, look) {
+    const d = KEYS[id];
+    const icon = look === "icon" ? '<svg class="tk-i" viewBox="0 0 46 38">' + ICON[d.i] + "</svg>" : "";
+    const pin = look === "paper" ? '<i class="pin"></i>' : "";
+    return '<div class="tk-h">' + pin + icon + '<span class="tk-k">' + d.k + '</span><span class="tk-w">' + d.w + "</span></div>";
+  }
+  function row(ids, look, style) {
+    return '<div class="tk-row" style="' + style + '">' + ids.map(id => hint(id, look)).join("") + "</div>";
+  }
+
+  // the corner: bottom left, under the letters (the stage's free dark band)
+  const CORNER = "left:28px; bottom:30px;";
+
+  function build(stage) {
+    const look = stage.dataset.look, place = stage.dataset.place;
+    const extra = (stage.dataset.keys || "tab").split(",").filter(k => k !== "tab");
+    const bg = stage.dataset.bg;
+    let h = '<img class="tk-bg closed" src="' + (bg ? IMG[bg] : IMG.closed) + '" alt="">';
+    if (!bg) h += '<img class="tk-bg open" src="' + IMG.open + '" alt="">';
+    h += '<div class="tk-layer">';
+    h += '<div class="tk-when-closed">' + row(["tab", ...extra], look, CORNER) + "</div>";
+    if (!bg) {
+      if (place === "corner") {
+        h += '<div class="tk-when-open">' + row(["close", "right", ...extra], look, CORNER) + "</div>";
+      } else if (place === "sides") {
+        h += '<div class="tk-when-open">' + row(["close", ...extra], look, CORNER)
+          + '<div class="tk-hide-sq" style="left:246px"></div><div class="tk-hide-sq" style="left:1308px"></div>'
+          + '<div class="tk-side" style="left:1307px"><span class="tk-k">→</span><span class="tk-w">Chat</span></div></div>';
+      } else if (place === "bar") {
+        h += '<div class="tk-when-open">' + row(["close", ...extra], look, CORNER)
+          + '<div class="tk-hide-sq" style="left:246px"></div><div class="tk-hide-sq" style="left:1308px"></div>'
+          + '<div class="tk-bar"><span class="tk-k" style="opacity:.35">←</span><span class="tk-tab on">Tableau</span>'
+          + '<span class="tk-tab">Chat</span><span class="tk-k">→</span></div></div>';
+      }
+    }
+    h += "</div>";
+    stage.innerHTML = h;
+    stage.querySelectorAll(".tk-row").forEach(r => r.addEventListener("click", () => setOpen(!isOpen)));
+  }
+  const stages = [...document.querySelectorAll(".tk-stage")];
+  stages.forEach(build);
+
+  // C: four moments of one game, each a mini stage with the hint at an opacity
+  const MOMENTS = ["1re nuit, ton tour", "1re nuit, tablette ouverte", "Nuit 3, ton tour", "Vote du jour 3, une minute après"];
+  document.querySelectorAll("[data-quad]").forEach(stage => {
+    const a = stage.dataset.quad.split(",").map(Number);
+    const av = (stage.dataset.quadV || stage.dataset.quad).split(",").map(Number);
+    let h = '<div class="tk-quad">';
+    MOMENTS.forEach((m, i) => {
+      const open = i === 1, vote = i === 3;
+      const src = vote ? IMG.vote : (open ? IMG.open : IMG.closed);
+      const ids = open ? ["close", "right"] : ["tab"];
+      h += '<div class="tk-q"><div class="tk-mini" data-look="cap"><img class="tk-bg" style="opacity:1" src="' + src + '" alt="">'
+        + '<div class="tk-layer"><div class="tk-row" style="' + CORNER + '">'
+        + '<div style="display:flex;gap:30px;opacity:' + a[i] + '">' + ids.map(id => hint(id, "cap")).join("") + "</div>"
+        + '<div style="opacity:' + av[i] + '">' + hint("v", "cap") + "</div>"
+        + '</div></div></div><div class="tk-cap">' + m + "</div></div>";
+    });
+    stage.innerHTML = h + "</div>";
+  });
+
+  // state: open / closed, shared by every frame; ?at=<ms> freezes it for the captures
+  let isOpen = false, looping = false, timer = null;
+  function setOpen(o) {
+    isOpen = o;
+    stages.forEach(s => s.classList.toggle("is-open", o && !s.dataset.bg));
+    document.querySelectorAll(".tk-moments button[data-at]").forEach(b =>
+      b.classList.toggle("on", !looping && (+b.dataset.at >= OPEN_AT) === o));
+  }
+  function stopLoop() { looping = false; clearInterval(timer); document.querySelector("[data-loop]").classList.remove("on"); }
+  document.querySelectorAll(".tk-moments button[data-at]").forEach(b => b.onclick = () => { stopLoop(); setOpen(+b.dataset.at >= OPEN_AT); });
+  document.querySelector("[data-loop]").onclick = e => {
+    if (looping) { stopLoop(); return; }
+    looping = true; e.target.classList.add("on");
+    const t0 = performance.now();
+    timer = setInterval(() => setOpen(((performance.now() - t0) % LOOP) >= OPEN_AT), 100);
+  };
+  document.addEventListener("keydown", e => {
+    if (e.key === "Tab" && !/TEXTAREA|INPUT/.test(document.activeElement.tagName)) { e.preventDefault(); stopLoop(); setOpen(!isOpen); }
+  });
+  const at = new URLSearchParams(location.search).get("at");
+  setOpen(at !== null && +at >= OPEN_AT);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

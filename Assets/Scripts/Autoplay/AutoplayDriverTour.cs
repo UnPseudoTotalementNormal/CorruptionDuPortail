@@ -190,6 +190,19 @@ namespace Autoplay
                 Transform _exit = _panel.transform.Find("ExitButton");
                 bool _closed = await ClickTarget(_exit ? _exit.gameObject : null, "pause-close", () => !_panel.isPanelOpen);
                 TourStep("pause-close", _closed);
+
+                // Escape opens and closes it too (PauseMenuInput, shown by the key hints).
+                await UniTask.Delay(TimeSpan.FromSeconds(0.6f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                await TourDwell();
+                bool _escOpened = await PressKeyFor(Key.Escape, "pause-escape-open", () => _panel.isPanelOpen);
+                TourStep("pause-escape-open", _escOpened);
+                if (_escOpened)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.8f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    await TourDwell();
+                    bool _escClosed = await PressKeyFor(Key.Escape, "pause-escape-close", () => !_panel.isPanelOpen);
+                    TourStep("pause-escape-close", _escClosed);
+                }
             }
             finally
             {
@@ -245,6 +258,7 @@ namespace Autoplay
                 return;
             }
 
+            await TourDwell();
             bool _opened = _tablet.IsOpen || await PressKeyFor(Key.Tab, "tablet-open", () => _tablet.IsOpen);
             TourStep("tablet-open", _opened);
             if (!_opened)
@@ -268,6 +282,7 @@ namespace Autoplay
         {
             await UniTask.Delay(TimeSpan.FromSeconds(0.6f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
             capture.Request("tour-tablet", 0f);
+            await TourDwell();
 
             SmartphoneApp _first = _tablet.currentApp;
             bool _swiped = await PressKeyFor(Key.RightArrow, "tablet-swipe", () => _tablet.currentApp != _first) ||
@@ -291,8 +306,10 @@ namespace Autoplay
                 await TourChat(_chat);
             }
 
+            await TourDwell();
             bool _closed = await PressKeyFor(Key.Tab, "tablet-close", () => !_tablet.IsOpen);
             TourStep("tablet-close", _closed);
+            await TourDwell();
         }
 
         private async UniTask TourChat(ChatPanel _chat)
@@ -379,12 +396,12 @@ namespace Autoplay
             }
         }
 
-        // Hold T, turn the virtual stick with mouse deltas, release (T is released even when cancelled).
+        // Hold the wheel's key (E), turn the virtual stick with mouse deltas, release (the key is released even when cancelled).
         private async UniTask EmoteWheelGesture(EmoteWheelInput _wheel)
         {
             try
             {
-                await VirtualInput.KeyDown(Key.T).WithCancellation(Cancel);
+                await VirtualInput.KeyDown(_wheel.OpenKey).WithCancellation(Cancel);
                 float _deadline = Time.realtimeSinceStartup + 1f;
                 while (!_wheel.IsOpen && Time.realtimeSinceStartup < _deadline)
                 {
@@ -418,9 +435,14 @@ namespace Autoplay
             }
             finally
             {
-                VirtualInput.ReleaseKey(Key.T);
+                VirtualInput.ReleaseKey(_wheel.OpenKey);
             }
         }
+
+        // -autoplay-tour-dwell: leave the current state on screen a little longer (videos).
+        private UniTask TourDwell() => options.tourDwellSeconds > 0f
+            ? UniTask.Delay(TimeSpan.FromSeconds(options.tourDwellSeconds), DelayType.Realtime, PlayerLoopTiming.Update, Cancel)
+            : UniTask.CompletedTask;
 
         // Press a key and wait for its effect: input.click with mode=key, or input.miss reason=no-effect.
         private async UniTask<bool> PressKeyFor(Key _key, string _action, Func<bool> _effect)

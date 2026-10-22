@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attribution des rôles, tour 7 : le bord du défilement</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  header.page ul { color: var(--soft); margin: 6px 0; padding-left: 20px; }
+  .ar-moments { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+  .ar-moments button { font: inherit; padding: 6px 12px; border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 4px; cursor: pointer; }
+  .ar-moments button.on { border-color: currentColor; font-weight: bold; }
+
+  .ar-bg { position: absolute; inset: 0; background: url(img/lobby.jpg) 0 0 / 1600px 900px; }
+  .ar-btn { cursor: pointer; user-select: none; }
+
+  /* The cork board as coded (PR #145), at the tablet's scale (RenderTexture 1440 wide -> 1002 px here). */
+  .k3 { position: absolute; left: 299px; top: 133px; width: 1002px; height: 634px; padding: 12px;
+    background: #78502f url(img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; box-sizing: border-box; font-family: "Garamond", Georgia, serif; color: #2e1d10; }
+  .k3 * { box-sizing: border-box; }
+  .k3 .cork { position: absolute; inset: 12px; border: 3px solid #341e0e; background: #b07846 url(img/cork_tablet.webp) 0 0 / 100% 100%; overflow: hidden; }
+  .k3 .paper { background: #f0e5cb; border: 1px solid rgba(90, 60, 30, .35); border-bottom: 2px solid rgba(40, 22, 8, .45); border-right: 1.5px solid rgba(40, 22, 8, .35); position: relative; }
+  .k3 .pin { position: absolute; top: -7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffd2c8 0 18%, #b21818 22%); border: 1px solid #600808; z-index: 3; }
+  .k3 .pin:before { content: ""; position: absolute; left: 2px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(30, 14, 4, .4); z-index: -1; }
+  .k3 .fell { font-family: "Fell", serif; }
+
+  .k3 .tabs { position: absolute; left: 21px; top: 15px; display: flex; gap: 28px; padding: 3px 18px 1px 15px; font: 22px "Fell", serif; transform: rotate(-.6deg); z-index: 2; }
+  .k3 .tabs span { color: #684a2e; } .k3 .tabs span.on { color: #2e1d10; }
+  .k3 .tally { position: absolute; left: 21px; right: 21px; top: 70px; display: flex; gap: 11px; z-index: 2; }
+  .k3 .tally .c { flex: 1; padding: 5px 9px 3px 11px; }
+  .k3 .tally .k { font-size: 15px; color: #684a2e; display: flex; align-items: center; gap: 5px; }
+  .k3 .tally .k img { width: 19px; height: 19px; object-fit: contain; }
+  .k3 .tally .v { font-size: 30px; line-height: 34px; }
+  .k3 .side { position: absolute; left: 21px; top: 160px; width: 174px; z-index: 2; }
+  .k3 .side h5 { display: inline-block; margin: 0 0 11px; padding: 1px 10px 1px 8px; font: 21px "Fell", serif; font-weight: normal; transform: rotate(-1deg); }
+  .k3 .side .it { display: block; min-height: 38px; margin-bottom: 11px; padding: 8px 8px 6px 11px; font-size: 17px; color: #684a2e; border-left: 3px solid transparent; }
+  .k3 .side .it.on { color: #8a1010; border-left-color: #8a1010; }
+
+  .k3 .scroll { position: absolute; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #684a2e transparent; z-index: 1; }
+  .k3 .fh { display: inline-flex; align-items: center; gap: 8px; margin: 3px 0 13px; padding: 1px 12px 1px 7px; font: 22px "Fell", serif; transform: rotate(-.8deg); }
+  .k3 .fh img { width: 26px; height: 26px; object-fit: contain; }
+  .k3 .grid { display: flex; flex-wrap: wrap; gap: 21px 18px; margin-bottom: 8px; }
+  .k3 .u { width: 110px; position: relative; }
+  .k3 .slot { background: #080607; border-radius: 7px; }
+  .k3 .crd { width: 110px; height: 154px; background: #080607; border-radius: 7px; padding: 5px 5px 0; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(30, 14, 4, .55); }
+  .k3 .crd .art { flex: 1; border-radius: 3px; background-size: cover; background-position: 50% 20%; }
+  .k3 .crd .nm { height: 26px; font: bold 9.5px/11px Georgia, serif; color: #e9c57a; text-align: center; padding-top: 3px; overflow: hidden; }
+  .k3 .u.out .crd { opacity: .3; }
+  .k3 .ctls { margin-top: 6px; padding: 1px 6px; }
+  .k3 .ctl { display: flex; justify-content: space-between; align-items: baseline; height: 21px; font-size: 14.5px; color: #684a2e; white-space: nowrap; }
+  .k3 .ctl.imp, .k3 .ctl.imp .v { color: #8a1010; }
+  .k3 .ctl .v { display: inline-block; min-width: 16px; text-align: center; font-size: 16.5px; color: #2e1d10; }
+  .k3 .ctl .b { padding: 0 3px; font-size: 18px; color: #8a4a1c; }
+  .k3 .foot { position: absolute; right: 21px; bottom: 12px; display: flex; align-items: center; gap: 18px; padding: 4px 14px 4px 15px; font-size: 17px; color: #684a2e; transform: rotate(-.5deg); z-index: 2; }
+  .k3 .foot .go { display: flex; align-items: center; gap: 9px; font: 22px "Fell", serif; color: #2e1d10; }
+  .k3 .foot .go i { width: 23px; height: 23px; border: 2px solid #2e1d10; border-radius: 2px; position: relative; }
+  .k3 .foot .go.on i:after { content: ""; position: absolute; left: 5px; top: -4px; width: 8px; height: 16px; border-right: 3px solid #8a1010; border-bottom: 3px solid #8a1010; transform: rotate(40deg); }
+  .k3 .rot0 { transform: rotate(-1.1deg); } .k3 .rot1 { transform: rotate(0deg); } .k3 .rot2 { transform: rotate(1.1deg); }
+
+  /* S0: as coded, a rectangle between the counters and the footer */
+  .s0 .scroll, .s2 .scroll { left: 216px; right: 10px; top: 160px; bottom: 58px; padding-right: 8px; padding-top: 8px; }
+  /* S1 / S3: the cards scroll over the whole cork and pass under the pinned papers and the wooden frame */
+  .s1 .scroll, .s3 .scroll { left: 216px; right: 10px; top: 0; bottom: 0; padding: 160px 8px 62px 0; }
+  .s1 .scroll::-webkit-scrollbar, .s3 .scroll::-webkit-scrollbar { width: 6px; }
+  /* S2: a soft shadow at both edges of the rectangle */
+  .s2 .edge { position: absolute; left: 216px; right: 18px; height: 26px; z-index: 2; pointer-events: none; }
+  .s2 .edge.t { top: 160px; background: linear-gradient(rgba(28, 14, 4, .55), rgba(28, 14, 4, 0)); }
+  .s2 .edge.b { bottom: 58px; background: linear-gradient(rgba(28, 14, 4, 0), rgba(28, 14, 4, .55)); }
+  /* S3: S1, and the papers cast a shadow on what passes under them */
+  .s3 .tally .c, .s3 .foot, .s3 .tabs { box-shadow: 0 5px 9px rgba(20, 10, 2, .55); }
+  /* the frame casts a shadow on the cork's edge (S1, S3) */
+  .s1 .cork:after, .s3 .cork:after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 12px rgba(20, 10, 2, .6); pointer-events: none; z-index: 2; }
+</style>
+</head>
+<body data-subject="attribution-roles">
+<header class="page">
+  <h1>Attribution des rôles, tour 7 : le bord du défilement</h1>
+  <p>La tablette en liège (K3, PR #145) telle qu'elle est codée. Tu n'aimes pas la façon dont les cartes disparaissent en bas : la zone qui défile s'arrête sur une ligne droite au milieu du liège. Seul ce bord change ici, le reste est identique au jeu.</p>
+  <ul>
+    <li>Fais défiler les cartes dans chaque cadre (molette, doigt), ou utilise les moments clés : tous les cadres se calent au même endroit.</li>
+    <li>Données d'une partie à 8 joueurs, composition classique, 7 prêts sur 8.</li>
+  </ul>
+  <div class="ar-moments">
+    <button data-at="0">En haut</button>
+    <button data-at="0.45">Au milieu</button>
+    <button data-at="1">En bas</button>
+    <button data-loop>▶ En boucle</button>
+  </div>
+</header>
+
+<main>
+<section>
+  <h2>Où les cartes disparaissent en défilant</h2>
+
+  <div class="variant" data-id="S0">
+    <div class="vhead"><span class="vid">S0</span><span class="vname">Aujourd'hui (référence)</span></div>
+    <p class="vdesc">La zone qui défile est un rectangle entre les compteurs et le pied de page : les cartes s'y coupent net, sur le liège.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 s0" id="s0"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S1">
+    <div class="vhead"><span class="vid">S1</span><span class="vname">Sous les papiers et le cadre</span></div>
+    <p class="vdesc">Les cartes défilent sur tout le liège : en montant, elles passent sous les fiches des compteurs ; en bas, sous le pied de page et le cadre en bois. Plus de ligne de coupe au milieu.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 s1" id="s1"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S2">
+    <div class="vhead"><span class="vid">S2</span><span class="vname">Ombre douce aux bords</span></div>
+    <p class="vdesc">Le rectangle reste, mais ses deux bords sont fondus par une ombre : les cartes s'enfoncent dans l'ombre au lieu d'être coupées.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 s2" id="s2"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="S3">
+    <div class="vhead"><span class="vid">S3</span><span class="vname">Sous les papiers, avec leur ombre</span></div>
+    <p class="vdesc">Comme S1, et les fiches punaisées projettent une ombre sur les cartes qui passent dessous : on voit qu'elles sont posées par-dessus.</p>
+    <div class="screen"><div class="stage"><div class="ar-bg"></div><div class="k3 s3" id="s3"></div></div></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <label for="global">Autre chose sur ce bord, ou ailleurs sur le tableau ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+const PLAYERS = 8, READY = 7;
+const FAC = {
+  a: { name: "Anomalies", logo: "img/LogoAnomalie.webp", ink: "#8e1616" },
+  e: { name: "Élus", logo: "img/LogoElu.webp", ink: "#2c5f22" },
+  m: { name: "Marginaux", logo: "img/LogoMarginaux.webp", ink: "#8a4d0e" },
+};
+const ROLES = [
+  ["MageOcculte", "Va'ahl, Le Mage Occulte", "a"], ["Abyss", "Abyss, L'Extension du Néant", "a"], ["Moork", "Mo'orkn l'Affamé", "a"],
+  ["Technomancien", "Le Technomancien", "e"], ["Croupiere", "Luma, la croupière", "e"], ["Orpheline", "L'Orpheline", "e"], ["DrGloubi", "Dr Gloubi", "e"],
+  ["Dryade", "La Dryade", "e"], ["Messager", "Le Messager", "e"], ["Repenti", "Le Repenti", "e"], ["Traqueuse", "La Chasseuse de Prime", "e"],
+  ["Uges", "Ugës, l'Imposteur", "e"], ["Incomplet", "L'Incomplet", "e"], ["Gardien", "Le Gardien", "e"], ["Geolier", "Geôlier", "e"],
+  ["Omniscient", "ORIGINE, l'Omniscient", "e"], ["Oracle", "Nara, l'oracle brisée", "e"], ["Robot", "Le Robot", "m"],
+].map(([id, name, f]) => ({ id, name, f }));
+const CLASSIC = { MageOcculte: [1, 1], Abyss: [1, 1], Repenti: [1, 0], Dryade: [1, 0], DrGloubi: [1, 0], Technomancien: [1, 0], Croupiere: [1, 0], Messager: [1, 0], Orpheline: [1, 0], Uges: [1, 0], Incomplet: [1, 0] };
+
+function render(el) {
+  const roles = ROLES.map(r => ({ ...r, max: (CLASSIC[r.id] || [0, 0])[0], forced: (CLASSIC[r.id] || [0, 0])[1] }));
+  const t = { max: 0, forced: 0, a: 0, e: 0, m: 0 };
+  roles.forEach(r => { t.max += r.max; t.forced += r.forced; t[r.f] += r.max; });
+  const pin = x => '<i class="pin" style="left:' + x + '%"></i>';
+  const cell = (k, v, f, i) => '<div class="c paper rot' + (i % 3) + '">' + pin(50) + '<div class="k">' + (f ? '<img src="' + FAC[f].logo + '">' : "") + k + '</div><div class="v">' + v + "</div></div>";
+  let h = '<div class="cork">';
+  h += '<div class="tabs paper"><span class="on">Rôles</span><span>Autres options</span></div>';
+  h += '<div class="tally">' + cell("Joueurs", PLAYERS, null, 0) + cell("Garantis", t.forced, null, 1) + cell("Rôles possibles", t.max, null, 2) +
+    cell("Anomalies", t.a, "a", 3) + cell("Élus", t.e, "e", 4) + cell("Marginaux", t.m, "m", 5) + "</div>";
+  h += '<div class="side"><h5 class="paper">Compositions</h5><div class="it paper on rot0">' + pin(86) + 'Classique</div></div>';
+  h += '<div class="scroll">';
+  let k = 0;
+  for (const f of ["a", "e", "m"]) {
+    h += '<div><span class="fh paper" style="color:' + FAC[f].ink + '"><img src="' + FAC[f].logo + '">' + FAC[f].name + '</span></div><div class="grid">';
+    roles.filter(r => r.f === f).forEach(r => {
+      h += '<div class="u rot' + (k++ % 3) + (r.max ? "" : " out") + '">' + pin(50) + '<div class="slot"><div class="crd"><div class="art" style="background-image:url(img/' + r.id + '.webp)"></div>' +
+        '<div class="nm">' + r.name + '</div></div></div><div class="ctls paper">' +
+        '<div class="ctl"><span>Au plus</span><span><span class="b">‹</span><span class="v">' + r.max + '</span><span class="b">›</span></span></div>' +
+        '<div class="ctl imp"><span>Au moins</span><span><span class="b">‹</span><span class="v">' + r.forced + '</span><span class="b">›</span></span></div></div></div>';
+    });
+    h += "</div>";
+  }
+  h += '</div>';
+  if (el.classList.contains("s2")) h += '<div class="edge t"></div><div class="edge b"></div>';
+  h += '<div class="foot paper">' + pin(4) + '<span>' + READY + ' joueurs prêts sur ' + PLAYERS + '</span><span class="go"><i></i>Je suis prêt</span></div>';
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+const boards = ["s0", "s1", "s2", "s3"].map(id => document.getElementById(id));
+boards.forEach(render);
+const scrolls = () => boards.map(b => b.querySelector(".scroll"));
+function setAt(f) { scrolls().forEach(s => { s.scrollTop = f * (s.scrollHeight - s.clientHeight); }); }
+let loop = null;
+document.querySelectorAll(".ar-moments button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".ar-moments button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  if (loop) { cancelAnimationFrame(loop); loop = null; }
+  if (b.hasAttribute("data-loop")) {
+    const t0 = performance.now();
+    const step = now => { const p = ((now - t0) % 8000) / 8000; setAt(p < .5 ? p * 2 : 2 - p * 2); loop = requestAnimationFrame(step); };
+    loop = requestAnimationFrame(step);
+  } else setAt(parseFloat(b.dataset.at));
+}));
+// ?at=<ms> freezes the loop at that instant (captures)
+const at = new URLSearchParams(location.search).get("at");
+if (at !== null) { const p = (parseFloat(at) % 8000) / 8000; requestAnimationFrame(() => setAt(p < .5 ? p * 2 : 2 - p * 2)); }
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

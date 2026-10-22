@@ -1,0 +1,248 @@
+using System.Collections.Generic;
+using Avatars;
+using CorruptionDuPortail.Domain;
+using Smartphone;
+using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using VoiceSystem;
+
+namespace UI.KeyHints
+{
+    /// <summary>
+    /// The keyboard keys are invisible to the player (2026-10-21): in the bottom left corner, under the letters, a small
+    /// drawing with its key under it, no word, half lit, for each key that does something right now (mockups touches v1
+    /// A3 + C1, v2 L2 + B1 + K5). Which ones: <see cref="CorruptionDuPortail.Domain.KeyHints"/>. Key names follow the
+    /// player's keyboard layout. Local presentation only, on its own overlay canvas built in code (like the night
+    /// parchment): it never takes a click. Hidden while the pause menu is open.
+    /// </summary>
+    public class KeyHintsHud : MonoBehaviour
+    {
+        // Mockup sizes on a 1600 x 900 screen.
+        private static readonly Vector2 ReferenceResolution = new(1600f, 900f);
+        private static readonly Vector2 CornerOffset = new(28f, 26f);
+        private static readonly Vector2 IconSize = new(46f, 38f);
+        private const float HintSpacing = 26f;
+        private const float IconLabelSpacing = 5f;
+        private const int LabelFontSize = 19;
+        private static readonly Color InkColor = new(0.918f, 0.863f, 0.749f, 1f); // #eadcbf
+        private static readonly Color ShadowColor = new(0f, 0f, 0f, 0.8f);
+
+        // Lane A: wired in GameScene. The voice and the emote wheel may be missing (their hint then never shows).
+        [SerializeField] private SmartphoneController _smartphone;
+        [SerializeField] private TabletToggleInput _tabletToggle;
+        [SerializeField] private VoiceChatManager _voice;
+        [SerializeField] private EmoteWheelInput _emoteWheel;
+        [SerializeField] private PauseMenuInput _pauseMenu;
+        [Tooltip("T23: the day's screen rows (keys 1 and 2). Missing = their hints never show.")]
+        [SerializeField] private Presentation.DayScreenRows _dayRows;
+        [Tooltip("T23: the day's vote on the cats (its skip key). Missing = the skip hint never shows.")]
+        [SerializeField] private Presentation.DayCatVoting _dayVoting;
+        [SerializeField] private Font _font;
+        // The game blends in linear space: a CanvasGroup alpha of 0.5 looks far brighter than the mockup's 50 % (a CSS
+        // blend in sRGB). 0.5^2.2 = 0.22 gives the mockup's look over the dark corner.
+        [Tooltip("Mockups touches v2 L2 (half lit) = 0.22 in linear space.")]
+        [Range(0f, 1f)] [SerializeField] private float _opacity = 0.22f;
+        [SerializeField] private int _sortingOrder = 5;
+
+        [Header("Drawings, in KeyHintAction order")]
+        [SerializeField] private Sprite _openTabletIcon;
+        [SerializeField] private Sprite _closeTabletIcon;
+        [SerializeField] private Sprite _previousScreenIcon;
+        [SerializeField] private Sprite _nextScreenIcon;
+        [SerializeField] private Sprite _speakIcon;
+        [SerializeField] private Sprite _emotesIcon;
+        [SerializeField] private Sprite _menuIcon;
+        [SerializeField] private Sprite _reportBugIcon;
+        [SerializeField] private Sprite _playersRowIcon;
+        [SerializeField] private Sprite _rolesRowIcon;
+        [SerializeField] private Sprite _spreadsheetIcon;
+        [SerializeField] private Sprite _skipVoteIcon;
+
+        private readonly Dictionary<KeyHintAction, Hint> _hints = new();
+        private readonly List<KeyHintAction> _shown = new();
+        private readonly List<KeyHintAction> _wanted = new();
+        private Canvas _canvas;
+        private bool _bugReportAvailable;
+
+        private sealed class Hint
+        {
+            public GameObject Root;
+            public Text Label;
+            public System.Func<Key> KeyOf;
+        }
+
+        private void Awake()
+        {
+            Assert.IsNotNull(_smartphone, "KeyHintsHud._smartphone is not wired — wire the SmartphoneController in GameScene.");
+            Assert.IsNotNull(_tabletToggle, "KeyHintsHud._tabletToggle is not wired — wire the TabletToggleInput in GameScene.");
+            Assert.IsNotNull(_pauseMenu, "KeyHintsHud._pauseMenu is not wired — wire the PauseMenuInput in GameScene.");
+            Assert.IsNotNull(_font, "KeyHintsHud._font is not wired — wire EB Garamond.");
+            Build();
+        }
+
+        private void Start()
+        {
+#if CDP_PLAYTEST_LOGS
+            // F8 exists only in playtest builds whose log switch is on (the window is made at startup then).
+            _bugReportAvailable = FindAnyObjectByType<Diagnostics.Logs.BugReportWindow>() != null;
+#endif
+        }
+
+        private void Update()
+        {
+            if (_pauseMenu.IsMenuOpen) _wanted.Clear();
+            else CorruptionDuPortail.Domain.KeyHints.For(ReadContext(), _wanted);
+            if (SameAsShown())
+            {
+                return;
+            }
+            _shown.Clear();
+            _shown.AddRange(_wanted);
+            foreach (KeyValuePair<KeyHintAction, Hint> _pair in _hints)
+            {
+                bool _on = _wanted.Contains(_pair.Key);
+                if (_on) _pair.Value.Label.text = LabelOf(_pair.Value.KeyOf());
+                _pair.Value.Root.SetActive(_on);
+            }
+            _canvas.enabled = _wanted.Count > 0;
+        }
+
+        private KeyHintContext ReadContext()
+        {
+            bool _open = _smartphone.IsOpen;
+            return new KeyHintContext(
+                tabletAvailable: true,
+                tabletOpen: _open,
+                hasPreviousScreen: _open && _smartphone.HasNeighborApp(SmartphoneController.SwipeDirection.Left),
+                hasNextScreen: _open && _smartphone.HasNeighborApp(SmartphoneController.SwipeDirection.Right),
+                canSpeak: _voice != null && _voice.PushToTalkReady,
+                emotesReachable: _emoteWheel != null && _emoteWheel.isActiveAndEnabled && _emoteWheel.IsReachable,
+                menuAvailable: true,
+                bugReportAvailable: _bugReportAvailable,
+                dayRowsAvailable: _dayRows != null && _dayRows.IsActive,
+                spreadsheetAvailable: _tabletToggle.SpreadsheetReachable,
+                skipVoteAvailable: _dayVoting != null && _dayVoting.SkipReachable);
+        }
+
+        private bool SameAsShown()
+        {
+            if (_wanted.Count != _shown.Count) return false;
+            for (int _i = 0; _i < _wanted.Count; _i++)
+            {
+                if (_wanted[_i] != _shown[_i]) return false;
+            }
+            return true;
+        }
+
+        // What the player's keyboard prints on the key (an AZERTY layout renames letters).
+        private static string LabelOf(Key _key)
+        {
+            Keyboard _keyboard = Keyboard.current;
+            string _printed = _keyboard != null ? _keyboard[_key].displayName : null;
+            return CorruptionDuPortail.Domain.KeyHints.Label(_key.ToString(), _printed);
+        }
+
+        // ---- build ----
+
+        private void Build()
+        {
+            var _canvasObject = new GameObject("KeyHintsCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(CanvasGroup));
+            _canvasObject.transform.SetParent(transform, false);
+            _canvas = _canvasObject.GetComponent<Canvas>();
+            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _canvas.sortingOrder = _sortingOrder;
+            _canvas.enabled = false;
+            var _scaler = _canvasObject.GetComponent<CanvasScaler>();
+            _scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            _scaler.referenceResolution = ReferenceResolution;
+            _scaler.matchWidthOrHeight = 0.5f;
+            var _group = _canvasObject.GetComponent<CanvasGroup>();
+            _group.alpha = _opacity;
+            _group.interactable = false;
+            _group.blocksRaycasts = false;
+
+            RectTransform _row = NewRect("Row", _canvasObject.transform);
+            _row.anchorMin = Vector2.zero;
+            _row.anchorMax = Vector2.zero;
+            _row.pivot = Vector2.zero;
+            _row.anchoredPosition = CornerOffset;
+            var _layout = _row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            _layout.spacing = HintSpacing;
+            _layout.childAlignment = TextAnchor.LowerLeft;
+            _layout.childControlWidth = true;
+            _layout.childControlHeight = true;
+            _layout.childForceExpandWidth = false;
+            _layout.childForceExpandHeight = false;
+            var _fitter = _row.gameObject.AddComponent<ContentSizeFitter>();
+            _fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            _fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Keys are read when a hint shows (the tablet's action binds in its own Awake).
+            AddHint(_row, KeyHintAction.PlayersRow, _playersRowIcon, () => Key.Digit1);
+            AddHint(_row, KeyHintAction.RolesRow, _rolesRowIcon, () => Key.Digit2);
+            AddHint(_row, KeyHintAction.Spreadsheet, _spreadsheetIcon, () => _tabletToggle.SpreadsheetKey);
+            AddHint(_row, KeyHintAction.SkipVote, _skipVoteIcon, () => _dayVoting.SkipKey);
+            AddHint(_row, KeyHintAction.OpenTablet, _openTabletIcon, () => _tabletToggle.ToggleKey);
+            AddHint(_row, KeyHintAction.CloseTablet, _closeTabletIcon, () => _tabletToggle.ToggleKey);
+            AddHint(_row, KeyHintAction.PreviousScreen, _previousScreenIcon, () => Key.LeftArrow);
+            AddHint(_row, KeyHintAction.NextScreen, _nextScreenIcon, () => Key.RightArrow);
+            AddHint(_row, KeyHintAction.Speak, _speakIcon, () => _voice.PushToTalkKey);
+            AddHint(_row, KeyHintAction.Emotes, _emotesIcon, () => _emoteWheel.OpenKey);
+            AddHint(_row, KeyHintAction.Menu, _menuIcon, () => _pauseMenu.MenuKey);
+            AddHint(_row, KeyHintAction.ReportBug, _reportBugIcon, () => Key.F8);
+        }
+
+        private void AddHint(RectTransform _row, KeyHintAction _action, Sprite _icon, System.Func<Key> _keyOf)
+        {
+            RectTransform _root = NewRect(_action.ToString(), _row);
+            var _column = _root.gameObject.AddComponent<VerticalLayoutGroup>();
+            _column.spacing = IconLabelSpacing;
+            _column.childAlignment = TextAnchor.LowerCenter;
+            _column.childControlWidth = true;
+            _column.childControlHeight = true;
+            _column.childForceExpandWidth = false;
+            _column.childForceExpandHeight = false;
+
+            RectTransform _iconRect = NewRect("Icon", _root);
+            var _image = _iconRect.gameObject.AddComponent<Image>();
+            _image.sprite = _icon;
+            _image.color = Color.white; // the drawings are already in the ink colour
+            _image.preserveAspect = true;
+            _image.raycastTarget = false;
+            var _size = _iconRect.gameObject.AddComponent<LayoutElement>();
+            _size.preferredWidth = IconSize.x;
+            _size.preferredHeight = IconSize.y;
+            AddShadow(_iconRect.gameObject);
+
+            RectTransform _labelRect = NewRect("Key", _root);
+            var _label = _labelRect.gameObject.AddComponent<Text>();
+            _label.font = _font;
+            _label.fontSize = LabelFontSize;
+            _label.color = InkColor;
+            _label.alignment = TextAnchor.MiddleCenter;
+            _label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _label.verticalOverflow = VerticalWrapMode.Overflow;
+            _label.raycastTarget = false;
+            AddShadow(_labelRect.gameObject);
+
+            _root.gameObject.SetActive(false);
+            _hints[_action] = new Hint { Root = _root.gameObject, Label = _label, KeyOf = _keyOf };
+        }
+
+        private static void AddShadow(GameObject _target)
+        {
+            var _shadow = _target.AddComponent<Shadow>();
+            _shadow.effectColor = ShadowColor;
+            _shadow.effectDistance = new Vector2(0f, -1.5f);
+        }
+
+        private static RectTransform NewRect(string _name, Transform _parent)
+        {
+            var _rect = (RectTransform)new GameObject(_name, typeof(RectTransform)).transform;
+            _rect.SetParent(_parent, false);
+            return _rect;
+        }
+    }
+}

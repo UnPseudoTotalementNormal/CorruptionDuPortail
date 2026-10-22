@@ -135,8 +135,15 @@ public class BoardManager : NetworkBehaviour
     
     #region Animations
     
+    /// <summary>T23: by day the cards leave the table for a row on screen (DayScreenRows). Null = the table's layout.</summary>
+    public Board.ICardLayoutOverride cardLayoutOverride { get; set; }
+
     public void PlaceAllCardsToPosition()
     {
+        if (cardLayoutOverride != null && cardLayoutOverride.PlaceCards(visibleCards))
+        {
+            return;
+        }
         int _count = visibleCards.Count;
         CardGrid _grid = _cardLayout.GridFor(_count, cardGridPreset);
         Vector3 _origin = spawnCardPosition.localPosition;

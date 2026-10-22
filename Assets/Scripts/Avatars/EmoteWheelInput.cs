@@ -37,7 +37,7 @@ namespace Avatars
 
         [Header("Feel — placeholder defaults, Poyo-tuned")]
         [Tooltip("Key held to open the wheel (release to play the highlighted emote).")]
-        [SerializeField] private Key openKey = Key.T;
+        [SerializeField] private Key openKey = Key.E;
 
         [Tooltip("Mouse-delta -> virtual-stick gain while the cursor is locked.")]
         [SerializeField] private float stickSensitivity = 1f;
@@ -57,6 +57,12 @@ namespace Avatars
         /// events below) to FREEZE the camera look while the wheel is up, so the mouse drives the wheel's virtual
         /// stick without also turning the camera. The cursor stays locked (the stick needs the delta).</summary>
         public bool IsOpen => _open;
+
+        /// <summary>The key held to open the wheel, shown by the key hints.</summary>
+        public Key OpenKey => openKey;
+
+        /// <summary>Pressing <see cref="OpenKey"/> would open the wheel now (the player looks through their own eyes).</summary>
+        public bool IsReachable => IsFirstPersonLive();
 
         /// <summary>Raised when the wheel opens / closes — the arbiter subscribes to gate the look (tablet-style).</summary>
         public event System.Action Opened;

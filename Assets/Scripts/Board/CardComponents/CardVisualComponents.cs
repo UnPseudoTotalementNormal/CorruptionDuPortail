@@ -45,6 +45,10 @@ namespace Board.CardComponents
                  "whole seated Vote, not only while hovered (T16). Wire the shared SeatedViewOptions asset.")]
         [field: SerializeField] public Presentation.SeatedViewOptions seatedViewOptions { get; private set; }
 
+        /// <summary>T23: the card sits in the day row on screen (it faces the camera already): no first-person
+        /// look-at pose, standing or hovered, which is built for a card lying on the table.</summary>
+        public bool inScreenRow { get; set; }
+
         [Header("Both Side References")] 
         [field: SerializeField] public MeIconCard meIconCard { get; private set; }
 

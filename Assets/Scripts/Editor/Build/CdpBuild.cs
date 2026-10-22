@@ -11,6 +11,9 @@ using UnityEngine;
 /// Player builds of both online flavors (<see cref="GameFlavor"/>): Relay (UGS + Unity Relay, several copies on
 /// one PC) and Steam (Steam lobbies + Steam Datagram Relay). The Steam build only adds the CDP_STEAM define, for
 /// this build alone: ProjectSettings keep no flavor, so the Editor and the autoplay builds stay Relay.
+/// The command line must say <c>-cdpLogs on</c> (playtest build: CDP_PLAYTEST_LOGS, online logs,
+/// Diagnostics/Logs/GameLog) or <c>-cdpLogs off</c> (public build: no log code, URL or key compiled in). Anything else
+/// fails the build, so a public build can never ship the logs by omission or typo.
 /// CI (Build.yml) calls <see cref="BuildFromCommandLine"/> through game-ci's <c>buildMethod</c>.
 /// </summary>
 public static class CdpBuild
@@ -19,12 +22,20 @@ public static class CdpBuild
 
     /// <summary>
     /// game-ci entry point. Reads game-ci's <c>-customBuildPath</c>, <c>-buildTarget</c>, <c>-buildVersion</c>
-    /// and our <c>-cdpFlavor relay|steam</c> (Build.yml <c>customParameters</c>). Exits 1 on failure.
+    /// and our <c>-cdpFlavor relay|steam</c> and <c>-cdpLogs on|off</c> (Build.yml <c>customParameters</c>). Exits 1 on failure.
     /// </summary>
     public static void BuildFromCommandLine()
     {
         Dictionary<string, string> _args = ParseArgs(Environment.GetCommandLineArgs());
         bool _steam = _args.TryGetValue("cdpFlavor", out string _flavor) && _flavor.Equals("steam", StringComparison.OrdinalIgnoreCase);
+        _args.TryGetValue("cdpLogs", out string _logs);
+        bool _playtestLogs = string.Equals(_logs, "on", StringComparison.OrdinalIgnoreCase);
+        if (!_playtestLogs && !string.Equals(_logs, "off", StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogError($"[BUILD] -cdpLogs must be 'on' (playtest) or 'off' (public), got '{_logs ?? "nothing"}'.");
+            EditorApplication.Exit(1);
+            return;
+        }
 
         if (!_args.TryGetValue("customBuildPath", out string _path) || string.IsNullOrEmpty(_path))
         {
@@ -50,15 +61,19 @@ public static class CdpBuild
             PlayerSettings.bundleVersion = _version;
         }
 
-        BuildReport _report = Build(_target, _path, _steam, BuildOptions.None);
+        BuildReport _report = Build(_target, _path, _steam, BuildOptions.None, _playtestLogs);
         if (_report.summary.result != BuildResult.Succeeded)
         {
             EditorApplication.Exit(1);
         }
     }
 
-    public static BuildReport Build(BuildTarget target, string locationPath, bool steam, BuildOptions options)
+    public static BuildReport Build(BuildTarget target, string locationPath, bool steam, BuildOptions options, bool playtestLogs = false)
     {
+        var _defines = new List<string>();
+        if (steam) _defines.Add(GameFlavor.SteamDefine);
+        if (playtestLogs) _defines.Add(Diagnostics.Logs.GameLog.Define);
+
         var _options = new BuildPlayerOptions
         {
             scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
@@ -66,10 +81,10 @@ public static class CdpBuild
             target = target,
             targetGroup = BuildPipeline.GetBuildTargetGroup(target),
             options = options,
-            extraScriptingDefines = steam ? new[] { GameFlavor.SteamDefine } : Array.Empty<string>(),
+            extraScriptingDefines = _defines.ToArray(),
         };
 
-        Debug.Log($"[BUILD] {(steam ? "Steam" : "Relay")} build, {target}, version {PlayerSettings.bundleVersion} -> {locationPath}");
+        Debug.Log($"[BUILD] {(steam ? "Steam" : "Relay")} build{(playtestLogs ? " + playtest logs" : "")}, {target}, version {PlayerSettings.bundleVersion} -> {locationPath}");
         BuildReport _report = BuildPipeline.BuildPlayer(_options);
         Debug.Log($"[BUILD] {_report.summary.result}: {_report.summary.totalErrors} error(s), {_report.summary.totalSize / (1024 * 1024)} MB.");
 

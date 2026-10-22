@@ -44,6 +44,12 @@ Spans: `turn` = from the prompt (or the previous hook) to the end of the AI resp
 reading/typing between a response and the next prompt, dropped above 15 min. `trigger=background` = a turn nobody
 prompted (task notification wake-up), e.g. waiting on an autoplay run.
 
+**Autoplay waits are not billed.** The Stop hook remembers the background commands and Monitors a turn leaves
+running autoplay (games launched, or watching `AutoplayRuns/`, or "autoplay" in the description). When one of them
+wakes the session, the wait before it is journaled with the tag `autoplay-wait` and dropped at once by a factor-0
+correction (`autoplay wait, not billed (hook)`), revocable with `tr.py undo`. The turns where the AI launches,
+watches or analyses the games still count; waits on tests, builds or agents still count.
+
 Tags come from the turn's transcript: `autoplay` (autoplay skill or game launch), `unity-tests`, `unity-build`,
 `unity-editor`, `git`, `discord`, `code` (.cs edited), `ui` (.uxml/.uss), `docs` (.md), `tooling`, `assets`,
 `subagents`, `web`, `research` (read/search only), `chat` (no tool).

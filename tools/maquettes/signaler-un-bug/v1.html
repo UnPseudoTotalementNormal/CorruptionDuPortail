@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signaler un bug (F8) : la fenêtre et la confirmation (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .sb-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sb-dim { position: absolute; inset: 0; background: rgba(0,0,0,.28); }
+
+  /* B1 parchment sheet */
+  .sb-sheet { position: absolute; left: 990px; top: 120px; width: 520px; height: 640px; box-sizing: border-box;
+              background: url(../common/parchment.webp) center / cover; padding: 46px 48px 36px;
+              font-family: "Fell", serif; color: #2b1a0e; box-shadow: 0 18px 40px rgba(0,0,0,.6); }
+  .sb-sheet h3 { margin: 0 0 18px; font: 40px "Fell", serif; text-align: center; font-weight: 400; }
+  .sb-sheet .sb-photo { width: 400px; height: 225px; object-fit: cover; display: block; margin: 0 auto 22px;
+                        border: 8px solid #f3ead8; box-shadow: 0 4px 10px rgba(0,0,0,.35); }
+  .sb-sheet textarea { all: unset; display: block; width: 100%; height: 170px; box-sizing: border-box;
+                       font: italic 28px/42px "Fell", serif; color: #2b1a0e;
+                       background: repeating-linear-gradient(transparent 0 41px, rgba(60,35,15,.35) 41px 42px); }
+  .sb-sheet textarea::placeholder { color: rgba(43,26,14,.45); }
+  .sb-sheet .sb-actions { display: flex; justify-content: space-between; margin-top: 30px; font: 32px "Fell", serif; }
+  .sb-sheet .sb-actions span { cursor: pointer; border-bottom: 2px solid rgba(43,26,14,.6); }
+
+  /* B2 the game's own panel (pause menu style) */
+  .sb-panel { position: absolute; left: 520px; top: 150px; width: 560px; background: #0b0b0b; color: #fff;
+              font: 28px Arial, "Liberation Sans", sans-serif; padding: 22px 28px 26px; box-sizing: border-box; }
+  .sb-panel h3 { margin: 0 0 16px; font: 32px Arial, sans-serif; text-align: center; font-weight: 400; }
+  .sb-panel .sb-photo { width: 100%; height: 282px; object-fit: cover; display: block; margin-bottom: 16px; }
+  .sb-panel textarea { all: unset; display: block; width: 100%; height: 110px; box-sizing: border-box; padding: 10px 12px;
+                       background: #fff; color: #111; font: 24px Arial, sans-serif; }
+  .sb-panel .sb-actions { display: flex; gap: 16px; margin-top: 18px; }
+  .sb-panel .sb-actions span { flex: 1; text-align: center; background: #3a3a3a; padding: 10px 0; font-size: 24px; cursor: pointer; }
+
+  /* B3 bottom strip */
+  .sb-strip { position: absolute; left: 0; right: 0; bottom: 0; height: 132px; background: rgba(8,8,8,.86);
+              display: flex; align-items: center; gap: 24px; padding: 0 36px; box-sizing: border-box;
+              font: 26px Arial, sans-serif; color: #fff; }
+  .sb-strip .sb-photo { width: 160px; height: 90px; object-fit: cover; }
+  .sb-strip textarea { all: unset; flex: 1; height: 62px; padding: 8px 14px; box-sizing: border-box; background: #fff; color: #111;
+                       font: 24px/46px Arial, sans-serif; }
+  .sb-strip .sb-actions { display: flex; gap: 14px; }
+  .sb-strip .sb-actions span { background: #3a3a3a; padding: 12px 22px; font-size: 24px; cursor: pointer; }
+
+  /* after sending */
+  .sb-done { position: absolute; font: 40px "Fell", serif; color: #2b1a0e; text-align: center; }
+  .sb-toast { position: absolute; left: 1050px; top: 380px; width: 400px; padding: 28px 0;
+              background: url(../common/parchment.webp) center / cover; box-shadow: 0 18px 40px rgba(0,0,0,.6);
+              font: 38px "Fell", serif; color: #2b1a0e; text-align: center; }
+  .sb-toast small { display: block; font: italic 28px "Fell", serif; margin-top: 6px; }
+  .sb-sound { position: absolute; left: 40px; bottom: 34px; font: 600 20px Arial, sans-serif; color: rgba(255,255,255,.85);
+              background: rgba(0,0,0,.55); padding: 6px 12px; }
+  .sb-key { position: absolute; left: 40px; top: 30px; font: 600 20px Arial, sans-serif; color: rgba(255,255,255,.85);
+            background: rgba(0,0,0,.55); padding: 6px 12px; }
+  .sb-hidden { display: none; }
+</style>
+</head>
+<body data-subject="signaler-un-bug">
+
+<header class="page">
+  <h1>Signaler un bug, touche F8 (tour 1)</h1>
+  <p>Pendant un playtest, F8 ouvre une petite fenêtre : le joueur écrit ce qui s'est passé, une capture de l'écran est
+     prise au moment de l'appui, et l'instant est marqué dans les logs en ligne. Claude reçoit l'alerte sur Discord avec
+     la capture, le texte et la minute exacte de la partie de chaque joueur.</p>
+  <p>Images : vraie capture du jour au vote. Les fenêtres sont redessinées ici avec les matières du jeu (parchemin de
+     T21, panneau noir du menu pause). La fenêtre ne met pas le jeu en pause (partie en réseau) ; elle existe
+     seulement dans les builds de playtest, jamais dans le jeu publié. Les cadres réagissent : écris, puis Envoyer.</p>
+</header>
+
+<section>
+  <h2>La fenêtre</h2>
+  <p>Wouh vient d'appuyer sur F8 pendant le vote du jour 2. La capture est celle de l'instant de l'appui.</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Un feuillet de parchemin</span></div>
+    <p class="vdesc">Le parchemin de la nuit, posé à droite : la capture en photo, des lignes pour écrire, Envoyer et
+       Annuler écrits à l'encre. On voit encore la table et les cartes.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt=""><div class="sb-dim"></div>
+      <div class="sb-sheet sb-form">
+        <h3>Qu'est-ce qui s'est passé ?</h3>
+        <img class="sb-photo" src="img/jour.jpg" alt="">
+        <textarea placeholder="J'ai voté pour Simulated 2 et mon vote n'apparaît pas"></textarea>
+        <div class="sb-actions"><span data-cancel>Annuler</span><span data-send>Envoyer</span></div>
+      </div>
+      <div class="sb-toast sb-hidden">Envoyé, merci</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Le panneau du menu pause</span></div>
+    <p class="vdesc">Même panneau noir que le menu pause (son, vocal) : cohérent avec les menus actuels, sans matière
+       nouvelle. Au centre, il cache le milieu de la table.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt=""><div class="sb-dim"></div>
+      <div class="sb-panel sb-form">
+        <h3>Qu'est-ce qui s'est passé ?</h3>
+        <img class="sb-photo" src="img/jour.jpg" alt="">
+        <textarea placeholder="J'ai voté pour Simulated 2 et mon vote n'apparaît pas"></textarea>
+        <div class="sb-actions"><span data-cancel>Annuler</span><span data-send>Envoyer</span></div>
+      </div>
+      <div class="sb-toast sb-hidden">Envoyé, merci</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Une bande en bas</span></div>
+    <p class="vdesc">Une seule ligne en bas de l'écran, la capture en vignette : toute la table reste visible, on peut
+       continuer à suivre le vote en écrivant. Moins de place pour un long récit.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt="">
+      <div class="sb-strip sb-form">
+        <img class="sb-photo" src="img/jour.jpg" alt="">
+        <textarea placeholder="Qu'est-ce qui s'est passé ?"></textarea>
+        <div class="sb-actions"><span data-cancel>Annuler</span><span data-send>Envoyer</span></div>
+      </div>
+      <div class="sb-toast sb-hidden">Envoyé, merci</div>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Après Envoyer</h2>
+  <p>La fenêtre se ferme. Ce que voit Wouh juste après.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">« Envoyé, merci »</span></div>
+    <p class="vdesc">Un petit papier à la place de la fenêtre, deux secondes, puis il s'efface.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt="">
+      <div class="sb-toast">Envoyé, merci</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">L'heure notée</span></div>
+    <p class="vdesc">Le papier donne l'heure marquée dans les logs : Wouh peut la recopier sur Discord, et on retrouve
+       la minute exacte même s'il écrit plus tard.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt="">
+      <div class="sb-toast">Envoyé<small>noté à 21:40:12</small></div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Rien à l'écran, un son</span></div>
+    <p class="vdesc">La fenêtre se ferme sur un bruit de papier, rien ne reste à l'écran.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt="">
+      <div class="sb-sound">🔊 bruit de papier froissé</div>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>La touche</h2>
+  <p>F8 est libre aujourd'hui. Une autre touche, ou aussi une entrée dans le menu pause ?</p>
+
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">F8 seulement</span></div>
+    <p class="vdesc">Rien d'autre à l'écran ; les testeurs connaissent la touche (annoncée sur Discord avec la build).</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt=""><div class="sb-key">F8</div>
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">F8 et une ligne dans le menu pause</span></div>
+    <p class="vdesc">« Signaler un bug » ajouté au menu pause, pour qui a oublié la touche.</p>
+    <div class="screen"><div class="stage">
+      <img class="sb-bg" src="img/jour.jpg" alt=""><div class="sb-dim"></div>
+      <div class="sb-panel" style="top:240px">
+        <h3>Pause</h3>
+        <div class="sb-actions" style="flex-direction:column"><span>Reprendre</span><span>Options</span><span>Signaler un bug</span><span>Quitter la partie</span></div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (plusieurs captures, joindre une courte vidéo des 30 dernières secondes, la nuit) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  document.querySelectorAll(".stage").forEach(stage => {
+    const form = stage.querySelector(".sb-form"), toast = stage.querySelector(".sb-toast.sb-hidden");
+    if (!form || !toast) return;
+    form.querySelector("[data-send]").onclick = () => {
+      form.classList.add("sb-hidden"); stage.querySelector(".sb-dim")?.classList.add("sb-hidden");
+      toast.classList.remove("sb-hidden");
+      setTimeout(() => { toast.classList.add("sb-hidden"); }, 2000);
+      setTimeout(() => { form.classList.remove("sb-hidden"); stage.querySelector(".sb-dim")?.classList.remove("sb-hidden"); }, 3500);
+    };
+    form.querySelector("[data-cancel]").onclick = () => {
+      form.classList.add("sb-hidden"); stage.querySelector(".sb-dim")?.classList.add("sb-hidden");
+      setTimeout(() => { form.classList.remove("sb-hidden"); stage.querySelector(".sb-dim")?.classList.remove("sb-hidden"); }, 1500);
+    };
+  });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

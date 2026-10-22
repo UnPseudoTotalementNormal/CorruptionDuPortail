@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Board.BoardCameraSystem;
 using GameLogic;
 using Reticle;
@@ -210,7 +211,7 @@ namespace Avatars
             // A game-state change is a camera change → end any running emote (restores FP + hides the local body).
             _emotePlayback?.End();
 
-            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue));
+            CameraMode _newMode = AvatarCameraModePolicy.ResolveMode(Query.GetGameState(_newValue), _currentMode);
             _currentMode = _newMode;
 
             // The seated first-person is the default camera ONLY in Embodied (day) — there the embodied camera
@@ -241,8 +242,10 @@ namespace Avatars
             // touches the GameState source or removes/disables any board camera (NFR1); order vs the board
             // manager's own subscriber is irrelevant (AND is order-independent). .instance is a recorded census
             // survivor / opt-out (sanctioned, NOT a locator to remove); null-tolerant for headless / early-boot.
-            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar,
-                _currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied);
+            // T23 (Poyo, 2026-10-21): no more switching cameras with the arrows. By day the player stays in the seated
+            // first person (the vote opens on it), at night in the top view (the board's starting camera, restored when
+            // the day ends). The phases still pick their camera themselves; only the player's arrows are cut, everywhere.
+            BoardCameraManager.instance?.SetActiveSource(BoardCameraInputActiveSource.Avatar, false);
 
             // Avatar movement input: enabled ONLY in FreeRoam (the Lobby), locked in every other state.
             ApplyMovementEnabled();
@@ -309,6 +312,26 @@ namespace Avatars
             ApplyFirstPersonPresentation();
         }
 
+        /// <summary>
+        /// A full-screen overlay that needs the mouse (the pause menu, the playtest bug report window): frees the cursor
+        /// and freezes the look like the tablet does; once the last one closes, the current camera mode is re-applied.
+        /// Each overlay passes itself: the bug report window opens over the pause menu, closing it must not lock the
+        /// cursor under the menu.
+        /// </summary>
+        public void SetOverlayOpen(object _holder, bool _open)
+        {
+            bool _changed = _open ? _overlayHolders.Add(_holder) : _overlayHolders.Remove(_holder);
+            if (_changed) ApplyCursorAndLook();
+        }
+
+        /// <summary>Whether an overlay other than <paramref name="_holder"/> holds the cursor (the pause menu ignores Escape
+        /// while the bug report window, which closes on Escape, is up).</summary>
+        public bool IsOverlayOpenBesides(object _holder) =>
+            _overlayHolders.Count > (_overlayHolders.Contains(_holder) ? 1 : 0);
+
+        private readonly HashSet<object> _overlayHolders = new();
+        private bool _overlayOpen => _overlayHolders.Count > 0;
+
         private void OnTabletOpened()
         {
             _tabletOpen = true;
@@ -374,7 +397,7 @@ namespace Avatars
         {
             bool _firstPerson = _currentMode == CameraMode.FreeRoam
                 || ((_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive);
-            bool _lockCursor = _firstPerson && !_tabletOpen;
+            bool _lockCursor = _firstPerson && !_tabletOpen && !_overlayOpen;
 
             WantsLockedCursor = _lockCursor;
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
@@ -383,7 +406,7 @@ namespace Avatars
             // Freeze the look whenever the tablet OR the emote wheel is open OR an emote is playing (all three
             // look-readers ignore it; default-on otherwise). The wheel/emote keep the cursor LOCKED (above) but
             // take the mouse for the wheel's virtual stick / the emote orbit, so the character must not also turn.
-            bool _lookEnabled = !_tabletOpen && !_wheelOpen && !_emoteActive;
+            bool _lookEnabled = !_tabletOpen && !_wheelOpen && !_emoteActive && !_overlayOpen;
             if (TryBindLocalMovement())
             {
                 _localMovement.SetLookEnabled(_lookEnabled);

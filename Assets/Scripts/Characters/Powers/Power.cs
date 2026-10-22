@@ -25,6 +25,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
 using static Characters.Powers.Target.TargetUtils;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -375,6 +376,8 @@ namespace Characters.Powers
 
         private bool RejectUse(string _reason)
         {
+            GameLog.Warn("power", "power.rejected", "power", powerName.ToString(), "owner", ownerClientId.Value, "reason", _reason,
+                "usesLeft", powerUseLeft.Value);
             Debug.LogWarning($"[POWER] rejected '{powerName}' of {ownerClientId.Value}: {_reason} " +
                              $"(uses left {powerUseLeft.Value}, effect awaiting consume {_serverEffectAwaitingConsume}, pre-consumed {_serverPreConsumedUses})");
             return false;
@@ -475,6 +478,7 @@ namespace Characters.Powers
         protected void EmitVerdictServer(PowerVerdict verdict)
         {
             if (verdict == PowerVerdict.None || !IsServer) return;
+            GameLog.Info("power", "power.verdict", "power", powerName.ToString(), "owner", ownerClientId.Value, "verdict", verdict);
 
             ulong _owner = ownerClientId.Value;
             if (_owner == NetworkManager.ServerClientId)
@@ -555,6 +559,7 @@ namespace Characters.Powers
 
         public virtual void StartUse()
         {
+            GameLog.Info("power", "power.start", "power", powerName.ToString(), "owner", ownerClientId.Value, "usesLeft", powerUseLeft.Value);
             isCurrentlyUsed = true;
             GameAudioManager.instance.PlayEventInstance(canalisationSound.GetPath(), CANALISATION_SOUND_KEY);
             onStartUse?.Invoke();
@@ -602,6 +607,8 @@ namespace Characters.Powers
             }
 
             OnUsedServer();
+            GameLog.Info("power", "power.used", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                "usesLeft", powerUseLeft.Value, "stolenCopy", isStolenCopy.Value);
             onPowerUsed?.Invoke();
             if (ownerClientId.Value != NetworkManager.ServerClientId) //notify owner client
             {
@@ -693,6 +700,7 @@ namespace Characters.Powers
             {
                 return;
             }
+            GameLog.Info("power", "power.cancel", "power", powerName.ToString(), "owner", ownerClientId.Value);
             StopUse();
         }
 

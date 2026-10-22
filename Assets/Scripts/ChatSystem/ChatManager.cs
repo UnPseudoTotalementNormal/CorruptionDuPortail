@@ -14,6 +14,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -239,6 +240,8 @@ namespace ChatSystem
                 return;
             }
 
+            GameLog.Guarded(() => GameLog.Info("chat", "chat.message", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId,
+                "public", _membership.IsPublic(_chatMessage.chatId), "text", _chatMessage.message.ToString()));
             if (_membership.IsPublic(_chatMessage.chatId))
             {
                 ReceiveChatMessageRpc(_chatMessage);

@@ -1,23 +1,65 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6729618235408494279
+--- !u!114 &-5124779444013946877
 MonoBehaviour:
-  m_ObjectHideFlags: 1
+  m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 312420e7960934bbaa47d364e225cd0c, type: 3}
-  m_Name: FreeOutline
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: 8527184a7d0504c41a880ed7039b9cdc, type: 3}
+  m_Name: Outline
+  m_EditorClassIdentifier: Game.Rendering::OutlineFeature
   m_Active: 1
-  settings: {fileID: 11400000, guid: c1956ffd22ff7c64ba48cb67753985c4, type: 2}
-  shaders:
-    mask: {fileID: 4800000, guid: 19ae7b440d27f4f9990007afdc74ddaf, type: 3}
-    outline: {fileID: 4800000, guid: fb375234a1509436fa2a7d37f08912f8, type: 3}
-    clear: {fileID: 4800000, guid: b854aa374420b4b47992044f7c9a0719, type: 3}
+  shader: {fileID: 4800000, guid: 8c1f5803ee3b3e9469a1339801a2c117, type: 3}
+  injectionPoint: 550
+  styles:
+  - renderingLayer: Outline Available
+    color: {r: 1, g: 0.62, b: 0.25, a: 0}
+    width: 0
+    softness: 1
+    glowRadius: 10
+    glowIntensity: 0.3
+    rimWidth: 0
+    rimIntensity: 0
+    pulseSpeed: 0
+    pulseAmount: 0
+    seeThrough: 0
+  - renderingLayer: Outline Hover
+    color: {r: 1.3, g: 0.806, b: 0.325, a: 0.5}
+    width: 1
+    softness: 1
+    glowRadius: 18
+    glowIntensity: 0.7
+    rimWidth: 0
+    rimIntensity: 0
+    pulseSpeed: 0
+    pulseAmount: 0
+    seeThrough: 0
+  - renderingLayer: Outline Active
+    color: {r: 1.6, g: 0.99200004, b: 0.4, a: 0.6}
+    width: 1.5
+    softness: 1
+    glowRadius: 24
+    glowIntensity: 0.9
+    rimWidth: 0
+    rimIntensity: 0
+    pulseSpeed: 0.8
+    pulseAmount: 0.5
+    seeThrough: 0
+  - renderingLayer: Outline Selected
+    color: {r: 1.3, g: 0.806, b: 0.325, a: 0.5}
+    width: 1
+    softness: 1
+    glowRadius: 18
+    glowIntensity: 0.7
+    rimWidth: 0
+    rimIntensity: 0
+    pulseSpeed: 0
+    pulseAmount: 0
+    seeThrough: 0
 --- !u!114 &-645741251972500588
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -70,9 +112,9 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: -645741251972500588}
-  - {fileID: -6729618235408494279}
   - {fileID: 1849153008880546261}
-  m_RendererFeatureMap: 94f35cabc0dd09f739517cb4de979ba2d571ab45dd82a919
+  - {fileID: -5124779444013946877}
+  m_RendererFeatureMap: 94f35cabc0dd09f7d571ab45dd82a919032853773f20e1b8
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3

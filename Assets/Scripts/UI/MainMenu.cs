@@ -315,6 +315,8 @@ namespace UI
             _rejoinButton = _copy.GetComponent<Button>();
             _rejoinButton.onClick.RemoveAllListeners();
             _rejoinButton.onClick.AddListener(OnRejoinButtonClicked);
+            // The session goes stale a few minutes after the drop (seat no longer reserved): hide the button then.
+            InvokeRepeating(nameof(RefreshRejoinButton), 5f, 5f);
         }
 
         /// <summary>Looks at the saved session again (the dev / autoplay session key can be set after this menu started).</summary>
@@ -376,6 +378,10 @@ namespace UI
             {
                 if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session))
                 {
+                    if (_rejoinButton != null)
+                    {
+                        _rejoinButton.gameObject.SetActive(false);
+                    }
                     throw new System.Exception("No game to rejoin");
                 }
                 GameCode.gameCode = _session.lobbyCode;

@@ -99,7 +99,8 @@ jobs:
           unityVersion: 6000.5.0f1
           buildName: ${{ matrix.buildName }}
           buildMethod: CdpBuild.BuildFromCommandLine
-          customParameters: -cdpFlavor ${{ matrix.flavor }}
+          # -cdpLogs on: playtest builds stream their logs online (CdpBuild). A public build must pass -cdpLogs off.
+          customParameters: -cdpFlavor ${{ matrix.flavor }} -cdpLogs on
 
       - name: Vérifier la build Steam
         if: matrix.flavor == 'steam'

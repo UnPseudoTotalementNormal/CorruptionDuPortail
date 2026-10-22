@@ -7,13 +7,18 @@ namespace Network
     /// Rejoin 02 (feat/player-rejoin), client side: the secret session token the host handed to this player when he
     /// was seated, and how to reach that host again, saved on the PC (PlayerPrefs) so it survives a crash and a
     /// relaunch. Sent with every connection request (<see cref="ClientConnectionPayload"/>): the host only honours it
-    /// mid-game, for the seat it reserved for this player. Cleared when the game ends or the player leaves on purpose.
+    /// mid-game, for the seat it reserved for this player. Cleared when the game ends, the host shuts it down or the player
+    /// leaves on purpose. Refreshed while this PC is connected (<see cref="KeepAlive"/>): once the connection has been gone
+    /// longer than a seat can stay reserved, there is nothing left to rejoin (host gone, grace over) and it is ignored.
     /// </summary>
     public static class RejoinSessionStore
     {
         private const string Key = "cdp.rejoin.session";
-        // A session older than this is ignored (a game never lasts that long; a stale token just costs nothing).
-        private const double MaxAgeHours = 6.0;
+        // Seconds after the last sign of life of the connection during which the session still opens something: the
+        // host's grace delay plus slack for the keep-alive period and the host noticing the drop.
+        public const double FreshSeconds = GameValues.REJOIN_GRACE_SECONDS + 60.0;
+        // How often a connected client refreshes its session (well under the slack above).
+        public const double KeepAlivePeriodSeconds = 10.0;
 
         [Serializable]
         public sealed class Session
@@ -25,9 +30,11 @@ namespace Network
             /// <summary>The UGS lobby code shown to players (display / lobby path).</summary>
             public string lobbyCode = string.Empty;
             public long savedAtUnixSeconds;
+            /// <summary>Last time this PC was still connected to that host (0 = never refreshed: <see cref="savedAtUnixSeconds"/>).</summary>
+            public long lastSeenUnixSeconds;
 
             public bool IsFresh => !string.IsNullOrEmpty(token) &&
-                                   DateTimeOffset.UtcNow.ToUnixTimeSeconds() - savedAtUnixSeconds < MaxAgeHours * 3600.0;
+                                   DateTimeOffset.UtcNow.ToUnixTimeSeconds() - Math.Max(savedAtUnixSeconds, lastSeenUnixSeconds) < FreshSeconds;
         }
 
         /// <summary>Dev / autoplay only: several player processes on one machine share PlayerPrefs, so each one keeps
@@ -66,6 +73,22 @@ namespace Network
                 lobbyCode = !string.IsNullOrEmpty(s_pendingLobbyCode) ? s_pendingLobbyCode : _previous?.lobbyCode ?? string.Empty,
                 savedAtUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             };
+            Save(_session);
+        }
+
+        /// <summary>Still connected to the host: the session stays good for a rejoin should the connection drop now.</summary>
+        public static void KeepAlive()
+        {
+            if (!TryLoad(out Session _session))
+            {
+                return;
+            }
+            _session.lastSeenUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Save(_session);
+        }
+
+        private static void Save(Session _session)
+        {
             PlayerPrefs.SetString(Key + KeySuffix, JsonUtility.ToJson(_session));
             PlayerPrefs.Save();
         }
@@ -92,7 +115,7 @@ namespace Network
         /// <summary>The token to put in a connection request (empty when none is saved or it is stale).</summary>
         public static string TokenForConnection() => TryLoad(out Session _session) ? _session.token : string.Empty;
 
-        /// <summary>The game is over for this player (ended, or he left on purpose): nothing to rejoin.</summary>
+        /// <summary>The game is over for this player (ended, shut down by the host, or he left on purpose): nothing to rejoin.</summary>
         public static void Clear()
         {
             PlayerPrefs.DeleteKey(Key + KeySuffix);

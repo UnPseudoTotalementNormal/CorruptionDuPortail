@@ -5,6 +5,7 @@ using CorruptionDuPortail.Domain;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -89,6 +90,7 @@ namespace Network
 
             if (!_approve)
             {
+                GameLog.Warn("net", "join.rejected", "connection", _request.ClientNetworkId, "reason", "game in progress");
                 _response.Reason = GameInProgressReason;
                 Debug.Log($"[JOIN-GATE] Rejected connection {_request.ClientNetworkId} — game already started.");
                 return;
@@ -107,6 +109,8 @@ namespace Network
                 {
                     _response.Approved = false;
                     _response.Reason = BuildVersionGate.MismatchReason;
+                    GameLog.Warn("net", "join.rejected", "connection", _clientId, "reason", "build mismatch",
+                        "joiner", _hasPayload ? _payload.BuildVersion : "none", "host", Application.version);
                     Debug.Log($"[JOIN-GATE] Rejected connection {_clientId} — build '{(_hasPayload ? _payload.BuildVersion : "none")}' " +
                               $"differs from host build '{Application.version}'.");
                     return;
@@ -123,6 +127,7 @@ namespace Network
                 {
                     _response.Approved = false;
                     _response.Reason = LobbyPasswordGate.WrongPasswordReason;
+                    GameLog.Warn("net", "join.rejected", "connection", _clientId, "reason", "wrong password");
                     Debug.Log($"[JOIN-GATE] Rejected connection {_clientId}: wrong lobby password.");
                     return;
                 }
@@ -131,6 +136,8 @@ namespace Network
                 s_joinPhase.Approved(_clientId, Time.realtimeSinceStartupAsDouble);
             }
 
+            GameLog.Info("net", "join.approved", "connection", _clientId, "rejoin", _rejoin,
+                "version", _hasPayload ? _payload.BuildVersion : null);
             // NET-02: keep the joiner's profile until it finishes synchronizing; LobbyPlayerInfoHolder takes it on
             // OnClientConnected and upserts the roster row itself (no follow-up RPC round-trip to lose).
             if (_rejoin)
@@ -195,6 +202,7 @@ namespace Network
                 return;
             }
             s_joinPhase.Synchronized(_clientId);
+            GameLog.Info("net", "join.synchronized", "connection", _clientId);
 
             // NET-05: approved in the lobby but finished loading after the game started — nothing can seat it (no
             // character, no role). Send it back to the menu with the server's reason instead of leaving a ghost.
@@ -215,6 +223,7 @@ namespace Network
 
         private static void OnClientLeft(ulong _clientId)
         {
+            GameLog.Info("net", "connection.closed", "connection", _clientId);
             s_joinPhase.Left(_clientId);
         }
 

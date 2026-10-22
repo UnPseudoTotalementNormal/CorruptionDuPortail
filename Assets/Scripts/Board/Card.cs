@@ -11,6 +11,7 @@ using UI.Panel;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -375,6 +376,7 @@ namespace Board
 
         public void OnPointerClick(PointerEventData _eventData)
         {
+            GameLog.Info("ui", "card.click", "seat", characterInfo != null ? (object)characterInfo.ownerClientId.Value : null);
             onCardClicked?.Invoke(this);
             animationHandler.OnClick();
             soundHandler.PlayClickSound();

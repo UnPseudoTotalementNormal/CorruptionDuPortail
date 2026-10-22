@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
+using CorruptionDuPortail.Domain;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -81,6 +82,25 @@ namespace Avatars
                  "local avatar keeps its size (its eye anchors the first-person camera). 1 = the prefab's size.")]
         [SerializeField] private float _seatedAvatarScale = 1f;
 
+        [Header("Day ring (T19 + T23: once the table is gone)")]
+        [Tooltip("Share of the screen's height the chained cat takes in the middle of the circle (Poyo 2026-10-21: 60 %). " +
+                 "The player sits as far from the middle as that needs.")]
+        [SerializeField] private float _dayScreenShare = 0.6f;
+        [Tooltip("The chained cat's height on screen while it floats (metres: its pose, legs hanging, ears up; measured).")]
+        [SerializeField] private float _dayCatHeight = 16.2f;
+        [Tooltip("A seated cat's click shape (its PointerTarget capsule, seated scale): radius and height in metres.")]
+        [SerializeField] private float _dayCatRadius = 4.4f;
+        [SerializeField] private float _dayClickHeight = 17.6f;
+        [Tooltip("Room left between two neighbours (metres).")]
+        [SerializeField] private float _dayGap = 2f;
+        [Tooltip("Share of every cat's click shape that stays in sight from the player's eye: the others' circle grows " +
+                 "with the number of players until it does.")]
+        [SerializeField] private float _dayMinVisibleShare = 0.5f;
+        [Tooltip("The view's rest pitch by day aims at the middle of the circle this high (share of the chained cat's height): " +
+                 "a little under the floating chained cat's middle, so it shows high above the floor and the far cats' feet " +
+                 "stay clear of the rows of cards.")]
+        [SerializeField] private float _dayAimShare = 0.8f;
+
         [Tooltip("The local player's tablet: while it is open, their cat takes it out and looks at it (every peer " +
                  "sees it). Wire the GameScene SmartphoneController. Null = no tablet animation.")]
         [SerializeField] private Smartphone.SmartphoneController _smartphone;
@@ -98,6 +118,21 @@ namespace Avatars
             get => _seatedAvatarScale;
             set => _seatedAvatarScale = value;
         }
+
+        /// <summary>Share of the screen's height the chained cat takes in the middle of the circle.</summary>
+        public float DayScreenShare => _dayScreenShare;
+
+        /// <summary>Whether the players sit in the day's circle (the table gone), see <see cref="SetDayRing"/>.</summary>
+        public bool DayRingActive => _dayRing;
+
+        /// <summary>The view's rest pitch by day (degrees, + = down): toward the middle of the circle.</summary>
+        public float DayRestPitch { get; private set; } = 20f;
+
+        private bool _dayRing;
+        private float _dayPlayerDistance;
+        private float _dayEyeHeight;
+        private int _dayRingCount = -1;
+        private float _dayOthersRadius;
 
         // One-shot warn guard so a missing ring center logs once, not every frame the presenter polls.
         private bool _warnedNoRingCenter;
@@ -397,6 +432,50 @@ namespace Avatars
         /// everywhere (gaze-preserving). Null-tolerant: returns the front pose / identity if no ring center
         /// is wired (warns once) — never crashes.
         /// </summary>
+        /// <summary>The centre of the seats' circle (on the floor), or null when it is not wired.</summary>
+        public Vector3? RingCenter => _ringCenter != null ? _ringCenter.position : (Vector3?)null;
+
+        /// <summary>
+        /// T19 + T23: by day, once the table is gone (under the dark), the players sit in a bigger circle: the player as
+        /// far from the middle as the chained cat needs to take <see cref="DayScreenShare"/> of the screen there
+        /// (<paramref name="_fovDegrees"/>: the seated view's vertical field), the others on a circle grown with their
+        /// number so every cat stays in sight and clickable from an eye <paramref name="_eyeHeight"/> above the floor.
+        /// Off: back around the table.
+        /// </summary>
+        public void SetDayRing(bool _on, float _fovDegrees, float _eyeHeight)
+        {
+            _dayRing = _on;
+            _dayRingCount = -1;
+            if (!_on)
+            {
+                return;
+            }
+            _dayEyeHeight = _eyeHeight;
+            _dayPlayerDistance = DayRingLayout.PlayerDistance(_dayCatHeight, _fovDegrees, _dayScreenShare);
+            DayRestPitch = DayRingLayout.RestPitch(_eyeHeight, _dayAimShare * _dayCatHeight, _dayPlayerDistance);
+            float _others = DayOthersRadius(SeatOrder().Count);
+            Debug.Log($"[DAYRING] {SeatOrder().Count} seats: player {_dayPlayerDistance:F1} m from the middle, others {_others:F1} m, " +
+                      $"eye {_eyeHeight:F1} m, rest pitch {DayRestPitch:F1}°");
+        }
+
+        // The others' circle for this many seats (recomputed only when the count changes).
+        private float DayOthersRadius(int _count)
+        {
+            if (_count != _dayRingCount)
+            {
+                _dayRingCount = _count;
+                _dayOthersRadius = DayRingLayout.OthersRadius(_count, _dayPlayerDistance, _dayCatRadius, _dayClickHeight,
+                    _dayEyeHeight, _dayGap, _dayMinVisibleShare);
+            }
+            return _dayOthersRadius;
+        }
+
+        /// <summary>By day, how far from the middle the outermost cat reaches (metres); 0 around the table.</summary>
+        public float DayRingReach => _dayRing ? Mathf.Max(_dayPlayerDistance, DayOthersRadius(SeatOrder().Count)) + _dayCatRadius : 0f;
+
+        /// <summary>This peer's own seat pose (where its first-person view sits).</summary>
+        public SeatPose GetLocalSeatPose() => GetSeatPose(LocalSeat);
+
         public SeatPose GetSeatPose(ulong _clientId)
         {
             if (_ringCenter == null)
@@ -416,8 +495,13 @@ namespace Avatars
             // radius), so the look DIRECTION is preserved — only a pushed-out remote head's origin shifts.
             bool _isLocal = _clientId == _localId;
             float _radius = _isLocal || _remoteRingRadius <= 0f ? _ringRadius : _remoteRingRadius;
+            int _count = SeatOrder().Count;
+            if (_dayRing)
+            {
+                _radius = _isLocal ? _dayPlayerDistance : DayOthersRadius(_count);
+            }
             return SeatRingGeometry.Compute(
-                SeatOrder().Count,
+                _count,
                 SeatIndexForClient(_localId),
                 SeatIndexForClient(_clientId),
                 _ringCenter.position,
@@ -465,6 +549,7 @@ namespace Avatars
             {
                 _nextChainedPoll = Time.unscaledTime + ChainedPollSeconds;
                 UpdateChainedBodies();
+                UpdateVotePoses();
             }
             if (_smartphone != null)
             {
@@ -485,6 +570,47 @@ namespace Avatars
                 bool _chained = _character != null && _character.isChained.Value;
                 _avatar.SetChainedServer(_chained);
             }
+        }
+
+        // T23 (V2): when the vote is not anonymous, a cat that voted holds the accusing pose for the rest of the day (vote
+        // and recap). The votes are server state (VoteState.votesForPlayer); the pose rides each body's NetworkAnimator.
+        private readonly HashSet<ulong> _voters = new();
+
+        private void UpdateVotePoses()
+        {
+            _voters.Clear();
+            GameLogic.GameStates.VoteState _vote = DayVote();
+            if (_vote != null && !_vote.anonymousVote)
+            {
+                foreach (List<ulong> _bucket in _vote.votesForPlayer.Values)
+                {
+                    _voters.UnionWith(_bucket);
+                }
+            }
+            foreach (PlayerAvatar _avatar in ResolvedAvatars())
+            {
+                if (_avatar != null)
+                {
+                    _avatar.SetAccusingServer(_voters.Contains(_avatar.ownerClientId.Value));
+                }
+            }
+        }
+
+        // The vote whose votes stand right now: during the vote itself and its recap, else none.
+        private GameLogic.GameStates.VoteState DayVote()
+        {
+            if (_rejoinSource == null || !_rejoinSource.IsSpawned)
+            {
+                return null;
+            }
+            GameState _state = _rejoinSource.GetGameState(_rejoinSource.currentGameStateIndex.Value);
+            if (_state is GameLogic.GameStates.VoteState _vote)
+            {
+                return _vote;
+            }
+            return _state is GameLogic.GameStates.VoteRecapState
+                ? _rejoinSource.GetGameStates(typeof(GameLogic.GameStates.VoteState)).OfType<GameLogic.GameStates.VoteState>().FirstOrDefault()
+                : null;
         }
 
         // The local player's tablet open / closed, told to their own body (sent again to a new body after a rejoin).

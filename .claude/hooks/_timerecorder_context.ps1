@@ -18,6 +18,11 @@ $script:TR_TranscriptFirstReadBytes = 2MB
 $script:TR_MaxCommands = 10
 $script:TR_MaxFiles = 20
 $script:TR_PromptChars = 400
+# Commands that run games (not merely touching tools/autoplay/: unityctl.sh compile lives there).
+$script:TR_AutoplayRunPattern = 'unityctl\.sh\s+(play-build|play-net|last-run)|run_scenario|launch-background\.ps1|-autoplay(-|\s|$)'
+# Background tasks remembered per session to recognise their notification (autoplay waits).
+$script:TR_MaxAutoplayTasks = 100
+$script:TR_AdjustmentFile = 'claude_adjustments.jsonl'
 
 # Hook stdin is UTF-8; Windows PowerShell 5.1 decodes it with the console code
 # page by default, which mangles accented prompts.
@@ -54,6 +59,15 @@ function Get-SystemPromptLabel {
     }
     if ($Prompt -match '^\s*<system-reminder>') { return 'system reminder' }
     return $null
+}
+
+# The tool call a task notification reports on (background command, Monitor
+# event): its tool_use id, or '' when the notification carries none.
+function Get-NotificationToolUseId {
+    param([string]$Prompt)
+    if ([string]::IsNullOrWhiteSpace($Prompt)) { return '' }
+    if ($Prompt -match '<tool-use-id>\s*([^<\s]+)\s*</tool-use-id>') { return $Matches[1] }
+    return ''
 }
 
 # Branch and worktree of the directory a session runs in. Reads .git directly
@@ -99,7 +113,7 @@ function Get-TurnStatePath {
 
 function Read-TurnState {
     param([string]$Dir, [string]$Session)
-    $state = @{ offset = -1; prompt = ''; promptPending = $false; trigger = 'prompt'; offProject = $false }
+    $state = @{ offset = -1; prompt = ''; promptPending = $false; trigger = 'prompt'; offProject = $false; autoplayTasks = @() }
     $path = Get-TurnStatePath -Dir $Dir -Session $Session
     if (-not (Test-Path -LiteralPath $path)) { return $state }
     try {
@@ -109,6 +123,7 @@ function Read-TurnState {
         if ($null -ne $j.promptPending) { $state.promptPending = [bool]$j.promptPending }
         if ($null -ne $j.trigger) { $state.trigger = [string]$j.trigger }
         if ($null -ne $j.offProject) { $state.offProject = [bool]$j.offProject }
+        if ($null -ne $j.autoplayTasks) { $state.autoplayTasks = @($j.autoplayTasks | ForEach-Object { [string]$_ }) }
     } catch { }
     return $state
 }
@@ -210,8 +225,7 @@ function Get-TurnActivity {
                 '^(Bash|PowerShell|Monitor)$' {
                     $cmd = [string]$in.command
                     if (-not $cmd) { break }
-                    # Running games, not merely touching tools/autoplay/ (unityctl.sh compile lives there)
-                    if ($cmd -match 'unityctl\.sh\s+(play-build|play-net|last-run)|run_scenario|launch-background\.ps1|-autoplay(-|\s|$)') { [void]$tags.Add('autoplay') }
+                    if ($cmd -match $script:TR_AutoplayRunPattern) { [void]$tags.Add('autoplay') }
                     if ($cmd -match 'unityctl\.sh\s+(editmode|playmode)|run_tests') { [void]$tags.Add('unity-tests') }
                     if ($cmd -match 'unityctl\.sh\s+build|unity(\.exe)?\s+build|-buildTarget') { [void]$tags.Add('unity-build') }
                     if ($cmd -match 'Unity\.exe|unity\s+command|unityctl') { [void]$tags.Add('unity-editor') }
@@ -259,17 +273,68 @@ function Get-TurnActivity {
     }
 }
 
+# Tool calls of a turn that leave an autoplay run going in the background
+# (background shell command or Monitor running games or watching their runs).
+# Their task notifications wake the session later: the wait before such a
+# wake-up is autoplay time, which is not billed (see claude_time_start.ps1).
+function Get-AutoplayBackgroundIds {
+    param([object[]]$Entries)
+    $ids = New-Object System.Collections.Generic.List[string]
+    foreach ($e in $Entries) {
+        $msg = $e.message
+        if ($null -eq $msg) { continue }
+        foreach ($b in @($msg.content)) {
+            if ($null -eq $b -or $b.type -ne 'tool_use' -or -not $b.id) { continue }
+            $name = [string]$b.name
+            $in = $b.input
+            $background = ($name -eq 'Monitor') -or (($name -match '^(Bash|PowerShell)$') -and $in.run_in_background -eq $true)
+            if (-not $background) { continue }
+            $cmd = [string]$in.command
+            $desc = [string]$in.description
+            if ($cmd -match $script:TR_AutoplayRunPattern -or $cmd -match 'AutoplayRuns' -or $desc -match 'autoplay') {
+                $ids.Add([string]$b.id)
+            }
+        }
+    }
+    return @($ids)
+}
+
+# Book a correction (claude_adjustments.jsonl, same format as tr.py adjust):
+# the given spans count with $Factor. Revocable with tr.py undo.
+function Add-AdjustmentRecord {
+    param([string]$Dir, [double]$Factor, [string]$Reason, [string]$Filter, [string[]]$Ids)
+    if (-not $Ids -or $Ids.Count -eq 0) { return }
+    $rec = [ordered]@{
+        v      = 1
+        id     = [Guid]::NewGuid().ToString('N')
+        atMs   = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        factor = $Factor
+        reason = $Reason
+        filter = $Filter
+        ids    = @($Ids)
+    }
+    $json = ConvertTo-Json -InputObject $rec -Compress -Depth 3
+    $fs = Get-LedgerLock -Dir $Dir
+    try {
+        [System.IO.File]::AppendAllText((Join-Path $Dir $script:TR_AdjustmentFile), $json + "`n", (New-Object System.Text.UTF8Encoding($false)))
+    } finally {
+        if ($null -ne $fs) { $fs.Close() }
+    }
+}
+
 # Build one journal line. Times are Unix ms; the span covers the booked seconds
 # only (a clamped turn shows its last $Seconds, flagged clamped).
 function New-IntervalRecord {
     param(
         [string]$Source, [string]$Kind, [string]$Trigger, [long]$EndMs, [int]$Seconds, [bool]$Clamped,
-        [string]$Session, [hashtable]$Git, [string]$SessionDir, [string]$Prompt, [hashtable]$Activity
+        [string]$Session, [hashtable]$Git, [string]$SessionDir, [string]$Prompt, [hashtable]$Activity,
+        [string]$Id = ''
     )
+    if ([string]::IsNullOrWhiteSpace($Id)) { $Id = [Guid]::NewGuid().ToString('N') }
     if ($null -eq $Activity) { $Activity = @{ model = ''; skills = @(); tools = @(); commands = @(); files = @(); tags = @() } }
     $rec = [ordered]@{
         v        = 1
-        id       = [Guid]::NewGuid().ToString('N')
+        id       = $Id
         src      = $Source
         kind     = $Kind
         trigger  = $Trigger

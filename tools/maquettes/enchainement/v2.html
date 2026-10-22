@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T19, l'enchaînement en 3D (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .en-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 38% 30%; }
+  .en-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .en-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .en-moments button, .en-listen { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .en-moments button.on, .en-listen.on { border-color: var(--accent); color: var(--accent); }
+  .en-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+  .en-under { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .en-level { flex: 1; height: 8px; background: #1a1411; border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .en-level i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); width: 0; }
+  .en-under small { color: var(--soft); font-size: 12px; min-width: 7em; }
+  .en-avant img { width: 100%; border: 1px solid var(--line); display: block; }
+  .en-avant p { color: var(--soft); }
+</style>
+</head>
+<body data-subject="enchainement">
+
+<header class="page">
+  <h1>L'enchaînement, en 3D (tour 2)</h1>
+  <p>Tes choix du tour 1 : <b>S2</b> le son aspiré avant le splatch, <b>F2</b> le gel d'une demi-seconde avec la
+     caméra qui se rapproche d'un coup, <b>Y1</b> le même plan pour tous (même si c'est toi qu'on enchaîne). Tous les
+     cadres ci-dessous les utilisent : appuie sur « ▶ Écouter » pour l'entendre.</p>
+  <p>Ta remarque, appliquée partout : la caméra se met <b>en face du chat</b>, assez loin pour le voir en entier, et le
+     chat <b>s'envole lentement</b>, tenu en l'air par une force pendant qu'on l'enchaîne, puis il est lâché et
+     s'écrase. Sa carte se dresse devant lui sur la table, montre son rôle et s'écrase en même temps que lui.</p>
+  <p>Reste à choisir où il s'écrase. Images rendues depuis le jeu (vrai chat, vraie animation, vraie carte), sons
+     provisoires synthétisés dans la page.</p>
+</header>
+
+<nav class="en-moments"><div>
+  <button data-at="1400">1. Il s'envole</button>
+  <button data-at="2250">2. Le rôle</button>
+  <button data-at="2800">3. Lâché</button>
+  <button data-at="3000">4. Splatch</button>
+  <button data-at="3208" data-freeze>5. Figé</button>
+  <button data-at="4700">6. Après</button>
+  <button data-loop>▶ En boucle</button>
+  <span>Tous les cadres au même instant.</span>
+</div></nav>
+
+<section>
+  <h2>Où il s'écrase</h2>
+  <p>Même plan, même moment sur chaque cadre ; son aspiré (S2) et gel avec bond de caméra (F2).</p>
+
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Il retombe à sa place</span></div>
+    <p class="vdesc">Il monte au-dessus de sa place, la force le lâche, il tombe droit et s'écrase par terre, à sa
+       place, pendant que sa carte claque sur la table devant lui.</p>
+    <div class="screen"><div class="stage en-stage" data-origin="48% 72%" data-cam="e1" data-silence="suck" data-freeze="500" data-zoom="1"></div></div>
+  </div>
+
+  <div class="variant" data-id="E2">
+    <div class="vhead"><span class="vid">E2</span><span class="vname">Il est attiré vers la table et s'écrase dessus</span></div>
+    <p class="vdesc">En montant, la force le tire vers la table ; lâché, il s'écrase sur la table, à côté de sa
+       carte. La crêpe s'étale sur la table, au milieu des cartes.</p>
+    <div class="screen"><div class="stage en-stage" data-origin="50% 70%" data-cam="e2" data-silence="suck" data-freeze="500" data-zoom="1"></div></div>
+  </div>
+
+  <div class="variant" data-id="E3">
+    <div class="vhead"><span class="vid">E3</span><span class="vname">Sa carte l'écrase</span></div>
+    <p class="vdesc">La carte montre le rôle, grandit et s'envole au-dessus de lui ; la force le lâche et la carte
+       tombe sur lui comme un tampon : on le voit aplati sous sa propre carte, rôle visible.</p>
+    <div class="screen"><div class="stage en-stage" data-origin="49% 70%" data-cam="e3" data-silence="suck" data-freeze="500" data-zoom="1"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (la hauteur, la vitesse de la montée, le cadrage) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  // Render timeline (24 images/s, 116 images): the card stands 0.3-1.1 s, flips 1.3-1.9 s, falls 2.62-2.96 s; the cat
+  // is flattened at 2.96 s (impact) and flattest at 3.21 s (image 77), then gets up chained.
+  const FPS = 24, LAST = 115, IMPACT = 2958, FLAT = 3208, FALL = 2620, CUT_K3 = 2620, PAD = 900;
+  const BASE_END = LAST * 1000 / FPS;
+  const src = (cam, i) => `img/seq/${cam}_${String(i).padStart(3, "0")}.webp`;
+  for (const cam of ["e1", "e2", "e3"]) for (let i = 0; i <= LAST; i++) { const im = new Image(); im.src = src(cam, i); }
+
+  const frames = [...document.querySelectorAll(".en-stage")].map(stage => {
+    const img = document.createElement("img"); img.className = "en-img"; img.alt = ""; stage.appendChild(img);
+    if (stage.dataset.origin) img.style.transformOrigin = stage.dataset.origin;
+    const variant = stage.closest(".variant");
+    const under = document.createElement("div"); under.className = "en-under";
+    under.innerHTML = '<button class="en-listen">▶ Écouter</button><small>son</small><div class="en-level"><i></i></div>';
+    variant.appendChild(under);
+    const F = { stage, img, cam: stage.dataset.cam, silence: stage.dataset.silence, freeze: +stage.dataset.freeze,
+      zoom: !!stage.dataset.zoom, level: under.querySelector("i"), listen: under.querySelector(".en-listen") };
+    F.loop = BASE_END + F.freeze + PAD;
+    F.listen.onclick = () => play(F);
+    return F;
+  });
+
+  // display time (with the freeze inserted) -> base time of the render
+  const toBase = (F, d) => d < FLAT ? d : d < FLAT + F.freeze ? FLAT : Math.min(BASE_END, d - F.freeze);
+  const fromMoment = (F, at, freeze) => freeze ? FLAT + F.freeze / 2 : at < FLAT ? at : at + F.freeze;
+
+  // loudness 0..1 of the page's own mix at display time d (drawn under the frame, and played by WebAudio)
+  function level(F, d) {
+    const b = toBase(F, d);
+    const silenceFrom = IMPACT - 250;
+    let amb = 0.25 + 0.35 * Math.min(1, Math.max(0, (b - 300) / (IMPACT - 300)));
+    if (b > FALL && b < IMPACT) amb += 0.25 * (b - FALL) / (IMPACT - FALL);
+    if (F.silence === "cut" && d >= silenceFrom && d < IMPACT) amb = 0;
+    if (F.silence === "suck" && d >= IMPACT - 850 && d < IMPACT) amb *= Math.max(0, 1 - (d - (IMPACT - 850)) / 600);
+    let splat = d >= IMPACT ? Math.exp(-(d - IMPACT) / 220) : 0;
+    if (d >= IMPACT && F.silence !== "none") amb *= Math.min(1, Math.max(0, (d - FLAT - F.freeze) / 700));
+    return Math.min(1, Math.max(amb * 0.6, splat));
+  }
+
+  function draw(F, d) {
+    const b = toBase(F, d);
+    const i = Math.min(LAST, Math.round(b * FPS / 1000));
+    const cam = F.cam === "k3" ? (b < CUT_K3 ? "k1" : "k3") : F.cam;
+    F.img.src = src(cam, i);
+    let z = 1;
+    if (F.zoom && d >= IMPACT) {
+      const hold = FLAT + F.freeze;
+      z = d < IMPACT + 80 ? 1 + 0.12 * (d - IMPACT) / 80 : d < hold ? 1.12 : 1 + 0.12 * Math.max(0, 1 - (d - hold) / 500);
+    }
+    F.img.style.transform = z === 1 ? "" : `scale(${z})`;
+    F.level.style.width = (100 * level(F, d)) + "%";
+  }
+
+  let looping = false, start = 0;
+  function tick(now) { if (!looping) return; for (const F of frames) draw(F, (now - start) % F.loop); requestAnimationFrame(tick); }
+  const btns = document.querySelectorAll(".en-moments button[data-at]");
+  const loopBtn = document.querySelector(".en-moments button[data-loop]");
+  function moment(b) {
+    looping = false; loopBtn.classList.remove("on");
+    for (const F of frames) draw(F, fromMoment(F, +b.dataset.at, b.hasAttribute("data-freeze")));
+    btns.forEach(x => x.classList.toggle("on", x === b));
+  }
+  const q = new URLSearchParams(location.search);
+  if (q.get("at") !== null) { for (const F of frames) draw(F, fromMoment(F, +q.get("at"), q.has("freeze"))); return; }
+  btns.forEach(b => b.onclick = () => moment(b));
+  loopBtn.onclick = () => { looping = true; start = performance.now(); btns.forEach(x => x.classList.remove("on")); loopBtn.classList.add("on"); requestAnimationFrame(tick); };
+  loopBtn.click();
+
+  // ---- sound (provisional, synthesized): room tone + tension, card swishes, the silence, the splatch
+  let ctx = null;
+  function noise(len) {
+    const buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    return buf;
+  }
+  function white(len) {
+    const buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return buf;
+  }
+  function play(F) {
+    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+    frames.forEach(x => x.listen.classList.toggle("on", x === F));
+    const t0 = ctx.currentTime + 0.05, s = ms => t0 + ms / 1000;
+    const master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
+    // the bed (room tone + rising drone + the card's swishes): what the silence cuts
+    const bed = ctx.createGain(); const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 9000;
+    bed.connect(lp); lp.connect(master);
+    const room = ctx.createBufferSource(); room.buffer = noise(8); const rg = ctx.createGain(); rg.gain.value = 0.25; room.connect(rg); rg.connect(bed); room.start(t0);
+    const drone = [55, 82.4].map(f => { const o = ctx.createOscillator(); o.frequency.value = f; const g = ctx.createGain(); g.gain.setValueAtTime(0.0, t0); g.gain.linearRampToValueAtTime(0.12, s(IMPACT)); o.connect(g); g.connect(bed); o.start(t0); return o; });
+    const swish = (from, to, vol) => { const n = ctx.createBufferSource(); n.buffer = white(2); const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.2;
+      bp.frequency.setValueAtTime(400, s(from)); bp.frequency.exponentialRampToValueAtTime(2500, s(to)); const g = ctx.createGain(); g.gain.setValueAtTime(0, s(from));
+      g.gain.linearRampToValueAtTime(vol, s((from + to) / 2)); g.gain.linearRampToValueAtTime(0, s(to)); n.connect(bp); bp.connect(g); g.connect(bed); n.start(s(from)); n.stop(s(to) + 0.1); };
+    swish(300, 1100, 0.25); swish(1300, 1900, 0.3); swish(FALL - 100, IMPACT, 0.5);
+    const g = bed.gain; g.setValueAtTime(1, t0);
+    if (F.silence === "cut") { g.setValueAtTime(1, s(IMPACT - 250)); g.linearRampToValueAtTime(0, s(IMPACT - 235)); }
+    if (F.silence === "suck") { g.setValueAtTime(1, s(IMPACT - 850)); g.linearRampToValueAtTime(0, s(IMPACT - 250));
+      lp.frequency.setValueAtTime(9000, s(IMPACT - 850)); lp.frequency.exponentialRampToValueAtTime(180, s(IMPACT - 250)); }
+    if (F.silence !== "none") { const back = FLAT + F.freeze; g.setValueAtTime(0, s(back)); g.linearRampToValueAtTime(1, s(back + 700)); lp.frequency.setValueAtTime(9000, s(back)); }
+    // the splatch: a wet slap (filtered noise), a body thump with a falling pitch, a short squelch
+    const slap = ctx.createBufferSource(); slap.buffer = white(1); const sf = ctx.createBiquadFilter(); sf.type = "lowpass"; sf.frequency.setValueAtTime(3500, s(IMPACT)); sf.frequency.exponentialRampToValueAtTime(300, s(IMPACT + 250));
+    const sg = ctx.createGain(); sg.gain.setValueAtTime(1.1, s(IMPACT)); sg.gain.exponentialRampToValueAtTime(0.001, s(IMPACT + 320)); slap.connect(sf); sf.connect(sg); sg.connect(master); slap.start(s(IMPACT)); slap.stop(s(IMPACT + 400));
+    const th = ctx.createOscillator(); th.frequency.setValueAtTime(140, s(IMPACT)); th.frequency.exponentialRampToValueAtTime(38, s(IMPACT + 220));
+    const tg = ctx.createGain(); tg.gain.setValueAtTime(1.2, s(IMPACT)); tg.gain.exponentialRampToValueAtTime(0.001, s(IMPACT + 350)); th.connect(tg); tg.connect(master); th.start(s(IMPACT)); th.stop(s(IMPACT + 400));
+    const sq = ctx.createBufferSource(); sq.buffer = white(1); const qf = ctx.createBiquadFilter(); qf.type = "bandpass"; qf.Q.value = 6; qf.frequency.setValueAtTime(900, s(IMPACT + 60)); qf.frequency.exponentialRampToValueAtTime(350, s(IMPACT + 260));
+    const qg = ctx.createGain(); qg.gain.setValueAtTime(0, s(IMPACT + 40)); qg.gain.linearRampToValueAtTime(0.7, s(IMPACT + 80)); qg.gain.exponentialRampToValueAtTime(0.001, s(IMPACT + 300)); sq.connect(qf); qf.connect(qg); qg.connect(master); sq.start(s(IMPACT + 40)); sq.stop(s(IMPACT + 400));
+    const end = BASE_END + F.freeze + 300;
+    master.gain.setValueAtTime(0.9, s(end - 400)); master.gain.linearRampToValueAtTime(0, s(end));
+    room.stop(s(end)); drone.forEach(o => o.stop(s(end)));
+    // the frame plays once from the start, in step with the sound
+    looping = false; loopBtn.classList.remove("on"); btns.forEach(x => x.classList.remove("on"));
+    const t0ms = performance.now() + 50;
+    (function run(now) { const d = now - t0ms; for (const X of frames) draw(X, X === F ? Math.max(0, d) : Math.max(0, d) % X.loop);
+      if (d < end) requestAnimationFrame(run); else { F.listen.classList.remove("on"); loopBtn.click(); } })(performance.now());
+  }
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

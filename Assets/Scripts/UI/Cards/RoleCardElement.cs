@@ -68,6 +68,13 @@ namespace UI.Cards
             return this;
         }
 
+        /// <summary>Set the role name's font size (14 by default), for cards drawn smaller than usual.</summary>
+        public RoleCardElement SetNameSize(float size)
+        {
+            _name.style.fontSize = size;
+            return this;
+        }
+
         /// <summary>Set the portrait sprite (fills the card, scale-and-crop). Null clears to the deep fallback.</summary>
         public RoleCardElement SetPortrait(Sprite sprite)
         {

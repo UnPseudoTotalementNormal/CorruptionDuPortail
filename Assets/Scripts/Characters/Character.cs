@@ -9,6 +9,7 @@ using Network;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Diagnostics.Logs;
 
 namespace Characters
 {
@@ -240,6 +241,7 @@ namespace Characters
         public void AwakenCharacterServerRpc()
         {
             isAwakened.Value = true;
+            GameLog.Info("night", "player.awake", "seat", ownerClientId.Value, "role", role != null ? role.roleID.ToString() : null);
             hasSentMessageThisTurn.Value = false;
             role.AwakenRole();
             AwakenCharacterClientRpc();
@@ -255,6 +257,7 @@ namespace Characters
         public void SleepCharacterServerRpc()
         {
             isAwakened.Value = false;
+            GameLog.Info("night", "player.sleep", "seat", ownerClientId.Value);
             role.SleepRole();
             SleepCharacterClientRpc();
         }
@@ -318,6 +321,7 @@ namespace Characters
             }
             isChained.Value = true;
             isCorrupted.Value = true;
+            GameLog.Info("game", "player.chained", "seat", ownerClientId.Value, "role", role != null ? role.roleID.ToString() : null);
         }
     }
 }

@@ -50,9 +50,26 @@ namespace Tests.Editor.Avatars
         }
 
         [Test]
-        public void ChainingState_MapsTo_Board()
+        public void ChainingState_MapsTo_Embodied()
         {
-            Assert.AreEqual(CameraMode.Board, Resolve<ChainingState>());
+            // T19: every chaining is seen seated (the morning one too).
+            Assert.AreEqual(CameraMode.Embodied, Resolve<ChainingState>());
+        }
+
+        [Test]
+        public void VictoryCheck_KeepsTheCurrentMode()
+        {
+            // A pass-through: seated after the morning chaining, the top view after the portal.
+            var _check = ScriptableObject.CreateInstance<VictoryConditionCheckState>();
+            try
+            {
+                Assert.AreEqual(CameraMode.Embodied, AvatarCameraModePolicy.ResolveMode(_check, CameraMode.Embodied));
+                Assert.AreEqual(CameraMode.Board, AvatarCameraModePolicy.ResolveMode(_check, CameraMode.Board));
+            }
+            finally
+            {
+                Object.DestroyImmediate(_check);
+            }
         }
 
         [Test]

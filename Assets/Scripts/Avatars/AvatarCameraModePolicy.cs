@@ -27,11 +27,11 @@ namespace Avatars
     public static class AvatarCameraModePolicy
     {
         /// <summary>
-        /// Resolves the camera mode for a game state. <c>LobbyState → FreeRoam</c>,
-        /// <c>VoteState → Embodied</c>; <c>null</c> AND every other state type → <c>Board</c>
-        /// (the safe default that preserves the untouched in-loop presentation, NFR1).
+        /// Resolves the camera mode for a game state. <c>LobbyState → FreeRoam</c>, the day (the chainings, the vote
+        /// and its recap) <c>→ Embodied</c>; a victory check keeps <paramref name="_current"/>; <c>null</c> AND every
+        /// other state type → <c>Board</c> (the safe default that preserves the untouched in-loop presentation, NFR1).
         /// </summary>
-        public static CameraMode ResolveMode(GameState _state)
+        public static CameraMode ResolveMode(GameState _state, CameraMode _current = CameraMode.Board)
         {
             return _state switch
             {
@@ -40,6 +40,11 @@ namespace Avatars
                 // DAY phases (the vote + its recap): seated WITH the other players visible.
                 VoteState => CameraMode.Embodied,
                 VoteRecapState => CameraMode.Embodied,
+                // T19 (Poyo, 2026-10-21): every chaining is seen seated, the morning one too; the table is away for it.
+                ChainingState => CameraMode.Embodied,
+                // A victory check is a pass-through: it keeps the view it comes from (seated after the morning
+                // chaining, the top view after the portal), so the table does not blink back for one state.
+                VictoryConditionCheckState => _current,
                 // NIGHT / neutral in-loop states + null: seated but the others are HIDDEN ("you only see each
                 // other during the day"). Board now ALSO seats the player — the seated first-person is reachable
                 // everywhere except the lobby; Board differs from Embodied only by hiding the others and

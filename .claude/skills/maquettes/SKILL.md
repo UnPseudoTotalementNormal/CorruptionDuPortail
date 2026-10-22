@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first).
 metadata:
   template: maquettes
-  template-version: 1.5.0
+  template-version: 1.6.0
 ---
 
 # Maquettes (Corruption du Portail)
@@ -21,8 +21,18 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 
 - Read the current screen's code, `CLAUDE.md` and the memory: choices already made, tastes.
 - **Read `~/.claude/ui-slop.md` first** (his UI slop list, kept up to date at his request).
-- Look at the real thing, not a memory of it: if he cites a reference (an app, a game, a site), open it
-  for real and sum up what you found at the top of the page, sources as links.
+- Look at the real thing, not a memory of it. Before any variant, the page's header says three things:
+  - **Reference**: how two or three games (apps, sites) that already do the thing go about it, seen for
+    real (his video or captures, the game opened on the PC or the phone, a search), gestures and timings
+    included, sources as links. If he cites one, that one first.
+  - **Today**: what the game does now, read in the code, and what is missing.
+  - **The scene**: one concrete moment of a game where the feature matters (who, what, why now), the
+    same on every frame.
+- Then list the questions to settle. Keep only those whose answer changes what will be coded and that
+  he would not settle with his eyes closed; look also for those that do not show on screen (rules,
+  sound, what counts or not, what happens on failure). What has only one sensible answer, or a run of
+  screens with no alternative, fits in one line of the header (« Sans question : … »), not in a section
+  to vote on. A wording question alone does not make a section.
 <!-- local:regarder -->
 - The screen's controller, UXML/USS or Canvas prefab, and `project-context.md`'s UI gotchas.
 - Autoplay captures (`AutoplayRuns/**.png`), the scene's sprites, the art files.
@@ -54,7 +64,12 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   items, say how it scales), not only today's handful.
 - If the screen reacts (choices, tabs), the mockup reacts. If it moves, the mockup moves: a short looping
   scenario with a **key moments** bar at the top (one button per step, « ▶ En boucle ») that freezes
-  every frame at the same instant, and `?at=<ms>` for the captures: comparable at a glance.
+  every frame at the same instant, and `?at=<ms>` for the captures: comparable at a glance. A feature
+  that unfolds over time (a transition, a reveal, sending) is never shown frozen, and a « Ralenti » helps
+  judge a short movement.
+- **A gesture is played.** When the question is a gesture (hold, drag, pinch, double tap), the frame
+  answers it on the page (pointer events, with the finger on the phone as with the mouse): he tries it
+  instead of judging a drawing of the gesture.
 - **Where does it go? Let him place it.** When the question is a place (an object on the table, a button on
   the screen), don't draw five guesses: give him the object to drag on the real screen. `<img class="place"
   data-name="bougie" data-x="391" data-y="757" data-scale="1">` inside a `.stage` (x, y = its anchor in stage
@@ -68,7 +83,15 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - Bottom: `<textarea id="global">` (a useful open question) and `<button id="send">`.
 - `?only=E1` shows that frame alone (captures).
 
-## 3. Check, capture
+## 3. Reread, check, capture
+
+- **Reread the page critically before showing it**, and redo what does not pass:
+  - the header has its reference seen for real, the today and the scene;
+  - each section asks a question that matters, with at least two really different answers (never a
+    single proposal « to approve »);
+  - what moves moves, what is touched can be touched;
+  - compared with a page he liked (this project's last kept round, or another project's from the
+    marketplace: the template's `variantes.md`), it is neither less polished nor less alive.
 
 - Server: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5198/`; if it does not answer, start
   `pythonw tools/maquettes/serve.py` detached (Clawd's mockups use 5199).

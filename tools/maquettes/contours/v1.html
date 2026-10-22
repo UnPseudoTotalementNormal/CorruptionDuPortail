@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les contours des objets qu'on peut pointer (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .ol-grid { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; background: #0a0806; }
+  .ol-cell { position: relative; overflow: hidden; }
+  .ol-cell img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ol-cell img.ol-low { animation: ol-breath 1.25s ease-in-out infinite alternate; }
+  .ol-cell.ol-zoom img { transform: scale(2.4); transform-origin: 66% 45%; }
+  @keyframes ol-breath { from { opacity: 0; } to { opacity: 1; } }
+  .ol-cap { position: absolute; left: 0; right: 0; top: 0; padding: 8px 14px; font: 22px Georgia, serif; color: #fff3da;
+    background: linear-gradient(rgba(0,0,0,.8), rgba(0,0,0,0)); }
+</style>
+</head>
+<body data-subject="contours">
+
+<header class="page">
+  <h1>Les contours des objets qu'on peut pointer (tour 1)</h1>
+  <p>Le contour jaune est refait de zéro. L'ancien gonflait chaque maillage : trous sur les arêtes, un trait autour de
+     chaque pièce (le chapeau du bouton avait le sien), bord baveux sur le sac. Le nouveau est calculé à l'écran :
+     une seule silhouette par objet, même épaisseur tout autour, bord lisse, et il s'arrête derrière ce qui le cache
+     (le chat derrière le liège).</p>
+  <p>Il reste à choisir le style. Tout est rendu dans la vraie scène, depuis la place du joueur. Quatre cas :
+     un pouvoir <b>prêt</b> (à gauche), <b>survolé</b> (milieu), <b>en cours</b> (à droite, il respire),
+     le <b>chat qui porte ton vote</b>, et le sac survolé. Les couleurs restent provisoires.</p>
+</header>
+
+<section>
+  <h2>Aujourd'hui, pour comparer</h2>
+  <div class="variant" data-id="AV">
+    <div class="vhead"><span class="vid">AV</span><span class="vname">L'ancien contour</span></div>
+    <p class="vdesc">Même ordre : prêt, survolé, en cours. Le jaune ne change presque pas d'un état à l'autre.</p>
+    <div class="screen"><div class="stage"><div class="ol-grid">
+      <div class="ol-cell" style="grid-column: span 2"><img src="img/avant_power.webp"></div>
+      <div class="ol-cell" style="grid-column: span 2"><img src="img/avant_wide.webp" style="object-position: 0 70%"></div>
+    </div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le style du contour</h2>
+  <div id="ol-variants"></div>
+</section>
+
+<section>
+  <h2>Autre chose ?</h2>
+  <textarea id="global" placeholder="Un état à revoir (prêt, survolé, en cours, vote) ? Une couleur à essayer ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  const V = [
+    ["S1", "A", "Fil d'or", "Un trait doré fin et net, sans halo. Plus épais au survol, il respire quand le pouvoir est en cours."],
+    ["S2", "B", "Halo de bougie", "Pas de trait : une lueur orangée autour de l'objet, comme une flamme posée derrière. Plus forte au survol."],
+    ["S3", "C", "Liseré et halo", "Un trait doré fin, et un halo léger qui n'apparaît qu'au survol, pour le vote et en cours."],
+    ["S4", "D", "Lumière de bord", "Le bord de l'objet s'éclaire de l'intérieur, comme frappé par une bougie, avec un trait très discret dehors."],
+    ["S5", "E", "Encre pâle", "Un trait couleur parchemin, plus épais, sans lueur : un objet cerné à la plume plutôt qu'éclairé."],
+  ];
+  const host = document.getElementById("ol-variants");
+  for (const [id, f, name, desc] of V) {
+    host.insertAdjacentHTML("beforeend", `
+    <div class="variant" data-id="${id}">
+      <div class="vhead"><span class="vid">${id}</span><span class="vname">${name}</span></div>
+      <p class="vdesc">${desc}</p>
+      <div class="screen"><div class="stage"><div class="ol-grid">
+        <div class="ol-cell"><img src="img/${f}_chat.webp"><div class="ol-cap">Le chat qui porte ton vote</div></div>
+        <div class="ol-cell"><img src="img/${f}_pouvoirs.webp"><img class="ol-low" src="img/${f}_pouvoirs_bas.webp"><div class="ol-cap">Pouvoirs : prêt, survolé, en cours</div></div>
+        <div class="ol-cell"><img src="img/${f}_sac.webp" style="object-position: 30% 50%"><div class="ol-cap">Le sac survolé</div></div>
+        <div class="ol-cell ol-zoom"><img src="img/${f}_pouvoirs.webp"><img class="ol-low" src="img/${f}_pouvoirs_bas.webp"><div class="ol-cap">De près</div></div>
+      </div></div></div>
+    </div>`);
+  }
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

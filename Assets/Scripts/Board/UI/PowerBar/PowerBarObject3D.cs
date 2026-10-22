@@ -6,6 +6,7 @@ using Characters.Powers;
 using DG.Tweening;
 using Extensions;
 using FMODUnity;
+using FX;
 using GameLogic;
 using TooltipSystem;
 using UnityEngine;
@@ -259,57 +260,54 @@ namespace Board.UI.PowerBar
             hovering = true;
             hoverSound.TryPlayOneShot();
             ScaleHover(true);
-            if (power.isCurrentlyUsed)
-            {
-                return;
-            }
-            if (powerViusalTransform != null)
-            {
-                int hoverLayer = LayerMask.NameToLayer("Outline_Hover");
-                powerViusalTransform.gameObject.SetLayerRecursively(hoverLayer);
-            }
+            RefreshOutline();
         }
 
         public void OnPointerExit(PointerEventData _eventData)
         {
             hovering = false;
             ScaleHover(false);
-            if (power.isCurrentlyUsed)
-            {
-                return;
-            }
-            if (powerViusalTransform != null)
-            {
-                int defaultLayer = 0;
-                powerViusalTransform.gameObject.SetLayerRecursively(defaultLayer);
-            }
-        }
-        
-        private void StartUsePower()
-        {
-            if (powerViusalTransform == null) return;
-            
-            int usedLayer = LayerMask.NameToLayer("Outline_Used");
-            powerViusalTransform.gameObject.SetLayerRecursively(usedLayer);
-        }
-        
-        private void StopUsePower()
-        {
-            if (powerViusalTransform == null) return;
-            
-            int defaultLayer = 0;
-            powerViusalTransform.gameObject.SetLayerRecursively(defaultLayer);
+            RefreshOutline();
         }
 
+        private void StartUsePower()
+        {
+            RefreshOutline();
+        }
+
+        private void StopUsePower()
+        {
+            RefreshOutline();
+        }
+
+        // The power can become usable or not at any moment (turn, phase, charges): the outline follows it every frame.
+        // SetOutline does nothing when the state did not change.
         private void Update()
         {
-            if (power == null || powerViusalTransform == null || power.isCurrentlyUsed || hovering || !power.CanUse())
+            RefreshOutline();
+        }
+
+        /// <summary>In use (picking its target) > under the pointer > usable this turn > nothing.</summary>
+        private void RefreshOutline()
+        {
+            if (powerViusalTransform == null)
             {
                 return;
             }
-            
-            int highlightLayer = LayerMask.NameToLayer("Outline_Highlight");
-            powerViusalTransform.gameObject.SetLayerRecursively(highlightLayer);
+            OutlineState _state = OutlineState.None;
+            if (power != null && power.isCurrentlyUsed)
+            {
+                _state = OutlineState.Active;
+            }
+            else if (hovering)
+            {
+                _state = OutlineState.Hover;
+            }
+            else if (power != null && power.CanUse())
+            {
+                _state = OutlineState.Available;
+            }
+            powerViusalTransform.gameObject.SetOutline(_state);
         }
     }
 }

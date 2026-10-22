@@ -3,6 +3,7 @@
 using DG.Tweening;
 using Extensions;
 using FMODUnity;
+using FX;
 using UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,7 +28,7 @@ namespace Board.UI
     /// makes IsPointerOverGameObject() true over the model itself, spuriously killed the hover).
     ///
     /// Presentation mirrors PowerBarObject3D: DOTween hover scale, click punch, FMOD one-shots and an
-    /// outline-layer swap on hover.
+    /// hover outline.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class Board3DButton : MonoBehaviour,
@@ -49,11 +50,8 @@ namespace Board.UI
 
         [Header("Outline")]
         [SerializeField] private bool useOutline = true;
-        [SerializeField] private string hoverLayerName = "Outline_Hover";
 
         private Vector3 _baseScale;
-        private int _defaultLayer;
-        private int _hoverLayer = -1;
         private bool _hovering;
 
         // Mirrors the CustomButton's own enabled gate (e.g. AnonymeMessageButton disables itself when the
@@ -67,11 +65,6 @@ namespace Board.UI
                 visualTransform = transform;
             }
             _baseScale = visualTransform.localScale;
-            _defaultLayer = visualTransform.gameObject.layer;
-            if (useOutline)
-            {
-                _hoverLayer = LayerMask.NameToLayer(hoverLayerName);
-            }
         }
 
         public void OnPointerClick(PointerEventData _eventData)
@@ -119,9 +112,9 @@ namespace Board.UI
             }
             visualTransform.DOKill();
             visualTransform.DOScale(_baseScale * hoverScale, hoverTweenDuration).SetEase(Ease.OutQuint);
-            if (useOutline && _hoverLayer >= 0)
+            if (useOutline)
             {
-                visualTransform.gameObject.SetLayerRecursively(_hoverLayer);
+                visualTransform.gameObject.SetOutline(OutlineState.Hover);
             }
         }
 
@@ -138,9 +131,9 @@ namespace Board.UI
             }
             visualTransform.DOKill();
             visualTransform.DOScale(_baseScale, hoverTweenDuration).SetEase(Ease.OutQuint);
-            if (useOutline && _hoverLayer >= 0)
+            if (useOutline)
             {
-                visualTransform.gameObject.SetLayerRecursively(_defaultLayer);
+                visualTransform.gameObject.SetOutline(OutlineState.None);
             }
         }
 

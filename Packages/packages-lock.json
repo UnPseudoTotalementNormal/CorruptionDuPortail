@@ -492,14 +492,6 @@
       },
       "hash": "9480d23aa58c326a21b2e96623f1177a84e31a5b"
     },
-    "dev.ameye.linework-lite": {
-      "version": "file:dev.ameye.linework-lite",
-      "depth": 0,
-      "source": "embedded",
-      "dependencies": {
-        "com.unity.collections": "1.0.0"
-      }
-    },
     "net.tnrd.nsubstitute": {
       "version": "https://github.com/Thundernerd/Unity3D-NSubstitute.git",
       "depth": 0,

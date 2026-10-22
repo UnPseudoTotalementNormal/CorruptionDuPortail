@@ -40,7 +40,7 @@ namespace Presentation
         [Tooltip("Sorting order of the black overlay (above the game's HUD, under the pause menu).")]
         [SerializeField] private int _overlaySortingOrder = 40;
         [Tooltip("The eye's height above the seat (metres) if the player's cat is not there to measure it.")]
-        [SerializeField] private float _nightEyeHeight = 12.4f;
+        [SerializeField] private float _nightEyeHeight = 11.3f;
 
         private readonly Dictionary<Renderer, bool> _renderers = new();
         private readonly Dictionary<Collider, bool> _colliders = new();

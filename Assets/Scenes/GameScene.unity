@@ -24184,7 +24184,7 @@ MonoBehaviour:
   _pitchClamp: 60
   _activePriority: 100
   _inactivePriority: -100
-  _heightOffset: 0
+  _heightOffset: -1.1
   _restPitch: 35
 --- !u!114 &1861743664
 MonoBehaviour:

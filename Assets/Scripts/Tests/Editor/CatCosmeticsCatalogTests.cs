@@ -83,6 +83,34 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void EveryCosmetic_FollowsTheBody_NotTheSkeletonRootAlone()
+        {
+            // The galactic bow was exported 71 % on the root bone: it went along with the cat but stayed still while the
+            // body leaned or was crushed (Poyo 2026-10-22). Bound, every skinned part rides the body's bones.
+            CatCosmeticsCatalog catalog = Catalog;
+            _cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            var appearance = _cat.GetComponent<CatAppearance>();
+            appearance.Apply(CatLook.Default); // edit mode: no Awake, Apply binds
+            Dictionary<string, Renderer> renderers = _cat.GetComponentsInChildren<Renderer>(true)
+                .GroupBy(r => r.name).ToDictionary(g => g.Key, g => g.First());
+
+            int checkedParts = 0;
+            foreach (CatCosmeticItem item in catalog.items.Where(i => i.slot != CatSlot.Fur))
+                foreach (string part in item.parts)
+                {
+                    if (!renderers.TryGetValue(part, out Renderer renderer) || !(renderer is SkinnedMeshRenderer skinned)
+                        || skinned.bones.Length == 0 || skinned.sharedMesh == null || skinned.sharedMesh.blendShapeCount > 0)
+                        continue;
+                    int root = System.Array.FindIndex(skinned.bones, b => b != null && b.name == "Root");
+                    BoneWeight[] weights = skinned.sharedMesh.boneWeights;
+                    int onRoot = weights.Count(w => w.boneIndex0 == root && w.weight0 > 0.5f);
+                    Assert.Less(onRoot, 0.01f * weights.Length + 1f, $"'{part}': {onRoot}/{weights.Length} vertices on the root bone alone");
+                    checkedParts++;
+                }
+            Assert.Greater(checkedParts, 0, "no skinned cosmetic checked");
+        }
+
+        [Test]
         public void Apply_ShowsExactlyTheChosenParts_SkinnedOnTheCatSkeleton()
         {
             CatCosmeticsCatalog catalog = Catalog;

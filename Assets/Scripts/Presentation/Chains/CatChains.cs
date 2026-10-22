@@ -195,7 +195,8 @@ namespace Presentation.Chains
 
         private static bool IsHead(string _name) => _name.Contains("Ear") || _name.Contains("Head") || _name.Contains("Eye") || _name.Contains("Whisker");
         private static bool IsArm(string _name) => _name.StartsWith("Arms");
-        private static bool IsFur(string _name) => _name.Contains("Fur");
+        private const string BodySkin = "Body";
+        private const string ArmsSkin = "Arms";
 
         // A baked body point: where it is now, and the bones that move it.
         private struct Point
@@ -251,7 +252,10 @@ namespace Presentation.Chains
                 Vector3[] _vs = _baked.vertices;
                 BoneWeight[] _ws = _r.sharedMesh.boneWeights;
                 Transform[] _rb = _r.bones;
-                bool _head = IsHead(_name), _arm = IsArm(_name), _fur = IsFur(_name);
+                bool _head = IsHead(_name), _arm = IsArm(_name);
+                // Only the cat's own skin lends its bones: the fur shells copy it, and the clothes may ride a bigger
+                // skeleton of their own (the capes: 75 bones, Cape_MCH...) that the body's does not have.
+                bool _skin = _name == BodySkin || _name == ArmsSkin;
                 for (int _i = 0; _i < _vs.Length; _i++)
                 {
                     Vector3 _p = _t.position + _t.rotation * _vs[_i];
@@ -260,8 +264,8 @@ namespace Presentation.Chains
                         if (_name.StartsWith("Ears")) _headBottom = Mathf.Min(_headBottom, _p.y);
                         continue;
                     }
-                    var _point = new Point { Position = _p, Weight = _fur || _i >= _ws.Length ? default : Remap(_ws[_i], _rb, _boneIndex) };
-                    if (_fur) _point.Weight.weight0 = -1f; // shape only: its weights are its base mesh's
+                    var _point = new Point { Position = _p, Weight = _skin && _i < _ws.Length ? Remap(_ws[_i], _rb, _boneIndex) : default };
+                    if (!_skin) _point.Weight.weight0 = -1f; // shape only
                     if (_arm) _armPoints.Add(_point);
                     else
                     {
@@ -380,7 +384,7 @@ namespace Presentation.Chains
             return null;
         }
 
-        // The weights of the nearest skinned (not fur) point: the link moves with that point of the body.
+        // The weights of the nearest point of the skin (the body, or the arms for the cuffs): the link moves with it.
         private static BoneWeight Nearest(List<Point> _points, Vector3 _at)
         {
             float _best = float.MaxValue;

@@ -297,6 +297,7 @@ GameObject:
   - component: {fileID: 6859099236886642734}
   - component: {fileID: 7237157391341920807}
   - component: {fileID: 6660450343953162174}
+  - component: {fileID: 7843739994642253507}
   m_Layer: 0
   m_Name: PlayerAvatar
   m_TagString: Untagged
@@ -492,6 +493,21 @@ MonoBehaviour:
   _cameraModeChannel: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   _label: {fileID: 4562080077085065399}
   _fontSize: 9
+--- !u!114 &7843739994642253507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3053062440023001246}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0977be836515f2744aea8e13ab11edd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Presentation.Chains.CatChains
+  _material: {fileID: 2100000, guid: 30c98d838dc7aa04fa6a220963dfbd92, type: 2}
+  _catHeightAtScale1: 4.4
+  _fallbackSeconds: 15
 --- !u!1001 &961825668200779015
 PrefabInstance:
   m_ObjectHideFlags: 0

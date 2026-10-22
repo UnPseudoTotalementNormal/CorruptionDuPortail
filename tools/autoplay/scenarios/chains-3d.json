@@ -1,0 +1,38 @@
+{
+ "name": "chains-3d",
+ "goal": "Chains on the chained cat (maquettes chaines v2: A1 + P1). A real client holds Abyss and every bot votes Abyss: during the day-1 chaining its cat gets cuffs on its right paw, then its left one, then its body, on every process (its own screen too); it keeps them crushed on the floor and back at its seat on day 2. Judge: [CHAINS] 'links built' logged by every process, no error, and the films (host + client1).",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "timescale": 1,
+ "timeout": 1500,
+ "video": true,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-cat-look",
+  "varied",
+  "-autoplay-max-days",
+  "2",
+  "-autoplay-fast-fakes",
+  "-autoplay-force-roles",
+  "Abyss",
+  "-autoplay-role-holder",
+  "client",
+  "-autoplay-vote-focus",
+  "Abyss"
+ ],
+ "expect": [
+  {
+   "type": "outcome",
+   "value": "Completed",
+   "process": "all"
+  },
+  {
+   "type": "noErrors",
+   "process": "all",
+   "ignore": [
+    "ClientLoadedSynchronization"
+   ]
+  }
+ ]
+}

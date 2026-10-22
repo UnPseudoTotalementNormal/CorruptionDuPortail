@@ -5,6 +5,7 @@ using Board;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using FMODUnity;
+using Presentation.Chains;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -70,6 +71,8 @@ namespace Presentation
         private AnimationClip _clip2;
         private AnimationClip _idleClip;
         private float _clipTime = -1f;
+        // Its chains, appearing on it with the pose (maquettes chaines v2: right paw, left paw, then its body).
+        private CatChains _chains;
 
         private void Awake()
         {
@@ -229,6 +232,11 @@ namespace Presentation
                 _visibility.SetFeatured(_avatar);
             }
             _spotlights.Lifted = _avatar;
+            _chains = _avatar.GetComponentInChildren<CatChains>();
+            if (_chains != null)
+            {
+                _chains.BeginReveal();
+            }
         }
 
         // Back on its seat (idempotent: under the black, then again in finally).
@@ -244,6 +252,11 @@ namespace Presentation
             }
             _clipTime = -1f;
             _animator = null;
+            if (_chains != null)
+            {
+                _chains.EndReveal(); // it keeps them, even if the moment was cut short
+                _chains = null;
+            }
             _visibility.SetFeatured(null);
             _dayRows.SetAway(false);
             _dayRows.SetRolesAway(false);
@@ -317,6 +330,10 @@ namespace Presentation
             else if (_idleClip != null)
             {
                 _idleClip.SampleAnimation(_target, Mathf.Repeat(_clipTime - ChainRevealTimeline.ClipEnd, _idleClip.length));
+            }
+            if (_chains != null)
+            {
+                _chains.SetRevealTime(_clipTime);
             }
         }
     }

@@ -53,8 +53,8 @@ namespace Avatars
         [SerializeField] private float _pitchClamp = 40f;
         [SerializeField] private int _activePriority = 100;
         [SerializeField] private int _inactivePriority = -100;
-        [Tooltip("Extra height (metres, world up) of the camera above the avatar's eye (T16: the designer wants to sit " +
-                 "higher above the table). 0 = the cat's own eye height.")]
+        [Tooltip("Extra height (metres, world up) of the camera above the avatar's eye. 0 = the cat's own eye height " +
+                 "(T16 had it 4 m higher to see over the table; the day has no table any more, Poyo 2026-10-22).")]
         [SerializeField] private float _heightOffset;
         [Tooltip("Pitch (degrees, + = down) the look starts at on each entry, so a raised camera still looks at the " +
                  "cards. The ±pitch clamp stays around the seat facing.")]

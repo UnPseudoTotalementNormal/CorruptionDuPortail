@@ -22504,11 +22504,11 @@ MonoBehaviour:
       Data4: 1940253763
     Path: event:/Interface/ChainSplat
   _catHeightAtScale1: 4.4
-  _liftShare: 0.18
+  _liftShare: 0.6
   _fallbackCatHeight: 14.85
-  _cardHeightShare: 0.5
-  _cardUpShare: 0.38
-  _cardForwardShare: 0.35
+  _cardHeightShare: 0.46
+  _cardUpShare: 0.22
+  _cardForwardShare: 0.42
   _darkenTo: 0.2
   _lightIntensity: 2600
   _maxWaitSeconds: 5

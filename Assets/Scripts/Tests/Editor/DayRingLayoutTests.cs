@@ -7,13 +7,13 @@ namespace Tests.Editor
     /// <summary>
     /// T19 + T23 (Poyo 2026-10-21): by day the chained cat floats in the middle of a bigger circle and takes 60 % of the
     /// screen's height there; the circle grows with the number of players so every cat stays in sight and clickable.
-    /// The numbers are the game's: seated view of 40°, the floating chained cat 16.8 m high, a click capsule 4.4 m wide and
+    /// The numbers are the game's: seated view of 40°, the floating chained cat 16.2 m high, a click capsule 4.4 m wide and
     /// 17.6 m high, the eye 16.4 m above the seat, 2 m between neighbours, half of every cat in sight.
     /// </summary>
     public class DayRingLayoutTests
     {
         private const float Fov = 40f;
-        private const float CatHeight = 16.8f;
+        private const float CatHeight = 16.2f;
         private const float CatRadius = 4.4f;
         private const float ClickHeight = 17.6f;
         private const float Eye = 16.4f;
@@ -34,7 +34,7 @@ namespace Tests.Editor
             float distance = Distance;
             double screen = 2.0 * distance * Math.Tan(Fov * 0.5 * Math.PI / 180.0);
             Assert.That(CatHeight / screen, Is.EqualTo(0.6).Within(1e-4));
-            Assert.That(distance, Is.EqualTo(38.5f).Within(0.5f), "the middle is about 38.5 m away");
+            Assert.That(distance, Is.EqualTo(37f).Within(0.5f), "the middle is about 37 m away");
         }
 
         [Test]
@@ -103,7 +103,7 @@ namespace Tests.Editor
         public void RestPitch_LooksDownAtTheMiddle()
         {
             Assert.That(DayRingLayout.RestPitch(10f, 0f, 10f), Is.EqualTo(45f).Within(1e-3f));
-            Assert.That(DayRingLayout.RestPitch(Eye, 0.52f * CatHeight, Distance), Is.InRange(8f, 13f));
+            Assert.That(DayRingLayout.RestPitch(Eye, 0.8f * CatHeight, Distance), Is.InRange(3f, 8f));
         }
     }
 }

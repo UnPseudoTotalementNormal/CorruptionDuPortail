@@ -4,6 +4,10 @@
 # time, provided it is under the idle threshold. The gap is journaled as a
 # "gap" span carrying the prompt it led to, and the prompt is kept in the turn
 # state so the Stop hook can label the turn it opens.
+# A wait that ends on the notification of an autoplay run (background command or
+# Monitor the Stop hook remembered) is autoplay time: journaled with the tag
+# "autoplay-wait" and dropped at once by a factor-0 correction (tr.py undo
+# restores it), so watching games play is never billed.
 #
 # IMPORTANT: this hook must NOT write anything to stdout. For UserPromptSubmit,
 # a hook's stdout is injected into the prompt context - any output would pollute
@@ -53,10 +57,21 @@ try {
     if ($acc.seconds -gt 0) {
         $git = Get-GitContext $sessionDir
         $gapActivity = $null
-        if ($systemLabel) { $gapActivity = @{ model = ''; skills = @(); tools = @(); commands = @(); files = @(); tags = @('waiting') } }
+        $autoplayWait = $false
+        if ($systemLabel) {
+            $toolUseId = Get-NotificationToolUseId ([string]$payload.prompt)
+            $autoplayWait = $toolUseId -and (@($state.autoplayTasks) -contains $toolUseId)
+            $gapTags = if ($autoplayWait) { @('waiting', 'autoplay-wait') } else { @('waiting') }
+            $gapActivity = @{ model = ''; skills = @(); tools = @(); commands = @(); files = @(); tags = $gapTags }
+        }
+        $gapId = [Guid]::NewGuid().ToString('N')
         Add-IntervalRecord -Dir $dir -Json (New-IntervalRecord -Source 'claude' -Kind 'gap' -Trigger $trigger `
             -EndMs $acc.nowMs -Seconds $acc.seconds -Clamped $false -Session $sessionId -Git $git `
-            -SessionDir $sessionDir -Prompt $prompt -Activity $gapActivity)
+            -SessionDir $sessionDir -Prompt $prompt -Activity $gapActivity -Id $gapId)
+        if ($autoplayWait) {
+            Add-AdjustmentRecord -Dir $dir -Factor 0 -Reason 'autoplay wait, not billed (hook)' `
+                -Filter 'tag=autoplay-wait' -Ids @($gapId)
+        }
     }
 
     # Remember the prompt for the turn it opens (the Stop hook journals it).

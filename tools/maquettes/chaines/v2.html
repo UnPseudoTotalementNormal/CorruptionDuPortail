@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les chaînes de l'enchaînement (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .ch-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .ch-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ch-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .ch-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .ch-frame { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+  .ch-black { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 9; }
+  .ch-card { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; z-index: 6; perspective: 1400px; }
+  .ch-card .ch-flip { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .ch-card img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; backface-visibility: hidden; box-shadow: 0 8px 22px rgba(0,0,0,.7); }
+  .ch-card img.ch-front { transform: rotateY(180deg); }
+  .ch-rowcard { position: absolute; border-radius: 6px; box-shadow: 0 6px 14px rgba(0,0,0,.6); z-index: 4; }
+</style>
+</head>
+<body data-subject="chaines">
+
+<header class="page">
+  <h1>Les chaînes de l'enchaînement (tour 2)</h1>
+  <p>Tes choix du tour 1 : elles apparaissent sur lui (O3), pendant qu'il monte (T1), en fer clair (M2), et restent sur
+     lui ensuite (R1). Ici elles prennent d'abord ses bras, au rythme de l'animation : son bras droit d'abord (à gauche de
+     l'écran, il le lève en premier), puis le gauche, puis le corps.</p>
+</header>
+
+<nav class="ch-moments"><div>
+  <button data-at="0">Assis</button>
+  <button data-at="1000">Il s'envole</button>
+  <button data-at="1450">Premier bras</button>
+  <button data-at="1950">Second bras</button>
+  <button data-at="2450">Enchaîné</button>
+  <button data-at="4100">Son rôle</button>
+  <button data-at="5650">La chute</button>
+  <button data-at="6100">Au sol</button>
+  <button data-at="7100">Il se relève</button>
+  <button data-loop>▶ En boucle</button>
+</div></nav>
+
+<section>
+  <h2>1. Comment elles prennent ses bras</h2>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Aux poignets</span></div>
+    <p class="vdesc">Quelques tours au bout de chaque bras, comme des menottes, puis le corps.</p>
+    <div class="screen"><div class="stage ch-stage" data-view="A1"></div></div>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Une seule chaîne</span></div>
+    <p class="vdesc">Elle part de la patte, remonte le bras, passe sur sa poitrine et descend l'autre bras, puis le corps.</p>
+    <div class="screen"><div class="stage ch-stage" data-view="A2"></div></div>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Tout le bras</span></div>
+    <p class="vdesc">Chaque bras pris de la patte à l'épaule, puis le corps.</p>
+    <div class="screen"><div class="stage ch-stage" data-view="A3"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Ensuite, à sa place</h2>
+  <p>Après le noir, ta vue au repos, la tête tournée vers Brandon.</p>
+
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Avec A1</span></div>
+    <div class="screen"><div class="stage"><img class="ch-frame" src="img/v2/RA1.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="P2">
+    <div class="vhead"><span class="vid">P2</span><span class="vname">Avec A2</span></div>
+    <div class="screen"><div class="stage"><img class="ch-frame" src="img/v2/RA2.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="P3">
+    <div class="vhead"><span class="vid">P3</span><span class="vname">Avec A3</span></div>
+    <div class="screen"><div class="stage"><img class="ch-frame" src="img/v2/RA3.webp" alt=""></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque ? (par exemple : la grosseur des maillons, combien de tours, un son)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(async () => {
+  const IMG = "img/v2/";
+  const STEP = 100, LOOP = 9400, LATE = 800;   // T2: the chains strike after the card, 0.8 s later
+  const T = { fly0: 2500, fly1: 3100, flip1: 3850, back0: 4750, back1: 5200, b0: 7600, b1: 7950 };
+  const views = ["A1", "A2", "A3"];
+  const N = { A1: 80, A2: 80, A3: 80 };
+  const PROJ = {};
+  for (const v of views) PROJ[v] = await (await fetch(IMG + v + "/proj.json")).json();
+  const frames = {};
+  for (const v of views) frames[v] = [...Array(N[v]).keys()].map(k => { const i = new Image(); i.src = IMG + v + "/" + String(k).padStart(3, "0") + ".webp"; return i; });
+
+  // the players' row of the day (T23, jour-pov R3); the roles row is lowered during the chaining
+  const CW = 108, CH = 150, GAP = 12;
+  const slot = i => { const total = 8 * CW + 7 * GAP, x0 = (1600 - total) / 2; return { x: x0 + i * (CW + GAP), y: 900 - 14 - CH }; };
+
+  const lerp = (a, b, u) => a + (b - a) * u;
+  const c01 = u => Math.max(0, Math.min(1, u));
+  const eout = u => 1 - Math.pow(1 - c01(u), 3);
+  const eio = u => { u = c01(u); return u * u * (3 - 2 * u); };
+
+  document.querySelectorAll(".ch-stage").forEach(stage => {
+    const v = stage.dataset.view;
+    let h = '<img class="ch-frame" src="' + frames[v][0].src + '">';
+    for (let i = 0; i < 8; i++) {
+      if (i === 3) continue;
+      const s = slot(i);
+      h += '<img class="ch-rowcard ch-row" src="' + IMG + "card_" + i + '.webp" style="left:' + s.x + "px;top:" + s.y + "px;width:" + CW + "px;height:" + CH + 'px">';
+    }
+    h += '<div class="ch-card"><div class="ch-flip"><img class="ch-back" src="' + IMG + 'card_3.webp"><img class="ch-front" src="' + IMG + 'brandon_dryade.webp"></div></div>';
+    h += '<div class="ch-black"></div>';
+    stage.innerHTML = h;
+  });
+
+  function draw(ms) {
+    document.querySelectorAll(".ch-stage").forEach(stage => {
+      const v = stage.dataset.view;
+      const k = Math.min(N[v] - 1, Math.floor(ms / STEP));
+      stage.querySelector(".ch-frame").src = frames[v][k].src;
+      // the base timeline (T2 holds 0.8 s at the release while the chains strike)
+      const base = v === "T2" && ms > T.back1 ? (ms < T.back1 + LATE ? T.back1 : ms - LATE) : ms;
+      const p = PROJ[v][k], s = slot(3);
+      let x = s.x + CW / 2, y = s.y + CH / 2, ch = CH, flip = 0;
+      if (base >= T.fly0 && base < T.back1) {
+        const go = eout((base - T.fly0) / (T.fly1 - T.fly0)), back = eio((base - T.back0) / (T.back1 - T.back0));
+        const u = base < T.back0 ? go : 1 - back;
+        x = lerp(x, p.x, u); y = lerp(y, p.y, u); ch = lerp(CH, p.h, u);
+      }
+      flip = base < T.fly1 ? 0 : base < T.flip1 ? eio((base - T.fly1) / (T.flip1 - T.fly1)) * 180 : 180;
+      // the row leaves the screen while it falls (it would hide the crushed cat), as in the game
+      const away = eio((base - T.back1) / 400) * (CH + 40);
+      stage.querySelectorAll(".ch-row").forEach(r => r.style.transform = "translateY(" + away + "px)");
+      if (base >= T.back1) y += away;
+      const cw = ch * 358 / 498;
+      const card = stage.querySelector(".ch-card");
+      card.style.cssText = "width:" + cw + "px;height:" + ch + "px;transform:translate(" + (x - cw / 2) + "px," + (y - ch / 2) + "px)";
+      card.querySelector(".ch-flip").style.transform = "rotateY(" + flip + "deg)";
+      stage.querySelector(".ch-black").style.opacity = base >= T.b0 ? eio((base - T.b0) / (T.b1 - T.b0)) : 0;
+    });
+  }
+
+  // key moments + loop (?at=<ms> freezes every frame at the same instant)
+  const at = new URLSearchParams(location.search).get("at");
+  let start = performance.now(), frozen = at !== null ? +at : null;
+  const buttons = document.querySelectorAll(".ch-moments button");
+  buttons.forEach(btn => btn.addEventListener("click", () => {
+    buttons.forEach(b => b.classList.remove("on")); btn.classList.add("on");
+    if (btn.hasAttribute("data-loop")) { frozen = null; start = performance.now(); } else frozen = +btn.dataset.at;
+  }));
+  if (frozen === null) document.querySelector("[data-loop]").classList.add("on");
+  const tick = now => { draw(frozen !== null ? frozen : (now - start) % LOOP); requestAnimationFrame(tick); };
+  draw(frozen !== null ? frozen : 0);
+  requestAnimationFrame(tick);
+
+  const sc = document.createElement("script"); sc.src = "../common/mock.js"; document.body.appendChild(sc);
+})();
+</script>
+</body>
+</html>

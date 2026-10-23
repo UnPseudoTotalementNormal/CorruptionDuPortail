@@ -146,6 +146,9 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 - A new gameplay action / decision / refusal gets a `GameLog.Info|Warn("cat", "event.name", "key", value…)` where it
   happens (server side for game state). Never per frame, never in Domain (pure).
+- Every feature ships with its logs: each player action (click, key) with its target, each **silent refusal** (early
+  `return` on a player input: "I clicked, nothing happened") with its reason, each step of a sequence (start / end /
+  cut short). A captured `Debug.Log("[TAG] …")` reaches the logs too (category `unity`) but is not searchable by key.
 - `CDP_PLAYTEST_LOGS` is added **only** by `CdpBuild` (CI playtest builds). Never in ProjectSettings: the Editor would
   compile the calls in. Code that needs the runtime (Firebase, file) stays inside `#if CDP_PLAYTEST_LOGS`; the facade's
   `[Conditional]` entry points strip the call sites elsewhere.

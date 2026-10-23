@@ -101,8 +101,13 @@ namespace Presentation
         private void ReadSkipKey()
         {
             UnityEngine.InputSystem.Keyboard _keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (_keyboard == null || !_keyboard[_skipKey].wasPressedThisFrame || DayScreenRows.IsTyping() || !SkipReachable)
+            if (_keyboard == null || !_keyboard[_skipKey].wasPressedThisFrame || DayScreenRows.IsTyping())
             {
+                return;
+            }
+            if (!SkipReachable)
+            {
+                Diagnostics.Logs.GameLog.Info("vote", "vote.skip.refused");
                 return;
             }
             Diagnostics.Logs.GameLog.Info("vote", "vote.skip.key");
@@ -192,21 +197,25 @@ namespace Presentation
             {
                 return;
             }
+            ulong _seat = _target.Avatar.ownerClientId.Value;
             VoteState _vote = Query.GetGameState(Query.currentGameStateIndex.Value) as VoteState;
             if (_vote == null)
             {
+                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason", "no-vote");
                 return; // the recap: the votes are in
             }
             ulong _me = CharacterQuery.GetLocalClientId();
-            ulong _seat = _target.Avatar.ownerClientId.Value;
             if (_seat == _me || _vote.HasVoted(_me))
             {
+                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason", _seat == _me ? "self" : "already-voted");
                 return; // a vote is final
             }
             // Same rule as the cards' vote buttons: a chained or eliminated player cannot be voted for.
             Character _character = CharacterQuery.GetCharacter(_seat, false);
             if (_character == null || _character.isFake || _character.isEliminated.Value || _character.isChained.Value)
             {
+                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason",
+                    _character == null ? "no-character" : _character.isFake ? "fake" : _character.isEliminated.Value ? "eliminated" : "chained");
                 return;
             }
             Diagnostics.Logs.GameLog.Info("vote", "vote.cat.click", "to", _seat);

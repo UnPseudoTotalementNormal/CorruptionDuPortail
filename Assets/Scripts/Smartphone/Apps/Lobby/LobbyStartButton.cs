@@ -34,8 +34,10 @@ namespace Smartphone.Apps.Lobby
         {
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
             {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.refused", "reason", NetworkManager.Singleton == null ? "no-network" : "not-host");
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.click");
 
             LobbyState _lobbyState = CompositionRoot.For(NetworkManager.Singleton).GameManager
                 .GetGameStates(typeof(LobbyState)).FirstOrDefault() as LobbyState;

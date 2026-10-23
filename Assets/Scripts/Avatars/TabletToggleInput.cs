@@ -41,8 +41,17 @@ namespace Avatars
             if (_keyboard == null || !SpreadsheetReachable || !_keyboard[_spreadsheetKey].wasPressedThisFrame
                 || Presentation.DayScreenRows.IsTyping())
             {
+                // Logged on the key press only (never per frame, never while typing: every "t" of a chat message):
+                // why T did not reach the table app.
+                if (_keyboard != null && _keyboard[_spreadsheetKey].wasPressedThisFrame && !Presentation.DayScreenRows.IsTyping())
+                {
+                    Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.toggle.refused", "key", _spreadsheetKey,
+                        "reason", _spreadsheetApp == null || _cameraMode == null ? "unwired" : "not-embodied");
+                }
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.toggle", "key", _spreadsheetKey, "open", _smartphone.IsOpen,
+                "onTable", _smartphone.currentApp == _spreadsheetApp);
             if (!_smartphone.IsOpen)
             {
                 _smartphone.TryOpenPanel();
@@ -95,6 +104,7 @@ namespace Avatars
 
         private void OnTogglePressed(InputAction.CallbackContext _context)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.toggle", "key", "ToggleTablet", "open", _smartphone.IsOpen);
             if (_smartphone.IsOpen)
             {
                 _smartphone.TryClosePanel();

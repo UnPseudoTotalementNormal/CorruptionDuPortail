@@ -132,6 +132,7 @@ namespace UI.BoardUI.Selection
                     stepDescriptions = _resolvedOptions.stepDescriptions,
                     pinnedCharacter = _character
                 };
+                Diagnostics.Logs.GameLog.Info("picker", "picker.step", "step", 2, "of", 2);
 
                 CardPickerManager.instance.ShowRolePicker(_validator, _role =>
                 {
@@ -185,6 +186,7 @@ namespace UI.BoardUI.Selection
             _stepValidator.AddRule(_ctx => _picked.All(_c => _c == null || _c.ownerClientId.Value != _ctx.targetId));
 
             ApplyFocus(_options.focusType, _stepValidator);
+            Diagnostics.Logs.GameLog.Info("picker", "picker.step", "step", _picked.Count + 1, "of", _count);
 
             CardPickerManager.instance.ShowCharacterPicker(_stepValidator, _character =>
             {
@@ -320,6 +322,7 @@ namespace UI.BoardUI.Selection
             }
 
             Debug.LogError("SelectionFlowService: CardPickerManager.instance is null.");
+            Diagnostics.Logs.GameLog.Error("picker", "picker.open.refused", "reason", "no-picker-manager");
             return false;
         }
 

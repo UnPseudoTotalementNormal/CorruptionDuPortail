@@ -57,6 +57,8 @@ namespace Inputs
             catch (Exception e)
             {
                 Debug.LogError($"Error invoking action from ActionStack: {e}");
+                Diagnostics.Logs.GameLog.Error("ui", "input.action.exception", "error", e.GetType().Name, "message", e.Message,
+                    "method", e.TargetSite != null ? e.TargetSite.DeclaringType?.Name + "." + e.TargetSite.Name : null);
             }
         }
     }
@@ -114,6 +116,8 @@ namespace Inputs
             catch (Exception e)
             {
                 Debug.LogError($"Error invoking action from ActionStack: {e}");
+                Diagnostics.Logs.GameLog.Error("ui", "input.action.exception", "error", e.GetType().Name, "message", e.Message,
+                    "method", e.TargetSite != null ? e.TargetSite.DeclaringType?.Name + "." + e.TargetSite.Name : null);
             }
         }
     }

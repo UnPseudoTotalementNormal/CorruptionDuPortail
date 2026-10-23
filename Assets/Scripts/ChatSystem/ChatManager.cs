@@ -125,12 +125,14 @@ namespace ChatSystem
         {
             if (_policy.CanActivateChannel(_chatId, discoveredChatIds))
             {
+                if (activeChatId != _chatId) GameLog.Info("chat", "chat.channel", "from", activeChatId, "to", _chatId);
                 activeChatId = _chatId;
                 onActiveChatChanged?.Invoke(activeChatId);
             }
             else
             {
                 Debug.LogWarning($"Chat with ID {_chatId} is not discovered yet.");
+                GameLog.Info("chat", "chat.channel.refused", "to", _chatId, "reason", "undiscovered");
             }
         }
 
@@ -138,6 +140,8 @@ namespace ChatSystem
         {
             if (!_policy.CanSendMessage(_text, activeChatId, (int)ChatWindowIDs.Server))
             {
+                GameLog.Info("chat", "chat.send.refused", "channel", activeChatId,
+                    "reason", string.IsNullOrEmpty(_text) ? "empty" : "read-only-channel");
                 return;
             }
             

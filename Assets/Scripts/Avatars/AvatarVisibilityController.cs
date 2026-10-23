@@ -54,17 +54,33 @@ namespace Avatars
         private MaterialPropertyBlock _propertyBlock;
 
         /// <summary>Arbiter contract: the resolved camera mode (mirror AvatarSeatingPresenter.SetActive).</summary>
-        public void SetMode(CameraMode _newMode) => _mode = _newMode;
+        public void SetMode(CameraMode _newMode)
+        {
+            if (_newMode != _mode) Diagnostics.Logs.GameLog.Info("avatar", "avatar.visibility", "what", "mode", "mode", _newMode);
+            _mode = _newMode;
+        }
 
         /// <summary>Arbiter contract: reveal the local (owner) body while emoting so the third-person orbit
         /// camera can show it. Only takes effect outside Board (night hides everyone). Applied next LateUpdate.</summary>
-        public void SetLocalBodyVisibleOverride(bool _revealLocalBody) => _localBodyOverride = _revealLocalBody;
+        public void SetLocalBodyVisibleOverride(bool _revealLocalBody)
+        {
+            if (_revealLocalBody != _localBodyOverride) Diagnostics.Logs.GameLog.Info("avatar", "avatar.visibility", "what", "local-body", "shown", _revealLocalBody);
+            _localBodyOverride = _revealLocalBody;
+        }
 
         /// <summary>
         /// One avatar shown whatever the mode, the local one too (T19: the chained cat, filmed from the front during
         /// the chaining while the others stay hidden). Null = none.
         /// </summary>
-        public void SetFeatured(PlayerAvatar _avatar) => _featured = _avatar;
+        public void SetFeatured(PlayerAvatar _avatar)
+        {
+            if (_avatar != _featured)
+            {
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("avatar", "avatar.visibility", "what", "featured",
+                    "seat", _avatar != null ? (object)_avatar.ownerClientId.Value : null));
+            }
+            _featured = _avatar;
+        }
 
         /// <summary>
         /// Pure visibility policy (EditMode-testable): is an avatar's body shown in <paramref name="_mode"/>?

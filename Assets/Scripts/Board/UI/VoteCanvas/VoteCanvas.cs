@@ -122,6 +122,8 @@ namespace Board.UI.VoteCanvas
         
         private void OnVoteButtonClicked()
         {
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("vote", "vote.card.click",
+                "to", card != null && card.characterInfo != null ? (object)card.characterInfo.ownerClientId.Value : null));
             onVoteButtonClicked?.Invoke(card);
         }
 

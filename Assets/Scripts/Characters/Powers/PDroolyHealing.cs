@@ -47,6 +47,8 @@ namespace Characters.Powers
                 !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
                 !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "reason", !_character ? "no-target" : "invalid-target");
                 return;
             }
             TryHealServerRpc(_character.ownerClientId.Value, _role);
@@ -78,6 +80,9 @@ namespace Characters.Powers
             // so a right guess on an uncorrupted target keeps playing the failure sound while the new
             // onPowerVerdict channel reports Correct. Poyo owns that call — flagged, not silently changed.
             bool _healSuccess = _roleGuessed && _wasHealable;
+            Diagnostics.Logs.GameLog.Info("power", "power.heal", "owner", ownerClientId.Value, "target", _healingCharacterId,
+                "comparedRoleOf", _compareRole != null ? _compareRole.ownerClientId : 0UL, "roleGuessed", _roleGuessed,
+                "healable", _wasHealable, "success", _healSuccess);
             GameAudioManager.instance.PlayOneShotRpc(
                 _healSuccess ? onHealSuccessfulSound.GetPath() : onHealFailedSound.GetPath(),
                 characterManager.GetSafeRpcTarget(ownerClientId.Value));

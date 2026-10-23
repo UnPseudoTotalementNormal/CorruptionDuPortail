@@ -22,8 +22,18 @@ namespace Avatars.Cosmetics
         public static CatLook Load()
         {
             if (_sessionLook.HasValue) return _sessionLook.Value;
-            return CatLook.TryDecode(PlayerPrefs.GetString(Key, string.Empty), out CatLook look) ? look : CatLook.Default;
+            string _saved = PlayerPrefs.GetString(Key, string.Empty);
+            if (CatLook.TryDecode(_saved, out CatLook look)) return look;
+            if (!string.IsNullOrEmpty(_saved) && !s_decodeWarned)
+            {
+                s_decodeWarned = true;
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.decode-failed", "saved", _saved);
+            }
+            return CatLook.Default;
         }
+
+        // Playtest log only: the undecodable saved look is warned once per process.
+        private static bool s_decodeWarned;
 
         public static void Save(CatLook look)
         {
@@ -51,6 +61,7 @@ namespace Avatars.Cosmetics
         {
             Changed = null;
             _sessionLook = null;
+            s_decodeWarned = false;
         }
     }
 }

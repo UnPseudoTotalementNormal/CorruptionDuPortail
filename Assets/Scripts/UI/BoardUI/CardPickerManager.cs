@@ -95,6 +95,7 @@ namespace UI.BoardUI
 
         private void OnDisable()
         {
+            if (isPickerActive) Diagnostics.Logs.GameLog.Info("picker", "picker.cancel", "reason", "disabled");
             CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
         }
 
@@ -130,6 +131,7 @@ namespace UI.BoardUI
             List<Character> _validRoles = GetValidRoleCandidates(_validator);
             if (_validRoles.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Info("picker", "picker.empty", "type", "role", "reason", "no-valid-target");
                 onPickerCanceled?.Invoke();
                 return;
             }
@@ -194,9 +196,12 @@ namespace UI.BoardUI
 
             if (cardClickHandlers.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Warn("picker", "picker.empty", "type", "role", "reason", "no-card-spawned", "candidates", _validRoles.Count);
                 CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
                 onPickerCanceled?.Invoke();
+                return;
             }
+            Diagnostics.Logs.GameLog.Info("picker", "picker.open", "type", "role", "candidates", cardClickHandlers.Count);
         }
 
         public void ShowCharacterPicker(Validator<(ulong targetId, TargetType targetType)> _validator,
@@ -210,6 +215,7 @@ namespace UI.BoardUI
                 IsTargetValidForPicker(_validator, _card.characterInfo.ownerClientId.Value, TargetType.Character)).ToList();
             if (_validCards.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Info("picker", "picker.empty", "type", "character", "reason", "no-valid-target");
                 onPickerCanceled?.Invoke();
                 return;
             }
@@ -251,9 +257,12 @@ namespace UI.BoardUI
 
             if (cardClickHandlers.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Warn("picker", "picker.empty", "type", "character", "reason", "no-compositor", "candidates", _validCards.Count);
                 CancelPicker(_invokeCanceled: false, _instantCharacterReset: true);
                 onPickerCanceled?.Invoke();
+                return;
             }
+            Diagnostics.Logs.GameLog.Info("picker", "picker.open", "type", "character", "candidates", cardClickHandlers.Count);
         }
 
         private void SetupPinnedCard(SelectionFlowOptions _options)
@@ -307,7 +316,13 @@ namespace UI.BoardUI
 
         private void OnRoleSelectedInternal(Role _role)
         {
-            if (!isPickerActive) return;
+            if (!isPickerActive)
+            {
+                Diagnostics.Logs.GameLog.Info("picker", "picker.pick.refused", "type", "role", "reason", "inactive");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("picker", "picker.pick", "type", "role",
+                "seat", _role != null ? (object)_role.ownerClientId : null, "role", _role != null ? _role.roleName.ToString() : null));
             // Tear down BEFORE invoking so a callback that starts a new picker (chained
             // selection) is not destroyed by the trailing cancel.
             Action<Role> _handler = onRoleSelected;
@@ -317,7 +332,13 @@ namespace UI.BoardUI
 
         private void OnCharacterSelectedInternal(Character _character)
         {
-            if (!isPickerActive) return;
+            if (!isPickerActive)
+            {
+                Diagnostics.Logs.GameLog.Info("picker", "picker.pick.refused", "type", "character", "reason", "inactive");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("picker", "picker.pick", "type", "character",
+                "seat", _character != null ? (object)_character.ownerClientId.Value : null));
             Action<Character> _handler = onCharacterSelected;
             CancelPicker(_invokeCanceled: false);
             _handler?.Invoke(_character);
@@ -431,6 +452,7 @@ namespace UI.BoardUI
 
             if (_wasActive && _invokeCanceled)
             {
+                Diagnostics.Logs.GameLog.Info("picker", "picker.cancel", "reason", "cancel");
                 onPickerCanceled?.Invoke();
             }
         }

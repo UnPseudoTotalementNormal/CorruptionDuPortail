@@ -94,9 +94,14 @@ namespace Board.UI
         private void OnSkipButtonClicked()
         {
             Character local = CharacterQuery.GetLocalCharacter(false);
-            if (local == null) return;
+            if (local == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.skip.refused", "reason", "no-local-character");
+                return;
+            }
 
             VoteState vote = CurrentVoteState();
+            Diagnostics.Logs.GameLog.Info("ui", "ui.skip.click", "kind", vote != null ? "vote-skip" : "sleep");
             if (vote != null)
             {
                 // A skip is a vote for SKIP_VOTE_ID, through the working player-vote dispatch.

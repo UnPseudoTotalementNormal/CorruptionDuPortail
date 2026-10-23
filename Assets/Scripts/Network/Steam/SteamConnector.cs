@@ -5,6 +5,7 @@ using Network.Services;
 using Steamworks;
 using Unity.Netcode;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -28,6 +29,7 @@ namespace Network.Steam
             if (!SteamClient.IsValid)
             {
                 Debug.LogError($"[STEAM] Cannot host: {SteamRuntime.NotRunningMessage}");
+                GameLog.Warn("net", "steam.host.failed", "reason", "steam not running");
                 return null;
             }
 
@@ -37,8 +39,11 @@ namespace Network.Steam
             if (!networkManager.StartHost())
             {
                 Debug.LogError("[STEAM] StartHost failed.");
+                GameLog.Warn("net", "steam.host.failed", "reason", "StartHost refused");
                 return null;
             }
+            GameLog.Info("net", "steam.host", "steamId", SteamClient.SteamId.Value.ToString(),
+                "hasPassword", !string.IsNullOrEmpty(lobbyPassword));
             return SteamClient.SteamId.Value.ToString();
         }
 
@@ -51,6 +56,7 @@ namespace Network.Steam
             if (!lobby.TryGetData(GameLobby.HostSteamIdKey, out string _rawHostId) || !ulong.TryParse(_rawHostId, out ulong _hostSteamId))
             {
                 Debug.LogError("[STEAM] Lobby without a host SteamID: not a Steam game.");
+                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.failed", "reason", "no host SteamID", "lobby", lobby.Id));
                 return false;
             }
 
@@ -58,6 +64,7 @@ namespace Network.Steam
             if (_transport == null)
             {
                 Debug.LogError("[STEAM] FacepunchTransport not found on NetworkManager.");
+                GameLog.Warn("net", "steam.client.failed", "reason", "no FacepunchTransport");
                 return false;
             }
 
@@ -69,8 +76,11 @@ namespace Network.Steam
             if (!networkManager.StartClient())
             {
                 Debug.LogError("[STEAM] StartClient failed.");
+                GameLog.Warn("net", "steam.client.failed", "reason", "StartClient refused", "host", _hostSteamId.ToString());
                 return false;
             }
+            GameLog.Guarded(() => GameLog.Info("net", "steam.client", "host", _hostSteamId.ToString(), "lobby", lobby.Id,
+                "code", lobby.Code, "hasPassword", !string.IsNullOrEmpty(lobbyPassword)));
             return true;
         }
     }

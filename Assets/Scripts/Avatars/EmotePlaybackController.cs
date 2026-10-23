@@ -25,6 +25,8 @@ namespace Avatars
         private int _startFrame;
         private float _oneShotEndTime;
         private PlayerAvatar _localAvatar;
+        // Playtest log only: why the next End() ends the emote (null = an outside caller: camera, state, tablet).
+        private string _endReason;
 
         /// <summary>Whether an emote is currently playing (self-feedback view up).</summary>
         public bool IsEmoting => _active;
@@ -41,18 +43,23 @@ namespace Avatars
         {
             if (_emote == null)
             {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.begin.refused", "reason", "no-emote");
                 return;
             }
             if (_active)
             {
+                _endReason = "replaced";
                 End();
             }
 
             PlayerAvatar _avatar = ResolveLocalAvatar();
             if (_avatar == null)
             {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.begin.refused", "emote", _emote.displayName, "reason", "no-local-avatar");
                 return;
             }
+
+            Diagnostics.Logs.GameLog.Info("emote", "emote.begin", "emote", _emote.displayName, "id", _emote.animatorEmoteId, "loops", _emote.loops);
 
             _avatar.RequestEmote(_emote.animatorEmoteId, _emote.loops);
             _active = true;
@@ -76,6 +83,8 @@ namespace Avatars
                 return;
             }
 
+            Diagnostics.Logs.GameLog.Info("emote", "emote.end", "emote", _activeEmote != null ? _activeEmote.displayName : null, "reason", _endReason ?? "external");
+            _endReason = null;
             bool _wasLoop = _activeEmote != null && _activeEmote.loops;
             _active = false;
             _activeEmote = null;
@@ -115,6 +124,7 @@ namespace Avatars
 
             if (EmoteStop.ShouldStop(_anyKey, _anyMouseButton))
             {
+                _endReason = "input";
                 End();
                 return;
             }
@@ -122,6 +132,7 @@ namespace Avatars
             // One-shot: auto-return once its clip window elapses (no player action needed).
             if (_activeEmote != null && !_activeEmote.loops && Time.time >= _oneShotEndTime)
             {
+                _endReason = "oneshot-done";
                 End();
             }
         }

@@ -130,7 +130,12 @@ namespace UI.LobbyRoles
         public void RequestSetReady(bool ready)
         {
             // SendTo.Server + sender-trusted: readies the LOCAL player only (works on host and non-host).
-            if (_lobby == null) return;
+            if (_lobby == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("lobby", "lobby.ready.refused", "ready", ready, "reason", "no-lobby");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.ready.toggle", "ready", ready);
             _lobby.RequestSetReady(ready);
         }
 
@@ -140,19 +145,45 @@ namespace UI.LobbyRoles
         {
             // Host-only DEV control ("Démarrage forcé"): skip the all-ready condition, keep the composition gate
             // (LobbyState.ForceStart re-validates it server-side). The normal start is now auto-on-all-ready.
-            if (_nm == null || !_nm.IsServer) return;
+            if (_nm == null || !_nm.IsServer)
+            {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.forcestart.refused", "reason", _nm == null ? "no-network" : "not-host");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.forcestart.click");
             var lobbyState = CompositionRoot.For(_nm).GameManager
                 .GetGameStates(typeof(LobbyState)).FirstOrDefault() as LobbyState;
             if (lobbyState == null)
             {
                 Debug.LogError("GameLobbyRolesDataSource: no LobbyState resolved — cannot force-start the game.");
+                Diagnostics.Logs.GameLog.Error("lobby", "lobby.forcestart.refused", "reason", "no-lobby-state");
                 return;
             }
             lobbyState.ForceStart();
         }
 
-        public void RequestSetMax(RoleID id, int max) => _manager?.RequestSetRoleCount(id, max);
-        public void RequestSetForced(RoleID id, int forced) => _manager?.RequestSetForced(id, forced);
+        public void RequestSetMax(RoleID id, int max)
+        {
+            LogRoleChange(id, "max", max);
+            _manager?.RequestSetRoleCount(id, max);
+        }
+
+        public void RequestSetForced(RoleID id, int forced)
+        {
+            LogRoleChange(id, "forced", forced);
+            _manager?.RequestSetForced(id, forced);
+        }
+
+        // Click intent on a ‹ › stepper. The non-host refusal itself is logged by GameSettingsManager.
+        private void LogRoleChange(RoleID id, string field, int value)
+        {
+            if (_manager == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("lobby", "lobby.role.refused", "role", id, "field", field, "value", value, "reason", "no-manager");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.change", "role", id, "field", field, "value", value);
+        }
 
         public int GetActivePresetIndex()
         {
@@ -192,10 +223,19 @@ namespace UI.LobbyRoles
 
         public void ApplyPreset(int index)
         {
-            if (_presetDatabase == null || _manager == null || _rolePool == null) return;
+            if (_presetDatabase == null || _manager == null || _rolePool == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("lobby", "lobby.preset.refused", "index", index, "reason", "not-ready");
+                return;
+            }
             List<RolePreset> forCount = _presetDatabase.ForPlayerCount(GetPlayerCount());
-            if (index < 0 || index >= forCount.Count) return;
+            if (index < 0 || index >= forCount.Count)
+            {
+                Diagnostics.Logs.GameLog.Warn("lobby", "lobby.preset.refused", "index", index, "reason", "out-of-range");
+                return;
+            }
             RolePreset preset = forCount[index];
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.preset", "index", index, "name", preset.displayName, "host", IsHost());
 
             // Fill the WHOLE pool: a role not listed in the preset goes to max 0. Set max before forced so the
             // server-side forced <= max clamp lands on the new max (host-only writes; non-host = no-op).

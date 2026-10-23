@@ -31,6 +31,7 @@ namespace UI
         private void OnLeavePressed()
         {
             NetworkManager _nm = NetworkManager.Singleton;
+            Diagnostics.Logs.GameLog.Info("net", "leave.pressed", "host", _nm != null && _nm.IsServer);
 
             // Host is the authority — the match cannot continue without it, so leaving ends it for everyone.
             // ShutOffGameRpc (SendTo.Everyone) shuts every peer down + deletes the cloud lobby on the host.

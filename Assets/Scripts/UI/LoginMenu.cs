@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using DG.Tweening;
+using Diagnostics.Logs;
 using Extensions;
 using Network;
 using Network.Player;
@@ -60,9 +61,12 @@ public class LoginMenu : MonoBehaviour
         if (SteamRuntime.TryStartClient())
         {
             LocalPlayerInfoHolder.CreateSteamClientData(SteamClient.Name, SteamClient.SteamId.Value);
+            GameLog.Info("net", "auth.signedin", "mode", "steam");
             menuCanvasGroup.DoHideGroup(0);
             return;
         }
+
+        GameLog.Warn("net", "auth.failed", "mode", "steam", "reason", "steam not running");
 
         loadingCanvasGroup.DoHideGroup(0);
         loginCanvasGroup.DoShowGroup(0);
@@ -82,7 +86,16 @@ public class LoginMenu : MonoBehaviour
     private async Task Init()
     {
         ShowLoading();
-        await UnityServices.InitializeAsync();
+        try
+        {
+            await UnityServices.InitializeAsync();
+        }
+        catch (Exception e)
+        {
+            // Fire-and-forget from Awake: the failure was invisible (the loading screen just stayed).
+            GameLog.Warn("net", "services.failed", "stage", "login init", "error", e.GetType().Name, "message", e.Message);
+            throw; // unchanged behaviour
+        }
         ShowLogin();
     }
 
@@ -141,6 +154,7 @@ public class LoginMenu : MonoBehaviour
                 Debug.Log("Username set to: " + nameResult);
                 // NET-02: UGS names carry the "#1234" discriminator, stripped for display.
                 LocalPlayerInfoHolder.CreateNewClientData(nameResult, true);
+                GameLog.Info("net", "auth.signedin", "mode", "ugs");
             }
             catch (Exception e)
             {
@@ -196,6 +210,8 @@ public class LoginMenu : MonoBehaviour
     
     private void DisplayError(string message)
     {
+        // Every login failure goes through here (already signed in, sign-in, set username).
+        GameLog.Warn("net", "auth.failed", "mode", "ugs", "reason", message);
         errorText.text = message;
         errorText.DOKill(true);
         errorText.alpha = 1;

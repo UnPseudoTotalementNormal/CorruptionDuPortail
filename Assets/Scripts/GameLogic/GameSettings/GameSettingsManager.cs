@@ -208,6 +208,7 @@ namespace GameLogic.GameSettings
 
             if (!_allowClientEditing)
             {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.refused", "role", _roleId, "field", "max", "value", _max, "reason", "not-host");
                 return;
             }
             SubmitRoleCountServerRpc(_roleId, _max);
@@ -267,6 +268,7 @@ namespace GameLogic.GameSettings
 
             if (!_allowClientEditing)
             {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.refused", "role", _roleId, "field", "forced", "value", _forced, "reason", "not-host");
                 return;
             }
             SubmitForcedServerRpc(_roleId, _forced);

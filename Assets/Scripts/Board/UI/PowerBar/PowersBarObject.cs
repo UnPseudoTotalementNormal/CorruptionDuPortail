@@ -74,6 +74,8 @@ namespace Board.UI.PowerBar
 
         protected void OnButtonClicked()
         {
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("ui", "ui.powerbar.click", "name", name,
+                "power", power != null ? power.GetType().Name : null, "listened", onPowerBarObjectClicked != null));
             onPowerBarObjectClicked?.Invoke(power);
         }
 

@@ -169,8 +169,14 @@ namespace UI.RoleCard
         public void Open(Role role, bool knownFake)
         {
             TryInitialize();
-            if (_root == null || role == null) return;
+            if (_root == null || role == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.rolecard.refused", "reason", _root == null ? "no-root" : "no-role");
+                return;
+            }
 
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.open", "seat", role.ownerClientId,
+                "role", role.roleName.ToString(), "knownFake", knownFake));
             Bind(role);
             _fakeBadge?.EnableInClassList(CollapsedClass, !knownFake);
             _root.RemoveFromClassList(CollapsedClass);
@@ -186,6 +192,7 @@ namespace UI.RoleCard
         public void Close()
         {
             if (_root == null) return;
+            if (!_root.ClassListContains(HiddenClass)) Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.close");
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
 

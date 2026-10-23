@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Diagnostics.Logs;
 using UnityEngine;
 
 namespace Network.Services
@@ -91,18 +92,21 @@ namespace Network.Services
         {
             if (string.IsNullOrWhiteSpace(_settings.lobbyName))
             {
+                GameLog.Info("lobby", "lobby.create.refused", "reason", "empty name");
                 OnLobbyError?.Invoke("Le nom du lobby ne peut pas être vide");
                 return null;
             }
 
             if (_settings.maxPlayers < 2 || _settings.maxPlayers > 20)
             {
+                GameLog.Info("lobby", "lobby.create.refused", "reason", "max players", "maxPlayers", _settings.maxPlayers);
                 OnLobbyError?.Invoke("Le nombre de joueurs doit être entre 2 et 20");
                 return null;
             }
 
             if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length < 8)
             {
+                GameLog.Info("lobby", "lobby.create.refused", "reason", "password too short");
                 OnLobbyError?.Invoke("Le mot de passe doit contenir au moins 8 caractères");
                 return null;
             }
@@ -110,6 +114,7 @@ namespace Network.Services
             // UGS caps it at 64; the Steam build sends it inside the connection request, whose strings are bounded.
             if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length > MaxPasswordLength)
             {
+                GameLog.Info("lobby", "lobby.create.refused", "reason", "password too long");
                 OnLobbyError?.Invoke($"Le mot de passe doit contenir au plus {MaxPasswordLength} caractères");
                 return null;
             }
@@ -122,11 +127,15 @@ namespace Network.Services
                 OnLobbyCreated?.Invoke(currentLobby);
 
                 Debug.Log($"Lobby créé: {currentLobby.Name} (ID: {currentLobby.Id}, code: {currentLobby.Code})");
+                GameLog.Guarded(() => GameLog.Info("lobby", "lobby.created", "lobby", currentLobby.Id, "code", currentLobby.Code,
+                    "maxPlayers", _settings.maxPlayers, "hasPassword", !string.IsNullOrEmpty(_settings.password),
+                    "backend", GameFlavor.IsSteam ? "steam" : "ugs"));
                 return currentLobby;
             }
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de création du lobby: {e.Message}");
+                GameLog.Warn("lobby", "lobby.create.failed", "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de créer le lobby: {e.Message}");
                 return null;
             }
@@ -140,6 +149,7 @@ namespace Network.Services
             }
             catch (LobbyBackendException e)
             {
+                GameLog.Warn("lobby", "lobby.query.failed", "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de récupérer les lobbies: {e.Message}");
                 throw new Exception($"Échec de récupération des lobbies: {e.Message}");
             }
@@ -149,6 +159,7 @@ namespace Network.Services
         {
             if (string.IsNullOrWhiteSpace(_lobbyId))
             {
+                GameLog.Info("lobby", "lobby.join.refused", "reason", "empty id");
                 OnLobbyError?.Invoke("L'ID du lobby ne peut pas être vide");
                 return null;
             }
@@ -160,11 +171,13 @@ namespace Network.Services
                 OnLobbyJoined?.Invoke(currentLobby);
 
                 Debug.Log($"Lobby rejoint: {currentLobby.Name} (ID: {currentLobby.Id})");
+                GameLog.Guarded(() => GameLog.Info("lobby", "lobby.joined", "lobby", currentLobby.Id, "code", currentLobby.Code, "by", "id"));
                 return currentLobby;
             }
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de rejoindre le lobby: {e.Message}");
+                GameLog.Warn("lobby", "lobby.join.failed", "lobby", _lobbyId, "reason", e.Message, "by", "id");
                 OnLobbyError?.Invoke($"Impossible de rejoindre le lobby: {e.Message}");
                 return null;
             }
@@ -174,6 +187,7 @@ namespace Network.Services
         {
             if (string.IsNullOrWhiteSpace(_lobbyCode))
             {
+                GameLog.Info("lobby", "lobby.join.refused", "reason", "empty code");
                 OnLobbyError?.Invoke("Le code du lobby ne peut pas être vide");
                 return null;
             }
@@ -185,11 +199,13 @@ namespace Network.Services
                 OnLobbyJoined?.Invoke(currentLobby);
 
                 Debug.Log($"Lobby rejoint par code: {currentLobby.Name} (Code: {_lobbyCode})");
+                GameLog.Guarded(() => GameLog.Info("lobby", "lobby.joined", "lobby", currentLobby.Id, "code", _lobbyCode, "by", "code"));
                 return currentLobby;
             }
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de rejoindre le lobby par code: {e.Message}");
+                GameLog.Warn("lobby", "lobby.join.failed", "code", _lobbyCode, "reason", e.Message, "by", "code");
                 OnLobbyError?.Invoke($"Code invalide ou lobby introuvable: {e.Message}");
                 return null;
             }
@@ -205,6 +221,7 @@ namespace Network.Services
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de lecture du lobby {_lobbyId}: {e.Message}");
+                GameLog.Warn("lobby", "lobby.get.failed", "lobby", _lobbyId, "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de rejoindre la partie: {e.Message}");
                 return null;
             }
@@ -218,11 +235,13 @@ namespace Network.Services
                 return;
             }
 
+            string _logLobbyId = currentLobby.Id;
             try
             {
                 await Backend.LeaveAsync(currentLobby);
                 ForgetCurrentLobby();
                 Debug.Log("Lobby quitté avec succès");
+                GameLog.Info("lobby", "lobby.left", "lobby", _logLobbyId);
             }
             catch (LobbyBackendException e)
             {
@@ -232,9 +251,11 @@ namespace Network.Services
                 if (e.LobbyGone)
                 {
                     Debug.Log($"Lobby déjà fermé en le quittant: {e.Message}");
+                    GameLog.Info("lobby", "lobby.left", "lobby", _logLobbyId, "alreadyGone", true);
                     return;
                 }
                 Debug.LogError($"Échec de quitter le lobby: {e.Message}");
+                GameLog.Warn("lobby", "lobby.leave.failed", "lobby", _logLobbyId, "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de quitter le lobby: {e.Message}");
             }
         }
@@ -247,11 +268,13 @@ namespace Network.Services
                 return;
             }
 
+            string _logLobbyId = currentLobby.Id;
             try
             {
                 await Backend.DeleteAsync(currentLobby);
                 ForgetCurrentLobby();
                 Debug.Log("Lobby supprimé avec succès");
+                GameLog.Info("lobby", "lobby.deleted", "lobby", _logLobbyId);
             }
             catch (LobbyBackendException e)
             {
@@ -259,9 +282,11 @@ namespace Network.Services
                 if (e.LobbyGone)
                 {
                     Debug.Log($"Lobby déjà supprimé: {e.Message}");
+                    GameLog.Info("lobby", "lobby.deleted", "lobby", _logLobbyId, "alreadyGone", true);
                     return;
                 }
                 Debug.LogError($"Échec de suppression du lobby: {e.Message}");
+                GameLog.Warn("lobby", "lobby.delete.failed", "lobby", _logLobbyId, "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de supprimer le lobby: {e.Message}");
             }
         }
@@ -335,6 +360,10 @@ namespace Network.Services
                     try
                     {
                         await Backend.HeartbeatAsync(currentLobby);
+                        if (_consecutiveFailures > 0)
+                        {
+                            GameLog.Info("lobby", "lobby.heartbeat.recovered", "failures", _consecutiveFailures);
+                        }
                         _consecutiveFailures = 0;
                         Debug.Log($"Heartbeat envoyé pour le lobby: {currentLobby?.Name}");
                     }
@@ -342,9 +371,15 @@ namespace Network.Services
                     {
                         _consecutiveFailures++;
                         Debug.LogWarning($"Heartbeat du lobby en échec ({_consecutiveFailures}/{MaxConsecutivePollFailures}): {e.Message}");
+                        if (_consecutiveFailures == 1)
+                        {
+                            GameLog.Warn("lobby", "lobby.heartbeat.failed", "reason", e.Message);
+                        }
                         if (_consecutiveFailures >= MaxConsecutivePollFailures)
                         {
                             Debug.LogError($"Échec du heartbeat: {e}");
+                            GameLog.Warn("lobby", "lobby.heartbeat.stopped", "failures", _consecutiveFailures, "reason", e.Message,
+                                "sessionRunning", IsNetworkSessionRunning());
                             if (!IsNetworkSessionRunning())
                             {
                                 OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
@@ -395,6 +430,10 @@ namespace Network.Services
                     try
                     {
                         GameLobby _updatedLobby = await Backend.RefreshAsync(currentLobby);
+                        if (_consecutiveFailures > 0)
+                        {
+                            GameLog.Info("lobby", "lobby.poll.recovered", "failures", _consecutiveFailures);
+                        }
                         _consecutiveFailures = 0;
                         if (currentLobby != null && currentLobby.Id == _lobbyId)
                         {
@@ -406,9 +445,15 @@ namespace Network.Services
                     {
                         _consecutiveFailures++;
                         Debug.LogWarning($"Polling du lobby en échec ({_consecutiveFailures}/{MaxConsecutivePollFailures}): {e.Message}");
+                        if (_consecutiveFailures == 1)
+                        {
+                            GameLog.Warn("lobby", "lobby.poll.failed", "lobby", _lobbyId, "reason", e.Message);
+                        }
                         if (_consecutiveFailures >= MaxConsecutivePollFailures)
                         {
                             Debug.LogError($"Échec du polling du lobby: {e}");
+                            GameLog.Warn("lobby", "lobby.poll.stopped", "lobby", _lobbyId, "failures", _consecutiveFailures,
+                                "reason", e.Message, "sessionRunning", IsNetworkSessionRunning());
                             // A live network session is the real link to the host (its loss is reported by
                             // ClientDisconnectHandler); the cloud lobby is only bookkeeping by then.
                             if (!IsNetworkSessionRunning())
@@ -454,10 +499,12 @@ namespace Network.Services
             {
                 await Backend.SetLockedAsync(currentLobby, isLocked);
                 Debug.Log($"Lobby {(isLocked ? "verrouillé" : "déverrouillé")}");
+                GameLog.Info("lobby", "lobby.locked", "locked", isLocked);
             }
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de verrouillage du lobby: {e.Message}");
+                GameLog.Warn("lobby", "lobby.lock.failed", "locked", isLocked, "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de verrouiller le lobby: {e.Message}");
             }
         }

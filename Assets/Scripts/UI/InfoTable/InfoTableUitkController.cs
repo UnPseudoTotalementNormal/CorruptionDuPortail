@@ -271,6 +271,9 @@ namespace UI.InfoTable
                 // Manual cycle only while the row isn't found — a found row's camp is auto-derived (locked).
                 camp.RegisterCallback<ClickEvent>(_ =>
                 {
+                    bool _locked = FirstSureRole(piCamp) >= 0;
+                    Diagnostics.Logs.GameLog.Info("ui", _locked ? "ui.infotable.camp.refused" : "ui.infotable.camp", "row", piCamp,
+                        "reason", _locked ? "row-found" : null);
                     if (FirstSureRole(piCamp) < 0) _model.CycleCampGuess(piCamp);
                 });
 
@@ -343,7 +346,11 @@ namespace UI.InfoTable
             int pi = playerIndex;
             int ri = roleIndex;
             CellState s = state;
-            seg.RegisterCallback<ClickEvent>(_ => _model.SetCell(pi, ri, s));
+            seg.RegisterCallback<ClickEvent>(_ =>
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.infotable.cell", "row", pi, "col", ri, "state", s);
+                _model.SetCell(pi, ri, s);
+            });
 
             cell.Add(seg);
         }

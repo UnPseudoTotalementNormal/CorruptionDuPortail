@@ -34,6 +34,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                LogClickRefused(_character.ownerClientId.Value);
                 return;
             }
 

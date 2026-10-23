@@ -66,11 +66,16 @@ namespace GameLogic
             
             if (_playerPower.CanUse())
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.click", "power", _playerPower.powerName.ToString(),
+                    "owner", _playerPower.ownerClientId.Value, "usesLeft", _playerPower.powerUseLeft.Value);
                 _playerPower.StartUse();
                 currentPower = _playerPower;
             }
             else
             {
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("power", "power.click.refused",
+                    "power", _playerPower.powerName.ToString(), "owner", _playerPower.ownerClientId.Value,
+                    "reason", _playerPower.CannotUseReason(), "usesLeft", _playerPower.powerUseLeft.Value));
                 _playerPower.Cancel();
             }
         }

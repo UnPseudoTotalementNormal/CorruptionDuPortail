@@ -72,14 +72,28 @@ namespace Network
 
             // Rejoin 02: mid-game, a connection carrying the token of a RESERVED seat takes that seat back.
             bool _rejoin = false;
-            if (!_approve && _gameManager != null
-                && ConnectionPayload.TryParse(_request.Payload, out ConnectionPayload _rejoinPayload)
-                && BuildVersionGate.Evaluate(Application.version, Application.isEditor, _rejoinPayload) != BuildVersionGate.Verdict.Rejected
-                && _gameManager.TryClaimReservedSeat(_rejoinPayload.RejoinToken, _request.ClientNetworkId, out ulong _claimedSeat))
+            string _rejectReason = "game in progress"; // playtest log only: why a mid-game connection is refused
+            if (!_approve && _gameManager != null)
             {
-                _approve = true;
-                _rejoin = true;
-                Debug.Log($"[JOIN-GATE] Connection {_request.ClientNetworkId} approved as a rejoin of seat {_claimedSeat}.");
+                // Same checks, same order as before (short-circuit chain), split only to name the refusal in the log.
+                if (!ConnectionPayload.TryParse(_request.Payload, out ConnectionPayload _rejoinPayload))
+                {
+                    _rejectReason = "game in progress, no payload";
+                }
+                else if (BuildVersionGate.Evaluate(Application.version, Application.isEditor, _rejoinPayload) == BuildVersionGate.Verdict.Rejected)
+                {
+                    _rejectReason = "game in progress, rejoin build mismatch";
+                }
+                else if (_gameManager.TryClaimReservedSeat(_rejoinPayload.RejoinToken, _request.ClientNetworkId, out ulong _claimedSeat))
+                {
+                    _approve = true;
+                    _rejoin = true;
+                    Debug.Log($"[JOIN-GATE] Connection {_request.ClientNetworkId} approved as a rejoin of seat {_claimedSeat}.");
+                }
+                else
+                {
+                    _rejectReason = DescribeRejoinRefusal(_rejoinPayload.RejoinToken);
+                }
             }
 
             _response.Approved = _approve;
@@ -90,7 +104,7 @@ namespace Network
 
             if (!_approve)
             {
-                GameLog.Warn("net", "join.rejected", "connection", _request.ClientNetworkId, "reason", "game in progress");
+                GameLog.Warn("net", "join.rejected", "connection", _request.ClientNetworkId, "reason", _rejectReason);
                 _response.Reason = GameInProgressReason;
                 Debug.Log($"[JOIN-GATE] Rejected connection {_request.ClientNetworkId} — game already started.");
                 return;
@@ -155,6 +169,31 @@ namespace Network
             }
         }
 
+        // Playtest log label for a refused mid-game connection that carried a payload. Never logs the token itself.
+        private static string DescribeRejoinRefusal(string _token)
+        {
+            if (string.IsNullOrEmpty(_token))
+            {
+                return "game in progress";
+            }
+            try
+            {
+                Characters.CharacterManager _characters = Characters.CharacterManager.For(NetworkManager.Singleton);
+                if (_characters == null || !_characters.Seats.TryGetSeatOfToken(_token, out ulong _seat))
+                {
+                    return "rejoin unknown token";
+                }
+                GameManager _gameManager = GameManager.instance;
+                return _gameManager != null && _gameManager.IsSeatReserved(_seat)
+                    ? "rejoin refused"
+                    : "rejoin seat not reserved";
+            }
+            catch (System.Exception)
+            {
+                return "rejoin refused";
+            }
+        }
+
         // ---- NET-05: approved-but-still-loading joiners ----
 
         private static readonly JoinPhaseTracker s_joinPhase = new();
@@ -177,6 +216,8 @@ namespace Network
                 s_joinPhase.Left(_clientId);
                 s_pendingProfiles.Remove(_clientId);
                 Debug.Log($"[JOIN-GATE] Disconnecting {_clientId}: still loading after {JoinHandshake.SyncTotalTimeoutSeconds} s.");
+                GameLog.Warn("net", "join.kicked", "connection", _clientId, "reason", "still loading",
+                    "seconds", JoinHandshake.SyncTotalTimeoutSeconds);
                 _networkManager.DisconnectClient(_clientId, JoinFailureMessage.StuckLoadMessage);
             }
         }
@@ -216,6 +257,7 @@ namespace Network
                 && !_gameManager.IsInLobbyPhase)
             {
                 Debug.Log($"[JOIN-GATE] Disconnecting {_clientId}: finished loading after the game started.");
+                GameLog.Warn("net", "join.kicked", "connection", _clientId, "reason", "loaded after game start");
                 s_pendingProfiles.Remove(_clientId);
                 _networkManager.DisconnectClient(_clientId, GameInProgressReason);
             }

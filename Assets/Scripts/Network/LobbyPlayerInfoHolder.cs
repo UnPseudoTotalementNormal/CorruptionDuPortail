@@ -314,6 +314,7 @@ namespace Network
         public void SetReadyServer(ulong clientId, bool ready)
         {
             if (!IsServer || !IsSpawned) return;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.ready", "seat", clientId, "ready", ready);
             SetRosterServer(_roster.Value.WithReady(clientId, ready));
         }
 

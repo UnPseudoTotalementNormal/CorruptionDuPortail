@@ -59,6 +59,8 @@ namespace Avatars
         // Clear() — its SHARED avatar cache mid-iteration while a spawn is still in flight, which would throw
         // "Collection was modified" on the live list. Reused (cleared, not re-allocated) to stay alloc-free.
         private readonly List<PlayerAvatar> _avatarsSnapshot = new();
+        // Playtest log only: the "waiting for the local avatar" edge was logged.
+        private bool _waitingLocalLogged;
 
         /// <summary>Arbiter contract (mirror AvatarEmbodiedCamera.SetActive): on iff the mode is Embodied.</summary>
         public void SetActive(bool _isActive)
@@ -67,7 +69,9 @@ namespace Avatars
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.seating", "active", _isActive, "restored", _isActive ? 0 : _suppressed.Count);
             _active = _isActive;
+            _waitingLocalLogged = false;
             if (!_active)
             {
                 RestoreAll();
@@ -106,7 +110,18 @@ namespace Avatars
             // seat would resolve to a wrong/colliding angle — so place nobody this frame.
             if (_networkManager == null || _manager.GetLocalAvatar() == null)
             {
+                // Edge only: the ring waits for the local body (logged once per wait, not per frame).
+                if (!_waitingLocalLogged)
+                {
+                    _waitingLocalLogged = true;
+                    Diagnostics.Logs.GameLog.Info("avatar", "avatar.seating.waiting", "reason", "no-local-avatar");
+                }
                 return;
+            }
+            if (_waitingLocalLogged)
+            {
+                _waitingLocalLogged = false;
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.seating.ready");
             }
 
             // Snapshot the live list FIRST: GetSeatPose below re-enters the manager and may rebuild (Clear)

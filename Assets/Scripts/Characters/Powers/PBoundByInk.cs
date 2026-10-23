@@ -66,6 +66,8 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "target", _character.ownerClientId.Value, "reason", "invalid-target");
                 return;
             }
 
@@ -79,6 +81,8 @@ namespace Characters.Powers
             if (!ServerAuthorizeEffect(_params, _characterId)) return; // NET-09: server-side use authorization
             if (alreadyTargetedClients.Contains(_characterId) || currentTargets.Contains(_characterId))
             {
+                Diagnostics.Logs.GameLog.Warn("power", "power.ink.refused", "owner", ownerClientId.Value, "target", _characterId,
+                    "reason", "already-targeted");
                 return;
             }
 

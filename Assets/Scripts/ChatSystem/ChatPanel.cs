@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using Diagnostics.Logs;
 using Network;
 using TMPro;
 using UI;
@@ -213,6 +214,7 @@ namespace ChatSystem
         
         public void OnFullScreenButtonClicked()
         {
+            GameLog.Info("chat", "chat.fullscreen", "on", !isFullScreen);
             if (isFullScreen)
             {
                 DeactivateFullScreen();
@@ -282,6 +284,7 @@ namespace ChatSystem
         {
             if (isFullScreen)
             {
+                GameLog.Info("ui", "ui.panel.refused", "panel", name, "reason", "fullscreen");
                 return;
             }
             
@@ -290,6 +293,7 @@ namespace ChatSystem
 
         public void OpenPanel()
         {
+            if (!isPanelOpen) GameLog.Info("ui", "ui.panel.open", "panel", name);
             isPanelOpen = true;
             rectTransform.DOAnchorPosX(basePosition.x, 0.5f).SetEase(Ease.OutQuint);
             onPanelOpened?.Invoke();
@@ -297,6 +301,7 @@ namespace ChatSystem
 
         public void ClosePanel()
         {
+            if (isPanelOpen) GameLog.Info("ui", "ui.panel.close", "panel", name);
             isPanelOpen = false;
             rectTransform.DOAnchorPosX(closedPosition.x, 0.5f).SetEase(Ease.OutQuint);
             onPanelClosed?.Invoke();

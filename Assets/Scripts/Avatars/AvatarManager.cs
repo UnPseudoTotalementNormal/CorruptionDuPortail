@@ -282,9 +282,18 @@ namespace Avatars
             {
                 DespawnAvatar(_seat);
             }
+            else if (_avatar != null)
+            {
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.despawn.skipped", "seat", _seat, "connection", _connection,
+                    "reason", "seat-taken-by-new-connection", "owner", _avatar.OwnerClientId);
+            }
         }
 
-        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection) => SpawnAvatar(_seat, _connection);
+        private void OnPlayerRejoinedServer(ulong _seat, ulong _connection)
+        {
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.rejoin", "seat", _seat, "connection", _connection);
+            SpawnAvatar(_seat, _connection);
+        }
 
         private ulong SeatOf(ulong _connection) =>
             _characterManager != null ? _characterManager.SeatOfTransport(_connection) : _connection;
@@ -313,12 +322,14 @@ namespace Avatars
             // IsLocalOrSimulated) is untouched — bots simply have no avatar.
             if (_clientId >= 100)
             {
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.spawn.skipped", "seat", _clientId, "reason", "bot");
                 return null;
             }
 
             // Guard double-spawn for an existing client (mirror CharacterManager.cs:402).
             if (GetAvatar(_clientId) != null)
             {
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.spawn.skipped", "seat", _clientId, "connection", _ownerConnection, "reason", "already-spawned");
                 return null;
             }
 
@@ -330,6 +341,10 @@ namespace Avatars
             Transform _spawn = GetSpawnPoint(_clientId);
             Vector3 _spawnPosition = _spawn != null ? _spawn.position : Vector3.zero;
             Quaternion _spawnRotation = _spawn != null ? _spawn.rotation : Quaternion.identity;
+            if (_spawn == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.spawn.no-point", "seat", _clientId, "reason", "spawn-at-origin");
+            }
 
             NetworkObject _avatarObject = NetworkManager.SpawnManager.InstantiateAndSpawn(
                 _avatarPrefab, ownerClientId: _ownerConnection, destroyWithScene: true,
@@ -355,6 +370,7 @@ namespace Avatars
             // Authoritative source (NET-04: assign a NEW id list — full-value replication, late-joiner safe).
             _avatars.Value = _avatars.Value.WithAdded(_avatarObject.NetworkObjectId);
             _cacheDirty = true;
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.spawn", "seat", _clientId, "connection", _ownerConnection, "spawnPoint", _spawn != null);
             return _avatar;
         }
 
@@ -370,9 +386,11 @@ namespace Avatars
             PlayerAvatar _avatar = GetAvatar(_clientId);
             if (_avatar == null)
             {
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.despawn.skipped", "seat", _clientId, "reason", "no-avatar");
                 return;
             }
 
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.despawn", "seat", _clientId);
             // NET-04: by id, never by index.
             _avatars.Value = _avatars.Value.WithRemoved(_avatar.NetworkObjectId);
 
@@ -444,6 +462,7 @@ namespace Avatars
         /// </summary>
         public void SetDayRing(bool _on, float _fovDegrees, float _eyeHeight)
         {
+            if (_dayRing != _on) Diagnostics.Logs.GameLog.Info("avatar", "avatar.dayring", "on", _on);
             _dayRing = _on;
             _dayRingCount = -1;
             if (!_on)
@@ -666,6 +685,37 @@ namespace Avatars
                 }
             }
             _cacheDirty = !_allResolved;
+            TrackUnresolved(_allResolved);
+        }
+
+        // Playtest log only: an avatar id that stays unresolved for long (spawn lost) is warned once, never per read.
+        private const float UnresolvedWarnSeconds = 5f;
+        private float _unresolvedSince = -1f;
+        private bool _unresolvedWarned;
+
+        private void TrackUnresolved(bool _allResolved)
+        {
+            if (_allResolved)
+            {
+                if (_unresolvedWarned)
+                {
+                    Diagnostics.Logs.GameLog.Info("avatar", "avatar.resolved", "seconds", Time.unscaledTime - _unresolvedSince);
+                }
+                _unresolvedSince = -1f;
+                _unresolvedWarned = false;
+                return;
+            }
+            if (_unresolvedSince < 0f)
+            {
+                _unresolvedSince = Time.unscaledTime;
+                return;
+            }
+            if (!_unresolvedWarned && Time.unscaledTime - _unresolvedSince > UnresolvedWarnSeconds)
+            {
+                _unresolvedWarned = true;
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.unresolved", "ids", _avatars.Value != null ? _avatars.Value.Ids.Count : 0,
+                    "resolved", _avatarsCache.Count, "seconds", UnresolvedWarnSeconds);
+            }
         }
 
         private void OnAvatarsChanged(Network.NetworkObjectIdList _previous, Network.NetworkObjectIdList _current) => _cacheDirty = true;

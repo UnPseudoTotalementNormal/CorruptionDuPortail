@@ -39,6 +39,9 @@ namespace GameLogic.GameStates
         // feat/lobby-ready-system: fires at most once per lobby entry (auto-start OR force-start latches it).
         private bool _started;
 
+        // Playtest logs only: the last auto-start blocking reason logged (the poll runs every frame, logs on change).
+        private string _lastBlockedReason;
+
         // The composition gate: coverage Σmax ≥ players, guaranteed-fit (subsumes the old Σforced ≤ players floor),
         // plus ≥1 anomaly / ≥1 élu — evaluated by the pure CompositionValidator through RoleAttributionState (the
         // same rule surface the tablet footer mirrors and RoleDistributor guarantees). Reads the replicated
@@ -58,9 +61,12 @@ namespace GameLogic.GameStates
             if (!TryResolveValidComposition(out CompositionValidation _validation))
             {
                 Debug.LogWarning($"Cannot start the game — invalid composition: {_validation.FirstReason}");
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.refused", "forced", true, "reason", "invalid-composition",
+                    "detail", _validation.FirstReason);
                 return false;
             }
 
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.start", "players", CharacterQuery.GetCharacters().Count, "forced", true);
             Loop.NextGameState();
             return true;
         }
@@ -88,12 +94,26 @@ namespace GameLogic.GameStates
 
             // NET-05: an approved joiner still loading has no Character yet, so AllParticipantsReady cannot see it —
             // starting now would turn it into a character-less ghost. Wait until it finishes, leaves, or is kicked.
-            if (ConnectionApprovalGate.HasSynchronizingClients || !AllParticipantsReady() || !TryResolveValidComposition(out _))
+            // Same checks, same order and short-circuit as before; the reason only feeds the playtest log.
+            CompositionValidation _validation = default;
+            string _blockedReason = ConnectionApprovalGate.HasSynchronizingClients ? "player-loading"
+                : !AllParticipantsReady() ? "not-all-ready"
+                : !TryResolveValidComposition(out _validation) ? "invalid-composition"
+                : null;
+            if (_blockedReason != null)
             {
+                if (_blockedReason != _lastBlockedReason)
+                {
+                    _lastBlockedReason = _blockedReason;
+                    Diagnostics.Logs.GameLog.Info("lobby", "lobby.autostart.blocked", "reason", _blockedReason,
+                        "players", CharacterQuery.GetCharacters().Count,
+                        "detail", _blockedReason == "invalid-composition" ? _validation.FirstReason : null);
+                }
                 return;
             }
 
             _started = true;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.start", "players", CharacterQuery.GetCharacters().Count, "forced", false);
             Loop.NextGameState();
         }
 
@@ -139,6 +159,7 @@ namespace GameLogic.GameStates
             if (ConnectionApprovalGate.HasSynchronizingClients)
             {
                 Debug.LogWarning("Cannot force-start: a player is still loading into the lobby.");
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.refused", "forced", true, "reason", "player-loading");
                 return;
             }
 
@@ -172,6 +193,7 @@ namespace GameLogic.GameStates
             // every frame and lazily resolves the census, so no subscription to wire here.
             _started = false;
             _lobbyInfo = null;
+            _lastBlockedReason = null;
 
             // Symmetric counterpart of the lock below: re-entering the lobby makes the session joinable again, so
             // it must reappear in the lobby list.

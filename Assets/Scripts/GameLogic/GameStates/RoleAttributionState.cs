@@ -114,6 +114,30 @@ namespace GameLogic.GameStates
                 ApplyRole(_frozenOrder[_realRoleIndices[i]], _realCharacters[i]);
             }
 
+            Diagnostics.Logs.GameLog.Guarded(() =>
+            {
+                var _dealt = new List<string>(_realRoleIndices.Count);
+                for (int i = 0; i < _realRoleIndices.Count && i < _realCharacters.Count; i++)
+                {
+                    _dealt.Add(_realCharacters[i].ownerClientId.Value + "=" + _frozenOrder[_realRoleIndices[i]].role.roleName.ToString());
+                }
+                var _fakeRoles = new List<string>(_fakeRoleIndices.Count);
+                foreach (int _index in _fakeRoleIndices) _fakeRoles.Add(_frozenOrder[_index].role.roleName.ToString());
+                var _counts = new List<string>();
+                var _forcedRoles = new List<string>();
+                for (int i = 0; i < _frozenOrder.Count; i++)
+                {
+                    int _drawn = _realRoleIndices.Count(_x => _x == i) + _fakeRoleIndices.Count(_x => _x == i);
+                    if (_drawn > 0) _counts.Add(_frozenOrder[i].role.roleName.ToString() + "x" + _drawn);
+                    if (_forced[i] > 0) _forcedRoles.Add(_frozenOrder[i].role.roleName.ToString() + "x" + _forced[i]);
+                }
+                var _minimumsText = new List<string>(_minimums.Count);
+                foreach (FactionMinimum _minimum in _minimums) _minimumsText.Add(_minimum.Faction + ">=" + _minimum.Min);
+                Diagnostics.Logs.GameLog.Snapshot("game.roles.dealt", "dealt", _dealt, "counts", _counts, "fakeRoles", _fakeRoles,
+                    "fakeCount", _fakeRoleIndices.Count, "forced", _forcedRoles, "minimums", _minimumsText,
+                    "players", _realCharacters.Count, "devFakeRoles", DevFakeRoles != null, "devSeatOrder", DevSeatOrder != null);
+            });
+
             Loop.NextGameState();
         }
 

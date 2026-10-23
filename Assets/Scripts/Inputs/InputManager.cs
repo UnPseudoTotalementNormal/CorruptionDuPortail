@@ -47,6 +47,7 @@ public class InputManager : MonoBehaviour
             if (actionStack == null)
             {
                 Debug.LogWarning("InputManager: No actions or action stack found for InputID " + inputID);
+                Diagnostics.Logs.GameLog.Warn("ui", "input.unbound", "key", inputID.ToString());
                 return;
             }
             
@@ -80,6 +81,7 @@ public class InputManager : MonoBehaviour
             if (actionStack == null)
             {
                 Debug.LogWarning("InputManager: No actions or action stack found for InputID " + inputID);
+                Diagnostics.Logs.GameLog.Warn("ui", "input.unbound", "key", inputID.ToString());
                 return;
             }
             
@@ -112,6 +114,7 @@ public class InputManager : MonoBehaviour
             if (actionStack == null)
             {
                 Debug.LogWarning("InputManager: No actions or action stack found for InputID " + inputID);
+                Diagnostics.Logs.GameLog.Warn("ui", "input.unbound", "key", inputID.ToString());
                 return;
             }
             
@@ -144,6 +147,7 @@ public class InputManager : MonoBehaviour
             if (actionStack == null)
             {
                 Debug.LogWarning("InputManager: No actions or action stack found for InputID " + inputID);
+                Diagnostics.Logs.GameLog.Warn("ui", "input.unbound", "key", inputID.ToString());
                 return;
             }
             

@@ -44,9 +44,17 @@ namespace UI.Settings
             }
         }
 
-        private void OnCardsStandChanged(bool _value) => _options.SetCardsStand(_value);
+        private void OnCardsStandChanged(bool _value)
+        {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.setting", "name", "cardsStand", "value", _value);
+            _options.SetCardsStand(_value);
+        }
 
-        private void OnRoundTableChanged(bool _value) => _options.SetRoundTable(_value);
+        private void OnRoundTableChanged(bool _value)
+        {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.setting", "name", "roundTable", "value", _value);
+            _options.SetRoundTable(_value);
+        }
 
         // Another writer (autoplay) changed an option: keep the toggles in sync without re-saving.
         private void Refresh()

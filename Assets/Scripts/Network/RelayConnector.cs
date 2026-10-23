@@ -12,6 +12,7 @@ using Unity.Networking.Transport.Relay;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -59,6 +60,7 @@ namespace Network
                     string _connectionType = ProtocolOrder[_i];
                     bool _lastAttempt = _i == ProtocolOrder.Length - 1;
 
+                    GameLog.Info("net", "relay.join.attempt", "code", _joinCode, "protocol", _connectionType, "attempt", _i + 1);
                     JoinAllocation _allocation;
                     try
                     {
@@ -68,6 +70,8 @@ namespace Network
                     {
                         // UGS HTTPS API failure — not UDP-shaped, a protocol change cannot fix it. No retry.
                         Debug.LogError($"{LogTag} Relay join allocation failed: {e.Message}");
+                        GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType,
+                            "reason", "allocation", "error", e.Reason.ToString(), "message", e.Message);
                         return RelayConnectResult.Failed(null);
                     }
 
@@ -77,6 +81,7 @@ namespace Network
                     {
                         if (!TryApplyTransport(_allocation.ToRelayServerData(_connectionType), _connectionType))
                         {
+                            GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType, "reason", "no transport");
                             return RelayConnectResult.Failed(null); // NetworkManager/transport gone — no session to retry on
                         }
                     }
@@ -87,6 +92,7 @@ namespace Network
                         Debug.LogError($"{LogTag} No '{_connectionType}' endpoint in the allocation: {e.Message}");
                         if (_lastAttempt)
                         {
+                            GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType, "reason", "no endpoint");
                             return RelayConnectResult.Failed(null);
                         }
 
@@ -98,6 +104,7 @@ namespace Network
                     if (!NetworkManager.Singleton.StartClient())
                     {
                         Debug.LogError($"{LogTag} StartClient refused ('{_connectionType}')");
+                        GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType, "reason", "StartClient refused");
                         return RelayConnectResult.Failed(null);
                     }
 
@@ -109,6 +116,7 @@ namespace Network
                             Debug.LogWarning($"{LogTag} Connected via fallback '{_connectionType}' — UDP looks blocked on this network.");
                         }
 
+                        GameLog.Info("net", "relay.join.done", "code", _joinCode, "protocol", _connectionType);
                         return RelayConnectResult.Succeeded();
                     }
 
@@ -120,10 +128,14 @@ namespace Network
                     if (_lastAttempt || _nm == null || !RelayFallbackPolicy.ShouldRetryNextProtocol(_fail, _hasServerReason))
                     {
                         // Build BEFORE the caller's teardown — Shutdown may clear DisconnectReason.
-                        return RelayConnectResult.Failed(JoinHandshake.BuildFailureMessage(_fail));
+                        string _finalMessage = JoinHandshake.BuildFailureMessage(_fail);
+                        GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType, "reason", _fail,
+                            "serverReason", _hasServerReason, "shown", _finalMessage);
+                        return RelayConnectResult.Failed(_finalMessage);
                     }
 
                     Debug.LogWarning($"{LogTag} '{_connectionType}' attempt failed ({_fail}) — retrying with the next protocol.");
+                    GameLog.Warn("net", "relay.join.retry", "code", _joinCode, "protocol", _connectionType, "reason", _fail);
 
                     // Build the fallback wording NOW: if the drain below stalls, the retry is aborted and this
                     // message is all the player gets — and the drain's own Shutdown may clear DisconnectReason.
@@ -137,6 +149,7 @@ namespace Network
                     {
                         // NGO never finished shutting down — a retry would StartClient against a listening
                         // NetworkManager and mask the real cause. Fail with the attempt's own wording.
+                        GameLog.Warn("net", "relay.join.failed", "code", _joinCode, "protocol", _connectionType, "reason", "drain stalled");
                         return RelayConnectResult.Failed(_failureMessageBeforeDrain);
                     }
                 }
@@ -164,6 +177,7 @@ namespace Network
                 string _connectionType = ProtocolOrder[_i];
                 bool _lastAttempt = _i == ProtocolOrder.Length - 1;
 
+                GameLog.Info("net", "relay.host.attempt", "protocol", _connectionType, "attempt", _i + 1, "maxConnections", _maxConnections);
                 Allocation _allocation;
                 try
                 {
@@ -172,6 +186,8 @@ namespace Network
                 catch (RelayServiceException e)
                 {
                     Debug.LogError($"{LogTag} Relay host allocation failed: {e.Message}");
+                    GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "allocation",
+                        "error", e.Reason.ToString(), "message", e.Message);
                     return null;
                 }
 
@@ -181,6 +197,7 @@ namespace Network
                 {
                     if (!TryApplyTransport(_allocation.ToRelayServerData(_connectionType), _connectionType))
                     {
+                        GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "no transport");
                         return null; // NetworkManager/transport gone — nothing to host on
                     }
                 }
@@ -190,6 +207,7 @@ namespace Network
                     Debug.LogError($"{LogTag} No '{_connectionType}' endpoint in the allocation: {e.Message}");
                     if (_lastAttempt)
                     {
+                        GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "no endpoint");
                         return null;
                     }
 
@@ -199,6 +217,7 @@ namespace Network
                 if (!NetworkManager.Singleton.StartHost())
                 {
                     Debug.LogError($"{LogTag} StartHost refused ('{_connectionType}')");
+                    GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "StartHost refused");
                     return null;
                 }
 
@@ -212,12 +231,15 @@ namespace Network
                             Debug.LogWarning($"{LogTag} Hosting via fallback '{_connectionType}' — UDP looks blocked on this network.");
                         }
 
+                        GameLog.Info("net", "relay.host.ready", "code", _joinCode, "protocol", _connectionType);
                         return _joinCode;
                     }
                     catch (RelayServiceException e)
                     {
                         // Host is up but the code fetch failed — the caller's error path shuts NGO down.
                         Debug.LogError($"{LogTag} GetJoinCode failed: {e.Message}");
+                        GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "join code",
+                            "error", e.Reason.ToString(), "message", e.Message);
                         return null;
                     }
                 }
@@ -229,18 +251,22 @@ namespace Network
                 if (_nm == null || !_nm.IsListening)
                 {
                     Debug.LogWarning($"{LogTag} Session torn down externally during the relay BIND — aborting the host fallback.");
+                    GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "torn down during bind");
                     return null;
                 }
 
                 if (_lastAttempt)
                 {
                     Debug.LogError($"{LogTag} Relay BIND failed on every protocol.");
+                    GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "bind failed");
                     return null;
                 }
 
                 Debug.LogWarning($"{LogTag} Host relay BIND not Established over '{_connectionType}' within {HostBindDeadlineSeconds}s — retrying with the next protocol.");
+                GameLog.Warn("net", "relay.host.retry", "protocol", _connectionType, "reason", "bind timeout");
                 if (!await ShutdownAndDrainAsync())
                 {
+                    GameLog.Warn("net", "relay.host.failed", "protocol", _connectionType, "reason", "drain stalled");
                     return null; // NGO never finished shutting down — a StartHost retry would be refused anyway
                 }
             }

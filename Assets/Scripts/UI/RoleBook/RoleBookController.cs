@@ -193,8 +193,16 @@ namespace UI.RoleBook
         public void Open()
         {
             TryInitialize();
-            if (_root == null || _pages.Count == 0 || _open) return;
+            if (_root == null || _pages.Count == 0 || _open)
+            {
+                if (!_open)
+                {
+                    Diagnostics.Logs.GameLog.Warn("ui", "ui.rolebook.refused", "reason", _root == null ? "no-root" : "no-pages");
+                }
+                return;
+            }
 
+            Diagnostics.Logs.GameLog.Info("ui", "ui.rolebook.open", "pages", _pages.Count, "page", _current);
             _open = true;
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position;
@@ -207,6 +215,7 @@ namespace UI.RoleBook
         public void Close()
         {
             if (!_open) return;
+            Diagnostics.Logs.GameLog.Info("ui", "ui.rolebook.close", "page", _current);
             FinishAnimation();
             _open = false;
             _root.AddToClassList(HiddenClass);

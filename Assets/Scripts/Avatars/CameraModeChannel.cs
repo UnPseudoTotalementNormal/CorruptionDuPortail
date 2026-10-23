@@ -42,6 +42,7 @@ namespace Avatars
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("camera", "camera.mode", "from", Current, "to", _mode);
             Current = _mode;
             OnChanged?.Invoke(_mode);
         }
@@ -54,6 +55,7 @@ namespace Avatars
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("camera", "camera.firstperson", "live", _live);
             SeatedFirstPersonLive = _live;
             OnSeatedFirstPersonLiveChanged?.Invoke(_live);
         }

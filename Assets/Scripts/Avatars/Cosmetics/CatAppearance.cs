@@ -57,9 +57,15 @@ namespace Avatars.Cosmetics
             Bind();
             if (catalog == null)
             {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.no-catalog", "name", name);
                 return;
             }
+            CatLook _requested = look;
             look = catalog.Sanitize(look);
+            if (look.Pack() != _requested.Pack())
+            {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.fallback", "name", name, "requested", _requested.Encode(), "applied", look.Encode());
+            }
             Current = look;
 
             CatCosmeticItem fur = catalog.Find(CatSlot.Fur, look.Fur);

@@ -4,6 +4,7 @@ using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -58,16 +59,20 @@ namespace Network
             NetworkManager _nm = NetworkManager.Singleton;
             if (_nm == null)
             {
+                GameLog.Warn("net", "connect.failed", "reason", ConnectFailReason.SessionEnded, "elapsedMs", 0,
+                    "syncStarted", false, "disconnectReason", "no NetworkManager");
                 return ConnectFailReason.SessionEnded;
             }
 
             if (_nm.IsConnectedClient)
             {
+                GameLog.Info("net", "connect.done", "elapsedMs", 0, "alreadyConnected", true);
                 return ConnectFailReason.None; // already connected — fast path
             }
 
             double _startTime = Time.realtimeSinceStartupAsDouble;
             bool _syncStarted = false;
+            GameLog.Info("net", "connect.start", "approvalSeconds", _approvalSeconds, "totalSeconds", _totalSeconds);
 
             // OnSynchronize fires client-side once the server has approved us and begun synchronizing (a network
             // round-trip after StartClient, so it cannot arrive before we subscribe here). It marks the load as
@@ -100,10 +105,14 @@ namespace Network
 
                     if (_state.Outcome == ConnectWaitOutcome.Connected)
                     {
+                        GameLog.Info("net", "connect.done", "elapsedMs", (int)(_elapsed * 1000), "syncStarted", _syncStarted);
                         return ConnectFailReason.None;
                     }
                     if (_state.Outcome == ConnectWaitOutcome.Failed)
                     {
+                        GameLog.Guarded(() => GameLog.Warn("net", "connect.failed", "reason", _state.Reason,
+                            "elapsedMs", (int)(_elapsed * 1000), "syncStarted", _syncStarted,
+                            "disconnectReason", _current != null ? _current.DisconnectReason : null));
                         return _state.Reason;
                     }
 

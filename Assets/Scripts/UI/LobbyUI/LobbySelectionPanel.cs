@@ -11,6 +11,7 @@ using Unity.Netcode;
 using Network.Steam;
 using UnityEngine;
 using UnityEngine.UI;
+using Diagnostics.Logs;
 
 namespace UI.Lobby
 {
@@ -60,14 +61,23 @@ namespace UI.Lobby
         private void OnSubmitPasswordButtonClicked()
         {
             if (currentLobbySelected == null)
+            {
+                GameLog.Info("net", "join.refused", "reason", "no lobby selected", "path", "password");
                 return;
+            }
 
             string password = passwordInputField.text;
             if (string.IsNullOrEmpty(password))
+            {
+                GameLog.Info("net", "join.refused", "reason", "empty password", "path", "password");
                 return;
+            }
 
             if (_isJoining)
+            {
+                GameLog.Info("net", "join.refused", "reason", "busy", "path", "password");
                 return;
+            }
             _isJoining = true;
 
             OnSubmitPasswordButtonClickedAsync(password).Forget();
@@ -117,11 +127,13 @@ namespace UI.Lobby
         {
             if (_isJoining)
             {
+                GameLog.Info("net", "join.refused", "reason", "busy", "path", "invite", "lobby", _lobbyId);
                 ReportJoinFailure(BusyForInviteMessage);
                 return;
             }
             _isJoining = true;
 
+            GameLog.Info("net", "join.invite", "lobby", _lobbyId);
             JoinFromSteamInviteAsync(_lobbyId).Forget();
         }
 
@@ -133,6 +145,7 @@ namespace UI.Lobby
                 GameLobby _lobby = await LobbyManager.instance.GetLobbyInfo(_lobbyId);
                 if (_lobby == null)
                 {
+                    GameLog.Warn("net", "join.failed", "reason", "invite lobby not found", "path", "invite", "lobby", _lobbyId);
                     HideLoadingSafe(); // GetLobbyInfo already reported why
                     return;
                 }
@@ -155,6 +168,7 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Échec de la connexion à la partie d'un ami: {e}");
+                GameLog.Warn("net", "join.failed", "reason", e.Message, "path", "invite", "lobby", _lobbyId);
                 HideLoadingSafe();
             }
             finally
@@ -168,10 +182,16 @@ namespace UI.Lobby
         private void OnConnectButtonClicked()
         {
             if (currentLobbySelected == null)
+            {
+                GameLog.Info("net", "join.refused", "reason", "no lobby selected", "path", "list");
                 return;
+            }
 
             if (_isJoining)
+            {
+                GameLog.Info("net", "join.refused", "reason", "busy", "path", "list");
                 return;
+            }
             _isJoining = true;
 
             OnConnectButtonClickedAsync().Forget();
@@ -322,6 +342,7 @@ namespace UI.Lobby
             // be rejected by ConnectionApprovalGate (investigation join-started-game-gate).
             if (lobby.IsLocked)
             {
+                GameLog.Info("net", "join.refused", "reason", "lobby locked", "path", "list", "lobby", lobby.Id);
                 ReportJoinFailure(ConnectionApprovalGate.GameInProgressReason);
                 loadingCanvasGroup.DoHideGroup();
                 return false;
@@ -330,18 +351,23 @@ namespace UI.Lobby
             // Si le lobby a un mot de passe et qu'on ne l'a pas fourni, demander le mot de passe
             if (lobby.HasPassword && string.IsNullOrEmpty(password))
             {
+                GameLog.Info("net", "join.password.prompt", "lobby", lobby.Id);
                 loadingCanvasGroup.DoHideGroup();
                 enterPasswordCanvasGroup.DoShowGroup();
                 return false;
             }
 
             loadingCanvasGroup.DoShowGroup();
-            
+            string _logLobbyId = lobby.Id; // playtest log only: kept even when the join below returns null
+            GameLog.Info("net", "join.start", "lobby", _logLobbyId, "code", lobby.Code, "mode", LogTransportMode(),
+                "hasPassword", !string.IsNullOrEmpty(password), "path", "list");
+
             try
             {
                 lobby = await LobbyManager.instance.JoinLobby(lobby.Id, password);
                 if (lobby == null)
                 {
+                    GameLog.Warn("net", "join.failed", "reason", "lobby join refused", "lobby", _logLobbyId, "path", "list");
                     loadingCanvasGroup.DoHideGroup();
                     return false;
                 }
@@ -356,6 +382,7 @@ namespace UI.Lobby
                     if (!SteamConnector.StartClient(NetworkManager.Singleton, lobby, password))
                     {
                         Debug.LogError("Failed to connect to game");
+                        GameLog.Warn("net", "join.failed", "reason", "steam StartClient failed", "lobby", _logLobbyId, "path", "list");
                         await AbortJoin(null);
                         return false;
                     }
@@ -368,7 +395,9 @@ namespace UI.Lobby
                     if (_fail != ConnectFailReason.None)
                     {
                         // Build BEFORE AbortJoin shuts NGO down — Shutdown may clear DisconnectReason.
-                        await AbortJoin(JoinHandshake.BuildFailureMessage(_fail));
+                        string _failureMessage = JoinHandshake.BuildFailureMessage(_fail);
+                        GameLog.Warn("net", "join.failed", "reason", _fail, "shown", _failureMessage, "lobby", _logLobbyId, "path", "list");
+                        await AbortJoin(_failureMessage);
                         return false;
                     }
                 }
@@ -380,6 +409,8 @@ namespace UI.Lobby
                     RelayConnectResult _result = await JoinWithUnityRelay(lobby);
                     if (!_result.Success)
                     {
+                        GameLog.Warn("net", "join.failed", "reason", "relay connect failed", "shown", _result.FailureMessage,
+                            "lobby", _logLobbyId, "path", "list");
                         await AbortJoin(_result.FailureMessage);
                         return false;
                     }
@@ -387,6 +418,7 @@ namespace UI.Lobby
                 else
                 {
                     Debug.LogError("Unknown transport type!");
+                    GameLog.Warn("net", "join.failed", "reason", "unknown transport", "lobby", _logLobbyId, "path", "list");
                     loadingCanvasGroup.DoHideGroup();
                     return false;
                 }
@@ -402,11 +434,14 @@ namespace UI.Lobby
                 // Touch NO UI past this point either: the menu scene is ALREADY unloaded, so every serialized
                 // reference on this panel is a destroyed object. Hiding the loading group here threw an NRE that
                 // fell into the catch below and ran AbortJoin — shutting down a perfectly good connection.
+                GameLog.Info("net", "join.done", "lobby", _logLobbyId, "code", lobby.Code, "path", "list");
                 return true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"Failed to join lobby: {e.Message}");
+                GameLog.Guarded(() => GameLog.Warn("net", "join.failed", "reason", e.Message, "lobby", _logLobbyId, "path", "list",
+                    "connected", NetworkManager.Singleton != null && NetworkManager.Singleton.IsConnectedClient));
 
                 // Never tear down an ESTABLISHED session on a stray exception. AbortJoin shuts NGO down and leaves
                 // the cloud lobby — correct while the join is still pending, catastrophic once we are connected and
@@ -476,6 +511,7 @@ namespace UI.Lobby
             if (!lobby.TryGetData(GameLobby.RelayJoinCodeKey, out string _joinCode))
             {
                 Debug.LogError("Lobby missing joinCode");
+                GameLog.Warn("net", "relay.join.nocode", "lobby", lobby.Id);
                 return RelayConnectResult.Failed(null);
             }
 
@@ -497,6 +533,12 @@ namespace UI.Lobby
             currentLobbyEntryUISelected = lobbyEntryUI;
             currentLobbyEntryUISelected.OnSelectedFeedback();
         }
+
+        // Playtest logs: which online stack a join goes through.
+        private static string LogTransportMode() =>
+            NetworkTransportDetector.IsUsingFacepunch() ? "steam"
+            : NetworkTransportDetector.IsUsingUnityRelay() ? "relay"
+            : "other";
 
         void Clear()
         {

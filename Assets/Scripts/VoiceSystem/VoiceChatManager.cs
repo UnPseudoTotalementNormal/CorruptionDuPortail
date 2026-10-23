@@ -6,6 +6,7 @@ using System.IO;
 using Characters;
 using ChatSystem;
 using CorruptionDuPortail.Domain;
+using Diagnostics.Logs;
 using Extensions;
 using FMODUnity;
 using GameLogic;
@@ -113,11 +114,15 @@ namespace VoiceSystem
             }
             _playbacks.Clear();
             _lastSequence.Clear();
+            _logLastListeners.Clear();
+            _logFailingSpeakers.Clear();
+            _logNoPlaybackSpeakers.Clear();
             base.OnNetworkDespawn();
         }
 
         private void Update()
         {
+            LogAvailabilityEdge();
             if (!IsSpawned || _codec == null || !_codec.IsAvailable)
             {
                 return;
@@ -171,6 +176,8 @@ namespace VoiceSystem
                 return;
             }
             IsTransmitting = _transmitting;
+            GameLog.Guarded(() => GameLog.Info("voice", "voice.mic", "on", _transmitting,
+                "mode", _options != null && _options.OpenMic ? "open" : "push-to-talk"));
             if (_codec != null && _codec.IsAvailable)
             {
                 _codec.Recording = _transmitting;
@@ -229,12 +236,18 @@ namespace VoiceSystem
         {
             if (_voice == null || _voice.Length == 0 || _voice.Length > MaxPacketBytes)
             {
+                if (_voice != null && _voice.Length > MaxPacketBytes)
+                {
+                    LogOversizedPacket(_params.Receive.SenderClientId, _voice.Length);
+                }
                 return;
             }
 
             // Rejoin: a rejoined player's new connection speaks as his seat.
             ulong _speaker = _characterManager.SeatOfTransport(_params.Receive.SenderClientId);
-            foreach (ulong _listener in ListenersOf(_speaker))
+            List<ulong> _listeners = ListenersOf(_speaker);
+            LogChannelIfChanged(_speaker, _listeners);
+            foreach (ulong _listener in _listeners)
             {
                 ReceiveVoiceRpc(_speaker, _sequence, _voice, _characterManager.GetSafeRpcTarget(_listener));
             }
@@ -273,6 +286,7 @@ namespace VoiceSystem
             _lastSequence[_speaker] = _sequence;
 
             int _decoded = _codec.Decode(_voice, _voice.Length, _pcm);
+            LogReceiveEdge(_speaker, _decoded > 0, _playback != null);
             if (_decoded <= 0 || _playback == null)
             {
                 return;
@@ -301,6 +315,92 @@ namespace VoiceSystem
             foreach (VoicePlayback _playback in _playbacks.Values)
             {
                 _playback?.SetVolume(_options.Volume);
+            }
+        }
+
+        // ---- Playtest logs (edges only: the voice runs every frame / every packet) ----
+        // Every call to these helpers is compiled out in a build without the logs.
+
+        private bool _logAvailabilityKnown;
+        private bool _logWasAvailable;
+        private readonly Dictionary<ulong, int> _logLastListeners = new();
+        private readonly HashSet<ulong> _logFailingSpeakers = new();
+        private readonly HashSet<ulong> _logNoPlaybackSpeakers = new();
+        private int _logOversizedCount;
+        private const int LogOversizedEvery = 100;
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogAvailabilityEdge()
+        {
+            if (!IsSpawned)
+            {
+                _logAvailabilityKnown = false;
+                return;
+            }
+            bool _available = _codec != null && _codec.IsAvailable;
+            if (_logAvailabilityKnown && _available == _logWasAvailable)
+            {
+                return;
+            }
+            _logAvailabilityKnown = true;
+            _logWasAvailable = _available;
+            if (_available)
+            {
+                GameLog.Info("voice", "voice.available");
+            }
+            else
+            {
+                GameLog.Warn("voice", "voice.unavailable", "codec", _codec != null);
+            }
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogChannelIfChanged(ulong _speaker, List<ulong> _listeners)
+        {
+            // Runs for every voice packet: no closure, no string, only a hash of the listener set.
+            try
+            {
+                int _key = 17;
+                if (_listeners != null)
+                {
+                    foreach (ulong _listener in _listeners) _key = _key * 31 + _listener.GetHashCode();
+                }
+                if (_logLastListeners.TryGetValue(_speaker, out int _last) && _last == _key)
+                {
+                    return;
+                }
+                _logLastListeners[_speaker] = _key;
+                GameLog.Info("voice", "voice.channel", "speaker", _speaker, "night", IsNight(),
+                    "listeners", _listeners != null ? new List<ulong>(_listeners) : null);
+            }
+            catch (System.Exception)
+            {
+                // logging never breaks the game
+            }
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogOversizedPacket(ulong _sender, int _bytes)
+        {
+            _logOversizedCount++;
+            if (_logOversizedCount == 1 || _logOversizedCount % LogOversizedEvery == 0)
+            {
+                GameLog.Warn("voice", "voice.packet.refused", "connection", _sender, "bytes", _bytes,
+                    "max", MaxPacketBytes, "count", _logOversizedCount);
+            }
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogReceiveEdge(ulong _speaker, bool _decodedOk, bool _hasPlayback)
+        {
+            // Once per speaker and session: an empty decode may be benign, a broken stream would repeat every packet.
+            if (!_decodedOk && _logFailingSpeakers.Add(_speaker))
+            {
+                GameLog.Warn("voice", "voice.decode.failed", "speaker", _speaker);
+            }
+            if (!_hasPlayback && _logNoPlaybackSpeakers.Add(_speaker))
+            {
+                GameLog.Warn("voice", "voice.playback.failed", "speaker", _speaker);
             }
         }
 

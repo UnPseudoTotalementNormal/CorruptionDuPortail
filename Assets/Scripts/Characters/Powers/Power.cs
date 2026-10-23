@@ -326,7 +326,12 @@ namespace Characters.Powers
         {
             if (!IsServer) return PowerVerdict.None;
             PowerOutcome outcome = decision.Decide(context);
-            if (!outcome.Accepted) return PowerVerdict.None;
+            if (!outcome.Accepted)
+            {
+                GameLog.Info("power", "power.decision.rejected", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "reason", outcome.RejectReason, "target", context.TargetSlot);
+                return PowerVerdict.None;
+            }
             PowerDispatcherHost.Dispatcher.Dispatch(outcome.Effects, new EffectRuntime(NetworkManager, state, localViewer, this));
             EmitVerdictServer(outcome.Verdict);
             return outcome.Verdict;
@@ -399,7 +404,7 @@ namespace Characters.Powers
             // authoritative state its UI just validated (CanUse): no latency, so no race to guard against.
             if (_sender == NetworkManager.ServerClientId)
             {
-                return true;
+                return AcceptEffect(_targetSlots, "host");
             }
             if (!IsAllowedSender(_sender))
             {
@@ -424,7 +429,7 @@ namespace Characters.Powers
             if (_preConsumed)
             {
                 _serverPreConsumedUses--;
-                return true;
+                return AcceptEffect(_targetSlots, "pre-consumed");
             }
             if (powerUseLeft.Value <= 0)
             {
@@ -435,7 +440,37 @@ namespace Characters.Powers
                 return RejectUse("stolen copy locked by its Marque until the next night");
             }
             _serverEffectAwaitingConsume = true;
+            return AcceptEffect(_targetSlots, "client");
+        }
+
+        private bool AcceptEffect(ulong[] _targetSlots, string _via)
+        {
+            GameLog.Info("power", "power.target", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                "targets", _targetSlots != null ? new List<ulong>(_targetSlots) : new List<ulong>(), "via", _via);
             return true;
+        }
+
+        /// <summary>
+        /// Playtest logs: why <see cref="CanUse"/> refuses, following the base rule order. Click time only, never per
+        /// frame (the power bars poll CanUse). "power-rule" = a power-specific override refused.
+        /// </summary>
+        public string CannotUseReason()
+        {
+            var _network = Unity.Netcode.NetworkManager.Singleton;
+            if (_network == null || _network.ShutdownInProgress || !_network.IsListening) return "session-stopping";
+            var _powerCharacter = ownerCharacter;
+            if (!_powerCharacter) return "no-owner";
+            if (IsLockedByMarque()) return "locked-by-marque";
+            PowerComponent _blocking = powerComponents.FirstOrDefault(_pc => _pc != null && !_pc.CanUsePower());
+            if (_blocking != null) return "blocked-by-" + _blocking.GetType().Name;
+            if (IsPassive) return "passive";
+            if (isCurrentlyUsed) return "currently-used";
+            if (_powerCharacter.isChained.Value) return "chained";
+            if (_powerCharacter.isEliminated.Value) return "eliminated";
+            if (hasToBeAwakened && !_powerCharacter.isAwakened.Value) return "asleep";
+            if (needTargetSelection && GetValidTargets().Count == 0) return "no-valid-target";
+            if (powerUseLeft.Value <= 0) return "no-use-left";
+            return "power-rule";
         }
 
         /// <summary>Server: an authorized effect was refused after all (its consume will never come): drop the pairing.</summary>
@@ -514,6 +549,13 @@ namespace Characters.Powers
         public bool CheckIsTargetValid(ulong _targetClientId, TargetType _targetType)
         {
             return targetValidator.Evaluate((_targetClientId, _targetType));
+        }
+
+        /// <summary>Playtest logs, owner's client: a picked target was refused before anything was sent.</summary>
+        protected void LogClickRefused(ulong _target, string _reason = "invalid-target")
+        {
+            GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                "target", _target, "reason", _reason);
         }
         
         public virtual bool CanUse(bool _ignoreCurrentlyUsed = false)

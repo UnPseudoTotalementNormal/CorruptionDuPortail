@@ -5,6 +5,7 @@ using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using Diagnostics.Logs;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -85,6 +86,10 @@ namespace Characters.Powers
         {
             if (IsServer && IsSpawned)
             {
+                if (copiesLocked.Value)
+                {
+                    GameLog.Info("power", "power.uges.copies.unlock", "owner", ownerClientId.Value);
+                }
                 copiesLocked.Value = false;
             }
         }
@@ -94,6 +99,7 @@ namespace Characters.Powers
         {
             if (IsServer)
             {
+                GameLog.Info("power", "power.uges.copies.lock", "owner", ownerClientId.Value, "reason", "copy-used");
                 copiesLocked.Value = true;
             }
         }
@@ -125,6 +131,7 @@ namespace Characters.Powers
             if (ownerCharacter == null)
             {
                 Debug.LogWarning("[UGUES] Marque d'Hurluberluges: owner character unresolved, nothing stolen.");
+                GameLog.Warn("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", 0, "reason", "no-owner");
                 return;
             }
 
@@ -162,10 +169,25 @@ namespace Characters.Powers
             if (_picks.Count == 0)
             {
                 Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
+                GameLog.Info("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", 0, "candidates", _candidates.Count,
+                    "reason", "no-eligible-power");
                 return;
             }
+            GameLog.Guarded(() =>
+            {
+                var _stolen = new List<string>(_picks.Count);
+                var _owners = new List<ulong>(_picks.Count);
+                foreach (int _index in _picks)
+                {
+                    _stolen.Add(_powers[_index].powerName.ToString());
+                    _owners.Add(_powers[_index].ownerClientId.Value);
+                }
+                GameLog.Info("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", _picks.Count,
+                    "powers", _stolen, "from", _owners, "devPreference", DevStealPreference != null && DevStealPreference.Length > 0);
+            });
             // Not usable the night of the theft (game start = night 1 for Ugës; the night of the copy for an
             // Incomplet who took the Marque): the next onNewDayPassed unlocks them.
+            GameLog.Info("power", "power.uges.copies.lock", "owner", (ulong)_ownerSlot, "reason", "theft-night");
             copiesLocked.Value = true;
             foreach (int _index in _picks)
             {

@@ -63,7 +63,8 @@ namespace GameLogic
             base.OnNetworkDespawn();
         }
         
-        public void AddCharacterToChainingList(ulong _characterId)
+        // _caller: filled by the compiler (playtest logs say who queued the chain); callers never pass it.
+        public void AddCharacterToChainingList(ulong _characterId, [System.Runtime.CompilerServices.CallerMemberName] string _caller = "")
         {
             if (!IsServer)
             {
@@ -82,6 +83,13 @@ namespace GameLogic
             if (new ChainingResolver().IsNewMember(_current, _characterId))
             {
                 chainingPlayers.Add(_characterId);
+                Diagnostics.Logs.GameLog.Info("chain", "chain.queued", "seat", _characterId,
+                    "source", _caller, "queue", _current.Count + 1);
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Info("chain", "chain.queued.refused", "seat", _characterId,
+                    "source", _caller, "reason", "already-queued");
             }
         }
 
@@ -103,6 +111,7 @@ namespace GameLogic
             {
                 var _portalState = (TakeDownThePortalState)_gameManager.GetGameStates(typeof(TakeDownThePortalState)).First();
                 _portalState.shouldActivate = true;
+                Diagnostics.Logs.GameLog.Info("portal", "portal.carrier", "mage", _character.ownerClientId.Value, "leave", _showCardReveal);
                     
                 _gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),
                     new NetworkSerializableObject[] { new(_character.ownerClientId.Value) },

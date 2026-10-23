@@ -48,6 +48,8 @@ namespace Characters.Powers.PowerComponents
 
             if (_potentialLegacyHolder.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.inherit", "power", power.powerName.ToString(), "from", ownerClientId,
+                    "legacyRole", legacyRoleName, "heir", null, "reason", "no-eligible-heir");
                 chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(ChatManager.SERVER_CLIENT_ID,
                         $"Aucun personnage n'est éligible pour hériter du pouvoir {power.powerName}.",
@@ -57,6 +59,9 @@ namespace Characters.Powers.PowerComponents
                 return;
             }
             
+            Diagnostics.Logs.GameLog.Info("power", "power.inherit", "power", power.powerName.ToString(), "from", ownerClientId,
+                "legacyRole", legacyRoleName, "heir", _potentialLegacyHolder[0].ownerClientId.Value,
+                "heirIsFake", _potentialLegacyHolder[0].isFake);
             PowerManager.instance.ReparentPowerToCharacterServer(power, _potentialLegacyHolder[0]);
         }
 

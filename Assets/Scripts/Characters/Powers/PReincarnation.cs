@@ -100,6 +100,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_roleClicked.ownerClientId, TargetUtils.TargetType.Role))
             {
+                LogClickRefused(_roleClicked.ownerClientId);
                 return;
             }
             ReincarnatePlayerRpc(_roleClicked.ownerClientId);

@@ -82,7 +82,11 @@ namespace UI.Settings
 
         private void SaveVoiceVolume(float _volume) => _voiceOptions.SetVolume(_volume);
 
-        private void ToggleMicMode() => _voiceOptions.SetOpenMic(!_voiceOptions.OpenMic);
+        private void ToggleMicMode()
+        {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.setting", "name", "openMic", "value", !_voiceOptions.OpenMic);
+            _voiceOptions.SetOpenMic(!_voiceOptions.OpenMic);
+        }
 
         // The other audio panel (main menu / pause menu) changed a voice option: keep this one in sync.
         private void RefreshVoice()

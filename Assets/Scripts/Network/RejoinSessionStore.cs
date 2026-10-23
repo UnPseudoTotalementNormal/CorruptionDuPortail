@@ -1,4 +1,5 @@
 using System;
+using Diagnostics.Logs;
 using UnityEngine;
 
 namespace Network
@@ -51,6 +52,31 @@ namespace Network
         {
             KeySuffix = string.Empty;
             s_pendingHostKind = s_pendingHostAddress = s_pendingLobbyCode = string.Empty;
+            s_lastInvalidLogged = null;
+        }
+
+        // Playtest logs: TryLoad runs often (keep-alive, menu, each connection request) — an invalid session is logged
+        // once, not on every read.
+        private static string s_lastInvalidLogged;
+
+        private static void LogInvalidOnce(string _reason, Session _session)
+        {
+            GameLog.Guarded(() =>
+            {
+                string _key = _reason + "|" + (_session != null ? _session.savedAtUnixSeconds : 0);
+                if (_key == s_lastInvalidLogged)
+                {
+                    return;
+                }
+                s_lastInvalidLogged = _key;
+                long _age = _session != null
+                    ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() - Math.Max(_session.savedAtUnixSeconds, _session.lastSeenUnixSeconds)
+                    : 0;
+                // Never the token itself: only whether there was one.
+                GameLog.Info("net", "rejoin.session.invalid", "reason", _reason, "ageSeconds", _age,
+                    "hostKind", _session != null ? _session.hostKind : null,
+                    "hadToken", _session != null && !string.IsNullOrEmpty(_session.token));
+            });
         }
 
         /// <summary>Join path: remembers which host this connection goes to (saved once the host hands a token).</summary>
@@ -109,7 +135,12 @@ namespace Network
             {
                 _session = null;
             }
-            return _session != null && _session.IsFresh;
+            bool _valid = _session != null && _session.IsFresh;
+            if (!_valid)
+            {
+                LogInvalidOnce(_session == null ? "corrupt" : string.IsNullOrEmpty(_session.token) ? "no token" : "stale", _session);
+            }
+            return _valid;
         }
 
         /// <summary>The token to put in a connection request (empty when none is saved or it is stale).</summary>
@@ -118,6 +149,7 @@ namespace Network
         /// <summary>The game is over for this player (ended, shut down by the host, or he left on purpose): nothing to rejoin.</summary>
         public static void Clear()
         {
+            GameLog.Info("net", "rejoin.session.cleared");
             PlayerPrefs.DeleteKey(Key + KeySuffix);
             PlayerPrefs.Save();
         }

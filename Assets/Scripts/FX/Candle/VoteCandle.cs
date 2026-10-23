@@ -326,6 +326,7 @@ namespace FX.Candle
 
         private void Ignite(Timer _timer)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.candle.ignite", "timer", _timer.Kind, "duration", _timer.Duration, "left", _timer.Left);
             _litFor = _timer.Kind;
             _phase = Phase.Lit;
             _phaseTime = 0f;
@@ -391,6 +392,7 @@ namespace FX.Candle
 
         private void Snuff()
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.candle.snuff", "timer", _litFor);
             _phase = Phase.Out;
             _phaseTime = 0f;
             if (_smoke != null)

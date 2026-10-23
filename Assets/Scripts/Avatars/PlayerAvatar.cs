@@ -129,8 +129,10 @@ namespace Avatars
         {
             if (_networkAnimator == null || _networkAnimator.Animator == null)
             {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.play.refused", "seat", ownerClientId.Value, "emote", _emoteId, "reason", "no-animator");
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("emote", "emote.play", "seat", ownerClientId.Value, "emote", _emoteId, "loops", _loops);
             _networkAnimator.Animator.SetInteger(EmoteIdParam, _emoteId);
             if (_loops)
             {
@@ -199,6 +201,9 @@ namespace Avatars
         {
             if (_rpcParams.Receive.SenderClientId != OwnerClientId || _networkAnimator == null || _networkAnimator.Animator == null)
             {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.tablet.refused", "seat", ownerClientId.Value, "out", _out,
+                    "reason", _rpcParams.Receive.SenderClientId != OwnerClientId ? "sender-not-owner" : "no-animator",
+                    "sender", _rpcParams.Receive.SenderClientId);
                 return;
             }
             _networkAnimator.Animator.SetBool(TabletParam, _out);
@@ -211,8 +216,10 @@ namespace Avatars
         {
             if (_networkAnimator == null || _networkAnimator.Animator == null)
             {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.stop.refused", "seat", ownerClientId.Value, "reason", "no-animator");
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("emote", "emote.stop", "seat", ownerClientId.Value);
             _networkAnimator.Animator.SetBool(EmotingParam, false);
         }
 
@@ -252,6 +259,12 @@ namespace Avatars
             if (_catAppearance != null)
             {
                 _catAppearance.Apply(CatLook.Unpack(_packed));
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("avatar", "avatar.cosmetics.applied", "seat", ownerClientId.Value,
+                    "look", _catAppearance.Current.Encode(), "fallback", _catAppearance.Current.Pack() != _packed));
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.no-appearance", "seat", ownerClientId.Value);
             }
         }
 
@@ -262,6 +275,8 @@ namespace Avatars
         {
             if (_rpcParams.Receive.SenderClientId != OwnerClientId)
             {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.refused", "seat", ownerClientId.Value, "sender", _rpcParams.Receive.SenderClientId,
+                    "reason", "sender-not-owner");
                 return;
             }
             CatLook _look = CatLook.Unpack(_packed);
@@ -269,6 +284,8 @@ namespace Avatars
             {
                 _look = _catAppearance.Catalog.Sanitize(_look);
             }
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.cosmetics.submitted", "seat", ownerClientId.Value, "look", _look.Encode(),
+                "fallback", _look.Pack() != _packed, "catalog", _catAppearance != null && _catAppearance.Catalog != null);
             CatLookPacked.Value = _look.Pack();
         }
 

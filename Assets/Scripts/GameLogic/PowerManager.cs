@@ -119,9 +119,13 @@ namespace GameLogic
             if (_power.ownerCharacter == _newOwner)
             {
                 Debug.LogWarning($"Power {_power.powerName} is already owned by character {_newOwner.ownerClientId.Value}");
+                Diagnostics.Logs.GameLog.Warn("power", "power.reparent.skipped", "power", _power.powerName.ToString(),
+                    "to", _newOwner.ownerClientId.Value, "reason", "already-owner");
                 return;
             }
 
+            Diagnostics.Logs.GameLog.Info("power", "power.reparent", "power", _power.powerName.ToString(),
+                "from", _power.ownerClientId.Value, "to", _newOwner.ownerClientId.Value);
             // NET-08: no list edit here — both owners' power lists are projections of the replicated ownerClientId
             // (Power.OnOwnerChanged rebuilds them on every peer).
             _power.GetComponent<NetworkObject>().TrySetParent(_newOwner.GetComponent<NetworkObject>());

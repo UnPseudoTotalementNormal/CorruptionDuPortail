@@ -8,6 +8,7 @@ using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using Diagnostics.Logs;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -63,6 +64,8 @@ namespace Characters.Powers
             ulong _clientIdClicked = _role.ownerClientId;
             if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
+                GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "target", _clientIdClicked, "reason", "invalid-target");
                 return;
             }
 
@@ -84,11 +87,15 @@ namespace Characters.Powers
                 // Never a silent return: the owner's picker is waiting for the next step.
                 ServerCancelAuthorizedEffect();
                 Debug.LogWarning($"[POWER] '{powerName}' of {ownerClientId.Value}: role of {_clientIdClicked} refused by the server");
+                GameLog.Info("power", "power.luma.refused", "owner", ownerClientId.Value, "target", _clientIdClicked,
+                    "reason", ServerRoleRefusalReason(_clientIdClicked));
                 RoleClickRefusedRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 return;
             }
 
             Character _character = characterManager.GetCharacter(_clientIdClicked);
+            GameLog.Guarded(() => GameLog.Info("power", "power.luma.choice", "owner", ownerClientId.Value, "target", _clientIdClicked,
+                "role", _character.role.roleName.ToString(), "kind", _character.isFake ? "fake-card" : "guess"));
             if (_character.isFake)
             {
                 // Rôle élu absent de la partie : Luma copie temporairement (one-shot) un de ses pouvoirs actifs.
@@ -126,6 +133,15 @@ namespace Characters.Powers
                 return false;
             }
             return targetIncludeFlags.HasFlag(TargetIncludeFlags.Self) || _target != ownerClientId.Value;
+        }
+
+        private string ServerRoleRefusalReason(ulong _target)
+        {
+            Character _targetCharacter = characterManager.GetCharacter(_target, false);
+            if (_targetCharacter == null || _targetCharacter.role == null) return "no-target";
+            if (discoveredClientIds.Contains(_target)) return "already-discovered";
+            if (_targetCharacter.role.factionType != FactionType.chosen) return "not-chosen";
+            return "self";
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
@@ -201,6 +217,8 @@ namespace Characters.Powers
             if (_picks.Count == 0)
             {
                 Debug.Log("[LUMA] Mélange des cartes : fausse carte élue sans pouvoir actif copiable.");
+                GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
+                    "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", 0, "reason", "no-active-power"));
                 _message = noActivePowerToCopyMessage;
             }
             else
@@ -214,6 +232,9 @@ namespace Characters.Powers
                     characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_pick], _onReady);
                     _names.Add(_powers[_pick].powerName.ToString());
                 }
+                GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
+                    "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", _names.Count, "powers", _names,
+                    "marqueBudget", marqueSourceId.Value != 0));
                 _message = string.Format(_names.Count == 1 ? copyObtainedMessage : copiesObtainedMessage,
                     _fakeCharacter.role.roleName.ToString(), string.Join(" », « ", _names));
             }

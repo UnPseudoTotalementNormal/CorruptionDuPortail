@@ -89,7 +89,39 @@ namespace Characters
                 ? NetworkManager.RpcTarget.Single(0, RpcTargetUse.Persistent)
                 : NetworkManager.RpcTarget.Single(TransportOfSeat(_clientId), RpcTargetUse.Persistent);
 
+            LogRpcTargetGone(_clientId);
             return new RpcParams { Send = new RpcSendParams { Target = _target } };
+        }
+
+        // Playtest logs: a server RPC aimed at a seat whose connection is gone (dropped player). Once per seat until
+        // its connection is back, so a burst of sends to a disconnected player writes one line.
+        private readonly HashSet<ulong> _loggedGoneSeats = new();
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogRpcTargetGone(ulong _seatId)
+        {
+            // Runs for every RPC sent (voice packets included): no closure.
+            try
+            {
+                if (_seatId >= 100 || NetworkManager == null || !NetworkManager.IsServer)
+                {
+                    return;
+                }
+                ulong _transport = TransportOfSeat(_seatId);
+                if (_transport == NetworkManager.ServerClientId || NetworkManager.ConnectedClients.ContainsKey(_transport))
+                {
+                    _loggedGoneSeats.Remove(_seatId);
+                    return;
+                }
+                if (_loggedGoneSeats.Add(_seatId))
+                {
+                    GameLog.Warn("net", "rpc.target.gone", "seat", _seatId, "transport", _transport);
+                }
+            }
+            catch (System.Exception)
+            {
+                // logging never breaks the game
+            }
         }
 
         // ---- Rejoin 02 (feat/player-rejoin): seat <-> connection aliases and session tokens ----
@@ -115,6 +147,7 @@ namespace Characters
             }
             string _token = Guid.NewGuid().ToString("N");
             Seats.IssueToken(_seatId, _token);
+            GameLog.Info("net", "rejoin.token.issued", "seat", _seatId, "transport", TransportOfSeat(_seatId));
             ReceiveRejoinTokenRpc(_token, GetSafeRpcTarget(_seatId));
         }
 
@@ -122,6 +155,7 @@ namespace Characters
         private void ReceiveRejoinTokenRpc(string _token, RpcParams _params = default)
         {
             Network.RejoinSessionStore.Remember(_token);
+            GameLog.Info("net", "rejoin.token.received", "hasToken", !string.IsNullOrEmpty(_token));
         }
 
         /// <summary>Server -> a rejoined player's new connection: from now on this peer plays <paramref name="_seatId"/>.</summary>
@@ -535,6 +569,9 @@ namespace Characters
             NetworkObject _powerNetworkObject = _newPower.GetComponent<NetworkObject>();
             _powerNetworkObject.GetComponent<Power>().idHolderServer = _characterId;
             _powerNetworkObject.Spawn(true);
+            GameLog.Guarded(() => GameLog.Info("power", "power.granted", "power", _newPower.powerName.ToString(), "owner", _characterId,
+                "copyOf", _power != null && _power.basePrefab != null ? _power.ownerClientId.Value.ToString() : null,
+                "withSetup", _onReady != null));
             StartCoroutine(
                 WaitForParentToSpawnAndSet(_powerNetworkObject, _character.GetComponent<NetworkObject>(),
                     (_result) =>
@@ -557,15 +594,21 @@ namespace Characters
             // Owner may have vanished the same frame the copy is spent (disconnect chain): quiet no-op, not an assert.
             if (_character == null || _power == null)
             {
+                GameLog.Info("power", "power.remove.skipped", "owner", _characterId,
+                    "reason", _power == null ? "no-power" : "no-owner");
                 return;
             }
 
             if (_power.ownerCharacter != _character)
             {
                 Debug.LogError($"Power {_power.powerName} does not belong to character {_characterId}");
+                GameLog.Warn("power", "power.remove.skipped", "power", _power.powerName.ToString(), "owner", _characterId,
+                    "reason", "not-owner");
                 return;
             }
             
+            GameLog.Info("power", "power.removed", "power", _power.powerName.ToString(), "owner", _characterId,
+                "stolenCopy", _power.isStolenCopy.Value);
             // NET-08: despawning unregisters the power; Power.OnNetworkDespawn rebuilds the owner's list on every peer.
             // (The previous list-removal "RPC" lived on a MonoBehaviour, so it never left the host.)
             NetworkObject _powerNetworkObject = _power.GetComponent<NetworkObject>();
@@ -582,6 +625,8 @@ namespace Characters
             if (!_result)
             {
                 Debug.LogError("Failed to reparent power " + _power.powerName + " to character " + _power.ownerClientId);
+                GameLog.Guarded(() => GameLog.Warn("power", "power.grant.failed", "power", _power.powerName.ToString(),
+                    "owner", _power.idHolderServer, "reason", "reparent-failed"));
                 return;
             }
 
@@ -593,6 +638,7 @@ namespace Characters
             if (!_child || !_parent)
             {
                 Debug.LogError("Child or parent is null in WaitForParentToSpawnAndSet");
+                GameLog.Warn("net", "reparent.failed", "reason", !_child ? "no-child" : "no-parent");
                 yield break;
             }
             
@@ -604,6 +650,8 @@ namespace Characters
             if (!_child.TrySetParent(_parent.transform, false))
             {
                 Debug.LogError("Failed to set parent in WaitForParentToSpawnAndSet");
+                GameLog.Guarded(() => GameLog.Warn("net", "reparent.failed", "reason", "try-set-parent",
+                    "child", _child.name, "parent", _parent.name));
                 _callback?.Invoke(false);
                 yield break;
             }

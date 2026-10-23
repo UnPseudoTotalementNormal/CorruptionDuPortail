@@ -34,12 +34,14 @@ public class PanelComponent : MonoBehaviour, IPanelComponent
 
     public void OpenPanel()
     {
+        if (!isPanelOpen) Diagnostics.Logs.GameLog.Info("ui", "ui.panel.open", "panel", name);
         isPanelOpen = true;
         canvasGroup.DoShowGroup(animationDuration);
     }
 
     public void ClosePanel()
     {
+        if (isPanelOpen) Diagnostics.Logs.GameLog.Info("ui", "ui.panel.close", "panel", name);
         isPanelOpen = false;
         canvasGroup.DoHideGroup(animationDuration);
     }

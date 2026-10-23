@@ -91,6 +91,8 @@ namespace Smartphone
         
         public void GoToApp(SmartphoneApp smartphoneApp, SwipeDirection swipeDirection = SwipeDirection.Up)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.app", "from", currentApp ? currentApp.name : null,
+                "to", smartphoneApp ? smartphoneApp.name : null, "dir", swipeDirection);
             if (currentApp)
             {
                 currentApp.TryClosePanel();
@@ -149,6 +151,7 @@ namespace Smartphone
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.close");
             phoneCanvasGroup.DoHideGroup();
             IsOpen = false;
             transform.DOLocalMove(phoneCloseLocalPosition, 0.5f).SetEase(Ease.OutQuint);
@@ -161,6 +164,7 @@ namespace Smartphone
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.open", "app", currentApp ? currentApp.name : null);
             phoneCanvasGroup.DoShowGroup();
             IsOpen = true;
             transform.DOLocalMove(phoneOpenLocalPosition, 0.5f).SetEase(Ease.OutQuint);

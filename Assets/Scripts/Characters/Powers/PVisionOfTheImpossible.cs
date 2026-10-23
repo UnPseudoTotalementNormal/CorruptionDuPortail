@@ -81,6 +81,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                LogClickRefused(_clickedCharacter.ownerClientId.Value);
                 return;
             }
             clickedCharacters.Add(_clickedCharacter);
@@ -109,6 +110,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_roleClicked.ownerClientId, TargetUtils.TargetType.Role))
             {
+                LogClickRefused(_roleClicked.ownerClientId);
                 return;
             }
             clickedRoles.Add(_roleClicked);

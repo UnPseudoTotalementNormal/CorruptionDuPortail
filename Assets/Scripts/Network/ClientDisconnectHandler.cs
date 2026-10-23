@@ -1,5 +1,6 @@
 #region
 
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Network.Services;
 using Unity.Netcode;
@@ -85,6 +86,7 @@ namespace Network
         private bool _localWasPureClient; // captured while connected (client && !server)
         private bool _handlingLoss;        // idempotency vs OnClientStopped + OnTransportFailure double fire
         private double _nextRejoinKeepAlive; // real time of the next rejoin session refresh while connected
+        private NetworkSceneManager _sceneEventsSource; // playtest logs: scene manager whose load events are logged
 
         // RAW placeholder notification UI (built in code). Colors below are neutral debug values, NOT a design palette.
         private Canvas _canvas;
@@ -231,6 +233,58 @@ namespace Network
             _subscribedNm.OnClientStopped -= OnClientStopped;
             _subscribedNm.OnTransportFailure -= OnTransportFailure;
             _subscribedNm = null;
+            UnsubscribeFromSceneEvents();
+        }
+
+        // Playtest logs: NGO scene loads (end of a load on every peer, who timed out) — the session's SceneManager is
+        // created by StartHost/StartClient, so it is (re)hooked on each client start.
+        private void SubscribeToSceneEvents(NetworkManager _nm)
+        {
+            UnsubscribeFromSceneEvents();
+            if (_nm == null || _nm.SceneManager == null)
+            {
+                return;
+            }
+            _sceneEventsSource = _nm.SceneManager;
+            _sceneEventsSource.OnSceneEvent += OnSceneEvent;
+        }
+
+        private void UnsubscribeFromSceneEvents()
+        {
+            if (_sceneEventsSource != null)
+            {
+                _sceneEventsSource.OnSceneEvent -= OnSceneEvent;
+                _sceneEventsSource = null;
+            }
+        }
+
+        private static void OnSceneEvent(SceneEvent _event)
+        {
+            GameLog.Guarded(() =>
+            {
+                switch (_event.SceneEventType)
+                {
+                    case SceneEventType.LoadEventCompleted:
+                        List<ulong> _completed = _event.ClientsThatCompleted != null ? new List<ulong>(_event.ClientsThatCompleted) : null;
+                        List<ulong> _timedOut = _event.ClientsThatTimedOut != null ? new List<ulong>(_event.ClientsThatTimedOut) : null;
+                        if (_timedOut != null && _timedOut.Count > 0)
+                        {
+                            GameLog.Warn("scene", "scene.load.done", "scene", _event.SceneName, "completed", _completed, "timedOut", _timedOut);
+                        }
+                        else
+                        {
+                            GameLog.Info("scene", "scene.load.done", "scene", _event.SceneName, "completed", _completed);
+                        }
+                        break;
+                    case SceneEventType.SynchronizeComplete:
+                        NetworkManager _nm = NetworkManager.Singleton;
+                        if (_nm != null && _event.ClientId == _nm.LocalClientId && !_nm.IsServer)
+                        {
+                            GameLog.Info("scene", "scene.sync.done", "client", _event.ClientId);
+                        }
+                        break;
+                }
+            });
         }
 
         private void UnsubscribeFromLobbyManager()
@@ -250,6 +304,7 @@ namespace Network
             _handlingLoss = false;
             Debug.Log($"{LogTag} Client started (pureClient={_localWasPureClient}).");
             GameLog.Info("net", "client.started", "pureClient", _localWasPureClient);
+            SubscribeToSceneEvents(_nm);
         }
 
         private void OnClientStopped(bool _wasHost)
@@ -273,8 +328,15 @@ namespace Network
             bool _joining = s_joinHandshakeInProgress;
             bool _shouldNotify = HostDropPolicy.ShouldNotifyHostLoss(_localWasPureClient, _expected, _joining);
             Debug.Log($"{LogTag} {_source}: pureClient={_localWasPureClient} expected={_expected} joining={_joining} -> notify={_shouldNotify}");
-            GameLog.Warn("net", "client.stopped", "source", _source, "pureClient", _localWasPureClient, "expected", _expected,
-                "joining", _joining, "notify", _shouldNotify);
+            GameLog.Guarded(() =>
+            {
+                string _logReason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
+                string _logShown = _shouldNotify
+                    ? (CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_logReason) ? _logReason : HostLostMessage)
+                    : null;
+                GameLog.Warn("net", "client.stopped", "source", _source, "pureClient", _localWasPureClient, "expected", _expected,
+                    "joining", _joining, "notify", _shouldNotify, "disconnectReason", _logReason, "shown", _logShown);
+            });
 
             // One-shot: consume the expected flag no matter which path we take.
             s_expectedShutdown = false;

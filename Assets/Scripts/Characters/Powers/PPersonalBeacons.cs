@@ -70,6 +70,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                LogClickRefused(_characterClicked.ownerClientId.Value);
                 return;
             }
 

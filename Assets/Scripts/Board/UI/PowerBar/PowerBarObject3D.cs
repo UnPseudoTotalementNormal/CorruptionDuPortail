@@ -225,6 +225,8 @@ namespace Board.UI.PowerBar
             }
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
+                // Locked-cursor exit above is the normal reticle route (it logs its own click): only this one is a refusal.
+                Diagnostics.Logs.GameLog.Info("ui", "ui.powerbar.refused", "name", name, "reason", "over-ui");
                 return;
             }
             Activate();

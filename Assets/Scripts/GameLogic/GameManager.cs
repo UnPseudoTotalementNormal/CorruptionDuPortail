@@ -207,6 +207,7 @@ namespace GameLogic
                 !string.IsNullOrEmpty(Network.RejoinSessionStore.TokenForConnection()))
             {
                 _clientStartDeferredForRejoin = true;
+                GameLog.Info("net", "client.start.deferred", "state", GetGameState(currentGameStateIndex.Value).GetType().Name, "reason", "rejoin-wait-seat");
                 return;
             }
             GetGameState(currentGameStateIndex.Value).OnStartStateClient();
@@ -713,6 +714,15 @@ namespace GameLogic
         [Rpc(SendTo.Everyone)]
         public void ShutOffGameRpc()
         {
+            // Who asked: on the host the local invocation still carries the caller (Leave button, autoplay...).
+            GameLog.Guarded(() => GameLog.Info("net", "host.shutoff", "server", IsServer,
+                "caller", new System.Diagnostics.StackTrace(1, false).GetFrames()?
+                    .Select(_f => _f.GetMethod())
+                    .Where(_m => _m != null && _m.DeclaringType != null && _m.DeclaringType != typeof(GameManager)
+                                 && !(_m.DeclaringType.FullName ?? "").StartsWith("Unity.Netcode")
+                                 && !(_m.DeclaringType.FullName ?? "").StartsWith("System."))
+                    .Select(_m => _m.DeclaringType.Name + "." + _m.Name)
+                    .FirstOrDefault()));
             _ = ShutOffGame();
         }
 
@@ -803,6 +813,8 @@ namespace GameLogic
             _seat = 0;
             if (!IsServer || characterManager == null || !characterManager.Seats.TryGetSeatOfToken(_token, out _seat))
             {
+                GameLog.Info("net", "rejoin.claim", "connection", _connectionId, "ok", false,
+                    "reason", !IsServer || characterManager == null ? "not-ready" : "unknown-token");
                 return false;
             }
             // A player who relaunches quickly after a crash comes back before the host noticed he was gone (liveness
@@ -812,9 +824,12 @@ namespace GameLogic
             // timed out at the transport level yet (~30 s): it is closed now, before the new connection is bound, so its
             // late disconnect can never pass for the player leaving again once he is back.
             ulong _holder = characterManager.TransportOfSeat(_seat);
+            bool _tookOverDeadConnection = false; // playtest logs only
             if (_holder != _connectionId && _holder != NetworkManager.ServerClientId && NetworkManager.ConnectedClientsIds.Contains(_holder))
             {
+                _tookOverDeadConnection = true;
                 Debug.Log($"[REJOIN] Seat {_seat} is still held by connection {_holder}: its game is gone, connection {_connectionId} takes over.");
+                GameLog.Info("net", "rejoin.takeover", "seat", _seat, "connection", _connectionId, "oldConnection", _holder, "reason", "dead-connection");
                 NetworkManager.DisconnectClient(_holder); // the leave pipeline runs from the disconnect callback
                 if (!_reservedSeats.IsReserved(_seat) && !HasClientLeft(_seat))
                 {
@@ -824,11 +839,14 @@ namespace GameLogic
             if (!_reservedSeats.IsReserved(_seat))
             {
                 Debug.Log($"[REJOIN] Connection {_connectionId} holds the token of seat {_seat}, which is not reserved (grace over or seat in use) — refused.");
+                GameLog.Info("net", "rejoin.claim", "seat", _seat, "connection", _connectionId, "ok", false, "reason", "seat-not-reserved");
                 return false;
             }
             characterManager.Seats.Bind(_connectionId, _seat);
             _rejoiningSeats[_connectionId] = _seat;
             Debug.Log($"[REJOIN] Connection {_connectionId} claims reserved seat {_seat}.");
+            GameLog.Info("net", "rejoin.claim", "seat", _seat, "connection", _connectionId, "ok", true,
+                "reason", _tookOverDeadConnection ? "dead-connection" : "reserved");
             return true;
         }
 
@@ -910,12 +928,16 @@ namespace GameLogic
                 if (_leaver == null || _leaver.isChained.Value)
                 {
                     Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired — nothing to chain (no live seat or already chained).");
+                    GameLog.Info("net", "seat.expired", "seat", _clientId, "chained", false,
+                        "reason", _leaver == null ? "no-live-seat" : "already-chained", "victory", false);
                     continue;
                 }
 
                 Debug.Log($"[LEAVE] Reserved seat of {_clientId} expired after {RejoinGraceSeconds:0} s — chaining instantly (no animation).");
                 ChainLeaverInstant(_leaver);
-                if (TryResolveVictoryAfterLeave())
+                bool _victory = TryResolveVictoryAfterLeave();
+                GameLog.Info("net", "seat.expired", "seat", _clientId, "chained", true, "grace", RejoinGraceSeconds, "victory", _victory);
+                if (_victory)
                 {
                     Debug.Log($"[LEAVE] Player {_clientId} was the last anomaly — victory resolved instantly, game ending.");
                     return;
@@ -949,6 +971,7 @@ namespace GameLogic
 
             // Rejoin 02: the callback carries the CONNECTION id; a rejoined player's new connection stands for his
             // original seat, which is what every game system keys on.
+            ulong _leftConnection = _clientId;
             _rejoiningSeats.Remove(_clientId); // a rejoin that dropped during its sync is simply over
             if (characterManager != null && !characterManager.Seats.IsAlias(_clientId) &&
                 characterManager.TransportOfSeat(_clientId) != _clientId)
@@ -977,8 +1000,12 @@ namespace GameLogic
                 return;
             }
             ulong _leftSeat = _clientId;
+            // reserved: what the branch below does (mid-game with a live seat = reserved for the grace delay).
             GameLog.Guarded(() => GameLog.Warn("net", "player.left", "seat", _leftSeat, "name", _leftSeat.GetPlayerName(),
-                "phase", GetGameState(currentGameStateIndex.Value).GetType().Name));
+                "phase", GetGameState(currentGameStateIndex.Value).GetType().Name, "connection", _leftConnection,
+                "reserved", !(GetGameState(currentGameStateIndex.Value) is LobbyState)
+                            && characterManager.GetCharacters().Any(_c => _c.ownerClientId.Value == _leftSeat),
+                "graceSeconds", RejoinGraceSeconds));
 
             // Phase signal: the current game state is a LobbyState iff we are still in the lobby (index 0,
             // pre-start); mid-game it is any other state. The LobbyState check is the precise phase signal —

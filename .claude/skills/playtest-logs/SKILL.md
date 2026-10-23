@@ -52,8 +52,20 @@ How to read a line: `21:40:12.345 Wouh#3(Abyss) I vote vote.cast from=3 to=5`
   `(unchanged)` when identical to the previous one (`--full` to see them all). `vote.result`, `game.end` = outcomes.
 - `power`: `power.start` (owner client), `power.used` / `power.rejected` (server, with the reason), `power.verdict`,
   `effect` (every executed effect, its `ToString`).
-- `net`: lobby/join (`join.approved/rejected/synchronized`), `client.started/stopped`, `player.left`, `player.rejoined`,
-  `seat.local`. A game timeline includes each player's lobby lines just before the game (`--no-lobby` to hide).
+  Also `power.granted/removed` (every power given or taken: deal, Ugës, Luma, inheritance), `power.target` (server,
+  accepted effect), `power.click` / `power.click.refused` (client, with the CanUse reason), one event per power
+  outcome (`power.uges.*`, `power.luma.*`, `power.heal`, `power.omni.*`…).
+- `net`: host/join/rejoin (`host.start`, `join.start/done/failed/refused`, `rejoin.*`, `connect.start/done/failed` with
+  the reason), Relay (`relay.join.*`, `relay.host.*`), Steam (`steam.*`, transport `[STEAM]` lines in `unity`), approval
+  (`join.approved/rejected/kicked`), `client.started/stopped` (DisconnectReason), `player.left` (reserved seat),
+  `seat.expired`, `peer.lost`, `seat.local`. A game timeline includes each player's lobby lines just before the game
+  (`--no-lobby` to hide).
+- `game` (`roles.dealt` snapshot, `intro.fakehint`, `role.assigned`, `player.eliminated/corrupted/healed`,
+  `victory.check`), `knowledge` (`knowledge.reveal`: who learnt what about whom), `night` (`night.layer.start/end`,
+  `night.timeout`, `night.autosleep`), `chain`, `portal`, `vote` (`vote.cast`, `vote.refused`, `vote.cat.*`).
+- Player side: `ui` (`ui.button.click/refused` = every uGUI button, panels, tablet, banner, candle), `lobby`, `picker`,
+  `message`, `note`, `chat`, `avatar` (spawn, cosmetics, visibility), `camera`, `emote`, `audio`
+  (`audio.event.missing`), `voice`, `scene`. Refusals carry a `reason`: "I clicked and nothing happened" is there.
 - `unity`: the game's own `Debug.Log` / warnings / exceptions, `[TAG]` as event name (e.g. `REJOIN`, `JOIN-GATE`).
 - `log` / `session`: the logging system itself (`log.dropped` = a category hit its per-minute cap, `log.switch`,
   `session.previous.crashed`).

@@ -104,8 +104,10 @@ namespace UI.MessageJournal
             TryInitialize();
             if (_root == null)
             {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.journal.refused", "reason", "no-root");
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.journal.open", "kind", _dismissible ? "browse" : "reveal");
             _canDismiss = _dismissible;
             _animateReveal = _animateNewest;
             _revealAnimatedDay = int.MinValue; // fresh reveal: let the newest turn write in once
@@ -121,6 +123,7 @@ namespace UI.MessageJournal
             {
                 return;
             }
+            if (!_root.ClassListContains(HiddenClass)) Diagnostics.Logs.GameLog.Info("ui", "ui.journal.close");
             _animateReveal = false;
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;

@@ -87,6 +87,7 @@ namespace Board.UI
         {
             if (!Interactable)
             {
+                GameLog.Info("ui", "button3d.refused", "name", name, "reason", "target-inactive");
                 return;
             }
             clickSound.TryPlayOneShot();
@@ -94,7 +95,16 @@ namespace Board.UI
             if (targetButton != null)
             {
                 // Reuse the exact CustomButton path (punch + click sound + onButtonClickedUnityEvent → TryOpenPanel).
-                targetButton.OnPointerClick(new PointerEventData(EventSystem.current));
+                // Already logged as button3d.click: the forwarded CustomButton does not log it again.
+                CustomButton.s_forwardedClick = true;
+                try
+                {
+                    targetButton.OnPointerClick(new PointerEventData(EventSystem.current));
+                }
+                finally
+                {
+                    CustomButton.s_forwardedClick = false;
+                }
             }
         }
 

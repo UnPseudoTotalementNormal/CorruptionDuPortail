@@ -50,6 +50,8 @@ namespace Presentation.Chains
         private readonly List<Piece> _pieces = new();
         private readonly List<int> _shown = new();
         private State _state = State.None;
+        // Playtest log only: a failed build is retried every frame, warned once.
+        private bool _buildFailWarned;
         private bool _built;
         private bool _seen;
         private bool _wasChained;
@@ -159,6 +161,8 @@ namespace Presentation.Chains
             _wasChained = _chained;
             if (_chained && _state == State.None && Time.unscaledTime - _chainedSince > _fallbackSeconds)
             {
+                // Once per chaining (ShowFull leaves State.None): the reveal moment never came for this cat.
+                Diagnostics.Logs.GameLog.Warn("chain", "chain.show.fallback", "name", transform.root.name, "seconds", _fallbackSeconds);
                 ShowFull();
             }
         }
@@ -211,6 +215,12 @@ namespace Presentation.Chains
             SkinnedMeshRenderer _body = FindBody();
             if (_body == null || _renderer == null || _animator == null)
             {
+                if (!_buildFailWarned)
+                {
+                    _buildFailWarned = true;
+                    Diagnostics.Logs.GameLog.Warn("chain", "chain.build.failed", "name", transform.root.name,
+                        "reason", _body == null ? "no-body" : _renderer == null ? "no-renderer" : "no-animator");
+                }
                 return false;
             }
             Transform[] _bones = _body.bones;

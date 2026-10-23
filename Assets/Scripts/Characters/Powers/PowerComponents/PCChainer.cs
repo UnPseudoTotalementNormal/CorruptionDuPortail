@@ -39,6 +39,11 @@ namespace Characters.Powers.PowerComponents
 
         private void OnCharacterAwakened()
         {
+            if (currentChain.Value != 0)
+            {
+                Diagnostics.Logs.GameLog.Info("power", "power.chainer", "power", power.powerName.ToString(), "owner", ownerClientId,
+                    "result", "reset", "count", 0, "max", maxChain);
+            }
             currentChain.Value = 0;
         }
 
@@ -49,11 +54,15 @@ namespace Characters.Powers.PowerComponents
             {
                 power.powerUseLeft.Value = 0;
             }
+            Diagnostics.Logs.GameLog.Info("power", "power.chainer", "power", power.powerName.ToString(), "owner", ownerClientId,
+                "result", "success", "count", currentChain.Value, "max", maxChain, "spent", currentChain.Value >= maxChain);
         }
 
         private void OnPowerFailed()
         {
             power.powerUseLeft.Value = 0;
+            Diagnostics.Logs.GameLog.Info("power", "power.chainer", "power", power.powerName.ToString(), "owner", ownerClientId,
+                "result", "failed", "count", currentChain.Value, "max", maxChain, "spent", true);
         }
     }
 }

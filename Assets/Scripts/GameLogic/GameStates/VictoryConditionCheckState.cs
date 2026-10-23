@@ -72,8 +72,31 @@ namespace GameLogic.GameStates
 
             if (_winningTeams.Count == 0)
             {
+                Diagnostics.Logs.GameLog.Info("game", "game.victory.check", "result", "none", "owners", _owners.Count);
                 return false;
             }
+            Diagnostics.Logs.GameLog.Guarded(() =>
+            {
+                // Which conditions could have fired: the winners' conditions whose team won (CheckCondition is not
+                // re-run here, the log never re-evaluates game rules).
+                var _teams = new List<string>();
+                var _conditions = new List<string>();
+                foreach (KeyValuePair<WinningTeam, HashSet<ulong>> _team in _winningTeams)
+                {
+                    _teams.Add(_team.Key + ":" + string.Join(",", _team.Value.OrderBy(_s => _s)));
+                    foreach (ConditionsForOwner _owner in _owners.Where(_o => _team.Value.Contains(_o.OwnerClientId)))
+                    {
+                        foreach (IWinningCondition _condition in _owner.Conditions)
+                        {
+                            if (_condition != null && _condition.GetWinningTeam().Equals(_team.Key))
+                            {
+                                _conditions.Add(_owner.OwnerClientId + ":" + _condition.GetType().Name);
+                            }
+                        }
+                    }
+                }
+                Diagnostics.Logs.GameLog.Info("game", "game.victory.check", "result", "won", "teams", _teams, "conditions", _conditions);
+            });
 
             var _gameEndingState = (GameEndingState)gameManager.GetGameStates(typeof(GameEndingState)).First();
             _gameEndingState.SetWinnersServer(_winningTeams);

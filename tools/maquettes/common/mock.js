@@ -79,6 +79,19 @@
     placeApply(el, st ? st.x : def.x, st ? st.y : def.y, st ? st.s : def.s, false);
   });
 
+  // A field opens the keyboard only when the finger really lands on it. On a phone Chromium hands a tap that falls
+  // near an editable field (a scroll too short to count, a touch on the overlay scroll bar under a remark) to that
+  // field; pointerdown is hit-tested at the raw point, so every other field is read-only until the next touch.
+  const typed = "textarea, input:not([type]), input[type=text], input[type=search], input[type=email], input[type=url], input[type=number]";
+  let locked = [];
+  addEventListener("pointerdown", e => {
+    locked.forEach(f => f.readOnly = false);
+    if (e.pointerType !== "touch") return void (locked = []);
+    locked = [...document.querySelectorAll(typed)].filter(f => !f.readOnly && f !== e.target && f !== document.activeElement &&
+      ![...(f.labels || [])].some(l => l.contains(e.target)));
+    locked.forEach(f => f.readOnly = true);
+  }, true);
+
   // theme: <div class="toggle"><button data-t="dark">Sombre</button><button data-t="light">Clair</button></div>
   function setTheme(t) {
     root.dataset.theme = t;

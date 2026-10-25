@@ -29,6 +29,7 @@ namespace Avatars.Cosmetics
         // Meshes copied to follow the body (FollowBody), this cat's own: destroyed with it.
         private readonly List<Mesh> _rebound = new();
         private bool _blinking;
+        private bool _mouthHidden;
         private float _angry;
 
         public CatCosmeticsCatalog Catalog => catalog;
@@ -100,7 +101,7 @@ namespace Avatars.Cosmetics
                 }
                 if (chosen != null)
                 {
-                    SetParts(chosen, true);
+                    SetParts(chosen, slot != CatSlot.Mouth || !_mouthHidden);
                 }
             }
             SetAngry(_angry);
@@ -126,6 +127,15 @@ namespace Avatars.Cosmetics
             _blinking = closed;
             SetParts(eyes, !closed);
             if (_parts.TryGetValue(eyes.blinkPart, out GameObject lids)) lids.SetActive(closed);
+        }
+
+        /// <summary>Hides / shows the worn mouth (CatTalk: the talking mouth takes its place while the cat speaks).</summary>
+        public void SetMouthHidden(bool hidden)
+        {
+            if (hidden == _mouthHidden) return;
+            _mouthHidden = hidden;
+            CatCosmeticItem mouth = catalog != null ? catalog.Find(CatSlot.Mouth, Current.Mouth) : null;
+            if (mouth != null) SetParts(mouth, !hidden);
         }
 
         /// <summary>Weight 0..1 of the eyes' "Angry" shape (the black and white eyes have one), for later use.</summary>

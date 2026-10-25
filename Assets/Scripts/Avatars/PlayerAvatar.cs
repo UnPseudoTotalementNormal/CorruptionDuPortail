@@ -249,6 +249,12 @@ namespace Avatars
             base.OnNetworkDespawn();
         }
 
+        /// <summary>How open this player's mouth is (0..1) as this peer hears his voice (T22, CatTalk). Local only: each
+        /// listener sets it from the voice it plays, nothing is replicated.</summary>
+        public float VoiceLevel { get; private set; }
+
+        public void SetVoiceLevel(float _level) => VoiceLevel = _level;
+
         /// <summary>The cat this avatar wears (as replicated).</summary>
         public CatLook CatLook => CatLook.Unpack(CatLookPacked.Value);
 

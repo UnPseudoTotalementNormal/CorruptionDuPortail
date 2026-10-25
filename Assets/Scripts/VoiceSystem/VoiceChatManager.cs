@@ -9,6 +9,7 @@ using CorruptionDuPortail.Domain;
 using Diagnostics.Logs;
 using Extensions;
 using FMODUnity;
+using Avatars;
 using GameLogic;
 using GameLogic.GameStates;
 using TMPro;
@@ -30,7 +31,8 @@ namespace VoiceSystem
     /// picks the listeners (<see cref="VoiceRouting"/>: everyone by day, at night only the players sharing a private
     /// chat channel, i.e. the anomalies together and the messager with his correspondent) and forwards the packets to
     /// them only, so no client ever receives a voice it must not hear. Each listener decodes with Steam and plays one
-    /// FMOD voice per speaker (<see cref="VoicePlayback"/>). Without Steam (Relay build) everything stays idle.
+    /// FMOD voice per speaker (<see cref="VoicePlayback"/>) and hands its level to the speaker's avatar, whose cat opens
+    /// its mouth with it (mockups vocal v2: W3, R1, M1; local to each listener). Without Steam (Relay build) everything stays idle.
     /// Lives on the ChatManager object of GameScene (lane A: the managers below are wired in the scene).
     /// </summary>
     public class VoiceChatManager : NetworkBehaviour
@@ -47,6 +49,8 @@ namespace VoiceSystem
         [SerializeField] private VoiceOptions _options;
         [SerializeField] private EventReference _micOpenSound;
         [SerializeField] private EventReference _micCloseSound;
+        [Tooltip("Finds the speaker's cat, which opens its mouth while his voice plays.")]
+        [SerializeField] private AvatarManager _avatarManager;
 
         private IGameStateQuery Query => _gameManager;
 
@@ -85,6 +89,7 @@ namespace VoiceSystem
             Assert.IsNotNull(_gameManager, "VoiceChatManager._gameManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(_characterManager, "VoiceChatManager._characterManager is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(_options, "VoiceChatManager._options is not wired — wire it in GameScene (the composition root).");
+            Assert.IsNotNull(_avatarManager, "VoiceChatManager._avatarManager is not wired — wire it in GameScene (the composition root).");
             _codec ??= new SteamVoiceCodec();
             _options.OnChanged += ApplyVolume;
         }
@@ -110,6 +115,10 @@ namespace VoiceSystem
             SetTransmitting(false);
             foreach (VoicePlayback _playback in _playbacks.Values)
             {
+                if (_playback != null)
+                {
+                    ShowVoiceLevel(_playback.Seat, 0f);
+                }
                 _playback?.Dispose(); // null = FMOD failed for that speaker
             }
             _playbacks.Clear();
@@ -418,6 +427,20 @@ namespace VoiceSystem
                 {
                     onSpeakingChanged?.Invoke(_playback.Seat, false);
                 }
+                if (_wasSpeaking || _playback.IsSpeaking)
+                {
+                    ShowVoiceLevel(_playback.Seat, _playback.Level);
+                }
+            }
+        }
+
+        // The speaker's avatar may be missing (not spawned yet, left): the level is simply not shown.
+        private void ShowVoiceLevel(ulong _seat, float _level)
+        {
+            PlayerAvatar _avatar = _avatarManager != null ? _avatarManager.GetAvatar(_seat) : null;
+            if (_avatar != null)
+            {
+                _avatar.SetVoiceLevel(_level);
             }
         }
     }

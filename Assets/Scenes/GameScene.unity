@@ -5954,6 +5954,7 @@ MonoBehaviour:
       Data3: -1032867410
       Data4: -626300355
     Path: event:/Interface/LightOffButton
+  _avatarManager: {fileID: 867493017}
 --- !u!1 &621464946
 GameObject:
   m_ObjectHideFlags: 0

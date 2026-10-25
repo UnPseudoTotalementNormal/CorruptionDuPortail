@@ -15,14 +15,17 @@ namespace VoiceSystem
     /// One remote player's voice played through FMOD (never an AudioSource): a looping one-second PCM16 mono user
     /// sound on the master bus, fed by <see cref="Push"/> and cleared behind the mixer by <see cref="Tick"/>
     /// (<see cref="VoiceRingCursor"/> keeps the accounts). The channel pauses when the speaker stops and starts
-    /// again on the next packet, a short prebuffer ahead. Created by <see cref="VoiceChatManager"/> (lane B).
+    /// again on the next packet, a short prebuffer ahead. <see cref="Level"/> measures the voice where the mixer
+    /// plays it (the speaker's cat opens its mouth with it). Created by <see cref="VoiceChatManager"/> (lane B).
     /// </summary>
     public sealed class VoicePlayback : IDisposable
     {
         private const float PrebufferSeconds = 0.08f;
         private const float MaxLeadSeconds = 0.4f;
+        private const float LevelBlockSeconds = 0.02f;
 
         private readonly VoiceRingCursor _cursor;
+        private readonly VoiceLevelTrack _levels;
         private readonly int _ringBytes;
         private readonly byte[] _silence;
         private Sound _sound;
@@ -34,12 +37,16 @@ namespace VoiceSystem
         /// <summary>Audio is coming out for this player right now.</summary>
         public bool IsSpeaking => !_paused;
 
+        /// <summary>How open the speaker's mouth is right now, 0..1 (0 when silent), from what the mixer is playing.</summary>
+        public float Level { get; private set; }
+
         private VoicePlayback(ulong seat, int sampleRate, Sound sound, Channel channel)
         {
             Seat = seat;
             _ringBytes = sampleRate * sizeof(short);
             _cursor = new VoiceRingCursor(_ringBytes, (int)(_ringBytes * PrebufferSeconds), (int)(_ringBytes * MaxLeadSeconds));
             _silence = new byte[_ringBytes];
+            _levels = new VoiceLevelTrack((int)(_ringBytes * LevelBlockSeconds));
             _sound = sound;
             _channel = channel;
             Write(0, _silence, _ringBytes); // a user sound starts with undefined memory
@@ -94,6 +101,7 @@ namespace VoiceSystem
                 return; // a late burst: dropping it keeps the delay short
             }
             Write(_offset, pcm, count);
+            _levels.Add(_cursor.Written, pcm, count);
             _cursor.Commit(count);
             if (_paused)
             {
@@ -122,6 +130,7 @@ namespace VoiceSystem
                 _channel.setPaused(true);
                 _paused = true;
             }
+            Level = _paused ? 0f : (float)VoiceLevelTrack.Openness(_levels.LevelAt(_cursor.Played));
         }
 
         private void Write(int offset, byte[] source, int count)

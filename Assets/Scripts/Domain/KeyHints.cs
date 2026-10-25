@@ -13,11 +13,22 @@ namespace CorruptionDuPortail.Domain
         Emotes,
         Menu,
         ReportBug,
-        // T23, the day's keys (mockups jour-pov): the players' row (1), the roles' row (2), the tablet's table (T).
+        // T23, the day's keys (mockups jour-pov): the players' row (1), the roles' row (2). The tablet's table key (T)
+        // still works but is no longer shown (mockups touches-jour v1 T1: Tab and T looked like the same thing).
         PlayersRow,
         RolesRow,
-        Spreadsheet,
         SkipVote,
+    }
+
+    /// <summary>Where a hint sits (mockups touches-jour v1 A2 + C2).</summary>
+    public enum KeyHintGroup
+    {
+        /// <summary>Top left, in place of the menu's grey square: what is not for playing (menu, bug report).</summary>
+        Corner,
+        /// <summary>Top of the left column: the vote's keys.</summary>
+        Vote,
+        /// <summary>The rest of the left column, after a gap.</summary>
+        Other,
     }
 
     /// <summary>What the player can do with a key right now, read off the live game by the presenter.</summary>
@@ -33,14 +44,12 @@ namespace CorruptionDuPortail.Domain
         public readonly bool BugReportAvailable;
         /// <summary>By day: the two screen rows answer their keys (1 and 2).</summary>
         public readonly bool DayRowsAvailable;
-        /// <summary>By day: T opens the tablet on the players' table.</summary>
-        public readonly bool SpreadsheetAvailable;
         /// <summary>By day, during the vote, before voting: the skip key (the board's skip button went with the table).</summary>
         public readonly bool SkipVoteAvailable;
 
         public KeyHintContext(bool tabletAvailable, bool tabletOpen, bool hasPreviousScreen, bool hasNextScreen,
             bool canSpeak, bool emotesReachable, bool menuAvailable, bool bugReportAvailable,
-            bool dayRowsAvailable = false, bool spreadsheetAvailable = false, bool skipVoteAvailable = false)
+            bool dayRowsAvailable = false, bool skipVoteAvailable = false)
         {
             TabletAvailable = tabletAvailable;
             TabletOpen = tabletOpen;
@@ -51,14 +60,14 @@ namespace CorruptionDuPortail.Domain
             MenuAvailable = menuAvailable;
             BugReportAvailable = bugReportAvailable;
             DayRowsAvailable = dayRowsAvailable;
-            SpreadsheetAvailable = spreadsheetAvailable;
             SkipVoteAvailable = skipVoteAvailable;
         }
     }
 
     /// <summary>
-    /// The keyboard keys are invisible to the player (2026-10-21): small drawings with their key in the bottom left
-    /// corner tell what a key does. Mockups touches v1 A3 + C1, v2 L2 + B1 + K5: only what works at this moment (the
+    /// The keyboard keys are invisible to the player (2026-10-21): small drawings with their key on the left of the
+    /// screen tell what a key does (mockups touches-jour v1 A2 + C2: the menu and the bug report top left, a column under
+    /// them, the vote's keys first). Mockups touches v1 A3 + C1, v2 L2 + B1 + K5: only what works at this moment (the
     /// tablet's key, its arrows once it is open, the voice key when the player may speak, the emote wheel when it can
     /// open), the menu and the bug report always; they never go away. Pure: the presenter feeds what the game allows.
     /// </summary>
@@ -68,13 +77,12 @@ namespace CorruptionDuPortail.Domain
         public static void For(KeyHintContext context, List<KeyHintAction> hints)
         {
             hints.Clear();
-            // The day's own keys come first (mockups jour-pov: 1, 2, T, then the others).
+            // The day's own keys come first (mockups jour-pov: 1, 2, then the others).
             if (context.DayRowsAvailable)
             {
                 hints.Add(KeyHintAction.PlayersRow);
                 hints.Add(KeyHintAction.RolesRow);
             }
-            if (context.SpreadsheetAvailable && !context.TabletOpen) hints.Add(KeyHintAction.Spreadsheet);
             if (context.SkipVoteAvailable) hints.Add(KeyHintAction.SkipVote);
             if (context.TabletAvailable)
             {
@@ -93,6 +101,23 @@ namespace CorruptionDuPortail.Domain
             if (context.EmotesReachable) hints.Add(KeyHintAction.Emotes);
             if (context.MenuAvailable) hints.Add(KeyHintAction.Menu);
             if (context.BugReportAvailable) hints.Add(KeyHintAction.ReportBug);
+        }
+
+        /// <summary>Which group a hint is laid out in.</summary>
+        public static KeyHintGroup GroupOf(KeyHintAction action)
+        {
+            switch (action)
+            {
+                case KeyHintAction.Menu:
+                case KeyHintAction.ReportBug:
+                    return KeyHintGroup.Corner;
+                case KeyHintAction.PlayersRow:
+                case KeyHintAction.RolesRow:
+                case KeyHintAction.SkipVote:
+                    return KeyHintGroup.Vote;
+                default:
+                    return KeyHintGroup.Other;
+            }
         }
 
         /// <summary>

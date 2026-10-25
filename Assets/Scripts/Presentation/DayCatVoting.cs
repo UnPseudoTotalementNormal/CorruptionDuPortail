@@ -198,28 +198,56 @@ namespace Presentation
                 return;
             }
             ulong _seat = _target.Avatar.ownerClientId.Value;
-            VoteState _vote = Query.GetGameState(Query.currentGameStateIndex.Value) as VoteState;
-            if (_vote == null)
+            string _refusal = VoteRefusal(_seat, out VoteState _vote);
+            if (_refusal != null)
             {
-                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason", "no-vote");
-                return; // the recap: the votes are in
-            }
-            ulong _me = CharacterQuery.GetLocalClientId();
-            if (_seat == _me || _vote.HasVoted(_me))
-            {
-                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason", _seat == _me ? "self" : "already-voted");
-                return; // a vote is final
-            }
-            // Same rule as the cards' vote buttons: a chained or eliminated player cannot be voted for.
-            Character _character = CharacterQuery.GetCharacter(_seat, false);
-            if (_character == null || _character.isFake || _character.isEliminated.Value || _character.isChained.Value)
-            {
-                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason",
-                    _character == null ? "no-character" : _character.isFake ? "fake" : _character.isEliminated.Value ? "eliminated" : "chained");
+                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "to", _seat, "reason", _refusal);
                 return;
             }
             Diagnostics.Logs.GameLog.Info("vote", "vote.cat.click", "to", _seat);
             _vote.OnPlayerVoted(_seat);
+        }
+
+        /// <summary>
+        /// Mockups touches-jour v1 D1: the seated reticle is on a cat a click would vote for right now, so "Clic : voter"
+        /// shows under it. Never once the local player has voted (a vote is final).
+        /// </summary>
+        public bool PointedVotable
+        {
+            get
+            {
+                if (!_interactable || _pointed == null || _pointed.Avatar == null) return false;
+                // Like the skip key: an eliminated (or fake) local player has no vote to cast.
+                Character _local = CharacterQuery.GetLocalCharacter(false);
+                if (_local == null || _local.isEliminated.Value || _local.isFake) return false;
+                return VoteRefusal(_pointed.Avatar.ownerClientId.Value, out _) == null;
+            }
+        }
+
+        // Why a click on this seat's cat would not vote (null = it would), shared by the click and the aim hint.
+        private string VoteRefusal(ulong _seat, out VoteState _vote)
+        {
+            _vote = Query.GetGameState(Query.currentGameStateIndex.Value) as VoteState;
+            if (_vote == null)
+            {
+                return "no-vote"; // the recap: the votes are in
+            }
+            ulong _me = CharacterQuery.GetLocalClientId();
+            if (_seat == _me)
+            {
+                return "self";
+            }
+            if (_vote.HasVoted(_me))
+            {
+                return "already-voted"; // a vote is final
+            }
+            // Same rule as the cards' vote buttons: a chained or eliminated player cannot be voted for.
+            Character _character = CharacterQuery.GetCharacter(_seat, false);
+            if (_character == null) return "no-character";
+            if (_character.isFake) return "fake";
+            if (_character.isEliminated.Value) return "eliminated";
+            if (_character.isChained.Value) return "chained";
+            return null;
         }
 
         // ---- the cards: pointing at a card points at its cat too (a free cursor reaches them)

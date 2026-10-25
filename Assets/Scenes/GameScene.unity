@@ -2594,6 +2594,8 @@ MonoBehaviour:
   _pauseMenu: {fileID: 326518135}
   _dayRows: {fileID: 1466880943}
   _dayVoting: {fileID: 1466880945}
+  _pauseButtonGraphic: {fileID: 1940196058}
+  _arbiter: {fileID: 54114941}
   _font: {fileID: 12800000, guid: 064ccef68462d7e468dcc051cdb50974, type: 3}
   _opacity: 0.22
   _sortingOrder: 5
@@ -2607,7 +2609,6 @@ MonoBehaviour:
   _reportBugIcon: {fileID: 21300000, guid: b40c8bb0aff7fd446937fd9cf7a87daa, type: 3}
   _playersRowIcon: {fileID: 21300000, guid: 04ce3da850af4a35b00d226fac2d08bb, type: 3}
   _rolesRowIcon: {fileID: 21300000, guid: ba1144cfa2c64f0b861e54a0df0a4e43, type: 3}
-  _spreadsheetIcon: {fileID: 21300000, guid: d3158eb3284e474e82b349f551a21696, type: 3}
   _skipVoteIcon: {fileID: 21300000, guid: efdd36c9ff424f78b4ab44540b132367, type: 3}
 --- !u!114 &326518135
 MonoBehaviour:

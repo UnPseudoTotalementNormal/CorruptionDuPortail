@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using Avatars;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
@@ -28,6 +30,9 @@ namespace UI.MessageJournal
 
         [SerializeField] private UIDocument document;
         [SerializeField] private MonoBehaviour dataSourceBehaviour;
+        // T23: opened from the sacoche in the seated first person, the journal frees the cursor and freezes the look
+        // (like the pause menu), else nothing can close it and the view turns under it. Null-tolerant.
+        [SerializeField] private AvatarCameraArbiter arbiter;
 
         private IMessageJournalDataSource _dataSource;
         private VisualElement _root;
@@ -38,6 +43,7 @@ namespace UI.MessageJournal
         private bool _animateReveal;
         private int _revealAnimatedDay = int.MinValue; // newest day already write-in-animated this reveal (anti-flicker latch)
         private bool _canDismiss;
+        private bool _isOpen;
 
         private void OnEnable()
         {
@@ -47,7 +53,20 @@ namespace UI.MessageJournal
 
         private void Start() => TryInitialize();
 
-        private void OnDisable() => Unsubscribe();
+        private void OnDisable()
+        {
+            Unsubscribe();
+            arbiter?.SetOverlayOpen(this, false);
+        }
+
+        // Escape closes the browsed journal (the click outside needs a cursor); the night reveal stays non-skippable.
+        private void Update()
+        {
+            if (_canDismiss && _isOpen && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Close();
+            }
+        }
 
         private void TryInitialize()
         {
@@ -113,6 +132,8 @@ namespace UI.MessageJournal
             _revealAnimatedDay = int.MinValue; // fresh reveal: let the newest turn write in once
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position;
+            _isOpen = true;
+            arbiter?.SetOverlayOpen(this, true);
             Rebuild();
             _root.schedule.Execute(() => _root.RemoveFromClassList(HiddenClass));
         }
@@ -127,6 +148,8 @@ namespace UI.MessageJournal
             _animateReveal = false;
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
+            _isOpen = false;
+            arbiter?.SetOverlayOpen(this, false);
             _root.schedule.Execute(CollapseIfHidden).ExecuteLater(ExitCollapseDelayMs);
         }
 

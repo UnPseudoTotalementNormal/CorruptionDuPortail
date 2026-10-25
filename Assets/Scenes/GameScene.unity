@@ -15438,6 +15438,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::UI.MessageJournal.MessageJournalController
   document: {fileID: 0}
   dataSourceBehaviour: {fileID: 1032449283}
+  arbiter: {fileID: 54114941}
 --- !u!114 &1032449285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17859,6 +17860,7 @@ MonoBehaviour:
   roleCardTexts: {fileID: 11400000, guid: 0850aafbd2e555a4b82b5f3a9878b561, type: 2}
   gameInfoRevealer: {fileID: 1771149311}
   showVictoryCondition: 0
+  arbiter: {fileID: 54114941}
 --- !u!114 &1269060634
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,24 +1,75 @@
 """Serves the mockups on 127.0.0.1:PORT (opened on the phone through Clawd Code's "Aperçu de l'appli", or in a
 browser on the PC). One folder per subject, one page per round (<subject>/v1.html, v2.html...).
 GET /retours?s=<subject>&t=<text> appends the feedback to <subject>/retours.txt (the preview relay does not
-carry POST bodies). From the "maquettes" template of the skill marketplace."""
+carry POST bodies); a page sends its whole state, so a new send of the same page replaces the last one. Every
+send is logged in retours.log. The subjects of the repository's worktrees (<repo>/.claude/worktrees/<name>/,
+same folder) are served too, their feedback written there. From the "maquettes" template of the skill marketplace."""
 
 import datetime
 import html
 import http.server
 import pathlib
 import re
+import threading
 import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
 PORT = 5198  # one port per project: see the list in the template's variantes.md
 APPLI = "Corruption du Portail"  # title of "/", the name Clawd Code's preview gives this server in its list
 CROQUIS = False  # True (an option of the project): a round's thumbnail is Claude's pen sketch <subject>/v<N>.svg when there is one
+LOCK = threading.Lock()  # two taps on "Envoyer" arrive together: read and write retours.txt one at a time
+
+
+def main_folder() -> pathlib.Path:
+    """This folder in the main checkout, even when serve.py was started from a worktree's copy."""
+    for p in [HERE, *HERE.parents]:
+        if (p / ".git").exists():
+            if p.parent.name == "worktrees" and p.parent.parent.name == ".claude":
+                return p.parent.parent.parent / HERE.relative_to(p)
+            return HERE
+    return HERE
+
+
+ROOT = main_folder()
+
+
+def roots() -> list:
+    """Where subjects live: this folder, then the same folder in each worktree of the repository, so that a
+    session working in a worktree writes its pages there, no copies."""
+    found = [ROOT]
+    repo = next((p for p in [ROOT, *ROOT.parents] if (p / ".git").is_dir()), None)
+    if repo:
+        rel = ROOT.relative_to(repo).as_posix()
+        found += sorted(d for d in (repo / ".claude" / "worktrees").glob("*" if rel == "." else f"*/{rel}") if d.is_dir())
+    return found
+
+
+def home(subject: str) -> pathlib.Path:
+    """The folder of a subject: the one holding its newest page (a worktree's), else here."""
+    pages = [p for r in roots() for p in (r / subject).glob("v*.html")]
+    return max(pages, key=lambda p: p.stat().st_mtime).parent if pages else ROOT / subject
+
+
+def page_of(text: str):
+    m = re.search(r"^Page : (\S+)", text, re.M)
+    return m.group(1) if m else None
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
-        super().__init__(*a, directory=str(HERE), **k)
+        super().__init__(*a, directory=str(ROOT), **k)
+
+    def translate_path(self, path):  # a file missing here may be a worktree's
+        here = pathlib.Path(super().translate_path(path))
+        if not here.exists():
+            try:
+                rel = here.relative_to(ROOT)
+            except ValueError:
+                return str(here)
+            for r in roots()[1:]:
+                if (r / rel).exists():
+                    return str(r / rel)
+        return str(here)
 
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
@@ -29,15 +80,59 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             text = query.get("t", [""])[0]
             subject = re.sub(r"[^\w-]", "", query.get("s", ["divers"])[0]) or "divers"
             stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            folder = HERE / subject
-            folder.mkdir(exist_ok=True)
-            path = folder / "retours.txt"
-            last = re.split(r"^--- .*$", path.read_text(encoding="utf-8"), flags=re.M)[-1] if path.exists() else ""
-            if text.strip() != last.strip():  # the same feedback sent again (several taps, a retried request)
-                with open(path, "a", encoding="utf-8") as f:
-                    f.write(f"--- {stamp}\n{text}\n")
+            with LOCK:
+                folder = home(subject)
+                folder.mkdir(parents=True, exist_ok=True)
+                path = folder / "retours.txt"
+                old = path.read_text(encoding="utf-8") if path.exists() else ""
+                parts = re.split(r"^(?=--- )", old, flags=re.M)
+                head, _, last = parts[-1].partition("\n") if old else ("", "", "")
+                if old and text.strip() == last.strip():  # the same feedback again (several taps, a retried request)
+                    what = "identique, ignoré"
+                elif old and page_of(text) and page_of(text) == page_of(last):  # the page's whole state again: it replaces
+                    was = re.search(r"\d\d:\d\d", head)
+                    path.write_text("".join(parts[:-1]) + f"--- {stamp} (remplace {was.group(0) if was else 'le précédent'})\n"
+                                    f"{text}\n", encoding="utf-8")
+                    what = "remplace le précédent"
+                else:
+                    with open(path, "a", encoding="utf-8") as f:
+                        f.write(f"--- {stamp}\n{text}\n")
+                    what = "ajouté"
+                bits = folder.parent.parts
+                where = "" if folder.parent == ROOT else f" (worktree {bits[bits.index('worktrees') + 1]})"
+                with open(ROOT / "retours.log", "a", encoding="utf-8") as f:  # was a vote said lost received?
+                    f.write(f"{stamp} {subject}{where} {page_of(text) or '?'} : {what}, {len(text)} car.\n")
             return self.send_body(b'{"ok":true}', "application/json")
+        if self.headers.get("Range") and self.send_range(pathlib.Path(self.translate_path(url.path))):
+            return
         super().do_GET()
+
+    def send_range(self, path: pathlib.Path) -> bool:
+        """A byte range: the phone's WebView asks for one and plays no mp4 served whole."""
+        m = re.fullmatch(r"bytes=(\d*)-(\d*)", self.headers.get("Range", "").strip())
+        if not m or not (m.group(1) or m.group(2)) or not path.is_file():
+            return False
+        size = path.stat().st_size
+        if m.group(1):
+            start, end = int(m.group(1)), min(int(m.group(2)) if m.group(2) else size - 1, size - 1)
+        else:
+            start, end = max(0, size - int(m.group(2))), size - 1
+        if start > end:
+            self.send_response(416)
+            self.send_header("Content-Range", f"bytes */{size}")
+            self.end_headers()
+            return True
+        with open(path, "rb") as f:
+            f.seek(start)
+            body = f.read(end - start + 1)
+        self.send_response(206)
+        self.send_header("Content-Type", self.guess_type(str(path)))
+        self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return True
 
     def send_body(self, body, kind):
         self.send_response(200)
@@ -76,7 +171,7 @@ def feedback(subject: pathlib.Path) -> list:
     if not path.exists():
         return []
     entries = []
-    for stamp, text in re.findall(r"^--- (\S+ \S+)\n(.*?)(?=^--- |\Z)", path.read_text(encoding="utf-8"), re.M | re.S):
+    for stamp, text in re.findall(r"^--- (\S+ \S+)[^\n]*\n(.*?)(?=^--- |\Z)", path.read_text(encoding="utf-8"), re.M | re.S):
         try:
             when = datetime.datetime.strptime(stamp, "%Y-%m-%d %H:%M").timestamp()
         except ValueError:
@@ -88,11 +183,12 @@ def feedback(subject: pathlib.Path) -> list:
 
 def rounds() -> list:
     """Every round, newest first: subject, number, title, time, captures, the feedback it got, its sketch."""
-    found = []
-    for f in HERE.glob("*/v*.html"):
-        m = re.fullmatch(r"v(\d+)", f.stem)
-        if not m:
+    found, seen = [], set()
+    for f in (f for r in roots() for f in r.glob("*/v*.html")):
+        m = re.fullmatch(r"v(\d+)", f.stem)  # v3.brouillon.html, not ready yet, stays out
+        if not m or (f.parent.name, m.group(1)) in seen:  # here and in a worktree: here wins
             continue
+        seen.add((f.parent.name, m.group(1)))
         t = re.search(r"<title>(.*?)</title>", f.read_text(encoding="utf-8"), re.S)
         shots = f.parent / "captures" / f.stem
         found.append({
@@ -117,7 +213,8 @@ def link(r: dict) -> str:
 
 
 def url(p: pathlib.Path) -> str:
-    return html.escape(p.relative_to(HERE).as_posix(), quote=True)
+    root = next(r for r in roots() if p.is_relative_to(r))
+    return html.escape(p.relative_to(root).as_posix(), quote=True)
 
 
 def thumb(r: dict) -> str:

@@ -1,9 +1,9 @@
 ---
 name: maquettes
-description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first).
+description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first) — without waiting for him to say « maquettes », also in the middle of another skill or task that leads to a visible change.
 metadata:
   template: maquettes
-  template-version: 1.6.1
+  template-version: 1.7.0
 ---
 
 # Maquettes (Corruption du Portail)
@@ -16,6 +16,9 @@ readable and two sessions never write in the same folder. Shared:
 `common/mock.css` (page chrome, frames), `common/mock.js` (scaling, `?only=`, votes, sending; **load it
 last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill marketplace
 (`~/Projects/skill-marketplace`, other variants in `templates/maquettes/variantes.md`).
+A session in a worktree (`.claude/worktrees/<name>/`) writes its pages in its worktree's
+`tools/maquettes/`: the main checkout's server serves them too and writes their feedback there, no copies.
+Mocking up another app than the session's: with that app's maquettes skill, in its folder.
 
 ## 1. Understand, look
 
@@ -24,7 +27,8 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - Look at the real thing, not a memory of it. Before any variant, the page's header says three things:
   - **Reference**: how two or three games (apps, sites) that already do the thing go about it, seen for
     real (his video or captures, the game opened on the PC or the phone, a search), gestures and timings
-    included, sources as links. If he cites one, that one first.
+    included, sources as links. If he cites one, that one first. It is there to look at, not to trace:
+    the faithful copy nearly always loses to a variant in the game's own style, have at least one.
   - **Today**: what the game does now, read in the code, and what is missing.
   - **The scene**: one concrete moment of a game where the feature matters (who, what, why now), the
     same on every frame.
@@ -33,6 +37,10 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   sound, what counts or not, what happens on failure). What has only one sensible answer, or a run of
   screens with no alternative, fits in one line of the header (« Sans question : … »), not in a section
   to vote on. A wording question alone does not make a section.
+- A technical means (which service, library, protocol) is never voted on: he judges the result (« en un
+  clic »), Claude decides and writes it in « Sans question ».
+- Before showing a variant, check it can be coded (limits of the engine, the components, an API): a
+  variant voted then found impossible costs a round.
 <!-- local:regarder -->
 - The screen's controller, UXML/USS or Canvas prefab, and `project-context.md`'s UI gotchas.
 - Autoplay captures (`AutoplayRuns/**.png`), the scene's sprites, the art files.
@@ -41,6 +49,9 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
 - Visuals stay **placeholder and design-owned**: no invented palette, reuse the game's art, fonts and
   tokens. Diegetic, not web/SaaS (the grimoire won over a web look).
 - Player text in French, no em dash (« — »).
+- No wax seal: refused twice (T21, then the roles board), Claude had put it back.
+- Only fonts the game ships (IM FELL English, EB Garamond): a variant in Georgia was voted then could
+  not be coded. Fell's digits read badly (« 1 » read as « I »).
 <!-- /local -->
 
 ## 2. The page
@@ -55,9 +66,22 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   write over an existing `v<N>`, another session may be working on it.
 - The kit's classes are reserved (`page`, `row`, `stack`, `stage`, `variant`, `vhead`, `vid`, `vname`,
   `vdesc`, `phone`, `screen`, `card`, `toggle`, `vote`, `send`…: see `common/mock.css`): the page's own
-  classes carry a prefix of their own (`rb-page`, not `page`).
+  classes carry a prefix of their own (`rb-page`, not `page`). Its script sits in a function
+  (`(() => { … })()`): a global `const top` or `name` breaks the page (`window.top`).
+- Pages and scripts are written with Write or Edit, never with a bash heredoc (apostrophes, `\`).
+- A question that changes the code is asked in a section, never only in `#global` (he almost never
+  answers there): its answers as variants, frameless if they are words, the one Claude would take
+  without an answer marked « (par défaut) » in its `.vname`.
+- Reworking a screen that exists: an « Actuel » variant (`X0`) in each section (it often wins), and all
+  of the current screen's information kept unless it is the question. Among the variants, always the
+  most direct one.
 - A question about a rule or a behaviour (when something happens, what if…) is shown too: one concrete
   scene per variant (what happens, before/after, on the real screen), not a sentence to interpret.
+- The scene starts from the real state before (the screen one comes from) and goes through the states
+  the feature will meet (moving, two gestures in a row, another outfit, a long wait at its real
+  duration), not only the ideal moment: the bugs after the code came from there.
+- Real media and content: a video plays; a text a model will write is written by that model (its real
+  prompt), otherwise the variant says it is a target.
 - Same moment and same data on every frame of a section; real texts, real art, nothing « Lorem ». The
   colors, fonts and images are the game's: no invented palette.
 - Plan for growth: a screen listing content that will grow (cosmetics, roles…) shows it full (real
@@ -80,7 +104,7 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   it in another frame, and write what the code needs into `el.dataset.info` (e.g. the world position under it).
   An object from the game is rendered from the game with a transparent background (`compte-a-rebours/v3.html`:
   the real candle, the seated view's camera fitted on the capture, its place mirrored on the night's top view).
-- Bottom: `<textarea id="global">` (a useful open question) and `<button id="send">`.
+- Bottom: `<textarea id="global">` (free remark) and `<button id="send">`.
 - `?only=E1` shows that frame alone (captures).
 
 ## 3. Reread, check, capture
@@ -90,11 +114,15 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   - each section asks a question that matters, with at least two really different answers (never a
     single proposal « to approve »);
   - what moves moves, what is touched can be touched;
+  - each remark of the round before shows, at every moment of the scenario;
+  - the console has no error (an empty section = a JS error);
   - compared with a page he liked (this project's last kept round, or another project's from the
     marketplace: the template's `variantes.md`), it is neither less polished nor less alive.
 
 - Server: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5198/`; if it does not answer, start
-  `pythonw tools/maquettes/serve.py` detached (Clawd's mockups use 5199).
+  `pythonw tools/maquettes/serve.py` detached, from the main checkout (Clawd's mockups use 5199).
+- A page long to prepare (images to render) is written `v<N>.brouillon.html`: the contents page shows it
+  only once renamed `v<N>.html`, when everything is ready.
 - Look at the whole page, not only the frames: `?only=` captures have neither the header nor the
   sections, a style clash hides there. One capture without `?only=` at the width he reads it. Phone:
   headless Edge does not go below 492 px (narrower, the capture is cropped and shows a false overflow),
@@ -118,16 +146,46 @@ last**), `serve.py` (port 5198). Made from the `maquettes` template of the skill
   thumbnails. On the PC: `http://127.0.0.1:5198/`.
 - **The site is the decision channel.** Do NOT ask the same choices again with AskUserQuestion. End the
   turn with the captures + « dis-moi quand tu as envoyé tes retours ». Questions that are not about the
-  screens (network, export, scope) go in the page too: a section with text variants, or the `#global`
-  prompt.
+  screens (network, export, scope) go in the page too: a section with text variants.
 - He votes, writes, taps « Envoyer mes retours à Claude »: it lands in `<subject>/retours.txt` (dated).
   **Before anything else on his next message, read the end of that file**, even if he does not mention it.
-- « Combine E1 et E3 » = a new round (`v<N+1>.html`) built from those variants, not code. Code only when
-  a round has a clear 👍 with no change asked. A 👍 whose remark says « mais », « plutôt »,
-  « j'imaginais » or brings another idea is a change asked: a new round. « X par défaut, Y à un tap » is a
-  clear choice.
 
-## 5. Keep the choice
+**Reading the feedback**
+- A send is the page's whole state: a new send of the same page replaces the previous one
+  (`--- … (remplace 14:02)`). Only the last one counts.
+- Clear: a single 👍 in the section. Two 👍 in a section, or a « – » (remark without a thumb), are not a
+  choice: to the next round, unless two variants add up without conflict (say so).
+- A 👍 with a precise remark that codes as is (a threshold, « moins foncé », a condition) is clear: code
+  it, and the message says how the remark is taken. A 👍 that asks to imagine (« mais », « plutôt »,
+  « j'imaginais », « trouve mieux », another idea) is a change: a new round. « X par défaut, Y à un
+  tap » is a clear choice. « Combine E1 et E3 » = a new round.
+- His message contradicts his votes (« j'aime rien » with 👍), or a remark asks a question: say it and
+  answer before coding.
+- A section left without a vote: the next message says the « (par défaut) » choice taken, never
+  silently.
+- Nothing new in `retours.txt` while he says he voted: do not code; look at
+  `tools/maquettes/retours.log` (received, ignored, in which folder) and tell him.
+
+**Rounds that go fast**
+- A round of edits shows again only what is still open, the choices made already in (said at the top).
+  A subject voted piece by piece shows the whole assembled screen in that round.
+- A remark that reads two ways: one variant per reading, he settles it at a glance.
+- « Pas clair », « pas intuitif »: study the rule under the screen and show what it does with the real
+  numbers, not a new layout.
+- « Ça fait X » (« ça fait IA ») without saying why: a section of cause hypotheses to vote on.
+- Everything refused: ask him why in one line, then go in other directions.
+
+## 5. Code what was voted
+
+- Before, in the message (not a round): what will be coded, variant by variant. Nothing from a variant
+  not chosen: a detail he did not pick does not go in. A gap forced by the code is said before coding;
+  it goes through a round only if it changes what he sees.
+- A visible change that was on no mockup (one more button, a removal) is mocked up or asked, never
+  slipped in.
+- After: each choice and each remark ticked one by one, and a capture of the real screen next to the
+  chosen variant in the answer (same moment, same data): without it, he is the one who finds the gaps.
+
+## 6. Keep the choice
 
 `retours.txt` is a draft, out of git (`tools/maquettes/.gitignore`): the choice is kept as follows.
 <!-- local:garder -->

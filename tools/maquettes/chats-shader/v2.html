@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le rendu des chats : la teinte de leur lumière (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cs-shot { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+</style>
+</head>
+<body data-subject="chats-shader">
+
+<header class="page">
+  <h1>Le rendu des chats : la teinte de leur lumière (tour 2)</h1>
+  <p><b>Déjà choisi au tour 1 :</b> B (l'aplat n'est éclairé que par le jeu), H1 (halo inchangé), L2 (lumière plus chaude).
+     Ta remarque : L2 est trop orangée en jeu.</p>
+  <p><b>La scène :</b> vue assise, de jour, les quatre pelages sous la lumière de leur chat. En haut le jeu, en bas Blender
+     pour comparer. Seule la teinte de la lumière change d'un cadre à l'autre, de L2 à l'ancienne crème.</p>
+</header>
+
+<section>
+  <h2>1. La teinte de la lumière de chaque chat</h2>
+
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">L2, actuelle</span></div>
+    <p class="vdesc">Celle de la PR : orangée.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/W0.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Ambrée</span></div>
+    <p class="vdesc">Un cran moins orange.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/W1.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Dorée (par défaut)</span></div>
+    <p class="vdesc">À mi-chemin entre L2 et l'ancienne.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/W2.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T3">
+    <div class="vhead"><span class="vid">T3</span><span class="vname">Bougie</span></div>
+    <p class="vdesc">Juste un peu plus chaude que l'ancienne.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/W3.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T4">
+    <div class="vhead"><span class="vid">T4</span><span class="vname">Crème, l'ancienne</span></div>
+    <p class="vdesc">La lumière d'avant la PR.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/W4.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script src="../common/mock.js"></script>
+</body>
+</html>

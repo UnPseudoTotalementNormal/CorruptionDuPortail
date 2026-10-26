@@ -41,10 +41,23 @@ Tablet Idle, Putting Table Away, Fiery Idle Test.
 - The mouth cards of the file switch textures with a Value node (the artist previews other mouths on them):
   `render_layers.py` puts each back on its own texture.
 
+## 3b. Glow masks
+
+The glowing parts of the .blend (black and white's orange dots, galactic cracks and speckles, mage speckles, fiery and
+galactic eyes) are a Mix Shader towards an Emission driven by a texture read as a number:
+`python bake_emission_masks.py <Drive "Cats" folder> <repo>` redoes that conversion (luminance, Color Ramp) into
+`Assets/Art/Textures/Cat/Cosmetics/Cat_*Mask.png` (linear, sRGB off). Run it again when one of those textures changes.
+
+To compare with the artist's look, render the .blend with its own camera and light (EEVEE): the shader reproduces its
+nodes, the warm light of its renders comes from its orange sun (the seated view's cat light is warm too).
+
 ## 4. Unity
 
-- `Tools > Cat Cosmetics > Rebuild assets`: materials (copies of the cat's CatDitherLit materials), FBX remap, catalog,
-  CatAppearance / CatBlink / CatFrown / CatTears on `Cat_Avatar`, PlayerAvatar wiring, missing vignettes.
+- `Tools > Cat Cosmetics > Rebuild assets`: materials (copies of the cat's own materials), FBX remap, catalog,
+  CatAppearance / CatBlink / CatFrown / CatTears on `Cat_Avatar`, PlayerAvatar wiring, missing vignettes. It ends with
+  `Apply toon look`.
+- `Tools > Cat Cosmetics > Apply toon look` (`CatToonLook`): every cat material on `Corruption/Cat Toon` with the values
+  of the .blend's nodes (share of the flat two-tone, shadow value, glowing parts). A new material needs its line there.
 - `Tools > Cat Cosmetics > Rebuild animations`: clip settings, the `Cat_Avatar` Animator (rebuilt from scratch), the
   emote wheel's entries.
 - `Wire main menu` / `Wire game scene` once. Opening a scene in batchmode recomputes layout-driven RectTransform sizes

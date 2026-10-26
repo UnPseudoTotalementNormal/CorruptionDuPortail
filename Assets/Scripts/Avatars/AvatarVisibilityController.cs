@@ -21,7 +21,7 @@ namespace Avatars
     /// </summary>
     public class AvatarVisibilityController : MonoBehaviour
     {
-        // Shader property on "Corruption/Cat Dither Lit": 1 = fully visible, 0 = fully clipped (screen-door
+        // Shader property on "Corruption/Cat Toon" (and "Cat Dither Lit"): 1 = fully visible, 0 = fully clipped (screen-door
         // dither). Driven per RENDERER via a MaterialPropertyBlock — the avatars share one material, so writing
         // the material itself would fade everyone at once (and instancing it would leak).
         private static readonly int CatFadeAmountId = Shader.PropertyToID("_CatFadeAmount");

@@ -14,7 +14,7 @@ namespace Avatars.Cosmetics.EditorTools
 {
     /// <summary>
     /// Rebuilds the cat cosmetics from the exported art (reproducible, run again after a new export): the materials
-    /// of the new parts (copies of the cat's own materials on the CatDitherLit shader, with the Drive's textures), the
+    /// of the new parts (copies of the cat's own materials on the Cat Toon shader, with the Drive's textures), the
     /// material remap of Cat_Cosmetics.fbx, the catalog (ids, names, icons, parts), the CatAppearance on Cat_Avatar
     /// and its wiring on PlayerAvatar, and the customization screen of the main menu.
     ///
@@ -49,6 +49,7 @@ namespace Avatars.Cosmetics.EditorTools
         {
             ImportIcons();
             Dictionary<string, Material> materials = BuildMaterials();
+            CatToonLook.Apply();
             RemapCosmeticsModel(materials);
             CatCosmeticsCatalog catalog = BuildCatalog(materials);
             WireCatPrefab(catalog, materials);
@@ -162,38 +163,38 @@ namespace Avatars.Cosmetics.EditorTools
             var materials = new Dictionary<string, Material>
             {
                 ["Black and White Body"] = AssetDatabase.LoadAssetAtPath<Material>(BodyMaterialPath),
-                ["Fiery Fur"] = Copy(BodyMaterialPath, "Fiery Fur", "Cat_Fiery_Body", null),
-                ["Galactic Fur"] = Copy(BodyMaterialPath, "Galactic Fur", "Cat_Galactic_Body", "Cat_Galactic_Speckles"),
-                ["Mage Fur"] = Copy(BodyMaterialPath, "Mage Fur", "Cat_Mage_Body", "Cat_Mage_Speckles"),
-                ["Fiery Clothes"] = Copy(ClothesMaterialPath, "Fiery Clothes", "Cat_Fiery_Clothes", null),
-                ["Galactic Bow"] = Copy(ClothesMaterialPath, "Galactic Bow", "Cat_Galactic_Bow", null),
-                ["Mage Clothes"] = Copy(ClothesMaterialPath, "Mage Clothes", "Cat_Mage_Clothes", null),
-                ["Chef Clothes"] = Copy(ClothesMaterialPath, "Chef Clothes", "Cat_Chef_Clothes", null),
-                ["Fiery Eyes"] = Copy(EyesMaterialPath, "Fiery Eyes", "Cat_Fiery_Eyes", null),
-                ["Galactic Eyes"] = Copy(EyesMaterialPath, "Galactic Eyes", "Cat_Galactic_Eyes", null),
-                ["Mage Eyes"] = Copy(EyesMaterialPath, "Mage Eyes", "Cat_Mage_Eyes", null),
-                ["Galactic Mouth"] = Mouth(Copy(BodyMaterialPath, "Galactic Mouth", "Cat_Galactic_Mouth", null)),
-                ["Mage Mouth"] = Mouth(Copy(BodyMaterialPath, "Mage Mouth", "Cat_Mage_Mouth", null)),
-                ["Choked Mouth"] = Mouth(Copy(BodyMaterialPath, "Choked Mouth", "Cat_Choked_Mouth", null)),
-                ["Drunk Mouth"] = Mouth(Copy(BodyMaterialPath, "Drunk Mouth", "Cat_Drunk_Mouth", null)),
-                ["Sad Mouth"] = Mouth(Copy(BodyMaterialPath, "Sad Mouth", "Cat_Sad_Mouth", null)),
+                ["Fiery Fur"] = Copy(BodyMaterialPath, "Fiery Fur", "Cat_Fiery_Body"),
+                ["Galactic Fur"] = Copy(BodyMaterialPath, "Galactic Fur", "Cat_Galactic_Body"),
+                ["Mage Fur"] = Copy(BodyMaterialPath, "Mage Fur", "Cat_Mage_Body"),
+                ["Fiery Clothes"] = Copy(ClothesMaterialPath, "Fiery Clothes", "Cat_Fiery_Clothes"),
+                ["Galactic Bow"] = Copy(ClothesMaterialPath, "Galactic Bow", "Cat_Galactic_Bow"),
+                ["Mage Clothes"] = Copy(ClothesMaterialPath, "Mage Clothes", "Cat_Mage_Clothes"),
+                ["Chef Clothes"] = Copy(ClothesMaterialPath, "Chef Clothes", "Cat_Chef_Clothes"),
+                ["Fiery Eyes"] = Copy(EyesMaterialPath, "Fiery Eyes", "Cat_Fiery_Eyes"),
+                ["Galactic Eyes"] = Copy(EyesMaterialPath, "Galactic Eyes", "Cat_Galactic_Eyes"),
+                ["Mage Eyes"] = Copy(EyesMaterialPath, "Mage Eyes", "Cat_Mage_Eyes"),
+                ["Galactic Mouth"] = Mouth(Copy(BodyMaterialPath, "Galactic Mouth", "Cat_Galactic_Mouth")),
+                ["Mage Mouth"] = Mouth(Copy(BodyMaterialPath, "Mage Mouth", "Cat_Mage_Mouth")),
+                ["Choked Mouth"] = Mouth(Copy(BodyMaterialPath, "Choked Mouth", "Cat_Choked_Mouth")),
+                ["Drunk Mouth"] = Mouth(Copy(BodyMaterialPath, "Drunk Mouth", "Cat_Drunk_Mouth")),
+                ["Sad Mouth"] = Mouth(Copy(BodyMaterialPath, "Sad Mouth", "Cat_Sad_Mouth")),
                 // Galactic hair cards: the body texture without the speckles (the file's "Galactic Fur").
-                ["Galactic Hair"] = Copy(BodyMaterialPath, "Galactic Hair", "Cat_Galactic_Body", null),
+                ["Galactic Hair"] = Copy(BodyMaterialPath, "Galactic Hair", "Cat_Galactic_Body"),
                 // The file's flat colours (toon shader RGB nodes); the button texture is missing from the Drive.
                 ["Black Eyes"] = DoubleSided(Flat(EyesMaterialPath, "Black Eyes", new Color(0.02f, 0.02f, 0.02f))),
                 ["Button Eyes"] = DoubleSided(Flat(EyesMaterialPath, "Button Eyes", new Color(0.32f, 0.22f, 0.15f))),
                 ["String"] = DoubleSided(Flat(EyesMaterialPath, "String", new Color(0.05f, 0.03f, 0.03f))),
                 ["Tear"] = Flat(EyesMaterialPath, "Tear", new Color(0.14f, 0.35f, 1f)),
                 // Blink: the round eyes texture darkened (the file mixes it with black).
-                ["BW Eyes Closed"] = Tint(Copy(EyesMaterialPath, "BW Eyes Closed", null, null), new Color(0.12f, 0.12f, 0.12f)),
+                ["BW Eyes Closed"] = Tint(Copy(EyesMaterialPath, "BW Eyes Closed", null), new Color(0.12f, 0.12f, 0.12f)),
                 ["BW Eyes Expressive"] = AssetDatabase.LoadAssetAtPath<Material>(EyesMaterialPath),
             };
             return materials;
         }
 
-        // A copy of one of the cat's materials (same shader, same settings) with another base map; speckles glow
-        // through the emission map (they are bright dots on black).
-        private static Material Copy(string templatePath, string name, string baseMap, string emissionMap)
+        // A copy of one of the cat's materials (same shader, same settings) with another base map. The glowing parts
+        // (speckles, cracks, eyes) and the toon values are set afterwards by CatToonLook.
+        private static Material Copy(string templatePath, string name, string baseMap)
         {
             string path = $"{MaterialsDir}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -213,13 +214,6 @@ namespace Avatars.Cosmetics.EditorTools
                 material.SetTexture("_BaseMap", baseTexture);
                 material.SetTexture("_MainTex", baseTexture);
             }
-            if (emissionMap != null)
-            {
-                material.SetTexture("_EmissionMap", Texture(emissionMap));
-                material.SetColor("_EmissionColor", Color.white * 1.4f);
-                material.EnableKeyword("_EMISSION");
-                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            }
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -227,7 +221,7 @@ namespace Avatars.Cosmetics.EditorTools
         // A flat colour (no texture) on the cat's shader.
         private static Material Flat(string templatePath, string name, Color color)
         {
-            Material material = Copy(templatePath, name, null, null);
+            Material material = Copy(templatePath, name, null);
             material.SetTexture("_BaseMap", null);
             material.SetTexture("_MainTex", null);
             return Tint(material, color);

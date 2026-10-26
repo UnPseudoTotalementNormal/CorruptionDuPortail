@@ -168,6 +168,7 @@ namespace Avatars.Cosmetics.EditorTools
                 ["Fiery Clothes"] = Copy(ClothesMaterialPath, "Fiery Clothes", "Cat_Fiery_Clothes", null),
                 ["Galactic Bow"] = Copy(ClothesMaterialPath, "Galactic Bow", "Cat_Galactic_Bow", null),
                 ["Mage Clothes"] = Copy(ClothesMaterialPath, "Mage Clothes", "Cat_Mage_Clothes", null),
+                ["Chef Clothes"] = Copy(ClothesMaterialPath, "Chef Clothes", "Cat_Chef_Clothes", null),
                 ["Fiery Eyes"] = Copy(EyesMaterialPath, "Fiery Eyes", "Cat_Fiery_Eyes", null),
                 ["Galactic Eyes"] = Copy(EyesMaterialPath, "Galactic Eyes", "Cat_Galactic_Eyes", null),
                 ["Mage Eyes"] = Copy(EyesMaterialPath, "Mage Eyes", "Cat_Mage_Eyes", null),
@@ -271,7 +272,7 @@ namespace Avatars.Cosmetics.EditorTools
             importer.importAnimation = false;
             importer.isReadable = true; // the tear emitter's mesh is the tears' particle shape
             importer.importBlendShapes = true; // BW Eyes Expressive: the Angry shape key
-            foreach (string name in new[] { "Fiery Clothes", "Galactic Bow", "Mage Clothes", "Fiery Eyes", "Galactic Eyes",
+            foreach (string name in new[] { "Fiery Clothes", "Galactic Bow", "Mage Clothes", "Chef Clothes", "Fiery Eyes", "Galactic Eyes",
                                              "Mage Eyes", "Galactic Mouth", "Mage Mouth", "Choked Mouth", "Drunk Mouth",
                                              "Sad Mouth", "Black Eyes", "Button Eyes", "String", "Tear", "BW Eyes Closed",
                                              "BW Eyes Expressive" })
@@ -307,12 +308,14 @@ namespace Avatars.Cosmetics.EditorTools
                 Parts(CatSlot.Outfit, 2, "Nœud galactique", "Outfit_Galactic", "Galactic Bow", "Galactic Bow Mid"),
                 Parts(CatSlot.Outfit, 3, "Cape de mage", "Outfit_Mage",
                     "Mage Cape Bottom", "Mage Cape Top", "Mage Cape Star", "Mage Head Star"),
+                Parts(CatSlot.Outfit, 5, "Tenue de chef", "Outfit_Chef",
+                    "Chef Apron", "Chef Shirt", "Chef Bow Neck", "Chef Bow Tie", "Chef Sleeves"),
                 Parts(CatSlot.Outfit, 4, "Sans tenue", null),
 
                 Blink(Parts(CatSlot.Eyes, 0, "Yeux de la portée", "Eyes_BlackWhite", "BW Eyes Expressive"), "BW Eyes Closed"),
                 Parts(CatSlot.Eyes, 1, "Yeux ardents", "Eyes_Fiery", "Fiery Eyes Neutral"),
                 Parts(CatSlot.Eyes, 2, "Yeux galactiques", "Eyes_Galactic", "Galactic Eyes", "Galactic Mid"),
-                Parts(CatSlot.Eyes, 3, "Yeux de mage", "Eyes_Mage", "Mage Eyes", "Mage Cheek Eyes", "Mage Top Eyes"),
+                Parts(CatSlot.Eyes, 3, "Yeux de mage", "Eyes_Mage", "Mage Eyes"),
                 Parts(CatSlot.Eyes, 4, "Yeux simples", null, "Simple Eyes"),
                 Parts(CatSlot.Eyes, 5, "Yeux blasés", null, "Bored Eyes"),
                 Parts(CatSlot.Eyes, 6, "Yeux boutons", null, "Full Button Eyes"),

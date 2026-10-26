@@ -27,6 +27,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Chef Clothes
+    second: {fileID: 2100000, guid: fbb34254342ee004a802817c3659b064, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Choked Mouth
     second: {fileID: 2100000, guid: c4b9df93c304fbf43bf8cfc18437eb06, type: 2}
   - first:

@@ -115,6 +115,19 @@ MonoBehaviour:
     - Mage Cape Top
     - Mage Cape Star
     - Mage Head Star
+  - id: 5
+    slot: 1
+    displayName: Tenue de chef
+    icon: {fileID: 2800000, guid: d7e669f7d68d7b64a9313173f883edf6, type: 3}
+    furMaterial: {fileID: 0}
+    hairMaterial: {fileID: 0}
+    blinkPart: 
+    parts:
+    - Chef Apron
+    - Chef Shirt
+    - Chef Bow Neck
+    - Chef Bow Tie
+    - Chef Sleeves
   - id: 4
     slot: 1
     displayName: Sans tenue
@@ -160,8 +173,6 @@ MonoBehaviour:
     blinkPart: 
     parts:
     - Mage Eyes
-    - Mage Cheek Eyes
-    - Mage Top Eyes
   - id: 4
     slot: 2
     displayName: Yeux simples

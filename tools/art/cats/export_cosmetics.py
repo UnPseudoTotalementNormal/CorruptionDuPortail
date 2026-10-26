@@ -1,5 +1,6 @@
 """Exports the parts of the Fiery / Galactic / Mage cats onto the game's skeleton (BW Rig + the Fiery rig's cape bones)
-as Assets/Art/Models/Cat_Cosmetics.fbx. Usage: blender -b <Drive>/Corrupted_Cats.blend --python export_cosmetics.py -- <fbx>
+as Assets/Art/Models/Cat_Cosmetics.fbx. Also the Chef outfit (shared by every skin).
+Usage: blender -b <Drive>/Corrupted_Cats.blend --python export_cosmetics.py -- <fbx>
 Then in Unity: Tools > Cat Cosmetics > Rebuild assets."""
 import bpy, mathutils, sys
 OUT = sys.argv[-1]
@@ -50,7 +51,8 @@ parts={
  'Galactic Bow':'arm','Galactic Bow Mid':('bone','Bow Center'),
  'Mage Cape Bottom':'arm','Mage Cape Top':'arm','Mage Cape Star':('bone','Cape Master'),'Mage Head Star':('bone','Head'),
  'Fiery Eyes Neutral':('bone','Eyes'),'Galactic Eyes.001':('bone','Eyes'),'Galactic Mid':('bone','Eyes'),
- 'Mage Eyes':('bone','Eyes'),'Mage Cheek Eyes':('bone','Eyes'),'Mage Top Eyes':('bone','Eyes'),
+ 'Mage Eyes':('bone','Eyes'),
+ 'Chef Apron':'arm','Chef Shirt':'arm','Chef Bow Neck':'arm','Chef Bow Tie':('bone','Spine3'),'Chef Sleeves':'sleeves',
  'Mouf':('bone','Head'),'Mage Mouf':('bone','Head'),
 }
 for n,how in parts.items():
@@ -60,6 +62,21 @@ for n,how in parts.items():
         if not mods:
             m=o.modifiers.new('Armature','ARMATURE'); mods=[m]
         for m in mods: m.object=bw
+        o.parent=bw; o.parent_type='OBJECT'
+    elif how=='sleeves':
+        # Not weighted in the file: each vertex follows the nearest arm bone of its side (rest pose, rigid).
+        bones=[b for b in bw.data.bones if b.name.split('.')[0] in ('Arm1','Arm2','Hand')]
+        def seg_dist(p,b):
+            a=bw.matrix_world @ b.head_local; c=bw.matrix_world @ b.tail_local
+            t=max(0.0,min(1.0,(p-a).dot(c-a)/max((c-a).length_squared,1e-9)))
+            return (p-(a+(c-a)*t)).length
+        groups={b.name:o.vertex_groups.get(b.name) or o.vertex_groups.new(name=b.name) for b in bones}
+        for v in o.data.vertices:
+            p=mw @ v.co
+            side='.L' if p.x>0 else '.R'
+            best=min((b for b in bones if b.name.endswith(side)), key=lambda b: seg_dist(p,b))
+            groups[best.name].add([v.index],1.0,'REPLACE')
+        m=o.modifiers.new('Armature','ARMATURE'); m.object=bw
         o.parent=bw; o.parent_type='OBJECT'
     elif how[0]=='bone':
         o.parent=bw; o.parent_type='BONE'; o.parent_bone=how[1]

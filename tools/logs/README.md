@@ -13,6 +13,7 @@ python tools/logs/logs.py list --since 24h --player Wouh   # his sessions: versi
 python tools/logs/logs.py games --since 2d                  # games and who played them
 python tools/logs/logs.py timeline <game id> --level W      # warnings/errors of every player, merged in time
 python tools/logs/logs.py around <game id> 21:40 --window 90  # everything ±90 s around the moment he describes
+python tools/logs/logs.py span "24/10 20:25" "20:45" --level W   # no game id (failed join, lobby, menu): every session in the range
 python tools/logs/logs.py timeline <game id> --cat vote,power,state  # what happened in the game
 python tools/logs/logs.py errors --since 24h --stack         # every error, grouped, with stacks
 python tools/logs/logs.py tail Wouh                          # follow a live session (~20 s delay)

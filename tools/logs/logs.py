@@ -9,6 +9,7 @@ missing ones are downloaded.
     python tools/logs/logs.py games  [--since 7d]                                         games and who played them
     python tools/logs/logs.py timeline <game id | session id> [filters]                   merged timeline, every player
     python tools/logs/logs.py around <game | session> <HH:MM[:SS]> [--window 60] [filters]
+    python tools/logs/logs.py span <[DD/MM] HH:MM> [[DD/MM] HH:MM] [--all] [filters]     every session in a time range
     python tools/logs/logs.py errors [--since 24h] [--player NAME] [--stack]             errors and warnings, grouped
     python tools/logs/logs.py grep <regex> [--since 24h] [--player NAME]                  raw search in every line
     python tools/logs/logs.py tail <player | session id>                                  follow a live session
@@ -17,7 +18,10 @@ missing ones are downloaded.
 
 Filters (timeline / around): --level W (minimum level), --cat vote,power (categories), --player Wouh,
 --grep REGEX, --stack (stack traces), --full (no truncation, every state picture), --json (raw lines),
---no-lobby (game lines only), --utc (times in UTC).
+--no-lobby (game lines only), --utc (times in UTC), --perf (show the perf.sample lines, hidden otherwise).
+
+`span` is for what happened outside a game: a join that failed, a lobby that never started, a menu bug. Those
+sessions have no game id, so `games` and `timeline <game>` never show them.
 
 Line format: `HH:MM:SS.mmm Player#seat(role) L cat event k=v …  ×n`, local time unless --utc. `state` lines are the
 host's picture of the game at each phase; `unity` lines are the game's own Debug.Log output ([TAG] as event).
@@ -382,8 +386,13 @@ def apply_filters(lines, a):
     cats = set(a.cat.split(",")) if getattr(a, "cat", None) else None
     players = {p.lower() for p in a.player.split(",")} if getattr(a, "player", None) else None
     rx = re.compile(a.grep, re.I) if getattr(a, "grep", None) else None
+    perf = getattr(a, "perf", False) or (cats is not None and "perf" in cats)
+    a.perf_hidden = 0
     out = []
     for l in lines:
+        if l.get("c") == "perf" and not perf:  # one sample every 30 s per player: drowns everything else
+            a.perf_hidden += 1
+            continue
         if LEVELS.find(l.get("lv", "I")) < lv: continue
         if cats and l.get("c") not in cats and not (l.get("c") == "phase"): continue
         if players and l["_who"].lower() not in players and l["_who"].split("~")[0].lower() not in players: continue
@@ -459,9 +468,47 @@ def cmd_timeline(a):
     if getattr(a, "at", None):
         lines = window(lines, a.at, a.window)
     lines = apply_filters(lines, a)
-    print(f"— {label}: {len(lines)} line(s), players: {', '.join(sorted({l['_who'] for l in lines})) or '-'}")
+    print(f"— {label}: {len(lines)} line(s), players: {', '.join(sorted({l['_who'] for l in lines})) or '-'}"
+          + perf_note(a))
     for sid, skew in skews.items():
         print(f"— clock of session {sid} corrected by {-skew / 1000:+.1f} s")
+    print_lines(lines, a)
+
+
+def perf_note(a):
+    return f" ({a.perf_hidden} perf sample(s) hidden, --perf)" if getattr(a, "perf_hidden", 0) else ""
+
+
+def moment_arg(text, ref=None):
+    """'24/10 20:28' or '20:28' (the day of `ref`, else today) → aware datetime in the display zone."""
+    m = re.fullmatch(r"(?:(\d{1,2})/(\d{1,2})\s+)?(\d{1,2}):(\d{2})", (text or "").strip())
+    if not m: sys.exit(f"time: expected [DD/MM] HH:MM, got {text!r}")
+    base = ref or shown(datetime.now(timezone.utc))
+    day, month = (int(m.group(1)), int(m.group(2))) if m.group(1) else (base.day, base.month)
+    try:
+        naive = datetime(base.year, month, day, int(m.group(3)), int(m.group(4)))
+    except ValueError:
+        sys.exit(f"time: {text!r} is not a valid date and time")
+    # the zone offset of that day, not today's (summer / winter time)
+    return naive.replace(tzinfo=timezone.utc) if UTC else naive.astimezone()
+
+
+def cmd_span(a):
+    start = moment_arg(a.start)
+    end = moment_arg(a.end, ref=start) if a.end else start + timedelta(minutes=30)
+    if end <= start:
+        end += timedelta(days=1)
+    rows = [r for r in sessions_since(start.astimezone(timezone.utc) - timedelta(hours=12))
+            if (ts(r.get("startedAt")) or start) <= end and (ts(r.get("lastSeen")) or end) >= start]
+    if a.player:
+        rows = [r for r in rows if any(p.lower() in (r.get("player") or "").lower() for p in a.player.split(","))]
+    if not a.all:
+        rows = [r for r in rows if not r.get("autoplay")]
+    lo, hi = start.timestamp() * 1000, end.timestamp() * 1000
+    lines = [l for l in sort_lines(parse([c for r in rows for c in chunks_of_session(r["sid"])])) if lo <= l.get("t", 0) <= hi]
+    lines = apply_filters(lines, a)
+    print(f"— {hm(start, '%d/%m %H:%M')}→{hm(end, '%d/%m %H:%M')}: {len(rows)} session(s), {len(lines)} line(s), players: "
+          f"{', '.join(sorted({l['_who'] for l in lines})) or '-'}" + perf_note(a))
     print_lines(lines, a)
 
 
@@ -617,6 +664,7 @@ def main():
         p.add_argument("--stack", action="store_true"); p.add_argument("--full", action="store_true")
         p.add_argument("--json", action="store_true")
         p.add_argument("--no-lobby", action="store_true", help="game lines only (no lobby lead-in)")
+        p.add_argument("--perf", action="store_true", help="show the perf.sample lines (hidden otherwise)")
 
     p = sub.add_parser("list"); p.add_argument("--since", default="24h"); p.add_argument("--player"); p.add_argument("--game")
     p.add_argument("--all", action="store_true", help="include autoplay sessions"); p.set_defaults(f=cmd_list)
@@ -624,6 +672,8 @@ def main():
     p = sub.add_parser("timeline"); p.add_argument("target"); filters(p); p.set_defaults(f=cmd_timeline)
     p = sub.add_parser("around"); p.add_argument("target"); p.add_argument("at"); p.add_argument("--window", type=int, default=60)
     filters(p); p.set_defaults(f=cmd_timeline)
+    p = sub.add_parser("span"); p.add_argument("start"); p.add_argument("end", nargs="?")
+    p.add_argument("--all", action="store_true", help="include autoplay sessions"); filters(p); p.set_defaults(f=cmd_span)
     p = sub.add_parser("errors"); p.add_argument("--since", default="24h"); p.add_argument("--player")
     p.add_argument("--stack", action="store_true"); p.set_defaults(f=cmd_errors)
     p = sub.add_parser("grep"); p.add_argument("regex"); p.add_argument("--since", default="24h"); p.add_argument("--player")

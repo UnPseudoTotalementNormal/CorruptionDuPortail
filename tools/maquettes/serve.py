@@ -1,13 +1,15 @@
 """Serves the mockups on 127.0.0.1:PORT (opened on the phone through Clawd Code's "Aperçu de l'appli", or in a
 browser on the PC). One folder per subject, one page per round (<subject>/v1.html, v2.html...).
 GET /retours?s=<subject>&t=<text> appends the feedback to <subject>/retours.txt (the preview relay does not
-carry POST bodies); a page sends its whole state, so a new send of the same page replaces the last one. Every
-send is logged in retours.log. The subjects of the repository's worktrees (<repo>/.claude/worktrees/<name>/,
-same folder) are served too, their feedback written there. From the "maquettes" template of the skill marketplace."""
+carry POST bodies), next to the page sent; a page sends its whole state, so a new send of the same page replaces
+the last one. Every send is logged in retours.log. GET /qui answers the folder served (is this our server?).
+The subjects of the repository's worktrees (<repo>/.claude/worktrees/<name>/, same folder) are served too, their
+feedback written there. From the "maquettes" template of the skill marketplace."""
 
 import datetime
 import html
 import http.server
+import json
 import pathlib
 import re
 import threading
@@ -75,13 +77,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         if url.path in ("/", "/index.html"):  # every round of every subject, newest first (the preview opens "/")
             return self.send_body(contents().encode("utf-8"), "text/html; charset=utf-8")
+        if url.path == "/qui":  # which folder this server serves: another project's server or a plain static one may hold the port
+            return self.send_body(str(ROOT).encode("utf-8"), "text/plain; charset=utf-8")
         if url.path == "/retours":
             query = urllib.parse.parse_qs(url.query)
             text = query.get("t", [""])[0]
+            page = pathlib.Path(self.translate_path(page_of(text) or "/"))
             subject = re.sub(r"[^\w-]", "", query.get("s", ["divers"])[0]) or "divers"
             stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             with LOCK:
-                folder = home(subject)
+                # next to the page sent (here or in a worktree), whatever its data-subject says
+                folder = page.parent if page.is_file() and page.parent != ROOT else home(subject)
+                subject = folder.name
                 folder.mkdir(parents=True, exist_ok=True)
                 path = folder / "retours.txt"
                 old = path.read_text(encoding="utf-8") if path.exists() else ""
@@ -99,10 +106,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         f.write(f"--- {stamp}\n{text}\n")
                     what = "ajouté"
                 bits = folder.parent.parts
-                where = "" if folder.parent == ROOT else f" (worktree {bits[bits.index('worktrees') + 1]})"
+                where = f" (worktree {bits[bits.index('worktrees') + 1]})" if "worktrees" in bits and folder.parent != ROOT else ""
                 with open(ROOT / "retours.log", "a", encoding="utf-8") as f:  # was a vote said lost received?
                     f.write(f"{stamp} {subject}{where} {page_of(text) or '?'} : {what}, {len(text)} car.\n")
-            return self.send_body(b'{"ok":true}', "application/json")
+            body = {"ok": True, "fichier": str(path)}
+            return self.send_body(json.dumps(body, ensure_ascii=False).encode("utf-8"), "application/json")
         if self.headers.get("Range") and self.send_range(pathlib.Path(self.translate_path(url.path))):
             return
         super().do_GET()

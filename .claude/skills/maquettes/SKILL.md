@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first) — without waiting for him to say « maquettes », also in the middle of another skill or task that leads to a visible change.
 metadata:
   template: maquettes
-  template-version: 1.7.0
+  template-version: 1.8.3
 ---
 
 # Maquettes (Corruption du Portail)
@@ -56,7 +56,7 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
 
 ## 2. The page
 
-- `<body data-subject="<subject folder>">`, a header (what changes, what is missing or provisional), one
+- A header (what changes, what is missing or provisional), one
   **section** per question to settle (the screen, the way in, the words…), 2 to 5 **really different**
   variants each, not shades: `<div class="variant" data-id="E1">` with `.vhead` (`.vid` + `.vname`),
   `.vdesc` (what changes and why, one or two sentences), then the `.screen` frame
@@ -119,8 +119,13 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
   - compared with a page he liked (this project's last kept round, or another project's from the
     marketplace: the template's `variantes.md`), it is neither less polished nor less alive.
 
-- Server: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5198/`; if it does not answer, start
-  `pythonw tools/maquettes/serve.py` detached, from the main checkout (Clawd's mockups use 5199).
+- Server: `curl -s http://127.0.0.1:5198/qui` must print the path of this `tools/maquettes/`. Nothing:
+  start `serve.py` detached, from the main checkout (Windows `pythonw tools/maquettes/serve.py`, macOS
+  and Linux `nohup python3 tools/maquettes/serve.py >/dev/null 2>&1 &`) and check again. Another path or
+  another answer: the port is held by another project or another server (Clawd's mockups use 5199),
+  take a free port (`PORT` of `serve.py` and this skill). Pages are shown only through this server:
+  opened as a file, by a static server, the project's dev server or a preview panel, the votes go
+  nowhere.
 - A page long to prepare (images to render) is written `v<N>.brouillon.html`: the contents page shows it
   only once renamed `v<N>.html`, when everything is ready.
 - Look at the whole page, not only the frames: `?only=` captures have neither the header nor the
@@ -137,18 +142,27 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
     --screenshot="$(cygpath -w $PWD/E1.png)" "http://127.0.0.1:5198/<subject>/v1.html?only=E1"
   ```
   then convert to a 1200 px JPEG (PIL) to keep the repo light. Read them (fix what overflows), put them
-  in the answer (`![E1](C:\…\E1.jpg)`, one per line): Poyo often follows from his phone.
+  in the answer (`![E1](C:\…\E1.jpg)`, one per line): Poyo may follow from his phone. They come with the
+  page (step 4), they never replace it.
 
 ## 4. Show it, then wait for his answers ON THE SITE
 
-- On his phone: in the Clawd Code session, ⋮ › « Aperçu de l'appli » › port 5198. The contents page shows
-  big what waits for his vote (a subject's last round, no feedback yet), then the rest by day, as
-  thumbnails. On the PC: `http://127.0.0.1:5198/`.
+- **The message gives the page's link every round**, bare and alone on its line:
+  http://127.0.0.1:5198/<subject>/v<N>.html (never in backticks: it would no longer be tappable).
+  Tapped in Clawd Code on the phone, it opens in « Aperçu de l'appli » (0.91.2 and later); on the PC,
+  in the browser. The captures are only a preview, never instead of the link.
+- The preview lists only running servers: `/qui` answers before sending the message (step 3). It opens
+  the contents page (`/`), which shows big what waits for his vote (a subject's last round, no feedback
+  yet), then the rest by day, as thumbnails.
 - **The site is the decision channel.** Do NOT ask the same choices again with AskUserQuestion. End the
-  turn with the captures + « dis-moi quand tu as envoyé tes retours ». Questions that are not about the
+  turn with the captures, where to vote and « vote sur la page, puis dis-moi quand tu as envoyé tes
+  retours ». Questions that are not about the
   screens (network, export, scope) go in the page too: a section with text variants.
-- He votes, writes, taps « Envoyer mes retours à Claude »: it lands in `<subject>/retours.txt` (dated).
-  **Before anything else on his next message, read the end of that file**, even if he does not mention it.
+- He votes, writes, taps « Envoyer mes retours à Claude »: it lands in the `retours.txt` of the page's
+  folder (dated). **Before anything else on his next message, read the end of that file**, even if he
+  does not mention it. A send the server did not take says so on the button and gives him the text to
+  paste in the session (`Page : …` then one line per variant): read it like a send, and repair the
+  server (step 3) before the next round.
 
 **Reading the feedback**
 - A send is the page's whole state: a new send of the same page replaces the previous one
@@ -164,7 +178,8 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
 - A section left without a vote: the next message says the « (par défaut) » choice taken, never
   silently.
 - Nothing new in `retours.txt` while he says he voted: do not code; look at
-  `tools/maquettes/retours.log` (received, ignored, in which folder) and tell him.
+  `tools/maquettes/retours.log` (received, ignored, in which folder) and `/qui`, tell him, and ask
+  what the button says (the text to paste if it is there).
 
 **Rounds that go fast**
 - A round of edits shows again only what is still open, the choices made already in (said at the top).

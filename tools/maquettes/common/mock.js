@@ -1,11 +1,13 @@
 // Mockup page plumbing: theme, screen scaling, ?only=<id> (one frame alone, for the captures), votes and
 // remarks kept in localStorage and sent to /retours. Load it LAST, after the variants are built.
-// The page sets <body data-subject="<folder>">. Everything stays inside this function: a page's own globals
-// (fit, root...) are never replaced. From the "maquettes" template of the skill marketplace.
+// The feedback goes to the page's folder; a send serve.py did not take shows its text to paste in the session.
+// Everything stays inside this function: a page's own globals (fit, root...) are never replaced.
+// From the "maquettes" template of the skill marketplace.
 (() => {
   const root = document.documentElement;
   const pageTheme = root.dataset.theme || "dark";
-  const subject = document.body.dataset.subject || "divers";
+  // the subject is the page's folder; data-subject only for a page outside one
+  const subject = location.pathname.split("/").slice(-2, -1)[0] || document.body.dataset.subject || "divers";
 
   // ?only=E1 : that variant's frame alone (.phone or .screen; a variant without a frame, whole)
   const only = new URLSearchParams(location.search).get("only");
@@ -142,10 +144,32 @@
       if (!lines.length) { send.textContent = "Rien à envoyer pour l’instant"; setTimeout(() => send.textContent = label, 2000); return; }
       lines.unshift("Page : " + location.pathname);
       if (document.querySelector(".toggle") && root.dataset.theme !== pageTheme) lines.push("Thème regardé : " + root.dataset.theme);
-      try {
-        const r = await fetch("/retours?s=" + encodeURIComponent(subject) + "&t=" + encodeURIComponent(lines.join("\n")));
-        send.textContent = r.ok ? "Envoyé ✓, dis-le à Claude dans la session" : "Échec de l’envoi";
-      } catch (e) { send.textContent = "Échec de l’envoi"; }
+      const text = lines.join("\n");
+      let got = false;
+      try { // only serve.py answers {"ok":true}: a page opened as a file, or by another server (static, dev server), keeps nothing
+        const r = await fetch("/retours?s=" + encodeURIComponent(subject) + "&t=" + encodeURIComponent(text));
+        got = r.ok && (await r.json()).ok === true;
+      } catch (e) {}
+      let copy = document.getElementById("send-copy");
+      if (got) {
+        if (copy) copy.remove();
+        send.textContent = "Envoyé ✓, dis-le à Claude dans la session";
+        return;
+      }
+      // not received: the whole text, to paste in the session instead of retyping every choice
+      if (!copy) {
+        copy = document.createElement("textarea");
+        copy.id = "send-copy";
+        copy.readOnly = true;
+        send.after(copy);
+      }
+      copy.value = text;
+      copy.rows = Math.min(lines.length + 1, 14);
+      copy.select();
+      let copied = false;
+      try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+      send.textContent = copied ? "Claude ne l’a pas reçu : texte copié, colle-le dans la session"
+                                : "Claude ne l’a pas reçu : copie ce texte dans la session";
     };
   }
 })();

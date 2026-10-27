@@ -1,6 +1,7 @@
 #region
 
 using System;
+using Diagnostics.Logs;
 using Netcode.Transports.Facepunch;
 using Steamworks;
 using Unity.Netcode;
@@ -59,6 +60,7 @@ namespace Network.Steam
             }
             _networkManager.NetworkConfig.NetworkTransport = _transport;
             Debug.Log("[STEAM] Network transport = Steam Datagram Relay (FacepunchTransport).");
+            GameLog.Info("net", "steam.runtime.transport", "transport", nameof(FacepunchTransport));
         }
 
         private void Awake()
@@ -81,6 +83,7 @@ namespace Network.Steam
                 SteamClient.Init(GameValues.STEAM_APP_ID, false);
                 SteamNetworkingUtils.InitRelayNetworkAccess();
                 Debug.Log($"[STEAM] Client ready: {SteamClient.Name} ({SteamClient.SteamId.Value}), app {GameValues.STEAM_APP_ID}.");
+                GameLog.Info("net", "steam.runtime.ready", "appId", GameValues.STEAM_APP_ID, "steamId", SteamClient.SteamId.Value.ToString());
                 SteamInvites.Listen();
                 return true;
             }
@@ -88,6 +91,7 @@ namespace Network.Steam
             {
                 // Steam closed, not logged in, or steam_api64.dll missing: the menu shows NotRunningMessage.
                 Debug.LogError($"[STEAM] Steam client unavailable: {e.Message}");
+                GameLog.Error("net", "steam.runtime.unavailable", "message", e.Message);
                 return false;
             }
         }

@@ -43,6 +43,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
         if (_localCharacter == null)
         {
             Diagnostics.Logs.GameLog.Warn("message", "message.send.error", "reason", "no-local-character");
+            return;
         }
         if (_localCharacter.messageLeft.Value <= 0)
         {

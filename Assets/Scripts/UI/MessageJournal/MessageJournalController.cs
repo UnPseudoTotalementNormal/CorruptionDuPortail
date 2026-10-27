@@ -64,6 +64,7 @@ namespace UI.MessageJournal
         {
             if (_canDismiss && _isOpen && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.journal.escape");
                 Close();
             }
         }

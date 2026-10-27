@@ -71,6 +71,7 @@ namespace GameLogic.GameStates
                 if (gameManager.IsServer && !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is VoteRecapState))
                 {
                     Debug.Log("[LEAVE] VoteRecapState: no longer the current state when its recap ended — not advancing.");
+                    Diagnostics.Logs.GameLog.Info("state", "state.advance.skipped", "from", nameof(VoteRecapState), "current", gameManager.currentGameStateIndex.Value);
                 }
                 else if (VoteState.mostVotedPlayer == VoteState.SKIP_VOTE_ID)
                 {

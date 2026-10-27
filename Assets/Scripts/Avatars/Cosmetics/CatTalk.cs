@@ -52,6 +52,10 @@ namespace Avatars.Cosmetics
                 _openScale = mouth.localScale;
                 mouth.gameObject.SetActive(false);
             }
+            else if (_avatar != null)
+            {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.talk.unwired", "object", name);
+            }
         }
 
         private void OnDisable()

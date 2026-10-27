@@ -89,6 +89,7 @@ namespace Network
                     _approve = true;
                     _rejoin = true;
                     Debug.Log($"[JOIN-GATE] Connection {_request.ClientNetworkId} approved as a rejoin of seat {_claimedSeat}.");
+                    GameLog.Info("net", "join.approved.rejoin", "connection", _request.ClientNetworkId, "seat", _claimedSeat);
                 }
                 else
                 {
@@ -133,6 +134,8 @@ namespace Network
                 {
                     Debug.LogWarning($"[JOIN-GATE] Build mismatch allowed because an Editor is involved: joiner " +
                                      $"'{(_hasPayload ? _payload.BuildVersion : "none")}', host '{Application.version}'.");
+                    GameLog.Warn("net", "join.mismatch.allowed", "connection", _clientId, "reason", "editor",
+                        "joiner", _hasPayload ? _payload.BuildVersion : "none", "host", Application.version);
                 }
 
                 // Steam build: Steam lobbies have no password of their own, the host checks it here. A rejoin is

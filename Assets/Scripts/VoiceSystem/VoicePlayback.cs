@@ -70,12 +70,14 @@ namespace VoiceSystem
                 if (_result != RESULT.OK)
                 {
                     Debug.LogError($"[VOICE] FMOD createSound failed for seat {seat}: {_result}");
+                    Diagnostics.Logs.GameLog.Error("voice", "voice.playback.fmod", "seat", seat, "step", "createSound", "result", _result.ToString());
                     return null;
                 }
                 _result = _core.playSound(_sound, default, true, out Channel _channel);
                 if (_result != RESULT.OK)
                 {
                     Debug.LogError($"[VOICE] FMOD playSound failed for seat {seat}: {_result}");
+                    Diagnostics.Logs.GameLog.Error("voice", "voice.playback.fmod", "seat", seat, "step", "playSound", "result", _result.ToString());
                     _sound.release();
                     return null;
                 }
@@ -84,6 +86,7 @@ namespace VoiceSystem
             catch (Exception e)
             {
                 Debug.LogError($"[VOICE] FMOD unavailable, seat {seat} stays silent: {e.Message}");
+                Diagnostics.Logs.GameLog.Error("voice", "voice.playback.fmod", "seat", seat, "step", "unavailable", "result", e.Message);
                 return null;
             }
         }

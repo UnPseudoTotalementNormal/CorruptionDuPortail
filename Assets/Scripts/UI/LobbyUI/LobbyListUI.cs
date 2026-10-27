@@ -50,6 +50,7 @@ namespace UI.LobbyUI
             catch (Exception e)
             {
                 Debug.LogError($"Échec du rafraîchissement de la liste des lobbies: {e}");
+                Diagnostics.Logs.GameLog.Error("lobby", "lobby.list.failed", "reason", e.Message, "type", e.GetType().Name, "step", "list-ui");
             }
             finally
             {

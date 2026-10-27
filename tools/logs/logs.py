@@ -16,6 +16,11 @@ missing ones are downloaded.
     python tools/logs/logs.py switch [on|off] [--verbose NAME ...] [--debug-cat CAT ...] [--min-level D|I|W|E]
     python tools/logs/logs.py reports [--since 7d] [--player NAME] [--download DIR]  F8 reports and crash alerts
 
+--local [DIR] reads the local log files instead of Firestore (default: this PC's game folder,
+%USERPROFILE%/AppData/LocalLow/DefaultCompany/CorruptionDuPortail/logs): every autoplay process writes one there,
+uploaded only with AUTOPLAY_LOGS=online. Same commands and filters (list/games/timeline/around/span/errors/grep/tail);
+autoplay sessions are shown without --all.
+
 Filters (timeline / around): --level W (minimum level), --cat vote,power (categories), --player Wouh,
 --grep REGEX, --stack (stack traces), --full (no truncation, every state picture), --json (raw lines),
 --no-lobby (game lines only), --utc (times in UTC), --perf (show the perf.sample lines, hidden otherwise).
@@ -218,6 +223,67 @@ def chunks_of_game(game):
         "where": {"fieldFilter": {"field": {"fieldPath": "gameIds"}, "op": "ARRAY_CONTAINS",
                                   "value": {"stringValue": game}}},
     }))
+
+
+# ---------- local files (--local) ----------
+
+LOCAL_DEFAULT = Path.home() / "AppData" / "LocalLow" / "DefaultCompany" / "CorruptionDuPortail" / "logs"
+_local_dir = None
+
+
+def _iso(ms):
+    return datetime.fromtimestamp(ms / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def local_sessions():
+    """Every <sid>.meta.json of the local folder, shaped like a Firestore session row."""
+    out = []
+    for p in _local_dir.glob("*.meta.json"):
+        try:
+            m = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        log = p.with_name(m["sid"] + ".ndjson")
+        m["_log"] = log
+        m["startedAt"] = _iso(m.get("startMs", 0))
+        m["lastSeen"] = _iso(log.stat().st_mtime * 1000 if log.exists() else m.get("startMs", 0))
+        out.append(m)
+    return out
+
+
+def local_sessions_since(since, page=300):
+    rows = [m for m in local_sessions() if ts(m["startedAt"]) >= since]
+    return sorted(rows, key=lambda m: m.get("startMs", 0), reverse=True)
+
+
+def local_chunk(m, after=-1):
+    """The whole file as one chunk; its seq is the byte length, so `tail` reads only what was appended since."""
+    data = m["_log"].read_bytes() if m["_log"].exists() else b""
+    start = max(after, 0)
+    return {"sid": m["sid"], "seq": len(data), "player": m.get("player"),
+            "lines": data[start:].decode("utf-8", errors="replace")}
+
+
+def local_chunks_of_session(sid, after_seq=-1):
+    m = next((m for m in local_sessions() if m["sid"] == sid), None)
+    if not m: return []
+    c = local_chunk(m, after_seq)
+    return [c] if c["lines"] else []
+
+
+def local_chunks_of_game(game):
+    return [local_chunk(m) for m in local_sessions() if game in (m.get("gameIds") or [])]
+
+
+def use_local(folder):
+    global _local_dir, sessions_since, chunks_of_session, chunks_of_game, session_players, chunks_of_session_range
+    _local_dir = Path(folder)
+    if not _local_dir.is_dir(): sys.exit(f"--local: no folder {_local_dir}")
+    sessions_since = local_sessions_since
+    chunks_of_session = local_chunks_of_session
+    chunks_of_game = local_chunks_of_game
+    session_players = lambda sids: {m["sid"]: m.get("player") for m in local_sessions()}
+    chunks_of_session_range = lambda sid, lo, hi: []  # one chunk per session: the lobby lines are already in it
 
 
 # ---------- lines ----------
@@ -655,6 +721,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--utc", action="store_true", help="times in UTC instead of this PC's zone")
+    common.add_argument("--local", nargs="?", const=str(LOCAL_DEFAULT), metavar="DIR",
+                        help="read the local log files (autoplay runs) instead of Firestore")
     sub = ap.add_subparsers(dest="cmd", required=True)
     add = sub.add_parser
     sub.add_parser = lambda name, **kw: add(name, parents=[common], **kw)
@@ -690,6 +758,9 @@ def main():
 
     a = ap.parse_args()
     UTC = a.utc
+    if a.local:
+        use_local(a.local)
+        if hasattr(a, "all"): a.all = True
     a.f(a)
 
 

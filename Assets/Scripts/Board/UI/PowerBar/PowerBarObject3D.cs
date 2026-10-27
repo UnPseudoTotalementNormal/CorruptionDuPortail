@@ -39,8 +39,14 @@ namespace Board.UI.PowerBar
         [Header("Single-use copy")]
         [SerializeField] private Material singleUseCoatMaterial;
         [SerializeField] private GameObject singleUseDripPrefab;
+        // APPENDED (board T26) — red for a copy usable at once (no Marque budget); the green pair above is for the copies
+        // under Ugës's one-per-night budget.
+        [SerializeField] private Material singleUseFreeCoatMaterial;
+        [SerializeField] private GameObject singleUseFreeDripPrefab;
 
         private Power stolenCopyWatched;
+        // The coat currently on the model (null = no mark yet), so a budget change swaps it instead of stacking.
+        private Material appliedCoat;
 
         private Transform powerViusalTransform;
         private Transform powerColliderTransform;
@@ -75,12 +81,14 @@ namespace Board.UI.PowerBar
                 UnwatchStolenCopy();
                 stolenCopyWatched = power;
                 power.isStolenCopy.OnValueChanged += OnStolenCopyChanged;
+                power.marqueSourceId.OnValueChanged += OnMarqueSourceChanged;
             }
 
             if (powerViusalTransform != null)
             {
                 Destroy(powerViusalTransform.gameObject);
             }
+            appliedCoat = null;
             if (powerColliderTransform != null)
             {
                 Destroy(powerColliderTransform.gameObject);
@@ -139,6 +147,7 @@ namespace Board.UI.PowerBar
             if (stolenCopyWatched != null)
             {
                 stolenCopyWatched.isStolenCopy.OnValueChanged -= OnStolenCopyChanged;
+                stolenCopyWatched.marqueSourceId.OnValueChanged -= OnMarqueSourceChanged;
             }
             stolenCopyWatched = null;
         }
@@ -152,9 +161,30 @@ namespace Board.UI.PowerBar
             }
         }
 
+        // The budget link is written in the same server tick as the one-shot flag but may replicate after it.
+        private void OnMarqueSourceChanged(ulong _previous, ulong _source)
+        {
+            if (power != null && power.isStolenCopy.Value)
+            {
+                ApplySingleUseMark();
+            }
+        }
+
         private void ApplySingleUseMark()
         {
-            SingleUseSlimeMark.Apply(powerViusalTransform, singleUseCoatMaterial, singleUseDripPrefab);
+            bool _underMarqueBudget = power != null && power.marqueSourceId.Value != 0;
+            Material _coat = _underMarqueBudget || !singleUseFreeCoatMaterial ? singleUseCoatMaterial : singleUseFreeCoatMaterial;
+            GameObject _drips = _underMarqueBudget || !singleUseFreeDripPrefab ? singleUseDripPrefab : singleUseFreeDripPrefab;
+            if (appliedCoat == _coat)
+            {
+                return;
+            }
+            if (appliedCoat)
+            {
+                SingleUseSlimeMark.Remove(powerViusalTransform, appliedCoat);
+            }
+            SingleUseSlimeMark.Apply(powerViusalTransform, _coat, _drips);
+            appliedCoat = _coat;
         }
 
         protected override void OnAnimateOut()

@@ -120,6 +120,11 @@ that never logged). For each one, close it where it happens, so the next playtes
 Do not log for the sake of it: a gap that would not have changed the answer stays open. End the answer with a short
 "Logs added" list (event → the question it will answer), and say what the logs prove vs what they only suggest.
 
+Record each closed game-log gap as one line in `tools/logs/gaps.md` (date, report, the unanswered question, event
+added). Read it first: when the new gap is of a kind already listed (same sort of code, same missing information),
+the per-feature rule is not enough there → fix the harness too (a `log_guard` check, a CLAUDE.md or
+project-context.md line, a skill step) and say so.
+
 Other tools:
 - Rules check (after editing `firebase/firestore.rules`, deploy `firebase deploy --only firestore`):
   `python tools/logs/check_rules.py` (all PASS).

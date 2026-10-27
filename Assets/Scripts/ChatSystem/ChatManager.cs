@@ -233,6 +233,8 @@ namespace ChatSystem
                 if (_chatMessage.chatId == (int)ChatWindowIDs.Server)
                 {
                     Debug.LogWarning($"[CHAT] Client {_transportSender} tried to write in the read-only server channel.");
+                    GameLog.Warn("chat", "chat.send.refused", "from", _chatMessage.senderClientId, "connection", _transportSender,
+                        "channel", _chatMessage.chatId, "reason", "read-only");
                     return;
                 }
             }
@@ -241,6 +243,8 @@ namespace ChatSystem
             if (!_isSentinel && !_membership.IsMember(_chatMessage.chatId, _chatMessage.senderClientId))
             {
                 Debug.LogWarning($"[CHAT] {_chatMessage.senderClientId} is not a member of channel {_chatMessage.chatId}; message dropped.");
+                GameLog.Warn("chat", "chat.send.refused", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId,
+                    "reason", "not-member");
                 return;
             }
 

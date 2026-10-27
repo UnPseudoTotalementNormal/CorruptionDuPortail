@@ -97,6 +97,7 @@ namespace GameLogic.GameStates
                     if (gameManager.HasClientLeft(_currentCharacter.ownerClientId.Value))
                     {
                         Debug.Log($"[LEAVE] Awakening: {_currentCharacter.ownerClientId.Value} is away (seat reserved) — skipped.");
+                        Diagnostics.Logs.GameLog.Info("night", "night.skip.away", "seat", _currentCharacter.ownerClientId.Value, "layer", _layerToAwake);
                         continue;
                     }
                     
@@ -261,6 +262,7 @@ namespace GameLogic.GameStates
             }
 
             Debug.Log($"[LEAVE] AwakeningState: chained leaver {_ownerId} was awakened this layer — draining it so the layer can advance.");
+            Diagnostics.Logs.GameLog.Info("night", "night.drain.leaver", "seat", _ownerId, "awakened", _character.isAwakened.Value, "remaining", currentlyAwakenedCharacters.Count);
 
             // Prefer the production drain: sleeping flips isAwakened, whose OnValueChanged fires
             // OnCharacterAwakeningChanged, which removes the character and advances the layer if it empties.

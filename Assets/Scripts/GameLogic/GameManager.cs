@@ -355,6 +355,7 @@ namespace GameLogic
             if (currentGameStateIndex.Value != _from)
             {
                 Debug.Log($"[LEAVE] WaitAFrameAndNextGameState: state {_from} was left meanwhile — not advancing.");
+                GameLog.Info("state", "state.advance.skipped", "from", _from, "current", currentGameStateIndex.Value);
                 return;
             }
             NextGameState();
@@ -978,6 +979,7 @@ namespace GameLogic
             {
                 // A dead connection of a seat whose player already plays again through another connection: stale.
                 Debug.Log($"[REJOIN] Late disconnect of connection {_clientId}: seat {_clientId} is played through connection {characterManager.TransportOfSeat(_clientId)} now — ignored.");
+                GameLog.Info("net", "leave.stale", "connection", _clientId, "transport", characterManager.TransportOfSeat(_clientId));
                 return;
             }
             if (characterManager != null && characterManager.Seats.Unbind(_clientId, out ulong _seat))

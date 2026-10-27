@@ -44,6 +44,7 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 - **Server authority strict** — Mutate game state on server only. Clients propose via `ServerRpc`s.
 - **Async = UniTask** (`UniTask`, `UniTaskVoid`), never `System.Threading.Tasks.Task`.
 - **Audio = FMOD** via `AudioSystem/GameAudioManager`. Never `AudioSource` for gameplay sounds.
+- **Every feature ships with its playtest logs** — in the same commit, unasked: `GameLog.Info|Warn("cat", "evt.name", key, value…)` for each player action (with its target), each silent refusal (early `return` on an input, with the reason), each step of a sequence, each server decision. A feature without logs is invisible in playtest reports. Rules: `project-context.md` § Playtest logs. The `log_guard` hook blocks a game-code commit with no `GameLog` call; write `Logs: none (<why>)` in the body only when there is truly nothing to log (shader, pure refactor).
 
 ## Build / Test / Run — use the official Unity CLI (MCP = fallback only)
 
@@ -76,6 +77,14 @@ Playtest bug reports (Wouh on Discord…): read what the game recorded online fi
 (`tools/logs/logs.py`, Firestore project `corruption-du-portail`).
 
 After any code change: check `console_status` for compile errors before assuming anything works. After a feature completes: run the tests (filter when relevant). Add unit tests for new powers/roles, network flows, non-trivial logic, or bugs with subtle root causes.
+
+## When a preventable problem slips through
+
+A forgotten rule or an already-known trap is a harness gap, not a person's fault. Do not just fix the instance: find
+what was missing (a hook that could check it, a rule absent from this file, a skill step, a doc too long to be read,
+information never written down) and fix it at the strongest level that fits: hook > CLAUDE.md > skill >
+project-context.md > memory. Example: playtest logs were skipped on features although the rule existed in
+project-context.md → `log_guard` hook + Critical patterns line + skill steps.
 
 ## AI working time
 

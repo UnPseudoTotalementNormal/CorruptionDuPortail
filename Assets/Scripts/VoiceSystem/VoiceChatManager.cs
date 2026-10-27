@@ -231,6 +231,7 @@ namespace VoiceSystem
             else
             {
                 Debug.LogWarning($"[VOICE] {_pending.Length} bytes captured at once: over one datagram, dropped.");
+                GameLog.Verbose("voice", "voice.capture.dropped", "bytes", _pending.Length, "max", MaxPacketBytes);
             }
             _pending.SetLength(0);
         }

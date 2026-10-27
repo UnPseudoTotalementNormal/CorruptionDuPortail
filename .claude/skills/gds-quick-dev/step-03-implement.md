@@ -36,6 +36,8 @@ Hand `{spec_file}` to a sub-agent/task and let it implement. If no sub-agents ar
 
 Before leaving this step, verify every task in the `## Tasks & Acceptance` section of `{spec_file}` is complete. Mark each finished task `[x]`. If any task is not done, finish it before proceeding.
 
+**Playtest logs.** Every player action, silent refusal (early `return` on an input), sequence step and server decision the change adds must write a `GameLog` line (rules: `_bmad-output/project-context.md` § Playtest logs). Add the missing ones now, even if the spec does not list them.
+
 ## NEXT
 
 Read fully and follow `./step-04-review.md`

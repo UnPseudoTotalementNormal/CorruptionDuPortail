@@ -149,6 +149,9 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - Every feature ships with its logs: each player action (click, key) with its target, each **silent refusal** (early
   `return` on a player input: "I clicked, nothing happened") with its reason, each step of a sequence (start / end /
   cut short). A captured `Debug.Log("[TAG] …")` reaches the logs too (category `unity`) but is not searchable by key.
+- Enforced by `.claude/hooks/log_guard.ps1` (PreToolUse): a commit adding ≥ 5 lines of game code (outside Editor, Tests,
+  Autoplay, Rendering, Facepunch, Domain, Diagnostics) with no `GameLog.` call is blocked. Escape hatch for code with
+  truly nothing to log: a `Logs: none (<why>)` line in the commit body.
 - `CDP_PLAYTEST_LOGS` is added **only** by `CdpBuild` (CI playtest builds). Never in ProjectSettings: the Editor would
   compile the calls in. Code that needs the runtime (Firebase, file) stays inside `#if CDP_PLAYTEST_LOGS`; the facade's
   `[Conditional]` entry points strip the call sites elsewhere.

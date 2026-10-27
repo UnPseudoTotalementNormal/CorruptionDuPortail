@@ -335,6 +335,8 @@ namespace GameLogic.GameStates
             if (boardManager == null || gameManager.currentGameStateIndex.Value != _from)
             {
                 Debug.Log($"[LEAVE] TakeDownThePortal: step {_from} was left during the card wait — selection not opened.");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.selection.skipped", "mage", mageCharacterOwnerId, "step", _from,
+                    "reason", boardManager == null ? "no-board" : "step-left");
                 return;
             }
             WaitForCharacterClickServer();

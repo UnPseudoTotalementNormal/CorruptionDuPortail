@@ -163,6 +163,7 @@ namespace UI.RoleCard
             if (_isOpen && UnityEngine.InputSystem.Keyboard.current != null &&
                 UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
             {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.escape");
                 Close();
             }
         }

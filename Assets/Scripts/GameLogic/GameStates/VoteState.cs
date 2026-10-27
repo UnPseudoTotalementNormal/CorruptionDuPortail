@@ -310,6 +310,7 @@ namespace GameLogic.GameStates
                 else
                 {
                     Debug.Log($"[LEAVE] VoteState: most-voted player {_winner} is no longer present — skipping chaining.");
+                    GameLog.Info("vote", "vote.chain.skipped", "winner", _winner, "reason", "absent");
                 }
             }
             

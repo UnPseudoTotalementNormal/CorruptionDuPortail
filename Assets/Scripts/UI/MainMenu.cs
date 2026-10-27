@@ -90,6 +90,7 @@ namespace UI
             if (_isBusy)
             {
                 Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
+                GameLog.Info("net", "steam.join.request", "lobby", _lobbyId, "source", "menu", "ignored", true, "reason", "menu busy");
                 LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
                 return;
             }
@@ -98,6 +99,7 @@ namespace UI
             if (_browser == null)
             {
                 Debug.LogError("[STEAM] No server browser in the menu: cannot join the friend's game.");
+                GameLog.Error("net", "steam.join.failed", "lobby", _lobbyId, "reason", "no server browser");
                 return;
             }
             hostMenuCanvasGroup.DoHideGroup();
@@ -435,6 +437,7 @@ namespace UI
             catch (System.Exception e)
             {
                 Debug.LogError($"[REJOIN] Error rejoining the game: {e}");
+                GameLog.Error("net", "rejoin.error", "type", e.GetType().Name, "message", e.Message);
                 if (_logFailReason == "connection failed")
                 {
                     _logFailReason = e.Message;

@@ -69,6 +69,7 @@ namespace GameLogic.GameStates
                 if (_chainingCharacter == null)
                 {
                     Debug.Log($"[LEAVE] ChainingState: character {_chainingCharacterId} no longer present — skipping its chaining animation.");
+                    Diagnostics.Logs.GameLog.Info("chain", "chain.skip.absent", "seat", _chainingCharacterId);
                     continue;
                 }
 

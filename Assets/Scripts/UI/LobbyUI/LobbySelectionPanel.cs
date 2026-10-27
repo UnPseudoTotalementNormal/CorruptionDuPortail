@@ -110,6 +110,7 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Échec de la connexion au lobby avec mot de passe: {e}");
+                GameLog.Error("net", "join.failed", "reason", e.Message, "type", e.GetType().Name, "path", "password");
                 loadingCanvasGroup.DoHideGroup();
                 passwordInputField.text = "";
             }
@@ -210,6 +211,7 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Échec de la connexion au lobby: {e}");
+                GameLog.Error("net", "join.failed", "reason", e.Message, "type", e.GetType().Name, "path", "list");
                 HideLoadingSafe();
             }
             finally
@@ -259,6 +261,7 @@ namespace UI.Lobby
                 catch (Exception e)
                 {
                     Debug.LogError($"Failed to get lobbies: {e.Message}");
+                    GameLog.Warn("lobby", "lobby.list.failed", "reason", e.Message, "step", "get");
                     return;
                 }
 
@@ -307,6 +310,7 @@ namespace UI.Lobby
             catch (Exception e)
             {
                 Debug.LogError($"Échec du rafraîchissement de la liste des lobbies: {e}");
+                GameLog.Error("lobby", "lobby.list.failed", "reason", e.Message, "type", e.GetType().Name, "step", "refresh");
             }
             finally
             {

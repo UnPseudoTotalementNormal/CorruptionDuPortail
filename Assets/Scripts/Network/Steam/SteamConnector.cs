@@ -53,11 +53,18 @@ namespace Network.Steam
         /// </summary>
         public static bool StartClient(NetworkManager networkManager, GameLobby lobby, string lobbyPassword)
         {
-            if (!lobby.TryGetData(GameLobby.HostSteamIdKey, out string _rawHostId) || !ulong.TryParse(_rawHostId, out ulong _hostSteamId))
+            if (!TryGetHostSteamId(lobby, out ulong _hostSteamId, out bool _fromOwner))
             {
                 Debug.LogError("[STEAM] Lobby without a host SteamID: not a Steam game.");
-                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.failed", "reason", "no host SteamID", "lobby", lobby.Id));
+                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.failed", "reason", "no host SteamID", "lobby", lobby.Id,
+                    "dataKeys", string.Join(",", lobby.Data.Keys)));
                 return false;
+            }
+            if (_fromOwner)
+            {
+                // Playtest 2026-10-24: every join read a lobby without this key although the host writes it.
+                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.hostFromOwner", "lobby", lobby.Id,
+                    "host", _hostSteamId.ToString(), "dataKeys", string.Join(",", lobby.Data.Keys)));
             }
 
             FacepunchTransport _transport = networkManager.GetComponent<FacepunchTransport>();
@@ -82,6 +89,22 @@ namespace Network.Steam
             GameLog.Guarded(() => GameLog.Info("net", "steam.client", "host", _hostSteamId.ToString(), "lobby", lobby.Id,
                 "code", lobby.Code, "hasPassword", !string.IsNullOrEmpty(lobbyPassword)));
             return true;
+        }
+
+        /// <summary>
+        /// The SteamID64 to dial: the one the host published in the lobby data, else the lobby owner (Steam tells it to
+        /// every member, and the host is the one who created the lobby).
+        /// </summary>
+        public static bool TryGetHostSteamId(GameLobby lobby, out ulong hostSteamId, out bool fromOwner)
+        {
+            fromOwner = false;
+            if (lobby.TryGetData(GameLobby.HostSteamIdKey, out string _published) && ulong.TryParse(_published, out hostSteamId)
+                && hostSteamId != 0)
+            {
+                return true;
+            }
+            fromOwner = true;
+            return ulong.TryParse(lobby.HostId, out hostSteamId) && hostSteamId != 0;
         }
     }
 }

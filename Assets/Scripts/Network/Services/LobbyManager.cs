@@ -129,6 +129,7 @@ namespace Network.Services
                 Debug.Log($"Lobby créé: {currentLobby.Name} (ID: {currentLobby.Id}, code: {currentLobby.Code})");
                 GameLog.Guarded(() => GameLog.Info("lobby", "lobby.created", "lobby", currentLobby.Id, "code", currentLobby.Code,
                     "maxPlayers", _settings.maxPlayers, "hasPassword", !string.IsNullOrEmpty(_settings.password),
+                    "locked", _settings.isLocked,
                     "backend", GameFlavor.IsSteam ? "steam" : "ugs"));
                 return currentLobby;
             }
@@ -487,25 +488,33 @@ namespace Network.Services
             pollCancellation = null;
         }
 
-        public async UniTask SetLobbyLocked(bool isLocked)
+        // True once the backend accepted the change (LobbyState retries the opening on false).
+        public async UniTask<bool> SetLobbyLocked(bool isLocked)
         {
             if (currentLobby == null)
             {
                 OnLobbyError?.Invoke("Aucun lobby actif");
-                return;
+                return false;
             }
 
             try
             {
                 await Backend.SetLockedAsync(currentLobby, isLocked);
+                // Without this the local copy only learns it at the next poll (~5 s).
+                if (currentLobby != null)
+                {
+                    currentLobby.IsLocked = isLocked;
+                }
                 Debug.Log($"Lobby {(isLocked ? "verrouillé" : "déverrouillé")}");
                 GameLog.Info("lobby", "lobby.locked", "locked", isLocked);
+                return true;
             }
             catch (LobbyBackendException e)
             {
                 Debug.LogError($"Échec de verrouillage du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.lock.failed", "locked", isLocked, "reason", e.Message);
                 OnLobbyError?.Invoke($"Impossible de verrouiller le lobby: {e.Message}");
+                return false;
             }
         }
 

@@ -1523,14 +1523,23 @@ namespace Autoplay
                 characterManager = CompositionRoot.For(networkManager).CharacterManager;
                 return gameManager != null && gameManager.IsSpawned && characterManager != null &&
                        gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState &&
-                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
-            }, 120f, "relay: GameScene never reached LobbyState with the host's character spawned");
+                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId) &&
+                       IsCloudLobbyOpen();
+            }, 120f, "relay: GameScene never reached LobbyState with the host's character spawned and the lobby open");
             if (_context.Failed) yield break;
             _context.Journal.Record("relay.lobby", GameCode.gameCode);
             if (rejoinGraceSeconds > 0f)
             {
                 _context.Journal.Record("seat.grace", string.Format(CultureInfo.InvariantCulture, "{0:0.0}s", rejoinGraceSeconds));
             }
+        }
+
+        // The menu creates the lobby locked and LobbyState opens it once GameScene is loaded: clients joining by code
+        // before that are refused, so session.ready waits for it.
+        private static bool IsCloudLobbyOpen()
+        {
+            LobbyManager _lobbyManager = LobbyManager.instance;
+            return _lobbyManager == null || !_lobbyManager.IsInLobby || !_lobbyManager.CurrentLobby.IsLocked;
         }
 
         private IEnumerator JoinThroughMenuByCode(AutoplayContext _context)

@@ -655,7 +655,10 @@ namespace UI
                     password = null;
                 }
                 _lobbySettings.password = password;
-                _lobbySettings.isLocked = false;
+                // Hidden from the list (and closed to codes / Steam invites) until the host has loaded GameScene: a
+                // client joining while the host's scene load is still in progress gets a broken scene sync. LobbyState
+                // opens it once the load event completes.
+                _lobbySettings.isLocked = true;
                 _lobbySettings.isPrivate = false;
                 _lobbySettings.lobbyName = lobbyCreatingName;
                 _lobbySettings.maxPlayers = 15;

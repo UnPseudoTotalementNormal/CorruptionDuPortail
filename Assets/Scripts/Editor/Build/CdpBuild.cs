@@ -68,6 +68,44 @@ public static class CdpBuild
         }
     }
 
+    /// <summary>
+    /// Autoplay build (<c>tools/autoplay/unityctl.sh build</c>): Development Relay player with the playtest logs compiled
+    /// in, so autoplay games write the same GameLog lines as a playtest: locally (read with <c>logs.py --local</c>),
+    /// online only with <c>-playtest-logs-upload</c>, always marked autoplay. Writes <c>build-result.json</c> next to
+    /// the exe once done (the wrapper waits for it).
+    /// </summary>
+    public static void BuildAutoplay()
+    {
+        string _path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "Autoplay", PlayerSettings.productName + ".exe"));
+        string _resultPath = Path.Combine(Path.GetDirectoryName(_path), "build-result.json");
+        var _result = new AutoplayBuildResult { result = "Exception" };
+        try
+        {
+            if (File.Exists(_resultPath)) File.Delete(_resultPath);
+            BuildReport _report = Build(BuildTarget.StandaloneWindows64, _path, false, BuildOptions.Development, true);
+            _result.result = _report.summary.result.ToString();
+            _result.errors = _report.summary.totalErrors;
+        }
+        catch (Exception _e)
+        {
+            _result.message = _e.Message;
+            Debug.LogException(_e);
+        }
+        finally
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_resultPath));
+            File.WriteAllText(_resultPath, JsonUtility.ToJson(_result));
+        }
+    }
+
+    [Serializable]
+    private sealed class AutoplayBuildResult
+    {
+        public string result;
+        public int errors;
+        public string message;
+    }
+
     public static BuildReport Build(BuildTarget target, string locationPath, bool steam, BuildOptions options, bool playtestLogs = false)
     {
         var _defines = new List<string>();

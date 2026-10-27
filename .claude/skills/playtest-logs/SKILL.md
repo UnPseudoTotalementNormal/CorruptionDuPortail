@@ -128,5 +128,6 @@ project-context.md line, a skill step) and say so.
 Other tools:
 - Rules check (after editing `firebase/firestore.rules`, deploy `firebase deploy --only firestore`):
   `python tools/logs/check_rules.py` (all PASS).
-- Reproduce with the `autoplay` skill; an autoplay run uploads only with `AUTOPLAY_ARGS="-playtest-logs-upload"`
-  (sessions marked autoplay, `list --all`).
+- Reproduce with the `autoplay` skill: its build writes the same GameLog lines to local files, read with the same
+  commands plus `--local` (`games --local --since 2h`). Upload on demand with `AUTOPLAY_LOGS=online` (sessions marked
+  autoplay, `list --all`).

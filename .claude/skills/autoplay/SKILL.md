@@ -23,6 +23,11 @@ guard, `Tools~/`) + the game adapter `Assets/Scripts/Autoplay/` (`CdpAutoplayGam
 Write down, before running anything: **what must be observed, when, on whose screen, and what counts as pass/fail**.
 Map it to what the run produces:
 - game logic / flow / errors → `report.json` (outcome, phase trace, counters, errors) + `events.ndjson`
+- what the game itself did (every player action, refusal with its reason, server decision) → its **GameLog** lines,
+  the same as in a playtest: the autoplay build (`unityctl.sh build`) compiles them in and each process writes its local
+  log, marked autoplay. Read them like a playtest: `python tools/logs/logs.py games --local --since 2h`, then
+  `timeline <game> --local --cat vote,power` / `--level W`. Online upload only on demand (`AUTOPLAY_LOGS=online`:
+  same Firestore quota as the testers)
 - exact values at a moment → the capture's state file (`NNN-label.json`, game state under `"game"`, probes)
 - visuals → the capture PNGs at that moment (bursts give several timings of one moment)
 

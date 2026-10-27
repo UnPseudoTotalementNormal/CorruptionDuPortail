@@ -61,6 +61,8 @@ Check them against the live project with `python tools/logs/check_rules.py`.
   launch, marked crashed; a local-only run (autoplay) never does.
 - Firestore: `sessions/{sid}` (index: player, version, flavor, host, gameIds, errors, crashed…) and
   `sessions/{sid}/chunks/{seq}` (`lines` = NDJSON). Rules and indexes: `firebase/` (`firebase deploy --only firestore`).
+- Autoplay builds (`tools/autoplay/unityctl.sh build` → `CdpBuild.BuildAutoplay`) compile the logs in; each process
+  writes its local file, read with `logs.py … --local` (same commands). Upload on demand: `AUTOPLAY_LOGS=online`.
 - The Editor never logs online; an autoplay run uploads only with `-playtest-logs-upload` (sessions marked autoplay,
   hidden from `list` unless `--all`).
 

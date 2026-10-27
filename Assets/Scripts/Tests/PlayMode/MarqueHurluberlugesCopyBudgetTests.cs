@@ -145,19 +145,27 @@ namespace Tests.PlayMode
             _out.Add(_power);
         }
 
-        private IEnumerator SpawnUgesWithMarque(List<PMarqueHurluberluges> _out)
+        private IEnumerator SpawnUgesWithMarque(List<PMarqueHurluberluges> _out) =>
+            SpawnUgesWithMarque(_networkManager.LocalClientId, _out);
+
+        private IEnumerator SpawnUgesWithMarque(ulong _slot, List<PMarqueHurluberluges> _out)
         {
-            Character _uges = _characterManager.AddNewCharacter(_networkManager.LocalClientId);
+            Character _uges = _characterManager.AddNewCharacter(_slot);
             yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(_uges);
             _uges.role = new Role { roleID = RoleID.Uges, factionType = FactionType.chosen };
 
+            // Built inactive so isPassive is set before Awake snapshots it (BaseIsPassive), like the real prefab
+            // (isPassive: 1): otherwise the Marque counts as an active, stealable power.
             GameObject _go = new GameObject("MarqueHurluberluges");
+            _go.SetActive(false);
             _go.AddComponent<NetworkObject>();
             var _marque = _go.AddComponent<PMarqueHurluberluges>();
             _marque.powerName = "Marque";
             _marque.isPassive = true;
+            _go.SetActive(true);
+            Assert.IsTrue(_marque.BaseIsPassive, "The Marque is passive, as authored on its prefab.");
             _go.GetComponent<NetworkObject>().Spawn();
-            _marque.ownerClientId.Value = _networkManager.LocalClientId;
+            _marque.ownerClientId.Value = _slot;
             yield return NetworkTestHelper.WaitUntilSpawnedOrTimeout(_marque);
             _out.Add(_marque);
         }
@@ -238,8 +246,10 @@ namespace Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator StolenReincarnation_GrantsJoinTheSameBudget()
+        public IEnumerator StolenReincarnation_GrantsAreUsableTheSameNight()
         {
+            // Board T26 (Wouh, 2026-10-27): only Ugës's own stolen powers are one per night (green); what he gets through
+            // a copied Incomplet / Luma is usable the same night (red).
             var _sources = new List<Power>();
             yield return AddChosenWithActivePower<PReincarnation>(721, RoleID.Incomplet, "Reincarnation", _sources);
             var _marques = new List<PMarqueHurluberluges>();
@@ -254,22 +264,123 @@ namespace Tests.PlayMode
 
             Power _reincarnation = CopiesOf(_marque).Single();
             ReflectionHelper.InvokePrivateMethod(_reincarnation, "ReincarnatePlayerRpc", (ulong)722);
+            // Same frame, before the use is consumed: the awakening flow checks Ugës's usable powers right after the
+            // use, so the grant must already be in his kit or he is put back to sleep before he can use it.
+            Assert.IsTrue(OwnedBy(_networkManager.LocalClientId).Any(_p => _p.powerName == "Granted"),
+                "The grant is in Ugës's kit in the same frame as the Réincarnation.");
             _reincarnation.OnUsed(false);
 
-            yield return NetworkTestHelper.WaitUntilOrTimeout(() => Object.FindObjectsByType<Power>()
-                    .Any(_p => _p != null && _p.IsSpawned && _p.ownerClientId.Value == _networkManager.LocalClientId &&
-                               _p.powerName == "Granted"), 3f,
-                "The stolen Réincarnation grants the target role's active power.");
-            Power _granted = Object.FindObjectsByType<Power>()
-                .First(_p => _p != null && _p.IsSpawned && _p.ownerClientId.Value == _networkManager.LocalClientId && _p.powerName == "Granted");
-            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _granted.marqueSourceId.Value == _marque.NetworkObjectId, 3f,
-                "The grant is tied to the same Marque.");
-
+            Power _granted = OwnedBy(_networkManager.LocalClientId).First(_p => _p.powerName == "Granted");
+            Assert.IsTrue(_marque.CopiesLocked, "Using the stolen Réincarnation spent tonight's Marque budget.");
             Assert.IsTrue(_granted.isStolenCopy.Value, "A stolen Réincarnation grants one-shot copies.");
-            Assert.IsTrue(_granted.IsLockedByMarque(), "Tonight's stored power was the Réincarnation: its grant waits for the next night.");
+            Assert.AreEqual(0UL, _granted.marqueSourceId.Value, "The grant is tied to no Marque budget.");
+            Assert.IsFalse(_granted.IsLockedByMarque(), "The grant is usable the same night.");
+        }
 
-            yield return NewDay(_marque);
-            Assert.IsFalse(_granted.IsLockedByMarque(), "The next night, the grant is usable.");
+        [UnityTest]
+        public IEnumerator CopiedReincarnation_OnUges_GivesOneRandomCopyUsableAtOnce()
+        {
+            var _sources = new List<Power>();
+            yield return AddChosenWithActivePower<Power>(731, RoleID.Dryade, "Source A", _sources);
+            yield return AddChosenWithActivePower<Power>(732, RoleID.Omniscient, "Source B", _sources);
+            var _marques = new List<PMarqueHurluberluges>();
+            yield return SpawnUgesWithMarque(733, _marques);
+            Power _reincarnation = null;
+            yield return ThiefWithCopiedReincarnation(RoleID.Croupiere, _p => _reincarnation = _p);
+
+            ReflectionHelper.InvokePrivateMethod(_reincarnation, "ReincarnatePlayerRpc", (ulong)733);
+            yield return WaitFrames(10);
+
+            List<Power> _granted = OwnedBy(_networkManager.LocalClientId).Where(_p => _p != _reincarnation).ToList();
+            Assert.AreEqual(1, _granted.Count, "A copied Réincarnation on Ugës gives ONE power, not his three. Got: " +
+                                               string.Join(", ", _granted.Select(_p => _p.powerName.ToString())));
+            Assert.IsTrue(_granted[0].powerName == "Source A" || _granted[0].powerName == "Source B",
+                "The power is drawn among the élus' active powers. Got: " + _granted[0].powerName + " [T26-TEST] characters=" +
+                string.Join(",", _characterManager.GetCharacters(false).Select(_c => $"{_c.ownerClientId.Value}:{_c.role?.roleID}:{_c.role?.factionType}:" +
+                    string.Join("+", _c.role?.powers.Select(_p => _p.powerName.ToString()) ?? new string[0]))));
+            Assert.IsFalse(_granted[0] is PMarqueHurluberluges, "The Marque itself is not copied.");
+            Assert.IsTrue(_granted[0].isStolenCopy.Value, "One-shot copy.");
+            Assert.AreEqual(0UL, _granted[0].marqueSourceId.Value, "Usable at once: tied to no Marque budget.");
+        }
+
+        [UnityTest]
+        public IEnumerator IncompletOwnReincarnation_OnUges_CopiesTheWholeMarque()
+        {
+            var _marques = new List<PMarqueHurluberluges>();
+            yield return SpawnUgesWithMarque(743, _marques);
+            var _own = new List<Power>();
+            yield return AddChosenWithActivePower<PReincarnation>(_networkManager.LocalClientId, RoleID.Incomplet, "Reincarnation", _own);
+
+            ReflectionHelper.InvokePrivateMethod(_own[0], "ReincarnatePlayerRpc", (ulong)743);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => OwnedBy(_networkManager.LocalClientId).OfType<PMarqueHurluberluges>().Any(), 3f,
+                "L'Incomplet's own Réincarnation on Ugës gives him the Marque (its three powers).");
+
+            PMarqueHurluberluges _copied = OwnedBy(_networkManager.LocalClientId).OfType<PMarqueHurluberluges>().Single();
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _copied.isCopiedPower.Value, 3f, "The Marque is a copy.");
+            Assert.IsFalse(_copied.isStolenCopy.Value, "A permanent copy, not a one-shot.");
+        }
+
+        [UnityTest]
+        public IEnumerator Reincarnation_NeverCopiesAnIncomplet()
+        {
+            var _incomplet = new List<Power>();
+            yield return AddChosenWithActivePower<PReincarnation>(751, RoleID.Incomplet, "Reincarnation of 751", _incomplet);
+            Power _reincarnation = null;
+            yield return ThiefWithCopiedReincarnation(RoleID.Uges, _p => _reincarnation = _p);
+
+            ReflectionHelper.InvokePrivateMethod(_reincarnation, "ReincarnatePlayerRpc", (ulong)751);
+            yield return WaitFrames(10);
+
+            Assert.AreEqual(0, OwnedBy(_networkManager.LocalClientId).Count(_p => _p != _reincarnation),
+                "A copy of l'Incomplet never copies l'Incomplet.");
+        }
+
+        [UnityTest]
+        public IEnumerator Melange_OnFacticeUges_GivesOneRandomCopyUsableAtOnce()
+        {
+            var _sources = new List<Power>();
+            yield return AddChosenWithActivePower<Power>(761, RoleID.Dryade, "Source A", _sources);
+            yield return AddChosenWithActivePower<Power>(762, RoleID.Omniscient, "Source B", _sources);
+            var _marques = new List<PMarqueHurluberluges>();
+            yield return SpawnUgesWithMarque(763, _marques);
+            var _luma = new List<Power>();
+            yield return AddChosenWithActivePower<PCardsShuffling>(_networkManager.LocalClientId, RoleID.Croupiere, "Melange", _luma);
+
+            ReflectionHelper.InvokePrivateMethod(_luma[0], "GrantCopyFromFakeRole", _characterManager.GetCharacter(763));
+            yield return WaitFrames(10);
+
+            List<Power> _granted = OwnedBy(_networkManager.LocalClientId).Where(_p => _p != _luma[0]).ToList();
+            Assert.AreEqual(1, _granted.Count, "Luma on a factice Ugës gets ONE power. Got: " +
+                                               string.Join(", ", _granted.Select(_p => _p.powerName.ToString())));
+            Assert.IsTrue(_granted[0].powerName == "Source A" || _granted[0].powerName == "Source B",
+                "The power is drawn among the élus' active powers. Got: " + _granted[0].powerName + " [T26-TEST] characters=" +
+                string.Join(",", _characterManager.GetCharacters(false).Select(_c => $"{_c.ownerClientId.Value}:{_c.role?.roleID}:{_c.role?.factionType}:" +
+                    string.Join("+", _c.role?.powers.Select(_p => _p.powerName.ToString()) ?? new string[0]))));
+            Assert.IsTrue(_granted[0].isStolenCopy.Value, "One-shot copy.");
+            Assert.AreEqual(0UL, _granted[0].marqueSourceId.Value, "Usable at once: tied to no Marque budget.");
+        }
+
+        // The local player holds a one-shot copy of a Réincarnation (as Ugës or Luma would after a theft).
+        private IEnumerator ThiefWithCopiedReincarnation(RoleID _thiefRole, System.Action<Power> _out)
+        {
+            var _list = new List<Power>();
+            yield return AddChosenWithActivePower<PReincarnation>(_networkManager.LocalClientId, _thiefRole, "Reincarnation copy", _list);
+            Power.ConfigureAsOneShotStolenCopy(_list[0]);
+            _out(_list[0]);
+        }
+
+        private List<Power> OwnedBy(ulong _slot) =>
+            Object.FindObjectsByType<Power>()
+                .Where(_p => _p != null && _p.IsSpawned && _p.ownerClientId.Value == _slot)
+                .ToList();
+
+        private static IEnumerator WaitFrames(int _frames)
+        {
+            for (int _i = 0; _i < _frames; _i++)
+            {
+                yield return null;
+            }
         }
     }
 }

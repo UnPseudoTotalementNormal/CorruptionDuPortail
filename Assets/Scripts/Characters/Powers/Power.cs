@@ -176,28 +176,6 @@ namespace Characters.Powers
                    && _marque.CopiesLocked;
         }
 
-        /// <summary>
-        /// Server, for a power that GRANTS powers (Réincarnation, Mélange des cartes): when this power is itself a
-        /// Marque copy, what it grants joins the same Marque's per-night budget (Ugës uses one stored power per night;
-        /// tonight's was this one, so its grants wait for the next night). Wraps the grant's onReady hook.
-        /// </summary>
-        protected Action<Power> InheritMarqueBudget(Action<Power> _onReady)
-        {
-            ulong _source = marqueSourceId.Value;
-            if (_source == 0)
-            {
-                return _onReady;
-            }
-            return _granted =>
-            {
-                _onReady?.Invoke(_granted);
-                if (_granted != null && _granted.IsServer)
-                {
-                    _granted.marqueSourceId.Value = _source;
-                }
-            };
-        }
-
         /// <summary>NET-08: the LIVE passive state on every peer (authored value unless overridden at runtime).</summary>
         public bool IsPassive => passiveOverride.Value switch
         {

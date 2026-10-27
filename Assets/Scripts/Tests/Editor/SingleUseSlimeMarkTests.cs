@@ -66,6 +66,23 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void Remove_ThenApplyAnotherCoat_SwapsTheColourWithoutStacking()
+        {
+            // Board T26: a copy turns from red (usable at once) to green (Ugës's budget) when its Marque link replicates.
+            Transform _visual = BuildVisual(out MeshRenderer _renderer);
+            Material _otherCoat = Track(new Material(coat) { name = "OtherCoat" });
+
+            SingleUseSlimeMark.Apply(_visual, coat, dripPrefab);
+            SingleUseSlimeMark.Remove(_visual, coat);
+            CollectionAssert.AreEqual(new[] { baseMaterial }, _renderer.sharedMaterials);
+            Assert.AreEqual(0, CountDrips(_visual), "the old drip emitter is gone");
+
+            SingleUseSlimeMark.Apply(_visual, _otherCoat, dripPrefab);
+            CollectionAssert.AreEqual(new[] { baseMaterial, _otherCoat }, _renderer.sharedMaterials);
+            Assert.AreEqual(1, CountDrips(_visual));
+        }
+
+        [Test]
         public void Apply_MissingAssets_SkipsOnlyTheMissingPart()
         {
             Transform _noCoat = BuildVisual(out MeshRenderer _noCoatRenderer);

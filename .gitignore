@@ -139,3 +139,5 @@ BackupToolkit/
 # Playtest logs reader cache (tools/logs/logs.py): immutable chunks downloaded from Firestore.
 /tools/logs/.cache/
 /tools/logs/__pycache__/
+/tools/sound/work/
+/tools/sound/__pycache__/

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{e0a690a3-1b69-48e4-8323-3c19555bf23d}">
+		<property name="assetPath">
+			<value>SoundMaker/vote-candle/candle_ignite.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.7046041666666667</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{e66d3d08-7377-46a7-824d-08ed54029370}</destination>
+		</relationship>
+	</object>
+</objects>

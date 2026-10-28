@@ -1,0 +1,35 @@
+{
+ "why": "Every sound of the game taken from outside the team: source, author, license, where it is used, how it was changed. Kept by tools/sound/sound.py; FMODProject/CREDITS.md is generated from it.",
+ "sounds": [
+  {
+   "source": "Freesound",
+   "id": 398448,
+   "title": "Match Ignite (No Strike)",
+   "author": "brachern",
+   "author_url": "https://freesound.org/people/brachern/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/brachern/sounds/398448/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-candle/candle_ignite.wav (event:/Interface/VoteCandleIgnite)"
+   ],
+   "changes": "candle_ignite: cut 0.0-0.75 s, filtered, faded, loudness normalized",
+   "added": "2026-10-28"
+  },
+  {
+   "source": "Freesound",
+   "id": 826338,
+   "title": "Candle flame flickers, blown out",
+   "author": "DeqstersLab",
+   "author_url": "https://freesound.org/people/DeqstersLab/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/DeqstersLab/sounds/826338/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-candle/candle_snuff.wav (event:/Interface/VoteCandleSnuff)"
+   ],
+   "changes": "candle_snuff: cut 1.05-2.05 s, filtered, faded, loudness normalized",
+   "added": "2026-10-28"
+  }
+ ]
+}

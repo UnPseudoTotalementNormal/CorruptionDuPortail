@@ -1,0 +1,43 @@
+name: FMOD project in sync
+
+# The game plays the built banks (Assets/FMODBanks), but FMODProject/ is the only place a sound can be edited. From
+# 2025-10 to 2026-02 banks were built from a project copy that was never committed, and the next rebuild from the repo
+# would have deleted the menu music. This check fails whenever the banks and the project disagree on an event (GUID or
+# path): commit the FMOD project together with the banks built from it. Reads the banks with the game's own FMOD
+# runtime (Windows DLL in the repo), no FMOD Studio needed.
+
+on:
+  push:
+    branches:
+      - Dev
+    paths:
+      - "FMODProject/**"
+      - "Assets/FMODBanks/**"
+      - "tools/fmod/banks.py"
+  pull_request:
+    branches:
+      - Dev
+    paths:
+      - "FMODProject/**"
+      - "Assets/FMODBanks/**"
+      - "tools/fmod/banks.py"
+
+jobs:
+  check:
+    name: Banks built from the committed FMOD project
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            FMODProject
+            Assets/FMODBanks
+            Assets/Plugins/FMOD/platforms/win/lib/x86_64
+            tools/fmod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compare banks and project
+        run: python tools/fmod/banks.py diff

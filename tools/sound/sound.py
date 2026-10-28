@@ -157,6 +157,8 @@ def secret(name):
 
 
 def http(url):
+    # A Freesound author can have a non-ASCII name (Paulo_Gonçalves): urllib only sends ASCII, so escape it.
+    url = urllib.parse.quote(url, safe=":/?&=%#+,;@!$'()*~[]")
     with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
         return r.read()
 

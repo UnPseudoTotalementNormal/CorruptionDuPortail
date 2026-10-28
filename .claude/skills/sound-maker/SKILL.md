@@ -3,7 +3,7 @@ name: sound-maker
 description: Give the game a new or better sound effect — search free sound libraries on the internet (Freesound first, then Kenney, Sonniss, OpenGameArt, Pixabay), keep only licenses a sold game may use, shape the takes (cut, layer, pitch, filter), level them to the game's own loudness per category so nothing jumps out, let Poyo pick by ear on a listening page, then put them in FMOD (event, random takes, pitch/volume variation, bus, bank), build, check, and record the credits. Use when the user asks for a sound ("trouve un son pour…", "fais-moi un son de…", "remplace le son provisoire", "il manque un son quand…", "sound effect", "SFX", "bruitage", "ce son est trop fort / pas harmonisé", "harmonise les volumes"), or when a feature being coded needs a sound that does not exist yet.
 metadata:
   template: sound-maker
-  template-version: 1.0.0
+  template-version: 1.0.1
 ---
 
 # Sound maker (Corruption du Portail)

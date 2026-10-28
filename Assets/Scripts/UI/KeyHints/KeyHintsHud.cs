@@ -26,12 +26,13 @@ namespace UI.KeyHints
         // Mockup sizes on a 1600 x 900 screen.
         private static readonly Vector2 ReferenceResolution = new(1600f, 900f);
         private static readonly Vector2 CornerOffset = new(14f, -12f);
-        private static readonly Vector2 ColumnOffset = new(22f, -110f);
+        // Same left edge as the corner: every hint has the same width, so the column's drawings sit under Échap's.
+        private static readonly Vector2 ColumnOffset = new(CornerOffset.x, -110f);
         private static readonly Vector2 IconSize = new(46f, 38f);
         private const float CornerSpacing = 14f;
         private const float ColumnSpacing = 10f;
         private const float GroupGap = 56f; // between the vote's keys and the others
-        private const float HintMinWidth = 58f;
+        private const float HintWidth = 58f;
         private const float IconLabelSpacing = 5f;
         private const int LabelFontSize = 19;
         private static readonly Color InkColor = new(0.918f, 0.863f, 0.749f, 1f); // #eadcbf
@@ -286,7 +287,10 @@ namespace UI.KeyHints
         private void AddHint(RectTransform _group, KeyHintAction _action, Sprite _icon, System.Func<Key> _keyOf)
         {
             RectTransform _root = NewRect(_action.ToString(), _group);
-            _root.gameObject.AddComponent<LayoutElement>().minWidth = HintMinWidth;
+            // Fixed width (a long key name overflows its slot): the drawings stay on one vertical line.
+            var _slot = _root.gameObject.AddComponent<LayoutElement>();
+            _slot.minWidth = HintWidth;
+            _slot.preferredWidth = HintWidth;
             var _column = _root.gameObject.AddComponent<VerticalLayoutGroup>();
             _column.spacing = IconLabelSpacing;
             _column.childAlignment = TextAnchor.LowerCenter;

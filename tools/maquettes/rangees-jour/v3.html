@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les rangées du jour, tour 3 : le liège, moins rectangle</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .rj-bg { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  /* the cork strip, where the game draws it today (1600 x 900: the vote capture of 28/10 scaled from 1280 x 720) */
+  .rj-cork { position: absolute; left: 311px; top: 768px; width: 734px; height: 110px;
+    background: url(img/liege.webp) 0 0 / 59px 59px; }
+  .rj-ports { position: absolute; left: 311px; top: 768px; width: 734px; height: 110px; pointer-events: none; }
+  /* today: the texture in its own colours (the game's day cork is the texture x ~0.9) */
+  .rj-cork.day { filter: brightness(.92); }
+  /* the night's colour: the cork under its warm lamp, measured on the night capture (texture x .53 / .45 / .38) */
+  .rj-cork.night { background-color: rgb(135, 115, 96); background-blend-mode: multiply; }
+  .rj-cork.fade { -webkit-mask-image: linear-gradient(90deg, transparent, #000 70px, #000 calc(100% - 70px), transparent),
+                                      linear-gradient(transparent, #000 22px, #000 calc(100% - 14px), transparent);
+                  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 70px, #000 calc(100% - 70px), transparent),
+                                      linear-gradient(transparent, #000 22px, #000 calc(100% - 14px), transparent); mask-composite: intersect; }
+  .rj-lamp { position: absolute; left: 251px; top: 738px; width: 854px; height: 170px; pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 30%, transparent 100%); mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 30%, transparent 100%); }
+  .rj-lamp .rj-cork { left: 60px; top: 30px; background-color: rgb(150, 124, 100); background-blend-mode: multiply; }
+  .rj-lamp:after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 34% 60% at 50% 40%, rgba(255, 196, 120, .28), transparent 70%);
+    mix-blend-mode: screen; }
+  .rj-frame { position: absolute; left: 301px; top: 760px; width: 754px; height: 126px; border-radius: 3px;
+    background: #4a2e18 url(../attribution-roles/img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; box-shadow: 0 6px 16px rgba(0,0,0,.8); }
+  .rj-frame:after { content: ""; position: absolute; inset: 8px; border: 2px solid #2a170a; border-radius: 2px; }
+  header.page img.rj-ref { width: 100%; max-width: 760px; border: 1px solid var(--line); margin-top: 8px; display: block; }
+  .rj-pair { display: flex; gap: 10px; flex-wrap: wrap; }
+  .rj-pair figure { margin: 0; flex: 1 1 360px; }
+  .rj-pair figcaption { color: var(--soft); font-size: 13px; }
+</style>
+</head>
+<body data-subject="rangees-jour">
+
+<header class="page">
+  <h1>Les rangées du jour, tour 3 : le liège trop « rough »</h1>
+  <p>Codé depuis le tour 2 (L0 + D3) : le jour, la barre part à l'écran avec la texture du liège de la table, dans ses
+     propres couleurs. Ton retour : « un rectangle clair au milieu de l'écran ». La nuit, le même liège est sombre et
+     orangé parce que seule sa lampe l'éclaire, et ses bords se perdent dans l'ombre de la table.</p>
+  <div class="rj-pair">
+    <figure><img class="rj-ref" src="img/jeu_jour.webp" alt=""><figcaption>Le jour, dans le jeu aujourd'hui</figcaption></figure>
+    <figure><img class="rj-ref" src="img/jeu_nuit.webp" alt=""><figcaption>La nuit, le même liège sous sa lampe</figcaption></figure>
+  </div>
+  <p><b>La scène</b> : la capture du vote du jour 1 de la partie autoplay de ce matin ; seul le liège est redessiné
+     (la vraie texture du jeu, à son grain), les portraits et les logos sont ceux de la capture.</p>
+  <p>Sans question : tout se fait sur le fond du liège seul, les portraits restent nets ; un fondu se code avec des
+     couleurs de sommets (le shader de la barre les lit), une teinte avec la couleur du fond.</p>
+</header>
+
+<section>
+  <h2>Le liège à l'écran</h2>
+  <p>Même moment, mêmes portraits ; seul le fond change.</p>
+  <div class="variant" data-id="F0">
+    <div class="vhead"><span class="vid">F0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">La texture dans ses couleurs, bords nets.</p>
+    <div class="screen"><div class="stage" data-v="day"></div></div>
+  </div>
+  <div class="variant" data-id="F1">
+    <div class="vhead"><span class="vid">F1</span><span class="vname">Les bords en fondu</span></div>
+    <p class="vdesc">Même liège, ses quatre bords s'effacent dans le noir : plus d'arête.</p>
+    <div class="screen"><div class="stage" data-v="day fade"></div></div>
+  </div>
+  <div class="variant" data-id="F2">
+    <div class="vhead"><span class="vid">F2</span><span class="vname">La couleur de la nuit</span></div>
+    <p class="vdesc">Le liège garde la couleur qu'il a sous sa lampe (sombre, orangé) ; bords nets.</p>
+    <div class="screen"><div class="stage" data-v="night"></div></div>
+  </div>
+  <div class="variant" data-id="F3">
+    <div class="vhead"><span class="vid">F3</span><span class="vname">Couleur de la nuit et fondu</span></div>
+    <p class="vdesc">F2 et F1 ensemble : sombre et sans arête.</p>
+    <div class="screen"><div class="stage" data-v="night fade"></div></div>
+  </div>
+  <div class="variant" data-id="F4">
+    <div class="vhead"><span class="vid">F4</span><span class="vname">Sous sa lampe</span></div>
+    <p class="vdesc">Comme la nuit : un rond de lumière chaude au milieu, le liège s'éteint vers les bords.</p>
+    <div class="screen"><div class="stage" data-v="lamp"></div></div>
+  </div>
+  <div class="variant" data-id="F5">
+    <div class="vhead"><span class="vid">F5</span><span class="vname">Dans un cadre de bois</span></div>
+    <p class="vdesc">Le liège garde ses couleurs mais devient un tableau : un cadre de bois sombre autour.</p>
+    <div class="screen"><div class="stage" data-v="frame"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  document.querySelectorAll(".stage[data-v]").forEach(st => {
+    const v = st.dataset.v;
+    let cork;
+    if (v === "lamp") cork = '<div class="rj-lamp"><div class="rj-cork"></div></div>';
+    else if (v === "frame") cork = '<div class="rj-frame"></div><div class="rj-cork day"></div>';
+    else cork = '<div class="rj-cork ' + v + '"></div>';
+    st.innerHTML = '<img class="rj-bg" src="img/jeu_sans_bande.webp">' + cork + '<img class="rj-ports" src="img/bande_portraits.webp">';
+  });
+  const s = document.createElement("script"); s.src = "../common/mock.js"; document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

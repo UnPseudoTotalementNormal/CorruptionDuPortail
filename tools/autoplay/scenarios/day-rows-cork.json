@@ -1,0 +1,32 @@
+{
+ "name": "day-rows-cork",
+ "goal": "Day rows on screen (mockups rangees-jour v2 L0 + v1 D3). When the day starts the roles bar flies to the screen with its cork (the DetectiveWall's own texture behind it, the 3D wall hidden) and the two counters show a sign and a number side by side; when the night comes the bar lands on the wall again and the wall takes its cork back. Two days, so both directions are filmed twice. Judge: the playtest logs carry 'day.rows.cork on=bar' then 'on=wall' on every process, no error, and the films (host + client1) show no cut when the cork leaves or lands.",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "timescale": 1,
+ "timeout": 1500,
+ "video": true,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-cat-look",
+  "varied",
+  "-autoplay-max-days",
+  "2",
+  "-autoplay-fast-fakes"
+ ],
+ "expect": [
+  {
+   "type": "outcome",
+   "value": "Completed",
+   "process": "all"
+  },
+  {
+   "type": "noErrors",
+   "process": "all",
+   "ignore": [
+    "ClientLoadedSynchronization"
+   ]
+  }
+ ]
+}

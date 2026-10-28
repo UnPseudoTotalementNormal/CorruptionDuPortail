@@ -336,9 +336,22 @@ def cmd_reference(a):
     print(json.dumps(cats, indent=1))
 
 
+def recipe_targets():
+    """{event path: target} for sounds whose recipe overrides their category's target (Poyo picked a level)."""
+    out = {}
+    folder = os.path.join(HERE, "recipes")
+    for name in os.listdir(folder) if os.path.isdir(folder) else []:
+        if name.endswith(".json") and not name.endswith((".sources.json", ".fmod.json")):
+            for snd in json.load(open(os.path.join(folder, name), encoding="utf-8")).get("sounds", []):
+                if snd.get("event") and "target_max_m" in snd:
+                    out[snd["event"]] = snd["target_max_m"]
+    return out
+
+
 def cmd_check(a):
     import banks
     t = targets()
+    own = recipe_targets()
     tmp = tempfile.mkdtemp(prefix="soundchk_")
     f = banks.Fmod(a.banks)
     events = {e["path"]: e for e in f.events()}
@@ -354,7 +367,7 @@ def cmd_check(a):
         banks.render_one(a.banks, e["guid"], wav, e["length_ms"] / 1000.0 + 2.0 if e["oneshot"] else 20.0)
         m = measure(wav)
         cat = category_of(path)
-        goal = t[cat]["max_m"]
+        goal = own.get(path, t[cat]["max_m"])
         off = None if m["max_m"] is None else round(m["max_m"] - goal, 1)
         ok = off is not None and abs(off) <= a.tolerance and (m["true_peak"] or -99) <= -0.5
         bad += 0 if ok else 1

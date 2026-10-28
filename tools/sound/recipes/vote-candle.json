@@ -1,5 +1,5 @@
 {
- "why": "Board T19 vote candle: real sounds instead of Claude's synthesized placeholders. Picked by ear on tools/maquettes/bougie-sons/v1.html (2026-10-28): A2 the flame alone, B2 the flame flickers then dies, V2 level as is (table target).",
+ "why": "Board T19 vote candle: real sounds instead of Claude's synthesized placeholders. Picked by ear on tools/maquettes/bougie-sons/v1.html (2026-10-28): A2 the flame alone, B2 the flame flickers then dies, then V1 quieter (-4 dB under the table target, Poyo 2026-10-28).",
  "out": "FMODProject/Corrupted/Assets/SoundMaker/vote-candle",
  "sounds": [
   {
@@ -16,7 +16,8 @@
      "highpass": 120
     }
    ],
-   "event": "event:/Interface/VoteCandleIgnite"
+   "event": "event:/Interface/VoteCandleIgnite",
+   "target_max_m": -28.0
   },
   {
    "name": "candle_snuff",
@@ -32,7 +33,8 @@
      "highpass": 180
     }
    ],
-   "event": "event:/Interface/VoteCandleSnuff"
+   "event": "event:/Interface/VoteCandleSnuff",
+   "target_max_m": -28.0
   }
  ]
 }

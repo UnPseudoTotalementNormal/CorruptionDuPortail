@@ -37,7 +37,8 @@ never a sound whose license is unclear. `fetch` refuses NC and Sampling+ by itse
 
 Per layer: `start` / `end` (s, cut), `reverse`, `pitch` (semitones, speed follows, like FMOD), `highpass` /
 `lowpass` (Hz), `eq` (`[freq, gain dB, Q]`…), `fade_in` / `fade_out` (s), `gain` (dB), `delay` (s). Layers are summed.
-Per sound: `category` (target from `loudness.json`), `target_max_m` to override it, `mono`, `reverb`
+Per sound: `category` (target from `loudness.json`), `target_max_m` to override it (a level Poyo picked by ear;
+`check` honours it), `mono`, `reverb`
 (`{"delays": "40|73|117", "decays": "0.35|0.25|0.15"}`, a small room; prefer FMOD's Reverb send for the room),
 `trim_lead: false` to keep leading silence. Every sound is then normalized: loudest 400 ms (`max_m`, LUFS) = its
 category's target, true peak under -1 dBTP.

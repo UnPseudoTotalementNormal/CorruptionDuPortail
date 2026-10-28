@@ -15,11 +15,25 @@ try {
     $cmd = [string]$payload.tool_input.command
     if ($cmd -notmatch '\bgit\b(\s+-C\s+\S+)?(\s+-c\s+\S+)*\s+commit\b|\bgh\s+pr\s+(create|edit|merge)\b') { exit 0 }
 
+    # Only this repository's commits and PRs: a session here may commit to another repository (`cd <other> &&`,
+    # `git -C <other>`) whose own rules ask for the attribution (the skill marketplace does).
+    $repo = [string]$payload.cwd
+    if ($cmd -match '\bgit\s+-C\s+("([^"]+)"|''([^'']+)''|(\S+))') {
+        $repo = @($Matches[2], $Matches[3], $Matches[4]) | Where-Object { $_ } | Select-Object -First 1
+    } elseif ($cmd -match '(?:^|[;&|]\s*)(?:cd|Set-Location)\s+("([^"]+)"|''([^'']+)''|([^\s;&|]+))') {
+        $repo = @($Matches[2], $Matches[3], $Matches[4]) | Where-Object { $_ } | Select-Object -First 1
+    }
+    if ($repo -match '^/([a-zA-Z])/(.*)$') { $repo = "$($Matches[1]):/$($Matches[2])" }
+    $project = $env:CLAUDE_PROJECT_DIR
+    if ($repo -and $project -and (Test-Path $repo)) {
+        $mine = & git -C $project rev-parse --path-format=absolute --git-common-dir 2>$null
+        $target = & git -C $repo rev-parse --path-format=absolute --git-common-dir 2>$null
+        if ($mine -and $target -and ([IO.Path]::GetFullPath($mine) -ne [IO.Path]::GetFullPath($target))) { exit 0 }
+    }
+
     $pattern = '(?i)Co-Authored-By:\s*Claude|Generated with \[?Claude Code'
     $texts = New-Object System.Collections.Generic.List[string]
     $texts.Add($cmd)
-
-    $repo = [string]$payload.cwd
     foreach ($m in [regex]::Matches($cmd, '(?:-F|--file|--body-file)[\s=]+("([^"]+)"|''([^'']+)''|(\S+))')) {
         $msgFile = @($m.Groups[2].Value, $m.Groups[3].Value, $m.Groups[4].Value) | Where-Object { $_ } | Select-Object -First 1
         if ($msgFile -eq '-') { continue }

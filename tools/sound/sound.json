@@ -1,0 +1,7 @@
+{
+ "project": "CorruptionDuPortail",
+ "credits": "FMODProject/credits.json",
+ "credits_page": "FMODProject/CREDITS.md",
+ "secret_command": ["pwsh", "-NoLogo", "-File", "C:/Users/azert/.claude/tools/secret.ps1"],
+ "secret_name": "Freesound"
+}

@@ -1,35 +1,39 @@
-"""Sound maker: find free sound effects, shape them, harmonize their loudness, put them in FMOD, keep the credits.
+"""Sound maker: find free sound effects, shape them, level them to the project's own mix, keep the credits.
 
-  python tools/sound/sound.py search "<words>" [--max-dur S] [--min-dur S] [--license cc0,by] [-n N] [--work W]
+  python sound.py search "<words>" [--max-dur S] [--min-dur S] [--license cc0,by] [-n N] [--work W]
         Freesound (API with a key, else the public search pages). Writes W/candidates.json, prints the list.
-  python tools/sound/sound.py fetch <W> <freesound id>...
+  python sound.py fetch <W> <freesound id>...
         Download the HQ preview + the sound's page metadata (author, license) into W/raw/, W/sources.json.
-  python tools/sound/sound.py add <W> <file> --title T --author A --license L --url U [--license-url LU]
-        A sound from another source (Kenney, Sonniss, OpenGameArt…): copied to W/raw/ with its metadata.
-  python tools/sound/sound.py analyze <file>... [--spectro DIR]
+  python sound.py add <W> <file> --title T --author A --license L --url U [--license-url LU] [--source S]
+        A sound from another source (Kenney, Sonniss, OpenGameArt...): copied to W/raw/ with its metadata.
+  python sound.py analyze <file>... [--spectro DIR]
         Duration, loudness (integrated, max momentary), true peak, silence at the ends, noise floor.
-  python tools/sound/sound.py make <recipe.json>
-        Build finished sounds from layers (trim, fade, pitch, filters, reverb, delay) and normalize each to the
-        loudness target of its category (tools/sound/loudness.json). See README.md for the recipe format.
-  python tools/sound/sound.py reference
-        Render every event of the built banks, measure them, write the per-category targets (loudness.json).
-  python tools/sound/sound.py check <event:/path>... [--banks DIR]
-        Render events from the built banks and compare them with their category's target.
-  python tools/sound/sound.py credit <recipe.json>
-        Record every outside source the recipe's sounds use in FMODProject/credits.json (what it became, how it was
-        changed), keep the recipe and its sources in tools/sound/recipes/, rewrite CREDITS.md.
-  python tools/sound/sound.py credits
-        Rewrite FMODProject/CREDITS.md from FMODProject/credits.json.
-  python tools/sound/sound.py fmod <spec.json>
-        Create or replace events (one take or several played at random, pitch / volume randomization, bus, bank)
-        with FMOD Studio's command line, then build every bank and check them.
+  python sound.py sheet <file>... --out sheet.png
+        One picture: waveform + spectrogram of each file, with its name (to place cuts without hearing).
+  python sound.py make <recipe.json> [--only NAME...] [--spectro DIR]
+        Build finished sounds from layers (trim, fade, pitch, filters, delay) and normalize each to the loudness
+        target of its category (loudness.json). Format: README.md.
+  python sound.py reference [--files GLOB...]
+        Measure the sounds already in the project (rendered by engine.py, or the files given), write the
+        per-category loudness and targets in loudness.json.
+  python sound.py check <name>... | check --files <file>...
+        Measure sounds as the project plays them (engine.py) or files, compare with their target.
+  python sound.py credit <recipe.json>
+        Record every outside source the recipe uses in the credits file (what it became, how it was changed),
+        keep the recipe and its sources in the recipes folder, rewrite the credits page.
+  python sound.py credits
+        Rewrite the credits page from the credits file.
 
-Work folders (W) live in tools/sound/work/<subject>/ (git-ignored): downloads and drafts. Finished sounds go to
-FMODProject/Corrupted/Assets/<folder>/, credited in FMODProject/credits.json in the same commit.
+Settings: sound.json next to this file (paths, project name, secret). Project-specific engine (render a sound as
+the project plays it, put a finished sound into the engine): optional engine.py next to this file, with
+sounds() -> [name], render(name, wav), and register(subparsers, sound_module) for its own commands.
+Needs ffmpeg / ffprobe on PATH; Python standard library only (sheet needs Pillow).
 """
 import argparse
 import datetime
+import glob
 import html
+import importlib.util
 import json
 import os
 import re
@@ -42,18 +46,49 @@ import urllib.parse
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-FMOD_ASSETS = os.path.join(ROOT, "FMODProject", "Corrupted", "Assets")
-CREDITS_JSON = os.path.join(ROOT, "FMODProject", "credits.json")
-CREDITS_MD = os.path.join(ROOT, "FMODProject", "CREDITS.md")
-LOUDNESS = os.path.join(HERE, "loudness.json")
-sys.path.insert(0, os.path.join(ROOT, "tools", "fmod"))
 
-UA = {"User-Agent": "Mozilla/5.0 (CorruptionDuPortail sound-maker)"}
-LICENSES = {  # Freesound filter name -> (short name, license URL). NonCommercial never: the game is sold on Steam.
+
+def find_root(path):
+    """The repository holding this folder (first parent with .git), else the folder itself."""
+    p = path
+    while True:
+        if os.path.exists(os.path.join(p, ".git")):
+            return p
+        up = os.path.dirname(p)
+        if up == p:
+            return path
+        p = up
+
+
+ROOT = find_root(HERE)
+CONF = json.load(open(os.path.join(HERE, "sound.json"), encoding="utf-8"))
+
+
+def rooted(p):
+    return p if os.path.isabs(p) else os.path.join(ROOT, p)
+
+
+CREDITS_JSON = rooted(CONF["credits"])
+CREDITS_MD = rooted(CONF.get("credits_page", os.path.splitext(CONF["credits"])[0] + ".md"))
+RECIPES = rooted(CONF.get("recipes", os.path.join(os.path.relpath(HERE, ROOT), "recipes")))
+WORK = rooted(CONF.get("work", os.path.join(os.path.relpath(HERE, ROOT), "work")))
+LOUDNESS = os.path.join(HERE, "loudness.json")
+
+UA = {"User-Agent": "Mozilla/5.0 (%s sound-maker)" % CONF.get("project", "game")}
+LICENSES = {  # Freesound filter name -> (Freesound name, short name, license URL). NonCommercial: never offered.
     "cc0": ("Creative Commons 0", "CC0 1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "by": ("Attribution", "CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/"),
 }
+
+
+def load_engine():
+    p = os.path.join(HERE, "engine.py")
+    if not os.path.exists(p):
+        return None
+    spec = importlib.util.spec_from_file_location("sound_engine", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 # ---------------------------------------------------------------- measuring
@@ -114,7 +149,7 @@ def spectrogram(path, png):
 
 def secret(name):
     try:
-        r = subprocess.run(["pwsh", "-NoLogo", "-File", os.path.expanduser("~/.claude/tools/secret.ps1"), name],
+        r = subprocess.run(CONF["secret_command"] + [name],
                            capture_output=True, text=True, timeout=60)
         return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
     except (OSError, subprocess.TimeoutExpired):
@@ -170,8 +205,9 @@ def cmd_search(a):
     licenses = [l.strip() for l in a.license.split(",") if l.strip()]
     for l in licenses:
         if l not in LICENSES:
-            raise SystemExit("license must be cc0 or by (NonCommercial is never allowed: the game is sold)")
-    key = os.environ.get("FREESOUND_API_KEY") or secret("Freesound")
+            raise SystemExit("license must be cc0 or by (NonCommercial is never offered)")
+    key = os.environ.get("FREESOUND_API_KEY") or (secret(CONF["secret_name"]) if CONF.get("secret_command")
+                                                    else None)
     try:
         found = search_api(key, a.words, licenses, a.min_dur, a.max_dur, a.n) if key else None
     except Exception as e:  # API down or key refused: the public pages still work
@@ -275,104 +311,125 @@ def cmd_analyze(a):
     print(json.dumps(rows, indent=1, ensure_ascii=False))
 
 
+def cmd_sheet(a):
+    """Waveform + spectrogram per file, two columns, with the file name: read it to place the cuts."""
+    from PIL import Image, ImageDraw
+    tmp = tempfile.mkdtemp(prefix="soundsheet_")
+    rows = []
+    for i, f in enumerate(a.files):
+        w, sp = os.path.join(tmp, "%d_w.png" % i), os.path.join(tmp, "%d_s.png" % i)
+        ffmpeg("-y", "-i", f, "-filter_complex",
+               "aformat=channel_layouts=mono,showwavespic=s=900x110:colors=white:scale=sqrt", "-frames:v", "1", w)
+        ffmpeg("-y", "-i", f, "-lavfi", "showspectrumpic=s=900x110:legend=0:color=intensity:scale=log", sp)
+        row = Image.new("RGB", (900, 250), (25, 25, 30))
+        ImageDraw.Draw(row).text((6, 4), "%s  %.2fs" % (os.path.basename(f), probe_duration(f)), fill=(255, 220, 120))
+        row.paste(Image.open(w).convert("RGB"), (0, 22))
+        row.paste(Image.open(sp).convert("RGB").resize((900, 110)), (0, 136))
+        rows.append(row)
+    sheet = Image.new("RGB", (1800, 250 * ((len(rows) + 1) // 2)))
+    for i, r in enumerate(rows):
+        sheet.paste(r, ((i % 2) * 900, (i // 2) * 250))
+    sheet.save(a.out)
+    print(a.out)
+
+
 # ---------------------------------------------------------------- loudness targets
 
-CATEGORIES = [  # (category, regex on the event path); first match wins
-    ("music", r"Music|Project_38"),
-    ("ambience", r"Ambiant|WaitingforPower|AbattreLePortail"),
-    ("power", r"^event:/Characters/"),  # a role's power: the loud moments
-    ("announce", r"ChainingAnnoucement|^event:/Interface/Opening$"),  # game moments everyone hears
-    ("table", r"VoteCandle|VoteClock|ChainLift|ChainSplat"),  # objects on the table: candle, clock, chains
-    ("ui", r"^event:/Interface/"),  # clicks: menus, messages, cards, light buttons
-]
-# Not a reference: placeholders synthesized by Claude (T19), at arbitrary levels. Their target is set by hand.
-PROVISIONAL = r"VoteCandle|VoteClock|ChainLift|ChainSplat"
+def loudness_conf():
+    return json.load(open(LOUDNESS, encoding="utf-8"))
 
 
-def category_of(path):
-    for cat, rx in CATEGORIES:
-        if re.search(rx, path or ""):
+def category_of(name, conf=None):
+    """First category whose regex matches the sound's name (event path, file path...); the last one otherwise."""
+    cats = (conf or loudness_conf())["categories"]
+    for cat, rx in cats:
+        if re.search(rx, name or ""):
             return cat
-    return "ui"
+    return cats[-1][0]
 
 
-def targets():
-    return json.load(open(LOUDNESS, encoding="utf-8"))["targets"]
+def target_of(cat, targets):
+    if cat not in targets:
+        raise SystemExit("no loudness target for category %r: run `sound.py reference`, or set targets.%s.max_m in "
+                         "loudness.json" % (cat, cat))
+    return targets[cat]["max_m"]
+
+
+def recipe_targets():
+    """{sound name: target} for sounds whose recipe overrides their category's target (a level picked by ear)."""
+    out = {}
+    for p in glob.glob(os.path.join(RECIPES, "*.json")):
+        if p.endswith((".sources.json", ".engine.json")):
+            continue
+        for snd in json.load(open(p, encoding="utf-8")).get("sounds", []):
+            if snd.get("event") and "target_max_m" in snd:
+                out[snd["event"]] = snd["target_max_m"]
+    return out
+
+
+def rendered(names, files):
+    """[(name, wav)]: the files as they are, or the engine's render of each name."""
+    if files:
+        return [(f, f) for pat in names for f in (sorted(glob.glob(pat)) or [pat])]
+    eng = load_engine()
+    if not eng:
+        raise SystemExit("no engine.py: give the sound files with --files")
+    tmp = tempfile.mkdtemp(prefix="soundrender_")
+    out = []
+    for i, name in enumerate(names):
+        wav = os.path.join(tmp, "%d.wav" % i)
+        eng.render(name, wav)
+        out.append((name, wav))
+    return out
 
 
 def cmd_reference(a):
-    import banks
-    f = banks.Fmod(a.banks)
-    events = f.events()
-    f.close()
-    tmp = tempfile.mkdtemp(prefix="soundref_")
+    conf = loudness_conf()
+    if a.files:
+        items = rendered(a.files, True)
+    else:
+        eng = load_engine()
+        if not eng:
+            raise SystemExit("no engine.py: give the project's sound files with --files")
+        items = rendered(eng.sounds(), False)
+    exclude = conf.get("exclude")
     rows = []
-    for e in events:
-        secs = 20.0 if not e["oneshot"] else e["length_ms"] / 1000.0 + 2.0
-        wav = os.path.join(tmp, e["guid"] + ".wav")
-        banks.render_one(a.banks, e["guid"], wav, secs)
+    for name, wav in items:
         m = measure(wav)
-        rows.append({"event": e["path"], "category": category_of(e["path"]), "max_m": m["max_m"],
+        rows.append({"sound": name, "category": category_of(name, conf), "max_m": m["max_m"],
                      "integrated": m["integrated"], "true_peak": m["true_peak"],
-                     "provisional": bool(re.search(PROVISIONAL, e["path"] or ""))})
+                     "excluded": bool(exclude and re.search(exclude, name))})
     cats = {}
-    for cat, _ in CATEGORIES:
-        ref = [r for r in rows if r["category"] == cat and not r["provisional"]]
+    for cat, _ in conf["categories"]:
+        ref = [r for r in rows if r["category"] == cat and not r["excluded"]]
         vals = [r["max_m"] for r in ref if r["max_m"] is not None]
         ints = [r["integrated"] for r in ref if r["integrated"] is not None]
         if vals:
             cats[cat] = {"max_m": round(statistics.median(vals), 1),
                          "spread": [round(min(vals), 1), round(max(vals), 1)],
-                         "integrated": round(statistics.median(ints), 1) if ints else None, "events": len(vals)}
-    old = json.load(open(LOUDNESS, encoding="utf-8")) if os.path.exists(LOUDNESS) else {}
-    out = {"why": "Loudness of the sounds already in the game, per category, measured on the built banks as the game "
-                  "mixes them (event + bus). New sounds are normalized to their category's target so nothing jumps "
-                  "out. max_m = loudest 400 ms in LUFS (one-shots), integrated = whole-file LUFS (music, loops).",
-           "measured": datetime.date.today().isoformat(), "reference": cats,
-           "targets": old.get("targets") or {c: {"max_m": v["max_m"]} for c, v in cats.items()},
-           "targets_why": old.get("targets_why", {}),
-           "events": rows}
-    json.dump(out, open(LOUDNESS, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+                         "integrated": round(statistics.median(ints), 1) if ints else None, "sounds": len(vals)}
+    conf["measured"] = datetime.date.today().isoformat()
+    conf["reference"] = cats
+    for c, v in cats.items():
+        conf.setdefault("targets", {}).setdefault(c, {"max_m": v["max_m"]})
+    conf["sounds"] = rows
+    json.dump(conf, open(LOUDNESS, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
     print(json.dumps(cats, indent=1))
 
 
-def recipe_targets():
-    """{event path: target} for sounds whose recipe overrides their category's target (Poyo picked a level)."""
-    out = {}
-    folder = os.path.join(HERE, "recipes")
-    for name in os.listdir(folder) if os.path.isdir(folder) else []:
-        if name.endswith(".json") and not name.endswith((".sources.json", ".fmod.json")):
-            for snd in json.load(open(os.path.join(folder, name), encoding="utf-8")).get("sounds", []):
-                if snd.get("event") and "target_max_m" in snd:
-                    out[snd["event"]] = snd["target_max_m"]
-    return out
-
-
 def cmd_check(a):
-    import banks
-    t = targets()
+    conf = loudness_conf()
     own = recipe_targets()
-    tmp = tempfile.mkdtemp(prefix="soundchk_")
-    f = banks.Fmod(a.banks)
-    events = {e["path"]: e for e in f.events()}
-    f.close()
     bad = 0
-    for path in a.events:
-        e = events.get(path)
-        if not e:
-            print("%s: not in the banks" % path)
-            bad += 1
-            continue
-        wav = os.path.join(tmp, e["guid"] + ".wav")
-        banks.render_one(a.banks, e["guid"], wav, e["length_ms"] / 1000.0 + 2.0 if e["oneshot"] else 20.0)
+    for name, wav in rendered(a.names, a.files):
         m = measure(wav)
-        cat = category_of(path)
-        goal = own.get(path, t[cat]["max_m"])
+        cat = category_of(name, conf)
+        goal = own[name] if name in own else target_of(cat, conf.get("targets", {}))
         off = None if m["max_m"] is None else round(m["max_m"] - goal, 1)
         ok = off is not None and abs(off) <= a.tolerance and (m["true_peak"] or -99) <= -0.5
         bad += 0 if ok else 1
         print("%s %-55s %s max_m %s (target %s, %+s LU) peak %s dBTP" % (
-            "ok" if ok else "!!", path, cat, m["max_m"], goal, off, m["true_peak"]))
+            "ok" if ok else "!!", name, cat, m["max_m"], goal, off, m["true_peak"]))
     return 1 if bad else 0
 
 
@@ -386,7 +443,7 @@ def layer_filter(i, L, sr=48000):
     if "start" in L or "end" in L:
         f.append("atrim=start=%s%s" % (L.get("start", 0), ":end=%s" % L["end"] if "end" in L else ""))
         f.append("asetpts=PTS-STARTPTS")
-    if L.get("pitch"):  # semitones, speed changes with it (like FMOD's pitch)
+    if L.get("pitch"):  # semitones, speed changes with it (like an engine's pitch)
         r = 2 ** (L["pitch"] / 12.0)
         f.append("asetrate=%d*%s,aresample=%d" % (sr, r, sr))
     if L.get("highpass"):
@@ -433,7 +490,7 @@ def make_one(sound, recipe_dir, out_dir, t):
     if r.returncode:
         raise SystemExit("ffmpeg failed for %s:\n%s" % (sound["name"], r.stderr))
     cat = sound["category"]
-    goal = sound.get("target_max_m", t[cat]["max_m"])
+    goal = sound["target_max_m"] if "target_max_m" in sound else target_of(cat, t)
     m = measure(tmp)
     gain = goal - m["max_m"]
     out = os.path.join(out_dir, sound["name"] + ".wav")
@@ -450,7 +507,7 @@ def cmd_make(a):
     recipe = json.load(open(a.recipe, encoding="utf-8"))
     rdir = os.path.dirname(os.path.abspath(a.recipe))
     out_dir = recipe["out"] if os.path.isabs(recipe["out"]) else os.path.join(ROOT, recipe["out"])
-    t = targets()
+    t = loudness_conf()["targets"]
     rows = [make_one(s, rdir, out_dir, t) for s in recipe["sounds"] if not a.only or s["name"] in a.only]
     for r in rows:
         print("%-28s max_m %6s (target %s) peak %s dBTP  %.2fs" % (r["name"], r["max_m"], r["target_max_m"],
@@ -478,11 +535,19 @@ def describe(L):
     return ", ".join(d)
 
 
+def load_credits():
+    if os.path.exists(CREDITS_JSON):
+        return json.load(open(CREDITS_JSON, encoding="utf-8"))
+    return {"why": "Every sound taken from outside the project: source, author, license, where it is used, how it was "
+                   "changed. Kept by sound.py credit; the .md page is generated from it.", "sounds": []}
+
+
 def cmd_credit(a):
     recipe = json.load(open(a.recipe, encoding="utf-8"))
     rdir = os.path.dirname(os.path.abspath(a.recipe))
     out_dir = recipe["out"] if os.path.isabs(recipe["out"]) else os.path.join(ROOT, recipe["out"])
-    data = json.load(open(CREDITS_JSON, encoding="utf-8"))
+    data = load_credits()
+    os.makedirs(os.path.dirname(CREDITS_JSON), exist_ok=True)
     by_key = {(s["source"], str(s.get("id") or s["url"])): s for s in data["sounds"]}
     used_sources = {}
     for snd in recipe["sounds"]:
@@ -514,7 +579,7 @@ def cmd_credit(a):
             parts = [p for p in entry["changes"].split("; ") if p and not p.startswith(snd["name"] + ":")]
             entry["changes"] = "; ".join(parts + [note])
     json.dump(data, open(CREDITS_JSON, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
-    keep = os.path.join(HERE, "recipes")
+    keep = RECIPES
     os.makedirs(keep, exist_ok=True)
     subject = os.path.splitext(os.path.basename(a.recipe))[0]
     if os.path.abspath(a.recipe) != os.path.abspath(os.path.join(keep, subject + ".json")):
@@ -525,11 +590,11 @@ def cmd_credit(a):
 
 
 def cmd_credits(a):
-    data = json.load(open(CREDITS_JSON, encoding="utf-8"))
+    data = load_credits()
     lines = ["# Sound credits", "",
-             "Generated from `credits.json` by `tools/sound/sound.py credits`: edit the JSON, not this file. Every",
-             "sound taken from outside the team is listed here with its license, what it became in the game and how",
-             "it was changed. CC BY sounds must keep their line in the game's credits.", ""]
+             "Generated from `%s` by `sound.py credits`: edit the JSON, not this file. Every" % os.path.basename(CREDITS_JSON),
+             "sound taken from outside the project is listed here with its license, what it became and how",
+             "it was changed. CC BY sounds must keep their line in the credits players see.", ""]
     by_license = {}
     for s in data["sounds"]:
         by_license.setdefault(s["license"], []).append(s)
@@ -544,104 +609,10 @@ def cmd_credits(a):
                 lines.append("  - changes: %s" % s["changes"])
         lines.append("")
     attrib = sorted({"%s (%s)" % (s["author"], s["source"]) for s in data["sounds"] if s["license"].startswith("CC BY")})
-    lines += ["## Line for the in-game credits", "",
+    lines += ["## Line for the credits players see", "",
               "Sounds: " + (", ".join(attrib) if attrib else "none to credit yet") + ".", ""]
     open(CREDITS_MD, "w", encoding="utf-8", newline="\n").write("\n".join(lines))
     print("wrote", CREDITS_MD, "(%d sounds)" % len(data["sounds"]))
-
-
-# ---------------------------------------------------------------- FMOD
-
-JS = r"""// Generated by tools/sound/sound.py fmod from %(spec)s.
-var project = studio.project;
-var spec = %(json)s;
-function need(path) { var o = project.lookup(path); if (!o) { throw new Error("not found: " + path); } return o; }
-function folderFor(path) {
-    var parts = path.substring("event:/".length).split("/"); parts.pop();
-    var cur = project.workspace.masterEventFolder, at = "event:";
-    for (var i = 0; i < parts.length; i++) {
-        at += "/" + parts[i];
-        var f = project.lookup(at);
-        if (!f) { f = project.create("EventFolder"); f.name = parts[i]; f.folder = cur; console.log("created " + at); }
-        cur = f;
-    }
-    return cur;
-}
-function randomize(sound, prop, amount) {
-    if (!amount) { return; }
-    var m = project.create("RandomizerModulator");
-    m.nameOfPropertyBeingModulated = prop;
-    m.amount = amount;
-    sound.relationships.modulators.add(m);
-}
-var bank = project.lookup("bank:/" + spec.bank);
-if (!bank) { bank = project.create("Bank"); bank.name = spec.bank; console.log("created bank:/" + spec.bank); }
-for (var i = 0; i < spec.events.length; i++) {
-    var e = spec.events[i];
-    var audios = [];
-    for (var k = 0; k < e.files.length; k++) {
-        var a = project.importAudioFile(spec.assets + e.files[k]);
-        if (!a) { throw new Error("import failed: " + e.files[k]); }
-        audios.push(a);
-    }
-    var length = 0;
-    for (var k = 0; k < audios.length; k++) { length = Math.max(length, audios[k].length); }
-    var event = project.lookup(e.path);
-    var track;
-    if (event) {
-        // Replace the instruments of the event's first audio track, keep the rest (effects, buses, references).
-        track = event.groupTracks[0];
-        var old = track.modules.slice();
-        for (var k = 0; k < old.length; k++) { project.deleteObject(old[k]); }
-        console.log("replacing " + e.path + " " + event.id);
-    } else {
-        event = project.create("Event");
-        event.name = e.path.substring(e.path.lastIndexOf("/") + 1);
-        event.folder = folderFor(e.path);
-        track = event.addGroupTrack("Audio");
-        console.log("creating " + e.path);
-    }
-    var sound;
-    if (audios.length === 1) {
-        sound = track.addSound(event.timeline, "SingleSound", 0, length);
-        sound.audioFile = audios[0];
-    } else {
-        sound = track.addSound(event.timeline, "MultiSound", 0, length);
-        for (var k = 0; k < audios.length; k++) {
-            var s = project.create("SingleSound");
-            s.audioFile = audios[k];
-            sound.relationships.sounds.add(s);
-        }
-    }
-    sound.volume = e.volume || 0;
-    randomize(sound, "pitch", e.pitch_random);
-    randomize(sound, "volume", e.volume_random);
-    if (e.bus) { event.mixerInput.output = need(e.bus); }
-    var banks = event.relationships.banks.destinations;
-    var has = false;
-    for (var k = 0; k < banks.length; k++) { if (banks[k].id === bank.id) { has = true; } }
-    if (!has) { event.relationships.banks.add(bank); }
-    console.log("done " + e.path + " " + event.id + " (" + audios.length + " take(s), " + length + " s)");
-}
-project.save();
-console.log("saved");
-"""
-
-
-def cmd_fmod(a):
-    spec = json.load(open(a.spec, encoding="utf-8"))
-    spec["assets"] = FMOD_ASSETS.replace("\\", "/") + "/"
-    for e in spec["events"]:
-        for f in e["files"]:
-            if not os.path.exists(os.path.join(FMOD_ASSETS, f)):
-                raise SystemExit("missing audio file: FMODProject/Corrupted/Assets/" + f)
-    js = os.path.join(tempfile.mkdtemp(prefix="soundfmod_"), "apply.js")
-    open(js, "w", encoding="utf-8").write(JS % {"spec": os.path.basename(a.spec), "json": json.dumps(spec)})
-    sh = os.path.join(ROOT, "tools", "fmod", "fmod.sh")
-    bash = shutil.which("bash") or r"C:\Program Files\Git\bin\bash.exe"
-    subprocess.run([bash, sh, "script", js], check=True)
-    if not a.no_build:
-        subprocess.run([bash, sh, "build"], check=True)
 
 
 # ---------------------------------------------------------------- main
@@ -651,7 +622,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("search"); p.add_argument("words"); p.add_argument("--license", default="cc0,by")
     p.add_argument("--min-dur", type=float, default=0); p.add_argument("--max-dur", type=float, default=10)
-    p.add_argument("-n", type=int, default=30); p.add_argument("--work", default=os.path.join(HERE, "work", "scratch"))
+    p.add_argument("-n", type=int, default=30); p.add_argument("--work", default=os.path.join(WORK, "scratch"))
     p.set_defaults(fn=cmd_search)
     p = sub.add_parser("fetch"); p.add_argument("work"); p.add_argument("ids", nargs="+"); p.set_defaults(fn=cmd_fetch)
     p = sub.add_parser("add"); p.add_argument("work"); p.add_argument("file"); p.add_argument("--key")
@@ -660,16 +631,18 @@ def main():
     p.add_argument("--url", required=True); p.add_argument("--source", default="other"); p.set_defaults(fn=cmd_add)
     p = sub.add_parser("analyze"); p.add_argument("files", nargs="+"); p.add_argument("--spectro")
     p.set_defaults(fn=cmd_analyze)
+    p = sub.add_parser("sheet"); p.add_argument("files", nargs="+"); p.add_argument("--out", required=True)
+    p.set_defaults(fn=cmd_sheet)
     p = sub.add_parser("make"); p.add_argument("recipe"); p.add_argument("--only", nargs="*")
     p.add_argument("--spectro"); p.set_defaults(fn=cmd_make)
-    import banks
-    p = sub.add_parser("reference"); p.add_argument("--banks", default=banks.BANKS); p.set_defaults(fn=cmd_reference)
-    p = sub.add_parser("check"); p.add_argument("events", nargs="+"); p.add_argument("--banks", default=banks.BANKS)
+    p = sub.add_parser("reference"); p.add_argument("--files", nargs="*"); p.set_defaults(fn=cmd_reference)
+    p = sub.add_parser("check"); p.add_argument("names", nargs="+"); p.add_argument("--files", action="store_true")
     p.add_argument("--tolerance", type=float, default=1.5); p.set_defaults(fn=cmd_check)
     p = sub.add_parser("credit"); p.add_argument("recipe"); p.set_defaults(fn=cmd_credit)
     p = sub.add_parser("credits"); p.set_defaults(fn=cmd_credits)
-    p = sub.add_parser("fmod"); p.add_argument("spec"); p.add_argument("--no-build", action="store_true")
-    p.set_defaults(fn=cmd_fmod)
+    eng = load_engine()
+    if eng and hasattr(eng, "register"):
+        eng.register(sub, sys.modules[__name__])
     a = ap.parse_args()
     sys.exit(a.fn(a) or 0)
 

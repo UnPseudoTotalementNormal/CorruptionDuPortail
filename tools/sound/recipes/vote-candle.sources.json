@@ -1,0 +1,49 @@
+{
+ "fs398448": {
+  "file": "raw/fs398448.ogg",
+  "source": "Freesound",
+  "id": 398448,
+  "title": "Match Ignite (No Strike)",
+  "author": "brachern",
+  "author_url": "https://freesound.org/people/brachern/",
+  "license": "CC0 1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "url": "https://freesound.org/people/brachern/sounds/398448/",
+  "tags": [
+   "candle",
+   "fire",
+   "flame",
+   "ignite",
+   "light",
+   "match",
+   "start"
+  ],
+  "fetched": "2026-10-28",
+  "quality": "preview HQ (Ogg ~192 kb/s); the original needs a Freesound login"
+ },
+ "fs826338": {
+  "file": "raw/fs826338.ogg",
+  "source": "Freesound",
+  "id": 826338,
+  "title": "Candle flame flickers, blown out",
+  "author": "DeqstersLab",
+  "author_url": "https://freesound.org/people/DeqstersLab/",
+  "license": "CC0 1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "url": "https://freesound.org/people/DeqstersLab/sounds/826338/",
+  "tags": [
+   "blown",
+   "candle",
+   "extinguish",
+   "flame",
+   "lamp",
+   "lantern",
+   "light",
+   "oil",
+   "whoosh",
+   "woosh"
+  ],
+  "fetched": "2026-10-28",
+  "quality": "preview HQ (Ogg ~192 kb/s); the original needs a Freesound login"
+ }
+}

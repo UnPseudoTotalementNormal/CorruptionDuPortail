@@ -45,7 +45,8 @@ UX: the player sees their role appear gradually — reduces confusion during rol
 - **Async = UniTask** (`UniTask`, `UniTaskVoid`), never `System.Threading.Tasks.Task`.
 - **Audio = FMOD** via `AudioSystem/GameAudioManager`. Never `AudioSource` for gameplay sounds. `FMODProject/` is
   the source of every sound: build **every** bank from it and commit it with `Assets/FMODBanks/` (`tools/fmod/README.md`;
-  the `fmod_guard` hook and CI check it).
+  the `fmod_guard` hook and CI check it). New or better sound effects: the `sound-maker` skill (free sources, levels
+  matched to the game, credits in `FMODProject/credits.json`).
 - **Every feature ships with its playtest logs** — in the same commit, unasked: `GameLog.Info|Warn("cat", "evt.name", key, value…)` for each player action (with its target), each silent refusal (early `return` on an input, with the reason), each step of a sequence, each server decision. A feature without logs is invisible in playtest reports. Rules: `project-context.md` § Playtest logs. The `log_guard` hook blocks a game-code commit with no `GameLog` call; write `Logs: none (<why>)` in the body only when there is truly nothing to log (shader, pure refactor).
 
 ## Build / Test / Run — use the official Unity CLI (MCP = fallback only)

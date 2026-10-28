@@ -5,7 +5,7 @@
 			<value>VoteCandleSnuff</value>
 		</property>
 		<property name="outputFormat">
-			<value>0</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{b824745e-f375-4fa1-964d-4a0d083788a0}</destination>
@@ -53,14 +53,14 @@
 			<destination>{cd4732b5-274d-45b5-bf37-358fdf5b77db}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{f8affebb-185a-47a4-b9ab-4e7715017db3}</destination>
+			<destination>{67320b85-f3a2-4ddb-ad74-3a5588158785}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{38efc136-e188-4091-a0ea-13a1ab602323}" />
 	<object class="MarkerTrack" id="{a5828126-eea0-4669-b8e0-4060e94232e8}" />
 	<object class="GroupTrack" id="{b5f44cb7-8a53-4fbc-bac0-39a237b3309e}">
 		<relationship name="modules">
-			<destination>{fa9999dc-277a-4387-b34d-6b3d281aa01b}</destination>
+			<destination>{d9162de5-3c04-4e7c-889d-c8c7f420be99}</destination>
 		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{42ad6cab-220a-4e3d-868f-6d0b5219c418}</destination>
@@ -68,7 +68,7 @@
 	</object>
 	<object class="Timeline" id="{b3f4b7c1-ebc4-4eda-9df5-eb203125d405}">
 		<relationship name="modules">
-			<destination>{fa9999dc-277a-4387-b34d-6b3d281aa01b}</destination>
+			<destination>{d9162de5-3c04-4e7c-889d-c8c7f420be99}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerMaster" id="{6699faeb-8aa4-487b-b6f2-58c97830b92d}">
@@ -88,12 +88,12 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{cd4732b5-274d-45b5-bf37-358fdf5b77db}" />
-	<object class="SingleSound" id="{fa9999dc-277a-4387-b34d-6b3d281aa01b}">
+	<object class="SingleSound" id="{d9162de5-3c04-4e7c-889d-c8c7f420be99}">
 		<property name="length">
-			<value>0.90000000000000002</value>
+			<value>0.96972916666666664</value>
 		</property>
 		<relationship name="audioFile">
-			<destination>{7d10e0a6-cf2b-4cf5-9238-7ad248cdf250}</destination>
+			<destination>{e5acaf84-1a59-4a32-b528-4beb926822d4}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{42ad6cab-220a-4e3d-868f-6d0b5219c418}">

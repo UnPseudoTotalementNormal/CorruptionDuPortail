@@ -1,0 +1,19 @@
+{
+ "bank": "VoteCandle",
+ "events": [
+  {
+   "path": "event:/Interface/VoteCandleIgnite",
+   "files": [
+    "SoundMaker/vote-candle/candle_ignite.wav"
+   ],
+   "bus": "bus:/Sfx"
+  },
+  {
+   "path": "event:/Interface/VoteCandleSnuff",
+   "files": [
+    "SoundMaker/vote-candle/candle_snuff.wav"
+   ],
+   "bus": "bus:/Sfx"
+  }
+ ]
+}

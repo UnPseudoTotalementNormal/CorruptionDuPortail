@@ -23,7 +23,10 @@ namespace Presentation
     /// flight has no visible cut. They hang under the camera, scaled by its field of view (<see cref="ScreenRowLayout"/>
     /// works in screen half-heights), so they stay put on screen while the head turns. Cards dealt by day
     /// (<see cref="BoardManager.ShowAllPlayerCards"/>) fly straight to the row: this is the board's layout override.
-    /// Local presentation only.
+    /// The bar takes its cork with it (mockups rangees-jour v2 L0): a backdrop drawn with the cork wall's own texture
+    /// and tiling, laid exactly over the wall when the bar lifts off, while the 3D wall hides (its triplanar texture is
+    /// mapped in world space, so the mesh itself cannot fly without its cork sliding); it swaps back once the bar has
+    /// landed. Local presentation only.
     /// </summary>
     [DefaultExecutionOrder(310)]
     public class DayScreenRows : MonoBehaviour, ICardLayoutOverride
@@ -32,12 +35,29 @@ namespace Presentation
         // The cards' and the roles bar's lit UI shaders (Shader Graphs/UI_LitImage*): 0 = lit by the room (the table), 1 =
         // their own colours, evenly, like screen UI (Poyo 2026-10-21: the cards in the rows were dark).
         private static readonly int CardUiLitId = Shader.PropertyToID("_CardUiLit");
+        private const int CorkSortingOrder = -2;
 
         [SerializeField] private BoardManager _boardManager;
         [Tooltip("The cork's characters bar (the roles of the game, grouped by side): row 2.")]
         [SerializeField] private RectTransform _rolesBar;
-        [Tooltip("The corruption and robot counters, stacked right of the bar in row 2.")]
+        [Tooltip("The corruption and robot counters, side by side right of the bar in row 2.")]
         [SerializeField] private RectTransform[] _counters = new RectTransform[0];
+        [Tooltip("The cork wall the bar lies on at night (DetectiveWall): by day its cork goes to the screen with the bar.")]
+        [SerializeField] private Renderer _corkWall;
+        [Tooltip("Material of the cork drawn behind the bar by day: the bar's lit UI material, so it lights like the bar.")]
+        [SerializeField] private Material _corkBackdropMaterial;
+        [Tooltip("Wood of the cork's frame by day (mockups rangees-jour v3 F5): the lobby tablet's frame wood.")]
+        [SerializeField] private Texture _frameTexture;
+        [Tooltip("Tint of that wood (the lobby frame's: LobbyRoles.uss).")]
+        [SerializeField] private Color _frameTint = new Color32(120, 79, 48, 255);
+        [Tooltip("The dark line between the wood and the cork (the lobby cork's border).")]
+        [SerializeField] private Color _frameLine = new Color32(52, 30, 14, 255);
+        [Tooltip("The shadow the frame casts on the cork, at the cork's edge (Poyo, v3 F5: softens the wood to cork step).")]
+        [SerializeField] private Color _shadowColour = new Color(0.06f, 0.03f, 0.01f, 0.75f);
+        [Tooltip("Frame width, line width and how far the shadow reaches in, as shares of the cork's height.")]
+        [SerializeField] private float _frameShare = 0.09f;
+        [SerializeField] private float _lineShare = 0.02f;
+        [SerializeField] private float _shadowShare = 0.22f;
         [Tooltip("Distance of the rows in front of the camera (world units). Near enough for no cat to come between.")]
         [SerializeField] private float _distance = 2f;
         [Tooltip("A card's size in its own units at scale 1 (its 3D model): width, height.")]
@@ -57,6 +77,16 @@ namespace Presentation
         private readonly List<Collider> _spotlitColliders = new();
         private readonly List<Graphic> _graphicsBuffer = new();
         private readonly List<SavedPose> _saved = new();
+        private readonly Dictionary<Collider, bool> _corkColliders = new();
+        private readonly List<Graphic> _corkDressing = new();
+        private readonly Dictionary<Graphic, float> _corkDressingAlpha = new();
+        private RectTransform _corkRoot;
+        private RawImage _corkBackdrop;
+        private RawImage _corkFrame;
+        private Image _corkLine;
+        private InnerShadowGraphic _corkShadow;
+        private bool _corkFitted;
+        private Tween _corkLanding;
         private Camera _camera;
         private Transform _cardAnchor;
         private Canvas _rolesCanvas;
@@ -99,6 +129,8 @@ namespace Presentation
         {
             Assert.IsNotNull(_boardManager, "DayScreenRows._boardManager is not wired — wire the BoardManager in GameScene.");
             Assert.IsNotNull(_rolesBar, "DayScreenRows._rolesBar is not wired — wire the cork's CharactersBar in GameScene.");
+            Assert.IsNotNull(_corkWall, "DayScreenRows._corkWall is not wired — wire the DetectiveWall renderer in GameScene.");
+            Assert.IsNotNull(_corkBackdropMaterial, "DayScreenRows._corkBackdropMaterial is not wired — wire UI_LitImageShader_Transparent.");
         }
 
         /// <summary>The day starts: both rows open, the cards and the roles fly from the table to the screen.</summary>
@@ -497,12 +529,215 @@ namespace Presentation
             {
                 Save(_counter);
             }
+            // While the bar still lies on the wall: its cork backdrop is laid over the wall exactly, so the swap shows nothing.
+            SetCorkOnBar(true);
             foreach (SavedPose _pose in _saved)
             {
                 _pose.Rect.DOKill();
                 _pose.Rect.SetParent(_rolesCanvas.transform, true);
             }
             PlaceRoles(_flySeconds);
+        }
+
+        // ---- the cork (mockups rangees-jour v2 L0 + v3 F5): the wall's cork travels with the bar, in a wooden frame
+
+        // True: the cork is drawn behind the bar (the 3D wall hidden, its collider off: it would stand between the eye
+        // and the cats), its frame fading in while the bar flies; false: the wall is back on the table, the backdrop off.
+        private void SetCorkOnBar(bool _onBar)
+        {
+            _corkLanding?.Kill();
+            _corkLanding = null;
+            if (_corkWall == null)
+            {
+                return;
+            }
+            if (_onBar)
+            {
+                if (CorkShown)
+                {
+                    FadeCorkDressing(1f); // the day came back before the bar had landed: the cork never left it
+                    return;
+                }
+                if (!FitCorkBackdrop())
+                {
+                    Diagnostics.Logs.GameLog.Warn("ui", "day.rows.cork.skip", "reason", "no cork texture on the wall");
+                    return;
+                }
+                _corkRoot.gameObject.SetActive(true);
+                SetCorkDressingAlpha(0f);
+                FadeCorkDressing(1f);
+                _corkWall.enabled = false;
+                _corkColliders.Clear();
+                foreach (Collider _collider in _corkWall.GetComponentsInChildren<Collider>(true))
+                {
+                    _corkColliders[_collider] = _collider.enabled;
+                    _collider.enabled = false;
+                }
+                Diagnostics.Logs.GameLog.Info("ui", "day.rows.cork", "on", "bar");
+                return;
+            }
+            if (!CorkShown)
+            {
+                return;
+            }
+            _corkRoot.gameObject.SetActive(false);
+            _corkWall.enabled = true;
+            foreach (KeyValuePair<Collider, bool> _entry in _corkColliders)
+            {
+                if (_entry.Key != null) _entry.Key.enabled = _entry.Value;
+            }
+            _corkColliders.Clear();
+            Diagnostics.Logs.GameLog.Info("ui", "day.rows.cork", "on", "wall");
+        }
+
+        private bool CorkShown => _corkRoot != null && _corkRoot.gameObject.activeSelf;
+
+        // The frame, its dark line and the cork's inner shadow exist only on screen (the wall has none): they come in
+        // while the bar flies up and go while it flies back, so the cork leaves and lands on the wall bare.
+        private void FadeCorkDressing(float _to)
+        {
+            foreach (Graphic _graphic in _corkDressing)
+            {
+                _graphic.DOKill();
+                _graphic.DOFade(_to * _corkDressingAlpha[_graphic], _flySeconds).SetEase(Ease.InOutSine).SetLink(gameObject);
+            }
+        }
+
+        private void SetCorkDressingAlpha(float _share)
+        {
+            foreach (Graphic _graphic in _corkDressing)
+            {
+                _graphic.DOKill();
+                Color _colour = _graphic.color;
+                _colour.a = _share * _corkDressingAlpha[_graphic];
+                _graphic.color = _colour;
+            }
+        }
+
+        // Lays the cork over the wall's front face, in the bar's own space, with the wall's texture and tiling, and
+        // builds its frame around it once.
+        private bool FitCorkBackdrop()
+        {
+            Material _wallMaterial = _corkWall.sharedMaterial;
+            Texture _cork = _wallMaterial != null && _wallMaterial.HasTexture("_MainTex") ? _wallMaterial.GetTexture("_MainTex") : null;
+            if (_cork == null || !_corkWall.TryGetComponent(out MeshFilter _filter) || _filter.sharedMesh == null)
+            {
+                return false;
+            }
+            if (_corkRoot == null)
+            {
+                BuildCorkBackdrop();
+            }
+            _corkRoot.SetAsFirstSibling();
+            _corkBackdrop.texture = _cork;
+            if (_corkFitted)
+            {
+                return true; // the wall and the bar never move on the table: measured once, while the bar lay on it
+            }
+            _corkFitted = true;
+
+            // The wall is a box; its front face is the one nearer the bar's plane.
+            Bounds _mesh = _filter.sharedMesh.bounds;
+            Transform _wall = _corkWall.transform;
+            Vector3 _ext = _mesh.extents;
+            float _front = Mathf.Abs(_rolesBar.InverseTransformPoint(_wall.TransformPoint(_mesh.center - new Vector3(0f, 0f, _ext.z))).z)
+                           < Mathf.Abs(_rolesBar.InverseTransformPoint(_wall.TransformPoint(_mesh.center + new Vector3(0f, 0f, _ext.z))).z)
+                ? -_ext.z : _ext.z;
+            Vector2 _min = new Vector2(float.MaxValue, float.MaxValue), _max = new Vector2(float.MinValue, float.MinValue);
+            for (int _i = 0; _i < 4; _i++)
+            {
+                Vector3 _corner = _mesh.center + new Vector3((_i & 1) == 0 ? -_ext.x : _ext.x, (_i & 2) == 0 ? -_ext.y : _ext.y, _front);
+                Vector3 _local = _rolesBar.InverseTransformPoint(_wall.TransformPoint(_corner));
+                _min = Vector2.Min(_min, _local);
+                _max = Vector2.Max(_max, _local);
+            }
+            Vector2 _corkSize = _max - _min;
+            float _frame = _frameShare * _corkSize.y;
+            float _line = _lineShare * _corkSize.y;
+            Vector2 _rootSize = _corkSize + Vector2.one * (2f * _frame);
+
+            _corkRoot.anchorMin = _corkRoot.anchorMax = _corkRoot.pivot = new Vector2(0.5f, 0.5f);
+            _corkRoot.localRotation = Quaternion.identity;
+            _corkRoot.localScale = Vector3.one;
+            _corkRoot.sizeDelta = _rootSize;
+            _corkRoot.anchoredPosition = (_min + _max) / 2f - _rolesBar.rect.center;
+            _corkRoot.localPosition = new Vector3(_corkRoot.localPosition.x, _corkRoot.localPosition.y, 0f);
+            Centre(_corkFrame.rectTransform, _rootSize);
+            Centre(_corkLine.rectTransform, _corkSize + Vector2.one * (2f * _line));
+            Centre(_corkBackdrop.rectTransform, _corkSize);
+            Centre(_corkShadow.rectTransform, _corkSize);
+            _corkShadow.Depth = _shadowShare * _corkSize.y;
+
+            // Same cork grain as on the wall: its triplanar repeats the texture _Tile times per metre.
+            float _tile = _wallMaterial.HasProperty("_Tile") ? _wallMaterial.GetFloat("_Tile") : 1f;
+            Vector3 _size = Vector3.Scale(_mesh.size, _wall.lossyScale);
+            _corkBackdrop.uvRect = new Rect(0f, 0f, _size.x * _tile, _size.y * _tile);
+            // The wood's grain: one tile for twice the frame's height, as on the lobby tablet's frame.
+            _corkFrame.uvRect = new Rect(0f, 0f, _rootSize.x / (2f * _rootSize.y), 0.5f);
+            return true;
+        }
+
+        private static void Centre(RectTransform _rect, Vector2 _size)
+        {
+            _rect.anchorMin = _rect.anchorMax = _rect.pivot = new Vector2(0.5f, 0.5f);
+            _rect.anchoredPosition = Vector2.zero;
+            _rect.sizeDelta = _size;
+        }
+
+        // Frame (the lobby tablet's wood), its dark line, the cork, the cork's inner shadow, back to front, on their own
+        // canvas one step under the portraits' (CharacterBarObject: nested canvases at order -1, which the bar's canvas
+        // ties with): drawn under them, not by chance of the batch order.
+        private void BuildCorkBackdrop()
+        {
+            int _layer = _rolesBar.gameObject.layer;
+            var _root = new GameObject("DayCorkBackdrop", typeof(RectTransform), typeof(LayoutElement));
+            _root.layer = _layer;
+            _root.GetComponent<LayoutElement>().ignoreLayout = true;
+            _corkRoot = (RectTransform)_root.transform;
+            _corkRoot.SetParent(_rolesBar, false);
+            var _canvas = _root.AddComponent<Canvas>();
+            _canvas.overrideSorting = true;
+            _canvas.sortingOrder = CorkSortingOrder;
+
+            _corkFrame = AddCorkPart<RawImage>("Frame", _layer);
+            _corkFrame.texture = _frameTexture;
+            _corkFrame.color = _frameTint;
+            _corkLine = AddCorkPart<Image>("Line", _layer);
+            _corkLine.color = _frameLine;
+            _corkBackdrop = AddCorkPart<RawImage>("Cork", _layer);
+            _corkShadow = AddCorkPart<InnerShadowGraphic>("Shadow", _layer);
+            _corkShadow.color = _shadowColour;
+
+            _corkDressing.Clear();
+            _corkDressingAlpha.Clear();
+            foreach (Graphic _graphic in new Graphic[] { _corkFrame, _corkLine, _corkShadow })
+            {
+                _corkDressing.Add(_graphic);
+                _corkDressingAlpha[_graphic] = _graphic.color.a;
+            }
+            _root.SetActive(false);
+        }
+
+        private T AddCorkPart<T>(string _name, int _layer) where T : Graphic
+        {
+            var _go = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
+            _go.layer = _layer;
+            _go.transform.SetParent(_corkRoot, false);
+            var _graphic = _go.GetComponent<T>();
+            _graphic.raycastTarget = false;
+            _graphic.material = _corkBackdropMaterial;
+            return _graphic;
+        }
+
+        // The row's box in the bar's space: the framed cork when it is drawn (larger than the bar), else the bar.
+        private Rect RolesBox()
+        {
+            if (CorkShown)
+            {
+                Vector2 _centre = _rolesBar.rect.center + _corkRoot.anchoredPosition;
+                return new Rect(_centre - _corkRoot.sizeDelta / 2f, _corkRoot.sizeDelta);
+            }
+            return _rolesBar.rect;
         }
 
         private void Save(RectTransform _rect)
@@ -522,7 +757,8 @@ namespace Presentation
             });
         }
 
-        // The bar fills the roles row's height; the counters stack at its right; all smaller if the row would not fit.
+        // The cork (or the bar) fills the roles row's height; the counters sit side by side at its right (mockups
+        // rangees-jour v2 L0 + v1 D3); all smaller if the row would not fit.
         private void PlaceRoles(float _seconds)
         {
             if (!IsActive || _rolesBar == null || _rolesBar.parent != _rolesCanvas.transform)
@@ -530,42 +766,44 @@ namespace Presentation
                 return;
             }
             float _height = ScreenRowLayout.RolesHeight;
-            float _barScale = _height / Mathf.Max(1f, _rolesBar.rect.height);
-            float _barWidth = _rolesBar.rect.width * _barScale;
-            float _counterHeight = _height * 0.48f;
+            Rect _box = RolesBox();
+            float _barScale = _height / Mathf.Max(1f, _box.height);
+            float _barWidth = _box.width * _barScale;
+            float _counterHeight = _height * 0.5f;
+            float _gap = _height * 0.15f;
             float _countersWidth = 0f;
             foreach (RectTransform _counter in _counters)
             {
                 if (_counter != null)
                 {
-                    _countersWidth = Mathf.Max(_countersWidth, _counter.rect.width * _counterHeight / Mathf.Max(1f, _counter.rect.height));
+                    _countersWidth += _gap + _counter.rect.width * _counterHeight / Mathf.Max(1f, _counter.rect.height);
                 }
             }
-            float _gap = _height * 0.15f;
-            float _total = _barWidth + (_countersWidth > 0f ? _gap + _countersWidth : 0f);
+            float _total = _barWidth + _countersWidth;
             float _fit = Mathf.Min(1f, ScreenRowLayout.MaxWidthShare * 2f * _aspect / Mathf.Max(0.001f, _total));
             float _left = -_total * _fit / 2f;
             float _y = ScreenRowLayout.RolesCentreY(RolesShown);
 
-            MoveRect(_rolesBar, new Vector2(_left + _barWidth * _fit / 2f, _y), _barScale * _fit, _seconds);
-            float _counterX = _left + (_barWidth + _gap + _countersWidth / 2f) * _fit;
-            for (int _i = 0; _i < _counters.Length; _i++)
+            MoveRect(_rolesBar, _box.center, new Vector2(_left + _barWidth * _fit / 2f, _y), _barScale * _fit, _seconds);
+            float _x = _left + _barWidth * _fit;
+            foreach (RectTransform _counter in _counters)
             {
-                RectTransform _counter = _counters[_i];
                 if (_counter == null)
                 {
                     continue;
                 }
                 float _scale = _counterHeight / Mathf.Max(1f, _counter.rect.height) * _fit;
-                float _offset = (_i - (_counters.Length - 1) / 2f) * -(_height / 2f) * _fit;
-                MoveRect(_counter, new Vector2(_counterX, _y + _offset), _scale, _seconds);
+                float _width = _counter.rect.width * _scale;
+                _x += _gap * _fit;
+                MoveRect(_counter, _counter.rect.center, new Vector2(_x + _width / 2f, _y), _scale, _seconds);
+                _x += _width;
             }
         }
 
-        // Puts a rect's CENTRE at _centre (canvas space = screen half-heights), facing the camera.
-        private static void MoveRect(RectTransform _rect, Vector2 _centre, float _scale, float _seconds)
+        // Puts the point _pivot of a rect (its own space) at _centre (canvas space = screen half-heights), facing the camera.
+        private static void MoveRect(RectTransform _rect, Vector2 _pivot, Vector2 _centre, float _scale, float _seconds)
         {
-            Vector3 _target = new Vector3(_centre.x - _rect.rect.center.x * _scale, _centre.y - _rect.rect.center.y * _scale, 0f);
+            Vector3 _target = new Vector3(_centre.x - _pivot.x * _scale, _centre.y - _pivot.y * _scale, 0f);
             _rect.DOKill();
             _rect.DOLocalMove(_target, _seconds).SetEase(Ease.InOutCubic);
             _rect.DOLocalRotateQuaternion(Quaternion.identity, _seconds).SetEase(Ease.InOutCubic);
@@ -588,6 +826,11 @@ namespace Presentation
                 _pose.Rect.DOScale(_pose.LocalScale, _flySeconds).SetEase(Ease.InOutCubic);
             }
             _saved.Clear();
+            // The frame goes while the bar flies back; the bar lies on the wall again once it has landed: the wall
+            // takes its cork back.
+            FadeCorkDressing(0f);
+            _corkLanding?.Kill();
+            _corkLanding = DOVirtual.DelayedCall(_flySeconds, () => SetCorkOnBar(false)).SetLink(gameObject);
         }
 
         // ---- the anchors under the camera
@@ -704,6 +947,7 @@ namespace Presentation
         private void OnDestroy()
         {
             _uiLitTween?.Kill();
+            SetCorkOnBar(false);
             Shader.SetGlobalFloat(CardUiLitId, 0f);
             RestoreGraphics();
             if (_boardManager != null && ReferenceEquals(_boardManager.cardLayoutOverride, this))

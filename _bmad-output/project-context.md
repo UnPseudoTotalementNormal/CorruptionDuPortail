@@ -184,6 +184,9 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   shows only its glowing parts.
 - Animating the scale of a non-convex `MeshCollider` re-cooks it every frame → raycast dropouts. Put the collider on an unscaled parent or use a primitive.
 - **The UI raycast ranks canvases by sorting order before distance.** A world-space canvas BEHIND a card with a higher order takes the cursor's and the seated reticle's hover / click (the characters bar's portraits at order 0 over cards at −1: looking at the top of a far card hovered a portrait, 2026-10-08). Keep world-space interactables that can sit behind cards at an order ≤ the cards' (−1); equal orders fall back to distance.
+- **The characters bar's portraits are nested canvases** (`CharacterBarObject`: `overrideSorting`, order −1). A graphic
+  added to the bar's own canvas ties with them and may draw OVER them (the day cork backdrop hid every portrait,
+  2026-10-28): give anything drawn behind the portraits its own nested canvas at a lower order (`DayScreenRows`: −2).
 - **A card's root is driven by its `TransformCompositorComponent`**: every frame it composes the layers (Transform, Hover,
   Flip, Punch) into the root's local transform, and folds any outside change of the root back into the Transform layer.
   A tween on the root fights it (the T23 screen row stacked every card at the centre, back side out). Move a card through

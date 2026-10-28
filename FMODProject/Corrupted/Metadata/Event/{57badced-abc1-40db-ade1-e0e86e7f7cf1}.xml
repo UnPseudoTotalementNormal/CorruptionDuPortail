@@ -2,7 +2,7 @@
 <objects serializationModel="Studio.02.03.00">
 	<object class="Event" id="{57badced-abc1-40db-ade1-e0e86e7f7cf1}">
 		<property name="name">
-			<value>corrupting brand</value>
+			<value>Corrupting brand</value>
 		</property>
 		<property name="outputFormat">
 			<value>1</value>

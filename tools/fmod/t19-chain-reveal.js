@@ -1,7 +1,7 @@
 // Board task T19, points 2-4: the chained cat lifted then flattened. Imports the placeholder sounds of
 // FMODProject/Corrupted/Assets/T19 and makes one 2D one-shot event per sound in event:/Interface, in their own bank
 // "ChainReveal" (built alone, like VoteCandle: the committed Master.bank holds events missing from this project).
-// Run: tools/fmod/fmod.sh script tools/fmod/t19-chain-reveal.js, then tools/fmod/fmod.sh build ChainReveal.
+// Run: tools/fmod/fmod.sh script tools/fmod/t19-chain-reveal.js, then tools/fmod/fmod.sh build (every bank).
 var project = studio.project;
 var fp = project.filePath.split("\\").join("/");
 var assetsDir = fp.substring(0, fp.lastIndexOf("/") + 1) + "Assets/T19/";

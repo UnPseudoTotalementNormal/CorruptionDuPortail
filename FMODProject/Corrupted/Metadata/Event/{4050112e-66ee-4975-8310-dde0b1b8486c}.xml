@@ -168,7 +168,7 @@
 	<object class="MixerBusPanner" id="{34d7dcfd-3242-43c5-ba65-8d98f5776a21}" />
 	<object class="LoopRegion" id="{f3d97025-1534-44a1-9cc3-aa41d0f10c1c}">
 		<property name="position">
-			<value>1.272</value>
+			<value>1.6000000000000001</value>
 		</property>
 		<property name="length">
 			<value>6.7279999999999998</value>

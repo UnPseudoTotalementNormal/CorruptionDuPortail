@@ -57,12 +57,7 @@ namespace Avatars
 
         public void OnPointerExit(PointerEventData _eventData) => Exited?.Invoke(this);
 
-        public void OnPointerClick(PointerEventData _eventData)
-        {
-            Diagnostics.Logs.GameLog.Info("avatar", "cat.click", "seat", _avatar != null ? (object)_avatar.ownerClientId.Value : null,
-                "listened", Clicked != null);
-            Clicked?.Invoke(this);
-        }
+        public void OnPointerClick(PointerEventData _eventData) => Clicked?.Invoke(this);
 
         private void OnDestroy() => SetOutlined(false);
     }

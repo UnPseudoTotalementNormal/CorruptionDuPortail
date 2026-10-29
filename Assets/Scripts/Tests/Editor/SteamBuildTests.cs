@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
 using Network.Services;
+using Network.Steam;
 using NUnit.Framework;
 
 namespace Tests.Editor
@@ -91,6 +92,28 @@ namespace Tests.Editor
             Assert.AreEqual("76561198000000000", _host);
             Assert.IsFalse(_lobby.TryGetData(GameLobby.RelayJoinCodeKey, out _), "a Steam lobby has no Relay join code");
             Assert.IsFalse(_lobby.TryGetData("missing", out _));
+        }
+
+        [Test]
+        public void SteamJoin_DialsThePublishedHost_ElseTheLobbyOwner()
+        {
+            var _published = new GameLobby
+            {
+                HostId = "76561198000000001",
+                Data = new Dictionary<string, string> { { GameLobby.HostSteamIdKey, "76561198000000000" } },
+            };
+            Assert.IsTrue(SteamConnector.TryGetHostSteamId(_published, out ulong _host, out bool _fromOwner));
+            Assert.AreEqual(76561198000000000UL, _host);
+            Assert.IsFalse(_fromOwner);
+
+            // Playtest 2026-10-24: the joined lobby's data lacked the key; the owner is the host.
+            var _ownerOnly = new GameLobby { HostId = "76561198000000001" };
+            Assert.IsTrue(SteamConnector.TryGetHostSteamId(_ownerOnly, out _host, out _fromOwner));
+            Assert.AreEqual(76561198000000001UL, _host);
+            Assert.IsTrue(_fromOwner);
+
+            Assert.IsFalse(SteamConnector.TryGetHostSteamId(new GameLobby { HostId = "0" }, out _, out _));
+            Assert.IsFalse(SteamConnector.TryGetHostSteamId(new GameLobby(), out _, out _));
         }
     }
 }

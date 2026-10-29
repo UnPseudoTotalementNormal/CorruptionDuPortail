@@ -62,6 +62,10 @@ namespace FocusSystem
 
         public void UnfocusAll()
         {
+            if (currentFocusObjects.Count > 0)
+            {
+                Diagnostics.Logs.GameLog.Info("board", "focus.clear", "count", currentFocusObjects.Count);
+            }
             foreach (var _focusObject in currentFocusObjects.ToList())
             {
                 UnfocusObject(_focusObject);
@@ -95,6 +99,7 @@ namespace FocusSystem
                 case FocusType.Powers:
                     break;
             }
+            Diagnostics.Logs.GameLog.Info("board", "focus.set", "type", _focusType.ToString(), "count", currentFocusObjects.Count);
         }
 
         public void SetFocusOnType(FocusType _focusType, Func<ulong, bool> _checkValidFunc, bool _stopOtherFocus = true)
@@ -127,6 +132,7 @@ namespace FocusSystem
                 case FocusType.Powers:
                     break;
             }
+            Diagnostics.Logs.GameLog.Info("board", "focus.set", "type", _focusType.ToString(), "count", currentFocusObjects.Count);
         }
         
         public void SetFocusOnType(FocusType _focusType, TargetIncludeFlags _includeFlags = (TargetIncludeFlags)(-1), bool _stopOtherFocus = true)
@@ -161,6 +167,7 @@ namespace FocusSystem
                 case FocusType.Powers:
                     break;
             }
+            Diagnostics.Logs.GameLog.Info("board", "focus.set", "type", _focusType.ToString(), "count", currentFocusObjects.Count);
         }
         
         public void FocusObject(GameObject _gameObject)

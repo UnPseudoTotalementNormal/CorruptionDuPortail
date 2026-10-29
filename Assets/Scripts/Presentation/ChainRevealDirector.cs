@@ -5,6 +5,7 @@ using Board;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using FMODUnity;
+using Presentation.Chains;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -70,6 +71,8 @@ namespace Presentation
         private AnimationClip _clip2;
         private AnimationClip _idleClip;
         private float _clipTime = -1f;
+        // Its chains, appearing on it with the pose (maquettes chaines v2: right paw, left paw, then its body).
+        private CatChains _chains;
 
         private void Awake()
         {
@@ -94,11 +97,16 @@ namespace Presentation
             {
                 await UniTask.Yield(PlayerLoopTiming.Update, _ct);
             }
+            if (!_day.DaySettled)
+            {
+                Diagnostics.Logs.GameLog.Warn("chain", "chain.reveal.wait.timeout", "seat", _seat, "seconds", _maxWaitSeconds);
+            }
 
             Camera _camera = Camera.main;
             AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
             if (_camera == null || _manager == null)
             {
+                Diagnostics.Logs.GameLog.Warn("chain", "chain.reveal.skipped", "seat", _seat, "reason", _camera == null ? "no-camera" : "no-avatars");
                 return;
             }
             PlayerAvatar _avatar = _manager.GetAvatar(_seat);
@@ -137,7 +145,9 @@ namespace Presentation
 
             float _end = _avatar != null ? ChainRevealTimeline.BlackOut : ChainRevealTimeline.CardBack;
             Debug.Log($"[CHAINREVEAL] seat {_seat}: {(_avatar != null ? "cat" : "card only")}{(_self ? " (mine)" : "")}, {_distance:F1} m away");
+            Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.start", "seat", _seat, "cat", _avatar != null, "mine", _self, "card", _hasCard);
             GameAudioManager _audio = GameAudioManager.instance;
+            bool _completed = false;
             try
             {
                 if (_avatar != null)
@@ -176,6 +186,7 @@ namespace Presentation
                         {
                             _ = _card.ShowPseudoWithRevealedInfo(true);
                         }
+                        Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.role", "seat", _seat, "card", _card != null);
                     }
                     // The rows go down while it falls: it lands where they would hide it (the head stays free).
                     if (_avatar != null && _t >= ChainRevealTimeline.Release)
@@ -194,9 +205,11 @@ namespace Presentation
                 {
                     await _day.BlackOutAsync(() => EndCat(_hop, _seat), _ct);
                 }
+                _completed = true;
             }
             finally
             {
+                Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.end", "seat", _seat, "completed", _completed, "revealed", _revealed);
                 EndCat(_hop, _seat);
                 if (_hasCard)
                 {
@@ -229,6 +242,11 @@ namespace Presentation
                 _visibility.SetFeatured(_avatar);
             }
             _spotlights.Lifted = _avatar;
+            _chains = _avatar.GetComponentInChildren<CatChains>();
+            if (_chains != null)
+            {
+                _chains.BeginReveal();
+            }
         }
 
         // Back on its seat (idempotent: under the black, then again in finally).
@@ -244,6 +262,11 @@ namespace Presentation
             }
             _clipTime = -1f;
             _animator = null;
+            if (_chains != null)
+            {
+                _chains.EndReveal(); // it keeps them, even if the moment was cut short
+                _chains = null;
+            }
             _visibility.SetFeatured(null);
             _dayRows.SetAway(false);
             _dayRows.SetRolesAway(false);
@@ -317,6 +340,10 @@ namespace Presentation
             else if (_idleClip != null)
             {
                 _idleClip.SampleAnimation(_target, Mathf.Repeat(_clipTime - ChainRevealTimeline.ClipEnd, _idleClip.length));
+            }
+            if (_chains != null)
+            {
+                _chains.SetRevealTime(_clipTime);
             }
         }
     }

@@ -64,6 +64,10 @@ namespace UI.RoleCard
         [Tooltip("Show the short victory condition above the kit. Off on the in-game card.")]
         [SerializeField] private bool showVictoryCondition;
 
+        [Tooltip("Frees the cursor and freezes the look while the card is open (opened in the seated first person, " +
+                 "nothing could close it). Wire the scene's AvatarCameraArbiter; null-tolerant.")]
+        [SerializeField] private Avatars.AvatarCameraArbiter arbiter;
+
         /// <summary>Raised when the card is dismissed (close button or click outside the page).</summary>
         public event Action Closed;
 
@@ -86,6 +90,7 @@ namespace UI.RoleCard
         private Label _powersLabel;
         private VisualElement _powers;
         private bool _initialized;
+        private bool _isOpen;
 
         private RoleSheetAssets Assets => new RoleSheetAssets(factionDatabase, portraitTable, roleCardTexts);
 
@@ -149,6 +154,18 @@ namespace UI.RoleCard
         private void OnDisable()
         {
             if (charactersBar != null) charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+            arbiter?.SetOverlayOpen(this, false);
+        }
+
+        // Escape closes the card too (the click outside needs a cursor).
+        private void Update()
+        {
+            if (_isOpen && UnityEngine.InputSystem.Keyboard.current != null &&
+                UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.escape");
+                Close();
+            }
         }
 
         // A character in the bar was clicked -> show its role card.
@@ -169,12 +186,20 @@ namespace UI.RoleCard
         public void Open(Role role, bool knownFake)
         {
             TryInitialize();
-            if (_root == null || role == null) return;
+            if (_root == null || role == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.rolecard.refused", "reason", _root == null ? "no-root" : "no-role");
+                return;
+            }
 
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.open", "seat", role.ownerClientId,
+                "role", role.roleName.ToString(), "knownFake", knownFake));
             Bind(role);
             _fakeBadge?.EnableInClassList(CollapsedClass, !knownFake);
             _root.RemoveFromClassList(CollapsedClass);
             _root.pickingMode = PickingMode.Position; // modal: scrim blocks the world + catches dismiss clicks
+            _isOpen = true;
+            arbiter?.SetOverlayOpen(this, true);
             // Remove the fade class next frame so the opacity transition actually runs from 0 -> 1.
             _root.schedule.Execute(() => _root.RemoveFromClassList(HiddenClass));
 
@@ -186,8 +211,11 @@ namespace UI.RoleCard
         public void Close()
         {
             if (_root == null) return;
+            if (!_root.ClassListContains(HiddenClass)) Diagnostics.Logs.GameLog.Info("ui", "ui.rolecard.close");
             _root.AddToClassList(HiddenClass);
             _root.pickingMode = PickingMode.Ignore;
+            _isOpen = false;
+            arbiter?.SetOverlayOpen(this, false);
 
             if (frostCanvasGroup != null) frostCanvasGroup.DoHideGroup(frostFadeDuration, false, false);
 

@@ -36,8 +36,14 @@ namespace UI.KeyHints
             Keyboard _keyboard = Keyboard.current;
             if (_keyboard == null || !_keyboard[MenuKey].wasPressedThisFrame || _otherOverlayLastFrame || IsTyping())
             {
+                // Logged on the key press only (never per frame): why Escape did not toggle the pause menu.
+                if (_keyboard != null && _keyboard[MenuKey].wasPressedThisFrame)
+                {
+                    Diagnostics.Logs.GameLog.Info("ui", "ui.pause.ignored", "reason", _otherOverlayLastFrame ? "other-overlay" : "typing");
+                }
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.pause.key", "open", !_pausePanel.isPanelOpen);
             _pausePanel.SwitchPanelOpen();
         }
 

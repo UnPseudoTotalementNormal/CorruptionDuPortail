@@ -71,6 +71,7 @@ Transform:
   - {fileID: 2019585619761175004}
   - {fileID: 783373721878416931}
   - {fileID: 3394528697323288156}
+  - {fileID: 5530991486847906801}
   m_Father: {fileID: 804202672995429565}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &444417476389507461
@@ -989,6 +990,7 @@ GameObject:
   - component: {fileID: 9033994382041459947}
   - component: {fileID: 8874405462709290909}
   - component: {fileID: 4055872417862776525}
+  - component: {fileID: 4646036212626112835}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1208,6 +1210,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatFrown
   animator: {fileID: 3870855746124023605}
   easeSeconds: 0.2
+--- !u!114 &4646036212626112835
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f0ef8c4e84213141bfb1c202a9667bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.Cosmetics.CatTalk
+  mouth: {fileID: 5530991486847906801}
+  headBone: {fileID: 4477502950927753904}
+  fidget: 0.25
+  openSeconds: 0.03
+  closeSeconds: 0.08
+  holdSeconds: 0.4
+  rollDegrees: 4
+  nodDegrees: 3
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0
@@ -2028,6 +2050,96 @@ Transform:
   - {fileID: 3490801614423665221}
   m_Father: {fileID: 2019585619761175004}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4451286158464433471
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5530991486847906801}
+  - component: {fileID: 6999944266703605351}
+  - component: {fileID: 8413829695665979413}
+  m_Layer: 0
+  m_Name: Talking Mouth
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &5530991486847906801
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4451286158464433471}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.0061, z: 0.0158}
+  m_LocalScale: {x: 0.0062, y: 0.0048, z: 0.0004}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4477502950927753904}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &6999944266703605351
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4451286158464433471}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &8413829695665979413
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4451286158464433471}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 38ecd242be5d64f4b8a77a22b16cb635, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &4596940910353851389
 GameObject:
   m_ObjectHideFlags: 0

@@ -103,6 +103,8 @@ MonoBehaviour:
   clickPunchDuration: 0.25
   singleUseCoatMaterial: {fileID: 2100000, guid: 120c54c1a134d4a48a6d0b3dc3a375b2, type: 2}
   singleUseDripPrefab: {fileID: 8711122620186976641, guid: 259c293a5962a8c4ba8e8e1f35d66b51, type: 3}
+  singleUseFreeCoatMaterial: {fileID: 2100000, guid: 961789eea7f133e4fb18ebcc154c45b0, type: 2}
+  singleUseFreeDripPrefab: {fileID: 8711122620186976641, guid: 62bc67fead41ec24e82fd00261c33ceb, type: 3}
 --- !u!114 &8704216733893804600
 MonoBehaviour:
   m_ObjectHideFlags: 0

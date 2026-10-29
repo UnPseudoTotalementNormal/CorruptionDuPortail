@@ -75,6 +75,7 @@ namespace GameLogic.GameStates
 
         public void OnPlayerVoted(ulong _playerId)
         {
+            GameLog.Guarded(() => GameLog.Info("vote", "vote.click", "to", _playerId, "skip", _playerId == SKIP_VOTE_ID));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
                 new NetworkSerializableObject[]
                 {
@@ -93,6 +94,7 @@ namespace GameLogic.GameStates
             if (!_isVoteOpenServer)
             {
                 Debug.LogWarning($"[VOTE] Late vote from {_senderId} for {_votedPlayerId} ignored: the vote is closed.");
+                GameLog.Info("vote", "vote.refused", "from", _senderId, "to", _votedPlayerId, "reason", "vote-closed");
                 return;
             }
 
@@ -102,12 +104,15 @@ namespace GameLogic.GameStates
             if (_rpcSender != Unity.Netcode.NetworkManager.ServerClientId && _senderId != _rpcSender)
             {
                 Debug.LogWarning($"[VOTE] Client {_rpcSender} tried to vote as {_senderId}; recording it as its own vote.");
+                GameLog.Warn("vote", "vote.impersonation", "sender", _rpcSender, "claimed", _senderId, "to", _votedPlayerId);
                 _senderId = _rpcSender;
             }
 
             if (!CanVote(_senderId))
             {
                 Debug.LogWarning($"Player {_senderId} tried to vote for player {_votedPlayerId} but cannot vote.");
+                ulong _refusedVoter = _senderId;
+                GameLog.Guarded(() => GameLog.Info("vote", "vote.refused", "from", _refusedVoter, "to", _votedPlayerId, "reason", CannotVoteReason(_refusedVoter)));
                 return; 
             }
 
@@ -130,8 +135,24 @@ namespace GameLogic.GameStates
             if (votesForPlayer.Values.Sum(voteList => voteList.Count) >=
                 CharacterQuery.GetCharacters().Count(_c => CanVote(_c.ownerClientId.Value, true)))
             {
+                if (voteTimer > 5)
+                {
+                    GameLog.Info("vote", "vote.timer.collapse", "from", voteTimer, "to", 5, "reason", "everyone-voted");
+                }
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
+        }
+
+        // Playtest logs only: which of CanVote's rules refuses this voter (same order as CanVote).
+        private string CannotVoteReason(ulong _playerId)
+        {
+            if (votesForPlayer.Values.Any(_voteList => _voteList.Contains(_playerId))) return "already-voted";
+            Character _character = CharacterQuery.GetCharacter(_playerId, false);
+            if (_character == null) return "no-character";
+            if (_character.isEliminated.Value) return "eliminated";
+            if (_character.isFake) return "fake";
+            if (_playerId < 100 && gameManager.HasClientLeft(_playerId)) return "player-left";
+            return "unknown";
         }
         
         public bool CanVote(ulong _playerId, bool _ignoreAlreadyVoted = false)
@@ -181,6 +202,10 @@ namespace GameLogic.GameStates
             if (_castVotes >= _eligibleVoters)
             {
                 Debug.Log($"[LEAVE] VoteState: after {_ownerId} left, {_castVotes} vote(s) meet the reduced denominator ({_eligibleVoters}) — collapsing the timer to auto-close.");
+                if (voteTimer > 5)
+                {
+                    GameLog.Info("vote", "vote.timer.collapse", "from", voteTimer, "to", 5, "reason", "player-left", "seat", _ownerId);
+                }
                 voteTimer = Mathf.Min(voteTimer, 5);
             }
         }
@@ -286,6 +311,7 @@ namespace GameLogic.GameStates
                 else
                 {
                     Debug.Log($"[LEAVE] VoteState: most-voted player {_winner} is no longer present — skipping chaining.");
+                    GameLog.Info("vote", "vote.chain.skipped", "winner", _winner, "reason", "absent");
                 }
             }
             

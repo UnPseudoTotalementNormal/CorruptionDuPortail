@@ -146,6 +146,12 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 - A new gameplay action / decision / refusal gets a `GameLog.Info|Warn("cat", "event.name", "key", value…)` where it
   happens (server side for game state). Never per frame, never in Domain (pure).
+- Every feature ships with its logs: each player action (click, key) with its target, each **silent refusal** (early
+  `return` on a player input: "I clicked, nothing happened") with its reason, each step of a sequence (start / end /
+  cut short). A captured `Debug.Log("[TAG] …")` reaches the logs too (category `unity`) but is not searchable by key.
+- Enforced by `.claude/hooks/log_guard.ps1` (PreToolUse): a commit adding ≥ 5 lines of game code (outside Editor, Tests,
+  Autoplay, Rendering, Facepunch, Domain, Diagnostics) with no `GameLog.` call is blocked. Escape hatch for code with
+  truly nothing to log: a `Logs: none (<why>)` line in the commit body.
 - `CDP_PLAYTEST_LOGS` is added **only** by `CdpBuild` (CI playtest builds). Never in ProjectSettings: the Editor would
   compile the calls in. Code that needs the runtime (Firebase, file) stays inside `#if CDP_PLAYTEST_LOGS`; the facade's
   `[Conditional]` entry points strip the call sites elsewhere.
@@ -172,8 +178,15 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 - Board objects are driven entirely through `IPointer*` (no `OnMouse*`): cursor mode = `InputSystemUIInputModule` + `PhysicsRaycaster` on CameraBrain; embodied mode = `ReticleInteractor`. Mutually exclusive: the reticle clicks only while `Cursor.lockState` is really Locked (the UI module ignores a locked pointer); with a free cursor (unfocused window, autoplay) both clicked the same button, every click arrived twice.
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
+- **Cat materials are on `Corruption/Cat Toon`**, set by `CatToonLook` (`Tools > Cat Cosmetics > Apply toon look`). A new
+  cat material made by hand or by an import stays on another shader: old look, no glow, and no emote dither fade. Add
+  it to `CatToonLook`'s table (`CatToonLookTests` fails otherwise). Its flat half is lit by the game only: an unlit cat
+  shows only its glowing parts.
 - Animating the scale of a non-convex `MeshCollider` re-cooks it every frame → raycast dropouts. Put the collider on an unscaled parent or use a primitive.
 - **The UI raycast ranks canvases by sorting order before distance.** A world-space canvas BEHIND a card with a higher order takes the cursor's and the seated reticle's hover / click (the characters bar's portraits at order 0 over cards at −1: looking at the top of a far card hovered a portrait, 2026-10-08). Keep world-space interactables that can sit behind cards at an order ≤ the cards' (−1); equal orders fall back to distance.
+- **The characters bar's portraits are nested canvases** (`CharacterBarObject`: `overrideSorting`, order −1). A graphic
+  added to the bar's own canvas ties with them and may draw OVER them (the day cork backdrop hid every portrait,
+  2026-10-28): give anything drawn behind the portraits its own nested canvas at a lower order (`DayScreenRows`: −2).
 - **A card's root is driven by its `TransformCompositorComponent`**: every frame it composes the layers (Transform, Hover,
   Flip, Punch) into the root's local transform, and folds any outside change of the root back into the Transform layer.
   A tween on the root fights it (the T23 screen row stacked every card at the centre, back side out). Move a card through

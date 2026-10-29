@@ -14,6 +14,7 @@ using Network.Steam;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -89,6 +90,7 @@ namespace UI
             if (_isBusy)
             {
                 Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
+                GameLog.Info("net", "steam.join.request", "lobby", _lobbyId, "source", "menu", "ignored", true, "reason", "menu busy");
                 LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
                 return;
             }
@@ -97,6 +99,7 @@ namespace UI
             if (_browser == null)
             {
                 Debug.LogError("[STEAM] No server browser in the menu: cannot join the friend's game.");
+                GameLog.Error("net", "steam.join.failed", "lobby", _lobbyId, "reason", "no server browser");
                 return;
             }
             hostMenuCanvasGroup.DoHideGroup();
@@ -340,6 +343,7 @@ namespace UI
                 throw new System.Exception("Failed to start client");
             }
             ConnectFailReason _fail = await JoinHandshake.WaitForConnectedOrTimeout();
+            GameLog.Info("net", "rejoin.handshake", "result", _fail);
             if (_fail != ConnectFailReason.None)
             {
                 LobbyManager.instance?.ReportError(JoinHandshake.BuildFailureMessage(_fail));
@@ -364,6 +368,7 @@ namespace UI
         {
             if (_isBusy)
             {
+                GameLog.Info("net", "rejoin.refused", "reason", "busy");
                 return;
             }
             _isBusy = true;
@@ -374,16 +379,19 @@ namespace UI
         {
             loadingCanvasGroup.DoShowGroup();
             bool _ok = false;
+            string _logFailReason = "connection failed"; // playtest log only
             try
             {
                 if (!Network.RejoinSessionStore.TryLoad(out Network.RejoinSessionStore.Session _session))
                 {
+                    _logFailReason = "no session";
                     if (_rejoinButton != null)
                     {
                         _rejoinButton.gameObject.SetActive(false);
                     }
                     throw new System.Exception("No game to rejoin");
                 }
+                GameLog.Info("net", "rejoin.start", "hostKind", _session.hostKind, "code", _session.lobbyCode);
                 GameCode.gameCode = _session.lobbyCode;
                 // The cloud lobby is locked once the game started: go straight to the host.
                 Network.RejoinSessionStore.SetConnectionTarget(_session.hostKind, _session.hostAddress, _session.lobbyCode);
@@ -418,18 +426,36 @@ namespace UI
                     _transport.SetConnectionData(_address, _port);
                     _ok = await StartRejoinClientAsync();
                 }
+                else
+                {
+                    // Nothing was tried: the saved session names no host this build can reach.
+                    _logFailReason = _session.hostKind == "steam" || _session.hostKind == "direct"
+                        ? "unreadable host address"
+                        : "unknown host kind";
+                }
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[REJOIN] Error rejoining the game: {e}");
+                GameLog.Error("net", "rejoin.error", "type", e.GetType().Name, "message", e.Message);
+                if (_logFailReason == "connection failed")
+                {
+                    _logFailReason = e.Message;
+                }
             }
             finally
             {
+                if (_ok)
+                {
+                    GameLog.Info("net", "rejoin.done");
+                }
                 if (!_ok)
                 {
                     // Read BEFORE the shutdown (it may clear the reason).
                     bool _refused = NetworkManager.Singleton != null &&
                                     CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(NetworkManager.Singleton.DisconnectReason);
+                    GameLog.Guarded(() => GameLog.Warn("net", "rejoin.failed", "reason", _logFailReason, "refused", _refused,
+                        "disconnectReason", NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null));
                     if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                     {
                         NetworkManager.Singleton.Shutdown();
@@ -438,6 +464,7 @@ namespace UI
                     // that merely failed keeps the session, so the player can try again while his seat is reserved.
                     if (_refused)
                     {
+                        GameLog.Info("net", "rejoin.cleared", "reason", "refused by host");
                         Network.RejoinSessionStore.Clear();
                         if (_rejoinButton != null)
                         {
@@ -454,11 +481,13 @@ namespace UI
         {
             if (string.IsNullOrEmpty(joinCodeInputField.text))
             {
+                GameLog.Info("net", "join.refused", "reason", "empty code");
                 return;
             }
 
             if (_isBusy)
             {
+                GameLog.Info("net", "join.refused", "reason", "busy");
                 return;
             }
             _isBusy = true;
@@ -475,6 +504,7 @@ namespace UI
             try
             {
                 string _lobbyCode = joinCodeInputField.text;
+                GameLog.Info("net", "join.start", "code", _lobbyCode, "mode", LogTransportMode(), "path", "code");
 
                 var _lobby = await LobbyManager.instance.JoinLobbyByCode(_lobbyCode);
                 if (_lobby == null)
@@ -543,10 +573,12 @@ namespace UI
                 // No scene load on the client: NGO already synchronized us into GameScene before the handshake
                 // above returned. SwitchToGameScene() is the SERVER entry point (host path) — calling it here was
                 // a silent ServerOnlyAction no-op (investigation client-join-lobby-desync).
+                GameLog.Info("net", "join.done", "code", _lobby.Code, "lobby", _lobby.Id, "path", "code");
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"Error joining game: {e}");
+                GameLog.Warn("net", "join.failed", "reason", e.Message, "path", "code");
 
                 // Nettoyer l'état du réseau
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
@@ -578,6 +610,7 @@ namespace UI
             if (!lobby.TryGetData(GameLobby.RelayJoinCodeKey, out string _joinCode))
             {
                 Debug.Log("Lobby missing joinCode");
+                GameLog.Warn("net", "relay.join.nocode", "lobby", lobby.Id);
                 return RelayConnectResult.Failed(null);
             }
 
@@ -593,11 +626,13 @@ namespace UI
         {
             if (string.IsNullOrEmpty(lobbyCreatingName) || lobbyCreatingName.Length < 3)
             {
+                GameLog.Info("net", "host.refused", "reason", "lobby name too short");
                 return;
             }
 
             if (_isBusy)
             {
+                GameLog.Info("net", "host.refused", "reason", "busy");
                 return;
             }
             _isBusy = true;
@@ -620,7 +655,10 @@ namespace UI
                     password = null;
                 }
                 _lobbySettings.password = password;
-                _lobbySettings.isLocked = false;
+                // Hidden from the list (and closed to codes / Steam invites) until the host has loaded GameScene: a
+                // client joining while the host's scene load is still in progress gets a broken scene sync. LobbyState
+                // opens it once the load event completes.
+                _lobbySettings.isLocked = true;
                 _lobbySettings.isPrivate = false;
                 _lobbySettings.lobbyName = lobbyCreatingName;
                 _lobbySettings.maxPlayers = 15;
@@ -628,6 +666,8 @@ namespace UI
                 {
                     { nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), "Français" }
                 };
+                GameLog.Info("net", "host.start", "mode", LogTransportMode(), "hasPassword", password != null,
+                    "maxPlayers", _lobbySettings.maxPlayers);
 
                 string connectionData = null;
                 if (NetworkTransportDetector.IsUsingFacepunch())
@@ -669,6 +709,7 @@ namespace UI
             catch (System.Exception e)
             {
                 Debug.LogError($"Error hosting game: {e}");
+                GameLog.Warn("net", "host.failed", "reason", e.Message);
 
                 // Nettoyer l'état du réseau
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
@@ -711,9 +752,20 @@ namespace UI
 
         private void SwitchToGameScene()
         {
-            NetworkManager.Singleton.SceneManager.LoadScene(
+            GameLog.Info("scene", "scene.load.start", "scene", "GameScene");
+            SceneEventProgressStatus _status = NetworkManager.Singleton.SceneManager.LoadScene(
                 "GameScene",
                 LoadSceneMode.Single);
+            if (_status != SceneEventProgressStatus.Started)
+            {
+                GameLog.Warn("scene", "scene.load.failed", "scene", "GameScene", "status", _status);
+            }
         }
+
+        // Playtest logs: which online stack a host / join goes through.
+        private static string LogTransportMode() =>
+            NetworkTransportDetector.IsUsingFacepunch() ? "steam"
+            : NetworkTransportDetector.IsUsingUnityRelay() ? "relay"
+            : "other";
     }
 }

@@ -55,9 +55,17 @@ namespace UI
 
         private Color RestColor => Interactable ? baseColor : disabledColor;
 
+        /// <summary>Set by a forwarder that already logged the click (Board3DButton) so it is not logged twice.</summary>
+        internal static bool s_forwardedClick;
+
         public void OnPointerClick(PointerEventData _eventData)
         {
-            if (!Interactable) return;
+            if (!Interactable)
+            {
+                if (!s_forwardedClick) Diagnostics.Logs.GameLog.Info("ui", "ui.button.refused", "name", name, "reason", "not-interactable");
+                return;
+            }
+            if (!s_forwardedClick) Diagnostics.Logs.GameLog.Info("ui", "ui.button.click", "name", name);
             transform.DOKill(true);
             transform.DOPunchScale(Vector3.one * 0.15f, 0.2f, 1, 0.2f).SetLink(gameObject);
             onButtonClicked?.Invoke();

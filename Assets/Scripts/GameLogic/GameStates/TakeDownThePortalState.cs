@@ -67,6 +67,7 @@ namespace GameLogic.GameStates
                 return;
             }
 
+            Diagnostics.Logs.GameLog.Info("portal", "portal.skipped", "mage", mageCharacterOwnerId, "reason", "mage-left");
             Debug.Log($"[LEAVE] TakeDownThePortal: awaited Mage {_ownerId} left — advancing the loop so the portal step cannot hang.");
             Loop.NextGameState();
         }
@@ -100,6 +101,8 @@ namespace GameLogic.GameStates
         {
             if (ignoreCharacters.Contains(_ownerId))
             {
+                Diagnostics.Logs.GameLog.Info("portal", "portal.pick.refused", "target", _ownerId, "sender", gameManager.CurrentStateRpcSenderId,
+                    "mage", mageCharacterOwnerId, "reason", "ignored-target");
                 return;
             }
 
@@ -109,8 +112,12 @@ namespace GameLogic.GameStates
             if (clickedCharacter == null)
             {
                 Debug.Log($"[LEAVE] TakeDownThePortal: clicked character {_ownerId} no longer present — ignoring the click.");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.pick.refused", "target", _ownerId, "sender", gameManager.CurrentStateRpcSenderId,
+                    "mage", mageCharacterOwnerId, "reason", "target-gone");
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("portal", "portal.pick", "target", _ownerId, "sender", gameManager.CurrentStateRpcSenderId,
+                "mage", mageCharacterOwnerId);
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToCharacterClick),
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
@@ -127,6 +134,8 @@ namespace GameLogic.GameStates
             if (_clickedRoleCharacter == null || clickedCharacter == null)
             {
                 Debug.Log($"[LEAVE] TakeDownThePortal: role/character for the guess is missing (roleOwner={_ownerId}) — advancing the loop.");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.guess", "roleOwner", _ownerId, "target", clickedCharacter != null ? clickedCharacter.ownerClientId.Value : ulong.MaxValue,
+                    "correct", false, "reason", "character-gone");
                 Loop.NextGameState();
                 return;
             }
@@ -135,6 +144,11 @@ namespace GameLogic.GameStates
 
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(UnsubscribeToRoleClick),
                 new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
+
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("portal", "portal.guess",
+                "target", clickedCharacter.ownerClientId.Value, "guessed", _clickedRole != null ? _clickedRole.roleName.ToString() : null,
+                "real", clickedCharacter.role != null ? clickedCharacter.role.roleName.ToString() : null,
+                "correct", _clickedRole != null && _clickedRole.IsTheSameRole(clickedCharacter.role), "mage", mageCharacterOwnerId));
 
             if (!_clickedRole.IsTheSameRole(clickedCharacter.role))
             {
@@ -176,6 +190,7 @@ namespace GameLogic.GameStates
             
             var _ignoreCharactersList = GetIgnoreCharacters();
             ignoreCharacters = _ignoreCharactersList.ToList();
+            Diagnostics.Logs.GameLog.Info("portal", "portal.wait.pick", "mage", mageCharacterOwnerId, "ignored", ignoreCharacters);
 
             if (ignoreCharacters.Count == CharacterQuery.GetCharacters(false).Count)
             {
@@ -187,6 +202,8 @@ namespace GameLogic.GameStates
                         .Select(_c => _c.ownerClientId.Value)) },
                 };
                 _gameEndingState.SetWinnersServer(_newWinners);
+                Diagnostics.Logs.GameLog.Info("portal", "portal.anomalywin", "mage", mageCharacterOwnerId,
+                    "winners", _newWinners[WinningTeam.anomaly].ToList(), "reason", "no-target-left");
                 
                 Loop.SetGameState(_gameEndingState);
                 return;
@@ -206,7 +223,6 @@ namespace GameLogic.GameStates
             
             foreach (Card _card in boardManager.visibleCards)
             {
-                Debug.Log("card visible from: " + _card.characterInfo.ownerClientId.Value);
                 if (ignoreCharacters.Contains(_card.characterInfo.ownerClientId.Value))
                 {
                     continue;
@@ -287,6 +303,7 @@ namespace GameLogic.GameStates
             if (!shouldActivate)
             {
                 Debug.Log("TakeDownThePortalState is not activated");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.skipped", "reason", "not-activated");
                 _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }
@@ -296,10 +313,12 @@ namespace GameLogic.GameStates
             if (gameManager.HasClientLeft(mageCharacterOwnerId))
             {
                 Debug.Log($"[LEAVE] TakeDownThePortal: the Mage {mageCharacterOwnerId} is away — step skipped.");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.skipped", "mage", mageCharacterOwnerId, "reason", "mage-away");
                 _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }
 
+            Diagnostics.Logs.GameLog.Info("portal", "portal.active", "mage", mageCharacterOwnerId);
             GameAudioManager.instance.PlayMusicRpc(takeDownThePortalMusic.GetPath(), 
                 gameManager.NetworkManager.RpcTarget.ClientsAndHost);
 
@@ -316,6 +335,8 @@ namespace GameLogic.GameStates
             if (boardManager == null || gameManager.currentGameStateIndex.Value != _from)
             {
                 Debug.Log($"[LEAVE] TakeDownThePortal: step {_from} was left during the card wait — selection not opened.");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.selection.skipped", "mage", mageCharacterOwnerId, "step", _from,
+                    "reason", boardManager == null ? "no-board" : "step-left");
                 return;
             }
             WaitForCharacterClickServer();

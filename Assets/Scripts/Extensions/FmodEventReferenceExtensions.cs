@@ -1,7 +1,9 @@
 #region
 
+using System.Collections.Generic;
 using FMODUnity;
 using Unity.Netcode;
+using UnityEngine;
 
 #endregion
 
@@ -32,6 +34,28 @@ namespace Extensions
             {
                 RuntimeManager.PlayOneShot(_eventReference.GetPath());
             }
+            else if (!_eventReference.Guid.IsNull)
+            {
+                // An empty reference is a sound left unassigned on purpose; a set one that resolves to nothing is missing
+                // from the banks.
+                ReportMissingEvent(_eventReference.Guid.ToString());
+            }
         }
+
+        // Playtest log only: each missing FMOD event is reported once per process (a hover sound would repeat it).
+        private static readonly HashSet<string> s_reportedMissing = new();
+
+        /// <summary>Logs <c>audio.event.missing</c> once per <paramref name="_event"/> (a path or a GUID).</summary>
+        public static void ReportMissingEvent(string _event, string _where = null)
+        {
+            if (string.IsNullOrEmpty(_event) || !s_reportedMissing.Add(_event))
+            {
+                return;
+            }
+            Diagnostics.Logs.GameLog.Warn("audio", "audio.event.missing", "event", _event, "where", _where);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => s_reportedMissing.Clear();
     }
 }

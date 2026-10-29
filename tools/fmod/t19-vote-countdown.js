@@ -2,7 +2,7 @@
 // and makes one 2D one-shot event per sound in event:/Interface, in their own bank "VoteCandle". Safe to run again.
 // Own bank, built alone: the committed Master.bank holds events missing from this project (the menu music of
 // 2026-02-09 was built from a project never committed), so rebuilding Master from here would delete them.
-// Run: tools/fmod/fmod.sh script tools/fmod/t19-vote-countdown.js, then tools/fmod/fmod.sh build VoteCandle.
+// Run: tools/fmod/fmod.sh script tools/fmod/t19-vote-countdown.js, then tools/fmod/fmod.sh build (every bank).
 var project = studio.project;
 var fp = project.filePath.split("\\").join("/");
 var assetsDir = fp.substring(0, fp.lastIndexOf("/") + 1) + "Assets/T19/";

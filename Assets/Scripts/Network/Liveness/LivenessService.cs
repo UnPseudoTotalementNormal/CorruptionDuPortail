@@ -1,5 +1,6 @@
 using System;
 using CorruptionDuPortail.Domain;
+using Diagnostics.Logs;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -31,6 +32,7 @@ namespace Network.Liveness
         private readonly LivenessTracker _tracker;
         private readonly ILivenessClock _clock;
         private readonly double _beatPeriodSeconds;
+        private readonly double _lossSilenceSeconds; // playtest logs: silence that declares a peer lost (threshold x period)
         private readonly System.Action<ulong> _onServerPeerLost;
         private readonly System.Action _onClientHostLost;
 
@@ -50,6 +52,7 @@ namespace Network.Liveness
             _isServerRole = isServerRole;
             _clock = clock;
             _beatPeriodSeconds = config.BeatPeriodSeconds;
+            _lossSilenceSeconds = config.Threshold * config.BeatPeriodSeconds;
             _onServerPeerLost = onServerPeerLost;
             _onClientHostLost = onClientHostLost;
             _pump = pumpOverride; // tests inject a ManualLivenessPump; prod builds a LivenessNetworkPump in Start.
@@ -220,11 +223,13 @@ namespace Network.Liveness
             if (_isServerRole)
             {
                 Debug.Log($"{LogTag} server declared client {_clientId} lost (no beats) — routing to the leave pipeline.");
+                GameLog.Warn("net", "peer.lost", "connection", _clientId, "silenceSeconds", _lossSilenceSeconds);
                 _onServerPeerLost?.Invoke(_clientId);
             }
             else
             {
                 Debug.Log($"{LogTag} client declared the host lost (no keepalives) — routing to host-loss handling.");
+                GameLog.Warn("net", "host.lost", "source", "liveness", "silenceSeconds", _lossSilenceSeconds);
                 _onClientHostLost?.Invoke();
             }
         }

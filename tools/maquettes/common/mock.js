@@ -1,11 +1,13 @@
 // Mockup page plumbing: theme, screen scaling, ?only=<id> (one frame alone, for the captures), votes and
 // remarks kept in localStorage and sent to /retours. Load it LAST, after the variants are built.
-// The page sets <body data-subject="<folder>">. Everything stays inside this function: a page's own globals
-// (fit, root...) are never replaced. From the "maquettes" template of the skill marketplace.
+// The feedback goes to the page's folder; a send serve.py did not take shows its text to paste in the session.
+// Everything stays inside this function: a page's own globals (fit, root...) are never replaced.
+// From the "maquettes" template of the skill marketplace.
 (() => {
   const root = document.documentElement;
   const pageTheme = root.dataset.theme || "dark";
-  const subject = document.body.dataset.subject || "divers";
+  // the subject is the page's folder; data-subject only for a page outside one
+  const subject = location.pathname.split("/").slice(-2, -1)[0] || document.body.dataset.subject || "divers";
 
   // ?only=E1 : that variant's frame alone (.phone or .screen; a variant without a frame, whole)
   const only = new URLSearchParams(location.search).get("only");
@@ -79,6 +81,19 @@
     placeApply(el, st ? st.x : def.x, st ? st.y : def.y, st ? st.s : def.s, false);
   });
 
+  // A field opens the keyboard only when the finger really lands on it. On a phone Chromium hands a tap that falls
+  // near an editable field (a scroll too short to count, a touch on the overlay scroll bar under a remark) to that
+  // field; pointerdown is hit-tested at the raw point, so every other field is read-only until the next touch.
+  const typed = "textarea, input:not([type]), input[type=text], input[type=search], input[type=email], input[type=url], input[type=number]";
+  let locked = [];
+  addEventListener("pointerdown", e => {
+    locked.forEach(f => f.readOnly = false);
+    if (e.pointerType !== "touch") return void (locked = []);
+    locked = [...document.querySelectorAll(typed)].filter(f => !f.readOnly && f !== e.target && f !== document.activeElement &&
+      ![...(f.labels || [])].some(l => l.contains(e.target)));
+    locked.forEach(f => f.readOnly = true);
+  }, true);
+
   // theme: <div class="toggle"><button data-t="dark">Sombre</button><button data-t="light">Clair</button></div>
   function setTheme(t) {
     root.dataset.theme = t;
@@ -129,10 +144,32 @@
       if (!lines.length) { send.textContent = "Rien à envoyer pour l’instant"; setTimeout(() => send.textContent = label, 2000); return; }
       lines.unshift("Page : " + location.pathname);
       if (document.querySelector(".toggle") && root.dataset.theme !== pageTheme) lines.push("Thème regardé : " + root.dataset.theme);
-      try {
-        const r = await fetch("/retours?s=" + encodeURIComponent(subject) + "&t=" + encodeURIComponent(lines.join("\n")));
-        send.textContent = r.ok ? "Envoyé ✓, dis-le à Claude dans la session" : "Échec de l’envoi";
-      } catch (e) { send.textContent = "Échec de l’envoi"; }
+      const text = lines.join("\n");
+      let got = false;
+      try { // only serve.py answers {"ok":true}: a page opened as a file, or by another server (static, dev server), keeps nothing
+        const r = await fetch("/retours?s=" + encodeURIComponent(subject) + "&t=" + encodeURIComponent(text));
+        got = r.ok && (await r.json()).ok === true;
+      } catch (e) {}
+      let copy = document.getElementById("send-copy");
+      if (got) {
+        if (copy) copy.remove();
+        send.textContent = "Envoyé ✓, dis-le à Claude dans la session";
+        return;
+      }
+      // not received: the whole text, to paste in the session instead of retyping every choice
+      if (!copy) {
+        copy = document.createElement("textarea");
+        copy.id = "send-copy";
+        copy.readOnly = true;
+        send.after(copy);
+      }
+      copy.value = text;
+      copy.rows = Math.min(lines.length + 1, 14);
+      copy.select();
+      let copied = false;
+      try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {}
+      send.textContent = copied ? "Claude ne l’a pas reçu : texte copié, colle-le dans la session"
+                                : "Claude ne l’a pas reçu : copie ce texte dans la session";
     };
   }
 })();

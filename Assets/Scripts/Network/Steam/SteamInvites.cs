@@ -2,6 +2,7 @@
 
 using System;
 using CorruptionDuPortail.Domain;
+using Diagnostics.Logs;
 using Network.Services;
 using Steamworks;
 using Steamworks.Data;
@@ -75,6 +76,7 @@ namespace Network.Steam
             if (_networkManager != null && _networkManager.IsListening)
             {
                 Debug.Log($"[STEAM] Join request for lobby {lobbyId} ({source}) ignored: already in a game.");
+                GameLog.Info("net", "steam.join.request", "lobby", lobbyId.ToString(), "source", source, "ignored", true, "reason", "already in a game");
                 if (LobbyManager.instance != null)
                 {
                     LobbyManager.instance.ReportError(AlreadyInGameMessage);
@@ -83,6 +85,7 @@ namespace Network.Steam
             }
 
             Debug.Log($"[STEAM] Join request for lobby {lobbyId} ({source}).");
+            GameLog.Info("net", "steam.join.request", "lobby", lobbyId.ToString(), "source", source, "ignored", false);
             s_pendingLobbyId = lobbyId.ToString();
             JoinRequested?.Invoke();
         }

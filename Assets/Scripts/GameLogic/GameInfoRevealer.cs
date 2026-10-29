@@ -154,6 +154,8 @@ namespace GameLogic
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.reveal", "target", _clientId, "field", _field, "level", _revealLevel,
+                "observer", _revealLevel == RevealLevel.Public ? "all" : _toObserverId.ToString(), "bot", _toObserverId >= 100, "show", _showInfo);
 
             if (_revealLevel == RevealLevel.Public)
             {
@@ -178,17 +180,26 @@ namespace GameLogic
             {
                 if (_ledger.RaisePublic(_clientId, _field, (int)_revealLevel))
                 {
+                    Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.reveal", "target", _clientId, "field", _field, "level", _revealLevel,
+                        "observer", "all", "show", _showInfo);
                     PushToAllViewers(_clientId, _showInfo);
                 }
                 return;
             }
 
+            var _raisedViewers = new List<ulong>();
             foreach (ulong _viewer in AllViewers())
             {
                 if (_ledger.Raise(_viewer, _clientId, _field, (int)_revealLevel))
                 {
+                    _raisedViewers.Add(_viewer);
                     PushSlice(_viewer, _clientId, _showInfo);
                 }
+            }
+            if (_raisedViewers.Count > 0)
+            {
+                Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.reveal", "target", _clientId, "field", _field, "level", _revealLevel,
+                    "observer", "each", "observers", _raisedViewers, "show", _showInfo);
             }
         }
 
@@ -200,6 +211,7 @@ namespace GameLogic
             if (!IsServer) return;
             if (_ledger.Clear(_toObserverId, _clientId, KnowledgeField.Hacked))
             {
+                Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.clear.hacked", "target", _clientId, "observer", _toObserverId);
                 PushSlice(_toObserverId, _clientId, false);
             }
         }
@@ -281,6 +293,7 @@ namespace GameLogic
         {
             // Rejoin 02: a rejoined player's new connection pulls his seat's slice.
             ulong _sender = _params.Receive.SenderClientId;
+            Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.slice.requested", "client", _sender);
             PushSlice(characterManager != null ? characterManager.SeatOfTransport(_sender) : _sender, ulong.MaxValue, false);
         }
 

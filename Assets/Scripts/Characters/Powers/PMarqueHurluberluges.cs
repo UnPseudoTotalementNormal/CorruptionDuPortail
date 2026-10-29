@@ -1,10 +1,12 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using Diagnostics.Logs;
 using GameLogic;
 using Unity.Netcode;
 using UnityEngine;
@@ -85,6 +87,10 @@ namespace Characters.Powers
         {
             if (IsServer && IsSpawned)
             {
+                if (copiesLocked.Value)
+                {
+                    GameLog.Info("power", "power.uges.copies.unlock", "owner", ownerClientId.Value);
+                }
                 copiesLocked.Value = false;
             }
         }
@@ -94,6 +100,7 @@ namespace Characters.Powers
         {
             if (IsServer)
             {
+                GameLog.Info("power", "power.uges.copies.lock", "owner", ownerClientId.Value, "reason", "copy-used");
                 copiesLocked.Value = true;
             }
         }
@@ -125,22 +132,75 @@ namespace Characters.Powers
             if (ownerCharacter == null)
             {
                 Debug.LogWarning("[UGUES] Marque d'Hurluberluges: owner character unresolved, nothing stolen.");
+                GameLog.Warn("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", 0, "reason", "no-owner");
                 return;
             }
 
-            // Build one engine-free descriptor per live power (across every present character, real or factice)
-            // in a list parallel to _powers, so the pure kernel owns the eligibility rule (chosen faction, not
-            // Ugues, active, not an already-stolen copy) — that filter is EditMode-tested, this loop is not.
+            List<Power> _stolen = PickCopiableServer(characterManager, _ownerSlot, POWERS_TO_STEAL, _randomProvider, out int _candidateCount);
+            if (_stolen.Count == 0)
+            {
+                Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
+                GameLog.Info("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", 0, "candidates", _candidateCount,
+                    "reason", "no-eligible-power");
+                return;
+            }
+            GameLog.Guarded(() => GameLog.Info("power", "power.uges.steal", "thief", (ulong)_ownerSlot, "count", _stolen.Count,
+                "powers", _stolen.ConvertAll(_p => _p.powerName.ToString()), "from", _stolen.ConvertAll(_p => _p.ownerClientId.Value),
+                "devPreference", DevStealPreference != null && DevStealPreference.Length > 0));
+            // Not usable the night of the theft (game start = night 1 for Ugës; the night of the copy for an
+            // Incomplet who took the Marque): the next onNewDayPassed unlocks them.
+            GameLog.Info("power", "power.uges.copies.lock", "owner", (ulong)_ownerSlot, "reason", "theft-night");
+            copiesLocked.Value = true;
+            foreach (Power _power in _stolen)
+            {
+                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
+                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _power, ConfigureMarqueCopy);
+            }
+        }
+
+        /// <summary>
+        /// Server, board T26: a Marque copied by anything but l'Incomplet's own Réincarnation (Luma's Mélange on a factice
+        /// Ugës, a copied Réincarnation on Ugës) gives ONE random copy instead of three, drawn like Ugës's (active powers of
+        /// the élus in the game, real or factice, never the thief's own nor a copy). The copy is configured by
+        /// <paramref name="_onReady"/> and joins no Marque budget: usable at once. Returns its name, null when nothing is
+        /// eligible.
+        /// </summary>
+        public static string GrantSingleCopyServer(CharacterManager _characterManager, int _thiefSlot, Action<Power> _onReady,
+            string _via)
+        {
+            List<Power> _picked = PickCopiableServer(_characterManager, _thiefSlot, 1, SingleCopyRandom, out int _candidateCount);
+            if (_picked.Count == 0)
+            {
+                GameLog.Info("power", "power.uges.single", "thief", (ulong)_thiefSlot, "via", _via, "count", 0,
+                    "candidates", _candidateCount, "reason", "no-eligible-power");
+                return null;
+            }
+            Power _power = _picked[0];
+            GameLog.Guarded(() => GameLog.Info("power", "power.uges.single", "thief", (ulong)_thiefSlot, "via", _via, "count", 1,
+                "power", _power.powerName.ToString(), "from", _power.ownerClientId.Value));
+            _characterManager.GivePowerToCharacter((ulong)_thiefSlot, _power, _onReady);
+            return _power.powerName.ToString();
+        }
+
+        // Seed seam for the single copy (static: the copy comes from a Réincarnation / Mélange, not from a Marque instance).
+        private static IRandomProvider SingleCopyRandom = new UnityRandomProvider();
+
+        // Walk the live roster, build one engine-free descriptor per live power (across every present character, real or
+        // factice) in a list parallel to _powers, so the pure kernel owns the eligibility rule (chosen faction, not the
+        // thief, active, not an already-copied power): that filter is EditMode-tested, this loop is not.
+        private static List<Power> PickCopiableServer(CharacterManager _characterManager, int _thiefSlot, int _count,
+            IRandomProvider _random, out int _candidateCount)
+        {
             var _powers = new List<Power>();
             var _candidates = new List<PowerCandidate>();
-            foreach (Character _c in characterManager.GetCharacters(false))
+            foreach (Character _c in _characterManager.GetCharacters(false))
             {
                 if (_c == null || _c.role == null)
                 {
                     continue;
                 }
                 bool _ownerIsChosen = _c.role.factionType == FactionType.chosen;
-                bool _ownerIsUgues = (int)_c.ownerClientId.Value == _ownerSlot;
+                bool _ownerIsThief = (int)_c.ownerClientId.Value == _thiefSlot;
                 foreach (Power _p in _c.role.powers)
                 {
                     if (_p == null)
@@ -148,30 +208,19 @@ namespace Characters.Powers
                         continue;
                     }
                     _powers.Add(_p);
-                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsUgues, _p.BaseIsPassive, _p.isCopiedPower.Value));
+                    _candidates.Add(new PowerCandidate(_ownerIsChosen, _ownerIsThief, _p.BaseIsPassive, _p.isCopiedPower.Value));
                 }
             }
+            _candidateCount = _candidates.Count;
 
             // Deterministic-source draw (mirrors RoleAttributionState's UnityRandomProvider); the filter +
             // distinct-pick + cap-at-what-exists mechanic lives in the EditMode-tested Domain kernel.
-            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, POWERS_TO_STEAL, _randomProvider);
+            List<int> _picks = StolenPowerSelector.SelectStealable(_candidates, _count, _random);
             if (DevStealPreference != null && DevStealPreference.Length > 0)
             {
-                _picks = PreferForDev(_candidates, _powers, _picks);
+                _picks = PreferForDev(_candidates, _powers, _picks, _count);
             }
-            if (_picks.Count == 0)
-            {
-                Debug.Log("[UGUES] Marque d'Hurluberluges: no eligible chosen active power to steal.");
-                return;
-            }
-            // Not usable the night of the theft (game start = night 1 for Ugës; the night of the copy for an
-            // Incomplet who took the Marque): the next onNewDayPassed unlocks them.
-            copiesLocked.Value = true;
-            foreach (int _index in _picks)
-            {
-                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn.
-                characterManager.GivePowerToCharacter((ulong)_ownerSlot, _powers[_index], ConfigureMarqueCopy);
-            }
+            return _picks.ConvertAll(_index => _powers[_index]);
         }
 
         /// <summary>
@@ -181,9 +230,13 @@ namespace Characters.Powers
         public static string[] DevStealPreference;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetDevSeams() => DevStealPreference = null;
+        private static void ResetDevSeams()
+        {
+            DevStealPreference = null;
+            SingleCopyRandom = new UnityRandomProvider();
+        }
 
-        private static List<int> PreferForDev(List<PowerCandidate> _candidates, List<Power> _powers, List<int> _drawn)
+        private static List<int> PreferForDev(List<PowerCandidate> _candidates, List<Power> _powers, List<int> _drawn, int _count)
         {
             var _picks = new List<int>();
             foreach (string _fragment in DevStealPreference)
@@ -205,9 +258,9 @@ namespace Characters.Powers
                     _picks.Add(_index);
                 }
             }
-            if (_picks.Count > POWERS_TO_STEAL)
+            if (_picks.Count > _count)
             {
-                _picks.RemoveRange(POWERS_TO_STEAL, _picks.Count - POWERS_TO_STEAL);
+                _picks.RemoveRange(_count, _picks.Count - _count);
             }
             Debug.Log("[UGUES] dev steal preference: " + string.Join(", ", _picks.ConvertAll(_i => _powers[_i].powerName.ToString())));
             return _picks;

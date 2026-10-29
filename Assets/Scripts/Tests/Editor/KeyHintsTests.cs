@@ -73,28 +73,44 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new[] { KeyHintAction.Menu }, _hints);
         }
 
+        // Mockups touches-jour v1 T1: T still opens the table but has no hint, Tab is the tablet's only one.
         [Test]
-        public void Day_RowsAndSpreadsheetFirst()
+        public void Day_RowsFirst_NoTableHint()
         {
             var _hints = new List<KeyHintAction>();
             CorruptionDuPortail.Domain.KeyHints.For(
-                new KeyHintContext(true, false, false, false, true, true, true, false, dayRowsAvailable: true, spreadsheetAvailable: true),
+                new KeyHintContext(true, false, false, false, true, true, true, false, dayRowsAvailable: true),
                 _hints);
             CollectionAssert.AreEqual(
-                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.Spreadsheet, KeyHintAction.OpenTablet,
+                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.OpenTablet,
                         KeyHintAction.Speak, KeyHintAction.Emotes, KeyHintAction.Menu },
                 _hints);
         }
 
         [Test]
-        public void Day_TabletOpen_NoSpreadsheetHint()
+        public void Day_TabletOpen_DayKeysStay()
         {
             var _hints = new List<KeyHintAction>();
             CorruptionDuPortail.Domain.KeyHints.For(
-                new KeyHintContext(true, true, false, false, false, false, true, false, dayRowsAvailable: true, spreadsheetAvailable: true),
+                new KeyHintContext(true, true, false, false, false, false, true, false, dayRowsAvailable: true),
                 _hints);
-            CollectionAssert.DoesNotContain(_hints, KeyHintAction.Spreadsheet);
             CollectionAssert.Contains(_hints, KeyHintAction.PlayersRow);
+            CollectionAssert.Contains(_hints, KeyHintAction.CloseTablet);
+        }
+
+        // Mockups touches-jour v1 A2 + C2: menu and bug report top left, the vote's keys head the column.
+        [TestCase(KeyHintAction.Menu, KeyHintGroup.Corner)]
+        [TestCase(KeyHintAction.ReportBug, KeyHintGroup.Corner)]
+        [TestCase(KeyHintAction.PlayersRow, KeyHintGroup.Vote)]
+        [TestCase(KeyHintAction.RolesRow, KeyHintGroup.Vote)]
+        [TestCase(KeyHintAction.SkipVote, KeyHintGroup.Vote)]
+        [TestCase(KeyHintAction.OpenTablet, KeyHintGroup.Other)]
+        [TestCase(KeyHintAction.NextScreen, KeyHintGroup.Other)]
+        [TestCase(KeyHintAction.Speak, KeyHintGroup.Other)]
+        [TestCase(KeyHintAction.Emotes, KeyHintGroup.Other)]
+        public void GroupOf_CornerVoteOther(KeyHintAction action, KeyHintGroup expected)
+        {
+            Assert.AreEqual(expected, CorruptionDuPortail.Domain.KeyHints.GroupOf(action));
         }
 
         [Test]
@@ -103,10 +119,10 @@ namespace Tests.Editor
             var _hints = new List<KeyHintAction>();
             CorruptionDuPortail.Domain.KeyHints.For(
                 new KeyHintContext(true, false, false, false, false, false, true, false, dayRowsAvailable: true,
-                    spreadsheetAvailable: true, skipVoteAvailable: true),
+                    skipVoteAvailable: true),
                 _hints);
             CollectionAssert.AreEqual(
-                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.Spreadsheet, KeyHintAction.SkipVote,
+                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.SkipVote,
                         KeyHintAction.OpenTablet, KeyHintAction.Menu },
                 _hints);
         }
@@ -115,7 +131,7 @@ namespace Tests.Editor
         public void Night_NoDayKeys()
         {
             CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.PlayersRow);
-            CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.Spreadsheet);
+            CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.SkipVote);
         }
 
         [TestCase("Digit1", "&", "1")] // AZERTY prints & on the 1 key

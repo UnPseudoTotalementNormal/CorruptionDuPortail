@@ -1,3 +1,4 @@
+using Diagnostics.Logs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -70,6 +71,7 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_characterClicked.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                LogClickRefused(_characterClicked.ownerClientId.Value);
                 return;
             }
 
@@ -83,6 +85,7 @@ namespace Characters.Powers
         {
             if (!ServerAuthorizeEffect(_params, _characterClickedId)) return; // NET-09: server-side use authorization
             roleTargetSystem.NewTargeting(ownerClientId.Value, _characterClickedId);
+            GameLog.Info("power", "power.beacon.placed", "owner", ownerClientId.Value, "target", _characterClickedId);
             
             CreateBeaconRpc(_characterClickedId, true);
         }

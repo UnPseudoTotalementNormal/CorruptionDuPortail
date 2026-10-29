@@ -91,6 +91,8 @@ namespace Smartphone
         
         public void GoToApp(SmartphoneApp smartphoneApp, SwipeDirection swipeDirection = SwipeDirection.Up)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.app", "from", currentApp ? currentApp.name : null,
+                "to", smartphoneApp ? smartphoneApp.name : null, "dir", swipeDirection);
             if (currentApp)
             {
                 currentApp.TryClosePanel();
@@ -127,6 +129,11 @@ namespace Smartphone
             {
                 GoToApp(nextApp, swipeDirection);
             }
+            else
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.swipe.refused", "dir", swipeDirection, "reason", "no-neighbor",
+                    "app", currentApp ? currentApp.name : null);
+            }
         }
 
         /// <summary>Whether a swipe that way would reach another screen (the key hints show its arrow only then).</summary>
@@ -149,6 +156,7 @@ namespace Smartphone
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.close");
             phoneCanvasGroup.DoHideGroup();
             IsOpen = false;
             transform.DOLocalMove(phoneCloseLocalPosition, 0.5f).SetEase(Ease.OutQuint);
@@ -161,6 +169,7 @@ namespace Smartphone
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.open", "app", currentApp ? currentApp.name : null);
             phoneCanvasGroup.DoShowGroup();
             IsOpen = true;
             transform.DOLocalMove(phoneOpenLocalPosition, 0.5f).SetEase(Ease.OutQuint);

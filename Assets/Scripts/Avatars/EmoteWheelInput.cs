@@ -80,6 +80,7 @@ namespace Avatars
             // Leaving the first-person embodied view mid-hold: close WITHOUT playing (the wheel is FP-only).
             if (_open && !IsFirstPersonLive())
             {
+                Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.close", "reason", "left-first-person");
                 CloseWheel(playSelection: false);
                 return;
             }
@@ -87,6 +88,10 @@ namespace Avatars
             if (_pressed && !_open && IsFirstPersonLive())
             {
                 OpenWheel();
+            }
+            else if (_pressed && !_open && !Presentation.DayScreenRows.IsTyping())
+            {
+                Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.refused", "reason", cameraModeChannel == null ? "unwired" : "not-first-person");
             }
 
             if (_open && _held)
@@ -110,6 +115,7 @@ namespace Avatars
 
         private void OpenWheel()
         {
+            Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.open");
             _open = true;
             _stick = Vector2.zero;
             _highlighted = EmoteWheelSelection.None;
@@ -161,8 +167,13 @@ namespace Avatars
                         Cursor.lockState == CursorLockMode.Locked ? _stick : PointerDirection(),
                         wheel.Count, deadzone);
                 EmoteDefinition _emote = wheel.GetEmote(_index);
+                if (_emote == null)
+                {
+                    Diagnostics.Logs.GameLog.Info("emote", "emote.pick.none", "index", _index);
+                }
                 if (_emote != null)
                 {
+                    Diagnostics.Logs.GameLog.Info("emote", "emote.pick", "emote", _emote.displayName, "index", _index, "playback", playback != null);
                     // Route through the playback orchestrator (third-person self-feedback + loop/stop) when wired;
                     // otherwise fall back to playing the emote directly on the local avatar.
                     if (playback != null)

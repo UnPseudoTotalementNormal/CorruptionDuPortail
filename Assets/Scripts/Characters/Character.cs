@@ -107,7 +107,11 @@ namespace Characters
                     _condition.ownerClientId = ownerClientId.Value;
                 }
             }
+            RoleID _previousRoleId = roleId.Value;
             roleId.Value = role.roleID;
+            GameLog.Info("game", (int)_previousRoleId != 0 && _previousRoleId != role.roleID ? "game.role.changed" : "game.role.assigned",
+                "seat", ownerClientId.Value, "role", role.roleID.ToString(), "previous", (int)_previousRoleId != 0 ? _previousRoleId.ToString() : null,
+                "faction", role.factionType, "fake", isFake);
             onRoleUpdated?.Invoke();
         }
 
@@ -298,6 +302,7 @@ namespace Characters
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void CorruptPlayerServerRpc()
         {
+            GameLog.Info("game", "game.player.corrupted", "seat", ownerClientId.Value, "already", isCorrupted.Value);
             isCorrupted.Value = true;
         }
 
@@ -306,8 +311,10 @@ namespace Characters
         {
             if (isHealed.Value)
             {
+                GameLog.Info("game", "game.player.heal.skipped", "seat", ownerClientId.Value, "reason", "already-healed");
                 return;
             }
+            GameLog.Info("game", "game.player.healed", "seat", ownerClientId.Value, "wasCorrupted", isCorrupted.Value);
             isCorrupted.Value = false;
             isHealed.Value = true;
         }

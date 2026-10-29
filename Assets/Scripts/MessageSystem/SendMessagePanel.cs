@@ -40,24 +40,34 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
     public void TrySendMessageToServer()
     {
         var _localCharacter = characterManager.GetLocalCharacter(false);
+        if (_localCharacter == null)
+        {
+            Diagnostics.Logs.GameLog.Warn("message", "message.send.error", "reason", "no-local-character");
+            return;
+        }
         if (_localCharacter.messageLeft.Value <= 0)
         {
             Debug.Log("You have no messages left to send.");
+            Diagnostics.Logs.GameLog.Info("message", "message.send.refused", "reason", "none-left");
             return;
         }
         
         if (_localCharacter.hasSentMessageThisTurn.Value == true)
         {
             Debug.Log("You have already sent a message this turn.");
+            Diagnostics.Logs.GameLog.Info("message", "message.send.refused", "reason", "already-sent-this-turn");
             return;
         }
         
         if (Encoding.UTF8.GetByteCount(messageInputField.text) > 512)
         {
             Debug.Log("Message is too long. Maximum length is 512 bytes.");
+            Diagnostics.Logs.GameLog.Info("message", "message.send.refused", "reason", "too-long",
+                "bytes", Encoding.UTF8.GetByteCount(messageInputField.text));
             return;
         }
         
+        Diagnostics.Logs.GameLog.Info("message", "message.send", "text", messageInputField.text, "left", _localCharacter.messageLeft.Value);
         messageManager.SendMessageRpc(characterManager.GetLocalClientId(), messageInputField.text);
         OnMessageSentRpc(characterManager.GetLocalClientId(), messageInputField.text);
         ClosePanel();
@@ -88,6 +98,7 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
         if (characterManager.GetLocalCharacter(false).messageLeft.Value <= 0)
         {
             Debug.Log("You have no messages left to send.");
+            Diagnostics.Logs.GameLog.Info("message", "message.panel.refused", "reason", "none-left");
             return;
         }
         
@@ -97,12 +108,14 @@ public class SendMessagePanel : NetworkBehaviour, IPanelComponent
 
     public void OpenPanel()
     {
+        if (!isPanelOpen) Diagnostics.Logs.GameLog.Info("ui", "ui.panel.open", "panel", name);
         isPanelOpen = true;
         canvasGroup.DoShowGroup(0.5f);
     }
 
     public void ClosePanel()
     {
+        if (isPanelOpen) Diagnostics.Logs.GameLog.Info("ui", "ui.panel.close", "panel", name);
         isPanelOpen = false;
         canvasGroup.DoHideGroup(0.5f);
     }

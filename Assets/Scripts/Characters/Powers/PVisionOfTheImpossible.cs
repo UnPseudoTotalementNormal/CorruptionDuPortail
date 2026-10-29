@@ -1,5 +1,6 @@
 #region
 
+using Diagnostics.Logs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -81,9 +82,12 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_clickedCharacter.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                LogClickRefused(_clickedCharacter.ownerClientId.Value);
                 return;
             }
             clickedCharacters.Add(_clickedCharacter);
+            GameLog.Info("power", "power.vision.pick", "owner", ownerClientId.Value, "kind", "character",
+                "target", _clickedCharacter.ownerClientId.Value, "step", clickedCharacters.Count, "of", charactersToSelect);
             if (clickedCharacters.Count >= charactersToSelect)
             {
                 StartRoleSelection();
@@ -109,9 +113,12 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_roleClicked.ownerClientId, TargetUtils.TargetType.Role))
             {
+                LogClickRefused(_roleClicked.ownerClientId);
                 return;
             }
             clickedRoles.Add(_roleClicked);
+            GameLog.Guarded(() => GameLog.Info("power", "power.vision.pick", "owner", ownerClientId.Value, "kind", "role",
+                "role", _roleClicked.roleName.ToString(), "step", clickedRoles.Count, "of", rolesToSelect));
             if (clickedRoles.Count >= rolesToSelect)
             {
                 focusManager.UnfocusAll();
@@ -140,6 +147,8 @@ namespace Characters.Powers
             Assert.IsTrue(NetworkManager.IsServer, "OnVisionGuessServerRpc should only be called on server");
             _pendingGuessedCharacterIds = _guessedCharacterIds;
             _pendingGuessedRoles = _guessedRoles;
+            GameLog.Guarded(() => GameLog.Info("power", "power.vision.guess", "owner", ownerClientId.Value,
+                "characters", _guessedCharacterIds, "roles", _guessedRoles.Select(_r => _r.roleName.ToString()).ToList()));
             RunDecisionEffects(_decision,
                 new PowerContext(ownerSlot: (int)ownerClientId.Value, state: SelfState), SelfState);
         }

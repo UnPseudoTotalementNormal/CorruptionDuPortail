@@ -23,6 +23,12 @@ namespace GameLogic.GameStates
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            Diagnostics.Logs.GameLog.Guarded(() =>
+            {
+                var _seats = new System.Collections.Generic.List<ulong>();
+                foreach (var _id in chainingManager.chainingPlayers) _seats.Add(_id);
+                Diagnostics.Logs.GameLog.Info("chain", "chain.server.start", "seats", _seats);
+            });
             foreach (var _chainingPlayerId in chainingManager.chainingPlayers)
             {
                 chainingManager.ChainCharacterRpc(_chainingPlayerId);
@@ -63,6 +69,7 @@ namespace GameLogic.GameStates
                 if (_chainingCharacter == null)
                 {
                     Debug.Log($"[LEAVE] ChainingState: character {_chainingCharacterId} no longer present — skipping its chaining animation.");
+                    Diagnostics.Logs.GameLog.Info("chain", "chain.skip.absent", "seat", _chainingCharacterId);
                     continue;
                 }
 
@@ -75,6 +82,7 @@ namespace GameLogic.GameStates
                 }
                 catch (OperationCanceledException)
                 {
+                    Diagnostics.Logs.GameLog.Warn("chain", "chain.reveal.cancelled", "seat", _chainingCharacterId, "board", (bool)boardManager);
                     if (!boardManager)
                     {
                         return; // the scene went away: nothing left to animate or advance
@@ -96,6 +104,7 @@ namespace GameLogic.GameStates
                     return;
                 }
                 Debug.Log("ChainingState completed on server, moving to next state.");
+                Diagnostics.Logs.GameLog.Info("chain", "chain.server.done", "seats", _chainingCharactersId);
                 Loop.NextGameState();
             }
         }
@@ -112,6 +121,10 @@ namespace GameLogic.GameStates
             if (chainingManager.RevealDirector != null)
             {
                 await chainingManager.RevealDirector.PlayAsync(_chainingCharacterId, _boardAlive);
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Warn("chain", "chain.reveal.skipped", "seat", _chainingCharacterId, "reason", "no-director");
             }
             if (_chainingCharacter.role != null)
             {

@@ -1,5 +1,6 @@
 ﻿#region
 
+using Diagnostics.Logs;
 using System;
 using UnityEngine;
 using Characters.Powers.Target;
@@ -46,6 +47,7 @@ namespace Characters.Powers
             }
             powerUseLeft.Value += 1;
             _bonusConsumedThisNight = true;
+            GameLog.Info("power", "power.chained.extra-use", "owner", ownerClientId.Value, "usesLeft", powerUseLeft.Value);
         }
 
         public override void OnNetworkSpawn()
@@ -56,10 +58,19 @@ namespace Characters.Powers
 
         private void OnCharacterAndRolePicked(Character _character, Role _role)
         {
-            if (!_character ||
-                !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
-                !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
+            if (!_character)
             {
+                LogClickRefused(0, "no-character");
+                return;
+            }
+            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
+            {
+                LogClickRefused(_character.ownerClientId.Value, "invalid-character");
+                return;
+            }
+            if (!CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
+            {
+                LogClickRefused(_role.ownerClientId, "invalid-role");
                 return;
             }
             TryCorruptCharacterServerRpc(_character.ownerClientId.Value, _role);

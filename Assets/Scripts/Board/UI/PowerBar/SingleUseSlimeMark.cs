@@ -12,6 +12,7 @@ namespace Board.UI.PowerBar
     /// <summary>
     /// Board T2 / T1: a one-shot copied power (<c>Power.isStolenCopy</c>: Ugës's Marque copies, Luma's fake-card copy, a
     /// stolen Réincarnation's grants) is coated in slime on the table so the player reads it as "used once, then gone".
+    /// Board T26: green for a copy under Ugës's one-per-night budget, red for a copy usable at once.
     /// Client-only cosmetic: a glossy translucent coat appended as the last material of each model renderer (a renderer
     /// with more materials than submeshes redraws its last submesh with the extra one) + drips emitted from the model.
     /// The look lives on the two assets (placeholder, design-owned), not here.
@@ -52,6 +53,42 @@ namespace Board.UI.PowerBar
             if (_dripPrefab && _meshSource && !_existingDrips)
             {
                 AddDrips(_visual, _dripPrefab, _meshSource);
+            }
+        }
+
+        /// <summary>
+        /// Takes a mark off (its coat from every model renderer, and the drip emitter) so another one can be applied:
+        /// board T26, a copy turns from red (free) to green (Ugës's Marque budget) when its budget link replicates.
+        /// </summary>
+        public static void Remove(Transform _visual, Material _coat)
+        {
+            if (!_visual)
+            {
+                return;
+            }
+            Transform _existingDrips = _visual.Find(DRIPS_OBJECT_NAME);
+            if (_coat)
+            {
+                foreach (Renderer _renderer in _visual.GetComponentsInChildren<Renderer>())
+                {
+                    if (IsModelSurface(_renderer, _existingDrips) && _renderer.sharedMaterials.Contains(_coat))
+                    {
+                        _renderer.sharedMaterials = _renderer.sharedMaterials.Where(_m => _m != _coat).ToArray();
+                    }
+                }
+            }
+            if (_existingDrips)
+            {
+                // Detached first: Destroy is deferred, and an Apply in the same frame must not find the old emitter.
+                _existingDrips.SetParent(null, false);
+                if (Application.isPlaying)
+                {
+                    Object.Destroy(_existingDrips.gameObject);
+                }
+                else
+                {
+                    Object.DestroyImmediate(_existingDrips.gameObject);
+                }
             }
         }
 

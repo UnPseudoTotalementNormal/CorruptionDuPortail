@@ -76,6 +76,7 @@ namespace Board.UI
             }
             if (roleTargetSystem == null)
             {
+                Diagnostics.Logs.GameLog.Warn("board", "board.counter.refused", "kind", "robot", "reason", "no-role-target-system");
                 Debug.LogWarning("[RobotBoardInfo] no RoleTargetSystem — robot counter not updated this night.");
                 return;
             }
@@ -89,6 +90,7 @@ namespace Board.UI
         private void SetShownText(FixedString32Bytes _newText)
         {
             shownText.Value = _newText;
+            Diagnostics.Logs.GameLog.Info("board", "board.counter", "kind", "robot", "text", _newText.ToString());
         }
 
         private void ShowText(FixedString32Bytes _previous, FixedString32Bytes _current)

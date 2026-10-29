@@ -1,6 +1,7 @@
 #region
 
 using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using System.Linq;
 using Characters;
 using CorruptionDuPortail.Domain;
@@ -9,6 +10,7 @@ using Network;
 using Network.Player;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 #endregion
 
@@ -39,6 +41,17 @@ namespace GameLogic.GameStates
         // feat/lobby-ready-system: fires at most once per lobby entry (auto-start OR force-start latches it).
         private bool _started;
 
+        // Playtest logs only: the last auto-start blocking reason logged (the poll runs every frame, logs on change).
+        private string _lastBlockedReason;
+
+        // Opening the cloud lobby once GameScene is loaded (see OpenCloudLobbyWhenSceneLoaded). The deadline is
+        // realtime, -1 when not waiting; the attempt id cancels pending retries once the game starts.
+        private const float OpenFallbackSeconds = 10f;
+        private const int OpenRetryCount = 3;
+        private const float OpenRetryDelaySeconds = 2f;
+        private float _openDeadline = -1f;
+        private int _openAttemptId;
+
         // The composition gate: coverage Σmax ≥ players, guaranteed-fit (subsumes the old Σforced ≤ players floor),
         // plus ≥1 anomaly / ≥1 élu — evaluated by the pure CompositionValidator through RoleAttributionState (the
         // same rule surface the tablet footer mirrors and RoleDistributor guarantees). Reads the replicated
@@ -58,9 +71,12 @@ namespace GameLogic.GameStates
             if (!TryResolveValidComposition(out CompositionValidation _validation))
             {
                 Debug.LogWarning($"Cannot start the game — invalid composition: {_validation.FirstReason}");
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.refused", "forced", true, "reason", "invalid-composition",
+                    "detail", _validation.FirstReason);
                 return false;
             }
 
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.start", "players", CharacterQuery.GetCharacters().Count, "forced", true);
             Loop.NextGameState();
             return true;
         }
@@ -88,12 +104,26 @@ namespace GameLogic.GameStates
 
             // NET-05: an approved joiner still loading has no Character yet, so AllParticipantsReady cannot see it —
             // starting now would turn it into a character-less ghost. Wait until it finishes, leaves, or is kicked.
-            if (ConnectionApprovalGate.HasSynchronizingClients || !AllParticipantsReady() || !TryResolveValidComposition(out _))
+            // Same checks, same order and short-circuit as before; the reason only feeds the playtest log.
+            CompositionValidation _validation = default;
+            string _blockedReason = ConnectionApprovalGate.HasSynchronizingClients ? "player-loading"
+                : !AllParticipantsReady() ? "not-all-ready"
+                : !TryResolveValidComposition(out _validation) ? "invalid-composition"
+                : null;
+            if (_blockedReason != null)
             {
+                if (_blockedReason != _lastBlockedReason)
+                {
+                    _lastBlockedReason = _blockedReason;
+                    Diagnostics.Logs.GameLog.Info("lobby", "lobby.autostart.blocked", "reason", _blockedReason,
+                        "players", CharacterQuery.GetCharacters().Count,
+                        "detail", _blockedReason == "invalid-composition" ? _validation.FirstReason : null);
+                }
                 return;
             }
 
             _started = true;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.start", "players", CharacterQuery.GetCharacters().Count, "forced", false);
             Loop.NextGameState();
         }
 
@@ -139,6 +169,7 @@ namespace GameLogic.GameStates
             if (ConnectionApprovalGate.HasSynchronizingClients)
             {
                 Debug.LogWarning("Cannot force-start: a player is still loading into the lobby.");
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.start.refused", "forced", true, "reason", "player-loading");
                 return;
             }
 
@@ -172,16 +203,102 @@ namespace GameLogic.GameStates
             // every frame and lazily resolves the census, so no subscription to wire here.
             _started = false;
             _lobbyInfo = null;
+            _lastBlockedReason = null;
 
-            // Symmetric counterpart of the lock below: re-entering the lobby makes the session joinable again, so
-            // it must reappear in the lobby list.
-            SetCloudLobbyLocked(false);
+            // The menu creates the cloud lobby locked: it only appears in the lobby list once the host has finished
+            // loading GameScene. This state starts while NGO is still processing that load (in-scene objects spawn
+            // mid-event), and a client joining before the event completes gets a broken scene sync ("Server Scene
+            // Handle already exist", stuck). Open it when the load event completes.
+            OpenCloudLobbyWhenSceneLoaded();
+        }
+
+        private void OpenCloudLobbyWhenSceneLoaded()
+        {
+            var _sceneManager = gameManager.NetworkManager.SceneManager;
+            if (_sceneManager == null || !gameManager.NetworkManager.NetworkConfig.EnableSceneManagement)
+            {
+                OpenCloudLobby("no-scene-management");
+                return;
+            }
+
+            _sceneManager.OnLoadEventCompleted -= OnSceneLoadEventCompleted;
+            _sceneManager.OnLoadEventCompleted += OnSceneLoadEventCompleted;
+            // NGO spawns the in-scene objects (this state starts) before it completes the load event, so the event
+            // cannot be missed; the deadline only guards against a lobby that would otherwise stay hidden forever.
+            _openDeadline = Time.realtimeSinceStartup + OpenFallbackSeconds;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.open.wait", "scene", gameManager.gameObject.scene.name);
+        }
+
+        private void OnSceneLoadEventCompleted(string _sceneName, LoadSceneMode _mode, List<ulong> _completed, List<ulong> _timedOut)
+        {
+            if (_sceneName != gameManager.gameObject.scene.name)
+            {
+                return;
+            }
+
+            OpenCloudLobby("scene-loaded");
+        }
+
+        // Polled from StateUpdateServer.
+        private void OpenCloudLobbyIfLoadNeverCompleted()
+        {
+            if (_openDeadline < 0f || Time.realtimeSinceStartup < _openDeadline)
+            {
+                return;
+            }
+
+            Diagnostics.Logs.GameLog.Warn("lobby", "lobby.open.fallback", "afterSeconds", OpenFallbackSeconds);
+            OpenCloudLobby("fallback");
+        }
+
+        private void StopWaitingForSceneLoad()
+        {
+            _openDeadline = -1f;
+            var _sceneManager = gameManager.NetworkManager != null ? gameManager.NetworkManager.SceneManager : null;
+            if (_sceneManager != null)
+            {
+                _sceneManager.OnLoadEventCompleted -= OnSceneLoadEventCompleted;
+            }
+        }
+
+        private void OpenCloudLobby(string _trigger)
+        {
+            StopWaitingForSceneLoad();
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.open", "trigger", _trigger);
+            OpenCloudLobbyWithRetriesAsync(++_openAttemptId).Forget();
+        }
+
+        // Before this change a failed unlock left the lobby open; now the lobby starts locked, so a failed unlock
+        // (UGS rate limit, network hiccup) would leave the game unjoinable: retry a few times.
+        private async UniTaskVoid OpenCloudLobbyWithRetriesAsync(int _attemptId)
+        {
+            for (int _try = 1; _try <= OpenRetryCount; _try++)
+            {
+                if (_attemptId != _openAttemptId || gameManager == null || !gameManager.IsSpawned)
+                {
+                    // The game started (OnEndStateServer locked it again) or the session ended: never reopen.
+                    Diagnostics.Logs.GameLog.Info("lobby", "lobby.open.cancelled", "try", _try);
+                    return;
+                }
+
+                if (await SetCloudLobbyLockedAsync(false))
+                {
+                    return;
+                }
+
+                Diagnostics.Logs.GameLog.Warn("lobby", "lobby.open.retry", "try", _try, "of", OpenRetryCount);
+                await UniTask.Delay(System.TimeSpan.FromSeconds(OpenRetryDelaySeconds), ignoreTimeScale: true);
+            }
+
+            Diagnostics.Logs.GameLog.Warn("lobby", "lobby.open.failed", "tries", OpenRetryCount);
         }
 
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
             gameManager.NetworkManager.OnClientConnectedCallback -= OnClientConnected;
+            StopWaitingForSceneLoad();
+            _openAttemptId++;
             _lobbyInfo = null;
 
             // The game just started. Hide the session from the lobby list (investigation join-started-game-gate):
@@ -196,18 +313,24 @@ namespace GameLogic.GameStates
         // No end-of-game counterpart is needed: GameManager.ShutOffGame already deletes the lobby outright.
         private void SetCloudLobbyLocked(bool _locked)
         {
+            SetCloudLobbyLockedAsync(_locked).Forget();
+        }
+
+        // True when done or when there is no cloud lobby to update (EditMode, bots, a client).
+        private UniTask<bool> SetCloudLobbyLockedAsync(bool _locked)
+        {
             if (!gameManager.NetworkManager.IsServer)
             {
-                return;
+                return UniTask.FromResult(true);
             }
 
             var _lobbyManager = Network.Services.LobbyManager.instance;
             if (_lobbyManager == null || !_lobbyManager.IsInLobby || !_lobbyManager.IsLobbyHost)
             {
-                return;
+                return UniTask.FromResult(true);
             }
 
-            _lobbyManager.SetLobbyLocked(_locked).Forget();
+            return _lobbyManager.SetLobbyLocked(_locked);
         }
         
         public override void OnStartStateClient()
@@ -230,6 +353,7 @@ namespace GameLogic.GameStates
             {
                 // NET-05: a loader stuck past the sync cap is disconnected so it cannot block the start forever.
                 ConnectionApprovalGate.KickExpiredLoaders(gameManager.NetworkManager);
+                OpenCloudLobbyIfLoadNeverCompleted();
                 TryAutoStart();
             }
         }

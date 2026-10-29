@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
+using Diagnostics.Logs;
 using GameLogic;
 using Network.Steam;
 using Steamworks;
@@ -31,6 +33,10 @@ namespace Network.Services
         // Rich presence key Steam turns into "Rejoindre la partie" on our profile (SteamInvites reads it back).
         private const string ConnectKey = "connect";
         private const float LobbyDataTimeoutSeconds = 5f;
+        private static readonly string[] DirectKeys =
+        {
+            GameLobby.HostSteamIdKey, nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language),
+        };
 
         private readonly IRandomProvider random = new UnityRandomProvider();
         // Steam handles of the lobbies we are in, by id: their data stays live (Steam pushes the updates to members).
@@ -73,7 +79,10 @@ namespace Network.Services
 
             joined[IdOf(_lobby)] = _lobby;
             PublishJoin(_lobby, !settings.isLocked);
-            return ToGameLobby(_lobby);
+            GameLobby _game = ToGameLobby(_lobby);
+            GameLog.Guarded(() => GameLog.Info("net", "steam.lobby.created", "lobby", _game.Id,
+                "dataKeys", string.Join(",", _game.Data.Keys)));
+            return _game;
         }
 
         public async UniTask<List<GameLobby>> QueryAsync()
@@ -114,7 +123,10 @@ namespace Network.Services
 
             joined[IdOf(_lobby)] = _lobby;
             PublishJoin(_lobby, _lobby.GetData(LockedKey) != "1");
-            return ToGameLobby(_lobby);
+            GameLobby _game = ToGameLobby(_lobby);
+            GameLog.Guarded(() => GameLog.Info("net", "steam.lobby.joined", "lobby", _game.Id, "owner", _game.HostId,
+                "dataKeys", string.Join(",", _game.Data.Keys), "enumerated", _lobby.Data.Count()));
+            return _game;
         }
 
         public async UniTask<GameLobby> JoinByCodeAsync(string code)
@@ -297,6 +309,16 @@ namespace Network.Services
             foreach (KeyValuePair<string, string> _entry in lobby.Data)
             {
                 _data[_entry.Key] = _entry.Value;
+            }
+            // The keys the joiner needs are read one by one too: on 2026-10-24 the enumerated data of a joined lobby
+            // lacked the host's SteamID, while GetData still returned its name.
+            foreach (string _key in DirectKeys)
+            {
+                string _value = lobby.GetData(_key);
+                if (!string.IsNullOrEmpty(_value))
+                {
+                    _data[_key] = _value;
+                }
             }
             ulong _owner = lobby.Owner.Id.Value; // 0 for a lobby we are not in: Steam only tells members
             return new GameLobby

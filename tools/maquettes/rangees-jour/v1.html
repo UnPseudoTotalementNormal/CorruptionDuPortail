@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les deux rangées du jour à l'écran : cartes des joueurs et rôles de la partie (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  @font-face { font-family: "Lib"; src: url("../fonts/LiberationSans.ttf"); }
+  .rj-bg { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  .rj-timer { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font: 50px Lib, sans-serif; color: #fff; z-index: 6; }
+  /* key hints: the shipped look (touches v2), left column as in the game today */
+  .rj-hints { position: absolute; left: 22px; top: 18px; width: 140px; height: 520px; opacity: .5; z-index: 6; }
+  .rj-h { position: absolute; display: flex; flex-direction: column; align-items: center; width: 54px; }
+  .rj-h svg { width: 40px; height: 32px; filter: drop-shadow(0 1px 3px #000); }
+  .rj-h span { font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; }
+
+  /* row 1: one slot = the card + what hangs under it */
+  .rj-row1 { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .rj-slot { position: absolute; transform-origin: 50% 100%; pointer-events: auto; cursor: pointer;
+    transform: translateY(0) rotate(var(--r, 0deg)) scale(1); transition: transform .2s ease-out, top .35s ease-out, left .35s ease-out; }
+  .rj-slot:hover { transform: translateY(var(--hy, -16px)) rotate(0deg) scale(var(--hs, 1.08)); z-index: 30 !important; }
+  .rj-card { position: relative; overflow: hidden; border-radius: 5px; background: #0b0908; box-shadow: 0 6px 14px rgba(0,0,0,.65); }
+  .rj-art { position: absolute; left: 0; width: 100%; object-fit: cover; object-position: 50% 50%; }
+  .rj-band { position: absolute; left: 0; right: 0; top: 0; background: #0d0c0b; color: #c9a04a; font-family: Lib, sans-serif; font-weight: 700;
+    display: flex; align-items: center; padding-left: 14%; white-space: nowrap; overflow: hidden; }
+  .rj-band.rj-g { font-family: Garamond, serif; font-weight: 400; color: #eadcbf; justify-content: center; padding-left: 0; }
+  .rj-plate { background: #24201c; color: #d8d0c4; font-family: Lib, sans-serif; text-align: center; white-space: nowrap; overflow: hidden; }
+  .rj-plate.rj-name { background: #1b1613; color: #f1e4c8; font-family: Garamond, serif; border-top: 1px solid #5a4630; }
+  .rj-tex { position: absolute; inset: 0; background: url(img/tex.webp) 0 0 / 100% 100%; filter: brightness(.9); }
+  .rj-eye { position: absolute; left: 50%; transform: translateX(-50%); opacity: .8; }
+  .rj-mid { position: absolute; left: 0; right: 0; top: 52%; text-align: center; font-family: Garamond, serif; color: #f1e4c8; text-shadow: 0 1px 4px #000; }
+  .rj-voted { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,.92) 40%); color: #f1e4c8;
+    font-family: Garamond, serif; text-align: center; }
+  .rj-me { position: absolute; left: 50%; transform: translateX(-50%); width: 36px; height: 46px; }
+  .rj-me img { width: 36px; height: 46px; display: block; }
+  .rj-me span { position: absolute; left: 0; right: 0; top: 12px; text-align: center; font: 12px Lib, sans-serif; color: #6d6d6d; }
+
+  /* row 2: the roles of the game */
+  .rj-row2 { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; align-items: flex-end; gap: 38px; z-index: 3;
+    transition: transform .35s ease-out; }
+  .rj-grp { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .rj-ports { display: flex; gap: 4px; align-items: flex-end; }
+  .rj-port { width: 48px; height: 50px; object-fit: cover; object-position: 50% 12%; display: block; box-shadow: 0 3px 8px rgba(0,0,0,.7); transition: transform .15s; cursor: pointer; position: relative; }
+  .rj-port:hover { transform: translateY(-14px) scale(1.6); z-index: 10; }
+  .rj-logobox { width: 46px; height: 46px; background: #2a2827; border: 1px solid #45403b; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .rj-logobox img { width: 30px; height: 30px; }
+  .rj-logobox span { font: 7px Lib, sans-serif; letter-spacing: .5px; }
+  .rj-cnt { display: flex; flex-direction: column; gap: 3px; }
+  .rj-cbox { width: 102px; height: 52px; background: #3b3735; color: #fff; font: 9.5px/1.15 Lib, sans-serif; text-align: center; padding: 4px 6px 0; }
+  .rj-cbox b { display: block; font: 17px Lib, sans-serif; margin-top: 1px; }
+  /* C1: on a leather strip */
+  .rj-strip { display: flex; align-items: center; gap: 30px; padding: 10px 22px; border-radius: 6px; background: url(../common/leather.webp) center / cover;
+    box-shadow: 0 6px 16px rgba(0,0,0,.75), inset 0 0 0 1px rgba(176,138,74,.55); }
+  .rj-strip .rj-grp { flex-direction: row; gap: 10px; }
+  .rj-strip .rj-port { width: 46px; height: 56px; box-shadow: 0 0 0 1px #b08a4a, 0 3px 6px rgba(0,0,0,.6); }
+  .rj-strip .rj-logo { width: 46px; height: 46px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.7)); }
+  /* C2: one small pack per side */
+  .rj-pack { position: relative; height: 58px; transition: width .2s ease-out; }
+  .rj-pack .rj-port { position: absolute; bottom: 0; width: 46px; height: 56px; transition: left .2s ease-out, transform .2s ease-out; transform-origin: 50% 100%; }
+  .rj-pack:hover .rj-port { transform: none; }
+  .rj-pack .rj-port:hover { transform: translateY(-14px) scale(1.6); }
+  .rj-logo { width: 44px; height: 44px; }
+  /* C3: a column on the right */
+  .rj-col { position: absolute; right: 18px; top: 250px; width: 124px; display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 3; transition: transform .35s ease-out; }
+  .rj-col .rj-ports { flex-wrap: wrap; justify-content: center; width: 104px; }
+  /* counters, other looks */
+  .rj-num { font-family: Garamond, serif; line-height: 1; text-shadow: 0 1px 4px #000; }
+  .rj-tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px; background: #15100d; border: 1px solid #5a4630; color: #eadcbf;
+    font: 16px Garamond, serif; padding: 4px 10px; white-space: nowrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+  .rj-hov { position: relative; cursor: default; }
+  .rj-hov:hover .rj-tip { opacity: 1; }
+  .rj-lines { display: flex; flex-direction: column; gap: 6px; font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 4px #000; padding-bottom: 6px; }
+  .rj-lines b { font-weight: 400; font-size: 24px; margin-left: 8px; }
+
+  .rj-ctl { display: flex; gap: 8px; margin-top: 8px; align-items: center; color: var(--soft); font-size: 14px; flex-wrap: wrap; }
+  .rj-ctl button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .rj-ctl button.on { border-color: var(--accent); color: var(--accent); }
+  header.page img.rj-ref { width: 100%; max-width: 760px; border: 1px solid var(--line); margin-top: 8px; display: block; }
+  header.page ul { color: var(--soft); margin: 4px 0 8px; padding-left: 20px; }
+</style>
+</head>
+<body data-subject="rangees-jour">
+
+<header class="page">
+  <h1>Les rangées du jour à l'écran (tour 1)</h1>
+  <p>Le jour, les cartes des joueurs (touche 1) et les rôles de la partie avec leurs deux compteurs (touche 2) quittent la
+     table pour le bas de l'écran. Elles marchent ; ici on cherche à les rendre plus belles et plus lisibles, sans rien
+     perdre de ce qu'elles montrent.</p>
+  <p><b>Aujourd'hui</b> (capture du jeu, vote du jour 1, partie autoplay du 28/10) :</p>
+  <img class="rj-ref" src="img/actuel_hote.webp" alt="Le vote du jour aujourd'hui">
+  <img class="rj-ref" src="img/actuel_bas.webp" alt="Le bas de l'écran agrandi">
+  <ul>
+    <li>Huit grandes cartes presque identiques (le dos à l'œil rouge) prennent un tiers de l'écran et passent devant le chat d'en face.</li>
+    <li>Le pseudo est écrit en tout petit en haut de chaque carte ; « N'a pas voté » est répété sous les huit.</li>
+    <li>Les portraits des rôles sont minuscules, les logos de camp flottent au-dessus dans des carrés gris.</li>
+    <li>Les deux compteurs sont des boîtes grises à longue phrase en police web : c'est ce qui fait le plus « placeholder ».</li>
+  </ul>
+  <p><b>Ailleurs</b> : la main de <a href="https://playhearthstone.com">Hearthstone</a> et de
+     <a href="https://blakecrosley.com/zh-Hans/guides/design/balatro">Balatro</a> (cartes en éventail qui se chevauchent,
+     celle qu'on survole se redresse et grandit : beaucoup de cartes, peu de place) ;
+     <a href="https://en.wikipedia.org/wiki/Inscryption">Inscryption</a> (les cartes restent des objets, pas une interface
+     posée dessus) ; la feuille de personnages de
+     <a href="https://wiki.bloodontheclocktower.com/Script_Tool">Blood on the Clocktower</a> et
+     <a href="https://github.com/aisen-lopez/townsquare-vue">Townsquare</a> (les rôles de la partie rangés par camp,
+     un seul bloc qu'on lit d'un coup d'œil).</p>
+  <p><b>La scène, sur toutes les images</b> : vote du jour 2, huit joueurs. Tu es Poyo (Dr Gloubi, ta carte est
+     retournée, « Moi » au-dessus). Steve, Brandon, Kiwi et Mathis ont voté. Composition : 5 Élus, 2 Anomalies, le Robot ;
+     1 corrompu sur 6, personne n'a touché le Robot cette nuit. Survole les cartes et les portraits ; 1 et 2 ouvrent et
+     ferment les rangées (clavier ou boutons sous chaque image).</p>
+  <p>Sans question : les cartes restent les vraies cartes du jeu (leur art, leurs marques, leur survol) ; le fond est un
+     rendu du jeu avec les chats plus proches qu'aujourd'hui, seulement pour le contexte. Une section par rangée : la
+     suivante assemblera l'écran entier.</p>
+</header>
+
+<section>
+  <h2>1. Comment les cartes se rangent</h2>
+  <p>Même carte partout (celle d'aujourd'hui), seule la place change.</p>
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Actuel : une ligne droite</span></div>
+    <p class="vdesc">Huit grandes cartes côte à côte, la plaque de vote dessous.</p>
+    <div class="screen"><div class="stage rj-st" data-lay="line"></div></div>
+  </div>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">En éventail, comme une main</span></div>
+    <p class="vdesc">Les cartes se chevauchent et s'ouvrent en arc ; celle qu'on survole se redresse et grandit. La rangée
+       prend moitié moins de large.</p>
+    <div class="screen"><div class="stage rj-st" data-lay="fan"></div></div>
+  </div>
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Deux ailes, le milieu libre</span></div>
+    <p class="vdesc">Quatre cartes à gauche, quatre à droite : le chat d'en face (et l'enchaîné, au milieu) n'est plus caché.</p>
+    <div class="screen"><div class="stage rj-st" data-lay="wings"></div></div>
+  </div>
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Plus petites, grandes au survol</span></div>
+    <p class="vdesc">Cartes aux deux tiers ; on les lit en les survolant, elles doublent de taille.</p>
+    <div class="screen"><div class="stage rj-st" data-lay="small"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Ce qu'on lit sur une carte</h2>
+  <p>Même ligne droite partout ; le pseudo, le vote et le dos changent.</p>
+  <div class="variant" data-id="B0">
+    <div class="vhead"><span class="vid">B0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Pseudo en petit dans la bande du haut, « A voté » ou « N'a pas voté » sur la plaque.</p>
+    <div class="screen"><div class="stage rj-st" data-face="x0"></div></div>
+  </div>
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Le pseudo sur la plaque</span></div>
+    <p class="vdesc">Le pseudo passe en grand sur la plaque sous la carte ; « A voté » monte dans la bande du haut, vide
+       tant qu'il n'a pas voté.</p>
+    <div class="screen"><div class="stage rj-st" data-face="b1"></div></div>
+  </div>
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Le dos s'efface, le pseudo au milieu</span></div>
+    <p class="vdesc">Sur une carte inconnue, l'œil devient petit et le pseudo s'écrit au milieu : les rôles connus
+       ressortent tout seuls.</p>
+    <div class="screen"><div class="stage rj-st" data-face="b2"></div></div>
+  </div>
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Seul « A voté » se voit</span></div>
+    <p class="vdesc">Plus de plaque : « A voté » s'écrit au pied de la carte de ceux qui ont voté, rien chez les autres.</p>
+    <div class="screen"><div class="stage rj-st" data-face="b3"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. La rangée des rôles</h2>
+  <p>Mêmes cartes partout (celles d'aujourd'hui) ; les compteurs restent ceux d'aujourd'hui, ils ont leur section.</p>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Portraits nus par camp, le logo du camp dans un carré au-dessus.</p>
+    <div class="screen"><div class="stage rj-st" data-roles="x0"></div></div>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Sur une bande de cuir</span></div>
+    <p class="vdesc">Les rôles sur une bande du cuir du grimoire, chaque camp derrière son logo, portraits cerclés d'or.</p>
+    <div class="screen"><div class="stage rj-st" data-roles="strip"></div></div>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Un petit paquet par camp</span></div>
+    <p class="vdesc">Les portraits d'un camp se chevauchent sous son logo ; survoler le paquet l'étale.</p>
+    <div class="screen"><div class="stage rj-st" data-roles="pack"></div></div>
+  </div>
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">En colonne à droite</span></div>
+    <p class="vdesc">Les rôles quittent le bas pour le bord droit : les cartes descendent tout en bas, le centre se dégage.</p>
+    <div class="screen"><div class="stage rj-st" data-roles="col"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4. Les deux compteurs</h2>
+  <p>« Nombre total de corrompus » et « Nombre de personnes ayant interagi avec le robot cette nuit ». Survole-les.</p>
+  <div class="variant" data-id="D0">
+    <div class="vhead"><span class="vid">D0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Deux boîtes grises empilées, la phrase entière et le chiffre.</p>
+    <div class="screen"><div class="stage rj-st" data-cnt="x0"></div></div>
+  </div>
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">À côté de ce qu'ils comptent</span></div>
+    <p class="vdesc">Les corrompus près des Anomalies, avec le symbole de la corruption ; le chiffre du Robot sur son
+       portrait. La phrase apparaît au survol.</p>
+    <div class="screen"><div class="stage rj-st" data-cnt="near"></div></div>
+  </div>
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Deux lignes courtes</span></div>
+    <p class="vdesc">Sans boîte, au bout de la rangée : « Corrompus 1/6 », « Robot cette nuit 0 ».</p>
+    <div class="screen"><div class="stage rj-st" data-cnt="lines"></div></div>
+  </div>
+  <div class="variant" data-id="D3">
+    <div class="vhead"><span class="vid">D3</span><span class="vname">Un signe et un chiffre</span></div>
+    <p class="vdesc">Au bout de la rangée, le symbole de la corruption et le Robot, chacun avec son chiffre en grand ;
+       la phrase au survol.</p>
+    <div class="screen"><div class="stage rj-st" data-cnt="icons"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const IMG = "img/", JP = "../jour-pov/img/";
+  const NAMES = ["Poyo", "Wouh", "Steve", "Brandon", "Uptn", "Kiwi", "Nox", "Mathis"];
+  const VOTED = new Set([2, 3, 5, 7]);
+  const SIDES = [
+    { logo: "LogoElu", label: "CHOSEN", color: "#3fbf8a", roles: ["DrGloubi", "Messager", "Orpheline", "Technomancien", "Geolier"] },
+    { logo: "LogoAnomalie", label: "ANOMALY", color: "#e0485a", roles: ["Vahal", "Moork"] },
+    { logo: "LogoMarginaux", label: "MARGINAL", color: "#ef8a2c", roles: ["Robot"] },
+  ];
+  const CORR = "1/6", ROBOT = "0";
+  const T_CORR = "Nombre total de corrompus", T_ROBOT = "Nombre de personnes ayant interagi avec le robot cette nuit";
+  let open1 = true, open2 = true;
+
+  // ------------------------------------------------------------ chrome: timer + key hints (as in the game today)
+  const ICON = {
+    esc: '<path d="M8 9h30M8 18h30M8 27h30" stroke="#eadcbf" stroke-width="3" fill="none"/>',
+    f8: '<ellipse cx="23" cy="20" rx="8" ry="10" fill="none" stroke="#eadcbf" stroke-width="2.4"/><path d="M15 14l-6-4M31 14l6-4M15 22H7M31 22h8M16 28l-6 4M30 28l6 4M23 10v20" stroke="#eadcbf" stroke-width="2" fill="none"/>',
+    one: '<rect x="5" y="9" width="11" height="17" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="18" y="7" width="11" height="19" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="31" y="9" width="11" height="17" fill="none" stroke="#eadcbf" stroke-width="2.2"/>',
+    two: '<path d="M23 4l4 4-4 4-4-4z" fill="#eadcbf"/><rect x="5" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="15" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="25" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="35" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/>',
+    p: '<rect x="14" y="10" width="14" height="16" fill="none" stroke="#eadcbf" stroke-width="2.4"/><path d="M4 18h34M32 12l6 6-6 6" stroke="#eadcbf" stroke-width="2.4" fill="none"/>',
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    e: '<circle cx="23" cy="19" r="14" fill="none" stroke="#eadcbf" stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+  };
+  const HINTS = [["esc", "Échap", 0, 0], ["f8", "F8", 72, 0], ["one", "1", 0, 92], ["two", "2", 0, 170], ["p", "P", 0, 246], ["tab", "Tab", 0, 390], ["e", "E", 0, 462]];
+  const chrome = () => '<div class="rj-timer">298</div><div class="rj-hints">' + HINTS.map(([i, k, x, y]) =>
+    '<div class="rj-h" data-key="' + k + '" style="left:' + x + "px;top:" + y + 'px"><svg viewBox="0 0 46 38">' + ICON[i] + "</svg><span>" + k + "</span></div>").join("") + "</div>";
+
+  // ------------------------------------------------------------ one card
+  function card(i, face, W, H) {
+    const band = Math.round(H * 0.12), known = i === 0;
+    let h = '<div class="rj-card" style="width:' + W + "px;height:" + H + 'px">';
+    if (face === "b2" && !known) {
+      h += '<div class="rj-tex"></div><img class="rj-eye" src="' + IMG + 'sym_corruption.webp" style="width:' + Math.round(W * .3) + "px;top:" + Math.round(H * .16) + 'px">'
+        + '<div class="rj-mid" style="font-size:' + Math.round(W * .18) + 'px">' + NAMES[i] + "</div>";
+    } else {
+      h += '<img class="rj-art" src="' + IMG + (known ? "face_gloubi" : "back") + '.webp" style="top:' + band + "px;height:" + (H - band) + 'px">';
+      const fs = Math.max(9, Math.round(W * .085));
+      if (face === "b1") h += '<div class="rj-band rj-g" style="height:' + band + "px;font-size:" + Math.round(W * .13) + 'px">' + (VOTED.has(i) ? "A voté" : "") + "</div>";
+      else h += '<div class="rj-band" style="height:' + band + "px;font-size:" + fs + 'px">' + NAMES[i] + "</div>";
+      if (face === "b3" && VOTED.has(i)) h += '<div class="rj-voted" style="font-size:' + Math.round(W * .15) + "px;padding:" + Math.round(H * .08) + 'px 0 ' + Math.round(H * .03) + 'px">A voté</div>';
+    }
+    return h + "</div>";
+  }
+  const plateH = (face, W) => face === "b3" ? 0 : face === "b1" ? Math.round(W * .24) : Math.round(W * .18);
+  function plate(i, face, W) {
+    const ph = plateH(face, W);
+    if (!ph) return "";
+    if (face === "b1") return '<div class="rj-plate rj-name" style="height:' + ph + "px;line-height:" + ph + "px;font-size:" + Math.round(W * .16) + 'px">' + NAMES[i] + "</div>";
+    return '<div class="rj-plate" style="height:' + ph + "px;line-height:" + ph + "px;font-size:" + Math.max(9, Math.round(W * .11)) + 'px">' + (VOTED.has(i) ? "A voté" : "N'a pas voté") + "</div>";
+  }
+
+  // ------------------------------------------------------------ row 1 layouts (slots: x, top, rotation)
+  function row1(lay, face, bottom) {
+    let W = 131, H = 183, xs, rot = () => 0, dy = () => 0, hs = 1.08, hy = -16;
+    if (lay === "line") { xs = i => 224 + i * 146; }
+    if (lay === "fan") { xs = i => 800 + (i - 3.5) * 92 - W / 2; rot = i => (i - 3.5) * 4; dy = i => (i - 3.5) * (i - 3.5) * 4 - 62; hs = 1.32; hy = -70; }
+    if (lay === "wings") { W = 118; H = 165; xs = i => i < 4 ? 70 + i * 126 : 1034 + (i - 4) * 126; }
+    if (lay === "small") { W = 86; H = 120; xs = i => 800 - (7 * 96 + 86) / 2 + i * 96; hs = 2; hy = -40; }
+    const ph = plateH(face, W);
+    return '<div class="rj-row1">' + NAMES.map((n, i) => {
+      const top = open1 ? bottom - H - ph + dy(i) : 960;
+      const me = i === 0 ? '<div class="rj-me" style="top:-54px"><img src="' + IMG + 'me.webp"><span>Moi</span></div>' : "";
+      return '<div class="rj-slot" style="left:' + xs(i) + "px;top:" + top + "px;width:" + W + "px;--r:" + rot(i) + "deg;--hs:" + hs + ";--hy:" + hy + "px;z-index:" + (i + 1) + '">'
+        + me + card(i, face, W, H) + plate(i, face, W) + "</div>";
+    }).join("") + "</div>";
+  }
+
+  // ------------------------------------------------------------ row 2: roles + counters
+  const port = r => '<img class="rj-port" src="' + JP + "p_" + r + '.webp" alt="' + r + '">';
+  const tip = (t, inner, style) => '<div class="rj-hov" style="' + (style || "") + '">' + inner + '<div class="rj-tip">' + t + "</div></div>";
+  function counters(cnt) {
+    if (cnt === "lines") return '<div class="rj-lines">' + tip(T_CORR, 'Corrompus<b style="color:#d8433a">' + CORR + "</b>") + tip(T_ROBOT, 'Robot cette nuit<b style="color:#ef8a2c">' + ROBOT + "</b>") + "</div>";
+    if (cnt === "icons") return '<div style="display:flex;gap:22px;align-items:center;padding-bottom:4px">'
+      + tip(T_CORR, '<div style="display:flex;align-items:center;gap:8px"><img src="' + IMG + 'sym_corruption.webp" style="width:44px"><span class="rj-num" style="font-size:34px;color:#d8433a">' + CORR + "</span></div>")
+      + tip(T_ROBOT, '<div style="display:flex;align-items:center;gap:8px"><img src="' + JP + 'p_Robot.webp" style="width:40px;height:44px;object-fit:cover;object-position:50% 12%;border-radius:50%;box-shadow:0 0 0 2px #ef8a2c"><span class="rj-num" style="font-size:34px;color:#ef8a2c">' + ROBOT + "</span></div>")
+      + "</div>";
+    if (cnt === "near") return "";
+    return '<div class="rj-cnt"><div class="rj-cbox">' + T_CORR + '<b style="color:#d8433a">' + CORR + '</b></div><div class="rj-cbox" style="font-size:8px">' + T_ROBOT + '<b style="color:#ef8a2c">' + ROBOT + "</b></div></div>";
+  }
+  function group(s, look, cnt) {
+    let ports = s.roles.map(port).join("");
+    if (cnt === "near" && s.logo === "LogoAnomalie") ports += tip(T_CORR, '<div style="display:flex;align-items:center;gap:6px;margin-left:8px"><img src="' + IMG + 'sym_corruption.webp" style="width:34px"><span class="rj-num" style="font-size:28px;color:#d8433a">' + CORR + "</span></div>");
+    if (cnt === "near" && s.logo === "LogoMarginaux") ports = tip(T_ROBOT, port("Robot") + '<span class="rj-num" style="position:absolute;right:0;bottom:0;z-index:2;font-size:24px;padding:1px 5px 0;background:rgba(10,8,6,.85);color:#ef8a2c;pointer-events:none">' + ROBOT + "</span>");
+    const box = '<div class="rj-logobox"><img src="' + JP + s.logo + '.webp"><span style="color:' + s.color + '">' + s.label + "</span></div>";
+    if (look === "strip") return '<div class="rj-grp"><img class="rj-logo" src="' + JP + s.logo + '.webp"><div class="rj-ports">' + ports + "</div></div>";
+    if (look === "pack") {
+      const n = s.roles.length;
+      const imgs = s.roles.map((r, k) => '<img class="rj-port" src="' + JP + "p_" + r + '.webp" style="left:' + (k * 18) + "px;transform:rotate(" + ((k - (n - 1) / 2) * 6) + 'deg)">').join("");
+      return '<div class="rj-grp"><img class="rj-logo" src="' + JP + s.logo + '.webp"><div class="rj-pack" data-n="' + n + '" style="width:' + (46 + (n - 1) * 18) + 'px">' + imgs + "</div></div>";
+    }
+    return '<div class="rj-grp">' + box + '<div class="rj-ports">' + ports + "</div></div>";
+  }
+  function row2(look, cnt) {
+    if (look === "col") return '<div class="rj-col" style="transform:translateX(' + (open2 ? 0 : 200) + 'px)">' + SIDES.map(s => group(s, "x0", cnt)).join("") + counters(cnt) + "</div>";
+    const inner = SIDES.map(s => group(s, look, cnt)).join("");
+    const body = look === "strip" ? '<div class="rj-strip">' + inner + "</div>" + counters(cnt) : inner + counters(cnt);
+    return '<div class="rj-row2" style="gap:' + (look === "strip" ? 24 : 38) + "px;transform:translateY(" + (open2 ? 0 : 170) + 'px)">' + body + "</div>";
+  }
+
+  // ------------------------------------------------------------ draw every frame
+  const stages = [...document.querySelectorAll(".rj-st")];
+  function draw() {
+    stages.forEach(st => {
+      const lay = st.dataset.lay || "line", face = st.dataset.face || "x0", roles = st.dataset.roles || "x0", cnt = st.dataset.cnt || "x0";
+      const bottom = (open2 && roles !== "col") ? 750 : 878;
+      st.innerHTML = '<img class="rj-bg" src="' + JP + 'vide20_y0.webp">' + chrome() + row1(lay, face, bottom) + row2(roles, cnt);
+      st.querySelectorAll(".rj-h").forEach(h => h.onclick = () => key(h.dataset.key));
+      st.querySelectorAll(".rj-pack").forEach(p => {
+        const n = +p.dataset.n, imgs = [...p.querySelectorAll(".rj-port")];
+        p.onmouseenter = () => { p.style.width = (46 + (n - 1) * 50) + "px"; imgs.forEach((im, k) => im.style.left = (k * 50) + "px"); };
+        p.onmouseleave = () => { p.style.width = (46 + (n - 1) * 18) + "px"; imgs.forEach((im, k) => im.style.left = (k * 18) + "px"); };
+      });
+    });
+    document.querySelectorAll(".rj-ctl [data-k]").forEach(b => b.classList.toggle("on", b.dataset.k === "1" ? open1 : open2));
+  }
+  function key(k) {
+    if (k === "1") open1 = !open1;
+    if (k === "2") open2 = !open2;
+    if (k === "1" || k === "2") draw();
+  }
+  stages.forEach(st => {
+    const ctl = document.createElement("div"); ctl.className = "rj-ctl";
+    ctl.innerHTML = 'Rangées : <button data-k="1">1 : cartes</button><button data-k="2">2 : rôles</button>';
+    st.closest(".screen").after(ctl);
+    ctl.querySelectorAll("[data-k]").forEach(b => b.onclick = () => key(b.dataset.k));
+  });
+  document.addEventListener("keydown", e => {
+    if (/TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+    if (e.key === "1" || e.key === "&") key("1");
+    if (e.key === "2" || e.key === "é") key("2");
+  });
+  draw();
+
+  const s = document.createElement("script"); s.src = "../common/mock.js"; document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

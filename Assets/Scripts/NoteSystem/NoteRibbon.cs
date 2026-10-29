@@ -146,8 +146,12 @@ namespace NoteSystem
         {
             if (currentNoteChoosePanel != null || siblingsRibbons.Any(_r => _r.isChoosePanelOpen))
             {
+                Diagnostics.Logs.GameLog.Info("note", "note.panel.refused", "type", noteType,
+                    "reason", currentNoteChoosePanel != null ? "already-open" : "sibling-open");
                 return;
             }
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("note", "note.panel.open", "type", noteType,
+                "seat", card != null && card.characterInfo != null ? (object)card.characterInfo.ownerClientId.Value : null));
             
             currentNoteChoosePanel = Instantiate(noteChoosePanelPrefab, noteChoosePanelCanvas.transform);
             currentNoteChoosePanel.transform.SetSiblingIndex(0);

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les sons de la bougie du vote (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+</style>
+</head>
+<body data-subject="bougie-sons">
+
+<header class="page">
+  <h1>Les sons de la bougie du vote (tour 1)</h1>
+  <p><b>Aujourd'hui :</b> la bougie s'allume au début du vote et s'éteint à la fin avec deux sons provisoires que
+     j'avais fabriqués de toutes pièces (A0 et B0). On les remplace par de vrais sons.</p>
+  <p><b>La scène :</b> le vote commence, la bougie s'allume sur la table devant toi ; quand tout le monde a voté ou
+     que le temps est écoulé, elle s'éteint d'un coup. La nuit, la même bougie compte ton tour, son extinction joue
+     deux fois moins fort.</p>
+  <p><b>Sans question :</b> les sons viennent de Freesound, licences CC0 ou CC BY seulement (utilisables dans un
+     jeu vendu, les auteurs CC BY seront crédités). Chacun est coupé, nettoyé de son souffle de micro et mis au même
+     volume, entre les clics des menus et les annonces du jeu. Le bouton joue le son au volume où le jeu le jouera.</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" data-src="audio/clic.ogg">▶ Un clic de carte, pour comparer</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<section>
+  <h2>L'allumage, au début du vote</h2>
+
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play" data-src="audio/A0.ogg" data-vol="0.8">▶ Écouter</button>
+  </div>
+
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Allumette grattée (par défaut)</span></div>
+    <p class="vdesc">Un coup sec de grattoir, puis la flamme qui prend et brûle un instant.</p>
+    <button class="bs-play" data-src="audio/A1.ogg" data-vol="0.8">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/scalywhale/sounds/423811/" target="_blank">Match strike 03</a>, scalywhale, CC0</p>
+  </div>
+
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">La flamme seule</span></div>
+    <p class="vdesc">Pas de main ni d'allumette : la mèche s'embrase toute seule, un souffle de feu.</p>
+    <button class="bs-play" data-src="audio/A2.ogg" data-vol="0.8">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/brachern/sounds/398448/" target="_blank">Match Ignite (No Strike)</a>, brachern, CC0</p>
+  </div>
+
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Allumette, flamme plus vive</span></div>
+    <p class="vdesc">Grattée plus nette, la flamme s'emballe davantage avant de se calmer.</p>
+    <button class="bs-play" data-src="audio/A3.ogg" data-vol="0.8">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/dobroide/sounds/394406/" target="_blank">20170530_match.igniting</a>, dobroide, CC BY 4.0</p>
+  </div>
+
+  <div class="variant" data-id="A4">
+    <div class="vhead"><span class="vid">A4</span><span class="vname">Allumette et flamme grave</span></div>
+    <p class="vdesc">Un grattage discret, puis une flamme descendue de cinq demi-tons : plus lourde, un peu
+       surnaturelle.</p>
+    <button class="bs-play" data-src="audio/A4.ogg" data-vol="0.8">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/devilqube/sounds/370362/" target="_blank">Match Lighting Candle</a>, devilqube, CC0 ;
+       <a href="https://freesound.org/people/brachern/sounds/398448/" target="_blank">Match Ignite (No Strike)</a>, brachern, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>L'extinction, à la fin du vote</h2>
+
+  <div class="variant" data-id="B0">
+    <div class="vhead"><span class="vid">B0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play" data-src="audio/B0.ogg">▶ Écouter</button>
+  </div>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Un souffle (par défaut)</span></div>
+    <p class="vdesc">Quelqu'un souffle la bougie, court et doux.</p>
+    <button class="bs-play" data-src="audio/B1.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Reitanna/sounds/242867/" target="_blank">blowing out candle</a>, Reitanna, CC0</p>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">La flamme vacille puis meurt</span></div>
+    <p class="vdesc">Quelques battements de flamme avant le souffle final : plus long, plus dramatique.</p>
+    <button class="bs-play" data-src="audio/B2.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/DeqstersLab/sounds/826338/" target="_blank">Candle flame flickers, blown out</a>, DeqstersLab, CC0</p>
+  </div>
+
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Souffle ample</span></div>
+    <p class="vdesc">Un souffle plus large qui s'étire, comme si la pièce entière soufflait.</p>
+    <button class="bs-play" data-src="audio/B3.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/JacobEmanuelMadrid/sounds/656818/" target="_blank">Candle blow</a>, JacobEmanuelMadrid, CC0</p>
+  </div>
+
+  <div class="variant" data-id="B4">
+    <div class="vhead"><span class="vid">B4</span><span class="vname">Souffle étouffé, grave</span></div>
+    <p class="vdesc">Un souffle descendu de trois demi-tons, mêlé d'un peu du B1 : sourd, presque un étouffoir.</p>
+    <button class="bs-play" data-src="audio/B4.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Dragon20C/sounds/803296/" target="_blank">blow_4</a>, Dragon20C, CC0 ;
+       <a href="https://freesound.org/people/Reitanna/sounds/242867/" target="_blank">blowing out candle</a>, Reitanna, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume, dans la partie</h2>
+  <p>Joue l'allumage puis l'extinction que tu as aimés (A1 et B1 sinon), sur la musique du jeu.</p>
+
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-seq" data-db="-4">▶ Allumage puis extinction</button>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-seq" data-db="0">▶ Allumage puis extinction</button>
+  </div>
+  <div class="variant" data-id="V3">
+    <div class="vhead"><span class="vid">V3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-seq" data-db="4">▶ Allumage puis extinction</button>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Un son à chercher ailleurs, une autre idée ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null, musicGain = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicGain = audio().createGain(); musicNode.connect(musicGain).connect(audio().destination);
+    musicNode.start(); return 0.8;  // let the music settle before the sound
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  async function play(src, vol, at) {
+    const buf = await load(src), node = audio().createBufferSource(), g = audio().createGain();
+    node.buffer = buf; g.gain.value = vol; node.connect(g).connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration;
+  }
+  const liked = (prefix, fallback) => {
+    const v = [...document.querySelectorAll('.variant[data-id^="' + prefix + '"]')]
+      .find(v => v.querySelector(".vote .like.on"));
+    return v ? v.dataset.id : fallback;
+  };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  document.getElementById("bs-stop").onclick = stopAll;
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume();
+    const wait = await startMusic();
+    play(b.dataset.src, parseFloat(b.dataset.vol || "1"), wait);
+  });
+  document.querySelectorAll(".bs-seq").forEach(b => b.onclick = async () => {
+    audio().resume();
+    const gain = Math.pow(10, parseFloat(b.dataset.db) / 20);
+    const wait = await startMusic(), a = liked("A", "A1"), z = liked("B", "B1");
+    const d = await play("audio/" + a + ".ogg", 0.8 * gain, wait);
+    play("audio/" + z + ".ogg", gain, wait + d + 1.6);
+  });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

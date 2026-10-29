@@ -56,6 +56,7 @@ public class OutlineFeature : ScriptableRendererFeature
 
     private Material _material;
     private OutlinePass _pass;
+    private static bool s_shaderMissingWarned;
 
     public override void Create()
     {
@@ -66,6 +67,12 @@ public class OutlineFeature : ScriptableRendererFeature
         if (shader != null)
         {
             _material = CoreUtils.CreateEngineMaterial(shader);
+        }
+        else if (!s_shaderMissingWarned)
+        {
+            // Once per process (Create runs again on every renderer rebuild): no outlines will be drawn at all.
+            s_shaderMissingWarned = true;
+            Debug.LogWarning("[Outline] Shader Hidden/CdP/Outline not found: outlines are off (assign the Shader field in the Renderer).");
         }
         _pass = new OutlinePass { renderPassEvent = injectionPoint };
         _pass.ConfigureInput(ScriptableRenderPassInput.Depth);

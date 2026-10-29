@@ -16,6 +16,9 @@ namespace Avatars.Cosmetics
     public class CatAppearance : MonoBehaviour
     {
         private const string SkeletonRootName = "Root";
+        private const string SkinName = "Body";
+        // A cosmetic with at least this share of its vertices on the skeleton's root alone does not follow the body.
+        private const float LooseShare = 0.01f;
 
         [SerializeField] private CatCosmeticsCatalog catalog;
 
@@ -23,7 +26,10 @@ namespace Avatars.Cosmetics
         private readonly List<Renderer> _furRenderers = new();
         private readonly HashSet<Renderer> _hairRenderers = new();
         private bool _bound;
+        // Meshes copied to follow the body (FollowBody), this cat's own: destroyed with it.
+        private readonly List<Mesh> _rebound = new();
         private bool _blinking;
+        private bool _mouthHidden;
         private float _angry;
 
         public CatCosmeticsCatalog Catalog => catalog;
@@ -37,15 +43,30 @@ namespace Avatars.Cosmetics
             Apply(catalog != null ? catalog.DefaultLook : CatLook.Default);
         }
 
+        private void OnDestroy()
+        {
+            foreach (Mesh mesh in _rebound)
+            {
+                if (mesh != null) Destroy(mesh);
+            }
+            _rebound.Clear();
+        }
+
         /// <summary>Puts <paramref name="look"/> on the cat. Unknown ids fall back to the catalog's defaults.</summary>
         public void Apply(CatLook look)
         {
             Bind();
             if (catalog == null)
             {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.no-catalog", "name", name);
                 return;
             }
+            CatLook _requested = look;
             look = catalog.Sanitize(look);
+            if (look.Pack() != _requested.Pack())
+            {
+                Diagnostics.Logs.GameLog.Warn("avatar", "avatar.cosmetics.fallback", "name", name, "requested", _requested.Encode(), "applied", look.Encode());
+            }
             Current = look;
 
             CatCosmeticItem fur = catalog.Find(CatSlot.Fur, look.Fur);
@@ -80,7 +101,7 @@ namespace Avatars.Cosmetics
                 }
                 if (chosen != null)
                 {
-                    SetParts(chosen, true);
+                    SetParts(chosen, slot != CatSlot.Mouth || !_mouthHidden);
                 }
             }
             SetAngry(_angry);
@@ -106,6 +127,15 @@ namespace Avatars.Cosmetics
             _blinking = closed;
             SetParts(eyes, !closed);
             if (_parts.TryGetValue(eyes.blinkPart, out GameObject lids)) lids.SetActive(closed);
+        }
+
+        /// <summary>Hides / shows the worn mouth (CatTalk: the talking mouth takes its place while the cat speaks).</summary>
+        public void SetMouthHidden(bool hidden)
+        {
+            if (hidden == _mouthHidden) return;
+            _mouthHidden = hidden;
+            CatCosmeticItem mouth = catalog != null ? catalog.Find(CatSlot.Mouth, Current.Mouth) : null;
+            if (mouth != null) SetParts(mouth, !hidden);
         }
 
         /// <summary>Weight 0..1 of the eyes' "Angry" shape (the black and white eyes have one), for later use.</summary>
@@ -209,6 +239,8 @@ namespace Avatars.Cosmetics
             }
 
             // 2) The parts: skinned meshes take this skeleton, static ones hang on the same-named bone.
+            SkinnedMeshRenderer skin = FindSkin(source.transform);
+            bones.TryGetValue(SkeletonRootName, out Transform skeletonRoot);
             foreach (Renderer renderer in sourceParts)
             {
                 // A mesh with blend shapes only (no bones) imports as skinned too: it hangs on its bone like a static one.
@@ -229,6 +261,7 @@ namespace Avatars.Cosmetics
                         skinned.rootBone = root;
                     }
                     skinned.transform.SetParent(transform, false);
+                    FollowBody(skinned, skin, skeletonRoot);
                 }
                 else if (renderer.transform.parent != null && !HasRenderer(renderer.transform.parent)
                          && bones.TryGetValue(renderer.transform.parent.name, out Transform bone))
@@ -245,6 +278,125 @@ namespace Avatars.Cosmetics
             }
 
             DestroyObject(source);
+        }
+
+        // The cat's own body mesh (not the cosmetics model's).
+        private SkinnedMeshRenderer FindSkin(Transform source)
+        {
+            foreach (SkinnedMeshRenderer r in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (r.name == SkinName && !r.transform.IsChildOf(source)) return r;
+            }
+            return null;
+        }
+
+        // Some cosmetics were exported with vertices on the skeleton's root alone (the galactic bow: 71 % of them): they
+        // went along with the cat but not with its body (leaning, the chained crush, Poyo 2026-10-22). Those vertices take
+        // the bones of the nearest point of the cat's skin, and the mesh is bound again on the pose it is drawn in now, so
+        // nothing moves on the spot. A copy of the mesh, this cat's own.
+        private void FollowBody(SkinnedMeshRenderer part, SkinnedMeshRenderer skin, Transform skeletonRoot)
+        {
+            Mesh mesh = part.sharedMesh;
+            if (mesh == null || skin == null || skin.sharedMesh == null || skeletonRoot == null || mesh.blendShapeCount > 0)
+            {
+                return;
+            }
+            Transform[] bones = part.bones;
+            int root = System.Array.IndexOf(bones, skeletonRoot);
+            BoneWeight[] weights = mesh.boneWeights;
+            if (root < 0 || weights.Length != mesh.vertexCount)
+            {
+                return;
+            }
+            var loose = new List<int>();
+            for (int i = 0; i < weights.Length; i++)
+            {
+                if (weights[i].boneIndex0 == root && weights[i].weight0 > 0.5f) loose.Add(i);
+            }
+            if (loose.Count == 0 || loose.Count < LooseShare * weights.Length)
+            {
+                return;
+            }
+
+            // Both meshes as drawn now. Baked without scale: the skeleton's own scale is already in the vertices; only
+            // the renderer's place and turn are left to apply.
+            var baked = new Mesh();
+            part.BakeMesh(baked, false);
+            Vector3[] partVertices = baked.vertices;
+            Vector3[] partNormals = baked.normals;
+            Vector4[] partTangents = baked.tangents;
+            skin.BakeMesh(baked, false);
+            Vector3[] skinVertices = baked.vertices;
+            if (Application.isPlaying) Destroy(baked); else DestroyImmediate(baked);
+            BoneWeight[] skinWeights = skin.sharedMesh.boneWeights;
+            Transform[] skinBones = skin.bones;
+            Transform pt = part.transform, st = skin.transform;
+            var skinWorld = new Vector3[skinVertices.Length];
+            for (int j = 0; j < skinVertices.Length; j++) skinWorld[j] = st.position + st.rotation * skinVertices[j];
+            var boneIndex = new Dictionary<Transform, int>();
+            for (int b = 0; b < bones.Length; b++)
+            {
+                if (bones[b] != null && !boneIndex.ContainsKey(bones[b])) boneIndex[bones[b]] = b;
+            }
+
+            bool Map(int skinBone, out int partBone)
+            {
+                partBone = 0;
+                return skinBone >= 0 && skinBone < skinBones.Length && skinBones[skinBone] != null
+                    && boneIndex.TryGetValue(skinBones[skinBone], out partBone);
+            }
+
+            int moved = 0;
+            foreach (int i in loose)
+            {
+                Vector3 at = pt.position + pt.rotation * partVertices[i];
+                int nearest = -1;
+                float best = float.MaxValue;
+                for (int j = 0; j < skinWorld.Length && j < skinWeights.Length; j++)
+                {
+                    float d = (skinWorld[j] - at).sqrMagnitude;
+                    if (d < best) { best = d; nearest = j; }
+                }
+                if (nearest < 0) continue;
+                BoneWeight w = skinWeights[nearest];
+                if (!Map(w.boneIndex0, out int b0) || !Map(w.boneIndex1, out int b1) || !Map(w.boneIndex2, out int b2)
+                    || !Map(w.boneIndex3, out int b3))
+                {
+                    continue;
+                }
+                w.boneIndex0 = b0; w.boneIndex1 = b1; w.boneIndex2 = b2; w.boneIndex3 = b3;
+                weights[i] = w;
+                moved++;
+            }
+            if (moved == 0)
+            {
+                return;
+            }
+
+            // Bound on the pose drawn now: each bone's bind is where it stands, the vertices where they are drawn.
+            Vector3 scale = pt.lossyScale;
+            var vertices = new Vector3[partVertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                vertices[i] = new Vector3(partVertices[i].x / scale.x, partVertices[i].y / scale.y, partVertices[i].z / scale.z);
+            }
+            Matrix4x4[] old = mesh.bindposes;
+            var bindposes = new Matrix4x4[bones.Length];
+            for (int b = 0; b < bones.Length; b++)
+            {
+                bindposes[b] = bones[b] != null ? bones[b].worldToLocalMatrix * pt.localToWorldMatrix
+                    : (b < old.Length ? old[b] : Matrix4x4.identity);
+            }
+            Mesh copy = Instantiate(mesh);
+            copy.name = mesh.name + " (follows the body)";
+            copy.vertices = vertices;
+            if (partNormals.Length == vertices.Length) copy.normals = partNormals;
+            if (partTangents.Length == vertices.Length) copy.tangents = partTangents;
+            copy.boneWeights = weights;
+            copy.bindposes = bindposes;
+            copy.RecalculateBounds();
+            part.sharedMesh = copy;
+            _rebound.Add(copy);
         }
 
         // Gone at once, not at the end of the frame: the cat's other components (idle motion, head look) scan its

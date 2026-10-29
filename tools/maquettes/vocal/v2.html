@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T22, le vocal : la bouche de celui qui parle (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .vc-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .vc-fx { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; }
+  .vc-moments { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .vc-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vc-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .vc-moments button.on { border-color: var(--accent); color: var(--accent); }
+
+  /* a mouth drawn on a face: centred on its anchor, scaled by the voice */
+  .vc-mouth { position: absolute; pointer-events: none; transform: translate(-50%, -50%) scale(0); }
+  .vc-mouth--oval { background: #050404; border-radius: 50%; }
+  .vc-mouth--game { border-radius: 50% 50% 46% 46% / 40% 40% 60% 60%; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 70%, #6b1d1c 0%, #3a0d0e 55%, #170506 100%); box-shadow: 0 0 0 3px #1a0c08; }
+  .vc-mouth--game::before, .vc-mouth--game::after { content: ""; position: absolute; top: -1px; width: 22%; height: 34%;
+    background: #f1e6d6; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .vc-mouth--game::before { left: 20%; } .vc-mouth--game::after { right: 20%; }
+  .vc-head { position: absolute; inset: 0; background: url(img/pov.webp) 0 0 / 1600px 900px; pointer-events: none; }
+
+  /* close-up: the cat of the menu, layered (personnalisation) */
+  .vc-close { position: absolute; left: 50%; top: 40px; width: 660px; height: 862px; transform: translateX(-50%); }
+  .vc-close img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .vc-dark { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, #3a332e 0%, #1c1917 60%, #0e0c0b 100%); }
+</style>
+</head>
+<body data-subject="vocal">
+
+<header class="page">
+  <h1>Le vocal : qui parle (tour 2)</h1>
+  <p>Déjà choisi au tour 1 : un petit clic quand ton micro s'ouvre (B3), la ligne « Micro » qui défile (C1), le
+     curseur « Voix » (D1). Le vocal est dans Dev. Reste à savoir qui parle : au tour 1 tu n'avais choisi aucune
+     lueur, et Wouh a proposé depuis la bouche de Peak (fil T22).</p>
+  <p><b>Référence.</b> Dans <a href="https://store.steampowered.com/app/3527290/PEAK/">Peak</a>, quelle que soit la
+     bouche du personnage, une bouche toute noire la remplace quand il parle et grossit, rétrécit sans arrêt au
+     rythme de sa voix (la capture de Wouh : la bouche noire sous le museau du scout bleu). Même idée dans
+     <a href="https://store.steampowered.com/app/2881650/Content_Warning/">Content Warning</a> (même studio) et
+     <a href="https://store.steampowered.com/app/1966720/Lethal_Company/">Lethal Company</a>, où l'on repère la voix
+     sur le personnage et non sur l'interface.</p>
+  <img class="ref" src="img/peak.jpg" alt="Peak : la bouche noire du scout qui parle" style="max-width:280px">
+  <p><b>Aujourd'hui.</b> On entend la voix (Steam Voice, routée jour et nuit), rien ne montre de qui elle vient. Les
+     chats n'ont pas de bouche par défaut ; certains joueurs en mettent une (Bouche de mage, Sourire galactique…).</p>
+  <p><b>La scène.</b> Le jour, tu regardes la table (vraie capture de la vue relevée, T23). Le chat noir en face
+     dit qu'il a vu quelqu'un se lever cette nuit, marque une pause, insiste ; le chat roux à droite lui répond et
+     ils parlent un instant en même temps. Le bouton « Son » fait un babil qui suit les mêmes voix, pour juger le
+     rythme.</p>
+  <p><b>Sans question</b> : ton propre chat ouvre la bouche aussi, pour les autres (tu ne le vois pas, le clic du
+     tour 1 te suffit) ; la bouche est un petit disque posé sur le museau, grossi par le volume reçu, invisible au
+     repos, et elle marche avec le micro toujours ouvert comme avec V.</p>
+</header>
+
+<nav class="vc-moments"><div>
+  <button data-at="300">1. Silence</button>
+  <button data-at="1150">2. Il parle</button>
+  <button data-at="1850">3. Entre deux mots</button>
+  <button data-at="2600">4. Il parle fort</button>
+  <button data-at="3800">5. Le roux répond</button>
+  <button data-at="4550">6. Les deux</button>
+  <button data-at="6200">7. Silence</button>
+  <button data-loop>▶ En boucle</button>
+  <button data-slow>Ralenti</button>
+  <button data-sound>Son</button>
+</div></nav>
+
+<section>
+  <h2>La bouche</h2>
+  <p>Quelle bouche s'ouvre quand il parle. Même voix sur les trois cadres.</p>
+
+  <div class="variant" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Un ovale noir, comme Peak (par défaut)</span></div>
+    <p class="vdesc">Ce que Wouh décrit : un trou noir sous le museau, rien d'autre. Se lit de loin, même sur un chat
+       noir grâce au museau clair.</p>
+    <div class="screen"><div class="stage vc-pov" data-shape="oval" data-rhythm="volume"><img class="vc-bg" src="img/pov.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Une gueule de chat</span></div>
+    <p class="vdesc">Même mouvement, mais une bouche ouverte rouge sombre avec deux crocs, dans le goût de la Bouche de
+       mage : plus « chat en peluche », moins nette de loin.</p>
+    <div class="screen"><div class="stage vc-pov" data-shape="game" data-rhythm="volume"><img class="vc-bg" src="img/pov.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="W3">
+    <div class="vhead"><span class="vid">W3</span><span class="vname">L'ovale noir, et la tête qui bouge</span></div>
+    <p class="vdesc">W1, plus un petit balancement de la tête quand il parle fort : on le repère même du coin de
+       l'œil, sans rien ajouter à l'écran.</p>
+    <div class="screen"><div class="stage vc-pov" data-shape="oval" data-rhythm="volume" data-bob="1"><img class="vc-bg" src="img/pov.webp" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le rythme</h2>
+  <p>Comment elle bouge. Regarde surtout le moment 3 (pause entre deux mots) et le moment 4 (il parle fort).</p>
+
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Elle suit la voix (par défaut)</span></div>
+    <p class="vdesc">Grande quand il parle fort, petite quand il murmure, fermée entre deux mots. On voit qui parle
+       et comment.</p>
+    <div class="screen"><div class="stage vc-pov" data-shape="oval" data-rhythm="volume"><img class="vc-bg" src="img/pov.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Elle s'agite sans arrêt</span></div>
+    <p class="vdesc">« Frénétique », comme dit Wouh : tant que sa voix arrive, la bouche grossit et rétrécit vite, au
+       même rythme qu'il parle fort ou bas, pauses comprises.</p>
+    <div class="screen"><div class="stage vc-pov" data-shape="oval" data-rhythm="frantic"><img class="vc-bg" src="img/pov.webp" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Un chat qui a déjà une bouche</h2>
+  <p>Vu de près : un joueur a mis la Bouche de mage dans la personnalisation. Il parle.</p>
+
+  <div class="variant" data-id="M1">
+    <div class="vhead"><span class="vid">M1</span><span class="vname">La noire remplace la sienne (par défaut)</span></div>
+    <p class="vdesc">Comme Peak : sa bouche disparaît le temps qu'il parle, la noire prend sa place, puis la sienne
+       revient.</p>
+    <div class="screen"><div class="stage vc-closeup" data-keep="0"><div class="vc-dark"></div></div></div>
+  </div>
+
+  <div class="variant" data-id="M2">
+    <div class="vhead"><span class="vid">M2</span><span class="vname">La noire s'ouvre dans la sienne</span></div>
+    <p class="vdesc">Sa bouche reste, l'ovale noir s'ouvre par-dessus en son milieu : la personnalisation se voit
+       toujours.</p>
+    <div class="screen"><div class="stage vc-closeup" data-keep="1"><div class="vc-dark"></div></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quand on ne voit pas son chat</h2>
+  <p>Au vote, la vue baisse sur les cartes et coupe les têtes ; la nuit, vue de dessus, les chats ne se voient pas.
+     Ici c'est Autoplayclient1, en face, qui parle pendant le vote.</p>
+
+  <div class="variant" data-id="X1">
+    <div class="vhead"><span class="vid">X1</span><span class="vname">Rien, la bouche suffit (par défaut)</span></div>
+    <p class="vdesc">Wouh : « je pense que ça suffit ». On relève la tête pour voir qui parle ; la nuit, on reconnaît
+       ses complices à la voix.</p>
+    <div class="screen"><div class="stage vc-vote" data-card="0"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="X2">
+    <div class="vhead"><span class="vid">X2</span><span class="vname">Sa carte s'éclaire aussi</span></div>
+    <p class="vdesc">La lueur du tour 1 (A1) en plus de la bouche, seulement là où les chats ne se voient pas : au vote
+       et la nuit.</p>
+    <div class="screen"><div class="stage vc-vote" data-card="1"><img class="vc-bg" src="img/jour.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (une autre forme de bouche, une autre idée vue dans un jeu) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const LOOP = 7000;
+  // who talks when (ms): the black cat in front, then the red one on the right answers, a short overlap
+  const TALK = {
+    front: [[600, 3250, 1], [4300, 5250, 2]],
+    right: [[3450, 4850, 3]],
+  };
+  // mouth anchors on the pov capture (stage pixels), full-open size, tilt of the face
+  const FACES = {
+    front: { x: 816, y: 354, w: 56, h: 42, rot: 0, head: { cx: 820, cy: 470, clip: "ellipse(200px 230px at 820px 250px)" } },
+    right: { x: 1424, y: 462, w: 52, h: 38, rot: -12 },
+  };
+
+  // a voice level, deterministic for ?at= captures: syllables, a pause between two words, a loud stretch
+  function level(who, t) {
+    for (const [a, b, seed] of TALK[who]) {
+      if (t < a || t > b) continue;
+      const fade = Math.min(1, (t - a) / 90, (b - t) / 140);
+      if (who === "front" && seed === 1 && t > 1700 && t < 2050) return 0;    // between two words
+      const loud = who === "front" && t > 2250 && t < 2950 ? 1 : 0.62;
+      const w = Math.abs(Math.sin(t / 88 + seed) * Math.sin(t / 211 + seed * 2));
+      return fade * loud * (w < 0.12 ? 0 : 0.35 + 0.65 * w);
+    }
+    return 0;
+  }
+  const transmitting = (who, t) => TALK[who].some(([a, b]) => t >= a && t <= b);
+  function mouthScale(who, t, rhythm) {
+    if (rhythm === "frantic") {
+      if (!transmitting(who, t)) return 0;
+      return 0.35 + 0.65 * Math.abs(Math.sin(t / 42 + (who === "right" ? 1 : 0)) * Math.sin(t / 67 + 2));
+    }
+    return level(who, t);
+  }
+
+  function mouth(stage, shape, f) {
+    const m = document.createElement("div");
+    m.className = "vc-mouth vc-mouth--" + shape;
+    m.style.left = f.x + "px"; m.style.top = f.y + "px";
+    m.style.width = f.w + "px"; m.style.height = f.h + "px";
+    stage.appendChild(m);
+    return m;
+  }
+
+  const povs = [...document.querySelectorAll(".vc-pov")].map(stage => {
+    const shape = stage.dataset.shape, rhythm = stage.dataset.rhythm, bob = !!stage.dataset.bob;
+    let head = null;
+    if (bob) {   // the front cat's head, cut out of the capture, swings around its neck
+      head = document.createElement("div"); head.className = "vc-head";
+      head.style.clipPath = FACES.front.head.clip;
+      head.style.transformOrigin = FACES.front.head.cx + "px " + FACES.front.head.cy + "px";
+      stage.appendChild(head);
+    }
+    const holder = bob ? head : stage;
+    const ms = { front: mouth(holder, shape, FACES.front), right: mouth(stage, shape, FACES.right) };
+    return { rhythm, head, ms };
+  });
+
+  // close-up: the menu cat (Noir et blanc, Cape ardente, Yeux de mage, Bouche de mage)
+  const L = "../personnalisation/img/";
+  const closes = [...document.querySelectorAll(".vc-closeup")].map(stage => {
+    const keep = stage.dataset.keep === "1";
+    const c = document.createElement("div"); c.className = "vc-close";
+    c.innerHTML = ["body_bw", "outfit_fiery", "eyes_mage", "mouth_mage"].map(n => `<img src="${L}${n}.webp" alt="">`).join("");
+    stage.appendChild(c);
+    // the layers are 440 x 575, shown at x1.5; the mage mouth's box in them is [80, 300, 226, 380]
+    const k = 660 / 440;
+    const m = mouth(c, "oval", { x: 153 * k, y: 344 * k, w: 70, h: 52 });
+    return { keep, own: c.querySelectorAll("img")[3], m };
+  });
+
+  // vote view: the speaker's card (corners measured on the capture, as in tour 1)
+  const CARD = [[820, 372], [968, 372], [994, 530], [808, 530]];
+  const votes = [...document.querySelectorAll(".vc-vote")].map(stage => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "vc-fx"); svg.setAttribute("viewBox", "0 0 1600 900");
+    const id = "g" + Math.random().toString(36).slice(2);
+    svg.innerHTML = `<defs><filter id="${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+      <polygon class="halo" fill="none" stroke="rgb(255,196,110)" stroke-width="16" filter="url(#${id})"/>
+      <polygon class="edge" fill="none" stroke="rgb(255,222,160)" stroke-width="3"/>`;
+    svg.querySelectorAll("polygon").forEach(p => p.setAttribute("points", CARD.map(c => c.join(",")).join(" ")));
+    stage.appendChild(svg);
+    return { on: stage.dataset.card === "1", halo: svg.querySelector(".halo"), edge: svg.querySelector(".edge") };
+  });
+
+  function place(m, s, rot) { m.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${s.toFixed(3)})`; }
+
+  function show(t) {
+    for (const P of povs) {
+      for (const who of ["front", "right"]) place(P.ms[who], mouthScale(who, t, P.rhythm), FACES[who].rot);
+      if (P.head) {
+        const v = level("front", t);
+        P.head.style.transform = `rotate(${(v * 2.2 * Math.sin(t / 150)).toFixed(2)}deg) translateY(${(-v * 4).toFixed(1)}px)`;
+      }
+    }
+    for (const C of closes) {
+      const s = level("front", t);
+      place(C.m, s, 0);
+      C.own.style.visibility = C.keep || !transmitting("front", t) ? "visible" : "hidden";
+    }
+    for (const V of votes) {
+      const v = V.on ? level("front", t) : 0;
+      V.halo.style.opacity = v; V.edge.style.opacity = Math.min(1, v * 1.4);
+    }
+    babble(t);
+    document.querySelectorAll(".vc-moments button[data-at]").forEach(b => b.classList.toggle("on", !looping && +b.dataset.at === t));
+  }
+
+  // "Son": a babble per cat that follows the same levels (Web Audio, starts on the tap)
+  let audio = null;
+  function babble(t) {
+    if (!audio) return;
+    const now = audio.ctx.currentTime;
+    for (const who of ["front", "right"]) {
+      const v = looping ? level(who, t) : 0, V = audio.voices[who];
+      V.gain.gain.setTargetAtTime(v * 0.18, now, 0.015);
+      V.osc.frequency.setTargetAtTime(V.base * (1 + 0.25 * Math.sin(t / 130 + V.base)), now, 0.02);
+    }
+  }
+  function startSound() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const voices = {};
+    for (const [who, base] of [["front", 150], ["right", 215]]) {
+      const osc = ctx.createOscillator(), filt = ctx.createBiquadFilter(), gain = ctx.createGain();
+      osc.type = "sawtooth"; osc.frequency.value = base;
+      filt.type = "lowpass"; filt.frequency.value = 1100; filt.Q.value = 4;
+      gain.gain.value = 0;
+      osc.connect(filt).connect(gain).connect(ctx.destination); osc.start();
+      voices[who] = { osc, gain, base };
+    }
+    audio = { ctx, voices };
+  }
+
+  let looping = false, slow = 1, start = 0, last = 0;
+  function tick(now) {
+    if (!looping) return;
+    last = ((now - start) * slow) % LOOP;
+    show(last);
+    requestAnimationFrame(tick);
+  }
+  const at = new URLSearchParams(location.search).get("at");
+  const loopBtn = document.querySelector(".vc-moments button[data-loop]");
+  const slowBtn = document.querySelector(".vc-moments button[data-slow]");
+  const soundBtn = document.querySelector(".vc-moments button[data-sound]");
+  if (at !== null) { show(+at); return; }
+  document.querySelectorAll(".vc-moments button[data-at]").forEach(b => b.onclick = () => {
+    looping = false; loopBtn.classList.remove("on"); show(+b.dataset.at);
+  });
+  loopBtn.onclick = () => {
+    looping = true; start = performance.now() - last / slow; loopBtn.classList.add("on"); requestAnimationFrame(tick);
+  };
+  slowBtn.onclick = () => {
+    const now = performance.now();
+    slow = slow === 1 ? 0.25 : 1; start = now - last / slow;
+    slowBtn.classList.toggle("on", slow !== 1);
+  };
+  soundBtn.onclick = () => {
+    if (!audio) { startSound(); soundBtn.classList.add("on"); if (!looping) loopBtn.click(); return; }
+    if (audio.ctx.state === "running") { audio.ctx.suspend(); soundBtn.classList.remove("on"); }
+    else { audio.ctx.resume(); soundBtn.classList.add("on"); }
+  };
+  loopBtn.click();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

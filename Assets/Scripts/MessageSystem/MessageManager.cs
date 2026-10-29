@@ -98,12 +98,14 @@ namespace MessageSystem
         [Rpc(SendTo.Server)]
         public void SendMessageRpc(ulong _sender, FixedString512Bytes _message)
         {
+            Diagnostics.Logs.GameLog.Info("message", "message.delivered", "from", _sender, "text", _message.ToString(), "day", Loop.currentDay);
             messagesToReveal.Add(new MessageInfo(_sender, _message, Loop.currentDay));
         }
 
         public void RevealAllMessage()
         {
             Assert.IsTrue(IsServer, $"{nameof(RevealAllMessage)} can only be called on the server.");
+            Diagnostics.Logs.GameLog.Info("message", "message.reveal", "count", messagesToReveal.Count);
             foreach (var _messageInfo in messagesToReveal)
             {
                 revealedMessages.Add(_messageInfo);

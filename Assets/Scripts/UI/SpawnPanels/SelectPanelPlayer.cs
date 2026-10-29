@@ -40,6 +40,7 @@ namespace UI.SpawnPanels
 
         private void OnPlayerButtonClicked(ulong _playerClicked)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.selectplayer.pick", "player", _playerClicked);
             onPlayerButtonClicked?.Invoke(_playerClicked);
         }
 
@@ -50,4 +51,4 @@ namespace UI.SpawnPanels
             return _panel;
         }
     }
-}
+}

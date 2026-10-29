@@ -86,6 +86,12 @@ namespace Presentation
                 Renderer _renderer = _seatedFloor.GetComponent<Renderer>();
                 if (_renderer == null || _renderer.sharedMaterial == null || !_renderer.sharedMaterial.HasProperty(FadeStartId))
                 {
+                    if (!_fadeMissingWarned)
+                    {
+                        _fadeMissingWarned = true;
+                        Diagnostics.Logs.GameLog.Warn("ui", "ui.seated.floor-fade-missing", "reason",
+                            _renderer == null ? "no-renderer" : _renderer.sharedMaterial == null ? "no-material" : "no-fade-property");
+                    }
                     return;
                 }
                 _floorMaterial = _renderer.material;
@@ -96,6 +102,9 @@ namespace Presentation
             _floorMaterial.SetFloat(FadeStartId, _start);
             _floorMaterial.SetFloat(FadeEndId, _start + _nightFadeWidth);
         }
+
+        // Playtest log only: the floor material without its fade property is warned once.
+        private bool _fadeMissingWarned;
 
         private void OnDestroy()
         {
@@ -114,6 +123,7 @@ namespace Presentation
             {
                 return;
             }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.seated.black", "on", _black);
             _isBlack = _black;
             foreach (Renderer _renderer in _room)
             {

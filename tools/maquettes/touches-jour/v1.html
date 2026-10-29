@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le jour assis : moins de touches à l'écran, et comprendre comment voter (T23, retours de Wouh)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .tj-world { position: absolute; inset: 0; transform-origin: 800px 450px; }
+  .tj-bg { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  .tj-sil { position: absolute; inset: 0; width: 1600px; height: 900px; pointer-events: none; -webkit-mask-size: 1600px 900px; mask-size: 1600px 900px; }
+  .tj-glow { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 0 2px #f6e7c1) drop-shadow(0 0 2px #f6e7c1) drop-shadow(0 0 5px rgba(246,231,193,.8)); }
+  .tj-card { position: absolute; display: block; border-radius: 6px; box-shadow: 0 6px 14px rgba(0,0,0,.6); transition: transform .25s, filter .18s; z-index: 4; }
+  .tj-card.lit { filter: brightness(1.45); }
+  .tj-card.lift { transform: translateY(-18px); }
+  .tj-row2 { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; align-items: flex-end; gap: 22px; z-index: 3; transform: scale(.75); transform-origin: 50% 100%; }
+  .tj-world, .tj-aim, .tj-voted { transition: opacity .18s; }
+  .tj-aim, .tj-voted { position: absolute; inset: 0; }
+  .tj-grp { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tj-grp .tj-logo { width: 34px; height: 34px; }
+  .tj-grp .tj-ports { display: flex; gap: 4px; }
+  .tj-grp .tj-ports img { width: 50px; height: 66px; object-fit: cover; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+  .tj-count { width: 96px; box-shadow: 0 3px 8px rgba(0,0,0,.7); }
+  .tj-timer { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font: 52px system-ui, sans-serif; color: #fff; z-index: 5; }
+  .tj-square { position: absolute; left: 12px; top: 12px; width: 52px; height: 52px; background: #8d8d8d; z-index: 5; }
+  .tj-reticle { position: absolute; left: 795px; top: 445px; width: 10px; height: 10px; background: #fff; box-shadow: 0 0 3px #000; z-index: 6; }
+
+  /* the key hints: the shipped look (touches v2: small drawing + key, no word, half lit) */
+  .tj-keys { position: absolute; display: flex; gap: 10px; opacity: .5; z-index: 5; }
+  .tj-keys.col { flex-direction: column; }
+  .tj-keys .tj-gap { width: 26px; height: 56px; }
+  .tj-h { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 58px; }
+  .tj-h svg { width: 44px; height: 36px; filter: drop-shadow(0 1px 3px #000); }
+  .tj-h span { font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; white-space: nowrap; }
+  .tj-h.new span { color: #fff3da; }
+  .tj-corner { position: absolute; left: 14px; top: 12px; display: flex; gap: 14px; opacity: .5; z-index: 5; }
+
+  /* how to vote */
+  .tj-under { position: absolute; left: 0; right: 0; top: 472px; text-align: center; font: 26px Garamond, serif; color: #fff3da; text-shadow: 0 1px 4px #000, 0 0 2px #000; z-index: 6; opacity: 0; transition: opacity .2s; }
+  .tj-line { position: absolute; left: 0; right: 0; top: 80px; text-align: center; font: 28px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 4px #000; z-index: 5; opacity: 0; transition: opacity .3s; }
+  .tj-band { position: absolute; height: 30px; z-index: 5; background: rgba(40,30,22,.92); color: #e7d3a8; font: 17px Garamond, serif; display: flex; align-items: center; justify-content: center; border-radius: 0 0 6px 6px; }
+
+  .tj-moments { position: sticky; top: 0; z-index: 7; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .tj-moments div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tj-moments button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .tj-moments button.on { border-color: var(--accent); color: var(--accent); }
+  .tj-moments span { color: var(--soft); font-size: 13px; margin-left: 6px; }
+</style>
+</head>
+<body data-subject="touches-jour">
+
+<header class="page">
+  <h1>Le jour assis : moins de touches, et voter sans chercher (T23, tour 1)</h1>
+  <p><b>D'où ça vient.</b> Wouh, après la partie du 23/10 : « il y a trop d'icônes en bas », le carré en haut à gauche pourrait
+     dire lui-même qu'Échap l'ouvre, Tab et T font presque la même chose, et une colonne à gauche prendrait moins de place.
+     Puis « j'ai pas compris comment voter ». Les journaux de cette partie le confirment : <b>personne n'a voté en trois jours</b>,
+     à trois joueurs.</p>
+  <p><b>Ailleurs.</b> Les jeux à la première personne mettent peu de touches à l'écran et disent l'action au moment où on
+     vise : Phasmophobia et Lethal Company écrivent « [E] Ramasser » sous le viseur seulement quand on vise l'objet, les
+     touches générales restent dans un menu. Among Us met ses boutons d'action dans un coin, un par action possible.</p>
+  <p><b>Aujourd'hui.</b> En bas à gauche, huit dessins à la file : 1 (les joueurs), 2 (les rôles), T (la tablette sur le
+     tableau), P (passer le vote), Tab (la tablette là où on l'a laissée), E (émotes), Échap (menu), F8 (signaler un bug),
+     et V quand on peut parler. Le carré gris en haut à gauche ouvre le même menu qu'Échap. Pour voter, il faut viser un chat
+     avec le point blanc du milieu et cliquer : rien ne le dit.</p>
+  <p><b>La scène.</b> Le jour 1, il reste 281 secondes. Tu es assis face à Brandon, Uptn et Kiwi, personne n'a encore voté,
+     tu veux voter contre Uptn.</p>
+  <p>Sans question : le journal des lettres (la sacoche) et la fiche d'un rôle libèrent maintenant la souris et figent la vue
+     tant qu'ils sont ouverts, Échap les ferme (point 1 de Wouh, déjà codé).</p>
+</header>
+
+<section>
+  <h2>1. Le menu : le carré ou la touche Échap</h2>
+  <p>Le reste de la rangée ne bouge pas.</p>
+  <div class="variant" data-id="A0">
+    <div class="vhead"><span class="vid">A0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un carré gris en haut à gauche, et Échap dans la rangée du bas.</p>
+    <div class="screen"><div class="stage tj-scene" data-menu="square"></div></div>
+  </div>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Le carré devient Échap (par défaut)</span></div>
+    <p class="vdesc">Le carré gris laisse place au dessin du menu avec « Échap » dessous ; Échap quitte la rangée. On le clique encore.</p>
+    <div class="screen"><div class="stage tj-scene" data-menu="corner"></div></div>
+  </div>
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Échap et F8 en haut à gauche</span></div>
+    <p class="vdesc">Ce qui ne sert pas à jouer (menu, signaler un bug) part en haut à gauche ; la rangée du bas ne garde que le jeu.</p>
+    <div class="screen"><div class="stage tj-scene" data-menu="corner+f8"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Tab et T</h2>
+  <p>La tablette a deux écrans : le tableau (qui est qui) et le chat.</p>
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Tab ouvre la tablette sur le dernier écran regardé, T l'ouvre sur le tableau. Deux dessins de tablette.</p>
+    <div class="screen"><div class="stage tj-scene" data-tab="both"></div></div>
+  </div>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Tab seulement</span></div>
+    <p class="vdesc">T disparaît. Tab ouvre la tablette, les flèches passent du tableau au chat.</p>
+    <div class="screen"><div class="stage tj-scene" data-tab="tab"></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">T pour le tableau, Tab pour le chat (par défaut)</span></div>
+    <p class="vdesc">L'idée de Wouh : chaque touche ouvre un écran précis, et chacune a son dessin (la grille, la bulle).</p>
+    <div class="screen"><div class="stage tj-scene" data-tab="split"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Où vont les touches</h2>
+  <p>Avec les touches d'aujourd'hui, pour juger la place seule.</p>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">À la file en bas à gauche, jusqu'au bord des portraits.</p>
+    <div class="screen"><div class="stage tj-scene" data-place="row"></div></div>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Une colonne à gauche</span></div>
+    <p class="vdesc">L'idée de Wouh : l'une sous l'autre le long du bord gauche ; le bas de l'écran ne garde que les cartes.</p>
+    <div class="screen"><div class="stage tj-scene" data-place="col"></div></div>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Deux colonnes, le vote d'abord (par défaut)</span></div>
+    <p class="vdesc">À gauche aussi, mais en deux petits groupes : ce qui sert au vote (1, 2, P) en haut, le reste en bas.</p>
+    <div class="screen"><div class="stage tj-scene" data-place="groups"></div></div>
+  </div>
+</section>
+
+<nav class="tj-moments"><div>
+  <button data-at="0">1. Le jour commence</button>
+  <button data-at="1800">2. Tu vises Uptn</button>
+  <button data-at="4400">3. Tu cliques</button>
+  <button data-loop>▶ En boucle</button>
+  <button data-slow>Ralenti</button>
+  <span>Pour la section 4. La vue tourne vers Uptn, le point blanc reste au milieu.</span>
+</div></nav>
+
+<section>
+  <h2>4. Comprendre qu'on vote en cliquant un chat</h2>
+  <p>Viser un chat l'éclaire déjà (H2) ; cliquer vote, ta carte d'Uptn reste levée et il garde un contour (M2, M3).</p>
+  <div class="variant" data-id="D0">
+    <div class="vhead"><span class="vid">D0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Rien d'autre que la lumière sur le chat visé.</p>
+    <div class="screen"><div class="stage tj-scene tj-vote" data-help="none"></div></div>
+  </div>
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">Sous le point, quand on vise (par défaut)</span></div>
+    <p class="vdesc">« Clic : voter » apparaît sous le point blanc tant qu'il est sur un chat, comme « [E] Ramasser » ailleurs. Après ton vote, sur un autre chat : « Clic : changer ton vote ».</p>
+    <div class="screen"><div class="stage tj-scene tj-vote" data-help="under"></div></div>
+  </div>
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Une touche de plus : la souris</span></div>
+    <p class="vdesc">Un dessin de souris et « Clic » en tête des touches, tant que tu n'as pas voté (comme P).</p>
+    <div class="screen"><div class="stage tj-scene tj-vote" data-help="key"></div></div>
+  </div>
+  <div class="variant" data-id="D3">
+    <div class="vhead"><span class="vid">D3</span><span class="vname">Une ligne sous le compte à rebours</span></div>
+    <p class="vdesc">« Vise un chat et clique pour voter » sous le temps, du début du jour jusqu'à ton vote.</p>
+    <div class="screen"><div class="stage tj-scene tj-vote" data-help="line"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque ? (par exemple une touche à retirer, ou une autre place)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const IMG = "../jour-pov/img/";
+  const VIEW = "vide20_y0", CATS = [3, 4, 5], UPTN = 4;
+  const LOOP = 7000, PAN0 = 900, PAN1 = 1700, CLICK = 4400;
+
+  // ---------------------------------------------------------------- drawings (44 x 36, cream line)
+  const C = 'fill="none" stroke="#eadcbf"';
+  const ICON = {
+    one: '<rect x="5" y="9" width="12" height="18" rx="1.5" ' + C + ' stroke-width="2.2"/><rect x="17" y="9" width="12" height="18" rx="1.5" ' + C + ' stroke-width="2.2"/><rect x="29" y="9" width="12" height="18" rx="1.5" ' + C + ' stroke-width="2.2"/>',
+    two: '<rect x="5" y="17" width="8" height="11" ' + C + ' stroke-width="2"/><rect x="15" y="17" width="8" height="11" ' + C + ' stroke-width="2"/><rect x="25" y="17" width="8" height="11" ' + C + ' stroke-width="2"/><circle cx="19" cy="9" r="4" ' + C + ' stroke-width="2"/><rect x="35" y="17" width="7" height="11" fill="rgba(234,220,191,.4)"/>',
+    t: '<rect x="6" y="5" width="34" height="26" rx="2" ' + C + ' stroke-width="2.5"/><path d="M11 13 h24 M11 19 h24 M11 25 h24 M20 9 v19" stroke="#eadcbf" stroke-width="1.6"/>',
+    p: '<path d="M6 19 h20 m-7 -7 l7 7 l-7 7" ' + C + ' stroke-width="2.6"/><rect x="29" y="8" width="11" height="22" rx="1.5" ' + C + ' stroke-width="2.4"/>',
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" ' + C + ' stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    chat: '<path d="M7 7 h32 v18 h-18 l-8 7 v-7 h-6 z" ' + C + ' stroke-width="2.5" stroke-linejoin="round"/><path d="M13 13 h20 M13 19 h13" stroke="#eadcbf" stroke-width="2"/>',
+    e: '<circle cx="23" cy="19" r="14" ' + C + ' stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" ' + C + ' stroke-width="2.5"/>',
+    esc: '<path d="M8 9 h30 M8 19 h30 M8 29 h30" stroke="#eadcbf" stroke-width="3"/>',
+    f8: '<ellipse cx="23" cy="21" rx="9" ry="11" ' + C + ' stroke-width="2.5"/><path d="M23 10 v22 M14 16 l-6 -3 M32 16 l6 -3 M14 26 l-6 3 M32 26 l6 3" stroke="#eadcbf" stroke-width="2.2"/>',
+    mouse: '<rect x="13" y="3" width="20" height="31" rx="10" ' + C + ' stroke-width="2.5"/><path d="M23 3 v12 M13 15 h20" stroke="#eadcbf" stroke-width="2.2"/><path d="M14.3 14 v-3 a9 9 0 0 1 8.7 -7 v10 z" fill="rgba(234,220,191,.55)"/>',
+  };
+  const KEY = { one: "1", two: "2", t: "T", p: "P", tab: "Tab", chat: "Tab", e: "E", esc: "Échap", f8: "F8", mouse: "Clic" };
+  const hint = (id, cls) => '<div class="tj-h ' + (cls || "") + '"><svg viewBox="0 0 46 38">' + ICON[id] + "</svg><span>" + KEY[id] + "</span></div>";
+
+  // ---------------------------------------------------------------- the scene
+  const NAMES = ["Poyo", "Wouh", "Steve", "Brandon", "Uptn", "Kiwi", "Nox", "Mathis"];
+  const CW = 132, CH = 184, GAP = 14, R2H = 132;
+  const slots = () => { const total = 8 * CW + 7 * GAP, x0 = (1600 - total) / 2, y = 900 - 22 - R2H - 14 - CH; return NAMES.map((_, i) => ({ x: x0 + i * (CW + GAP), y })); };
+  const sil = (i, style) => '<div class="tj-sil" style="-webkit-mask-image:url(' + IMG + "m_" + VIEW + "_" + i + ".webp);mask-image:url(" + IMG + "m_" + VIEW + "_" + i + '.webp);' + style + '"></div>';
+  function row2() {
+    const grp = (logo, ps) => '<div class="tj-grp"><img class="tj-logo" src="' + IMG + logo + '.webp"><div class="tj-ports">'
+      + ps.map(p => '<img src="' + IMG + "p_" + p + '.webp">').join("") + "</div></div>";
+    return '<div class="tj-row2">' + grp("LogoElu", ["DrGloubi", "Messager", "Orpheline", "Technomancien", "Geolier"]) + grp("LogoAnomalie", ["Vahal", "Moork"])
+      + grp("LogoMarginaux", ["Robot"])
+      + '<div style="display:flex;flex-direction:column;gap:6px;margin-left:10px"><img class="tj-count" src="' + IMG + 'count_robot.webp"><img class="tj-count" src="' + IMG + 'count_corr.webp"></div></div>';
+  }
+
+  // which keys, where (one stage's data-* settles it; the others stay as today)
+  function keysOf(d, voted) {
+    let ids = ["one", "two"];
+    if (d.tab === "split") ids.push("t");
+    else if (d.tab !== "tab") ids.push("t");
+    if (!voted) ids.push("p");
+    ids.push(d.tab === "split" ? "chat" : "tab");
+    ids.push("e");
+    if (!d.menu || d.menu === "square") ids.push("esc");
+    if (d.menu !== "corner+f8") ids.push("f8");
+    if (d.help === "key" && !voted) ids.unshift("mouse");
+    return ids;
+  }
+  function keysHtml(d, voted) {
+    const ids = keysOf(d, voted), cls = id => id === "mouse" ? "new" : "";
+    if (d.place === "col") return '<div class="tj-keys col" style="left:22px;top:' + (450 - ids.length * 33) + 'px">' + ids.map(i => hint(i, cls(i))).join("") + "</div>";
+    if (d.place === "groups") {
+      const vote = ids.filter(i => ["mouse", "one", "two", "p"].includes(i)), rest = ids.filter(i => !vote.includes(i));
+      return '<div class="tj-keys col" style="left:22px;top:110px">' + vote.map(i => hint(i, cls(i))).join("") + '<div class="tj-gap"></div>'
+        + rest.map(i => hint(i, cls(i))).join("") + "</div>";
+    }
+    return '<div class="tj-keys" style="left:22px;bottom:22px">' + ids.map(i => hint(i, cls(i))).join("") + "</div>";
+  }
+  function cornerHtml(d) {
+    if (d.menu === "corner") return '<div class="tj-corner">' + hint("esc") + "</div>";
+    if (d.menu === "corner+f8") return '<div class="tj-corner">' + hint("esc") + hint("f8") + "</div>";
+    return '<div class="tj-square"></div>';
+  }
+
+  // ---------------------------------------------------------------- the vote scenario (section 4) and the still frames
+  // the view starts looking down at the floor, then turns up onto Uptn (the white point stays in the middle)
+  function stateAt(t) {
+    const u = Math.max(0, Math.min(1, (t - PAN0) / (PAN1 - PAN0))), e = u * u * (3 - 2 * u);
+    return { pan: 1 - e, aim: e > 0.85 ? UPTN : 0, voted: t >= CLICK };
+  }
+  // built once (re-creating the images every frame broke them), then only the moving parts are touched
+  function build(stage) {
+    const d = stage.dataset;
+    let h = '<div class="tj-world"><img class="tj-bg" src="' + IMG + VIEW + '.webp" alt="">'
+      + '<div class="tj-aim" style="opacity:0">' + sil(UPTN, "background:radial-gradient(circle at 50% 25%, #ffe9c4, #8a6a3c);mix-blend-mode:soft-light;opacity:.8") + "</div>"
+      + '<div class="tj-voted" style="opacity:0"><div class="tj-glow">' + sil(UPTN, "background:#f6e7c1") + "</div>"
+      + sil(UPTN, "background:url(" + IMG + VIEW + ".webp) 0 0/1600px 900px") + "</div></div>";
+    slots().forEach((p, i) => {
+      h += '<img class="tj-card" data-i="' + i + '" src="' + IMG + "card_" + i + '.webp" style="left:' + p.x + "px;top:" + p.y + "px;width:" + CW + "px;height:" + CH + 'px" alt="">';
+    });
+    h += row2() + '<div class="tj-timer">281</div>' + cornerHtml(d) + '<div class="tj-keyhost">' + keysHtml(d, false) + "</div>";
+    h += '<div class="tj-reticle"></div>';
+    if (d.help === "under") h += '<div class="tj-under">Clic : voter</div>';
+    if (d.help === "line") h += '<div class="tj-line">Vise un chat et clique pour voter</div>';
+    stage.innerHTML = h;
+    stage._voted = false;
+  }
+  function update(stage, t) {
+    const s = stateAt(t), d = stage.dataset;
+    stage.querySelector(".tj-world").style.transform = "translateY(" + (-150 * s.pan).toFixed(1) + "px)";
+    stage.querySelector(".tj-aim").style.opacity = s.aim && !s.voted ? 1 : 0;
+    stage.querySelector(".tj-voted").style.opacity = s.voted ? 1 : 0;
+    stage.querySelectorAll(".tj-card").forEach(c => {
+      const i = +c.dataset.i;
+      c.classList.toggle("lit", i === s.aim && !s.voted);
+      c.classList.toggle("lift", i === UPTN && s.voted);
+    });
+    stage.querySelector(".tj-timer").textContent = Math.max(0, 281 - Math.floor(t / 1000));
+    if (stage._voted !== s.voted) { stage._voted = s.voted; stage.querySelector(".tj-keyhost").innerHTML = keysHtml(d, s.voted); }
+    const under = stage.querySelector(".tj-under"); if (under) under.style.opacity = s.aim && !s.voted ? 1 : 0;
+    const line = stage.querySelector(".tj-line"); if (line) line.style.opacity = s.voted ? 0 : 1;
+  }
+
+  const votes = [...document.querySelectorAll(".tj-vote")];
+  document.querySelectorAll(".tj-scene").forEach(build);
+  votes.forEach(s => update(s, 0));
+
+  // key moments, loop, slow motion; ?at=<ms> freezes the vote frames for the captures
+  let looping = false, slow = 1, t0 = 0, raf = 0, last = -1;
+  const show = t => { const k = Math.floor(t / 40); if (k === last) return; last = k; votes.forEach(s => update(s, t));
+    document.querySelectorAll(".tj-moments button[data-at]").forEach(b => b.classList.remove("on")); };
+  function tick(now) { show(((now - t0) / slow) % LOOP); raf = requestAnimationFrame(tick); }
+  function stop() { looping = false; cancelAnimationFrame(raf); document.querySelector("[data-loop]").classList.remove("on"); }
+  function play() { looping = true; t0 = performance.now(); document.querySelector("[data-loop]").classList.add("on"); raf = requestAnimationFrame(tick); }
+  document.querySelectorAll(".tj-moments button[data-at]").forEach(b => b.onclick = () => { stop(); last = -1; show(+b.dataset.at); b.classList.add("on"); });
+  document.querySelector("[data-loop]").onclick = () => looping ? stop() : play();
+  document.querySelector("[data-slow]").onclick = e => { slow = slow === 1 ? 3 : 1; e.target.classList.toggle("on", slow !== 1); if (looping) { stop(); play(); } };
+  const at = new URLSearchParams(location.search).get("at");
+  if (at !== null) show(+at); else play();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

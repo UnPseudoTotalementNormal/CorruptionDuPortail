@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le rendu des chats, comme dans Blender (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cs-shot { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+  .cs-ref { width: 100%; max-width: 1100px; display: block; margin: 8px 0 4px; }
+</style>
+</head>
+<body data-subject="chats-shader">
+
+<header class="page">
+  <h1>Le rendu des chats, comme dans Blender (tour 1)</h1>
+  <p><b>Référence :</b> les matériaux de l'artiste dans <code>Corrupted_Cats.blend</code>, rendus avec sa caméra et sa
+     lumière (le Drive n'a aucun rendu, je les ai faits) :</p>
+  <img class="cs-ref" src="img/blender.jpg" alt="Les quatre pelages rendus dans Blender">
+  <p><b>Aujourd'hui :</b> les chats utilisent le rendu réaliste d'Unity : dégradé doux, reflets, ombres qui tombent au noir,
+     et presque aucune partie lumineuse. Chez l'artiste, chaque matériau mélange moitié lumière classique et moitié aplat
+     à deux tons (la texture, ou la texture à 50 % côté ombre, coupure nette), et cet aplat brille de lui-même.</p>
+  <p><b>La scène :</b> vue assise, de jour. Les quatre pelages de l'artiste, chacun sous la lumière de son chat ; en
+     dessous (section 1), les mêmes chats hors de toute lumière, comme un chat que rien n'éclaire la nuit.</p>
+  <p><b>Sans question :</b> nouveau shader des chats avec l'aplat à deux tons, sans reflets, avec les parties lumineuses
+     du fichier (points orange du noir et blanc, yeux ardents et galactiques, fissures, paillettes) ; textures du corps
+     noir et blanc et des yeux ronds remises à la version du Drive ; le fondu des emotes et les contours ne changent pas ;
+     le chat du menu suit le même choix.</p>
+</header>
+
+<section>
+  <h2>1. Hors de la lumière, le chat reste-t-il visible ?</h2>
+
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le rendu d'Unity d'aujourd'hui. En haut sous sa lumière, en bas sans lumière.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/X0.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A">
+    <div class="vhead"><span class="vid">A</span><span class="vname">Comme Blender (par défaut)</span></div>
+    <p class="vdesc">L'aplat brille de lui-même : sans lumière, le chat garde ses couleurs à moitié, on le reconnaît toujours.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/A.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="B">
+    <div class="vhead"><span class="vid">B</span><span class="vname">Seulement la lumière du jeu</span></div>
+    <p class="vdesc">Mêmes aplats sous la lumière, mais sans lumière il ne reste que ce qui brille (yeux, points, fissures).</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/B.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="C">
+    <div class="vhead"><span class="vid">C</span><span class="vname">Entre les deux</span></div>
+    <p class="vdesc">Sans lumière, le chat reste visible mais plus sombre que A.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/C.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Le halo des parties lumineuses</h2>
+
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">Halo actuel du jeu (par défaut)</span></div>
+    <p class="vdesc">Le halo d'aujourd'hui. En haut le jeu, en bas Blender pour comparer.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/H_A.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">Halo fort, comme Blender</span></div>
+    <p class="vdesc">Les yeux et les points rayonnent autour d'eux. Le halo vaut pour toute la scène : les bougies et le portail aussi.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/H_D.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. La lumière de chaque chat en vue assise</h2>
+
+  <div class="variant" data-id="L1">
+    <div class="vhead"><span class="vid">L1</span><span class="vname">Crème, actuelle (par défaut)</span></div>
+    <p class="vdesc">La lumière du chat d'aujourd'hui. En bas Blender, éclairé par un soleil orange.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/L_A.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="L2">
+    <div class="vhead"><span class="vid">L2</span><span class="vname">Chaude, vers Blender</span></div>
+    <p class="vdesc">Une lumière orangée sur chaque chat, plus proche des rendus de l'artiste.</p>
+    <div class="screen"><div class="stage"><img class="cs-shot" src="img/L_E.jpg" alt=""></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script src="../common/mock.js"></script>
+</body>
+</html>

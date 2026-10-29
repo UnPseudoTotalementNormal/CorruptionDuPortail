@@ -59,6 +59,8 @@ namespace Characters.Powers
             var _clickedCharacterId = _character.ownerClientId.Value;
             if (!CheckIsTargetValid(_clickedCharacterId, TargetUtils.TargetType.Character))
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "target", _clickedCharacterId, "reason", "invalid-target");
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;
             }
@@ -78,6 +80,8 @@ namespace Characters.Powers
             Character _target = characterManager.GetCharacter(_clickedCharacterId, false);
             if (_target == null || _target.isBlessed.Value)
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.mark.failed", "owner", ownerClientId.Value, "target", _clickedCharacterId,
+                    "reason", _target == null ? "no-target" : "blessed");
                 lastCorruptedCharacterId.Value = NoCorruptedTarget;
                 InvokeOnCharacterCorruptionFailedRpc(_clickedCharacterId);
                 return;

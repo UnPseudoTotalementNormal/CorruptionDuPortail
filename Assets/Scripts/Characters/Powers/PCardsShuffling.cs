@@ -8,6 +8,7 @@ using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using Diagnostics.Logs;
 using GameLogic;
 using RoleTarget;
 using UI.BoardUI.Selection;
@@ -63,6 +64,8 @@ namespace Characters.Powers
             ulong _clientIdClicked = _role.ownerClientId;
             if (!CheckIsTargetValid(_clientIdClicked, TargetUtils.TargetType.Role))
             {
+                GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "target", _clientIdClicked, "reason", "invalid-target");
                 return;
             }
 
@@ -84,11 +87,15 @@ namespace Characters.Powers
                 // Never a silent return: the owner's picker is waiting for the next step.
                 ServerCancelAuthorizedEffect();
                 Debug.LogWarning($"[POWER] '{powerName}' of {ownerClientId.Value}: role of {_clientIdClicked} refused by the server");
+                GameLog.Info("power", "power.luma.refused", "owner", ownerClientId.Value, "target", _clientIdClicked,
+                    "reason", ServerRoleRefusalReason(_clientIdClicked));
                 RoleClickRefusedRpc(characterManager.GetSafeRpcTarget(ownerClientId.Value));
                 return;
             }
 
             Character _character = characterManager.GetCharacter(_clientIdClicked);
+            GameLog.Guarded(() => GameLog.Info("power", "power.luma.choice", "owner", ownerClientId.Value, "target", _clientIdClicked,
+                "role", _character.role.roleName.ToString(), "kind", _character.isFake ? "fake-card" : "guess"));
             if (_character.isFake)
             {
                 // Rôle élu absent de la partie : Luma copie temporairement (one-shot) un de ses pouvoirs actifs.
@@ -126,6 +133,15 @@ namespace Characters.Powers
                 return false;
             }
             return targetIncludeFlags.HasFlag(TargetIncludeFlags.Self) || _target != ownerClientId.Value;
+        }
+
+        private string ServerRoleRefusalReason(ulong _target)
+        {
+            Character _targetCharacter = characterManager.GetCharacter(_target, false);
+            if (_targetCharacter == null || _targetCharacter.role == null) return "no-target";
+            if (discoveredClientIds.Contains(_target)) return "already-discovered";
+            if (_targetCharacter.role.factionType != FactionType.chosen) return "not-chosen";
+            return "self";
         }
 
         [Rpc(SendTo.SpecifiedInParams)]
@@ -177,6 +193,9 @@ namespace Characters.Powers
             "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique).";
         [SerializeField] private string copiesObtainedMessage =
             "Le rôle {0} n'est pas en jeu : vous copiez temporairement ses pouvoirs « {1} » (usage unique chacun).";
+        // {0} = nom du rôle copié (Ugës), {1} = nom du pouvoir tiré au hasard.
+        [SerializeField] private string marqueCopyObtainedMessage =
+            "Le rôle {0} n'est pas en jeu : sa marque vous donne une copie du pouvoir « {1} » (usage unique).";
         [SerializeField] private string noActivePowerToCopyMessage =
             "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier.";
 
@@ -198,22 +217,37 @@ namespace Characters.Powers
 
             List<int> _picks = StolenPowerSelector.SelectAllEligible(_candidates);
             string _message;
-            if (_picks.Count == 0)
+            // Board T26: a factice Ugës gives Luma ONE random copy drawn like his Marque (only l'Incomplet's own
+            // Réincarnation copies the whole Marque). The Marque is passive, so it is not among _picks.
+            PMarqueHurluberluges _marque = _powers.OfType<PMarqueHurluberluges>().FirstOrDefault(_p => !_p.isCopiedPower.Value);
+            if (_marque != null)
+            {
+                string _single = PMarqueHurluberluges.GrantSingleCopyServer(characterManager, (int)ownerClientId.Value,
+                    Power.ConfigureAsOneShotStolenCopy, "melange");
+                _message = _single != null
+                    ? string.Format(marqueCopyObtainedMessage, _fakeCharacter.role.roleName.ToString(), _single)
+                    : noActivePowerToCopyMessage;
+            }
+            else if (_picks.Count == 0)
             {
                 Debug.Log("[LUMA] Mélange des cartes : fausse carte élue sans pouvoir actif copiable.");
+                GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
+                    "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", 0, "reason", "no-active-power"));
                 _message = noActivePowerToCopyMessage;
             }
             else
             {
-                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn. A Mélange
-                // stolen by Ugës: the copies it gives join his Marque's per-night budget.
-                var _onReady = InheritMarqueBudget(Power.ConfigureAsOneShotStolenCopy);
+                // onReady = shared one-shot config (Power.ConfigureAsOneShotStolenCopy): spent copies despawn. Board T26:
+                // a Mélange stolen by Ugës gives copies outside his Marque's budget, usable the same night.
                 var _names = new List<string>(_picks.Count);
                 foreach (int _pick in _picks)
                 {
-                    characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_pick], _onReady);
+                    characterManager.GivePowerToCharacter(ownerClientId.Value, _powers[_pick], Power.ConfigureAsOneShotStolenCopy);
                     _names.Add(_powers[_pick].powerName.ToString());
                 }
+                GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
+                    "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", _names.Count, "powers", _names,
+                    "copiedMelange", isStolenCopy.Value));
                 _message = string.Format(_names.Count == 1 ? copyObtainedMessage : copiesObtainedMessage,
                     _fakeCharacter.role.roleName.ToString(), string.Join(" », « ", _names));
             }

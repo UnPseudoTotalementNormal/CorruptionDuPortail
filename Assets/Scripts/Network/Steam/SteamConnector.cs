@@ -5,6 +5,7 @@ using Network.Services;
 using Steamworks;
 using Unity.Netcode;
 using UnityEngine;
+using Diagnostics.Logs;
 
 #endregion
 
@@ -28,6 +29,7 @@ namespace Network.Steam
             if (!SteamClient.IsValid)
             {
                 Debug.LogError($"[STEAM] Cannot host: {SteamRuntime.NotRunningMessage}");
+                GameLog.Warn("net", "steam.host.failed", "reason", "steam not running");
                 return null;
             }
 
@@ -37,8 +39,11 @@ namespace Network.Steam
             if (!networkManager.StartHost())
             {
                 Debug.LogError("[STEAM] StartHost failed.");
+                GameLog.Warn("net", "steam.host.failed", "reason", "StartHost refused");
                 return null;
             }
+            GameLog.Info("net", "steam.host", "steamId", SteamClient.SteamId.Value.ToString(),
+                "hasPassword", !string.IsNullOrEmpty(lobbyPassword));
             return SteamClient.SteamId.Value.ToString();
         }
 
@@ -48,16 +53,25 @@ namespace Network.Steam
         /// </summary>
         public static bool StartClient(NetworkManager networkManager, GameLobby lobby, string lobbyPassword)
         {
-            if (!lobby.TryGetData(GameLobby.HostSteamIdKey, out string _rawHostId) || !ulong.TryParse(_rawHostId, out ulong _hostSteamId))
+            if (!TryGetHostSteamId(lobby, out ulong _hostSteamId, out bool _fromOwner))
             {
                 Debug.LogError("[STEAM] Lobby without a host SteamID: not a Steam game.");
+                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.failed", "reason", "no host SteamID", "lobby", lobby.Id,
+                    "dataKeys", string.Join(",", lobby.Data.Keys)));
                 return false;
+            }
+            if (_fromOwner)
+            {
+                // Playtest 2026-10-24: every join read a lobby without this key although the host writes it.
+                GameLog.Guarded(() => GameLog.Warn("net", "steam.client.hostFromOwner", "lobby", lobby.Id,
+                    "host", _hostSteamId.ToString(), "dataKeys", string.Join(",", lobby.Data.Keys)));
             }
 
             FacepunchTransport _transport = networkManager.GetComponent<FacepunchTransport>();
             if (_transport == null)
             {
                 Debug.LogError("[STEAM] FacepunchTransport not found on NetworkManager.");
+                GameLog.Warn("net", "steam.client.failed", "reason", "no FacepunchTransport");
                 return false;
             }
 
@@ -69,9 +83,28 @@ namespace Network.Steam
             if (!networkManager.StartClient())
             {
                 Debug.LogError("[STEAM] StartClient failed.");
+                GameLog.Warn("net", "steam.client.failed", "reason", "StartClient refused", "host", _hostSteamId.ToString());
                 return false;
             }
+            GameLog.Guarded(() => GameLog.Info("net", "steam.client", "host", _hostSteamId.ToString(), "lobby", lobby.Id,
+                "code", lobby.Code, "hasPassword", !string.IsNullOrEmpty(lobbyPassword)));
             return true;
+        }
+
+        /// <summary>
+        /// The SteamID64 to dial: the one the host published in the lobby data, else the lobby owner (Steam tells it to
+        /// every member, and the host is the one who created the lobby).
+        /// </summary>
+        public static bool TryGetHostSteamId(GameLobby lobby, out ulong hostSteamId, out bool fromOwner)
+        {
+            fromOwner = false;
+            if (lobby.TryGetData(GameLobby.HostSteamIdKey, out string _published) && ulong.TryParse(_published, out hostSteamId)
+                && hostSteamId != 0)
+            {
+                return true;
+            }
+            fromOwner = true;
+            return ulong.TryParse(lobby.HostId, out hostSteamId) && hostSteamId != 0;
         }
     }
 }

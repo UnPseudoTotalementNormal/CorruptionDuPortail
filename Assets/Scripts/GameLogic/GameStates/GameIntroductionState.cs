@@ -62,7 +62,10 @@ namespace GameLogic.GameStates
             foreach ((ulong _viewer, ulong _fake) in AnomalyFakeRoleHint.Pick(_anomalies, _fakes, new UnityRandomProvider()))
             {
                 gameInfoRevealer.SendRevealLevelRpc(_fake, nameof(CharacterInfoReveal.isFakeRevealed), RevealLevel.Personal, _viewer, false);
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("game", "game.intro.fakehint", "anomaly", _viewer,
+                    "fakeSeat", _fake, "fakeRole", _characters.First(_c => _c && _c.ownerClientId.Value == _fake).role.roleName.ToString()));
             }
+            Diagnostics.Logs.GameLog.Info("game", "game.intro.fakehint.done", "anomalies", _anomalies, "fakeSeats", _fakes);
         }
 
         public override void OnEndStateServer()

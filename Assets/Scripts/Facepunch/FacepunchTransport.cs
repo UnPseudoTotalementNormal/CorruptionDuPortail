@@ -32,6 +32,11 @@ namespace Netcode.Transports.Facepunch
 
         private LogLevel LogLevel => NetworkManager.Singleton.LogLevel;
 
+        // [CdP patch] Connection lifecycle lines (connect, disconnect with its end reason) must reach the playtest logs,
+        // whose builds run the NetworkManager at Normal: the upstream Developer-only lines never showed up there.
+        // Null-safe: a disconnect callback can land while the NetworkManager is being torn down.
+        private static bool LifecycleLogs => NetworkManager.Singleton == null || NetworkManager.Singleton.LogLevel <= LogLevel.Normal;
+
         // [CdP patch] Messages drained per manager and per poll. Facepunch's default (32) throttles a host with 15
         // players during the GameScene synchronization burst: the rest waits for the next frame.
         private const int ReceiveBatchSize = 256;
@@ -190,6 +195,9 @@ namespace Netcode.Transports.Facepunch
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Starting as client.");
 
+            if (LifecycleLogs)
+                Debug.Log($"[STEAM] Transport starting as client, dialing host {targetSteamId}.");
+
             connectionManager = SteamNetworkingSockets.ConnectRelay<ConnectionManager>(targetSteamId);
             connectionManager.Interface = this;
             return true;
@@ -199,6 +207,9 @@ namespace Netcode.Transports.Facepunch
         {
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Starting as server.");
+
+            if (LifecycleLogs)
+                Debug.Log("[STEAM] Transport starting as server (relay socket).");
 
             socketManager = SteamNetworkingSockets.CreateRelaySocket<SocketManager>();
             socketManager.Interface = this;
@@ -231,6 +242,9 @@ namespace Netcode.Transports.Facepunch
 
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Connected with Steam user {info.Identity.SteamId}.");
+
+            if (LifecycleLogs)
+                Debug.Log($"[STEAM] Connected to host {info.Identity.SteamId}.");
         }
 
         void IConnectionManager.OnDisconnected(ConnectionInfo info)
@@ -239,6 +253,9 @@ namespace Netcode.Transports.Facepunch
 
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Disconnected Steam user {info.Identity.SteamId}.");
+
+            if (LifecycleLogs)
+                Debug.LogWarning($"[STEAM] Disconnected from host {info.Identity.SteamId}: state={info.State} endReason={info.EndReason}.");
         }
 
         unsafe void IConnectionManager.OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel)
@@ -279,6 +296,9 @@ namespace Netcode.Transports.Facepunch
 
                 if (LogLevel <= LogLevel.Developer)
                     Debug.Log($"[{nameof(FacepunchTransport)}] - Connected with Steam user {info.Identity.SteamId}.");
+
+                if (LifecycleLogs)
+                    Debug.Log($"[STEAM] Client connection {connection.Id} connected (Steam user {info.Identity.SteamId}).");
             }
             else if (LogLevel <= LogLevel.Normal)
                 Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Failed to connect client with ID {connection.Id}, client already connected.");
@@ -292,6 +312,10 @@ namespace Netcode.Transports.Facepunch
 
 	       if (LogLevel <= LogLevel.Developer)
                     Debug.Log($"[{nameof(FacepunchTransport)}] - Disconnected Steam user {info.Identity.SteamId}");
+
+                if (LifecycleLogs)
+                    Debug.LogWarning($"[STEAM] Client connection {connection.Id} disconnected (Steam user {info.Identity.SteamId}): " +
+                                     $"state={info.State} endReason={info.EndReason}.");
 	    }
      	    else if (LogLevel <= LogLevel.Normal)
                 Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Failed to diconnect client with ID {connection.Id}, client not connected.");

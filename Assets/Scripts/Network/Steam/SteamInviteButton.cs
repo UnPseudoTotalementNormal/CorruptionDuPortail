@@ -1,5 +1,6 @@
 #region
 
+using Diagnostics.Logs;
 using Network.Services;
 using Steamworks;
 using TMPro;
@@ -81,13 +82,17 @@ namespace Network.Steam
             if (_lobby == null || !ulong.TryParse(_lobby.Id, out ulong _lobbyId) || !SteamClient.IsValid)
             {
                 Debug.LogWarning("[STEAM] Invite clicked outside a Steam lobby.");
+                GameLog.Info("ui", "ui.steam.invite.refused", "reason",
+                    _lobby == null ? "no lobby" : !SteamClient.IsValid ? "steam not running" : "not a steam lobby");
                 return;
             }
             if (!SteamUtils.IsOverlayEnabled)
             {
+                GameLog.Info("ui", "ui.steam.invite.refused", "reason", "overlay disabled", "lobby", _lobby.Id);
                 _lobbyManager.ReportError(OverlayDisabledMessage);
                 return;
             }
+            GameLog.Info("ui", "ui.steam.invite", "lobby", _lobby.Id);
             SteamFriends.OpenGameInviteOverlay(_lobbyId);
         }
     }

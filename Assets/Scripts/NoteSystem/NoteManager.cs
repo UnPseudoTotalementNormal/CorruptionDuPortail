@@ -66,6 +66,13 @@ namespace NoteSystem
             if (!_targetDictionary[_playerID].Any(_r => _r.IsTheSameRole(_role)))
             {
                 _targetDictionary[_playerID].Add(_role);
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("note", "note.add", "seat", _playerID,
+                    "role", _role != null ? _role.roleName.ToString() : null, "type", _noteType));
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("note", "note.add.refused", "seat", _playerID,
+                    "role", _role != null ? _role.roleName.ToString() : null, "type", _noteType, "reason", "already-noted"));
             }
             
             switch (_noteType)
@@ -96,6 +103,8 @@ namespace NoteSystem
 
             if (_targetDictionary.ContainsKey(_playerID) && _targetDictionary[_playerID].Any(_r => _r.IsTheSameRole(_role)))
             {
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("note", "note.remove", "seat", _playerID,
+                    "role", _role != null ? _role.roleName.ToString() : null, "type", _noteType));
                 _targetDictionary[_playerID].Remove(_role);
                 
                 switch (_noteType)

@@ -100,8 +100,13 @@ namespace UI.CatCustomization
         public void Open()
         {
             TryInitialize();
-            if (_root == null || catalog == null || _open) return;
+            if (_root == null || catalog == null || _open)
+            {
+                if (!_open) Diagnostics.Logs.GameLog.Warn("ui", "ui.cosmetic.refused", "reason", _root == null ? "no-root" : "no-catalog");
+                return;
+            }
 
+            Diagnostics.Logs.GameLog.Info("ui", "ui.cosmetic.open");
             _open = true;
             _look = catalog.Sanitize(CatLookStore.Load());
             if (stage != null)
@@ -120,6 +125,7 @@ namespace UI.CatCustomization
         public void Close()
         {
             if (!_open) return;
+            Diagnostics.Logs.GameLog.Info("ui", "ui.cosmetic.close");
             _open = false;
             _dragging = false;
             _spin = 0f;
@@ -163,7 +169,13 @@ namespace UI.CatCustomization
         /// <summary>Picks an item: the cat wears it at once and the look is saved.</summary>
         public void Choose(CatSlot slot, byte id)
         {
-            if (catalog == null || !catalog.Contains(slot, id)) return;
+            if (catalog == null || !catalog.Contains(slot, id))
+            {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.cosmetic.refused", "slot", slot, "id", (int)id,
+                    "reason", catalog == null ? "no-catalog" : "unknown-id");
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.cosmetic.pick", "slot", slot, "id", (int)id);
             _look = _look.With(slot, id);
             CatLookStore.Save(_look); // the stage follows through CatLookStore.Changed
             Rebuild();

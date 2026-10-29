@@ -97,6 +97,7 @@ namespace GameLogic.GameStates
                     if (gameManager.HasClientLeft(_currentCharacter.ownerClientId.Value))
                     {
                         Debug.Log($"[LEAVE] Awakening: {_currentCharacter.ownerClientId.Value} is away (seat reserved) — skipped.");
+                        Diagnostics.Logs.GameLog.Info("night", "night.skip.away", "seat", _currentCharacter.ownerClientId.Value, "layer", _layerToAwake);
                         continue;
                     }
                     
@@ -106,17 +107,32 @@ namespace GameLogic.GameStates
                 }
             }
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
+            // Layers nobody plays in this game start and end in the same frame: not logged.
+            if (currentlyAwakenedCharacters.Count > 0) Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("night", "night.layer.start", "index", _layerToAwake,
+                "roles", awakeningOrder[_layerToAwake].awakeningCharacters.Where(_r => _r != null && _r.role != null).Select(_r => _r.role.roleName.ToString()).ToList(),
+                "awake", currentlyAwakenedCharacters.Select(_c => _c.ownerClientId.Value).ToList(), "timer", currentAwakeningMaxTime));
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningMaxTimeRpc), new[] {new NetworkSerializableObject(currentAwakeningMaxTime)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
         }
 
+        // Playtest logs only: true while the previous layer is put to sleep, so its expected layer-mismatch wake-ups stay silent.
+        private bool _sleepingPreviousLayer;
+
         private void SleepCurrentlyAwakenedCharacters()
         {
-            foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
+            _sleepingPreviousLayer = true;
+            try
             {
-                _awakenedCharacter.SleepCharacterServerRpc();
+                foreach (var _awakenedCharacter in currentlyAwakenedCharacters)
+                {
+                    _awakenedCharacter.SleepCharacterServerRpc();
+                }
+            }
+            finally
+            {
+                _sleepingPreviousLayer = false;
             }
 
             currentlyAwakenedCharacters.Clear();
@@ -204,6 +220,11 @@ namespace GameLogic.GameStates
             
             if (_awakeningIndexForCharacter != currentAwakeningIndex)
             {
+                if (!_sleepingPreviousLayer)
+                {
+                    Diagnostics.Logs.GameLog.Warn("night", "night.awake.ignored", "seat", _ownerId, "roleLayer", _awakeningIndexForCharacter,
+                        "currentLayer", currentAwakeningIndex, "awaited", currentlyAwakenedCharacters.Contains(_character), "reason", "layer-mismatch");
+                }
                 return;
             }
             
@@ -211,7 +232,7 @@ namespace GameLogic.GameStates
 
             if (currentlyAwakenedCharacters.Count == 0)
             {
-                GoToNextAwakeLayer();
+                GoToNextAwakeLayer("all-slept");
             }
         }
 
@@ -241,6 +262,7 @@ namespace GameLogic.GameStates
             }
 
             Debug.Log($"[LEAVE] AwakeningState: chained leaver {_ownerId} was awakened this layer — draining it so the layer can advance.");
+            Diagnostics.Logs.GameLog.Info("night", "night.drain.leaver", "seat", _ownerId, "awakened", _character.isAwakened.Value, "remaining", currentlyAwakenedCharacters.Count);
 
             // Prefer the production drain: sleeping flips isAwakened, whose OnValueChanged fires
             // OnCharacterAwakeningChanged, which removes the character and advances the layer if it empties.
@@ -255,7 +277,7 @@ namespace GameLogic.GameStates
             // already drained it, Remove returns false and this is a no-op — so the layer never double-advances.
             if (currentlyAwakenedCharacters.Remove(_character) && currentlyAwakenedCharacters.Count == 0)
             {
-                GoToNextAwakeLayer();
+                GoToNextAwakeLayer("player-left");
             }
         }
 
@@ -305,6 +327,8 @@ namespace GameLogic.GameStates
                     float _r = Random.Range(0.0f, 1.0f);
                     if (_r < _sleepChance)
                     {
+                        Diagnostics.Logs.GameLog.Info("night", "night.autosleep", "seat", _fakeAwakenedCharacter.ownerClientId.Value,
+                            "layer", currentAwakeningIndex, "reason", "fake-role");
                         _fakeAwakenedCharacter.SleepCharacterServerRpc();
                     }
                 }
@@ -314,8 +338,13 @@ namespace GameLogic.GameStates
             {
                 return;
             }
-            
-            GoToNextAwakeLayer();
+
+            if (currentlyAwakenedCharacters.Count > 0)
+            {
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("night", "night.timeout", "layer", currentAwakeningIndex,
+                    "notPlayed", currentlyAwakenedCharacters.Select(_c => _c.ownerClientId.Value).ToList(), "timer", currentAwakeningMaxTime));
+            }
+            GoToNextAwakeLayer(currentlyAwakenedCharacters.Count > 0 ? "timeout" : "empty-layer");
         }
 
         // Rate at which an awake fake role goes back to sleep once a fifth of its layer has elapsed: the old
@@ -332,12 +361,15 @@ namespace GameLogic.GameStates
             return 1f - Mathf.Exp(-FAKE_SLEEP_RATE_PER_SECOND * _deltaTime);
         }
 
-        private void GoToNextAwakeLayer()
+        // _reason: playtest logs only (all-slept, timeout, empty-layer, player-left).
+        private void GoToNextAwakeLayer(string _reason)
         {
+            if (_reason != "empty-layer") Diagnostics.Logs.GameLog.Info("night", "night.layer.end", "index", currentAwakeningIndex, "reason", _reason);
             currentAwakeningIndex++;
             
             if (currentAwakeningIndex >= awakeningOrder.Count)
             {
+                Diagnostics.Logs.GameLog.Info("night", "night.end", "layers", awakeningOrder.Count);
                 SleepCurrentlyAwakenedCharacters();
                 Loop.NextGameState();
                 return;
@@ -422,6 +454,8 @@ namespace GameLogic.GameStates
                 return;
             }
             
+            Diagnostics.Logs.GameLog.Info("night", "night.autosleep", "seat", _character.ownerClientId.Value, "layer", currentAwakeningIndex,
+                "reason", "no-usable-power");
             _character.SleepCharacterServerRpc();
         }
     }

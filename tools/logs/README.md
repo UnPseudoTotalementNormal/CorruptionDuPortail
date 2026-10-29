@@ -13,6 +13,7 @@ python tools/logs/logs.py list --since 24h --player Wouh   # his sessions: versi
 python tools/logs/logs.py games --since 2d                  # games and who played them
 python tools/logs/logs.py timeline <game id> --level W      # warnings/errors of every player, merged in time
 python tools/logs/logs.py around <game id> 21:40 --window 90  # everything ±90 s around the moment he describes
+python tools/logs/logs.py span "24/10 20:25" "20:45" --level W   # no game id (failed join, lobby, menu): every session in the range
 python tools/logs/logs.py timeline <game id> --cat vote,power,state  # what happened in the game
 python tools/logs/logs.py errors --since 24h --stack         # every error, grouped, with stacks
 python tools/logs/logs.py tail Wouh                          # follow a live session (~20 s delay)
@@ -60,6 +61,8 @@ Check them against the live project with `python tools/logs/check_rules.py`.
   launch, marked crashed; a local-only run (autoplay) never does.
 - Firestore: `sessions/{sid}` (index: player, version, flavor, host, gameIds, errors, crashed…) and
   `sessions/{sid}/chunks/{seq}` (`lines` = NDJSON). Rules and indexes: `firebase/` (`firebase deploy --only firestore`).
+- Autoplay builds (`tools/autoplay/unityctl.sh build` → `CdpBuild.BuildAutoplay`) compile the logs in; each process
+  writes its local file, read with `logs.py … --local` (same commands). Upload on demand: `AUTOPLAY_LOGS=online`.
 - The Editor never logs online; an autoplay run uploads only with `-playtest-logs-upload` (sessions marked autoplay,
   hidden from `list` unless `--all`).
 

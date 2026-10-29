@@ -47,6 +47,7 @@ namespace AudioSystem
 
         public void StopMusic(string _eventPath)
         {
+            int _before = activeMusicInstances.Count;
             foreach (var _m in activeMusicInstances.ToList())
             {
                 _m.getDescription(out EventDescription _desc);
@@ -58,6 +59,15 @@ namespace AudioSystem
                     _m.release();
                     activeMusicInstances.Remove(_m);
                 }
+            }
+            
+            if (_before == activeMusicInstances.Count)
+            {
+                Diagnostics.Logs.GameLog.Verbose("audio", "audio.music.stop.unknown", "path", _eventPath, "playing", _before);
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Info("audio", "audio.music.stop", "path", _eventPath, "left", activeMusicInstances.Count);
             }
             
             if (activeMusicInstances.Count > 0)
@@ -80,7 +90,12 @@ namespace AudioSystem
             }
             
             EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
-            EventInstance _newMusicInstance = RuntimeManager.CreateInstance(_eventReference);
+            // A path missing from the banks used to throw EventNotFoundException at the caller: reported, then skipped.
+            if (!TryCreateInstance(_eventReference, _eventPath, "music", out EventInstance _newMusicInstance))
+            {
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("audio", "audio.music", "path", _eventPath, "previous", activeMusicInstances.Count);
 
             Assert.IsTrue(_newMusicInstance.isValid(), "the new music instance is not valid with path: " + _eventPath);
             
@@ -111,6 +126,11 @@ namespace AudioSystem
             }
             
             EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
+            if (_eventReference.Guid.IsNull)
+            {
+                FmodEventReferenceExtensions.ReportMissingEvent(_eventPath, "oneshot");
+                return;
+            }
             _eventReference.TryPlayOneShot();
         }
 
@@ -121,7 +141,10 @@ namespace AudioSystem
             {
                 return;
             }
-            EventInstance _instance = RuntimeManager.CreateInstance(_eventReference);
+            if (!TryCreateInstance(_eventReference, null, "oneshot-volume", out EventInstance _instance))
+            {
+                return;
+            }
             _instance.setVolume(Mathf.Clamp01(_volume));
             _instance.start();
             _instance.release();
@@ -146,7 +169,10 @@ namespace AudioSystem
             }
             
             EventReference _eventReference = RuntimeManager.PathToEventReference(_eventPath);
-            EventInstance _instance = RuntimeManager.CreateInstance(_eventReference);
+            if (!TryCreateInstance(_eventReference, _eventPath, "instance", out EventInstance _instance))
+            {
+                return;
+            }
             _instance.start();
 
             if (eventInstances.ContainsKey(_instanceKey))
@@ -178,6 +204,32 @@ namespace AudioSystem
                     _instance.release();
                 }
                 eventInstances.Remove(_instanceKey);
+            }
+            else
+            {
+                Diagnostics.Logs.GameLog.Verbose("audio", "audio.instance.stop.unknown", "key", _instanceKey);
+            }
+        }
+
+        // CreateInstance throws EventNotFoundException for an event missing from the banks (an unresolved path gives an
+        // empty GUID): report it once (audio.event.missing) and let the caller skip the sound instead of throwing.
+        private static bool TryCreateInstance(EventReference _eventReference, string _path, string _where, out EventInstance _instance)
+        {
+            _instance = default;
+            if (_eventReference.Guid.IsNull)
+            {
+                FmodEventReferenceExtensions.ReportMissingEvent(_path ?? "(no guid)", _where);
+                return false;
+            }
+            try
+            {
+                _instance = RuntimeManager.CreateInstance(_eventReference);
+                return true;
+            }
+            catch (EventNotFoundException)
+            {
+                FmodEventReferenceExtensions.ReportMissingEvent(_path ?? _eventReference.Guid.ToString(), _where);
+                return false;
             }
         }
 

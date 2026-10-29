@@ -78,10 +78,14 @@ namespace Characters.Powers
             }
             if (_wasVoted)
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.omni.hack.kept", "owner", ownerClientId.Value, "target", hackedCharacterClientId,
+                    "reason", "target-voted");
                 return;
             }
 
             ulong _expiredTarget = hackedCharacterClientId;
+            Diagnostics.Logs.GameLog.Info("power", "power.omni.hack.expired", "owner", ownerClientId.Value, "target", _expiredTarget,
+                "reason", "target-not-voted");
             hackedCharacterClientId = HACKED_CHARACTER_DEFAULT;
             if (gameInfoRevealer != null)
             {
@@ -93,6 +97,8 @@ namespace Characters.Powers
         {
             if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
             {
+                Diagnostics.Logs.GameLog.Info("power", "power.click.refused", "power", powerName.ToString(), "owner", ownerClientId.Value,
+                    "target", _character.ownerClientId.Value, "reason", "invalid-target");
                 return;
             }
             roleTargetSystem.NewTargeting(ownerClientId.Value, _character.ownerClientId.Value);

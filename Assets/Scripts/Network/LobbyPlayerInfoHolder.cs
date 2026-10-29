@@ -202,6 +202,7 @@ namespace Network
             // NET-01: key the row on the RPC SENDER (never a client-supplied id) and upsert — a repeated answer
             // replaces the row instead of adding a second one.
             playerInfo.playerClientId = rpcParams.Receive.SenderClientId;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.player.info", "seat", playerInfo.playerClientId, "name", playerInfo.playerName.ToString());
             SetRosterServer(_roster.Value.WithUpsert(playerInfo));
         }
 
@@ -314,6 +315,7 @@ namespace Network
         public void SetReadyServer(ulong clientId, bool ready)
         {
             if (!IsServer || !IsSpawned) return;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.ready", "seat", clientId, "ready", ready);
             SetRosterServer(_roster.Value.WithReady(clientId, ready));
         }
 

@@ -76,7 +76,14 @@ namespace UI.BoardUI
 
         private void UpdateButtonState()
         {
-            enabled = MessageAvailability.CanSend(isAwakeningState, messagesLeft, hasSentMessageThisTurn);
+            bool _canSend = MessageAvailability.CanSend(isAwakeningState, messagesLeft, hasSentMessageThisTurn);
+            if (_canSend != enabled)
+            {
+                // Edge only: why the anonymous-message button (and its 3D model) accepts or refuses clicks now.
+                Diagnostics.Logs.GameLog.Info("message", "message.availability", "can", _canSend, "awakening", isAwakeningState,
+                    "left", messagesLeft, "sentThisTurn", hasSentMessageThisTurn);
+            }
+            enabled = _canSend;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Avatars;
 using Characters;
 using ChatSystem;
 using GameLogic;
@@ -59,6 +60,7 @@ namespace Tests.PlayMode.Desingleton
             _placeholderChat = _placeholderGo.AddComponent<ChatManager>();
             var _placeholderGm = _placeholderGo.AddComponent<GameManager>();
             var _placeholderCm = _placeholderGo.AddComponent<CharacterManager>();
+            var _placeholderAm = _placeholderGo.AddComponent<AvatarManager>();
 
             _voicePrefabGo = new GameObject("VoicePrefab");
             _voicePrefabNo = _voicePrefabGo.AddComponent<NetworkObject>();
@@ -69,6 +71,7 @@ namespace Tests.PlayMode.Desingleton
             ReflectionHelper.SetPrivateField(_template, "_chatManager", _placeholderChat);
             ReflectionHelper.SetPrivateField(_template, "_gameManager", _placeholderGm);
             ReflectionHelper.SetPrivateField(_template, "_characterManager", _placeholderCm);
+            ReflectionHelper.SetPrivateField(_template, "_avatarManager", _placeholderAm);
             _voiceOptions = ScriptableObject.CreateInstance<VoiceOptions>();
             _voiceOptions.SetOpenMic(false, false); // hold-to-talk whatever this PC saved: nobody holds V here
             ReflectionHelper.SetPrivateField(_template, "_options", _voiceOptions);

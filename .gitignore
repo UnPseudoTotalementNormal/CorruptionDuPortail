@@ -91,6 +91,10 @@ crashlytics-build.properties
 # Log files can be ignored.
 fmod_editor.log
 /FMODProject/Corrupted/.unsaved
+# FMOD Studio build cache and per-user layout: rebuilt locally, never source (FMOD source control guide).
+/FMODProject/Corrupted/.cache/
+/FMODProject/Corrupted/.user/
+/tools/fmod/__pycache__/
 .idea/
 
 # Normalize line endings
@@ -135,3 +139,5 @@ BackupToolkit/
 # Playtest logs reader cache (tools/logs/logs.py): immutable chunks downloaded from Firestore.
 /tools/logs/.cache/
 /tools/logs/__pycache__/
+/tools/sound/work/
+/tools/sound/__pycache__/

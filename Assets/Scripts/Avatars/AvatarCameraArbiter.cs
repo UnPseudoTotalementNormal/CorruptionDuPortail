@@ -223,6 +223,7 @@ namespace Avatars
                 && BoardCameraManager.instance != null
                 && BoardCameraManager.instance.CurrentBoardCameraId == BoardCameraIdEnum.SeatedFirstPerson)
             {
+                Diagnostics.Logs.GameLog.Info("camera", "camera.reset", "reason", "left-embodied", "mode", _newMode);
                 BoardCameraManager.instance.ResetToStartingCamera();
             }
 
@@ -298,6 +299,7 @@ namespace Avatars
         {
             // Arrowing between board cameras is a camera change → end any running emote.
             _emotePlayback?.End();
+            Diagnostics.Logs.GameLog.Info("camera", "camera.board", "id", _id, "mode", _currentMode);
 
             if (_currentMode != CameraMode.Board && _currentMode != CameraMode.Embodied)
             {
@@ -321,7 +323,12 @@ namespace Avatars
         public void SetOverlayOpen(object _holder, bool _open)
         {
             bool _changed = _open ? _overlayHolders.Add(_holder) : _overlayHolders.Remove(_holder);
-            if (_changed) ApplyCursorAndLook();
+            if (_changed)
+            {
+                Diagnostics.Logs.GameLog.Info("camera", "camera.overlay", "holder", _holder != null ? _holder.GetType().Name : null, "open", _open,
+                    "overlays", _overlayHolders.Count);
+                ApplyCursorAndLook();
+            }
         }
 
         /// <summary>Whether an overlay other than <paramref name="_holder"/> holds the cursor (the pause menu ignores Escape
@@ -362,6 +369,11 @@ namespace Avatars
         {
             if (_orbitCamera == null)
             {
+                if (!_orbitUnwiredWarned)
+                {
+                    _orbitUnwiredWarned = true;
+                    Diagnostics.Logs.GameLog.Warn("camera", "camera.emote.orbit-unwired");
+                }
                 return;
             }
             _emoteActive = true;
@@ -399,6 +411,11 @@ namespace Avatars
                 || ((_currentMode == CameraMode.Board || _currentMode == CameraMode.Embodied) && _firstPersonActive);
             bool _lockCursor = _firstPerson && !_tabletOpen && !_overlayOpen;
 
+            if (WantsLockedCursor != _lockCursor)
+            {
+                Diagnostics.Logs.GameLog.Info("camera", "camera.cursor", "locked", _lockCursor, "mode", _currentMode, "firstPerson", _firstPerson,
+                    "tablet", _tabletOpen, "overlay", _overlayOpen);
+            }
             WantsLockedCursor = _lockCursor;
             Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !_lockCursor;
@@ -437,6 +454,13 @@ namespace Avatars
                 if (_localMovement != null)
                 {
                     _localMovement.SetLookEnabled(!_tabletOpen);
+                    if (_unboundWarned) Diagnostics.Logs.GameLog.Info("camera", "camera.localavatar.bound", "seconds", Time.unscaledTime - _unboundSince);
+                    _unboundSince = -1f;
+                    _unboundWarned = false;
+                }
+                else
+                {
+                    TrackUnbound();
                 }
             }
 
@@ -446,6 +470,27 @@ namespace Avatars
         // owned avatar via AvatarManager.For(NetworkManager.Singleton) + IsOwner, cache its movement
         // controller. (AvatarManager.For + NetworkManager.Singleton are the avatar layer's own resolution —
         // same as 13.2 — which is why the avatar types are NOT in DiSeamMigratedConsumers.)
+        // Playtest log only: the local avatar's movement never bound (no body, no look) is warned once, not per frame.
+        private const float UnboundWarnSeconds = 10f;
+        private float _unboundSince = -1f;
+        private bool _unboundWarned;
+        private bool _orbitUnwiredWarned;
+
+        private void TrackUnbound()
+        {
+            if (_unboundSince < 0f)
+            {
+                _unboundSince = Time.unscaledTime;
+                return;
+            }
+            if (!_unboundWarned && Time.unscaledTime - _unboundSince > UnboundWarnSeconds)
+            {
+                _unboundWarned = true;
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Warn("camera", "camera.localavatar.unbound", "seconds", UnboundWarnSeconds,
+                    "mode", _currentMode, "manager", AvatarManager.For(NetworkManager.Singleton) != null));
+            }
+        }
+
         private bool TryBindLocalMovement()
         {
             if (_localMovement != null)

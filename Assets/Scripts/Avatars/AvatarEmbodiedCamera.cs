@@ -53,8 +53,9 @@ namespace Avatars
         [SerializeField] private float _pitchClamp = 40f;
         [SerializeField] private int _activePriority = 100;
         [SerializeField] private int _inactivePriority = -100;
-        [Tooltip("Extra height (metres, world up) of the camera above the avatar's eye (T16: the designer wants to sit " +
-                 "higher above the table). 0 = the cat's own eye height.")]
+        [Tooltip("Extra height (metres, world up) of the camera above the avatar's eye pivot. The pivot sits near the top " +
+                 "of the cat's big eyes: -1.1 puts the camera at their centre (measured on the seated cat, x4.5). T16 had it " +
+                 "4 m higher to see over the table; the day has no table any more (Poyo 2026-10-22).")]
         [SerializeField] private float _heightOffset;
         [Tooltip("Pitch (degrees, + = down) the look starts at on each entry, so a raised camera still looks at the " +
                  "cards. The ±pitch clamp stays around the seat facing.")]
@@ -232,8 +233,12 @@ namespace Avatars
                 TryBind();
                 if (!_bound)
                 {
+                    TrackUnbound();
                     return;
                 }
+                if (_unboundWarned) Diagnostics.Logs.GameLog.Info("camera", "camera.embodied.bound", "seconds", Time.unscaledTime - _unboundSince);
+                _unboundSince = -1f;
+                _unboundWarned = false;
             }
 
             // The manager/avatar can be torn down (scene unload, host shutdown) while the Vote is still
@@ -289,6 +294,25 @@ namespace Avatars
         // Resolve the local manager + the local owned avatar (route A: the LOCAL client's own seat = front
         // spot). AvatarManager.For + NetworkManager.Singleton are the avatar layer's own resolution — same as
         // 13.2/13.3 — which is why the avatar types are NOT in DiSeamMigratedConsumers.
+        // Playtest log only: the first-person camera active but never bound to the local avatar is warned once.
+        private const float UnboundWarnSeconds = 5f;
+        private float _unboundSince = -1f;
+        private bool _unboundWarned;
+
+        private void TrackUnbound()
+        {
+            if (_unboundSince < 0f)
+            {
+                _unboundSince = Time.unscaledTime;
+                return;
+            }
+            if (!_unboundWarned && Time.unscaledTime - _unboundSince > UnboundWarnSeconds)
+            {
+                _unboundWarned = true;
+                Diagnostics.Logs.GameLog.Warn("camera", "camera.embodied.unbound", "seconds", UnboundWarnSeconds);
+            }
+        }
+
         private void TryBind()
         {
             NetworkManager _networkManager = NetworkManager.Singleton;

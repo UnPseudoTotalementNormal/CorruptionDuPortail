@@ -101,6 +101,12 @@ namespace UI
                 subscribedCharacter.isAwakened.OnValueChanged -= OnAwakeningChanged;
             }
             subscribedCharacter = CharacterQuery.GetLocalCharacter(false);
+            if (subscribedCharacter == null)
+            {
+                // Was a raw NullReferenceException (which also cut the other onGameStarted listeners short).
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.banner.no-local-character");
+                return;
+            }
             subscribedCharacter.isAwakened.OnValueChanged += OnAwakeningChanged;
         }
 
@@ -141,6 +147,7 @@ namespace UI
         {
             if (playing)
             {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.queued", "kind", BannerKind(_text), "replacing", pendingText != null ? BannerKind(pendingText) : null);
                 pendingText = _text;
                 pendingWholeSeconds = _wholeSeconds;
                 wholeSeconds = Mathf.Min(wholeSeconds, elapsed);
@@ -149,8 +156,12 @@ namespace UI
             Show(_text, _wholeSeconds);
         }
 
+        // Playtest log only: which banner (never the whole text).
+        private string BannerKind(string _text) => _text == wakeText ? "wake" : _text == sleepText ? "sleep" : "other";
+
         private void Show(string _text, float _wholeSeconds)
         {
+            Diagnostics.Logs.GameLog.Info("ui", "ui.banner.start", "kind", BannerKind(_text), "seconds", _wholeSeconds);
             label.text = _text;
             wholeSeconds = _wholeSeconds;
             elapsed = 0f;
@@ -178,6 +189,7 @@ namespace UI
             Apply(_frame);
             if (_frame.Done)
             {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.end", "kind", BannerKind(label.text), "seconds", elapsed);
                 playing = false;
                 canvas.enabled = false;
                 if (pendingText != null)

@@ -4,6 +4,7 @@ using System.Linq;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
+using Diagnostics.Logs;
 using Unity.Netcode;
 
 namespace Characters.Powers
@@ -15,7 +16,8 @@ namespace Characters.Powers
         // port implemented by this adapter). Trigger is PER-TARGETING (RoleTargetSystem.onTargetingAddedServer):
         // the moment a role targets her, its icon lands on that role's thumbnail — no waiting for end of night.
         // This inherently captures late-awakening roles (Traqueuse/Robot/Croupière) too, since each targeting
-        // fires when it happens whatever the layer order. Delivery is icon-only (private player-icon channel).
+        // fires when it happens whatever the layer order. Only élu targeters are shown (the decision filters on
+        // the roster's role faction). Delivery is icon-only (private player-icon channel).
         private readonly TargetedByReportDecision _decision = new();
 
         // Whether we are currently subscribed to the targeting event, so OnGameStartedServer's idempotent
@@ -75,12 +77,19 @@ namespace Characters.Powers
             {
                 return;
             }
-            // Re-run the whole decision: it reads every current targeter and emits one AddPlayerIcon each;
+            FactionType _faction = Roster.FactionOf((int)_data.targeterId);
+            if (_faction != FactionType.chosen)
+            {
+                // Non-élu targeters stay hidden from the Orpheline; log it so a missing icon reads as by design.
+                GameLog.Info("power", "orpheline.targeter.hidden", "owner", ownerClientId.Value,
+                    "targeter", _data.targeterId, "faction", _faction);
+            }
+            // Re-run the whole decision: it reads every current targeter and emits one AddPlayerIcon per élu;
             // PlayerIconManager.AddIcon dedups, so re-emitting already-placed icons is a harmless no-op and
             // only the new targeter's icon is actually added.
             var _selfState = SelfState;
             RunDecisionEffects(_decision,
-                new PowerContext(ownerSlot: (int)ownerClientId.Value, state: _selfState), _selfState);
+                new PowerContext(ownerSlot: (int)ownerClientId.Value, roster: Roster, state: _selfState), _selfState);
         }
     }
 }

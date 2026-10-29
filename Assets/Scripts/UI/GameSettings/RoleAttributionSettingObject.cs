@@ -53,6 +53,7 @@ namespace UI.GameSettings
         private void OnRoleToAttributeValueChanged(float _number)
         {
             int _rolesToAttribute = (int)_number;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.change", "role", roleDataObject.role.roleID, "field", "max", "value", _rolesToAttribute, "via", "slider");
             roleNumberToAttributeValueText.text = _rolesToAttribute.ToString();
             gameSettingsManager?.RequestSetRoleCount(roleDataObject.role.roleID, _rolesToAttribute);
         }

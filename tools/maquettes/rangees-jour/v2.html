@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les rangées du jour, tour 2 : les rôles sur le liège de détective</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  @font-face { font-family: "Lib"; src: url("../fonts/LiberationSans.ttf"); }
+  .rj-bg { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  .rj-timer { position: absolute; left: 0; right: 0; top: 16px; text-align: center; font: 50px Lib, sans-serif; color: #fff; z-index: 6; }
+  .rj-hints { position: absolute; left: 22px; top: 18px; width: 140px; height: 520px; opacity: .5; z-index: 6; }
+  .rj-h { position: absolute; display: flex; flex-direction: column; align-items: center; width: 54px; }
+  .rj-h svg { width: 40px; height: 32px; filter: drop-shadow(0 1px 3px #000); }
+  .rj-h span { font: 19px Garamond, serif; color: #eadcbf; text-shadow: 0 1px 3px #000; }
+
+  /* row 1, as today (A0 + B0) */
+  .rj-row1 { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .rj-slot { position: absolute; transform-origin: 50% 100%; pointer-events: auto; cursor: pointer; transition: transform .2s ease-out, top .35s ease-out; }
+  .rj-slot:hover { transform: translateY(-16px) scale(1.08); z-index: 30 !important; }
+  .rj-card { position: relative; overflow: hidden; border-radius: 5px; background: #0b0908; box-shadow: 0 6px 14px rgba(0,0,0,.65); }
+  .rj-art { position: absolute; left: 0; width: 100%; object-fit: cover; }
+  .rj-band { position: absolute; left: 0; right: 0; top: 0; background: #0d0c0b; color: #c9a04a; font: 700 11px Lib, sans-serif; display: flex; align-items: center; padding-left: 14%; }
+  .rj-plate { background: #24201c; color: #d8d0c4; font: 14px Lib, sans-serif; text-align: center; height: 24px; line-height: 24px; }
+  .rj-me { position: absolute; left: 50%; top: -54px; transform: translateX(-50%); width: 36px; height: 46px; }
+  .rj-me img { width: 36px; height: 46px; display: block; }
+  .rj-me span { position: absolute; left: 0; right: 0; top: 12px; text-align: center; font: 12px Lib, sans-serif; color: #6d6d6d; }
+
+  /* row 2 */
+  .rj-row2 { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; align-items: flex-end; gap: 26px; z-index: 3; transition: transform .35s ease-out; }
+  .rj-num { font-family: Garamond, serif; line-height: 1; }
+  .rj-tip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 10px; background: #15100d; border: 1px solid #5a4630; color: #eadcbf;
+    font: 16px Garamond, serif; padding: 4px 10px; white-space: nowrap; opacity: 0; transition: opacity .15s; pointer-events: none; z-index: 40; }
+  .rj-hov { position: relative; }
+  .rj-hov:hover .rj-tip { opacity: 1; }
+
+  /* L0: the table's cork bar, as it is in the game */
+  .rj-tablebar { height: 118px; display: block; box-shadow: 0 6px 16px rgba(0,0,0,.75); }
+
+  /* the lobby's cork board (attribution-roles v10 K1: cork a little darker, light kraft, red pins) */
+  .rj-cork { position: relative; border: 3px solid #341e0e; background: #b07846 url(../attribution-roles/img/cork_tablet.webp) 0 0 / 1000px 633px;
+    box-shadow: 0 0 0 5px #5a3a20, 0 8px 18px rgba(0,0,0,.8); display: flex; align-items: center; gap: 30px; padding: 16px 24px 12px; }
+  .rj-cork:before { content: ""; position: absolute; inset: 0; background: rgba(28, 14, 4, .18); pointer-events: none; }
+  .rj-cork > * { position: relative; }
+  .pin { position: absolute; top: -7px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffd2c8 0 18%, #b21818 22%); border: 1px solid #600808; z-index: 3; }
+  .pin:before { content: ""; position: absolute; left: 2px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: rgba(30, 14, 4, .4); z-index: -1; }
+  .kraft { background: #dcc39c; border: 1px solid rgba(70, 40, 15, .5); border-bottom: 2px solid rgba(40, 22, 8, .6); border-right: 1.5px solid rgba(40, 22, 8, .4); color: #2e1d10; position: relative; }
+  .rj-side { display: flex; align-items: flex-end; gap: 10px; }
+  .rj-tag { display: flex; align-items: center; gap: 6px; padding: 3px 10px 1px 7px; font: 20px Fell, serif; white-space: nowrap; transform: rotate(var(--t)); align-self: center; }
+  .rj-tag img { width: 26px; height: 26px; }
+  .rj-pinned { position: relative; transform: rotate(var(--t)); transition: transform .18s ease-out; cursor: pointer; }
+  .rj-pinned:hover { transform: rotate(0deg) translateY(-12px) scale(1.55); z-index: 20; }
+  .rj-pinned img.p { width: 50px; height: 58px; object-fit: cover; object-position: 50% 12%; display: block; box-shadow: 0 3px 6px rgba(30, 14, 4, .7); border: 2px solid #f0e5cb; }
+  /* L3: role cards (the lobby's card: black, art, name in gold) */
+  .rj-crd { width: 66px; height: 92px; background: #080607; border-radius: 6px; padding: 3px 3px 0; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(30, 14, 4, .6); }
+  .rj-crd .a { flex: 1; border-radius: 3px; background-size: cover; background-position: 50% 15%; }
+  .rj-crd .n { height: 19px; font: bold 7.5px/8px Garamond, serif; color: #e9c57a; text-align: center; padding-top: 2px; overflow: hidden; }
+  /* the counters, D3 (chosen): a sign and a number; on kraft when they are pinned on the cork */
+  .rj-cnt { display: flex; gap: 22px; align-items: center; }
+  .rj-cnt.on-cork { gap: 14px; }
+  .rj-note { padding: 6px 10px 4px; display: flex; align-items: center; gap: 7px; transform: rotate(var(--t)); }
+  svg.rj-threads { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 2; }
+
+  .rj-ctl { display: flex; gap: 8px; margin-top: 8px; align-items: center; color: var(--soft); font-size: 14px; flex-wrap: wrap; }
+  .rj-ctl button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .rj-ctl button.on { border-color: var(--accent); color: var(--accent); }
+  header.page img.rj-ref { width: 100%; max-width: 760px; border: 1px solid var(--line); margin-top: 8px; display: block; }
+</style>
+</head>
+<body data-subject="rangees-jour">
+
+<header class="page">
+  <h1>Les rangées du jour, tour 2 : les rôles sur le liège</h1>
+  <p>Tour 1 : la ligne droite des cartes reste (A0, « aucun autre ne me convient ») ; la carte elle-même ne change pas
+     (section sans vote, l'actuel par défaut) ; les compteurs deviennent un signe et un chiffre, la phrase au survol (D3 👍).
+     Pour les rôles : « essaie avec le tableau en liège de détective ».</p>
+  <p>Le liège, c'est celui que le jeu a déjà : le tableau des rôles de la tablette au lobby (liège un peu assombri,
+     punaises rouges, kraft clair, choisis au tour 10 des maquettes du lobby) et la bande de liège de la table, la nuit.</p>
+  <img class="rj-ref" src="../attribution-roles/captures/v10/jeu_K1_elus.jpg" alt="Le liège de la tablette au lobby, dans le jeu">
+  <p><b>La scène</b> : la même qu'au tour 1 (vote du jour 2, huit joueurs, tu es Poyo, Dr Gloubi ; Steve, Brandon, Kiwi
+     et Mathis ont voté ; 5 Élus, 2 Anomalies, le Robot ; 1 corrompu sur 6, 0 pour le Robot). Survole les portraits et
+     les compteurs ; 1 et 2 ouvrent et ferment les rangées.</p>
+  <p>Sans question : sur le liège, les compteurs sont écrits sur un papier kraft punaisé (le rouge et l'orange
+     foncent un peu pour se lire sur le papier).</p>
+</header>
+
+<section>
+  <h2>La rangée des rôles en liège</h2>
+  <p>Tout l'écran, assemblé ; seule la rangée du bas change.</p>
+  <div class="variant" data-id="L0">
+    <div class="vhead"><span class="vid">L0</span><span class="vname">La bande de liège de la table</span></div>
+    <p class="vdesc">La barre telle qu'elle est posée sur la table la nuit (son liège, son bois, ses logos), montée à l'écran ;
+       les compteurs à côté. Image prise dans une autre partie : ses rôles ne sont pas ceux de la scène.</p>
+    <div class="screen"><div class="stage rj-st" data-look="table"></div></div>
+  </div>
+  <div class="variant" data-id="L1">
+    <div class="vhead"><span class="vid">L1</span><span class="vname">Les portraits punaisés</span></div>
+    <p class="vdesc">Le liège du lobby ; chaque portrait est une photo punaisée un peu de travers, chaque camp a son
+       étiquette kraft. Le portrait survolé se redresse.</p>
+    <div class="screen"><div class="stage rj-st" data-look="pins"></div></div>
+  </div>
+  <div class="variant" data-id="L2">
+    <div class="vhead"><span class="vid">L2</span><span class="vname">Le fil rouge</span></div>
+    <p class="vdesc">Comme L1, et un fil rouge tendu de l'étiquette du camp à chacun de ses portraits, comme sur un
+       tableau d'enquête.</p>
+    <div class="screen"><div class="stage rj-st" data-look="threads"></div></div>
+  </div>
+  <div class="variant" data-id="L3">
+    <div class="vhead"><span class="vid">L3</span><span class="vname">Les cartes de rôle punaisées</span></div>
+    <p class="vdesc">Les rôles sont les petites cartes du lobby (image et nom), punaisées par camp : on lit le nom sans
+       survoler.</p>
+    <div class="screen"><div class="stage rj-st" data-look="cards"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const IMG = "img/", JP = "../jour-pov/img/", AR = "../attribution-roles/img/";
+  const NAMES = ["Poyo", "Wouh", "Steve", "Brandon", "Uptn", "Kiwi", "Nox", "Mathis"];
+  const VOTED = new Set([2, 3, 5, 7]);
+  const SIDES = [
+    { logo: "LogoElu", name: "Élus", roles: [["DrGloubi", "Dr Gloubi"], ["Messager", "Le Messager"], ["Orpheline", "L'Orpheline"], ["Technomancien", "Le Technomancien"], ["Geolier", "Le Geôlier"]] },
+    { logo: "LogoAnomalie", name: "Anomalies", roles: [["Vahal", "Vahal"], ["Moork", "Moork"]] },
+    { logo: "LogoMarginaux", name: "Marginaux", roles: [["Robot", "Le Robot"]] },
+  ];
+  const CORR = "1/6", ROBOT = "0";
+  const T_CORR = "Nombre total de corrompus", T_ROBOT = "Nombre de personnes ayant interagi avec le robot cette nuit";
+  const TILT = [-2.5, 1.5, -1, 2.5, -2, 1, -1.5, 2, -3, 1.8, -0.8];
+  let open1 = true, open2 = true;
+
+  // ------------------------------------------------------------ chrome (as in the game today)
+  const ICON = {
+    esc: '<path d="M8 9h30M8 18h30M8 27h30" stroke="#eadcbf" stroke-width="3" fill="none"/>',
+    f8: '<ellipse cx="23" cy="20" rx="8" ry="10" fill="none" stroke="#eadcbf" stroke-width="2.4"/><path d="M15 14l-6-4M31 14l6-4M15 22H7M31 22h8M16 28l-6 4M30 28l6 4M23 10v20" stroke="#eadcbf" stroke-width="2" fill="none"/>',
+    one: '<rect x="5" y="9" width="11" height="17" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="18" y="7" width="11" height="19" fill="none" stroke="#eadcbf" stroke-width="2.2"/><rect x="31" y="9" width="11" height="17" fill="none" stroke="#eadcbf" stroke-width="2.2"/>',
+    two: '<path d="M23 4l4 4-4 4-4-4z" fill="#eadcbf"/><rect x="5" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="15" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="25" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/><rect x="35" y="16" width="8" height="11" fill="none" stroke="#eadcbf" stroke-width="2"/>',
+    p: '<rect x="14" y="10" width="14" height="16" fill="none" stroke="#eadcbf" stroke-width="2.4"/><path d="M4 18h34M32 12l6 6-6 6" stroke="#eadcbf" stroke-width="2.4" fill="none"/>',
+    tab: '<rect x="6" y="5" width="34" height="26" rx="2" fill="none" stroke="#eadcbf" stroke-width="2.5"/><rect x="11" y="10" width="24" height="16" fill="rgba(234,220,191,.25)"/>',
+    e: '<circle cx="23" cy="19" r="14" fill="none" stroke="#eadcbf" stroke-width="2.5"/><circle cx="18" cy="16" r="2" fill="#eadcbf"/><circle cx="28" cy="16" r="2" fill="#eadcbf"/><path d="M16 23 q7 6 14 0" fill="none" stroke="#eadcbf" stroke-width="2.5"/>',
+  };
+  const HINTS = [["esc", "Échap", 0, 0], ["f8", "F8", 72, 0], ["one", "1", 0, 92], ["two", "2", 0, 170], ["p", "P", 0, 246], ["tab", "Tab", 0, 390], ["e", "E", 0, 462]];
+  const chrome = () => '<div class="rj-timer">298</div><div class="rj-hints">' + HINTS.map(([i, k, x, y]) =>
+    '<div class="rj-h" data-key="' + k + '" style="left:' + x + "px;top:" + y + 'px"><svg viewBox="0 0 46 38">' + ICON[i] + "</svg><span>" + k + "</span></div>").join("") + "</div>";
+
+  // ------------------------------------------------------------ row 1, as today
+  function row1(bottom) {
+    const W = 131, H = 183, band = 22;
+    return '<div class="rj-row1">' + NAMES.map((n, i) => {
+      const top = open1 ? bottom - H - 24 : 960;
+      return '<div class="rj-slot" style="left:' + (224 + i * 146) + "px;top:" + top + "px;width:" + W + "px;z-index:" + (i + 1) + '">'
+        + (i === 0 ? '<div class="rj-me"><img src="' + IMG + 'me.webp"><span>Moi</span></div>' : "")
+        + '<div class="rj-card" style="width:' + W + "px;height:" + H + 'px"><img class="rj-art" src="' + IMG + (i === 0 ? "face_gloubi" : "back") + '.webp" style="top:' + band + "px;height:" + (H - band) + 'px">'
+        + '<div class="rj-band" style="height:' + band + 'px">' + n + "</div></div>"
+        + '<div class="rj-plate">' + (VOTED.has(i) ? "A voté" : "N'a pas voté") + "</div></div>";
+    }).join("") + "</div>";
+  }
+
+  // ------------------------------------------------------------ counters, D3
+  const tip = (t, inner) => '<div class="rj-hov">' + inner + '<div class="rj-tip">' + t + "</div></div>";
+  const robotFace = '<img src="' + JP + 'p_Robot.webp" style="width:40px;height:44px;object-fit:cover;object-position:50% 12%;border-radius:50%;box-shadow:0 0 0 2px #ef8a2c;display:block">';
+  function counters(onCork) {
+    if (!onCork) return '<div class="rj-cnt">'
+      + tip(T_CORR, '<div style="display:flex;align-items:center;gap:8px"><img src="' + IMG + 'sym_corruption.webp" style="width:44px"><span class="rj-num" style="font-size:34px;color:#d8433a;text-shadow:0 1px 4px #000">' + CORR + "</span></div>")
+      + tip(T_ROBOT, '<div style="display:flex;align-items:center;gap:8px">' + robotFace + '<span class="rj-num" style="font-size:34px;color:#ef8a2c;text-shadow:0 1px 4px #000">' + ROBOT + "</span></div>")
+      + "</div>";
+    return '<div class="rj-cnt on-cork">'
+      + tip(T_CORR, '<div class="kraft rj-note" style="--t:-1.5deg"><span class="pin"></span><img src="' + IMG + 'sym_corruption.webp" style="width:38px"><span class="rj-num" style="font-size:32px;color:#a51c1c">' + CORR + "</span></div>")
+      + tip(T_ROBOT, '<div class="kraft rj-note" style="--t:2deg"><span class="pin"></span>' + robotFace.replace("40px;height:44px", "36px;height:40px") + '<span class="rj-num" style="font-size:32px;color:#a5490c">' + ROBOT + "</span></div>")
+      + "</div>";
+  }
+
+  // ------------------------------------------------------------ row 2 looks
+  function cork(look) {
+    let t = 0;
+    const sides = SIDES.map((s, si) => {
+      const tag = '<div class="kraft rj-tag" data-side="' + si + '" style="--t:' + (TILT[(si * 3) % TILT.length] * .6) + 'deg"><span class="pin"></span><img src="' + JP + s.logo + '.webp">' + s.name + "</div>";
+      const items = s.roles.map(([r, label]) => {
+        const tt = TILT[t++ % TILT.length];
+        if (look === "cards") return '<div class="rj-pinned" data-side="' + si + '" style="--t:' + tt + 'deg"><span class="pin"></span><div class="rj-crd"><div class="a" style="background-image:url(' + JP + "p_" + r + '.webp)"></div><div class="n">' + label + "</div></div></div>";
+        return '<div class="rj-pinned" data-side="' + si + '" style="--t:' + tt + 'deg"><span class="pin"></span><img class="p" src="' + JP + "p_" + r + '.webp" alt="' + label + '"></div>';
+      }).join("");
+      return '<div class="rj-side">' + tag + items + "</div>";
+    }).join("");
+    return '<div class="rj-cork">' + (look === "threads" ? '<svg class="rj-threads"></svg>' : "") + sides + counters(true) + "</div>";
+  }
+  function row2(look) {
+    const body = look === "table" ? '<img class="rj-tablebar" src="' + JP + 'strip.webp">' + counters(false) : cork(look);
+    return '<div class="rj-row2" style="transform:translateY(' + (open2 ? 0 : 200) + 'px)">' + body + "</div>";
+  }
+  const ROWH = { table: 118, pins: 104, threads: 104, cards: 138 };
+
+  // red threads: from each side's tag pin to each of its portraits' pins (measured once laid out)
+  function threads(stage) {
+    const svg = stage.querySelector("svg.rj-threads");
+    if (!svg) return;
+    const box = svg.getBoundingClientRect(), k = box.width / svg.parentElement.offsetWidth || 1;
+    const pt = el => { const r = el.querySelector(".pin").getBoundingClientRect(); return [(r.left + r.width / 2 - box.left) / k, (r.top + r.height / 2 - box.top) / k]; };
+    let h = "";
+    stage.querySelectorAll(".rj-tag").forEach(tag => {
+      const a = pt(tag);
+      stage.querySelectorAll('.rj-pinned[data-side="' + tag.dataset.side + '"]').forEach(p => {
+        const b = pt(p), my = Math.max(a[1], b[1]) + 10;
+        h += '<path d="M' + a[0] + " " + a[1] + " Q" + (a[0] + b[0]) / 2 + " " + my + " " + b[0] + " " + b[1] + '" fill="none" stroke="#a3141a" stroke-width="1.6" opacity=".9"/>';
+      });
+    });
+    svg.innerHTML = h;
+  }
+
+  // ------------------------------------------------------------ draw
+  const stages = [...document.querySelectorAll(".rj-st")];
+  function draw() {
+    stages.forEach(st => {
+      const look = st.dataset.look;
+      const bottom = open2 ? 900 - 22 - ROWH[look] - 32 : 878;
+      st.innerHTML = '<img class="rj-bg" src="' + JP + 'vide20_y0.webp">' + chrome() + row1(bottom) + row2(look);
+      st.querySelectorAll(".rj-h").forEach(h => h.onclick = () => key(h.dataset.key));
+      requestAnimationFrame(() => threads(st));
+    });
+    document.querySelectorAll(".rj-ctl [data-k]").forEach(b => b.classList.toggle("on", b.dataset.k === "1" ? open1 : open2));
+  }
+  function key(k) {
+    if (k === "1") open1 = !open1;
+    if (k === "2") open2 = !open2;
+    if (k === "1" || k === "2") draw();
+  }
+  stages.forEach(st => {
+    const ctl = document.createElement("div"); ctl.className = "rj-ctl";
+    ctl.innerHTML = 'Rangées : <button data-k="1">1 : cartes</button><button data-k="2">2 : rôles</button>';
+    st.closest(".screen").after(ctl);
+    ctl.querySelectorAll("[data-k]").forEach(b => b.onclick = () => key(b.dataset.k));
+  });
+  document.addEventListener("keydown", e => {
+    if (/TEXTAREA|INPUT/.test(document.activeElement.tagName)) return;
+    if (e.key === "1" || e.key === "&") key("1");
+    if (e.key === "2" || e.key === "é") key("2");
+  });
+  window.addEventListener("resize", () => stages.forEach(threads));
+  draw();
+
+  const s = document.createElement("script"); s.src = "../common/mock.js"; document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

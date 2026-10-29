@@ -47,6 +47,7 @@ namespace GameLogic.GameStates
                 new NetworkSerializableObject[] { new(NONE_EVENT_INDEX) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
 
             currentEventIndex = 0;
+            Diagnostics.Logs.GameLog.Info("night", "recap.start", "events", recapEvents.Count);
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(PlayEvent),
                 new NetworkSerializableObject[] { new(currentEventIndex) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
         }
@@ -77,11 +78,13 @@ namespace GameLogic.GameStates
                 int _nextIndex = currentEventIndex + 1;
                 if (_nextIndex < recapEvents.Count)
                 {
+                    Diagnostics.Logs.GameLog.Info("night", "recap.event", "index", _nextIndex, "name", recapEvents[_nextIndex].eventName);
                     gameManager.DoStateMethodRpc(GetType().FullName, nameof(PlayEvent),
                         new NetworkSerializableObject[] { new(_nextIndex) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
                 }
                 else
                 {
+                    Diagnostics.Logs.GameLog.Info("night", "recap.end", "events", recapEvents.Count);
                     Loop.NextGameState();
                 }
             }

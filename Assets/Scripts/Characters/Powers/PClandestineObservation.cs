@@ -1,3 +1,4 @@
+using Diagnostics.Logs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,6 +59,8 @@ namespace Characters.Powers
             // for revisit — the Chasseuse rework is not frozen.
             int _available = GetValidTargets().Count;
             int _pickCount = System.Math.Min(_nonEluCount.Value, _available);
+            GameLog.Info("power", "power.observe.start", "owner", ownerClientId.Value, "wanted", _nonEluCount.Value,
+                "available", _available, "pick", _pickCount);
             selectionFlowService.StartMultiCharacterSelection(targetValidator, _pickCount,
                 OnAllCharactersPicked, new SelectionFlowOptions { stepDescriptions = pickerStepDescriptions });
         }
@@ -65,6 +68,7 @@ namespace Characters.Powers
         private void OnAllCharactersPicked(List<Character> _characters)
         {
             ulong[] _ids = _characters.Where(_c => _c != null).Select(_c => _c.ownerClientId.Value).ToArray();
+            GameLog.Info("power", "power.observe.picks", "owner", ownerClientId.Value, "targets", _ids);
             ObserveServerRpc(_ids);
             OnUsed();
         }

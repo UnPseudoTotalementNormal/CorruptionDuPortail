@@ -621,6 +621,7 @@ namespace GameLogic
             if (_clientStartDeferredForRejoin &&
                 (methodName == nameof(GameState.OnStartStateClient) || methodName == nameof(GameState.OnEndStateClient)))
             {
+                GameLog.Info("net", "state.rpc.deferred", "state", stateTypeName.ToString(), "method", methodName.ToString(), "reason", "rejoin-catchup-pending");
                 return;
             }
 
@@ -899,6 +900,7 @@ namespace GameLogic
         {
             gameLoopCount = _gameLoopCount;
             Debug.Log($"[REJOIN] Caught up: day {currentDay}.");
+            GameLog.Info("net", "rejoin.catchup", "loopCount", _gameLoopCount, "deferredStart", _clientStartDeferredForRejoin);
             if (_clientStartDeferredForRejoin)
             {
                 _clientStartDeferredForRejoin = false;

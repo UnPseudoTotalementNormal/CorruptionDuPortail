@@ -195,6 +195,7 @@ namespace Presentation
         {
             if (!_interactable || _target.Avatar == null)
             {
+                Diagnostics.Logs.GameLog.Info("vote", "vote.cat.refused", "reason", _interactable ? "no-avatar" : "not-interactable");
                 return;
             }
             ulong _seat = _target.Avatar.ownerClientId.Value;

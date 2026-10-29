@@ -28,10 +28,19 @@ namespace Characters.Powers
 
         private void OnCharacterAndRolePicked(Character _character, Role _role)
         {
-            if (!_character ||
-                !CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character) ||
-                !CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
+            if (!_character)
             {
+                LogClickRefused(0, "no-character");
+                return;
+            }
+            if (!CheckIsTargetValid(_character.ownerClientId.Value, TargetUtils.TargetType.Character))
+            {
+                LogClickRefused(_character.ownerClientId.Value, "invalid-character");
+                return;
+            }
+            if (!CheckIsTargetValid(_role.ownerClientId, TargetUtils.TargetType.Role))
+            {
+                LogClickRefused(_role.ownerClientId, "invalid-role");
                 return;
             }
 

@@ -293,6 +293,7 @@ namespace GameLogic
         {
             // Rejoin 02: a rejoined player's new connection pulls his seat's slice.
             ulong _sender = _params.Receive.SenderClientId;
+            Diagnostics.Logs.GameLog.Info("knowledge", "knowledge.slice.requested", "client", _sender);
             PushSlice(characterManager != null ? characterManager.SeatOfTransport(_sender) : _sender, ulong.MaxValue, false);
         }
 

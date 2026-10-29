@@ -83,6 +83,7 @@ namespace Reticle
                 return;
             }
             _active = _isActive;
+            Diagnostics.Logs.GameLog.Info("ui", "reticle.active", "on", _active);
             _hud?.SetVisible(_active);
 
             if (_active)
@@ -133,7 +134,13 @@ namespace Reticle
                     : (_worldHandler != null ? _worldHandler : _bodyHandler);
                 if (_clickTarget != null)
                 {
+                    Diagnostics.Logs.GameLog.Info("ui", "reticle.click", "target", _clickTarget.name,
+                        "track", _uiHandler != null ? "ui" : (_worldHandler != null ? "world" : "body"));
                     DispatchClick(_clickTarget);
+                }
+                else
+                {
+                    Diagnostics.Logs.GameLog.Info("ui", "reticle.refused", "reason", "no-target");
                 }
             }
         }

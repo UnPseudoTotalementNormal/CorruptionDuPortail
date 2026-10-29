@@ -129,6 +129,11 @@ namespace Smartphone
             {
                 GoToApp(nextApp, swipeDirection);
             }
+            else
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.swipe.refused", "dir", swipeDirection, "reason", "no-neighbor",
+                    "app", currentApp ? currentApp.name : null);
+            }
         }
 
         /// <summary>Whether a swipe that way would reach another screen (the key hints show its arrow only then).</summary>

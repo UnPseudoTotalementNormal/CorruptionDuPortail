@@ -1,3 +1,4 @@
+using Diagnostics.Logs;
 using System.Linq;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
@@ -50,6 +51,8 @@ namespace Characters.Powers
         void ILegacyGrant.GrantLegacy(int _ownerSlot)
         {
             isLegacyInherited = true;
+            GameLog.Guarded(() => GameLog.Info("power", "power.legacy.granted", "owner", _ownerSlot,
+                "legacyPower", legacyPower.powerName.ToString(), "from", roleForLegacy.ToString()));
             characterManager.GivePowerToCharacter((ulong)_ownerSlot, legacyPower);
         }
         

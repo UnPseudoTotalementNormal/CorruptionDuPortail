@@ -77,6 +77,8 @@ namespace RoleTarget
         [Rpc(SendTo.Server)]
         private void NewTargetingRpc(TargetingData _targetingData)
         {
+            Diagnostics.Logs.GameLog.Info("power", "targeting.recorded", "targeter", _targetingData.targeterId,
+                "target", _targetingData.targetId);
             ReceiveTargetingDataRpc(_targetingData);
         }
         

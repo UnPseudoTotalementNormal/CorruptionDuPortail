@@ -202,6 +202,7 @@ namespace Network
             // NET-01: key the row on the RPC SENDER (never a client-supplied id) and upsert — a repeated answer
             // replaces the row instead of adding a second one.
             playerInfo.playerClientId = rpcParams.Receive.SenderClientId;
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.player.info", "seat", playerInfo.playerClientId, "name", playerInfo.playerName.ToString());
             SetRosterServer(_roster.Value.WithUpsert(playerInfo));
         }
 

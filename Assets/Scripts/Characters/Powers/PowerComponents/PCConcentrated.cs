@@ -36,7 +36,11 @@ namespace Characters.Powers.PowerComponents
             }
 
             // The concentrated effect only when the precedent power is untouched this turn...
-            if (_precedentPower.powerUseLeft.Value == _precedentPower.maxPowerUse)
+            bool _precedentUntouched = _precedentPower.powerUseLeft.Value == _precedentPower.maxPowerUse;
+            Diagnostics.Logs.GameLog.Info("power", "power.concentrated", "power", power.powerName.ToString(),
+                "owner", power.ownerClientId.Value, "precedent", _precedentPower.powerName.ToString(),
+                "effect", _precedentUntouched ? "applied" : "skipped");
+            if (_precedentUntouched)
             {
                 if (power is IConcentratedPowerEffect _cPower)
                 {

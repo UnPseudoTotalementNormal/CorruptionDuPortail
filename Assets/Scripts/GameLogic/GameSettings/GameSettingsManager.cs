@@ -220,6 +220,7 @@ namespace GameLogic.GameSettings
             // Server-side gate (defence in depth): ignore client proposals unless editing is opened up.
             if (!_allowClientEditing)
             {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.refused", "role", _roleId, "field", "max", "value", _max, "reason", "client-editing-closed");
                 return;
             }
             ApplyRoleCountServer(_roleId, _max);
@@ -249,6 +250,7 @@ namespace GameLogic.GameSettings
                 RoleSettingEntry _entry = _settings[i];
                 _entry.max = _clampedMax;
                 _entry.forced = _clampedForced;
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.set", "role", _roleId, "field", "max", "value", _clampedMax, "forced", _clampedForced);
                 _settings[i] = _entry;
                 return;
             }
@@ -279,6 +281,7 @@ namespace GameLogic.GameSettings
         {
             if (!_allowClientEditing)
             {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.refused", "role", _roleId, "field", "forced", "value", _forced, "reason", "client-editing-closed");
                 return;
             }
             ApplyForcedServer(_roleId, _forced);
@@ -305,6 +308,7 @@ namespace GameLogic.GameSettings
 
                 RoleSettingEntry _entry = _settings[i];
                 _entry.forced = _clamped;
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.role.set", "role", _roleId, "field", "forced", "value", _clamped);
                 _settings[i] = _entry;
                 return;
             }

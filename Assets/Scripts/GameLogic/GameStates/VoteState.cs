@@ -75,6 +75,7 @@ namespace GameLogic.GameStates
 
         public void OnPlayerVoted(ulong _playerId)
         {
+            GameLog.Guarded(() => GameLog.Info("vote", "vote.click", "to", _playerId, "skip", _playerId == SKIP_VOTE_ID));
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(OnPlayerVotedRpc),
                 new NetworkSerializableObject[]
                 {

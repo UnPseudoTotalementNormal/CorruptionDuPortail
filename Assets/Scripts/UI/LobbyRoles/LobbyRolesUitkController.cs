@@ -468,8 +468,13 @@ namespace UI.LobbyRoles
         // Tap a card → open the shared screen-space RoleCard overlay with that role's full authored detail.
         private void OpenDetail(RoleID id)
         {
-            if (_roleCardOverlay == null || _data == null) return;
+            if (_roleCardOverlay == null || _data == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("ui", "ui.lobbyroles.detail.refused", "role", id, "reason", _data == null ? "no-data" : "no-overlay");
+                return;
+            }
             Role role = _data.GetRole(id);
+            Diagnostics.Logs.GameLog.Info("ui", "ui.lobbyroles.detail", "role", id, "found", role != null);
             if (role != null) _roleCardOverlay.Open(role);
         }
 

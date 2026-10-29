@@ -45,6 +45,8 @@ namespace Characters.Powers.PowerComponents
             }
             
             hasLegacyBeenInherited = true;
+            Diagnostics.Logs.GameLog.Info("power", "power.unlocked", "power", power.powerName.ToString(),
+                "owner", power.ownerClientId.Value, "reason", "legacy-role-chained", "legacyRole", legacyRoleID.ToString());
         }
 
         protected override void Init()

@@ -358,6 +358,7 @@ namespace GameLogic
             }
 
             _markers.Add(_marker);
+            Diagnostics.Logs.GameLog.Info("game", "icon.add", "icon", _iconId, "marked", _markedClientId, "viewer", _viewerClientId, "lifetime", _lifetime.ToString());
             PushSliceTo(_viewerClientId);
         }
 
@@ -376,6 +377,7 @@ namespace GameLogic
             int _removed = _markers.RemoveAll(_m => _m.IconId == _iconId && _m.MarkedClientId == _markedClientId);
             if (_removed > 0)
             {
+                Diagnostics.Logs.GameLog.Info("game", "icon.remove", "icon", _iconId, "marked", _markedClientId, "viewer", _viewerClientId, "count", _removed);
                 PushSliceTo(_viewerClientId);
             }
         }
@@ -392,14 +394,17 @@ namespace GameLogic
                 return;
             }
 
+            int _total = 0;
             foreach (var _viewerId in _byViewer.Keys.ToList())
             {
                 int _removed = _byViewer[_viewerId].RemoveAll(_m => _m.Lifetime == PlayerIconLifetime.ClearAtAwakeningStart);
                 if (_removed > 0)
                 {
+                    _total += _removed;
                     PushSliceTo(_viewerId);
                 }
             }
+            if (_total > 0) Diagnostics.Logs.GameLog.Info("game", "icon.purge", "removed", _total);
         }
 
         /// <summary>SERVER-ONLY read of the authoritative table (tests / debug). Empty for an unknown viewer.</summary>
@@ -454,6 +459,7 @@ namespace GameLogic
             {
                 // No safe target to wrap: sending an UNWRAPPED RPC would break the bot-debug flow, so the
                 // push is dropped — but ResolveCharacterManager has already told the console about it.
+                Diagnostics.Logs.GameLog.Warn("game", "icon.push.dropped", "viewer", _viewerClientId, "reason", "no character manager");
                 return;
             }
             ReceiveIconSliceRpc(_slice, _viewerClientId, _resolved.GetSafeRpcTarget(_viewerClientId));

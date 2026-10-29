@@ -74,6 +74,7 @@ namespace Board.UI
         private void SetShownText(FixedString32Bytes _newText)
         {
             shownText.Value = _newText;
+            Diagnostics.Logs.GameLog.Info("board", "board.counter", "kind", "corruption", "text", _newText.ToString());
         }
 
         private void ShowText(FixedString32Bytes _previous, FixedString32Bytes _current)

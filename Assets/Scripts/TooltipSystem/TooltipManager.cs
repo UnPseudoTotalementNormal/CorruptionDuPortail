@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using Diagnostics.Logs;
 using Extensions;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -189,9 +190,50 @@ namespace TooltipSystem
                 }
             }
             
-            _tooltipRect.position = _componentScreenPos
+            Vector2 _wanted = _componentScreenPos
                 + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f)
                 + _tooltipTrigger.tooltipPixelOffset;
+            (Vector2 _placed, bool _flipped) = KeepOnScreen(_componentScreenPos, _componentBoundingBoxSize,
+                _tooltipBoundingBoxSize, _tooltipTrigger.tooltipOffsetDirection, _tooltipTrigger.tooltipPixelOffset,
+                new Vector2(Screen.width, Screen.height));
+            if (_placed != _wanted)
+            {
+                GameLog.Info("ui", "ui.tooltip.kept.on.screen", "target", _linkedGameObject.name, "flipped", _flipped,
+                    "from", _wanted, "to", _placed);
+            }
+
+            _tooltipRect.position = _placed;
+        }
+
+        /// <summary>
+        /// Centre of a tooltip placed beside its trigger, kept inside the screen. A trigger near a screen edge (the
+        /// robot counter in the top-right corner, playtest 2026-10-29) pushed its tooltip out of the screen: the
+        /// tooltip flips to the other side on each axis where it does not fit, then the whole box is clamped inside.
+        /// </summary>
+        public static (Vector2 centre, bool flipped) KeepOnScreen(Vector2 _triggerCentre, Vector2 _triggerSize,
+            Vector2 _tooltipSize, Vector2 _direction, Vector2 _pixelOffset, Vector2 _screen)
+        {
+            Vector2 _gap = _triggerSize / 2f + _tooltipSize / 2f;
+            Vector2 _half = _tooltipSize / 2f;
+            Vector2 _centre = _triggerCentre + _direction * _gap + _pixelOffset;
+
+            bool _flipped = false;
+            for (int _axis = 0; _axis < 2; _axis++)
+            {
+                bool _out = _centre[_axis] - _half[_axis] < 0f || _centre[_axis] + _half[_axis] > _screen[_axis];
+                if (_out && !Mathf.Approximately(_direction[_axis], 0f))
+                {
+                    _direction[_axis] = -_direction[_axis];
+                    _flipped = true;
+                }
+            }
+            if (_flipped)
+            {
+                _centre = _triggerCentre + _direction * _gap + _pixelOffset;
+            }
+            return (new Vector2(
+                Mathf.Clamp(_centre.x, _half.x, Mathf.Max(_half.x, _screen.x - _half.x)),
+                Mathf.Clamp(_centre.y, _half.y, Mathf.Max(_half.y, _screen.y - _half.y))), _flipped);
         }
 
         private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)

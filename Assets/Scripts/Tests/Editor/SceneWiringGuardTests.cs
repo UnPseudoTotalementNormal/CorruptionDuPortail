@@ -103,6 +103,37 @@ namespace Tests.Editor
             }
         }
 
+        // T23 vote on the cats: the cat's pointer collider must sit on a layer both the seated reticle's world ray and a
+        // free cursor's PhysicsRaycaster look at. It sat on Default while both looked at 3DPhysical only: no cat could be
+        // voted for in the b25 playtest (2026-10-29), every click read "reticle.refused no-target".
+        [Test]
+        public void CatPointerTarget_IsOnTheLayersThePointersRaycast()
+        {
+            var avatar = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Avatars/PlayerAvatar.prefab");
+            Assert.IsNotNull(avatar, "PlayerAvatar prefab not found.");
+            var targets = avatar.GetComponentsInChildren<global::Avatars.CatPointerTarget>(true);
+            Assert.IsNotEmpty(targets, "PlayerAvatar has no CatPointerTarget: cats cannot be voted for.");
+
+            var reticles = Object.FindObjectsByType<global::Reticle.ReticleInteractor>(FindObjectsInactive.Include);
+            Assert.IsNotEmpty(reticles, "No ReticleInteractor in GameScene.");
+            var raycasters = Object.FindObjectsByType<UnityEngine.EventSystems.PhysicsRaycaster>(FindObjectsInactive.Include);
+            Assert.IsNotEmpty(raycasters, "No PhysicsRaycaster in GameScene: a free cursor cannot point at a cat.");
+
+            foreach (var target in targets)
+            {
+                int layer = target.gameObject.layer;
+                string name = $"{target.name} (layer {LayerMask.LayerToName(layer)})";
+                foreach (var reticle in reticles)
+                {
+                    int mask = new SerializedObject(reticle).FindProperty("_worldMask").intValue;
+                    Assert.IsTrue((mask & (1 << layer)) != 0,
+                        $"{name} is outside the reticle's world mask on {GetHierarchyPath(reticle)}: a seated click never reaches the cat.");
+                }
+                Assert.IsTrue(raycasters.Any(raycaster => (raycaster.eventMask.value & (1 << layer)) != 0),
+                    $"{name} is outside every PhysicsRaycaster's event mask: a free cursor never reaches the cat.");
+            }
+        }
+
         [Test]
         public void Guard_Bites_OnSyntheticUnwiredField()
         {

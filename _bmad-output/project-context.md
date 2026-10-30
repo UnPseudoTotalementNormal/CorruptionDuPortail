@@ -177,6 +177,11 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 ## 3D interaction
 
 - Board objects are driven entirely through `IPointer*` (no `OnMouse*`): cursor mode = `InputSystemUIInputModule` + `PhysicsRaycaster` on CameraBrain; embodied mode = `ReticleInteractor`. Mutually exclusive: the reticle clicks only while `Cursor.lockState` is really Locked (the UI module ignores a locked pointer); with a free cursor (unfocused window, autoplay) both clicked the same button, every click arrived twice.
+- **A 3D clickable goes on layer `3DPhysical` (7).** The reticle's world ray (`_worldMask`) and CameraBrain's
+  `PhysicsRaycaster` look at that layer only: a collider left on Default is never hovered nor clicked (the T23 cat vote
+  read `reticle.refused no-target` for a whole playtest, 2026-10-29; guard: `SceneWiringGuardTests`). Any change to
+  how a player clicks something (new clickable, layer, mask, reticle): run autoplay `real-input-actions`, the only
+  check that clicks for real. Default autoplay votes and powers call the game directly and pass anyway.
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
 - **Cat materials are on `Corruption/Cat Toon`**, set by `CatToonLook` (`Tools > Cat Cosmetics > Apply toon look`). A new
   cat material made by hand or by an import stays on another shader: old look, no glow, and no emote dither fade. Add

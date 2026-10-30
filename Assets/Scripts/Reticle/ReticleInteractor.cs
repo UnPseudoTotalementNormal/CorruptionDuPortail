@@ -140,7 +140,15 @@ namespace Reticle
                 }
                 else
                 {
-                    Diagnostics.Logs.GameLog.Info("ui", "reticle.refused", "reason", "no-target");
+                    // What sat under the reticle, so a click that reaches nothing says why (a cat on a layer the world
+                    // ray ignores read "no-target" for a whole playtest, 2026-10-29).
+                    Diagnostics.Logs.GameLog.Guarded(() =>
+                    {
+                        DescribeWorldHit(out string _hit, out string _layer, out bool _inMask);
+                        Diagnostics.Logs.GameLog.Info("ui", "reticle.refused", "reason", "no-target",
+                            "uiHits", _uiResults.Count, "uiTop", _uiResults.Count > 0 ? _uiResults[0].gameObject.name : "-",
+                            "hit", _hit, "layer", _layer, "inMask", _inMask);
+                    });
                 }
             }
         }
@@ -254,6 +262,29 @@ namespace Reticle
                 return null;
             }
             return ExecuteEvents.GetEventHandler<IPointerClickHandler>(_hit.collider.gameObject);
+        }
+
+        // Diagnostics only (a refused click): the first collider on ANY layer under the reticle, its layer, and whether
+        // the world ray's mask lets it through.
+        private void DescribeWorldHit(out string _hit, out string _layer, out bool _inMask)
+        {
+            _hit = "-";
+            _layer = "-";
+            _inMask = false;
+            Camera _cam = _worldCamera != null ? _worldCamera : Camera.main;
+            if (_cam == null)
+            {
+                _hit = "no-camera";
+                return;
+            }
+            Ray _ray = _cam.ScreenPointToRay(PointerData().position);
+            if (Physics.Raycast(_ray, out RaycastHit _any, _worldMaxDistance, ~0, QueryTriggerInteraction.Collide))
+            {
+                int _l = _any.collider.gameObject.layer;
+                _hit = _any.collider.gameObject.name;
+                _layer = LayerMask.LayerToName(_l);
+                _inMask = (_worldMask.value & (1 << _l)) != 0;
+            }
         }
 
         /// <summary>

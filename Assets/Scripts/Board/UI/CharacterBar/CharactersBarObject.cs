@@ -73,8 +73,12 @@ namespace Board.UI.CharacterBar
         private Transform HoverVisual => hoverVisual != null ? hoverVisual : transform;
 
         private Camera _mainCamera;
-        private Vector3 _restPosition;
-        private Quaternion _restRotation;
+        // Rest pose in the PARENT's space, not the world: the bar flies between the cork wall and the day rows,
+        // which hang under the camera and follow the head (T23). A world rest pose went stale the moment the bar
+        // moved, and the unhover then sent the portrait to where the bar used to be: off screen (playtest
+        // 2026-10-29, Wouh: portraits vanishing after a click, or while hovered in the pause menu).
+        private Vector3 _restLocalPosition;
+        private Quaternion _restLocalRotation;
         private bool _hasRestPose;
 
         public event Action<Character> onCharacterBarObjectClicked;
@@ -117,17 +121,27 @@ namespace Board.UI.CharacterBar
             EnsureCamera();
             if (!_hasRestPose)
             {
-                _restPosition = _visual.position;
-                _restRotation = _visual.rotation;
+                _restLocalPosition = _visual.localPosition;
+                _restLocalRotation = _visual.localRotation;
                 _hasRestPose = true;
             }
 
             _visual.DOKill();
-            _visual.DOMove(_restPosition + GetCameraZoomOffset(), hoverTweenDuration).SetEase(Ease.OutQuint);
+            Vector3 _restWorld = _visual.parent != null ? _visual.parent.TransformPoint(_restLocalPosition) : _restLocalPosition;
+            Vector3 _liftedWorld = _restWorld + GetCameraZoomOffset();
+            Vector3 _liftedLocal = _visual.parent != null ? _visual.parent.InverseTransformPoint(_liftedWorld) : _liftedWorld;
+            _visual.DOLocalMove(_liftedLocal, hoverTweenDuration).SetEase(Ease.OutQuint);
             if (hoverFaceCamera && _mainCamera != null)
             {
-                _visual.DORotateQuaternion(GetFaceCameraRotation(), hoverTweenDuration).SetEase(Ease.OutQuint);
+                Quaternion _faceWorld = GetFaceCameraRotation();
+                Quaternion _faceLocal = _visual.parent != null ? Quaternion.Inverse(_visual.parent.rotation) * _faceWorld : _faceWorld;
+                _visual.DOLocalRotateQuaternion(_faceLocal, hoverTweenDuration).SetEase(Ease.OutQuint);
             }
+            // Where the portrait rests on screen (viewport 0..1) when hovered: a value off 0..1 is a portrait sent
+            // out of view, the playtest symptom this pose fix closes.
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("ui", "ui.bar.hover",
+                "seat", playerCharacter != null ? playerCharacter.ownerClientId.Value : ulong.MaxValue,
+                "rest", _mainCamera != null ? (Vector2)_mainCamera.WorldToViewportPoint(_restWorld) : Vector2.negativeInfinity));
             canvasObject.sortingOrder += 1;
             if (_hoverOutline != null) _hoverOutline.enabled = true;
             onCharacterBarObjectHovered?.Invoke(playerCharacter);
@@ -139,8 +153,8 @@ namespace Board.UI.CharacterBar
             _visual.DOKill();
             if (_hasRestPose)
             {
-                _visual.DOMove(_restPosition, hoverTweenDuration).SetEase(Ease.OutQuint);
-                _visual.DORotateQuaternion(_restRotation, hoverTweenDuration).SetEase(Ease.OutQuint);
+                _visual.DOLocalMove(_restLocalPosition, hoverTweenDuration).SetEase(Ease.OutQuint);
+                _visual.DOLocalRotateQuaternion(_restLocalRotation, hoverTweenDuration).SetEase(Ease.OutQuint);
             }
             canvasObject.sortingOrder -= 1;
             if (_hoverOutline != null) _hoverOutline.enabled = false;

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic-tac du vote, levée et chute du chat (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+</style>
+</head>
+<body data-subject="t19-sons">
+
+<header class="page">
+  <h1>Tic-tac du vote, levée et chute du chat (tour 1)</h1>
+  <p><b>Aujourd'hui :</b> les derniers sons provisoires que j'avais fabriqués de toutes pièces (X0, B0, C0) :
+     le tic-tac de la bougie du vote, la levée du chat enchaîné et sa chute. On les remplace par de vrais sons.</p>
+  <p><b>Les scènes :</b> le tic-tac commence tout bas une minute avant la fin du vote, puis s'accélère et monte
+     pendant les dix dernières secondes. Quand un chat est enchaîné, une force le soulève deux secondes jusqu'au
+     milieu du cercle, sa carte se montre, puis il retombe à plat sur le sol.</p>
+  <p><b>Sans question :</b> sons de Freesound, licences CC0 ou CC BY seulement (les auteurs CC BY seront crédités),
+     coupés, nettoyés et mis au volume des objets de la table, comme la bougie. Les boutons jouent au volume du jeu :
+     le tic-tac à sa vraie cadence, « Toute la scène » avec la levée et la chute à leur vrai moment.</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" data-src="audio/clic.ogg">▶ Un clic de carte, pour comparer</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<section>
+  <h2>Le tic-tac de la bougie, pendant le vote</h2>
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le tic-tac provisoire fabriqué à la main.</p>
+    <button class="bs-play bs-clock" data-take="X0">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="X0">▶ Une minute avant la fin</button>
+  </div>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Pendule de cheminée (par défaut)</span></div>
+    <p class="vdesc">Un tic sourd puis un tac plus franc, bois et métal, très net.</p>
+    <button class="bs-play bs-clock" data-take="A1">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="A1">▶ Une minute avant la fin</button>
+    <img class="bs-wave" src="audio/A1_tac.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Tewkesound/sounds/140147/" target="_blank">Mantel Clock Ticking.wav</a>, Tewkesound, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Horloge murale ancienne</span></div>
+    <p class="vdesc">Plus grave dans le timbre, une vieille horloge de mur.</p>
+    <button class="bs-play bs-clock" data-take="A2">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="A2">▶ Une minute avant la fin</button>
+    <img class="bs-wave" src="audio/A2_tac.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/straget/sounds/456236/" target="_blank">Antique wall clock.wav</a>, straget, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Vieille horloge sèche</span></div>
+    <p class="vdesc">Deux coups secs et clairs, presque un claquement de bois.</p>
+    <button class="bs-play bs-clock" data-take="A3">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="A3">▶ Une minute avant la fin</button>
+    <img class="bs-wave" src="audio/A3_tac.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Duasun/sounds/323626/" target="_blank">Old clock tick-tock</a>, Duasun, CC0</p>
+  </div>
+  <div class="variant" data-id="A4">
+    <div class="vhead"><span class="vid">A4</span><span class="vname">Pendule de salon</span></div>
+    <p class="vdesc">Un tic-tac régulier et feutré, le plus discret.</p>
+    <button class="bs-play bs-clock" data-take="A4">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="A4">▶ Une minute avant la fin</button>
+    <img class="bs-wave" src="audio/A4_tac.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/nightcustard/sounds/675680/" target="_blank">Mantlepiece clock ticks</a>, nightcustard, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="A5">
+    <div class="vhead"><span class="vid">A5</span><span class="vname">Petit mécanisme</span></div>
+    <p class="vdesc">Un tic-tac fin et métallique, une petite horloge de bureau.</p>
+    <button class="bs-play bs-clock" data-take="A5">▶ Les 10 dernières secondes du vote</button> <button class="bs-play bs-calm" data-take="A5">▶ Une minute avant la fin</button>
+    <img class="bs-wave" src="audio/A5_tac.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/blukotek/sounds/412751/" target="_blank">ticking of the clock 01.wav</a>, blukotek, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>La levée du chat enchaîné</h2>
+  <div class="variant" data-id="B0">
+    <div class="vhead"><span class="vid">B0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play" data-src="audio/B0.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B0">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Souffle qui monte</span></div>
+    <p class="vdesc">Une cymbale à l'envers : un souffle qui gonfle jusqu'au sommet de la levée.</p>
+    <button class="bs-play" data-src="audio/B1.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B1">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/B1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/deleted_user_7146007/sounds/383903/" target="_blank">Reverse Crash Cymbal Projection</a>, deleted_user_7146007, CC0</p>
+  </div>
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Montée métallique</span></div>
+    <p class="vdesc">Une montée inquiétante, des résonances de métal qui grimpent.</p>
+    <button class="bs-play" data-src="audio/B2.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B2">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/B2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/eldiariosonoro_/sounds/545798/" target="_blank">Metallic Horror Riser FX.wav</a>, eldiariosonoro_, CC0</p>
+  </div>
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Force obscure</span></div>
+    <p class="vdesc">Un grondement magique qui enfle et culmine quand le chat arrive en haut.</p>
+    <button class="bs-play" data-src="audio/B3.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B3">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/B3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/oldestmillennial/sounds/533025/" target="_blank">Dark Teleport.wav</a>, oldestmillennial, CC BY 3.0</p>
+  </div>
+  <div class="variant" data-id="B4">
+    <div class="vhead"><span class="vid">B4</span><span class="vname">Souffle grave et chaînes (par défaut)</span></div>
+    <p class="vdesc">La montée de B1 descendue de cinq demi-tons, et des chaînes qui s'agitent pendant que le chat s'élève.</p>
+    <button class="bs-play" data-src="audio/B4.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B4">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/B4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/deleted_user_7146007/sounds/383903/" target="_blank">Reverse Crash Cymbal Projection</a>, deleted_user_7146007, CC0 ;
+       <a href="https://freesound.org/people/mffm/sounds/235960/" target="_blank">Chains Rattling.wav</a>, mffm, CC0</p>
+  </div>
+  <div class="variant" data-id="B5">
+    <div class="vhead"><span class="vid">B5</span><span class="vname">Mystère</span></div>
+    <p class="vdesc">Une nappe mystérieuse qui monte doucement, moins menaçante.</p>
+    <button class="bs-play" data-src="audio/B5.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-lift="B5">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/B5.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/resourcemoon/sounds/434799/" target="_blank">Mystical &amp; Mysterious Rise and Fall</a>, resourcemoon, CC BY 3.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>La chute du chat</h2>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play" data-src="audio/C0.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C0">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Splatch de dessin animé</span></div>
+    <p class="vdesc">Un splatch mouillé et rebondi, franchement comique.</p>
+    <button class="bs-play" data-src="audio/C1.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C1">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/C1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Breviceps/sounds/445118/" target="_blank">Cartoon - Splat!</a>, Breviceps, CC0</p>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Splatch mouillé court</span></div>
+    <p class="vdesc">Un seul coup mouillé, net et bref.</p>
+    <button class="bs-play" data-src="audio/C2.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C2">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/C2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/nebulasnails/sounds/495118/" target="_blank">Wet Splat 1.mp3</a>, nebulasnails, CC0</p>
+  </div>
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Chute lourde</span></div>
+    <p class="vdesc">Un corps qui tombe sur le sol, mat, avec un petit rebond.</p>
+    <button class="bs-play" data-src="audio/C3.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C3">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/C3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/leonelmail/sounds/504626/" target="_blank">BODY FALL - V HVY - DIRT</a>, leonelmail, CC0</p>
+  </div>
+  <div class="variant" data-id="C4">
+    <div class="vhead"><span class="vid">C4</span><span class="vname">Chute sur le plancher</span></div>
+    <p class="vdesc">Un corps qui s'écrase sur un parquet, sourd et sec.</p>
+    <button class="bs-play" data-src="audio/C4.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C4">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/C4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/courtneyeck/sounds/673424/" target="_blank">Falling body hits the floor</a>, courtneyeck, CC0</p>
+  </div>
+  <div class="variant" data-id="C5">
+    <div class="vhead"><span class="vid">C5</span><span class="vname">Chute et splatch (par défaut)</span></div>
+    <p class="vdesc">La chute sur le plancher de C4 avec le splatch mouillé de C2 par-dessus : lourd et drôle à la fois.</p>
+    <button class="bs-play" data-src="audio/C5.ogg">▶ Écouter</button> <button class="bs-play bs-scene" data-splat="C5">▶ Toute la scène</button>
+    <img class="bs-wave" src="audio/C5.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/courtneyeck/sounds/673424/" target="_blank">Falling body hits the floor</a>, courtneyeck, CC0 ;
+       <a href="https://freesound.org/people/nebulasnails/sounds/495118/" target="_blank">Wet Splat 1.mp3</a>, nebulasnails, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume du tic-tac</h2>
+  <p>Avec le tic-tac que tu as aimé (A1 sinon), sur la musique du jeu.</p>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-lclock" data-db="-4">▶ Les 10 dernières secondes</button>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-lclock" data-db="0">▶ Les 10 dernières secondes</button>
+  </div>
+  <div class="variant" data-id="V3">
+    <div class="vhead"><span class="vid">V3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-lclock" data-db="4">▶ Les 10 dernières secondes</button>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume de la levée et de la chute</h2>
+  <p>Avec la levée et la chute que tu as aimées (B4 et C5 sinon). Les sons provisoires jouaient beaucoup plus fort.</p>
+  <div class="variant" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-lscene" data-db="-4">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-lscene" data-db="0">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="W3">
+    <div class="vhead"><span class="vid">W3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-lscene" data-db="4">▶ Toute la scène</button>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Un son à chercher ailleurs, une autre idée ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null, musicGain = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicGain = audio().createGain(); musicNode.connect(musicGain).connect(audio().destination);
+    musicNode.start(); return 0.8;  // let the music settle before the sound
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  async function play(src, vol, at) {
+    const buf = await load(src), node = audio().createBufferSource(), g = audio().createGain();
+    node.buffer = buf; g.gain.value = vol; node.connect(g).connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration;
+  }
+  const liked = (prefix, fallback) => {
+    const v = [...document.querySelectorAll('.variant[data-id^="' + prefix + '"]')]
+      .find(v => v.querySelector(".vote .like.on"));
+    return v ? v.dataset.id : fallback;
+  };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  document.getElementById("bs-stop").onclick = stopAll;
+  // The vote's tick as the game plays it (VoteCountdown): 1 s apart, then faster (down to 0.28 s) and louder
+  // (0.55 to 1) over the final 10 s; a minute before the end, barely audible (0.12).
+  function finalTicks() {
+    const out = []; let left = 10, n = 0;
+    while (left > 0) {
+      const k = 1 - left / 10; out.push([10 - left, 0.55 + 0.45 * k, n++ % 2]);
+      left -= 1 - 0.72 * k * k;
+    }
+    return out;
+  }
+  async function clock(take, gain, calm) {
+    audio().resume(); stopAll();
+    const wait = await startMusic();
+    const ticks = calm ? [0, 1, 2, 3, 4, 5].map(i => [i, 0.12, i % 2]) : finalTicks();
+    ticks.forEach(([t, v, tac]) => play("audio/" + take + (tac ? "_tac" : "_tic") + ".ogg", v * gain, wait + t));
+  }
+  // The chain scene (ChainRevealTimeline): the lift at 0, the impact at 5.21 s.
+  async function scene(lift, splat, gain) {
+    audio().resume(); stopAll();
+    const wait = await startMusic();
+    play("audio/" + lift + ".ogg", gain, wait); play("audio/" + splat + ".ogg", gain, wait + 5.21);
+  }
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume();
+    const wait = await startMusic();
+    play(b.dataset.src, parseFloat(b.dataset.vol || "1"), wait);
+  });
+  const db = b => Math.pow(10, parseFloat(b.dataset.db) / 20);
+  document.querySelectorAll(".bs-clock").forEach(b => b.onclick = () => clock(b.dataset.take, 1, false));
+  document.querySelectorAll(".bs-calm").forEach(b => b.onclick = () => clock(b.dataset.take, 1, true));
+  document.querySelectorAll(".bs-scene").forEach(b => b.onclick = () =>
+    scene(b.dataset.lift || liked("B", "B4"), b.dataset.splat || liked("C", "C5"), 1));
+  document.querySelectorAll(".bs-lclock").forEach(b => b.onclick = () => clock(liked("A", "A1"), db(b), false));
+  document.querySelectorAll(".bs-lscene").forEach(b => b.onclick = () => scene(liked("B", "B4"), liked("C", "C5"), db(b)));
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

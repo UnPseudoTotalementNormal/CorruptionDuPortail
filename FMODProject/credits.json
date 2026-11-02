@@ -30,6 +30,26 @@
    ],
    "changes": "candle_snuff: cut 1.05-2.05 s, filtered, faded, loudness normalized",
    "added": "2026-10-28"
+  },
+  {
+   "source": "Freesound",
+   "id": 456236,
+   "title": "Antique wall clock.wav",
+   "author": "straget",
+   "author_url": "https://freesound.org/people/straget/",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "url": "https://freesound.org/people/straget/sounds/456236/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tic_1.wav (event:/Interface/VoteClockTic)",
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tic_2.wav (event:/Interface/VoteClockTic)",
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tic_3.wav (event:/Interface/VoteClockTic)",
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tac_1.wav (event:/Interface/VoteClockTac)",
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tac_2.wav (event:/Interface/VoteClockTac)",
+    "FMODProject/Corrupted/Assets/SoundMaker/vote-clock/clock_tac_3.wav (event:/Interface/VoteClockTac)"
+   ],
+   "changes": "clock_tic_1: cut 1.681-1.841 s, filtered, faded, loudness normalized; clock_tic_2: cut 2.839-2.999 s, filtered, faded, loudness normalized; clock_tic_3: cut 3.996-4.156 s, filtered, faded, loudness normalized; clock_tac_1: cut 1.142-1.302 s, filtered, faded, loudness normalized; clock_tac_2: cut 2.3-2.46 s, filtered, faded, loudness normalized; clock_tac_3: cut 3.462-3.622 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
   }
  ]
 }

@@ -1,0 +1,27 @@
+{
+ "bank": "VoteCandle",
+ "events": [
+  {
+   "path": "event:/Interface/VoteClockTic",
+   "files": [
+    "SoundMaker/vote-clock/clock_tic_1.wav",
+    "SoundMaker/vote-clock/clock_tic_2.wav",
+    "SoundMaker/vote-clock/clock_tic_3.wav"
+   ],
+   "bus": "bus:/Sfx",
+   "pitch_random": 0.4,
+   "volume_random": 1.0
+  },
+  {
+   "path": "event:/Interface/VoteClockTac",
+   "files": [
+    "SoundMaker/vote-clock/clock_tac_1.wav",
+    "SoundMaker/vote-clock/clock_tac_2.wav",
+    "SoundMaker/vote-clock/clock_tac_3.wav"
+   ],
+   "bus": "bus:/Sfx",
+   "pitch_random": 0.4,
+   "volume_random": 1.0
+  }
+ ]
+}

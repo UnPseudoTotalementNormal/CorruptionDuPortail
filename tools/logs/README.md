@@ -28,7 +28,9 @@ Playtest builds: F8 (or « Signaler un bug » in the pause menu) captures the sc
 passé ? » (mockups `tools/maquettes/signaler-un-bug`, B2 + C1 + K2). Envoyer marks the moment (`bug.report`), sends the
 waiting log lines, uploads the capture (Storage `reports/<id>.jpg`) and the report (Firestore `reports/<id>`); the Cloud
 Function `firebase/functions` posts it to the hidden Discord channel « rapports-de-bug » (bot token in Secret Manager).
-A crashed session found at the next launch posts a « Crash » alert. Offline / switch off: the report waits in
+A crashed session found at the next launch posts a « Crash » alert, with the end of Unity's `Player-prev.log` (its
+native crash block, user folder masked). The function stores the alert's `discordMessageId`: `logs.py resolve <id>`
+puts a ✅ on it once the report is handled, and `reports` shows `✅ handled`. Offline / switch off: the report waits in
 `logs/reports/` and goes at a later launch. `python tools/logs/logs.py reports --download DIR` lists them and saves the
 captures. Test switch for autoplay runs: `-playtest-bug-report-at <seconds>`. Function tests: `node firebase/functions/test.js`.
 Deploy everything: `cd firebase && firebase deploy --only firestore,storage,functions`.

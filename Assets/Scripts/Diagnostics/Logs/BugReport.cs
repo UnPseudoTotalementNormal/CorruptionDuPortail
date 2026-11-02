@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 
 namespace Diagnostics.Logs
 {
@@ -49,6 +50,23 @@ namespace Diagnostics.Logs
         /// <summary>Milliseconds the player still has to wait before the next report (0 = send now).</summary>
         public static long WaitBeforeNext(long _lastSentMs, long _nowMs) =>
             _lastSentMs <= 0 ? 0 : Math.Max(0, MinIntervalMs - (_nowMs - _lastSentMs));
+
+        /// <summary>
+        /// The useful end of Unity's own log of a crashed launch (<c>Player-prev.log</c>): from its native crash block
+        /// (<c>Crash!!!</c>) when there is one, else its last lines (a frozen game killed by hand shows where it hung).
+        /// The Windows user folder is masked: the excerpt goes to Discord.
+        /// </summary>
+        public static string CrashExcerpt(string _logTail, int _maxChars)
+        {
+            if (string.IsNullOrEmpty(_logTail) || _maxChars <= 0) return string.Empty;
+            string _log = Regex.Replace(_logTail.Replace("\r", string.Empty), @"(?i)(users[\\/])[^\\/\n]+", "$1~");
+            int _crash = _log.LastIndexOf("Crash!!!", StringComparison.Ordinal);
+            if (_crash >= 0)
+            {
+                return _log.Substring(_crash, Math.Min(_maxChars, _log.Length - _crash)).Trim();
+            }
+            return (_log.Length > _maxChars ? _log.Substring(_log.Length - _maxChars) : _log).Trim();
+        }
 
         /// <summary>Capture size kept for upload: width at most <see cref="MaxCaptureWidth"/>, ratio kept, never upscaled.</summary>
         public static (int width, int height) CaptureSize(int _width, int _height)

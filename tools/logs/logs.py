@@ -15,6 +15,7 @@ missing ones are downloaded.
     python tools/logs/logs.py tail <player | session id>                                  follow a live session
     python tools/logs/logs.py switch [on|off] [--verbose NAME ...] [--debug-cat CAT ...] [--min-level D|I|W|E]
     python tools/logs/logs.py reports [--since 7d] [--player NAME] [--download DIR]  F8 reports and crash alerts
+    python tools/logs/logs.py resolve <report id>                                    ✅ on its Discord alert (handled)
 
 --local [DIR] reads the local log files instead of Firestore (default: this PC's game folder,
 %USERPROFILE%/AppData/LocalLow/DefaultCompany/CorruptionDuPortail/logs): every autoplay process writes one there,
@@ -654,6 +655,88 @@ def report_command(r):
     return "(invalid ids: no command)"
 
 
+# ---------- Discord « rapports-de-bug »: a ✅ on the alert = report handled ----------
+
+REPORTS_CHANNEL = "1562180825305448578"  # same default as firebase/functions/index.js
+DONE = "✅"
+_discord_token = None
+
+
+def discord_token():
+    """The bot token from the repo-root .env (as tools/discord/discord_tasks.py), None when absent."""
+    global _discord_token
+    if _discord_token is None:
+        _discord_token = ""
+        for d in [Path(__file__).resolve().parent, *Path(__file__).resolve().parents]:
+            f = d / ".env"
+            if f.is_file():
+                for line in f.read_text(encoding="utf-8").splitlines():
+                    k, _, v = line.strip().partition("=")
+                    if k.strip() == "DISCORD_BOT_TOKEN":
+                        _discord_token = v.strip().strip('"').strip("'")
+                break
+    return _discord_token or None
+
+
+def discord(method, path, params=None):
+    url = "https://discord.com/api/v10" + path + ("?" + urllib.parse.urlencode(params) if params else "")
+    headers = {"Authorization": f"Bot {discord_token()}", "User-Agent": "DiscordBot (cdp-logs, 1)"}
+    for _ in range(6):
+        try:
+            req = urllib.request.Request(url, method=method, headers=headers, data=b"" if method == "PUT" else None)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read() or b"null")
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                time.sleep(float(json.load(e).get("retry_after", 1)) + 0.1)
+                continue
+            sys.exit(f"Discord HTTP {e.code} {method} {path}: {e.read().decode(errors='replace')[:300]}")
+    sys.exit(f"Discord rate-limited too many times on {path}")
+
+
+def report_messages(pages=5):
+    """The channel's latest alerts, newest first (100 per page)."""
+    out, before = [], None
+    for _ in range(pages):
+        page = discord("GET", f"/channels/{REPORTS_CHANNEL}/messages", {"limit": 100, **({"before": before} if before else {})})
+        if not page: break
+        out += page
+        before = page[-1]["id"]
+    return out
+
+
+def find_report_message(r, messages):
+    """The alert of a report: its stored message id, else (alerts posted before 2026-11-02) the embed whose footer
+    names its session and whose time field shows its moment."""
+    if r.get("discordMessageId"):
+        return next((m for m in messages if m["id"] == r["discordMessageId"]), {"id": r["discordMessageId"]})
+    when = ts(r.get("t"))
+    hms = when.astimezone().strftime("%H:%M:%S") if when else None  # the alert shows Paris time: this PC's zone
+    for m in messages:
+        for e in m.get("embeds") or []:
+            footer = ((e.get("footer") or {}).get("text") or "").replace("\\", "")
+            if f"session {r.get('sid')}" in footer and any(hms and hms in (f.get("value") or "") for f in e.get("fields") or []):
+                return m
+    return None
+
+
+def is_done(m):
+    return any((x.get("emoji") or {}).get("name") == DONE for x in (m or {}).get("reactions") or [])
+
+
+def cmd_resolve(a):
+    if not REPORT_RX.fullmatch(a.id): sys.exit(f"report id expected like 20261101-142854-c40e70, got {a.id!r}")
+    if not discord_token(): sys.exit("No DISCORD_BOT_TOKEN in the repo-root .env")
+    try:
+        r = fields(http("GET", f"{BASE}/reports/{a.id}"))
+    except NotFound:
+        sys.exit(f"No report {a.id}")
+    m = find_report_message(r, [] if r.get("discordMessageId") else report_messages(10))
+    if not m: sys.exit(f"Alert of {a.id} not found in « rapports-de-bug »")
+    discord("PUT", f"/channels/{REPORTS_CHANNEL}/messages/{m['id']}/reactions/{urllib.parse.quote(DONE)}/@me")
+    print(f"{DONE} on the alert of {a.id} ({r.get('player') or '?'}, message {m['id']})")
+
+
 def cmd_reports(a):
     since = since_arg(a.since).strftime("%Y-%m-%dT%H:%M:%SZ")
     docs = run_query({
@@ -670,12 +753,14 @@ def cmd_reports(a):
     if not rows:
         print("No report.")
         return
+    messages = report_messages() if discord_token() else None
     for r in rows:
         when = ts(r.get("t"))
         where = ", ".join(x for x in (r.get("phase"), f"day {r['day']}" if r.get("day") else None, r.get("role")) if x)
         kind = "CRASH " if r.get("kind") == "crash" else ""
+        done = f"  {DONE} handled" if messages is not None and is_done(find_report_message(r, messages)) else ""
         print(f"{hm(when, '%d/%m %H:%M:%S')}  {kind}{r.get('player') or '?'}  v{r.get('version')} {r.get('flavor') or ''}"
-              f"  {where or 'out of game'}")
+              f"  {where or 'out of game'}  id={r.get('id')}{done}")
         if r.get("text"):
             print(f"    « {r['text']} »")
         if r.get("postError"):
@@ -750,6 +835,7 @@ def main():
     p.add_argument("--full", action="store_true"); p.set_defaults(f=cmd_tail)
     p = sub.add_parser("reports"); p.add_argument("--since", default="7d"); p.add_argument("--player")
     p.add_argument("--download", help="folder where the captures are saved"); p.set_defaults(f=cmd_reports)
+    p = sub.add_parser("resolve"); p.add_argument("id", help="report id (reports shows it)"); p.set_defaults(f=cmd_resolve)
     p = sub.add_parser("switch"); p.add_argument("state", nargs="?", choices=["on", "off"])
     p.add_argument("--verbose", nargs="*", help="players whose Debug lines go online (none = clear)")
     p.add_argument("--debug-cat", nargs="*", help="categories whose Debug lines go online (none = clear)")

@@ -38,5 +38,37 @@ namespace Tests.Editor.Avatars
 
             Assert.That(_orbit.AutoDistance, Is.LessThan(LocalSeatRadius + RemoteSeatRadius));
         }
+
+        [Test]
+        public void Orbit_StopsInFrontOfAWall()
+        {
+            _avatar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _avatar.transform.position = new Vector3(0f, 0f, -10f);
+            _avatar.transform.localScale = new Vector3(20f, 20f, 1f);
+            _camera = new GameObject("EmoteOrbitCamera");
+            AvatarEmoteOrbitCamera _orbit = _camera.AddComponent<AvatarEmoteOrbitCamera>();
+            Physics.SyncTransforms();
+
+            float _clear = _orbit.ClearRadius(Vector3.zero, Vector3.back, 30f, out Collider _blocker);
+
+            // Wall face at z = -9.5, swept sphere of 1 m: the camera centre stops 8.5 m out.
+            Assert.That(_blocker, Is.SameAs(_avatar.GetComponent<Collider>()));
+            Assert.That(_clear, Is.EqualTo(8.5f).Within(0.05f));
+        }
+
+        [Test]
+        public void Orbit_IgnoresTheCatsOwnColliders()
+        {
+            _avatar = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerAvatarPrefabPath));
+            _avatar.transform.position = new Vector3(0f, 0f, -10f);
+            _camera = new GameObject("EmoteOrbitCamera");
+            AvatarEmoteOrbitCamera _orbit = _camera.AddComponent<AvatarEmoteOrbitCamera>();
+            Physics.SyncTransforms();
+
+            float _clear = _orbit.ClearRadius(Vector3.zero, Vector3.back, 30f, out Collider _blocker);
+
+            Assert.That(_blocker, Is.Null);
+            Assert.That(_clear, Is.EqualTo(30f));
+        }
     }
 }

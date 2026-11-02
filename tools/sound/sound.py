@@ -358,14 +358,18 @@ def target_of(cat, targets):
 
 
 def recipe_targets():
-    """{sound name: target} for sounds whose recipe overrides their category's target (a level picked by ear)."""
+    """{sound name: target} for sounds whose recipe overrides their category's target (a level picked by ear), and the
+    `event_targets` of recipes whose sounds are the parts of layered events."""
     out = {}
     for p in glob.glob(os.path.join(RECIPES, "*.json")):
         if p.endswith((".sources.json", ".engine.json")):
             continue
-        for snd in json.load(open(p, encoding="utf-8")).get("sounds", []):
+        recipe = json.load(open(p, encoding="utf-8"))
+        for snd in recipe.get("sounds", []):
             if snd.get("event") and "target_max_m" in snd:
                 out[snd["event"]] = snd["target_max_m"]
+        # a layered event: its sounds are parts, the whole event has its own target
+        out.update(recipe.get("event_targets", {}))
     return out
 
 

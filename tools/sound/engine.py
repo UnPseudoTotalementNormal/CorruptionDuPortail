@@ -4,7 +4,7 @@
 - render(name, wav): the event played offline by the game's own FMOD runtime (tools/fmod/banks.py), bus and event
   volume included, bit-exact repeatable.
 - `sound.py fmod <spec.json>`: create or replace events with FMOD Studio's command line (one take or several
-  played at random, pitch / volume randomization, bus, bank), then build every bank and check them against the
+  played at random, pitch / volume randomization, layers on their own tracks at their own start, bus, bank), then build every bank and check them against the
   project (tools/fmod/README.md). Spec format: tools/sound/README.md.
 """
 import json
@@ -63,52 +63,73 @@ function randomize(sound, prop, amount) {
 }
 var bank = project.lookup("bank:/" + spec.bank);
 if (!bank) { bank = project.create("Bank"); bank.name = spec.bank; console.log("created bank:/" + spec.bank); }
-for (var i = 0; i < spec.events.length; i++) {
-    var e = spec.events[i];
+function takes(files) {
     var audios = [];
-    for (var k = 0; k < e.files.length; k++) {
-        var a = project.importAudioFile(spec.assets + e.files[k]);
-        if (!a) { throw new Error("import failed: " + e.files[k]); }
+    for (var k = 0; k < files.length; k++) {
+        var a = project.importAudioFile(spec.assets + files[k]);
+        if (!a) { throw new Error("import failed: " + files[k]); }
         audios.push(a);
     }
+    return audios;
+}
+// One instrument at `start` seconds on `track`: one take, or several played at random.
+function place(event, track, layer) {
+    var audios = takes(layer.files);
     var length = 0;
     for (var k = 0; k < audios.length; k++) { length = Math.max(length, audios[k].length); }
-    var event = project.lookup(e.path);
-    var track;
-    if (event) {
-        // Replace the instruments of the event's first audio track, keep the rest (effects, buses, references).
-        track = event.groupTracks[0];
-        var old = track.modules.slice();
-        for (var k = 0; k < old.length; k++) { project.deleteObject(old[k]); }
-        console.log("replacing " + e.path + " " + event.id);
-    } else {
-        event = project.create("Event");
-        event.name = e.path.substring(e.path.lastIndexOf("/") + 1);
-        event.folder = folderFor(e.path);
-        track = event.addGroupTrack("Audio");
-        console.log("creating " + e.path);
-    }
     var sound;
     if (audios.length === 1) {
-        sound = track.addSound(event.timeline, "SingleSound", 0, length);
+        sound = track.addSound(event.timeline, "SingleSound", layer.start || 0, length);
         sound.audioFile = audios[0];
     } else {
-        sound = track.addSound(event.timeline, "MultiSound", 0, length);
+        sound = track.addSound(event.timeline, "MultiSound", layer.start || 0, length);
         for (var k = 0; k < audios.length; k++) {
             var s = project.create("SingleSound");
             s.audioFile = audios[k];
             sound.relationships.sounds.add(s);
         }
     }
-    sound.volume = e.volume || 0;
-    randomize(sound, "pitch", e.pitch_random);
-    randomize(sound, "volume", e.volume_random);
+    sound.volume = layer.volume || 0;
+    if (layer.pitch) { sound.pitch = layer.pitch; }
+    randomize(sound, "pitch", layer.pitch_random);
+    randomize(sound, "volume", layer.volume_random);
+    return (layer.start || 0) + length;
+}
+for (var i = 0; i < spec.events.length; i++) {
+    var e = spec.events[i];
+    // A plain event is one layer at 0; a layered one has a track per layer, each at its own start.
+    var layers = e.layers || [{files: e.files, volume: e.volume, pitch_random: e.pitch_random, volume_random: e.volume_random}];
+    var event = project.lookup(e.path);
+    if (event) {
+        // Empty the event's audio tracks and keep the first one (effects, buses, references stay).
+        var tracks = event.groupTracks.slice();
+        for (var t = 0; t < tracks.length; t++) {
+            var old = tracks[t].modules.slice();
+            for (var k = 0; k < old.length; k++) { project.deleteObject(old[k]); }
+            if (t > 0) { project.deleteObject(tracks[t]); }
+        }
+        console.log("replacing " + e.path + " " + event.id);
+    } else {
+        event = project.create("Event");
+        event.name = e.path.substring(e.path.lastIndexOf("/") + 1);
+        event.folder = folderFor(e.path);
+        event.addGroupTrack("Audio");
+        console.log("creating " + e.path);
+    }
+    var length = 0;
+    for (var l = 0; l < layers.length; l++) {
+        var track = l === 0 ? event.groupTracks[0] : event.addGroupTrack(layers[l].name || ("Layer " + (l + 1)));
+        if (l === 0 && layers[l].name) { track.name = layers[l].name; }
+        length = Math.max(length, place(event, track, layers[l]));
+    }
+    // A layered event's own volume (its master track): the layers keep their balance, the whole lands on target.
+    if (e.layers) { event.masterTrack.mixerGroup.volume = e.volume || 0; }
     if (e.bus) { event.mixerInput.output = need(e.bus); }
     var banks = event.relationships.banks.destinations;
     var has = false;
     for (var k = 0; k < banks.length; k++) { if (banks[k].id === bank.id) { has = true; } }
     if (!has) { event.relationships.banks.add(bank); }
-    console.log("done " + e.path + " " + event.id + " (" + audios.length + " take(s), " + length + " s)");
+    console.log("done " + e.path + " " + event.id + " (" + layers.length + " layer(s), " + length + " s)");
 }
 project.save();
 console.log("saved");
@@ -119,7 +140,7 @@ def cmd_fmod(a):
     spec = json.load(open(a.spec, encoding="utf-8"))
     spec["assets"] = FMOD_ASSETS.replace("\\", "/") + "/"
     for e in spec["events"]:
-        for f in e["files"]:
+        for f in [f for l in e.get("layers", [e]) for f in l["files"]]:
             if not os.path.exists(os.path.join(FMOD_ASSETS, f)):
                 raise SystemExit("missing audio file: FMODProject/Corrupted/Assets/" + f)
     js = os.path.join(tempfile.mkdtemp(prefix="soundfmod_"), "apply.js")

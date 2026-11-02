@@ -35,6 +35,9 @@ namespace CorruptionDuPortail.Domain
         public const float Flat = Release + (ClipFlat - ClipRelease);
         public const float FreezeSeconds = 0.5f;
 
+        /// <summary>The freeze ends: the cat starts getting up.</summary>
+        public const float GetUp = Flat + FreezeSeconds;
+
         /// <summary>The day's black comes: the cat goes back to its seat under it.</summary>
         public const float BlackOut = 7.2f;
 

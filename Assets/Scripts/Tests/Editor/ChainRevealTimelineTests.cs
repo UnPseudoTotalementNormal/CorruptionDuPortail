@@ -35,6 +35,17 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void SoundBeats_FollowEachOther_BeforeTheBlack()
+        {
+            // ChainRevealDirector plays one sound on each: the release, the impact, the get-up.
+            Assert.That(ChainRevealTimeline.Release, Is.GreaterThan(ChainRevealTimeline.LiftEnd));
+            Assert.That(ChainRevealTimeline.Impact, Is.GreaterThan(ChainRevealTimeline.Release));
+            Assert.That(ChainRevealTimeline.GetUp, Is.EqualTo(ChainRevealTimeline.Flat + ChainRevealTimeline.FreezeSeconds).Within(1e-5f));
+            Assert.That(ChainRevealTimeline.GetUp, Is.GreaterThan(ChainRevealTimeline.Impact));
+            Assert.That(ChainRevealTimeline.GetUp, Is.LessThan(ChainRevealTimeline.BlackOut), "the cat gets up before the black");
+        }
+
+        [Test]
         public void Fall_Accelerates()
         {
             float t0 = ChainRevealTimeline.Release, t1 = (t0 + ChainRevealTimeline.Impact) / 2f;

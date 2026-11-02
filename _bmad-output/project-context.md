@@ -223,6 +223,10 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **New `.cs` files (tests especially): create via Unity** (`unity command create_script`). A file written from disk can sit in the AssetDatabase yet be excluded from compilation: 0 errors, tests in no suite.
 - 2-NM fixture (`MultiClientGameFixture`): network tests always run on **UTP loopback**, never Steam. `IsOwner` is false on client replicas, so drive owner assertions from the host. `ClientCm.GetCharacter` returns the **host** object; the real client replica is `ClientNm.SpawnManager.SpawnedObjects[netId].GetComponent<Character>()`. The real prod `NetworkBehaviour` can be spawned in both NMs via `BuildExtraNetworkPrefabs`.
 - `TestStaticReset.ResetAll` is opt-in, not automatic (auto-reset broke leak-dependent tests; resetting only at Desingleton teardown gives a false green).
+- A fake of a third-party SDK (Steam, FMOD, Relay) must enforce the real API's contract, not just record: the voice
+  fake read nothing and decoded anything, so tests stayed green while every Steam packet failed to decode (several
+  `GetVoice` reads glued into one packet, playtest 2026-10-31). Write down the contract on the interface
+  (`IVoiceCodec.ReadCaptured`: one read = one packet) and make the fake fail when it is broken.
 - Never `WaitForSeconds` / real-time waits in tests. PlayMode flake: port 7777 bind.
 - CI test runner is off (`unity-tests.yml` `if: false`) → run tests locally before a PR.
 - Claude never enters Play mode or builds a player: verify via tests + console; playtests are Poyo's.

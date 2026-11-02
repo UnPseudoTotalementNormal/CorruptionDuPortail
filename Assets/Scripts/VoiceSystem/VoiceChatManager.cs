@@ -56,10 +56,9 @@ namespace VoiceSystem
 
         private IVoiceCodec _codec;
         private Func<ulong, int, VoicePlayback> _createPlayback = VoicePlayback.Create;
-        private readonly MemoryStream _pending = new();
         private readonly MemoryStream _captured = new();
         private readonly MemoryStream _pcm = new();
-        private float _pendingSince;
+        private float _lastReadAt = float.NegativeInfinity;
         private ushort _nextSequence;
 
         private readonly Dictionary<ulong, VoicePlayback> _playbacks = new();
@@ -124,7 +123,7 @@ namespace VoiceSystem
             _playbacks.Clear();
             _lastSequence.Clear();
             _logLastListeners.Clear();
-            _logFailingSpeakers.Clear();
+            _logDecodeCounts.Clear();
             _logNoPlaybackSpeakers.Clear();
             base.OnNetworkDespawn();
         }
@@ -185,8 +184,7 @@ namespace VoiceSystem
                 return;
             }
             IsTransmitting = _transmitting;
-            GameLog.Guarded(() => GameLog.Info("voice", "voice.mic", "on", _transmitting,
-                "mode", _options != null && _options.OpenMic ? "open" : "push-to-talk"));
+            LogMic(_transmitting);
             if (_codec != null && _codec.IsAvailable)
             {
                 _codec.Recording = _transmitting;
@@ -198,42 +196,33 @@ namespace VoiceSystem
             onTransmittingChanged?.Invoke(_transmitting);
         }
 
-        // Steam keeps handing out the tail of the voice for a moment after the key is released: read it until empty.
+        // One read = one packet: Steam hands out everything captured since the last read as a single packet, and two
+        // packets glued together no longer decode (playtest 2026-10-31: every voice failed to decode when the reads of
+        // several frames were sent as one). Steam keeps handing out the tail of the voice for a moment after the key is
+        // released: reading goes on until it is empty.
         private void Capture()
         {
+            if (Time.unscaledTime - _lastReadAt < SendInterval)
+            {
+                return;
+            }
+            _lastReadAt = Time.unscaledTime;
+
             _captured.SetLength(0);
             int _read = _codec.ReadCaptured(_captured);
-            if (_read > 0)
+            if (_read <= 0)
             {
-                // Steam's packets cannot be cut: send what is pending before it would overflow one datagram.
-                if (_pending.Length > 0 && _pending.Length + _read > MaxPacketBytes)
-                {
-                    Flush();
-                }
-                if (_pending.Length == 0)
-                {
-                    _pendingSince = Time.unscaledTime;
-                }
-                _pending.Write(_captured.GetBuffer(), 0, _read);
+                return;
             }
-            if (_pending.Length > 0 && Time.unscaledTime - _pendingSince >= SendInterval)
+            if (_read > MaxPacketBytes)
             {
-                Flush();
+                // Steam's packets cannot be cut: a long hitch captured more than one datagram holds.
+                Debug.LogWarning($"[VOICE] {_read} bytes captured at once: over one datagram, dropped.");
+                GameLog.Verbose("voice", "voice.capture.dropped", "bytes", _read, "max", MaxPacketBytes);
+                return;
             }
-        }
-
-        private void Flush()
-        {
-            if (_pending.Length <= MaxPacketBytes)
-            {
-                SendVoice(_pending.ToArray());
-            }
-            else
-            {
-                Debug.LogWarning($"[VOICE] {_pending.Length} bytes captured at once: over one datagram, dropped.");
-                GameLog.Verbose("voice", "voice.capture.dropped", "bytes", _pending.Length, "max", MaxPacketBytes);
-            }
-            _pending.SetLength(0);
+            LogSent(_read);
+            SendVoice(_captured.ToArray());
         }
 
         /// <summary>Sends one packet of compressed voice to the server, which forwards it to the listeners.</summary>
@@ -296,7 +285,7 @@ namespace VoiceSystem
             _lastSequence[_speaker] = _sequence;
 
             int _decoded = _codec.Decode(_voice, _voice.Length, _pcm);
-            LogReceiveEdge(_speaker, _decoded > 0, _playback != null);
+            LogReceiveEdge(_speaker, _voice.Length, _decoded, _playback != null);
             if (_decoded <= 0 || _playback == null)
             {
                 return;
@@ -334,10 +323,13 @@ namespace VoiceSystem
         private bool _logAvailabilityKnown;
         private bool _logWasAvailable;
         private readonly Dictionary<ulong, int> _logLastListeners = new();
-        private readonly HashSet<ulong> _logFailingSpeakers = new();
+        private readonly Dictionary<ulong, (int ok, int failed)> _logDecodeCounts = new();
         private readonly HashSet<ulong> _logNoPlaybackSpeakers = new();
         private int _logOversizedCount;
         private const int LogOversizedEvery = 100;
+        private const int LogDecodeFailedEvery = 100;
+        private int _logSentPackets;
+        private int _logSentMaxBytes;
 
         [System.Diagnostics.Conditional(GameLog.Define)]
         private void LogAvailabilityEdge()
@@ -401,13 +393,53 @@ namespace VoiceSystem
         }
 
         [System.Diagnostics.Conditional(GameLog.Define)]
-        private void LogReceiveEdge(ulong _speaker, bool _decodedOk, bool _hasPlayback)
+        private void LogMic(bool _on)
         {
-            // Once per speaker and session: an empty decode may be benign, a broken stream would repeat every packet.
-            if (!_decodedOk && _logFailingSpeakers.Add(_speaker))
+            string _mode = _options != null && _options.OpenMic ? "open" : "push-to-talk";
+            if (_on)
             {
-                GameLog.Warn("voice", "voice.decode.failed", "speaker", _speaker);
+                GameLog.Info("voice", "voice.mic", "on", true, "mode", _mode);
+                return;
             }
+            // What this press sent: no packet = Steam captured nothing (muted / wrong input device in Steam).
+            GameLog.Info("voice", "voice.mic", "on", false, "mode", _mode,
+                "packets", _logSentPackets, "maxBytes", _logSentMaxBytes);
+            _logSentPackets = 0;
+            _logSentMaxBytes = 0;
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogSent(int _bytes)
+        {
+            _logSentPackets++;
+            _logSentMaxBytes = Math.Max(_logSentMaxBytes, _bytes);
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogReceiveEdge(ulong _speaker, int _bytes, int _pcmBytes, bool _hasPlayback)
+        {
+            // Edges only: the first decoded packet of each speaker, then the failures counted (one empty decode may be
+            // benign, a broken stream fails every packet).
+            _logDecodeCounts.TryGetValue(_speaker, out (int ok, int failed) _counts);
+            if (_pcmBytes > 0)
+            {
+                _counts.ok++;
+                if (_counts.ok == 1)
+                {
+                    GameLog.Info("voice", "voice.decode.ok", "speaker", _speaker, "bytes", _bytes, "pcmBytes", _pcmBytes,
+                        "failedBefore", _counts.failed);
+                }
+            }
+            else
+            {
+                _counts.failed++;
+                if (_counts.failed == 1 || _counts.failed % LogDecodeFailedEvery == 0)
+                {
+                    GameLog.Warn("voice", "voice.decode.failed", "speaker", _speaker, "bytes", _bytes,
+                        "failed", _counts.failed, "ok", _counts.ok);
+                }
+            }
+            _logDecodeCounts[_speaker] = _counts;
             if (!_hasPlayback && _logNoPlaybackSpeakers.Add(_speaker))
             {
                 GameLog.Warn("voice", "voice.playback.failed", "speaker", _speaker);

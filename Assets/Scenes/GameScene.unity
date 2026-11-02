@@ -22432,6 +22432,13 @@ MonoBehaviour:
       Data3: 1752956316
       Data4: -67549771
     Path: event:/Interface/ChainLift
+  _releaseSound:
+    Guid:
+      Data1: -473055577
+      Data2: 1137525404
+      Data3: -1433975143
+      Data4: 961103690
+    Path: event:/Interface/ChainRelease
   _splatSound:
     Guid:
       Data1: 1465860112
@@ -22439,6 +22446,13 @@ MonoBehaviour:
       Data3: 518758291
       Data4: 1940253763
     Path: event:/Interface/ChainSplat
+  _getUpSound:
+    Guid:
+      Data1: -489117164
+      Data2: 1239912099
+      Data3: 1462170765
+      Data4: -1380970036
+    Path: event:/Interface/ChainGetUp
   _catHeightAtScale1: 4.4
   _liftShare: 0.6
   _fallbackCatHeight: 14.85

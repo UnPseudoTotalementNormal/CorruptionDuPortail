@@ -72,7 +72,27 @@ objects -24, game moments ≈ -19.5, powers ≈ -14, ambience ≈ -23, music ≈
  ]}
 ```
 
-An existing event keeps its GUID, effects and references: only the instruments of its first track are replaced.
+A sound made of several parts at their own moments (a scene: a rise, chains closing on cue, a drone) is a
+**layered** event: `layers` instead of `files`, one audio track each, the timing done by FMOD rather than baked
+into one file:
+
+```json
+{"path": "event:/Interface/ChainLift", "bus": "bus:/Sfx", "volume": 2.5,
+ "layers": [
+  {"name": "Rise", "files": ["SoundMaker/chain-reveal/rise_dark.wav"], "start": 0, "volume": 0},
+  {"name": "Cuff R", "files": ["SoundMaker/chain-reveal/chain_1.wav"], "start": 0.78, "volume": -5, "pitch_random": 1},
+  {"name": "Drone", "files": ["SoundMaker/chain-reveal/drone_evil.wav"], "start": 1.8, "volume": -9}
+ ]}
+```
+
+Per layer: `files` (several = random), `start` (s on the event's timeline), `volume` (dB), `pitch` (semitones),
+`pitch_random`, `volume_random`; per event: `volume` (dB, the whole event: set it so `check` lands on target).
+Each part is one take of the recipe (normalized to its category alone); the layer volumes give the balance. A scene
+the code follows beat by beat (a sound per moment of an animation) is one event **per beat**, played by the code at
+that beat's time: the sound stays on the picture even when a frame drags.
+
+An existing event keeps its GUID, effects and references: its audio tracks are emptied, the first kept, the others
+deleted.
 Several `files` = one random take per play (multi instrument). `pitch_random` (semitones) / `volume_random` (dB)
 add FMOD random modulators, so a sound heard often never repeats exactly. Then every bank is built and checked
 against the project (`tools/fmod/README.md`).

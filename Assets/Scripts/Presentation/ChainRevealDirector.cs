@@ -31,6 +31,14 @@ namespace Presentation
         private const string GettingChained2 = "Getting Chained 2";
         private const string ChainedIdle = "Chained Idle";
 
+        // The sounds after the lift, in order: the release, the impact, the get-up.
+        private static readonly (float At, string Name)[] Beats =
+        {
+            (ChainRevealTimeline.Release, "release"),
+            (ChainRevealTimeline.Impact, "impact"),
+            (ChainRevealTimeline.GetUp, "getup"),
+        };
+
         [SerializeField] private AvatarVisibilityController _visibility;
         [Tooltip("The day's rows (T23): the chained player's card leaves its row for the moment.")]
         [SerializeField] private DayScreenRows _dayRows;
@@ -39,8 +47,13 @@ namespace Presentation
         [SerializeField] private CatSpotlights _spotlights;
         [Tooltip("The light that follows the chained cat (the room is dark). Off outside the moment.")]
         [SerializeField] private Light _light;
+        [Tooltip("The lift and the hover, from the start until the release.")]
         [SerializeField] private EventReference _liftSound;
+        [Tooltip("The force lets go: the cat starts falling.")]
+        [SerializeField] private EventReference _releaseSound;
         [SerializeField] private EventReference _splatSound;
+        [Tooltip("The freeze ends: the cat gets up.")]
+        [SerializeField] private EventReference _getUpSound;
 
         [Header("Where it floats (in cat heights)")]
         [Tooltip("Height of the cat model at scale 1 (the avatar's scale multiplies it).")]
@@ -155,7 +168,7 @@ namespace Presentation
                     BeginCat(_avatar, _self);
                     _audio?.PlayOneShot(_liftSound);
                 }
-                bool _splatched = false;
+                int _beat = 0;
                 for (float _t = 0f; _t < _end; _t += Time.deltaTime)
                 {
                     float _travel = ChainRevealTimeline.Travel(_t);
@@ -193,11 +206,12 @@ namespace Presentation
                     {
                         _dayRows.SetAway(true);
                     }
-                    if (!_splatched && _avatar != null && _t >= ChainRevealTimeline.Impact)
+                    // Each sound on its beat of the timeline, from the game's clock: it stays on the picture if a frame drags.
+                    if (_avatar != null && _beat < Beats.Length && _t >= Beats[_beat].At)
                     {
-                        _splatched = true;
-                        _audio?.PlayOneShot(_splatSound);
-                        Debug.Log($"[CHAINREVEAL] seat {_seat}: splatch");
+                        _audio?.PlayOneShot(_beat == 0 ? _releaseSound : _beat == 1 ? _splatSound : _getUpSound);
+                        Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.beat", "seat", _seat, "beat", Beats[_beat].Name, "t", _t);
+                        _beat++;
                     }
                     await UniTask.Yield(PlayerLoopTiming.Update, _ct);
                 }

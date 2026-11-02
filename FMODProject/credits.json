@@ -50,6 +50,144 @@
    ],
    "changes": "clock_tic_1: cut 1.681-1.841 s, filtered, faded, loudness normalized; clock_tic_2: cut 2.839-2.999 s, filtered, faded, loudness normalized; clock_tic_3: cut 3.996-4.156 s, filtered, faded, loudness normalized; clock_tac_1: cut 1.142-1.302 s, filtered, faded, loudness normalized; clock_tac_2: cut 2.3-2.46 s, filtered, faded, loudness normalized; clock_tac_3: cut 3.462-3.622 s, filtered, faded, loudness normalized",
    "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 533025,
+   "title": "Dark Teleport.wav",
+   "author": "oldestmillennial",
+   "author_url": "https://freesound.org/people/oldestmillennial/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/oldestmillennial/sounds/533025/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/rise_dark.wav (event:/Interface/ChainLift)"
+   ],
+   "changes": "rise_dark: cut 2.0-4.3 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 798137,
+   "title": "CHAINHndl_Chain Metal Rattle 01_KVV AUDIO_FREE",
+   "author": "KVV_Audio",
+   "author_url": "https://freesound.org/people/KVV_Audio/",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "url": "https://freesound.org/people/KVV_Audio/sounds/798137/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_1.wav (event:/Interface/ChainLift)",
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_2.wav (event:/Interface/ChainLift)",
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_3.wav (event:/Interface/ChainLift)",
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_4.wav (event:/Interface/ChainGetUp)"
+   ],
+   "changes": "chain_1: cut 0.13-0.95 s, filtered, faded, loudness normalized; chain_2: cut 2.53-3.6 s, filtered, faded, loudness normalized; chain_3: cut 4.94-6.3 s, filtered, faded, loudness normalized; chain_4: cut 7.66-8.6 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 748866,
+   "title": "Unseen Evil Lurking",
+   "author": "rahulsawla_",
+   "author_url": "https://freesound.org/people/rahulsawla_/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/rahulsawla_/sounds/748866/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/drone_evil.wav (event:/Interface/ChainLift)"
+   ],
+   "changes": "drone_evil: cut 0.3-3.6 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 377830,
+   "title": "long wispy woosh1.wav",
+   "author": "newagesoup",
+   "author_url": "https://freesound.org/people/newagesoup/",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "url": "https://freesound.org/people/newagesoup/sounds/377830/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/woosh_wispy.wav (event:/Interface/ChainRelease)"
+   ],
+   "changes": "woosh_wispy: cut 0.15-1.0 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 167372,
+   "title": "Steel chain being dropped and dragged on a cardboard box",
+   "author": "ani_music",
+   "author_url": "https://freesound.org/people/ani_music/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/ani_music/sounds/167372/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_slack.wav (event:/Interface/ChainRelease)"
+   ],
+   "changes": "chain_slack: cut 0.0-0.66 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 500912,
+   "title": "Squish impact",
+   "author": "Bertsz",
+   "author_url": "https://freesound.org/people/Bertsz/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Bertsz/sounds/500912/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/squish.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "squish: cut 0.13-1.0 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 187136,
+   "title": "BodyFall.wav",
+   "author": "000600",
+   "author_url": "https://freesound.org/people/000600/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/000600/sounds/187136/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/bodyfall.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "bodyfall: cut 0.35-0.96 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 799421,
+   "title": "chaindrop 1",
+   "author": "Logicogonist",
+   "author_url": "https://freesound.org/people/Logicogonist/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Logicogonist/sounds/799421/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_drop2.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "chain_drop2: cut 0.0-0.9 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 19291,
+   "title": "foley cloth rustle.wav",
+   "author": "martian",
+   "author_url": "https://freesound.org/people/martian/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/martian/sounds/19291/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/cloth.wav (event:/Interface/ChainGetUp)"
+   ],
+   "changes": "cloth: cut 0.45-1.6 s, filtered, faded, loudness normalized",
+   "added": "2026-11-02"
   }
  ]
 }

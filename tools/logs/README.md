@@ -33,7 +33,7 @@ native crash block, user folder masked). The function stores the alert's `discor
 puts a ✅ on it once the report is handled, and `reports` shows `✅ handled`. Offline / switch off: the report waits in
 `logs/reports/` and goes at a later launch. `python tools/logs/logs.py reports --download DIR` lists them and saves the
 captures. Test switch for autoplay runs: `-playtest-bug-report-at <seconds>`. Function tests: `node firebase/functions/test.js`.
-Deploy everything: `cd firebase && firebase deploy --only firestore,storage,functions`.
+Deploy everything: `cd firebase && firebase deploy --only firestore,storage,functions`. A non-interactive deploy (Claude) fails on « no value for DISCORD_REPORTS_CHANNEL_ID » until the gitignored `firebase/functions/.env` holds `DISCORD_REPORTS_CHANNEL_ID=1562180825305448578` (the channel id, not a secret).
 
 ## Switch (instant, no rebuild)
 

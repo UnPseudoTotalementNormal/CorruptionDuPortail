@@ -179,7 +179,10 @@ namespace Diagnostics.Logs
                 "gpuMb", SystemInfo.graphicsMemorySize, "api", SystemInfo.graphicsDeviceType,
                 "screen", $"{Screen.width}x{Screen.height}@{Screen.currentResolution.refreshRateRatio.value:0}",
                 "fullscreen", Screen.fullScreenMode, "quality", QualitySettings.GetQualityLevel(),
+                "vsync", QualitySettings.vSyncCount, "targetFps", Application.targetFrameRate,
                 "lang", Application.systemLanguage);
+            // On disk now, not at the first flush: a launch that dies in its first second still says who and on what.
+            FlushToFile(true);
 
             _nextPerfSample = Time.unscaledTime + PerfSampleSeconds; // the loading frame would read as 0.3 fps
             _client = new FirestoreLogClient(_directory);
@@ -672,7 +675,7 @@ namespace Diagnostics.Logs
             }
         }
 
-        private void QueueCrashReport(SessionMeta _meta, string _logPath)
+        private void QueueCrashReport(SessionMeta _meta, string _logPath, string _unityLog)
         {
             if (_meta.autoplay) return; // killed autoplay processes are not crashes worth an alert
             LastLine _last = ReadLastLine(_logPath);
@@ -687,7 +690,7 @@ namespace Diagnostics.Logs
                 role = _last?.ro,
                 phase = _last?.ph,
                 day = _last?.d ?? 0,
-                text = string.Empty,
+                text = BugReport.CleanText(_unityLog), // the start of Unity's crash block, shown in the alert
                 t = _last != null && _last.t > 0 ? _last.t : _meta.startMs,
                 version = _meta.version,
                 flavor = _meta.flavor,
@@ -850,6 +853,7 @@ namespace Diagnostics.Logs
 
         private void FindRecoverableSessions()
         {
+            var _crashed = new List<(SessionMeta meta, string logPath)>();
             foreach (string _metaPath in Directory.GetFiles(_directory, "*.meta.json"))
             {
                 try
@@ -863,8 +867,7 @@ namespace Diagnostics.Logs
                     if (!_meta.ended && !_meta.crashed)
                     {
                         _meta.crashed = true;
-                        GameLog.Warn("session", "session.previous.crashed", "sid", _meta.sid);
-                        QueueCrashReport(_meta, _logPath);
+                        _crashed.Add((_meta, _logPath));
                     }
                     _meta.ended = true;
                     var _old = new Session { meta = _meta, logPath = _logPath, metaPath = _metaPath };
@@ -875,6 +878,53 @@ namespace Diagnostics.Logs
                 {
                     // A broken meta file is skipped.
                 }
+            }
+            ReportCrashes(_crashed);
+        }
+
+        // Our lines stop at the last flush; the native crash stack is only in Unity's own log. Player-prev.log is the
+        // launch just before this one: it goes to the latest crashed session that started before it was last written
+        // (two copies on one PC must not swap stacks).
+        private void ReportCrashes(List<(SessionMeta meta, string logPath)> _crashed)
+        {
+            if (_crashed.Count == 0) return;
+            (string _unityLog, long _writtenMs) = ReadPreviousPlayerLog();
+            string _owner = _unityLog == null ? null : _crashed
+                .Where(_c => _c.meta.startMs <= _writtenMs)
+                .OrderByDescending(_c => _c.meta.startMs)
+                .Select(_c => _c.meta.sid)
+                .FirstOrDefault();
+            foreach ((SessionMeta _meta, string _logPath) in _crashed)
+            {
+                string _excerpt = _meta.sid == _owner ? _unityLog : null;
+                GameLog.Warn("session", "session.previous.crashed", "sid", _meta.sid,
+                    "unityLog", _excerpt ?? "(none: Player-prev.log missing or from another launch)");
+                QueueCrashReport(_meta, _logPath, _excerpt);
+            }
+        }
+
+        private const int CrashLogChars = 6000;
+
+        private static (string excerpt, long writtenMs) ReadPreviousPlayerLog()
+        {
+            try
+            {
+                string _current = Application.consoleLogPath;
+                if (string.IsNullOrEmpty(_current)) return (null, 0);
+                string _path = Path.Combine(Path.GetDirectoryName(_current) ?? string.Empty, "Player-prev.log");
+                if (!File.Exists(_path)) return (null, 0);
+                long _writtenMs = new DateTimeOffset(File.GetLastWriteTimeUtc(_path)).ToUnixTimeMilliseconds();
+                using var _read = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                long _start = Math.Max(0, _read.Length - 65536);
+                _read.Seek(_start, SeekOrigin.Begin);
+                var _bytes = new byte[_read.Length - _start];
+                int _count = _read.Read(_bytes, 0, _bytes.Length);
+                string _excerpt = BugReport.CrashExcerpt(Encoding.UTF8.GetString(_bytes, 0, _count), CrashLogChars);
+                return (string.IsNullOrEmpty(_excerpt) ? null : _excerpt, _writtenMs);
+            }
+            catch (Exception)
+            {
+                return (null, 0); // the alert still goes out, without Unity's side
             }
         }
 

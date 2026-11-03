@@ -22,6 +22,13 @@ const crash = buildMessage({ kind: "crash", player: "Wouh", sid: "20261020-19300
 assert.strictEqual(crash.embeds[0].title, "Crash");
 assert.ok(command(crash).includes("timeline 20261020-193000-abc123"));
 assert.strictEqual(crash.embeds[0].image, undefined);
+assert.ok(!crash.embeds[0].description.includes("```"), "no Unity log, no empty code block");
+
+const crashLog = buildMessage({ kind: "crash", player: "Flamy", sid: "20261020-193000-abc123",
+  text: "Crash!!!\n```\n@everyone [x](https://evil.example)", t: at, capture: "" });
+const block = crashLog.embeds[0].description.split("```")[1];
+assert.ok(block.includes("Crash!!!"), crashLog.embeds[0].description);
+assert.strictEqual(crashLog.embeds[0].description.split("```").length, 3, "the excerpt cannot close its code block");
 
 const empty = buildMessage({ kind: "report", player: "", sid: "20261020-193000-abc123", text: "   ", t: at, capture: "" });
 assert.strictEqual(empty.embeds[0].description, "(sans texte)");

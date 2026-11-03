@@ -47,6 +47,10 @@ namespace GameLogic.GameSettings
         // (see LobbyPlayerInfoHolder.playerInfos).
         private readonly NetworkList<RoleSettingEntry> _settings = new();
 
+        // T29 "Nuit rapide": the night wakes the roles in 3 grouped calls (AwakeningState.compactAwakeningOrder)
+        // instead of the classic order. Off by default; host-only, server-written, replicated (late joiners too).
+        private readonly NetworkVariable<bool> _compactNight = new();
+
         /// <summary>Fires on every peer (host included) whenever the replicated settings change.</summary>
         public event Action OnSettingsChanged;
 
@@ -54,6 +58,7 @@ namespace GameLogic.GameSettings
         {
             base.OnNetworkSpawn();
             _settings.OnListChanged += OnSettingsListChanged;
+            _compactNight.OnValueChanged += OnCompactNightChanged;
 
             if (IsServer)
             {
@@ -64,7 +69,32 @@ namespace GameLogic.GameSettings
         public override void OnNetworkDespawn()
         {
             _settings.OnListChanged -= OnSettingsListChanged;
+            _compactNight.OnValueChanged -= OnCompactNightChanged;
             base.OnNetworkDespawn();
+        }
+
+        private void OnCompactNightChanged(bool _previous, bool _current)
+        {
+            OnSettingsChanged?.Invoke();
+        }
+
+        /// <summary>True when the night uses the compact 3-call order ("Nuit rapide", T29).</summary>
+        public bool CompactNight => _compactNight.Value;
+
+        /// <summary>Host-only: switch the night between the classic order and the compact 3-call one.</summary>
+        public void RequestSetCompactNight(bool _compact)
+        {
+            if (!IsServer)
+            {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.option.refused", "option", "compactNight", "value", _compact, "reason", "not-host");
+                return;
+            }
+            if (_compactNight.Value == _compact)
+            {
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("lobby", "lobby.option.set", "option", "compactNight", "value", _compact);
+            _compactNight.Value = _compact;
         }
 
         private void OnSettingsListChanged(NetworkListEvent<RoleSettingEntry> _change)

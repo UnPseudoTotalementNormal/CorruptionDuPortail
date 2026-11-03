@@ -178,5 +178,16 @@ namespace UI.LobbyRoles
         public int GetReadyCount() => _localReady ? 1 : 0;
 
         public void RequestForceStart() { /* harness only — no game loop to advance */ }
+
+        private bool _compactNight;
+
+        public bool GetCompactNight() => _compactNight;
+
+        public void RequestSetCompactNight(bool compact)
+        {
+            if (_compactNight == compact) return;
+            _compactNight = compact;
+            OnChanged?.Invoke();
+        }
     }
 }

@@ -23,6 +23,23 @@ namespace GameLogic.GameStates
     public class AwakeningState : GameState
     {
         public List<AwakeningLayerObject> awakeningOrder;
+
+        // T29 "Nuit rapide" (lobby option): the same roles grouped into 3 calls, so the night lasts at most
+        // 3 x CompactLayerMaxTime. Empty = the option falls back to the classic order.
+        public List<AwakeningLayerObject> compactAwakeningOrder = new();
+
+        // Nuit rapide: a call lasts 45 s at most (60 s in the classic order, the powers' maxWaitTime).
+        public const float CompactLayerMaxTime = 45f;
+        // Nuit rapide: an awake fake role may fall asleep once 5 s have passed, 1 chance in 30 per second.
+        public const float CompactFakeSleepDelay = 5f;
+        public const float CompactFakeSleepRatePerSecond = 1f / 30f;
+
+        /// <summary>True when this night runs the compact 3-call order (host's lobby option, replicated).</summary>
+        public bool IsCompactNight => gameSettingsManager != null && gameSettingsManager.CompactNight
+                                      && compactAwakeningOrder != null && compactAwakeningOrder.Count > 0;
+
+        /// <summary>The order this night follows: <see cref="compactAwakeningOrder"/> or <see cref="awakeningOrder"/>.</summary>
+        public List<AwakeningLayerObject> ActiveOrder => IsCompactNight ? compactAwakeningOrder : awakeningOrder;
         public List<Character> currentlyAwakenedCharacters = new();
         
         public int currentAwakeningIndex;
@@ -34,6 +51,7 @@ namespace GameLogic.GameStates
         private const float UpdateAwakeningTimerInterval = 1f;
         
         private Dictionary<FixedString64Bytes, int> _awakeningLayerCache;
+        private List<AwakeningLayerObject> _awakeningLayerCacheOrder;
         
         private Dictionary<Character, NetworkVariable<bool>.OnValueChangedDelegate> characterAwakeningCallbacks = new();
         
@@ -48,12 +66,14 @@ namespace GameLogic.GameStates
                 return int.MaxValue;
             }
 
-            if (_awakeningLayerCache == null)
+            List<AwakeningLayerObject> _order = ActiveOrder;
+            if (_awakeningLayerCache == null || _awakeningLayerCacheOrder != _order)
             {
                 _awakeningLayerCache = new Dictionary<FixedString64Bytes, int>();
-                for (int i = 0; i < awakeningOrder.Count; i++)
+                _awakeningLayerCacheOrder = _order;
+                for (int i = 0; i < _order.Count; i++)
                 {
-                    foreach (var _rdo in awakeningOrder[i].awakeningCharacters)
+                    foreach (var _rdo in _order[i].awakeningCharacters)
                     {
                         if (_rdo != null && _rdo.role != null)
                         {
@@ -78,7 +98,7 @@ namespace GameLogic.GameStates
         {
             SleepCurrentlyAwakenedCharacters();
 
-            foreach (RoleDataObject _roleToAwake in awakeningOrder[_layerToAwake].awakeningCharacters)
+            foreach (RoleDataObject _roleToAwake in ActiveOrder[_layerToAwake].awakeningCharacters)
             {
                 List<Character> _charactersInGame = CharacterQuery.GetCharacters().ToList();
                 foreach (Character _currentCharacter in _charactersInGame)
@@ -109,7 +129,7 @@ namespace GameLogic.GameStates
             currentAwakeningMaxTime = currentAwakeningTimer = CalculateAwakeningTimer(currentlyAwakenedCharacters.Select(_character => _character.role).ToList());
             // Layers nobody plays in this game start and end in the same frame: not logged.
             if (currentlyAwakenedCharacters.Count > 0) Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("night", "night.layer.start", "index", _layerToAwake,
-                "roles", awakeningOrder[_layerToAwake].awakeningCharacters.Where(_r => _r != null && _r.role != null).Select(_r => _r.role.roleName.ToString()).ToList(),
+                "roles", ActiveOrder[_layerToAwake].awakeningCharacters.Where(_r => _r != null && _r.role != null).Select(_r => _r.role.roleName.ToString()).ToList(),
                 "awake", currentlyAwakenedCharacters.Select(_c => _c.ownerClientId.Value).ToList(), "timer", currentAwakeningMaxTime));
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningMaxTimeRpc), new[] {new NetworkSerializableObject(currentAwakeningMaxTime)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
@@ -153,7 +173,7 @@ namespace GameLogic.GameStates
                     _maxAwakeningTime = Mathf.Max(_maxAwakeningTime, _power.maxWaitTime);
                 }
             }
-            return _maxAwakeningTime;
+            return IsCompactNight ? Mathf.Min(_maxAwakeningTime, CompactLayerMaxTime) : _maxAwakeningTime;
         }
 
         
@@ -162,6 +182,7 @@ namespace GameLogic.GameStates
         { 
             base.OnStateCreated();
             _awakeningLayerCache = null;
+            _awakeningLayerCacheOrder = null;
             Loop.onGameStarted += () =>
             {
                 var _localCharacter = CharacterQuery.GetLocalCharacter(false);
@@ -184,6 +205,7 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
             currentAwakeningIndex = 0;
+            Diagnostics.Logs.GameLog.Info("night", "night.order", "mode", IsCompactNight ? "compact" : "classic", "layers", ActiveOrder.Count);
             AwakeLayer(currentAwakeningIndex);
             
             gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningIndexRpc), new NetworkSerializableObject[] {new(currentAwakeningIndex)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
@@ -314,13 +336,17 @@ namespace GameLogic.GameStates
                 gameManager.DoStateMethodRpc(GetType().FullName, nameof(UpdateAwakeningTimerRpc), new NetworkSerializableObject[] {new(currentAwakeningTimer)}, new CustomRpcParams(CustomRpcParams.RpcTargetType.notHost));
             }
             
-            if (currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f) //handle fake skip/used power
+            bool _compact = IsCompactNight;
+            bool _fakesMayAct = _compact
+                ? currentAwakeningMaxTime - currentAwakeningTimer >= CompactFakeSleepDelay
+                : currentAwakeningTimer <= currentAwakeningMaxTime / 1.25f;
+            if (_fakesMayAct) //handle fake skip/used power
             {
                 var _fakeAwakenedCharacters = CharacterQuery.GetCharacters(false)
                     .Where(_c => _c.ownerClientId.Value.IsFakeClientId() && _c.isAwakened.Value);
                 // Per-frame chance from a per-SECOND rate, so a fake role's wait no longer depends on the host's
                 // framerate (it was a flat 0.00045 per frame: ~37 s on average at 60 fps, ~4 s at 500 fps).
-                float _sleepChance = FakeSleepChance(Time.deltaTime);
+                float _sleepChance = FakeSleepChance(Time.deltaTime, _compact ? CompactFakeSleepRatePerSecond : FAKE_SLEEP_RATE_PER_SECOND);
                 foreach (var _fakeAwakenedCharacter in _fakeAwakenedCharacters)
                 {
                     // [DETERMINISM-QUARANTINE §3b B] Frame-timed RNG: call count depends on framerate. Out of scope for Phase 0 / Wave 1 — needs IGameClock + seed isolation (Wave). MUST NOT feed any golden. Proven isolated by AwakeningStateIsolationTests (no WinningCondition reads awakening state).
@@ -352,13 +378,16 @@ namespace GameLogic.GameStates
         public const float FAKE_SLEEP_RATE_PER_SECOND = 0.00045f * 60f;
 
         /// <summary>Chance that an awake fake role falls asleep during a frame of <paramref name="_deltaTime"/> seconds.</summary>
-        public static float FakeSleepChance(float _deltaTime)
+        public static float FakeSleepChance(float _deltaTime) => FakeSleepChance(_deltaTime, FAKE_SLEEP_RATE_PER_SECOND);
+
+        /// <summary>Same, for a given per-second rate (the compact night uses <see cref="CompactFakeSleepRatePerSecond"/>).</summary>
+        public static float FakeSleepChance(float _deltaTime, float _ratePerSecond)
         {
             if (_deltaTime <= 0f)
             {
                 return 0f;
             }
-            return 1f - Mathf.Exp(-FAKE_SLEEP_RATE_PER_SECOND * _deltaTime);
+            return 1f - Mathf.Exp(-_ratePerSecond * _deltaTime);
         }
 
         // _reason: playtest logs only (all-slept, timeout, empty-layer, player-left).
@@ -367,9 +396,9 @@ namespace GameLogic.GameStates
             if (_reason != "empty-layer") Diagnostics.Logs.GameLog.Info("night", "night.layer.end", "index", currentAwakeningIndex, "reason", _reason);
             currentAwakeningIndex++;
             
-            if (currentAwakeningIndex >= awakeningOrder.Count)
+            if (currentAwakeningIndex >= ActiveOrder.Count)
             {
-                Diagnostics.Logs.GameLog.Info("night", "night.end", "layers", awakeningOrder.Count);
+                Diagnostics.Logs.GameLog.Info("night", "night.end", "layers", ActiveOrder.Count);
                 SleepCurrentlyAwakenedCharacters();
                 Loop.NextGameState();
                 return;

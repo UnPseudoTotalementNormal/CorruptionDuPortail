@@ -394,6 +394,18 @@
     color: rgb(138, 74, 28);
     -unity-text-align: middle-left;
 }
+.lobby-roles__options-check {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.lobby-roles__options-check Label {
+    font-size: 25px;
+    color: var(--cdp-color-ink);
+}
+.lobby-roles__options-check:hover .lobby-roles__start-box {
+    border-color: rgb(138, 16, 16);
+}
 
 /* ---- thin ink scrollbar (as on the role sheet) ---- */
 .lobby-roles__scroll .unity-scroller--vertical {

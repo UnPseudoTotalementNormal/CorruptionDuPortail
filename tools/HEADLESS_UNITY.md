@@ -20,8 +20,8 @@ user's own editor, and without ever being blocked by a modal dialog. Verified on
 # Optional, saves a long first import on a fresh worktree: seed its Library from the main checkout.
 # Exclude compiled assemblies, the Bee cache and the pipeline port file (see traps below).
 # Same thing in one command: tools/autoplay/unityctl.sh unpark (and `park` frees it again once the work is merged).
-robocopy "<main>\Library" "<worktree>\Library" /E /MT:16 /XF *.lock UnityLockfile /XD ScriptAssemblies Bee Pipeline
-# (robocopy exit code 1 = files copied = success)
+MSYS_NO_PATHCONV=1 robocopy "<main>\Library" "<worktree>\Library" /E /MT:16 /XF *.lock UnityLockfile /XD ScriptAssemblies Bee Pipeline
+# (robocopy exit code 1 = files copied = success; without MSYS_NO_PATHCONV, Git Bash turns /E into a path: exit 16)
 
 # Never keep a copied port file: it points at the MAIN editor.
 rm -f Library/Pipeline/.unity-pipeline-port

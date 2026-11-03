@@ -75,6 +75,7 @@ namespace UI.LobbyRoles
         private const string OptionsClass = "lobby-roles__options";
         private const string OptionsTitleClass = "lobby-roles__options-title";
         private const string OptionsBtnClass = "lobby-roles__options-btn";
+        private const string OptionsCheckClass = "lobby-roles__options-check";
         private const string CardSlotClass = "lobby-roles__card-slot";
         private const string ReadPaperClass = "lobby-roles__paper--read";
         private const string StatusClass = "lobby-roles__status";
@@ -261,13 +262,21 @@ namespace UI.LobbyRoles
             }
         }
 
-        // ---- "Autres options": the host-only dev "Démarrage forcé" (skips the all-ready condition; the server still
-        // re-validates the composition). Non-host tablets show the page empty.
+        // ---- "Autres options" (host only): the night order (classic or the compact 3-call "Nuit rapide", T29), then
+        // the dev "Démarrage forcé" (skips the all-ready condition; the server still re-validates the composition).
+        // Non-host tablets show the page empty.
         private VisualElement BuildOptions()
         {
             var options = new VisualElement();
             options.AddToClassList(OptionsClass);
             if (!_data.IsHost()) return options;
+
+            var nightTitle = new Label("Nuit");
+            nightTitle.AddToClassList(TitleClass);
+            nightTitle.AddToClassList(OptionsTitleClass);
+            options.Add(nightTitle);
+
+            options.Add(Checkbox("Rapide, en 3 appels", _data.GetCompactNight(), _data.RequestSetCompactNight));
 
             var title = new Label("Options de développement");
             title.AddToClassList(TitleClass);
@@ -279,6 +288,25 @@ namespace UI.LobbyRoles
             force.AddToClassList(OptionsBtnClass);
             options.Add(force);
             return options;
+        }
+
+        // The ink checkbox of "Je suis prêt" (box + red tick), for an option; the click → OnChanged → Rebuild.
+        private Button Checkbox(string label, bool on, System.Action<bool> set)
+        {
+            var check = new Button(() => set(!on));
+            check.AddToClassList(TextBtnClass);
+            check.AddToClassList(OptionsCheckClass);
+            var box = new VisualElement { pickingMode = PickingMode.Ignore };
+            box.AddToClassList(StartBoxClass);
+            if (on)
+            {
+                var tick = new VisualElement { pickingMode = PickingMode.Ignore };
+                tick.AddToClassList(StartTickClass);
+                box.Add(tick);
+            }
+            check.Add(box);
+            check.Add(new Label(label) { pickingMode = PickingMode.Ignore });
+            return check;
         }
 
         // ---- counters ----

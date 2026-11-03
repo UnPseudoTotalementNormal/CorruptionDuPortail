@@ -110,6 +110,12 @@ namespace UI.LobbyRoles
         /// The server still re-validates the composition gate before advancing.
         /// </summary>
         void RequestForceStart();
+
+        /// <summary>Whether the night runs the compact 3-call order ("Nuit rapide", T29).</summary>
+        bool GetCompactNight();
+
+        /// <summary>Host-only: choose the classic night order or the compact 3-call one.</summary>
+        void RequestSetCompactNight(bool compact);
     }
 
     /// <summary>

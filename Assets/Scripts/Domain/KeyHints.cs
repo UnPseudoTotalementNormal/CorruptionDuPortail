@@ -17,7 +17,6 @@ namespace CorruptionDuPortail.Domain
         // still works but is no longer shown (mockups touches-jour v1 T1: Tab and T looked like the same thing).
         PlayersRow,
         RolesRow,
-        SkipVote,
     }
 
     /// <summary>Where a hint sits (mockups touches-jour v1 A2 + C2).</summary>
@@ -44,12 +43,10 @@ namespace CorruptionDuPortail.Domain
         public readonly bool BugReportAvailable;
         /// <summary>By day: the two screen rows answer their keys (1 and 2).</summary>
         public readonly bool DayRowsAvailable;
-        /// <summary>By day, during the vote, before voting: the skip key (the board's skip button went with the table).</summary>
-        public readonly bool SkipVoteAvailable;
 
         public KeyHintContext(bool tabletAvailable, bool tabletOpen, bool hasPreviousScreen, bool hasNextScreen,
             bool canSpeak, bool emotesReachable, bool menuAvailable, bool bugReportAvailable,
-            bool dayRowsAvailable = false, bool skipVoteAvailable = false)
+            bool dayRowsAvailable = false)
         {
             TabletAvailable = tabletAvailable;
             TabletOpen = tabletOpen;
@@ -60,7 +57,6 @@ namespace CorruptionDuPortail.Domain
             MenuAvailable = menuAvailable;
             BugReportAvailable = bugReportAvailable;
             DayRowsAvailable = dayRowsAvailable;
-            SkipVoteAvailable = skipVoteAvailable;
         }
     }
 
@@ -83,7 +79,6 @@ namespace CorruptionDuPortail.Domain
                 hints.Add(KeyHintAction.PlayersRow);
                 hints.Add(KeyHintAction.RolesRow);
             }
-            if (context.SkipVoteAvailable) hints.Add(KeyHintAction.SkipVote);
             if (context.TabletAvailable)
             {
                 if (!context.TabletOpen)
@@ -113,7 +108,6 @@ namespace CorruptionDuPortail.Domain
                     return KeyHintGroup.Corner;
                 case KeyHintAction.PlayersRow:
                 case KeyHintAction.RolesRow:
-                case KeyHintAction.SkipVote:
                     return KeyHintGroup.Vote;
                 default:
                     return KeyHintGroup.Other;

@@ -52,7 +52,7 @@ namespace UI.KeyHints
         [SerializeField] private PauseMenuInput _pauseMenu;
         [Tooltip("T23: the day's screen rows (keys 1 and 2). Missing = their hints never show.")]
         [SerializeField] private Presentation.DayScreenRows _dayRows;
-        [Tooltip("T23: the day's vote on the cats (its skip key). Missing = the skip hint never shows.")]
+        [Tooltip("T23: the day's vote on the cats. Missing = \"Clic : voter\" never shows.")]
         [SerializeField] private Presentation.DayCatVoting _dayVoting;
         [Tooltip("The pause menu's grey square, top left: made invisible (the menu's drawing sits on it), it still opens the menu on a click.")]
         [SerializeField] private Graphic _pauseButtonGraphic;
@@ -76,7 +76,6 @@ namespace UI.KeyHints
         [SerializeField] private Sprite _reportBugIcon;
         [SerializeField] private Sprite _playersRowIcon;
         [SerializeField] private Sprite _rolesRowIcon;
-        [SerializeField] private Sprite _skipVoteIcon;
 
         private readonly Dictionary<KeyHintAction, Hint> _hints = new();
         private readonly List<KeyHintAction> _shown = new();
@@ -161,8 +160,7 @@ namespace UI.KeyHints
                 emotesReachable: _emoteWheel != null && _emoteWheel.isActiveAndEnabled && _emoteWheel.IsReachable,
                 menuAvailable: true,
                 bugReportAvailable: _bugReportAvailable,
-                dayRowsAvailable: _dayRows != null && _dayRows.IsActive,
-                skipVoteAvailable: _dayVoting != null && _dayVoting.SkipReachable);
+                dayRowsAvailable: _dayRows != null && _dayRows.IsActive);
         }
 
         private bool SameAsShown()
@@ -209,7 +207,6 @@ namespace UI.KeyHints
             // layout's: the vote's keys, the gap, the others.
             AddHint(_column, KeyHintAction.PlayersRow, _playersRowIcon, () => Key.Digit1);
             AddHint(_column, KeyHintAction.RolesRow, _rolesRowIcon, () => Key.Digit2);
-            AddHint(_column, KeyHintAction.SkipVote, _skipVoteIcon, () => _dayVoting.SkipKey);
             RectTransform _gap = NewRect("Gap", _column);
             _gap.gameObject.AddComponent<LayoutElement>().preferredHeight = GroupGap;
             _groupGap = _gap.gameObject;

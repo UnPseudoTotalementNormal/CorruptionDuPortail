@@ -25,6 +25,7 @@ namespace Avatars.Cosmetics
         private readonly Dictionary<string, GameObject> _parts = new();
         private readonly List<Renderer> _furRenderers = new();
         private readonly HashSet<Renderer> _hairRenderers = new();
+        private readonly Dictionary<string, Material> _partMaterials = new();
         private bool _bound;
         // Meshes copied to follow the body (FollowBody), this cat's own: destroyed with it.
         private readonly List<Mesh> _rebound = new();
@@ -101,6 +102,7 @@ namespace Avatars.Cosmetics
                 }
                 if (chosen != null)
                 {
+                    WearPartMaterial(chosen);
                     SetParts(chosen, slot != CatSlot.Mouth || !_mouthHidden);
                 }
             }
@@ -159,6 +161,21 @@ namespace Avatars.Cosmetics
             if (catalog == null) return null;
             CatCosmeticItem eyes = catalog.Find(CatSlot.Eyes, Current.Eyes);
             return eyes != null && !string.IsNullOrEmpty(eyes.blinkPart) && _parts.ContainsKey(eyes.blinkPart) ? eyes : null;
+        }
+
+        // Two items may share a mesh with different textures: the part wears the chosen item's material, or its own back.
+        private void WearPartMaterial(CatCosmeticItem item)
+        {
+            foreach (string part in item.parts)
+            {
+                if (!_parts.TryGetValue(part, out GameObject go) || !go.TryGetComponent(out Renderer renderer)) continue;
+                if (!_partMaterials.TryGetValue(part, out Material own))
+                {
+                    own = renderer.sharedMaterial;
+                    _partMaterials[part] = own;
+                }
+                renderer.sharedMaterial = item.partMaterial != null ? item.partMaterial : own;
+            }
         }
 
         private void SetParts(CatCosmeticItem item, bool on)

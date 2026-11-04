@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T3 : son chat sur la tablette du lobby</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .ct-back { position: absolute; inset: 0; background: #141414; }
+  .ct-wood { position: absolute; background: #78502f url(../attribution-roles/img/wood_tablet.webp) 0 0 / 360px; background-blend-mode: multiply; }
+  .ct-cork { position: absolute; background: url(img/cork_tablet.webp) center / cover; overflow: hidden; }
+  .ct-player { position: absolute; left: 26px; width: 150px; padding: 5px 10px; background: rgb(240,229,203); font: 19px "Garamond", serif; color: #2e1d10; box-shadow: 0 3px 3px rgba(40,22,8,.45); }
+
+  .ct-tabs { position: absolute; left: 16px; top: 12px; display: flex; gap: 28px; padding: 5px 22px 5px 18px; background: rgb(240,229,203); transform: rotate(-.6deg); box-shadow: 0 3px 3px rgba(40,22,8,.45); z-index: 3; }
+  .ct-tabs b { font: 24px "Garamond", serif; color: #7a6a58; cursor: pointer; }
+  .ct-tabs b.on { color: #2e1d10; text-shadow: .4px 0 0 #2e1d10; }
+
+  .ct-page { position: absolute; left: 0; top: 58px; right: 0; bottom: 0; }
+  .ct-roles { position: absolute; inset: 0; background: url(../attribution-roles/captures/v9/J1.jpg) -315px -206px / 1600px 900px; }
+  .ct-opts { position: absolute; left: 16px; top: 6px; padding: 14px 24px; background: rgb(240,229,203); color: #2e1d10; font: 22px "Garamond", serif; }
+
+  .ct-cat { position: absolute; left: 26px; top: 8px; height: 526px; aspect-ratio: 440 / 575; cursor: grab; touch-action: none; }
+  .ct-cat img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .ct-panel { position: absolute; left: 448px; top: 16px; width: 508px; bottom: 8px; }
+  .ct-parts { display: flex; gap: 26px; }
+  .ct-part { cursor: pointer; user-select: none; }
+  .ct-now { margin: 8px 0 12px; }
+  .ct-grid { display: grid; grid-template-columns: repeat(4, 112px); gap: 12px 12px; max-height: 410px; overflow-y: auto; padding-top: 4px; scrollbar-width: thin; }
+  .ct-cell { text-align: center; cursor: pointer; user-select: none; position: relative; }
+  .ct-box { width: 112px; height: 105px; display: flex; align-items: center; justify-content: center; }
+  .ct-box img { width: 104px; height: 97px; object-fit: contain; }
+  .ct-cell span { display: block; margin-top: 4px; font: 16px/1.1 "Fell", serif; }
+
+  /* T1: the menu's look, a dark sheet laid on the cork */
+  .ct-dark .ct-page { background: rgba(8,3,2,.96); margin: 2px 6px 6px; }
+  .ct-dark .ct-part { font: 30px "FellSC", serif; color: rgb(168,138,104); padding-bottom: 4px; border-bottom: 2px solid transparent; }
+  .ct-dark .ct-part.on { color: rgb(251,238,221); border-bottom-color: #d9a441; }
+  .ct-dark .ct-now { font: italic 23px "Fell", serif; color: rgb(201,154,91); }
+  .ct-dark .ct-box { background: rgba(30,16,8,.82); border: 1px solid rgb(90,64,40); box-sizing: border-box; color: rgb(90,64,40); font: 38px "Fell", serif; }
+  .ct-dark .ct-cell span { color: rgb(216,194,160); }
+  .ct-dark .ct-cell.on .ct-box { border: 2px solid #d9a441; }
+  .ct-dark .ct-cell.on span { color: rgb(251,238,221); }
+
+  /* T2: the same layout on the cork, cream paper for what is clicked, kraft for what is read */
+  .ct-paper .ct-parts { display: inline-flex; background: rgb(240,229,203); padding: 3px 18px; box-shadow: 0 3px 3px rgba(40,22,8,.45); transform: rotate(.4deg); }
+  .ct-paper .ct-part { font: 27px "FellSC", serif; color: #7a6a58; border-bottom: 2px solid transparent; }
+  .ct-paper .ct-part.on { color: #2e1d10; border-bottom-color: #8a2a1c; }
+  .ct-paper .ct-now { display: table; font: italic 21px "Fell", serif; color: #2e1d10; background: rgb(220,195,156); padding: 2px 12px; box-shadow: 0 2px 2px rgba(40,22,8,.4); }
+  .ct-paper .ct-cell { background: rgb(240,229,203); padding: 4px 2px 5px; box-shadow: 0 3px 3px rgba(40,22,8,.45); }
+  .ct-paper .ct-cell:nth-child(3n) { transform: rotate(-1.1deg); }
+  .ct-paper .ct-cell:nth-child(3n+1) { transform: rotate(.9deg); }
+  .ct-paper .ct-cell::before { content: ""; position: absolute; left: 50%; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d5504a, #7c1216); z-index: 1; }
+  .ct-paper .ct-box { width: 108px; margin: auto; color: #8a7458; font: 38px "Fell", serif; background: rgba(46,29,16,.82); }
+  .ct-paper .ct-cell span { color: #2e1d10; }
+  .ct-paper .ct-cell.on { outline: 2px solid #8a2a1c; outline-offset: 1px; transform: none; }
+  .ct-paper .ct-grid { padding-left: 2px; }
+</style>
+</head>
+<body data-subject="chat-tablette">
+<header class="page">
+  <h1>T3 : son chat sur la tablette du lobby</h1>
+  <p><b>Ce qui change.</b> Un troisième onglet sur la tablette, à côté de « Rôles » et « Autres options » ; dans le menu et
+    sur la tablette : Pelage, Yeux, Bouche, puis Tenue en dernier ; « Sans … » en premier, en haut à gauche ; la bouche
+    qui sourit revient.</p>
+  <p><b>Référence.</b> Among Us : le même ordinateur du lobby sert aux réglages de la partie et, par un onglet, à habiller
+    son personnage avant le début (<a href="https://www.pcgamer.com/uk/how-to-customize-your-character-in-among-us">PC Gamer</a>).
+    Goose Goose Duck : on se change dans le lobby même, à une armoire ou un coffre du décor
+    (<a href="https://gamerjournalist.com/how-to-change-colors-and-customize-in-goose-goose-duck/">Gamer Journalist</a>).
+    Vus dans des guides écrits, pas en jeu.</p>
+  <p><b>Aujourd'hui.</b> Le chat ne se change que dans le menu principal. Il n'est envoyé au serveur qu'une fois, à
+    l'apparition de l'avatar : un changement fait en lobby ne se verrait qu'à la partie suivante. Le code devra donc
+    aussi le renvoyer à chaque choix.</p>
+  <p><b>La scène.</b> Huit joueurs en lobby, l'hôte règle les rôles. Pendant que tu attends, tu ouvres l'onglet et tu
+    changes de tenue.</p>
+  <p><b>Sans question.</b> Le nom de l'onglet est provisoire (« Mon chat »). Pas de lien « Menu » sur la tablette : on en
+    sort par les onglets. Chaque choix se voit tout de suite chez les autres et reste enregistré pour les parties
+    suivantes. Le chat tourne quand on le fait glisser, comme dans le menu (essaie ici aussi). L'onglet est là pour tout
+    le monde, pas seulement l'hôte.</p>
+  <p>Les chats sont composés à la main à partir des vraies images : yeux 4-6, bouches étouffée, ivre et triste y sont
+    placées approximativement. Le vrai rendu sera celui du jeu.</p>
+</header>
+
+<section>
+  <h2>1. L'onglet sur la tablette</h2>
+  <p>Touche les onglets et les vignettes. La disposition est celle du menu, à la taille de la tablette.</p>
+
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Le même écran que le menu (par défaut)</span></div>
+    <p class="vdesc">Ta demande à la lettre : le fond sombre et les vignettes du menu, posés sur le liège sous les onglets
+      de la tablette.</p>
+    <div class="screen"><div class="stage" id="t1"></div></div>
+  </div>
+
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Même disposition, en papier sur le liège</span></div>
+    <p class="vdesc">Mêmes places, mais dans le style de la tablette : le chat directement sur le liège, les vignettes en
+      papiers épinglés comme les cartes de rôles.</p>
+    <div class="screen"><div class="stage" id="t2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. « La bouche qui sourit » de Wouh</h2>
+  <p>Une seule bouche a disparu du jeu : l'ancienne bouche du Mage, remplacée le 26 octobre par le grand sourire à crocs,
+    trois jours avant son message.</p>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">L'ancienne bouche du Mage revient (par défaut)</span></div>
+    <p class="vdesc">Une bouche de plus, « Petit sourire » (nom provisoire), à côté de la Bouche de mage actuelle.</p>
+    <div class="screen"><div class="stage" id="b1"></div></div>
+  </div>
+
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Il parlait du Sourire galactique</span></div>
+    <p class="vdesc">Il est déjà dans le jeu : rien à ajouter, on répond à Wouh où le trouver.</p>
+    <div class="screen"><div class="stage" id="b2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. « Sans yeux »</h2>
+  <p>Wouh cite « sans bouche / sans yeux », mais « Sans yeux » n'existe pas aujourd'hui : seuls « Sans tenue » et « Sans
+    bouche » existent.</p>
+
+  <div class="variant" data-id="Y1">
+    <div class="vhead"><span class="vid">Y1</span><span class="vname">On ne l'ajoute pas (par défaut)</span></div>
+    <p class="vdesc">La liste des yeux reste telle quelle. « Sans tenue » et « Sans bouche » passent en premier.</p>
+    <div class="screen"><div class="stage" id="y1"></div></div>
+  </div>
+
+  <div class="variant" data-id="Y2">
+    <div class="vhead"><span class="vid">Y2</span><span class="vname">On ajoute « Sans yeux »</span></div>
+    <p class="vdesc">Une vignette de plus, en premier. Le chat n'a plus d'yeux du tout, comme ici.</p>
+    <div class="screen"><div class="stage" id="y2"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const P = "../personnalisation/img/";
+  const SMILE = { id: "sourire", name: "Petit sourire", icon: "img/icon_mouth_sourire.webp", layer: P + "mouth_mage.webp" };
+  const item = (id, name, part, icon, layer) => ({ id, name, icon: "img/icon_" + (icon || part + "_" + id) + ".webp", layer: layer || P + part + "_" + id + ".webp" });
+  const catalog = (o) => ({
+    fur: { label: "Pelage", items: [
+      { id: "bw", name: "Noir et blanc", icon: "img/icon_fur_bw.webp", layer: P + "body_bw.webp" },
+      { id: "fiery", name: "Ardent", icon: "img/icon_fur_fiery.webp", layer: P + "body_fiery.webp" },
+      { id: "galactic", name: "Galactique", icon: "img/icon_fur_galactic.webp", layer: P + "body_galactic.webp" },
+      { id: "mage", name: "Mage", icon: "img/icon_fur_mage.webp", layer: P + "body_mage.webp" } ] },
+    eyes: { label: "Yeux", items: [
+      ...(o.noEyes ? [{ id: "", name: "Sans yeux" }] : []),
+      item("bw", "Yeux de la portée", "eyes"), item("fiery", "Yeux ardents", "eyes"),
+      item("galactic", "Yeux galactiques", "eyes"), item("mage", "Yeux de mage", "eyes"),
+      item("4", "Yeux simples", "eyes", null, "img/layer_eyes_4.webp"), item("5", "Yeux blasés", "eyes", null, "img/layer_eyes_5.webp"),
+      item("6", "Yeux boutons", "eyes", null, "img/layer_eyes_6.webp") ] },
+    mouth: { label: "Bouche", items: [
+      { id: "", name: "Sans bouche" }, ...(o.noSmile ? [] : [SMILE]),
+      item("galactic", "Sourire galactique", "mouth"),
+      item("mage2", "Bouche de mage", "mouth", null, "img/layer_mouth_mage2.webp"),
+      item("3", "Bouche étouffée", "mouth", null, "img/layer_mouth_3.webp"),
+      item("4", "Bouche ivre", "mouth", null, "img/layer_mouth_4.webp"),
+      item("5", "Bouche triste", "mouth", null, "img/layer_mouth_5.webp") ] },
+    outfit: { label: "Tenue", items: [
+      { id: "", name: "Sans tenue" },
+      item("bw", "Cape et nœud rouge", "outfit"), item("fiery", "Cape ardente", "outfit"),
+      item("galactic", "Nœud galactique", "outfit"), item("mage", "Cape de mage", "outfit"),
+      item("chef", "Tenue de chef", "outfit", null, "img/layer_outfit_chef.webp") ] },
+  });
+  const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  function mount(id, style, o) {
+    const stage = document.getElementById(id), cat = catalog(o);
+    const look = { fur: "bw", eyes: "mage", mouth: "sourire", outfit: "fiery", ...o.look };
+    let openPart = o.open, tab = "chat", flip = 1;
+    stage.classList.add(style);
+    stage.append(h("div", "ct-back"));
+
+    const roster = Object.assign(h("div", "ct-wood"), { style: "left:19px;top:133px;width:218px;height:634px" });
+    const rosterCork = Object.assign(h("div", "ct-cork"), { style: "left:12px;top:14px;right:12px;bottom:14px" });
+    roster.append(rosterCork); stage.append(roster);
+    ["UPTNButButter", "Wouh", "Mistigri", "CapitaineCroqu…", "Nyx", "pomme2terre", "Kaelan", "Mamie Ronron"].forEach((n, i) => {
+      const p = h("div", "ct-player", n); p.style.top = 170 + i * 46 + "px"; stage.append(p);
+    });
+
+    const frame = Object.assign(h("div", "ct-wood"), { style: "left:300px;top:133px;width:1000px;height:634px" });
+    const cork = Object.assign(h("div", "ct-cork"), { style: "left:15px;top:15px;width:970px;height:604px" });
+    frame.append(cork); stage.append(frame);
+
+    const tabs = h("div", "ct-tabs"), page = h("div", "ct-page");
+    cork.append(tabs, page);
+
+    const render = () => {
+      tabs.innerHTML = ""; page.innerHTML = "";
+      [["roles", "Rôles"], ["opts", "Autres options"], ["chat", "Mon chat"]].forEach(([k, label]) => {
+        const b = h("b", tab === k ? "on" : "", label);
+        b.onclick = () => { tab = k; render(); };
+        tabs.append(b);
+      });
+      page.style.background = tab === "chat" ? "" : "none";
+      if (tab === "roles") { page.append(h("div", "ct-roles")); return; }
+      if (tab === "opts") { page.append(h("div", "ct-opts", "Options de développement")); return; }
+
+      const c = h("div", "ct-cat");
+      for (const part of ["fur", "outfit", "eyes", "mouth"]) {
+        const chosen = cat[part].items.find(i => i.id === look[part]);
+        if (chosen && chosen.layer) { const im = h("img"); im.src = chosen.layer; if (part !== "fur") im.style.zIndex = part === "outfit" ? 1 : 2; c.append(im); }
+      }
+      c.style.transform = "scaleX(" + flip + ")";
+      // A flat picture cannot turn: dragging past a threshold mirrors it, enough to try the gesture.
+      c.onpointerdown = (e) => { c.setPointerCapture(e.pointerId); c.dataset.x = e.clientX; };
+      c.onpointermove = (e) => { if (c.dataset.x && Math.abs(e.clientX - c.dataset.x) > 40) { flip = -flip; c.style.transform = "scaleX(" + flip + ")"; c.dataset.x = e.clientX; } };
+      c.onpointerup = () => { delete c.dataset.x; };
+      page.append(c);
+
+      const panel = h("div", "ct-panel"), parts = h("div", "ct-parts");
+      Object.keys(cat).forEach((k) => {
+        const t = h("div", "ct-part" + (k === openPart ? " on" : ""), cat[k].label);
+        t.onclick = () => { openPart = k; render(); };
+        parts.append(t);
+      });
+      panel.append(parts);
+      const now = cat[openPart].items.find(i => i.id === look[openPart]);
+      const nowWrap = h("div"); nowWrap.append(h("div", "ct-now", now ? now.name : ""));
+      panel.append(nowWrap);
+      const grid = h("div", "ct-grid");
+      for (const it of cat[openPart].items) {
+        const cell = h("div", "ct-cell" + (it.id === look[openPart] ? " on" : "")), box = h("div", "ct-box");
+        if (it.icon) { const im = h("img"); im.src = it.icon; box.append(im); } else box.textContent = "-";
+        cell.append(box, h("span", "", it.name));
+        cell.onclick = () => { look[openPart] = it.id; render(); };
+        grid.append(cell);
+      }
+      panel.append(grid);
+      page.append(panel);
+    };
+    render();
+  }
+
+  mount("t1", "ct-dark", { open: "outfit" });
+  mount("t2", "ct-paper", { open: "outfit" });
+  mount("b1", "ct-dark", { open: "mouth" });
+  mount("b2", "ct-dark", { open: "mouth", noSmile: true, look: { mouth: "galactic" } });
+  mount("y1", "ct-dark", { open: "eyes" });
+  mount("y2", "ct-dark", { open: "eyes", noEyes: true, look: { eyes: "" } });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

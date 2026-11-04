@@ -25819,6 +25819,7 @@ GameObject:
   - component: {fileID: 2005486241}
   - component: {fileID: 2005486240}
   - component: {fileID: 2005486239}
+  - component: {fileID: 2005486244}
   m_Layer: 0
   m_Name: LobbyRolesUITK
   m_TagString: Untagged
@@ -25843,6 +25844,27 @@ MonoBehaviour:
   _factionDatabase: {fileID: 11400000, guid: 19ecc1a7ccad9e642b3c1e9bf0d8cacc, type: 2}
   _portraitTable: {fileID: 11400000, guid: 60ad95a6ca4f42344af418149260738c, type: 2}
   _roleCardOverlay: {fileID: 1269060633}
+  _catCatalog: {fileID: 11400000, guid: 19321be12ebc6f74d8cef35f394b3fed, type: 2}
+  _catStage: {fileID: 2005486244}
+  _ownerApp: {fileID: 327896358}
+--- !u!114 &2005486244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2005486238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 664cbcc21a43fba4cbff0bde181ef682, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::UI.CatCustomization.CatPreviewStage
+  catModelPrefab: {fileID: 2649580169876941965, guid: 59ac7bc14aee6ff46bff00ee6abead1e, type: 3}
+  stagePosition: {x: 0, y: -1000, z: 0}
+  onDemand: 1
+  textureSize: {x: 900, y: 1100}
+  fieldOfView: 24
+  startYaw: -18
 --- !u!114 &2005486240
 MonoBehaviour:
   m_ObjectHideFlags: 0

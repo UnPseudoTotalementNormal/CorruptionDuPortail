@@ -542,6 +542,10 @@ namespace Autoplay
                 // A role card face on the tablet opens the role detail overlay (screen-space UI Toolkit), then close it.
                 yield return driver.LobbyPeekRoleCard().ToCoroutine(null, _e => InputError(_context, "lobby-role-card", _e));
             }
+            if (LobbyUi(_context) && _context.Config.Flag("lobby-cat"))
+            {
+                yield return driver.LobbyDressCat().ToCoroutine(null, _e => InputError(_context, "lobby-cat", _e));
+            }
             if (_context.Config.Flag("compact-night"))
             {
                 // T29 "Nuit rapide": the host's lobby option, set like the tablet's "Autres options" choice does.
@@ -628,6 +632,10 @@ namespace Autoplay
                 // first when the lobby is played through the tablet).
                 if (LobbyUi(_context))
                 {
+                    if (_context.Config.Flag("lobby-cat"))
+                    {
+                        yield return driver.LobbyDressCat().ToCoroutine(null, _e => InputError(_context, "lobby-cat", _e));
+                    }
                     yield return driver.LobbyReady().ToCoroutine(null, _e => InputError(_context, "lobby-ready", _e));
                 }
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),

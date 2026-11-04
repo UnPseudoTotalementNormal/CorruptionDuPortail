@@ -2609,7 +2609,6 @@ MonoBehaviour:
   _reportBugIcon: {fileID: 21300000, guid: b40c8bb0aff7fd446937fd9cf7a87daa, type: 3}
   _playersRowIcon: {fileID: 21300000, guid: 04ce3da850af4a35b00d226fac2d08bb, type: 3}
   _rolesRowIcon: {fileID: 21300000, guid: ba1144cfa2c64f0b861e54a0df0a4e43, type: 3}
-  _skipVoteIcon: {fileID: 21300000, guid: efdd36c9ff424f78b4ab44540b132367, type: 3}
 --- !u!114 &326518135
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19804,6 +19803,7 @@ GameObject:
   - component: {fileID: 1466880943}
   - component: {fileID: 1466880946}
   - component: {fileID: 1466880945}
+  - component: {fileID: 1466880947}
   m_Layer: 0
   m_Name: DayPresentation
   m_TagString: Untagged
@@ -19875,7 +19875,6 @@ MonoBehaviour:
   _cameraMode: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   _rows: {fileID: 1466880943}
   _spotlights: {fileID: 1299616908}
-  _skipKey: 30
 --- !u!114 &1466880946
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19906,6 +19905,39 @@ MonoBehaviour:
   _fromBlackSeconds: 0.6
   _overlaySortingOrder: 40
   _nightEyeHeight: 11.3
+--- !u!114 &1466880947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1466880942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 403bf40e38162db47aa45268e6238595, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Presentation.DaySkipTable
+  _gameManager: {fileID: 704980999}
+  _dayVoting: {fileID: 1466880945}
+  _cameraMode: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
+  _day: {fileID: 1466880946}
+  _embodiedCamera: {fileID: 1861743663}
+  _spotlights: {fileID: 1299616908}
+  _floor: {fileID: 432154199}
+  _lightTemplate: {fileID: 992669905}
+  _font: {fileID: 11400000, guid: 8f0644f8666d1cb40a297cf78668697e, type: 2}
+  _darkMaterial: {fileID: 2100000, guid: d73ff3baeb65b4049ae8ab584326f644, type: 2}
+  _topMaterial: {fileID: 2100000, guid: a94c49493b3d10644862d556fe157893, type: 2}
+  _buttonMaterial: {fileID: 2100000, guid: 0f0d9c01a175aac4e8d4097a3f7b1c90, type: 2}
+  _carvingMaterial: {fileID: 2100000, guid: f4978e2f93b68534a8885e2d28024354, type: 2}
+  _riseSeconds: 0.7
+  _sinkSeconds: 0.5
+  _pressDepth: 0.42
+  _lightHeight: 30
+  _lightAngle: 22
+  _lightShare: 0.7
+  _fontSize: 11
+  _hoverTextAbove: 2.1
 --- !u!1 &1480106853
 GameObject:
   m_ObjectHideFlags: 0

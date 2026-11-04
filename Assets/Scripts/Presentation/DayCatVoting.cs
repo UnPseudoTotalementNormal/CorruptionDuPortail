@@ -79,13 +79,7 @@ namespace Presentation
             _targets.Clear();
         }
 
-        // T23: the board's "Passer le vote" button lay on the table; by day it is a key (Poyo, 2026-10-21).
-        [Tooltip("Key that skips the vote by day (a vote for nobody), shown by the key hints.")]
-        [SerializeField] private UnityEngine.InputSystem.Key _skipKey = UnityEngine.InputSystem.Key.P;
-
-        public UnityEngine.InputSystem.Key SkipKey => _skipKey;
-
-        /// <summary>Whether the skip key works right now: by day, during the vote, the local player not voted yet.</summary>
+        /// <summary>Whether the day's skip button works right now: by day, during the vote, the local player not voted yet.</summary>
         public bool SkipReachable
         {
             get
@@ -98,25 +92,30 @@ namespace Presentation
             }
         }
 
-        private void ReadSkipKey()
+        /// <summary>The local player's vote stands for nobody (during the vote and its recap).</summary>
+        public bool LocalSkipped
         {
-            UnityEngine.InputSystem.Keyboard _keyboard = UnityEngine.InputSystem.Keyboard.current;
-            if (_keyboard == null || !_keyboard[_skipKey].wasPressedThisFrame || DayScreenRows.IsTyping())
+            get
             {
-                return;
+                VoteState _vote = DayVote();
+                return _vote != null && _vote.VotedFor(CharacterQuery.GetLocalClientId()) == VoteState.SKIP_VOTE_ID;
             }
+        }
+
+        /// <summary>T27: a click on the day's skip button (<see cref="DaySkipTable"/>): a vote for nobody.</summary>
+        public void SkipFromButton()
+        {
             if (!SkipReachable)
             {
-                Diagnostics.Logs.GameLog.Info("vote", "vote.skip.refused");
+                Diagnostics.Logs.GameLog.Info("vote", "vote.skip.refused", "reason", LocalSkipped ? "already-skipped" : "cannot-vote");
                 return;
             }
-            Diagnostics.Logs.GameLog.Info("vote", "vote.skip.key");
+            Diagnostics.Logs.GameLog.Info("vote", "vote.skip.button");
             ((VoteState)Query.GetGameState(Query.currentGameStateIndex.Value)).OnPlayerVoted(VoteState.SKIP_VOTE_ID);
         }
 
         private void Update()
         {
-            ReadSkipKey();
             bool _day = _cameraMode.Current == CameraMode.Embodied;
             if (Time.unscaledTime >= _nextScan)
             {
@@ -307,7 +306,7 @@ namespace Presentation
         }
 
         // The vote whose votes stand: during the vote and its recap.
-        private VoteState DayVote()
+        public VoteState DayVote()
         {
             GameState _state = Query.GetGameState(Query.currentGameStateIndex.Value);
             if (_state is VoteState _vote)

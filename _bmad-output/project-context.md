@@ -235,4 +235,4 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 - Wake-up is sequential (`awakeningOrder`), so heal/corrupt never race; there is no victory tie-break.
 - Mage auto-skip after its 2 powers is by design.
-- In-game skip = sleep only; the real vote-skip path is dead code (deferred, design-owned).
+- By day the vote is skipped on the button in the middle of the circle (`DaySkipTable`, T27); at night the board's button is sleep only.

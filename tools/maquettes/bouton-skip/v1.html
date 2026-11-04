@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T27 : le bouton pour passer le vote, au milieu du cercle</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .bs-layer { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; pointer-events: none; }
+  .bs-world { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  .bs-world.bs-smooth { transition: transform .45s ease-in-out; }
+  .bs-under { position: absolute; left: 0; top: 900px; width: 1600px; height: 900px; transform: scaleY(-1); pointer-events: none; }
+  .bs-lit { filter: drop-shadow(0 0 2px #fff3da) drop-shadow(0 0 7px rgba(255, 243, 218, .75)); }
+  .bs-hit { position: absolute; cursor: pointer; z-index: 2; }
+  .bs-text { position: absolute; transform: translateX(-50%); white-space: nowrap; font-family: "Garamond", serif; color: #fff3da;
+    font-size: 34px; text-shadow: 0 2px 5px rgba(0, 0, 0, .95); pointer-events: none; opacity: 0; transition: opacity .2s; }
+  .bs-text.on { opacity: 1; }
+  .bs-big { text-align: center; line-height: 1; }
+  .bs-big b { display: block; font-size: 86px; font-weight: 400; }
+  .bs-big span { font-size: 28px; }
+  .bs-reticle { position: absolute; left: 794px; top: 444px; width: 12px; height: 12px; background: #ffcb3c; pointer-events: none; }
+  .bs-ring { position: absolute; pointer-events: none; }
+  .bs-black { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; background: #000; opacity: 0; pointer-events: none; }
+  .bs-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .bs-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .bs-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .bs-words { font-size: 16px; color: var(--fg); margin: 0; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>T27 : le bouton pour passer le vote, au milieu du cercle</h1>
+  <p><b>Référence.</b> <a href="https://www.gamepressure.com/among-us/emergency-meeting/z4da96">Among Us</a> : un gros bouton rouge posé au milieu de la table de la cafétéria, repérable de loin, mais il appelle une réunion ; passer le vote s'y fait sur l'écran de vote (<a href="https://shacknews.com/article/120611/how-to-call-an-emergency-meeting-among-us">guide</a>). <a href="https://store.steampowered.com/app/3097560/Liars_Bar/">Liar's Bar</a> : à la première personne, assis, tout ce qui se joue est au centre de la table. Guides et fiches lus, pas joués. À regarder, pas à copier.</p>
+  <p><b>Aujourd'hui.</b> Passer le vote, c'est la touche P, avec son signe en bas à gauche : rien dans la salle ne dit que c'est possible. Au récapitulatif, « Skip votes: 3 » est écrit en bas de l'écran, et il n'apparaît pas sur la capture du récap : il passe sous la rangée des rôles.</p>
+  <p><b>Le piège.</b> Le milieu du cercle, au sol, est tout en bas de l'écran (y = 897 sur 900). Une table basse est donc derrière les cartes au repos : il faut qu'elle fasse 10 m (un chat en fait 16) pour que le bouton dépasse au-dessus d'elles. C'est la première question.</p>
+  <p><b>La scène.</b> Premier jour, 8 joueurs, personne n'a de preuve. Tu veux passer sans lever les yeux de la discussion, puis tout le monde voit combien ont passé.</p>
+  <p><b>Sans question.</b> Le bouton suit la même règle que la touche : pendant le vote, si tu peux voter et n'as pas encore voté. Une fois pressé, il reste enfoncé et éclairé pour toi seul, les autres ne voient rien (vote anonyme). Sa hauteur se calcule depuis l'œil du joueur : le bouton reste au même endroit de l'écran quel que soit le nombre de joueurs, le cercle resserré en cours (cercle-jour) et le sol plus bas de T33 (là, ses pieds sont plus longs, on ne les voit qu'en baissant la tête). Si personne n'est enchaîné, la table part avec la nuit, sous le noir qui existe déjà. Le son du bouton : après ce choix, avec sound-maker.</p>
+</header>
+
+<section>
+  <h2>À quelle hauteur, pour le voir sans baisser la tête ?</h2>
+  <p>Les rendus sortent de la caméra exacte du jour. Essaie les quatre moments, et clique le bouton.</p>
+  <div class="bs-bar" data-moments="H1,H2,H3">
+    <button data-m="repos" class="on">Au repos</button><button data-m="regard">Tête baissée pour voir les chats</button><button data-m="vise">Viseur sur le bouton</button><button data-m="presse">Après le clic</button>
+  </div>
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">Plus haute que les cartes</span></div>
+    <p class="vdesc">10,6 m. Le bouton se voit au repos sans rien changer aux cartes, mais la table passe devant le chat d'en face et cache sa bouche. Ce n'est plus vraiment une table basse.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h10"}'></div></div>
+  </div>
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">Basse, les cartes s'écartent (par défaut)</span></div>
+    <p class="vdesc">5,6 m. La rangée laisse un passage au milieu : on voit la table entre les cartes et le chat d'en face reste entier. Les cartes prennent plus de large.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125}'></div></div>
+  </div>
+  <div class="variant" data-id="H3">
+    <div class="vhead"><span class="vid">H3</span><span class="vname">Vraiment basse, derrière les cartes</span></div>
+    <p class="vdesc">3,6 m, la taille d'origine de la table d'Alex. Au repos, on n'en voit qu'un bout de rouge entre les deux rangées : le bouton n'apparaît qu'en baissant la tête ou en fermant les rangées.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h3"}'></div></div>
+  </div>
+  <div class="variant" data-id="H4">
+    <div class="vhead"><span class="vid">H4</span><span class="vname">À toi de la placer</span></div>
+    <p class="vdesc">Monte ou descends la table, change sa taille. Sa hauteur en mètres part avec tes retours.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"none"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quelle table ?</h2>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Guéridon rond (par défaut)</span></div>
+    <p class="vdesc">Un seul pied, avec le bois de la table d'Alex. Se voit pareil de tous les sièges du cercle, et le pied fin cache peu.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"table":"rond"}'></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">La table d'Alex en petit</span></div>
+    <p class="vdesc">Son modèle, pieds allongés à la hauteur voulue. Rappelle la table de la nuit. Rectangulaire : vue de côté depuis les sièges à gauche et à droite du milieu.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"table":"alex"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quel bouton ?</h2>
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Dôme rouge, bague de laiton (par défaut)</span></div>
+    <p class="vdesc">Se lit tout de suite comme un bouton, même dans le noir, sans rien écrit dessus.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"btn":"rouge"}'></div></div>
+  </div>
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Palet de bois gravé</span></div>
+    <p class="vdesc">Dans la matière de la salle, avec gravé dessus le dessin de la touche P. Plus discret, se détache moins dans le noir.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"btn":"bois"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Un clic, ou maintenir ?</h2>
+  <p>Un vote est définitif. Le bouton est au centre du regard : un clic de trop passe ton vote. Essaie sur le bouton.</p>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Un clic (par défaut)</span></div>
+    <p class="vdesc">Comme pour voter un chat, et comme demandé dans la tâche.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"moment":"vise"}'></div></div>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Maintenir une seconde</span></div>
+    <p class="vdesc">Un clic par erreur ne fait plus rien. Un geste de plus, propre à ce bouton.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"moment":"vise","hold":true}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le nombre de skips au récap, au-dessus du bouton</h2>
+  <div class="variant" data-id="R0">
+    <div class="vhead"><span class="vid">R0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">« Skip votes: 3 » en bas de l'écran, sous la rangée des rôles : on ne le voit pas.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"recap":"r0"}'></div></div>
+  </div>
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">« Skips : 3 » (par défaut)</span></div>
+    <p class="vdesc">Une ligne, dans la même écriture que le texte du survol.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"recap":"r1"}'></div></div>
+  </div>
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Le chiffre en grand</span></div>
+    <p class="vdesc">Le chiffre d'abord, lisible de loin, comme les compteurs du jour. Occupe le haut du passage entre les cartes.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h5","gap":125,"recap":"r2"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Le chat enchaîné arrive au milieu : où part la table ?</h2>
+  <p>Il flotte puis tombe exactement là où elle est. Elle doit donc partir après le récap, et revenir au vote suivant.</p>
+  <div class="bs-bar" id="bs-time">
+    <button data-at="0">Début du vote</button><button data-at="1800">Vote</button><button data-at="3200">Récap</button><button data-at="5200">Fin du récap</button><button data-at="6800">Chat enchaîné</button><button data-loop class="on">▶ En boucle</button>
+  </div>
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Elle s'enfonce dans le sol (par défaut)</span></div>
+    <p class="vdesc">Elle monte du sol au début du vote, redescend en une demi-seconde à la fin du récap. On comprend où elle va.</p>
+    <div class="screen"><div class="stage" data-chain="sink"></div></div>
+  </div>
+  <div class="variant" data-id="E2">
+    <div class="vhead"><span class="vid">E2</span><span class="vname">Elle part dans un noir court</span></div>
+    <p class="vdesc">Même noir que le départ de la grande table. Rien ne bouge, mais un noir de plus juste avant l'enchaînement.</p>
+    <div class="screen"><div class="stage" data-chain="black"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>La touche P reste-t-elle ?</h2>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Elle reste, avec son signe (par défaut)</span></div>
+    <p class="bs-words">Le bouton s'ajoute à la touche : deux façons de passer.</p>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Elle disparaît</span></div>
+    <p class="bs-words">Le bouton est la seule façon de passer, et le signe P quitte le coin de l'écran.</p>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque sur l'ensemble ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  // Bounding boxes of the renders, stage pixels (tools: Blender, the day's camera at 8 players).
+  const BTN = { h3: [731, 721, 869, 788], h5: [731, 653, 869, 719], h10: [732, 486, 868, 550] };
+  const REGARD = -140;
+  const img = (src, cls) => { const i = new Image(); i.src = "img/" + src; i.className = cls || "bs-layer"; i.alt = ""; i.draggable = false; return i; };
+  const scenes = [];
+
+  function build(stage) {
+    const o = Object.assign({ table: "rond", btn: "rouge", gap: 0, moment: "repos" }, JSON.parse(stage.dataset.scene));
+    const world = document.createElement("div"); world.className = "bs-world bs-smooth";
+    const bg = img("bg_repos.jpg"); const under = img("bg_regard.jpg", "bs-under");
+    world.append(bg, under);
+    let btn = null, hit = null, label = null, box = null;
+    if (o.h !== "none") {
+      box = BTN[o.h];
+      world.append(img(`table_${o.table}_${o.h}.webp`));
+      btn = img(`btn_${o.btn}_${o.h}_haut.webp`);
+      world.append(btn);
+      label = document.createElement("div"); label.className = "bs-text";
+      label.style.left = "800px"; label.style.top = (box[1] - 54) + "px";
+      label.textContent = o.hold ? "Maintenir pour skip le vote" : "Cliquer pour skip le vote";
+      world.append(label);
+      hit = document.createElement("div"); hit.className = "bs-hit";
+      hit.style.cssText = `left:${box[0] - 10}px;top:${box[1] - 10}px;width:${box[2] - box[0] + 20}px;height:${box[3] - box[1] + 20}px`;
+      world.append(hit);
+    }
+    stage.append(world);
+    if (o.h === "none") {
+      const place = img("place_table.webp", "place");
+      Object.assign(place.dataset, { name: "table", x: 800, y: 900, scale: 1, scaleMin: .5, scaleMax: 1.6 });
+      stage.append(place);
+    }
+    const shiftGap = (name, dir) => { const l = img(name); l.style.transform = `translateX(${dir * o.gap}px)`; return l; };
+    const recap = !!o.recap;
+    stage.append(shiftGap(recap ? "cards_rl.webp" : "cards_l.webp", -1), shiftGap(recap ? "cards_rr.webp" : "cards_r.webp", 1), img("row2.webp"), img("hints.webp"));
+    const reticle = document.createElement("div"); reticle.className = "bs-reticle"; stage.append(reticle);
+
+    if (o.recap === "r0") {
+      const t = document.createElement("div"); t.className = "bs-text on"; t.style.cssText = "left:800px;top:868px;font-size:26px;z-index:-1;opacity:.35";
+      t.textContent = "Skip votes: 3"; stage.append(t);
+    } else if (o.recap) {
+      label.classList.add("on");
+      if (o.recap === "r1") label.textContent = "Skips : 3";
+      else { label.classList.add("bs-big"); label.innerHTML = "<b>3</b><span>skips</span>"; label.style.top = (box[1] - 112) + "px"; }
+    }
+
+    const s = { o, world, bg, btn, label, hit, box, pressed: false, hover: false, moment: o.moment, stage };
+    s.apply = () => {
+      if (!box) { world.style.transform = ""; return; }
+      let y = 0, src = "bg_repos.jpg";
+      const aim = s.moment === "vise" || s.moment === "presse";
+      if (s.moment === "regard") { y = REGARD; src = "bg_regard.jpg"; }
+      if (aim) { y = 450 - (box[1] + box[3]) / 2; src = "bg_regard.jpg"; }
+      bg.src = "img/" + src;
+      world.style.transform = `translateY(${src === "bg_regard.jpg" ? y : 0}px)`;
+      if (src === "bg_regard.jpg") {
+        // The renders follow the world; the regard image already slid by REGARD.
+        bg.style.transform = `translateY(${-REGARD}px)`;
+      } else bg.style.transform = "";
+      const pressed = s.pressed || s.moment === "presse";
+      btn.src = `img/btn_${o.btn}_${o.h}_${pressed ? "bas" : "haut"}.webp`;
+      const pointed = aim || s.hover;
+      btn.classList.toggle("bs-lit", (pointed && !o.recap) || pressed);
+      if (!o.recap) {
+        label.classList.toggle("on", pointed && !pressed);
+      }
+    };
+    if (hit && !o.recap) {
+      hit.addEventListener("pointerenter", () => { s.hover = true; s.apply(); });
+      hit.addEventListener("pointerleave", () => { s.hover = false; s.apply(); });
+      if (o.hold) {
+        let timer = 0;
+        hit.addEventListener("pointerdown", () => { timer = setTimeout(() => { s.pressed = !s.pressed; s.apply(); }, 1000); });
+        ["pointerup", "pointerleave"].forEach(e => hit.addEventListener(e, () => clearTimeout(timer)));
+      } else hit.addEventListener("click", () => { s.pressed = !s.pressed; s.apply(); });
+    }
+    s.apply();
+    scenes.push(s);
+    return s;
+  }
+
+  document.querySelectorAll(".stage[data-scene]").forEach(build);
+
+  // Key moments of the height section.
+  const param = new URLSearchParams(location.search);
+  const setMoment = m => scenes.filter(s => ["H1", "H2", "H3"].includes(s.stage.closest(".variant").dataset.id)).forEach(s => { s.moment = m; s.pressed = false; s.apply(); });
+  const bar = document.querySelector("[data-moments]");
+  bar.addEventListener("click", e => {
+    const m = e.target.dataset.m; if (!m) return;
+    bar.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
+    setMoment(m);
+  });
+  if (param.get("m")) setMoment(param.get("m"));
+
+  // Free placement: what the height means in the world (eye 11.3 m, 37.1 m from the middle, field 40°, rest 2.56° up).
+  document.addEventListener("mockplace", e => {
+    const el = e.target; const top = e.detail.y - 247 * e.detail.scale;
+    const below = Math.atan((top - 450) / 450 * Math.tan(20 * Math.PI / 180)) - 2.56 * Math.PI / 180;
+    const metres = 11.3 - 37.1 * Math.tan(below);
+    el.dataset.info = `haut du bouton à ${metres.toFixed(1)} m du sol, plateau ${(7.2 * e.detail.scale).toFixed(1)} m de large`;
+  });
+
+  // ---- the chained cat's scenario: vote -> recap -> the table leaves -> the cat comes to the middle
+  const LOOP = 8600;
+  const chains = [...document.querySelectorAll(".stage[data-chain]")].map(stage => {
+    const mode = stage.dataset.chain;
+    const bg = img("bg_repos.jpg"), chain = img("bg_chaine.jpg"); chain.style.opacity = 0;
+    const table = document.createElement("div"); table.className = "bs-world";
+    const box = BTN.h5;
+    table.append(img("table_rond_h5.webp"), img("btn_rouge_h5_haut.webp"));
+    const label = document.createElement("div"); label.className = "bs-text"; label.style.cssText = `left:800px;top:${box[1] - 54}px`; label.textContent = "Skips : 3"; table.append(label);
+    const gap = 125;
+    const l = img("cards_l.webp"), r = img("cards_r.webp"), rl = img("cards_rl.webp"), rr = img("cards_rr.webp");
+    [[l, -1], [r, 1], [rl, -1], [rr, 1]].forEach(([c, d]) => c.style.transform = `translateX(${d * gap}px)`);
+    const row2 = img("row2.webp"), hints = img("hints.webp");
+    const black = document.createElement("div"); black.className = "bs-black";
+    stage.append(bg, chain, table, l, r, rl, rr, row2, hints, black);
+    return t => {
+      const rise = Math.min(1, t / 700);
+      let down = 1 - (1 - rise) * (1 - rise); // 0..1 up
+      let shade = 0, gone = false;
+      if (mode === "sink") { if (t >= 5200) down = 1 - Math.min(1, (t - 5200) / 500); gone = down <= 0; }
+      else {
+        if (t < 350) { down = 1; shade = 1 - t / 350; }
+        if (t >= 5200 && t < 5550) shade = (t - 5200) / 350;
+        if (t >= 5550 && t < 5800) shade = 1;
+        if (t >= 5800 && t < 6400) shade = 1 - (t - 5800) / 600;
+        if (t >= 5550) gone = true;
+        if (t >= 5800 || t < 0) gone = true; else if (t < 5550) down = 1;
+      }
+      table.style.transform = `translateY(${(1 - down) * 260}px)`;
+      table.style.visibility = gone ? "hidden" : "visible";
+      label.classList.toggle("on", t >= 2800 && t < 5200);
+      const recap = t >= 2800 && t < 5700, cat = t >= 6000;
+      chain.style.opacity = cat ? 1 : 0;
+      l.style.visibility = r.style.visibility = (!recap && !cat) ? "visible" : "hidden";
+      rl.style.visibility = rr.style.visibility = recap ? "visible" : "hidden";
+      row2.style.visibility = cat ? "hidden" : "visible";
+      black.style.opacity = shade;
+    };
+  });
+  let loopOn = !param.has("at"), frozen = +param.get("at") || 0, start = performance.now();
+  const timeBar = document.getElementById("bs-time");
+  timeBar.addEventListener("click", e => {
+    if (e.target.tagName !== "BUTTON") return;
+    timeBar.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
+    if ("loop" in e.target.dataset) { loopOn = true; start = performance.now(); }
+    else { loopOn = false; frozen = +e.target.dataset.at; }
+  });
+  (function tick() {
+    const t = loopOn ? (performance.now() - start) % LOOP : frozen;
+    chains.forEach(f => f(t));
+    requestAnimationFrame(tick);
+  })();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

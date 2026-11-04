@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cercle du jour : se rapprocher quand on est peu</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cj-shot { position: absolute; inset: 0; width: 1600px; height: 900px; display: block; }
+  .cj-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 14px 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .cj-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cj-group span { color: var(--soft); }
+  .cj-group button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .cj-group button.on { border-color: var(--accent); color: var(--accent); }
+  .cj-dist { color: var(--fg); margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Cercle du jour : se rapprocher quand on est peu</h1>
+  <p><b>Référence.</b> <a href="https://store.steampowered.com/app/3097560/Liars_Bar/">Liar's Bar</a> : quatre joueurs en vue à la première personne autour d'une table, tout le monde à portée de regard. Lu sur des fiches, pas vu en jeu.</p>
+  <p><b>Aujourd'hui.</b> Le rayon vient seulement du chat enchaîné (60 % de l'écran = 37 m du milieu) et ne descend jamais. À 4, les voisins sont à 52 m et sortent du cadre au repos, le joueur en face est à 74 m et les cartes le cachent presque en entier.</p>
+  <p><b>La scène.</b> Vote du premier jour à 4 joueurs, rangées ouvertes comme au début du jour. Puis un voisin est enchaîné.</p>
+  <p><b>Sans question.</b> À partir de 10 joueurs, rien ne change. Chaque chat reste visible au moins à moitié, le cercle grandit s'il le faut. Le sol s'arrête juste après le dernier chat. Les rendus viennent de la vraie scène, mais sans la bougie ni les chaînes.</p>
+
+  <div class="cj-bar">
+    <div class="cj-group" id="cj-count"><span>Joueurs</span>
+      <button data-n="4">4</button><button data-n="6">6</button><button data-n="8">8</button>
+    </div>
+    <div class="cj-group" id="cj-moment"><span>Moment</span>
+      <button data-m="repos">Vote</button><button data-m="droite">Tête à droite</button><button data-m="chaine">Chat enchaîné</button>
+    </div>
+  </div>
+
+  <h2>Où s'assoit-on quand on est peu ?</h2>
+
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le même cercle de 4 à 12 joueurs.</p>
+    <p class="cj-dist" data-layout="X0"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-layout="X0" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="A">
+    <div class="vhead"><span class="vid">A</span><span class="vname">Les autres se resserrent</span></div>
+    <p class="vdesc">Le joueur reste où il est, les autres viennent vers le milieu. Le chat enchaîné ne change pas du tout. Tous dans le cadre à 4, mais encore assez loin.</p>
+    <p class="cj-dist" data-layout="A"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-layout="A" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="B">
+    <div class="vhead"><span class="vid">B</span><span class="vname">Tout le monde se rapproche (par défaut)</span></div>
+    <p class="vdesc">Le joueur avance aussi. Le chat enchaîné garde sa taille et ses 60 % : il flotte un peu au-delà du milieu, juste devant le joueur d'en face.</p>
+    <p class="cj-dist" data-layout="B"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-layout="B" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="C">
+    <div class="vhead"><span class="vid">C</span><span class="vname">Tout près, chat enchaîné réduit</span></div>
+    <p class="vdesc">Le plus serré. Le chat enchaîné reste au milieu exact et garde ses 60 % à l'écran, mais il est réduit à 6/10 de sa taille à 4 joueurs. Les voisins passent devant lui en taille.</p>
+    <p class="cj-dist" data-layout="C"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-layout="C" alt=""></div></div>
+  </div>
+
+  <h2>Où regarde-t-on au repos pendant le vote ?</h2>
+  <div class="cj-bar">
+    <div class="cj-group" id="cj-circle"><span>Cercle</span>
+      <button data-c="X0">X0</button><button data-c="A">A</button><button data-c="B">B</button><button data-c="C">C</button>
+    </div>
+  </div>
+
+  <div class="variant" data-id="G0">
+    <div class="vhead"><span class="vid">G0</span><span class="vname">Actuel : la vue vise haut</span></div>
+    <p class="vdesc">La place est gardée pour le chat enchaîné. Pendant le vote, les cartes cachent le bas des visages.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-gaze="repos" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="G1">
+    <div class="vhead"><span class="vid">G1</span><span class="vname">La vue baisse un peu pendant le vote (par défaut)</span></div>
+    <p class="vdesc">Les visages passent au-dessus des cartes. Quand un chat est enchaîné, la vue remonte pour le cadrer.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-gaze="regard" alt=""></div></div>
+  </div>
+
+  <h2>Une remarque ?</h2>
+  <textarea id="global" rows="3" placeholder="Remarque libre"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</div>
+<script>
+(() => {
+  const query = new URLSearchParams(location.search);
+  const state = { n: query.get("n") || "4", m: query.get("m") || "repos", c: query.get("c") || "B" };
+  // Player's distance from the middle, others' radius (metres), as rendered.
+  const layouts = {
+    X0: { 4: [37.1, 37.1], 6: [37.1, 37.1], 8: [37.1, 37.1] },
+    A: { 4: [37.1, 17], 6: [37.1, 17], 8: [37.1, 26] },
+    B: { 4: [28, 11.5], 6: [31, 17], 8: [34.1, 26] },
+    C: { 4: [22, 8], 6: [27, 13], 8: [32.1, 24] },
+  };
+  function seat(n, k, [d, r]) {
+    const a = 2 * Math.PI * k / n, x = r * Math.sin(a), z = d - r * Math.cos(a);
+    return Math.hypot(x, z);
+  }
+  function distances(id) {
+    const n = +state.n, l = layouts[id][n];
+    let near = Infinity, far = 0;
+    for (let k = 1; k < n; k++) { const s = seat(n, k, l); near = Math.min(near, s); far = Math.max(far, s); }
+    return `Le plus proche à ${Math.round(near)} m, en face à ${Math.round(far)} m.`;
+  }
+  function render() {
+    document.querySelectorAll("img.cj-shot[data-layout]").forEach(i => { i.src = `img/${i.dataset.layout}_${state.n}_${state.m}.jpg`; });
+    document.querySelectorAll("p.cj-dist").forEach(p => { p.textContent = distances(p.dataset.layout); });
+    document.querySelectorAll("img.cj-shot[data-gaze]").forEach(i => { i.src = `img/${state.c}_${state.n}_${i.dataset.gaze}.jpg`; });
+    document.querySelectorAll("#cj-count button").forEach(b => b.classList.toggle("on", b.dataset.n === state.n));
+    document.querySelectorAll("#cj-moment button").forEach(b => b.classList.toggle("on", b.dataset.m === state.m));
+    document.querySelectorAll("#cj-circle button").forEach(b => b.classList.toggle("on", b.dataset.c === state.c));
+  }
+  document.querySelector("#cj-count").addEventListener("click", e => { if (e.target.dataset.n) { state.n = e.target.dataset.n; render(); } });
+  document.querySelector("#cj-moment").addEventListener("click", e => { if (e.target.dataset.m) { state.m = e.target.dataset.m; render(); } });
+  document.querySelector("#cj-circle").addEventListener("click", e => { if (e.target.dataset.c) { state.c = e.target.dataset.c; render(); } });
+  render();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

@@ -4,9 +4,10 @@ namespace CorruptionDuPortail.Domain
 {
     /// <summary>
     /// The circle the players sit in by day, once the table is gone (T19 + T23, Poyo 2026-10-21): the chained cat floats
-    /// in the middle of the circle and takes a set share of the screen's height there, so the player sits that far from
-    /// the middle. The others sit on a circle at least as big, grown with the number of players until every cat keeps
-    /// enough of itself in sight from the player's eye (a cat is voted by clicking it) and no two cats touch.
+    /// ahead of the player, far enough to take a set share of the screen's height. A full table sits that far from the
+    /// middle; fewer players sit closer (mockups cercle-jour v1: B, loosened at 4 and 6), the chained cat then floating a
+    /// little past the middle. The others' circle grows if needed until every cat keeps enough of itself in sight from
+    /// the player's eye (a cat is voted by clicking it) and no two cats touch.
     /// A cat is seen as an upright cylinder (its click shape); the player looks from its eye, on its own seat.
     /// Seat 0 is the player; seat k is k steps around the circle. Pure: no engine type, testable in EditMode.
     /// </summary>
@@ -19,8 +20,8 @@ namespace CorruptionDuPortail.Domain
         private const float GrowthStep = 0.25f;
 
         /// <summary>
-        /// How far from the middle the player sits: there a cat <paramref name="catHeight"/> high takes
-        /// <paramref name="screenShare"/> of a screen of vertical field <paramref name="fovDegrees"/>.
+        /// How far ahead of the eye a cat <paramref name="catHeight"/> high takes <paramref name="screenShare"/> of a
+        /// screen of vertical field <paramref name="fovDegrees"/>: the chained cat's distance, and a full table's seats.
         /// </summary>
         public static float PlayerDistance(float catHeight, float fovDegrees, float screenShare)
         {
@@ -29,15 +30,29 @@ namespace CorruptionDuPortail.Domain
         }
 
         /// <summary>
-        /// The others' circle for <paramref name="count"/> players: the smallest, from the player's distance up to
-        /// <paramref name="maxGrowth"/> times it, where neighbours keep <paramref name="gap"/> between them and every cat
-        /// keeps at least <paramref name="minVisibleShare"/> of its silhouette in sight.
+        /// Where <paramref name="count"/> players sit before any growth: <paramref name="fewDistance"/> and
+        /// <paramref name="fewRadius"/> up to <paramref name="fewPlayers"/> players, one circle of
+        /// <paramref name="fullDistance"/> from <paramref name="fullPlayers"/> on, in proportion between the two.
         /// </summary>
-        public static float OthersRadius(int count, float playerDistance, float catRadius, float catHeight, float eyeHeight,
-            float gap, float minVisibleShare, float maxGrowth = 2f)
+        public static void Seats(int count, int fewPlayers, int fullPlayers, float fewDistance, float fewRadius, float fullDistance,
+            out float playerDistance, out float startRadius)
+        {
+            float share = fullPlayers > fewPlayers ? (count - fewPlayers) / (float)(fullPlayers - fewPlayers) : 1f;
+            share = Math.Max(0f, Math.Min(1f, share));
+            playerDistance = fewDistance + (fullDistance - fewDistance) * share;
+            startRadius = fewRadius + (fullDistance - fewRadius) * share;
+        }
+
+        /// <summary>
+        /// The others' circle for <paramref name="count"/> players: the smallest, from <paramref name="startRadius"/> up to
+        /// <paramref name="maxGrowth"/> times the player's distance, where neighbours keep <paramref name="gap"/> between
+        /// them and every cat keeps at least <paramref name="minVisibleShare"/> of its silhouette in sight.
+        /// </summary>
+        public static float OthersRadius(int count, float playerDistance, float startRadius, float catRadius, float catHeight,
+            float eyeHeight, float gap, float minVisibleShare, float maxGrowth = 2f)
         {
             float max = playerDistance * Math.Max(1f, maxGrowth);
-            for (float radius = playerDistance; radius < max; radius += GrowthStep)
+            for (float radius = startRadius; radius < max; radius += GrowthStep)
             {
                 if (Fits(count, playerDistance, radius, catRadius, catHeight, eyeHeight, gap, minVisibleShare))
                 {
@@ -109,10 +124,10 @@ namespace CorruptionDuPortail.Domain
         }
 
         /// <summary>The pitch (degrees, + = down) that looks from the eye at a point <paramref name="aimHeight"/> above the
-        /// floor in the middle of the circle.</summary>
-        public static float RestPitch(float eyeHeight, float aimHeight, float playerDistance)
+        /// floor, <paramref name="distance"/> ahead.</summary>
+        public static float RestPitch(float eyeHeight, float aimHeight, float distance)
         {
-            return (float)(Math.Atan2(eyeHeight - aimHeight, Math.Max(1e-3f, playerDistance)) * 180.0 / Math.PI);
+            return (float)(Math.Atan2(eyeHeight - aimHeight, Math.Max(1e-3f, distance)) * 180.0 / Math.PI);
         }
 
         // Where seat k is from the player's seat: x to the right, z toward the middle.

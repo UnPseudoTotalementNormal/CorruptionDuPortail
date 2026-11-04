@@ -19898,7 +19898,6 @@ MonoBehaviour:
   _tableUi:
   - {fileID: 129913597}
   - {fileID: 1237554685}
-  _riseSeconds: 1.2
   _cardsFlightSeconds: 1.1
   _toBlackSeconds: 0.35
   _blackHoldSeconds: 0.25

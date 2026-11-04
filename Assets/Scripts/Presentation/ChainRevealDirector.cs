@@ -126,8 +126,8 @@ namespace Presentation
             AvatarHopMotion _hop = _avatar != null ? _avatar.GetComponentInChildren<AvatarHopMotion>() : null;
             bool _self = _avatar != null && _avatar.IsOwner;
 
-            // ---- where: the middle of the circle (the day's circle is sized for it, Poyo 2026-10-21); still around the
-            // table, on the line from this player's eye to the middle, as far as it needs to fit
+            // ---- where: on the line from this player's eye to the middle, as far as it needs to fit: by day the distance
+            // the day's circle gives it (the middle at a full table, past it when few players sit closer)
             Vector3 _eye = _camera.transform.position;
             Vector3 _centre = _manager.RingCenter ?? _eye + _camera.transform.forward * 20f;
             Vector3 _toCentre = _centre - _eye;
@@ -138,7 +138,7 @@ namespace Presentation
             float _scale = _self ? _manager.SeatedAvatarScale : 1f;
             float _catHeight = _avatar != null ? _catHeightAtScale1 * _avatar.transform.lossyScale.y * _scale : _fallbackCatHeight;
             float _distance = _manager.DayRingActive
-                ? _ringDistance
+                ? _manager.DayChainDistance
                 : ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _manager.DayScreenShare);
             float _floor = _avatar != null ? _avatar.transform.position.y : _centre.y;
             Vector3 _hover = new Vector3(_eye.x, _floor, _eye.z) + _ahead * _distance;

@@ -119,25 +119,18 @@ namespace Avatars
             set => _restPitch = value;
         }
 
-        // Pitch still to add to the look (degrees) and how fast, while the rest pitch moves (SetRestPitch).
-        private float _pitchToAdd;
-        private float _pitchAddSpeed;
-
         /// <summary>
-        /// T23 (mockups jour-pov v1 K2): moves the rest pitch (the next entries start there) and turns the current look by
-        /// the same amount over <paramref name="_seconds"/>, on top of whatever the mouse does meanwhile. Once the table
-        /// has gone by day, the view rises from the table to the cats; it goes back down when the table returns.
+        /// Puts the look at a new rest pitch at once (the next entries start there too). Only ever under the dark, when
+        /// the table leaves or comes back: the camera never moves in sight, the mouse is the player's (Poyo 2026-11-04).
         /// </summary>
-        public void SetRestPitch(float _newRestPitch, float _seconds)
+        public void SetRestPitch(float _newRestPitch)
         {
-            float _delta = _newRestPitch - _restPitch;
             _restPitch = _newRestPitch;
-            if (!_active || Mathf.Approximately(_delta, 0f))
+            if (_active)
             {
-                return;
+                _pitch = Mathf.Clamp(_restPitch, -_pitchClamp, _pitchClamp);
+                Diagnostics.Logs.GameLog.Info("camera", "camera.embodied.rest-pitch", "pitch", _pitch);
             }
-            _pitchToAdd += _delta;
-            _pitchAddSpeed = _seconds > 0f ? Mathf.Abs(_pitchToAdd) / _seconds : float.PositiveInfinity;
         }
 
         private void Awake()
@@ -195,7 +188,6 @@ namespace Avatars
             // Re-centre the look on the seat facing (tilted down by the rest pitch) each time we enter the Vote.
             _yaw = 0f;
             _pitch = Mathf.Clamp(_restPitch, -_pitchClamp, _pitchClamp);
-            _pitchToAdd = 0f;
             // Force a fresh publish of the (re-centred) yaw on the first frame so remote viewers don't briefly
             // see the previous Vote's stale gaze before we write again.
             _lastPublishedYaw = float.NaN;
@@ -251,12 +243,6 @@ namespace Avatars
 
             // Accumulate the clamped look from the mouse delta (pure math, EditMode-tested).
             Vector2 _look = (_lookEnabled && _lookAction != null) ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
-            if (_pitchToAdd != 0f)
-            {
-                float _step = Mathf.Min(Mathf.Abs(_pitchToAdd), _pitchAddSpeed * Time.deltaTime) * Mathf.Sign(_pitchToAdd);
-                _pitch += _step;
-                _pitchToAdd -= _step;
-            }
             EmbodiedLookAngles _angles = EmbodiedLookClamp.Apply(
                 _yaw, _pitch, _look, _yawSpeed, _pitchSpeed, _yawClamp, _pitchClamp);
             _yaw = _angles.Yaw;

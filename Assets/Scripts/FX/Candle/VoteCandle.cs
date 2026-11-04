@@ -51,14 +51,17 @@ namespace FX.Candle
         [Header("Parts")]
         [Tooltip("Shown while the candle is on the table, hidden the rest of the game.")]
         [SerializeField] private GameObject _visual;
+        [Tooltip("The wax and the wick of the artist's candle under the visual (their meshes Read/Write on).")]
         [SerializeField] private MeshFilter _wax;
-        [SerializeField] private MeshFilter _holder;
         [SerializeField] private MeshFilter _wick;
         [SerializeField] private MeshFilter _flame;
         [SerializeField] private MeshFilter _glow;
         [SerializeField] private Light _flameLight;
         [SerializeField] private ParticleSystem _smoke;
-        [SerializeField] private CandleMesh.Shape _shape = CandleMesh.Shape.Default;
+        [Tooltip("The artist's wax is drawn out by this much, so there is wax to burn (objets-alex v1 K2).")]
+        [SerializeField] private float _waxStretch = 1.7f;
+        [Tooltip("Height left when it has melted all the way, as a share of its new height above the cup.")]
+        [Range(0f, 1f)] [SerializeField] private float _meltedShare = 0.2f;
 
         [Header("Flame and light")]
         [SerializeField] private Vector2 _flameSize = new Vector2(0.46f, 1.25f);
@@ -100,6 +103,13 @@ namespace FX.Candle
 
         private Phase _phase = Phase.Hidden;
         private Mesh _waxMesh;
+        private Vector3[] _waxSource;
+        private Vector3[] _waxVertices;
+        private float _waxFoot;
+        private float _waxGrowth;
+        private float _meltDrop;
+        private Vector3 _wickHome;
+        private float _flameBaseY;
         private float _builtMelt = -1f;
         private int _tickCount;
         private readonly VoteClock _clock = new VoteClock();
@@ -132,8 +142,6 @@ namespace FX.Candle
             {
                 _floorBaseBrightness = _seatedFloor.sharedMaterial.GetFloat(BrightnessId);
             }
-            // The dish's foot goes below its floor: stand it on the table, not in it.
-            _visual.transform.localPosition = new Vector3(0f, CandleMesh.DishDepth, 0f);
             BuildStaticMeshes();
             ConfigureSmoke();
             _visual.SetActive(false);
@@ -208,14 +216,19 @@ namespace FX.Candle
 
         private void BuildStaticMeshes()
         {
-            _waxMesh = new Mesh { name = "VoteCandle Wax" };
+            // The wax's own copy, melted on the CPU: it keeps the shape the artist gave it and its shadow follows.
+            Mesh _waxModel = _wax.sharedMesh;
+            _waxMesh = Instantiate(_waxModel);
+            _waxMesh.name = "VoteCandle Wax";
+            _waxMesh.MarkDynamic();
             _wax.sharedMesh = _waxMesh;
-            var _holderMesh = new Mesh { name = "VoteCandle Dish" };
-            CandleMesh.BuildHolder(_holderMesh);
-            _holder.sharedMesh = _holderMesh;
-            var _wickMesh = new Mesh { name = "VoteCandle Wick" };
-            CandleMesh.BuildWick(_wickMesh, 0.36f, 0.25f);
-            _wick.sharedMesh = _wickMesh;
+            _waxSource = _waxModel.vertices;
+            _waxVertices = new Vector3[_waxSource.Length];
+            _waxFoot = _waxModel.bounds.min.y;
+            float _height = _waxModel.bounds.size.y;
+            _waxGrowth = _height * (_waxStretch - 1f);
+            _meltDrop = _height * _waxStretch * (1f - _meltedShare);
+            _wickHome = _wick.transform.localPosition;
             var _flameMesh = new Mesh { name = "VoteCandle Flame" };
             CandleMesh.BuildQuad(_flameMesh, 0f);
             _flame.sharedMesh = _flameMesh;
@@ -429,7 +442,10 @@ namespace FX.Candle
 
         [Tooltip("T23: where the candle stands by day, when the table is gone, from the player's seat (metres): x to the " +
                  "right, z ahead; y is the floor's height. On the floor ahead of the player: in sight when looking down.")]
-        [SerializeField] private Vector3 _floorSpot = new Vector3(3f, -21.94f, 16.8f);
+        [SerializeField] private Vector3 _floorSpot = new Vector3(5.4f, -31.94f, 30.4f);
+        [Tooltip("T33: the floor went 10 m down under the chairs and the candle further ahead to stay in sight; it is this " +
+                 "much bigger there, to keep its size on screen.")]
+        [SerializeField] private float _floorScale = 1.8f;
         private bool _onFloor;
 
         /// <summary>T23: by day the table disappears; the candle goes down to the floor (Poyo, 2026-10-21) and back on
@@ -452,7 +468,7 @@ namespace FX.Candle
                 Avatars.SeatPose _seat = _avatars != null ? _avatars.GetLocalSeatPose() : new Avatars.SeatPose(Vector3.zero, Quaternion.identity);
                 Vector3 _floor = _seat.Position + _seat.Rotation * new Vector3(_floorSpot.x, 0f, _floorSpot.z);
                 transform.position = new Vector3(_floor.x, _floorSpot.y, _floor.z);
-                transform.localScale = Vector3.one * _baseScale;
+                transform.localScale = Vector3.one * (_baseScale * _floorScale);
                 return;
             }
             if (_boardManager == null || _table == null)
@@ -504,15 +520,19 @@ namespace FX.Candle
                 return;
             }
             _builtMelt = _melt;
-            CandleMesh.BuildCandle(_waxMesh, _shape, _melt);
-            float _pool = CandleMesh.PoolHeight(_shape, _melt);
-            _wick.transform.localPosition = new Vector3(0f, _pool, 0f);
+            float _drop = _melt * _meltDrop;
+            CandleMesh.MeltWax(_waxSource, _waxVertices, _waxFoot, _waxStretch, _drop);
+            _waxMesh.SetVertices(_waxVertices);
+            _waxMesh.RecalculateBounds();
+            _wick.transform.localPosition = _wickHome + Vector3.up * (_waxGrowth - _drop);
+            // The flame stands on the wick's tip.
+            Vector3 _tip = _wick.transform.TransformPoint(new Vector3(0f, _wick.sharedMesh.bounds.max.y, 0f));
+            _flameBaseY = _visual.transform.InverseTransformPoint(_tip).y;
         }
 
         private Vector3 FlameBase()
         {
-            float _pool = CandleMesh.PoolHeight(_shape, Mathf.Max(0f, _builtMelt));
-            return _visual.transform.TransformPoint(new Vector3(0.03f, _pool + 0.22f, 0f));
+            return _visual.transform.TransformPoint(new Vector3(0.03f, _flameBaseY, 0f));
         }
 
         private void DriveFlame(float _strength, float _tension, float _pulse)
@@ -523,8 +543,7 @@ namespace FX.Candle
             float _lean = Mathf.Clamp((Mathf.PerlinNoise(_t * 0.8f, 5.1f) - 0.5f) * 2f * (0.12f + 0.75f * _tension) + 0.08f, -1f, 1f);
             float _height = 1f + 0.07f * _noise * (1f + 2f * _tension) + 0.3f * _pulse * (0.3f + 0.7f * _tension);
 
-            float _pool = CandleMesh.PoolHeight(_shape, Mathf.Max(0f, _builtMelt));
-            Vector3 _base = new Vector3(_lean * 0.07f, _pool + 0.22f, 0f);
+            Vector3 _base = new Vector3(_lean * 0.07f, _flameBaseY, 0f);
             _flame.transform.localPosition = _base;
             _flame.transform.localScale = new Vector3(_flameSize.x * (1f - 0.08f * _pulse), _flameSize.y * _height, 1f);
             _flame.gameObject.SetActive(_strength > 0.001f);

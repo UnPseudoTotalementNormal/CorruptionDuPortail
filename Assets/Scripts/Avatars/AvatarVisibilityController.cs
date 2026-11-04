@@ -95,6 +95,9 @@ namespace Avatars
             return !_isOwner;
         }
 
+        /// <summary>Chairs are for the seated game: in the free-roaming lobby the cats walk around without them.</summary>
+        public static bool ResolveChairShown(CameraMode _mode) => _mode != CameraMode.FreeRoam;
+
         private void LateUpdate()
         {
             AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
@@ -123,6 +126,7 @@ namespace Avatars
                     _visible = true;
                 }
                 ApplyFaded(_avatar, _visible);
+                _avatar.SetChairShown(ResolveChairShown(_mode));
             }
 
             // Evict entries whose avatar was despawned (Unity-null key) — the live-roster loop above never

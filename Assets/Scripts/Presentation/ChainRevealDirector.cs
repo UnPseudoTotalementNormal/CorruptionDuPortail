@@ -45,6 +45,12 @@ namespace Presentation
         [Tooltip("The day's table transition: the moment waits for the table to be gone, and ends under its black.")]
         [SerializeField] private DayTableTransition _day;
         [SerializeField] private CatSpotlights _spotlights;
+        [SerializeField] private AvatarEmbodiedCamera _embodiedCamera;
+        [Tooltip("The cats sit on chairs (T33): the floor is this far under their seat.")]
+        [SerializeField] private float _seatHeight = 10f;
+        [Tooltip("The landing stays this far (degrees) above the bottom of the screen.")]
+        [SerializeField] private float _landingMarginDegrees = 10f;
+        private float _fallLook;
         [Tooltip("The light that follows the chained cat (the room is dark). Off outside the moment.")]
         [SerializeField] private Light _light;
         [Tooltip("The lift and the hover, from the start until the release.")]
@@ -173,7 +179,7 @@ namespace Presentation
                 {
                     float _travel = ChainRevealTimeline.Travel(_t);
                     Vector3 _feet = Vector3.Lerp(_seatPosition, _hover, _travel);
-                    _feet.y = _floor + ChainRevealTimeline.Height(_t) * _lift;
+                    _feet.y = _floor + ChainRevealTimeline.FeetHeight(_t, _lift, _seatHeight);
                     if (_hop != null)
                     {
                         _hop.SetWorldPose(_feet, Quaternion.Slerp(_seatRotation, _facing, _travel), Mathf.Lerp(1f, _scale, _travel));
@@ -205,6 +211,7 @@ namespace Presentation
                     if (_avatar != null && _t >= ChainRevealTimeline.Release)
                     {
                         _dayRows.SetAway(true);
+                        FollowTheFall(_seat, _eye.y - (_floor - _seatHeight), _distance, _camera.fieldOfView);
                     }
                     // Each sound on its beat of the timeline, from the game's clock: it stays on the picture if a frame drags.
                     if (_avatar != null && _beat < Beats.Length && _t >= Beats[_beat].At)
@@ -263,6 +270,24 @@ namespace Presentation
             }
         }
 
+        // The floor is far below the seats now: the view leans down with the fall so that the landing stays on screen. On
+        // top of the player's own look (the head stays free), taken back with the black.
+        private void FollowTheFall(ulong _seat, float _eyeAboveFloor, float _distance, float _fov)
+        {
+            if (_fallLook != 0f)
+            {
+                return;
+            }
+            float _needed = ChainRevealTimeline.FallLookPitch(_eyeAboveFloor, _distance, _fov, _landingMarginDegrees) - _embodiedCamera.RestPitch;
+            if (_needed <= 0f)
+            {
+                return;
+            }
+            _fallLook = _needed;
+            _embodiedCamera.SetRestPitch(_embodiedCamera.RestPitch + _fallLook, ChainRevealTimeline.Impact - ChainRevealTimeline.Release);
+            Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.look-down", "seat", _seat, "degrees", _fallLook);
+        }
+
         // Back on its seat (idempotent: under the black, then again in finally).
         private void EndCat(AvatarHopMotion _hop, ulong _seat)
         {
@@ -276,6 +301,11 @@ namespace Presentation
             }
             _clipTime = -1f;
             _animator = null;
+            if (_fallLook != 0f)
+            {
+                _embodiedCamera.SetRestPitch(_embodiedCamera.RestPitch - _fallLook, 0f);
+                _fallLook = 0f;
+            }
             if (_chains != null)
             {
                 _chains.EndReveal(); // it keeps them, even if the moment was cut short

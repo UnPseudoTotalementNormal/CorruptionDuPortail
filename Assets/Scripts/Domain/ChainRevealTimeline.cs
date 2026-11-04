@@ -109,6 +109,31 @@ namespace CorruptionDuPortail.Domain
             return top * (1f - fall * fall);
         }
 
+        /// <summary>
+        /// Height of its feet above its seat (T33, the cats sit on chairs above the floor): it rises by <paramref name="lift"/>
+        /// like <see cref="Height"/>, then falls past its seat to the floor, <paramref name="seatHeight"/> below it.
+        /// </summary>
+        public static float FeetHeight(float t, float lift, float seatHeight)
+        {
+            float height = Height(t);
+            if (t < Release)
+            {
+                return height * lift;
+            }
+            float top = 1f + BobShare * (float)Math.Sin((Release - LiftEnd) * 2.4f);
+            return -seatHeight + height / top * (top * lift + seatHeight);
+        }
+
+        /// <summary>
+        /// How far down (degrees) the view must look for a cat landing <paramref name="distance"/> ahead and
+        /// <paramref name="eyeAboveFloor"/> below the eye to stay on screen, <paramref name="marginDegrees"/> above its bottom edge.
+        /// </summary>
+        public static float FallLookPitch(float eyeAboveFloor, float distance, float verticalFovDegrees, float marginDegrees)
+        {
+            double below = Math.Atan2(eyeAboveFloor, Math.Max(distance, 1e-3f)) * 180.0 / Math.PI;
+            return (float)below - (verticalFovDegrees / 2f - marginDegrees);
+        }
+
         /// <summary>Share [0, 1] of the way from the card's row slot to the front of the cat.</summary>
         public static float CardFlight(float t)
         {

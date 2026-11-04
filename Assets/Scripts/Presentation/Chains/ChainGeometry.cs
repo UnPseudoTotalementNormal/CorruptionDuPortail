@@ -5,18 +5,12 @@ using UnityEngine;
 namespace Presentation.Chains
 {
     /// <summary>
-    /// Chain links as a mesh (maquettes chaines v1/v2): each link is a stadium-shaped ring of round wire, laid one after
-    /// another along a path, every other one turned a quarter turn about the path so they interlock. Sizes are shares of
-    /// the cat's height, so a chain looks the same on any cat. No artist model yet: made here until one exists.
+    /// Chain links as a mesh (maquettes chaines v1/v2): the artist's link (objets-alex v1 E1), laid one after another
+    /// along a path, every other one turned a quarter turn about the path so they interlock. Sizes are shares of the
+    /// cat's height, so a chain looks the same on any cat.
     /// </summary>
     public static class ChainGeometry
     {
-        /// <summary>Points around a link's centreline, then around its wire.</summary>
-        public const int RingSegments = 20;
-        public const int TubeSegments = 6;
-        public const int VerticesPerLink = RingSegments * TubeSegments;
-        public const int IndicesPerLink = RingSegments * TubeSegments * 6;
-
         /// <summary>One link's shape: half its width (the round ends' radius), its straight sides, its wire's radius.</summary>
         public readonly struct LinkSize
         {
@@ -101,58 +95,61 @@ namespace Presentation.Chains
             return _count;
         }
 
-        /// <summary>Appends one link's vertices, normals and triangles (<see cref="VerticesPerLink"/>, <see cref="IndicesPerLink"/>).</summary>
-        public static void AddLink(LinkFrame _link, LinkSize _size, List<Vector3> _vertices, List<Vector3> _normals, List<int> _indices)
+        /// <summary>
+        /// The artist's link, read once from its mesh: centred, longest side = the link's length, shortest = its thickness
+        /// (one wire), so it can be laid along any path whatever the axes of the file.
+        /// </summary>
+        public sealed class LinkTemplate
         {
-            Vector3 _forward = _link.Forward;
-            Vector3 _plane = Vector3.Cross(_forward, _link.Side).normalized;   // the ring's own normal
-            Vector3 _side = Vector3.Cross(_plane, _forward).normalized;
-            float _a = _size.StraightLength, _c = _size.HalfWidth, _r = _size.WireRadius;
-            float _perimeter = 2f * _a + 2f * Mathf.PI * _c;
-            int _first = _vertices.Count;
-            for (int _i = 0; _i < RingSegments; _i++)
+            private readonly Vector3[] _vertices;
+            private readonly Vector3[] _normals;
+            private readonly Vector2[] _uvs;
+            private readonly int[] _indices;
+            private readonly int _lengthAxis, _widthAxis, _thicknessAxis;
+            private readonly float _handedness;
+            private readonly float _innerLength;
+
+            public int IndexCount => _indices.Length;
+            public int VertexCount => _vertices.Length;
+
+            public LinkTemplate(Mesh _mesh)
             {
-                // the stadium's centreline: right side up, top half circle, left side down, bottom half circle
-                float _s = _i * _perimeter / RingSegments;
-                float _x, _z, _tx, _tz;
-                if (_s < _a)
+                _vertices = _mesh.vertices;
+                _normals = _mesh.normals;
+                _uvs = _mesh.uv;
+                _indices = _mesh.triangles;
+                Bounds _bounds = _mesh.bounds;
+                for (int _v = 0; _v < _vertices.Length; _v++)
                 {
-                    _x = _c; _z = -_a / 2f + _s; _tx = 0f; _tz = 1f;
+                    _vertices[_v] -= _bounds.center;
                 }
-                else if (_s < _a + Mathf.PI * _c)
-                {
-                    float _angle = (_s - _a) / _c;
-                    _x = _c * Mathf.Cos(_angle); _z = _a / 2f + _c * Mathf.Sin(_angle); _tx = -Mathf.Sin(_angle); _tz = Mathf.Cos(_angle);
-                }
-                else if (_s < 2f * _a + Mathf.PI * _c)
-                {
-                    _x = -_c; _z = _a / 2f - (_s - _a - Mathf.PI * _c); _tx = 0f; _tz = -1f;
-                }
-                else
-                {
-                    float _angle = (_s - 2f * _a - Mathf.PI * _c) / _c + Mathf.PI;
-                    _x = _c * Mathf.Cos(_angle); _z = -_a / 2f + _c * Mathf.Sin(_angle); _tx = -Mathf.Sin(_angle); _tz = Mathf.Cos(_angle);
-                }
-                Vector3 _onLine = _side * _x + _forward * _z;
-                Vector3 _outward = (_side * _tz - _forward * _tx).normalized;
-                for (int _j = 0; _j < TubeSegments; _j++)
-                {
-                    float _angle = _j * Mathf.PI * 2f / TubeSegments;
-                    Vector3 _n = _outward * Mathf.Cos(_angle) + _plane * Mathf.Sin(_angle);
-                    _vertices.Add(_link.Centre + _onLine + _n * _r);
-                    _normals.Add(_n);
-                }
+                Vector3 _size = _bounds.size;
+                _lengthAxis = _size.x >= _size.y && _size.x >= _size.z ? 0 : _size.y >= _size.z ? 1 : 2;
+                _thicknessAxis = _size.x <= _size.y && _size.x <= _size.z ? 0 : _size.y <= _size.z ? 1 : 2;
+                _widthAxis = 3 - _lengthAxis - _thicknessAxis;
+                // An odd swap of the axes would turn the link inside out: its thickness then goes the other way.
+                _handedness = (_widthAxis - _lengthAxis + 3) % 3 == 1 ? 1f : -1f;
+                _innerLength = _size[_lengthAxis] - 2f * _size[_thicknessAxis];
             }
-            for (int _i = 0; _i < RingSegments; _i++)
+
+            /// <summary>Appends one link: its inner length made equal to the pitch, so that the links hook into each other.</summary>
+            public void Add(LinkFrame _link, LinkSize _size, List<Vector3> _outVertices, List<Vector3> _outNormals, List<Vector2> _outUvs, List<int> _outIndices)
             {
-                int _i1 = (_i + 1) % RingSegments;
-                for (int _j = 0; _j < TubeSegments; _j++)
+                float _scale = _size.Pitch / _innerLength;
+                Vector3 _forward = _link.Forward;
+                Vector3 _side = _link.Side;
+                Vector3 _thickness = Vector3.Cross(_forward, _side).normalized * _handedness;
+                int _first = _outVertices.Count;
+                for (int _v = 0; _v < _vertices.Length; _v++)
                 {
-                    int _j1 = (_j + 1) % TubeSegments;
-                    int _q00 = _first + _i * TubeSegments + _j, _q10 = _first + _i1 * TubeSegments + _j;
-                    int _q01 = _first + _i * TubeSegments + _j1, _q11 = _first + _i1 * TubeSegments + _j1;
-                    _indices.Add(_q00); _indices.Add(_q01); _indices.Add(_q10);
-                    _indices.Add(_q10); _indices.Add(_q01); _indices.Add(_q11);
+                    Vector3 _p = _vertices[_v], _n = _normals[_v];
+                    _outVertices.Add(_link.Centre + (_forward * _p[_lengthAxis] + _side * _p[_widthAxis] + _thickness * _p[_thicknessAxis]) * _scale);
+                    _outNormals.Add(_forward * _n[_lengthAxis] + _side * _n[_widthAxis] + _thickness * _n[_thicknessAxis]);
+                    _outUvs.Add(_uvs[_v]);
+                }
+                foreach (int _i in _indices)
+                {
+                    _outIndices.Add(_first + _i);
                 }
             }
         }

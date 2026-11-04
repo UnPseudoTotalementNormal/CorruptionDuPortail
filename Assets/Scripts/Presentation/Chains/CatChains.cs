@@ -27,6 +27,8 @@ namespace Presentation.Chains
         private const float BodyFrom = 1.65f, BodyTo = 2.15f;
 
         [SerializeField] private Material _material;
+        [Tooltip("The artist's single link (Read/Write on).")]
+        [SerializeField] private Mesh _linkMesh;
         [Tooltip("Height of the cat model at scale 1, ears included (the chains' size follows it).")]
         [SerializeField] private float _catHeightAtScale1 = 4.4f;
         [Tooltip("A cat chained while watched, with no reveal played for it (a missed moment), gets its chains this late.")]
@@ -60,8 +62,11 @@ namespace Presentation.Chains
         /// <summary>True while its chains are drawn, in part or whole.</summary>
         public bool Shown => _state != State.None;
 
+        private ChainGeometry.LinkTemplate _template;
+
         private void Awake()
         {
+            UnityEngine.Assertions.Assert.IsNotNull(_linkMesh, "CatChains._linkMesh is not wired");
             _animator = GetComponentInChildren<Animator>(true);
             SkinnedMeshRenderer _body = FindBody();
             if (_body == null)
@@ -179,8 +184,8 @@ namespace Presentation.Chains
             {
                 float _share = _clipTime >= _piece.To ? 1f : Mathf.Clamp01((_clipTime - _piece.From) / (_piece.To - _piece.From));
                 int _count = Mathf.CeilToInt(_share * _piece.LinkCount - 1e-4f);
-                int _start = _piece.FirstLink * ChainGeometry.IndicesPerLink;
-                _shown.AddRange(new System.ArraySegment<int>(_allIndices, _start, _count * ChainGeometry.IndicesPerLink));
+                int _start = _piece.FirstLink * _template.IndexCount;
+                _shown.AddRange(new System.ArraySegment<int>(_allIndices, _start, _count * _template.IndexCount));
             }
             _mesh.SetTriangles(_shown, 0, false);
         }
@@ -328,15 +333,17 @@ namespace Presentation.Chains
             _pieces.Add(new Piece { FirstLink = _bodyFirst, LinkCount = _links.Count - _bodyFirst, From = BodyFrom, To = BodyTo });
 
             // The mesh, in the chains' own space, bound to the skeleton as it stands now.
-            var _vertices = new List<Vector3>(_links.Count * ChainGeometry.VerticesPerLink);
+            _template ??= new ChainGeometry.LinkTemplate(_linkMesh);
+            var _vertices = new List<Vector3>(_links.Count * _template.VertexCount);
             var _normals = new List<Vector3>(_vertices.Capacity);
-            var _indices = new List<int>(_links.Count * ChainGeometry.IndicesPerLink);
+            var _uvs = new List<Vector2>(_vertices.Capacity);
+            var _indices = new List<int>(_links.Count * _template.IndexCount);
             var _weights = new List<BoneWeight>(_vertices.Capacity);
             Transform _space = _renderer.transform;
             for (int _l = 0; _l < _links.Count; _l++)
             {
                 int _from = _vertices.Count;
-                ChainGeometry.AddLink(_links[_l], _size, _vertices, _normals, _indices);
+                _template.Add(_links[_l], _size, _vertices, _normals, _uvs, _indices);
                 for (int _v = _from; _v < _vertices.Count; _v++)
                 {
                     _vertices[_v] = _space.InverseTransformPoint(_vertices[_v]);
@@ -352,6 +359,7 @@ namespace Presentation.Chains
             _mesh.Clear();
             _mesh.SetVertices(_vertices);
             _mesh.SetNormals(_normals);
+            _mesh.SetUVs(0, _uvs);
             _mesh.boneWeights = _weights.ToArray();
             _mesh.bindposes = _bindposes;
             _allIndices = _indices.ToArray();

@@ -9,6 +9,17 @@ namespace Tests.Editor.Avatars
     /// </summary>
     public class NameplatePolicyTests
     {
+        [TestCase(10f)]
+        [TestCase(34f)]
+        [TestCase(70f)]
+        public void ScaleForScreenShare_KeepsTheSameHeightOnScreen_NearOrFar(float depth)
+        {
+            float scale = NameplatePolicy.ScaleForScreenShare(0.04f, 40f, depth, 9f);
+            double em = 9f * 0.1f * scale;
+            double visible = 2.0 * depth * System.Math.Tan(20.0 * System.Math.PI / 180.0);
+            Assert.That(em / visible, Is.EqualTo(0.04).Within(1e-4));
+        }
+
         [Test]
         public void ShouldShow_OtherPlayerInFirstPerson_True()
         {

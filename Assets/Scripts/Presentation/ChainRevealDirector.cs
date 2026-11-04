@@ -236,6 +236,8 @@ namespace Presentation
             }
         }
 
+        private AvatarNameplate _nameplate;
+
         private void BeginCat(PlayerAvatar _avatar, bool _self)
         {
             _animator = _avatar.GetComponentInChildren<Animator>();
@@ -256,6 +258,11 @@ namespace Presentation
                 _visibility.SetFeatured(_avatar);
             }
             _spotlights.Lifted = _avatar;
+            _nameplate = _avatar.GetComponent<AvatarNameplate>();
+            if (_nameplate != null)
+            {
+                _nameplate.SetHiddenForReveal(true);
+            }
             _chains = _avatar.GetComponentInChildren<CatChains>();
             if (_chains != null)
             {
@@ -280,6 +287,11 @@ namespace Presentation
             {
                 _chains.EndReveal(); // it keeps them, even if the moment was cut short
                 _chains = null;
+            }
+            if (_nameplate != null)
+            {
+                _nameplate.SetHiddenForReveal(false);
+                _nameplate = null;
             }
             _visibility.SetFeatured(null);
             _dayRows.SetAway(false);

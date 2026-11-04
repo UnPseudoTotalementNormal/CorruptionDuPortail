@@ -197,6 +197,9 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   A tween on the root fights it (the T23 screen row stacked every card at the centre, back side out). Move a card through
   its Transform layer only; after a `SetParent` call `ApplyComposedTransform()` before tweening; put a size on the PARENT
   (the flip lifts a card 4 parent units, so it must keep the table's proportions).
+- **A dealt card's Transform layer is at its place before the card is**: they wait stacked in the middle of the table
+  until the deal, and the first night starts as they leave. To measure the table, wait for `BoardManager.CardsAtRest()`
+  (reads the card itself): the vote candle measured a free table and stood on a card at 14 seats, T33.
 - **Board card layout values are measured, never guessed** (`CardLayout.GridFor`). Free band of the top view at 1600 × 900: z ≈ +9.8 (characters bar) to −13.6 (bottom HUD / skip button); a hovered card grows ~1.1× and its vote count text slides to 6.89 × scale under the card's centre. Each guess so far hid something (V3 spacing 10.3: near-line panels under the bottom HUD at 12 seats). Any change: `CardLayoutTests` constraints, then `tools/autoplay/sweep_card_visibility.py` (every size, PASS with `--effects-see-through`).
 
 ## Code organization

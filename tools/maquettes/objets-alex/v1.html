@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les objets d'Alex dans le jeu</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .oa-full { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; display: block; }
+  .oa-half { position: absolute; top: 225px; width: 800px; height: 450px; display: block; }
+  .oa-tag { position: absolute; top: 183px; color: #b9a68c; font: 26px "Fell", serif; }
+  .oa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .oa-tile { background: #33261c; border: 1px solid var(--line); padding: 8px; text-align: center; }
+  .oa-tile .oa-pic { height: 110px; display: flex; align-items: center; justify-content: center; }
+  .oa-tile img { max-width: 100%; max-height: 110px; }
+  .oa-tile b { display: block; font-weight: normal; color: var(--fg); margin-top: 6px; }
+  .oa-tile span { display: block; color: var(--soft); font-size: 14px; }
+  .oa-tile.oa-none .oa-pic { color: var(--soft); font-size: 14px; }
+  .oa-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .oa-two img { width: 100%; display: block; }
+  .oa-refs a { color: var(--accent); }
+</style>
+</head>
+<body data-subject="objets-alex">
+
+<header class="page">
+  <h1>Les objets d'Alex dans le jeu (T33)</h1>
+  <p>Alex a livré la table, la chaise, l'horloge, la bougie, les chaînes et les objets des pouvoirs. Tout ce que tu vois
+     est rendu depuis son fichier dans la vraie scène du jeu, avec les lumières du jeu. Les cartes et le liège viennent
+     d'une capture de partie, prise avec la même caméra.</p>
+  <p class="oa-refs"><b>Référence.</b> <a href="https://dotesports.com/indies/news/all-items-in-buckshot-roulette-listed">Buckshot Roulette</a> :
+     des objets posés à des places fixes sur la table, autour du fusil, qu'on prend en cliquant.
+     <a href="https://www.thegamer.com/top-best-items-use-in-inscryption-ranked/">Inscryption</a> : les objets à usage
+     unique posés sur la table à côté du joueur, trois au plus. Vus par des articles, pas joués.</p>
+  <p><b>Aujourd'hui.</b> Tous les pouvoirs sont le même bouton rouge, posé sur une bande noire au bas de la table. Le jeu
+     a déjà un champ par pouvoir pour son objet 3D, resté vide. Table sans détail, pas de chaise, pas d'horloge, bougie
+     et chaînes générées par le code.</p>
+  <p><b>La scène.</b> Partie à 8, deuxième nuit. La Dryade s'éveille et cherche son pouvoir. Puis le jour, le cercle des
+     chats au moment du vote.</p>
+  <p><b>Sans question.</b> Robot et Luma gardent le bouton rouge jusqu'à leur livraison. Les objets gardent le survol et
+     le clic d'aujourd'hui, et la bave des pouvoirs copiés. Les animations de pouvoirs du suivi d'Alex ne sont pas livrées.
+     Une nouvelle version de son fichier se réimporte en une commande : ses retouches à venir ne coûtent rien.</p>
+  <p><b>Manque chez Alex.</b> <code>Leaves.jpg</code> et <code>LeafB2.jpg</code>, les feuilles du cœur, pas sur le Drive : le
+     cœur est ici en or uni, provisoire. L'objet du Robot, celui de Luma.</p>
+</header>
+
+<section>
+  <h2>1. Quel objet pour quel pouvoir</h2>
+  <p>Le suivi d'Alex liste les pouvoirs sans dire quel objet va où. Si Wouh a une autre idée, une remarque suffit, ça se
+     change en une ligne.</p>
+
+  <div class="variant" data-id="M1">
+    <div class="vhead"><span class="vid">M1</span><span class="vname">Boule pour les visions, crâne pour la réincarnation (par défaut)</span></div>
+    <div class="oa-grid">
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/PurpleHand.webp" alt=""></div><b>Étreintes des ombres</b><span>Mage Occulte</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/Corruptor.webp" alt=""></div><b>Corruption Ciblée</b><span>Mage Occulte</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/ChainPile.webp" alt=""></div><b>Enchaîné par les Ombres</b><span>Abyss</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/ChainPile.webp" alt=""></div><b>Chaînes de la vérité</b><span>Geôlier</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/WoodenBoard.webp" alt=""></div><b>Soin Baveux</b><span>Dr Gloubi</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/LeafHeart.webp" alt=""></div><b>Bénédiction</b><span>Dryade</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/ArcaneCube.webp" alt=""></div><b>Balises Personnelles</b><span>Technomancien</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/TeddyBear.webp" alt=""></div><b>Manque d'affection</b><span>Orpheline</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/Sniper.webp" alt=""></div><b>Observation Clandestine</b><span>Traqueuse</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/CrystalSkull.webp" alt=""></div><b>Réincarnation</b><span>Incomplet</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/Bell.webp" alt=""></div><b>Lié par l'encre</b><span>Messager</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/CrystalBall.webp" alt=""></div><b>Vision Maudite</b><span>Repenti</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/CrystalBall.webp" alt=""></div><b>Vision de l'impossible</b><span>Oracle</span></div>
+    </div>
+  </div>
+
+  <div class="variant" data-id="M2">
+    <div class="vhead"><span class="vid">M2</span><span class="vname">Le crâne pour la vision maudite</span></div>
+    <p class="vdesc">Tout comme M1, sauf ces deux lignes : la boule reste à l'Oracle.</p>
+    <div class="oa-grid">
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/CrystalSkull.webp" alt=""></div><b>Vision Maudite</b><span>Repenti</span></div>
+      <div class="oa-tile"><div class="oa-pic"><img src="img/objets/CrystalBall.webp" alt=""></div><b>Réincarnation</b><span>Incomplet</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2. La table</h2>
+  <p>Mêmes dimensions que la table actuelle : les cartes, le liège et la caméra ne bougent pas.</p>
+
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">Actuelle</span></div>
+    <div class="screen"><div class="stage"><img class="oa-full" src="img/nuit_actuel.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Celle d'Alex (par défaut)</span></div>
+    <p class="vdesc">Sa texture telle quelle, taches de lumière peintes comprises : elles restent visibles entre les cartes.</p>
+    <div class="screen"><div class="stage"><img class="oa-full" src="img/nuit_dryade.webp" alt=""></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Où se posent les objets des pouvoirs</h2>
+  <p>La vue de nuit est au-dessus du centre de la table : un objet posé au bord de l'écran y est vu de biais et coupé. Chaque
+     objet est donc penché vers la caméra pour se lire de face.</p>
+
+  <div class="variant" data-id="B0">
+    <div class="vhead"><span class="vid">B0</span><span class="vname">À la place du bouton, sur la bande noire</span></div>
+    <p class="vdesc">Place actuelle, rien ne bouge. Un objet plus haut que le bouton sort de l'écran : le cœur est coupé.</p>
+    <div class="screen"><div class="stage"><img class="oa-full" src="img/nuit_bande.webp" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Sur le bois, sans la bande noire (par défaut)</span></div>
+    <p class="vdesc">La bande disparaît, la rangée remonte juste sous les cartes. Ici les deux objets du Mage : déplace-les
+       si tu les veux ailleurs. À cette place elle ne touche aucune carte : la dernière rangée s'arrête au même endroit de 7 à 14 joueurs.</p>
+    <div class="screen"><div class="stage">
+      <img class="oa-full" src="img/nuit_vide.webp" alt="">
+      <img class="place" data-name="pouvoirs" data-x="757" data-y="880" data-scale="1" data-scale-min="0.6" data-scale-max="1.4" src="img/objets/_barre_mage.webp" alt="">
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4. Les chaises</h2>
+  <p>Le jour, vue assise, rangées de cartes fermées : au repos à gauche, tête tournée à droite. La nuit elles sont hors champ.</p>
+
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Pas de chaise</span></div>
+    <div class="screen"><div class="stage">
+      <span class="oa-tag" style="left:20px">Au repos</span><span class="oa-tag" style="left:820px">Tête tournée</span>
+      <img class="oa-half" style="left:0" src="img/jour_c0_repos.webp" alt=""><img class="oa-half" style="left:800px" src="img/jour_c0_tourne.webp" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Derrière le chat, à la taille d'Alex (par défaut)</span></div>
+    <p class="vdesc">Le chat reste au sol, comme aujourd'hui, le dossier s'élève derrière lui. Aucun réglage de vue ne change.</p>
+    <div class="screen"><div class="stage">
+      <span class="oa-tag" style="left:20px">Au repos</span><span class="oa-tag" style="left:820px">Tête tournée</span>
+      <img class="oa-half" style="left:0" src="img/jour_c1_repos.webp" alt=""><img class="oa-half" style="left:800px" src="img/jour_c1_tourne.webp" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Derrière le chat, plus petite</span></div>
+    <p class="vdesc">Le dossier dépasse à peine des oreilles : le chat reste le sujet.</p>
+    <div class="screen"><div class="stage">
+      <span class="oa-tag" style="left:20px">Au repos</span><span class="oa-tag" style="left:820px">Tête tournée</span>
+      <img class="oa-half" style="left:0" src="img/jour_c2_repos.webp" alt=""><img class="oa-half" style="left:800px" src="img/jour_c2_tourne.webp" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Vraiment assis dessus</span></div>
+    <p class="vdesc">Le sol descend de 10 m sous les chats. Le plus juste, mais à revérifier partout où le sol se voit (emotes,
+       enchaînement, bougie du jour) : c'est le choix le plus long à coder.</p>
+    <div class="screen"><div class="stage">
+      <span class="oa-tag" style="left:20px">Au repos</span><span class="oa-tag" style="left:820px">Tête tournée</span>
+      <img class="oa-half" style="left:0" src="img/jour_c3_repos.webp" alt=""><img class="oa-half" style="left:800px" src="img/jour_c3_tourne.webp" alt="">
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>5. L'horloge</h2>
+  <p>Le suivi d'Alex la range dans le décor sans dire à quoi elle sert. Le jeu a déjà un tic-tac sans horloge visible
+     pendant le vote, et un temps limité à l'éveil.</p>
+
+  <div class="variant" data-id="H0">
+    <div class="vhead"><span class="vid">H0</span><span class="vname">Pas d'horloge pour l'instant</span></div>
+  </div>
+
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">La nuit, sur la table, le temps de l'éveil (par défaut)</span></div>
+    <p class="vdesc">La grande aiguille fait un tour pendant ton temps d'éveil. Le jour la table part, et l'horloge avec. Déplace-la où tu la veux.</p>
+    <div class="screen"><div class="stage">
+      <img class="oa-full" src="img/nuit_dryade.webp" alt="">
+      <img class="place" data-name="horloge" data-x="1185" data-y="770" data-scale="1" data-scale-min="0.5" data-scale-max="1.4" src="img/objets/Clock.webp" alt="">
+    </div></div>
+  </div>
+
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">Le jour, au sol, le temps du vote</span></div>
+    <p class="vdesc">Elle rejoint la bougie devant toi, ses aiguilles suivent le vote et donnent un visage au tic-tac. La nuit, rien sur la table.</p>
+    <div class="screen"><div class="stage">
+      <img class="oa-full" src="img/jour_c1_repos.webp" alt="">
+      <img class="place" data-name="horloge" data-x="1180" data-y="800" data-scale="1.4" data-scale-min="0.6" data-scale-max="2.4" src="img/objets/Clock.webp" alt="">
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <h2>6. La bougie du vote</h2>
+  <p>Celle d'aujourd'hui fond, repousse et éclaire. Celle d'Alex est un modèle figé.</p>
+
+  <div class="variant" data-id="K0">
+    <div class="vhead"><span class="vid">K0</span><span class="vname">Actuelle</span></div>
+    <div class="oa-two"><img src="../compte-a-rebours/captures/v4/en-jeu-vote.jpg" alt=""></div>
+  </div>
+
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Le bougeoir d'Alex, notre cire qui fond (par défaut)</span></div>
+    <p class="vdesc">Son plateau et son pied, posés sous la cire, la flamme et la fumée d'aujourd'hui. Sa cire à lui n'apparaît pas : l'image montre le bougeoir.</p>
+    <div class="oa-two"><img src="img/gros_candle.webp" alt=""></div>
+  </div>
+
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Toute la bougie d'Alex</span></div>
+    <p class="vdesc">Son modèle entier avec notre flamme. Il ne fond plus : le vote perd la fonte que tu avais choisie (T19).</p>
+    <div class="oa-two"><img src="img/gros_candle.webp" alt=""></div>
+  </div>
+</section>
+
+<section>
+  <h2>7. Les chaînes de l'enchaînement</h2>
+  <p>Aujourd'hui, maillons générés par le code, en fer clair (ton choix M2 de T19). Alex livre un maillon rouillé et un tas.</p>
+
+  <div class="variant" data-id="E0">
+    <div class="vhead"><span class="vid">E0</span><span class="vname">Actuelles, fer clair</span></div>
+    <div class="oa-two"><img src="../chaines/captures/v1/M2.jpg" alt=""></div>
+  </div>
+
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Les maillons d'Alex, rouillés (par défaut)</span></div>
+    <p class="vdesc">Même enroulement sur les bras et le corps, avec son maillon et sa texture. Plus sombres sur le chat que le fer clair.</p>
+    <div class="oa-two"><img src="img/gros_chain.webp" alt=""></div>
+  </div>
+</section>
+
+<section>
+  <h2>Autre chose</h2>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script src="../common/mock.js"></script>
+</body>
+</html>

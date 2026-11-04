@@ -262,11 +262,13 @@ namespace FX.Candle
                     // Always on the table during a game (maquettes v3): burnt down and out between two timers.
                     _phase = Phase.Out;
                     _phaseTime = 10f;
-                    _visual.SetActive(true);
+                    AwaitPlace();
                     Melt(1f);
                     DriveFlame(0f, 0f, 0f);
                     SetStrength(_glow, 0f);
                 }
+                // The cards are dealt at the end of the introduction, however long it lasts: the wait starts after it.
+                PlaceOnceTheCardsLanded(_state is GameIntroductionState ? 0f : _dt);
                 if (_timer.Kind != TimerKind.None)
                 {
                     if (_phase != Phase.Lit || _timer.Kind != _litFor)
@@ -343,8 +345,17 @@ namespace FX.Candle
             _litFor = _timer.Kind;
             _phase = Phase.Lit;
             _phaseTime = 0f;
-            // The cards are laid out by now (at the start of the game they were still flying to their places).
-            PlaceOnTable();
+            // The first night starts while the cards still leave the middle of the table for their places (it read a free
+            // table and stood on a card at 14 seats): it burns out of sight until they have landed.
+            if (_onFloor || _boardManager == null || _boardManager.CardsAtRest())
+            {
+                PlaceOnTable();
+                ShowPlaced();
+            }
+            else
+            {
+                AwaitPlace();
+            }
             _clock.Start(_timer.Duration, _timer.Left);
             _pulse = 0f;
             _tickCount = 0;
@@ -447,6 +458,10 @@ namespace FX.Candle
                  "much bigger there, to keep its size on screen.")]
         [SerializeField] private float _floorScale = 1.8f;
         private bool _onFloor;
+        [Tooltip("A candle out of sight waiting for the cards to land shows up after this long anyway.")]
+        [SerializeField] private float _maxPlaceWaitSeconds = 8f;
+        private bool _awaitingPlace;
+        private float _awaitedSeconds;
 
         /// <summary>T23: by day the table disappears; the candle goes down to the floor (Poyo, 2026-10-21) and back on
         /// the table at night.</summary>
@@ -457,7 +472,50 @@ namespace FX.Candle
                 return;
             }
             _onFloor = _floor;
+            // Back on the table, the cards are still flying down from the day's rows: unless it burns, it waits for them.
+            if (!_floor && _phase == Phase.Out)
+            {
+                AwaitPlace();
+                return;
+            }
             PlaceOnTable();
+            if (_phase != Phase.Hidden)
+            {
+                ShowPlaced();
+            }
+        }
+
+        // Out of sight until it has its place, so it never stands on a card: it measures the free places on the cards
+        // where they really lie, which is only true once they have landed.
+        private void AwaitPlace()
+        {
+            _awaitingPlace = true;
+            _awaitedSeconds = 0f;
+            _visual.SetActive(false);
+        }
+
+        private void ShowPlaced()
+        {
+            _awaitingPlace = false;
+            _visual.SetActive(true);
+        }
+
+        private void PlaceOnceTheCardsLanded(float _dt)
+        {
+            if (!_awaitingPlace)
+            {
+                return;
+            }
+            _awaitedSeconds += _dt;
+            bool _landed = _onFloor || _boardManager == null || _boardManager.CardsAtRest();
+            if (!_landed && _awaitedSeconds < _maxPlaceWaitSeconds)
+            {
+                return;
+            }
+            PlaceOnTable();
+            ShowPlaced();
+            Diagnostics.Logs.GameLog.Info("ui", "ui.candle.placed", "landed", _landed, "waited", _awaitedSeconds,
+                "x", transform.position.x, "z", transform.position.z, "scale", transform.localScale.x, "cards", _cardRects.Count);
         }
 
         private void PlaceOnTable()

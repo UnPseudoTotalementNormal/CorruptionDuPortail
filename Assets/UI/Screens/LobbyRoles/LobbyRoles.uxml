@@ -7,6 +7,7 @@
          root is just the canvas the controller fills with a tally + faction sections of role cards + a footer.
          The frame around it is the wooden edge of the cork board (mockup K3).
          Palette is provisional/design-owned — see the proto. Layout is LobbyRoles.uss. -->
+    <ui:Style src="../CatCustomization/CatCustomization.uss" />
     <ui:Style src="LobbyRoles.uss" />
     <ui:VisualElement class="lobby-roles-frame">
         <ui:VisualElement name="lobby-roles" class="lobby-roles" />

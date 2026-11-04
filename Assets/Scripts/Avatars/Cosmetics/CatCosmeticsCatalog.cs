@@ -33,6 +33,10 @@ namespace Avatars.Cosmetics
         [Tooltip("Eyes only, optional: the closed-eyes part shown while the cat blinks (CatBlink). Empty = no blink.")]
         public string blinkPart;
 
+        [Tooltip("Optional: the material its parts wear while it is chosen, for an item that reuses another item's mesh " +
+                 "with its own texture (« Petit sourire »). Empty = the parts' own material.")]
+        public Material partMaterial;
+
         [Tooltip("Outfit / eyes / mouth: names of the renderers this item shows (cat model or cosmetics model). " +
                  "Empty = nothing (« Sans tenue »).")]
         public string[] parts = Array.Empty<string>();

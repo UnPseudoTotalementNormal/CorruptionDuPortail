@@ -85,6 +85,7 @@ namespace Avatars.Cosmetics.EditorTools
             ["Cosmetics/Tear"] = Toon,
             ["Cosmetics/Galactic Mouth"] = Flat,
             ["Cosmetics/Mage Mouth"] = Flat,
+            ["Cosmetics/Smile Mouth"] = Flat,
             ["Cosmetics/Choked Mouth"] = Flat,
             ["Cosmetics/Drunk Mouth"] = Flat,
             ["Cosmetics/Sad Mouth"] = Flat,

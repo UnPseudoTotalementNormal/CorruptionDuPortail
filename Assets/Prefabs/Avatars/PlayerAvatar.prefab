@@ -163,7 +163,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - {fileID: 1549004507643472899, guid: 8f0644f8666d1cb40a297cf78668697e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -209,8 +209,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Nom du joueur
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f0644f8666d1cb40a297cf78668697e, type: 2}
+  m_sharedMaterial: {fileID: 1549004507643472899, guid: 8f0644f8666d1cb40a297cf78668697e, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -493,6 +493,7 @@ MonoBehaviour:
   _cameraModeChannel: {fileID: 11400000, guid: 092c23d2ca33c6f4b9d78076cacc43d4, type: 2}
   _label: {fileID: 4562080077085065399}
   _fontSize: 9
+  _seatedScreenShare: 0.038
 --- !u!114 &7843739994642253507
 MonoBehaviour:
   m_ObjectHideFlags: 0

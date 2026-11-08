@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first) — without waiting for him to say « maquettes », also in the middle of another skill or task that leads to a visible change.
 metadata:
   template: maquettes
-  template-version: 1.8.3
+  template-version: 1.9.1
 ---
 
 # Maquettes (Corruption du Portail)
@@ -104,6 +104,9 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
   it in another frame, and write what the code needs into `el.dataset.info` (e.g. the world position under it).
   An object from the game is rendered from the game with a transparent background (`compte-a-rebours/v3.html`:
   the real candle, the seated view's camera fitted on the capture, its place mirrored on the night's top view).
+- **A setting he makes himself goes with his votes.** An element of a variant whose `data-retour` is not empty
+  (a camera framing he turned, a slider he moved) is sent as is with the remarks (« E1 <data-retour> »): the
+  page writes it on every change, he has nothing to copy.
 - Bottom: `<textarea id="global">` (free remark) and `<button id="send">`.
 - `?only=E1` shows that frame alone (captures).
 

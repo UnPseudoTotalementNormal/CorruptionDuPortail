@@ -116,6 +116,11 @@ namespace Autoplay
 
         private async UniTask TourTooltip()
         {
+            if (!string.IsNullOrEmpty(options.tourTooltipTargets))
+            {
+                await TourNamedTooltips(options.tourTooltipTargets.Split(',').Select(_n => _n.Trim()).Where(_n => _n.Length > 0).ToArray());
+                return;
+            }
             // Wait (bounded) for something with a tooltip to be on screen and reachable (power bar, role cards…).
             HoverTooltipComponent _trigger = null;
             float _waitUntil = Time.realtimeSinceStartup + 6f;
@@ -166,6 +171,36 @@ namespace Autoplay
                 await TourDwell();
             }
             // Leave it: back to a corner, so the tooltip closes before the next step.
+            await VirtualInput.MoveTo(new Vector2(4f, Screen.height - 4f), options.pointerMoveSeconds).WithCancellation(Cancel);
+        }
+
+        // -autoplay-tour-tooltip-targets: each named trigger in turn, the pointer going straight from one to the next
+        // (no stop in a corner: neighbouring triggers must hand the bubble over without covering each other).
+        private async UniTask TourNamedTooltips(string[] _names)
+        {
+            foreach (string _name in _names)
+            {
+                HoverTooltipComponent _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
+                    .FirstOrDefault(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent);
+                if (_trigger == null || TooltipManager.instance == null)
+                {
+                    TourStep("tooltip", false, $"reason=no-trigger name={_name}");
+                    continue;
+                }
+                bool _hovered = await HoverTarget(_trigger.gameObject, "tooltip", 0f);
+                float _deadline = Time.realtimeSinceStartup + options.clickEffectTimeout;
+                while (_hovered && !TooltipManager.instance.IsTooltipOpenForGameObject(_trigger.gameObject) && Time.realtimeSinceStartup < _deadline)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+                }
+                bool _open = _hovered && TooltipManager.instance.IsTooltipOpenForGameObject(_trigger.gameObject);
+                TourStep("tooltip", _open, $"target={AutoplayUiLocator.PathOf(_trigger.gameObject)}");
+                if (_open)
+                {
+                    capture.Request($"tour-tooltip-{_name}", 0.2f);
+                    await TourDwell();
+                }
+            }
             await VirtualInput.MoveTo(new Vector2(4f, Screen.height - 4f), options.pointerMoveSeconds).WithCancellation(Cancel);
         }
 

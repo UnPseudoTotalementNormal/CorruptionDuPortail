@@ -70,7 +70,9 @@ exports.postReportToDiscord = onDocumentCreated(
       await ref.update({ postedAt: Timestamp.now(), postError: `Discord ${response.status}` }); // will never pass
       return;
     }
-    await ref.update({ postedAt: Timestamp.now() });
+    // The message id lets `logs.py resolve` put its ✅ on this alert once the report is handled.
+    const posted = await response.json().catch(() => ({}));
+    await ref.update({ postedAt: Timestamp.now(), ...(posted.id ? { discordMessageId: String(posted.id) } : {}) });
     logger.info("report posted", { id: event.params.id, kind: report.kind });
   },
 );

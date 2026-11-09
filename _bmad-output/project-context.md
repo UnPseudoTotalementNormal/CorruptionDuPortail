@@ -23,6 +23,9 @@ Unity **6000.5.0f1** · URP 17.5 · NGO 2.12 (+ Multiplayer Tools 2.2.8, bump to
 2. **`IsLocalOrSimulated(clientId)`, never `IsLocalClient`.**
 3. **Server authority.** Game state mutated server-side only; clients propose via `ServerRpc`. `NetworkVariable` write perm stays `Server`. Sole sanctioned exception: cosmetic gaze `SeatedYaw/Pitch` (owner-write).
 4. **UniTask only** (never `Task`, never new coroutines). Every `.Forget()` in a MonoBehaviour chains `this.GetCancellationTokenOnDestroy()`. Tweens: `AwaitForComplete(ct)`, never `AsyncWaitForCompletion()`.
+   **A join/connect await can unload the menu scene under you** (NGO loads GameScene on success): after it, check
+   `if (this == null) return;` before touching any serialized widget, in every join path (list, password, invite). The
+   NRE otherwise reads as a failed join, or worse, aborts a good connection (password path, playtest 2026-11-01).
 5. **FMOD via `AudioSystem/GameAudioManager`**, never `AudioSource`. `GameAudioManager` must stay no-op-safe without FMOD (EditMode tests). Event refs must exist in `Assets/FMODBanks/` (else runtime `EVENT_NOTFOUND`).
 6. **Depend on injected slices, never locators** (see DI below).
 

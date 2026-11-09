@@ -22,6 +22,7 @@ namespace TooltipSystem
         [SerializeField] private Transform tooltipCanvas;
         
         private List<TooltipInstanceInfo> tooltipInstances = new();
+        private TooltipWindow _keptOnScreenLogged;
 
         // Story 11.4 (Epic 11 / D5): the link-colouring policy extracted to a pure EditMode-tested Domain POCO.
         private const string LINK_COLOR_HEX = "6fb5d1";
@@ -196,8 +197,10 @@ namespace TooltipSystem
             (Vector2 _placed, bool _flipped) = KeepOnScreen(_componentScreenPos, _componentBoundingBoxSize,
                 _tooltipBoundingBoxSize, _tooltipTrigger.tooltipOffsetDirection, _tooltipTrigger.tooltipPixelOffset,
                 new Vector2(Screen.width, Screen.height));
-            if (_placed != _wanted)
+            // Placed every frame while it grows: once per tooltip, or it fills the playtest log (~90 lines a hover).
+            if (_placed != _wanted && _keptOnScreenLogged != _newTooltip)
             {
+                _keptOnScreenLogged = _newTooltip;
                 GameLog.Info("ui", "ui.tooltip.kept.on.screen", "target", _linkedGameObject.name, "flipped", _flipped,
                     "from", _wanted, "to", _placed);
             }

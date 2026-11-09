@@ -21,6 +21,11 @@ function plain(text) {
   return String(text == null ? "" : text).replace(/([\\*_~`|>\[\]()<#@:-])/g, "\\$1");
 }
 
+/** A crash alert's Unity log excerpt, inside a code block: no backtick can close it early. */
+function codeBlock(text, max) {
+  return clip(String(text).replace(/`/g, "'"), max);
+}
+
 function clip(text, max) {
   return text.length > max ? text.slice(0, max - 1) + "…" : text;
 }
@@ -50,7 +55,8 @@ function buildMessage(report) {
     color: crash ? 15548997 : 15105570,
     description: crash
       ? "Le jeu s'est fermé sans finir sa session (vu au lancement suivant)."
-      : clip(report.text && report.text.trim() ? plain(report.text) : "(sans texte)", 3800),
+        + (report.text && report.text.trim() ? "\n```\n" + codeBlock(report.text, 3600) + "\n```" : "")
+      :clip(report.text && report.text.trim() ? plain(report.text) : "(sans texte)", 3800),
     fields,
     footer: { text: clip(`session ${plain(report.sid) || "?"}${report.gameId ? ", partie " + plain(report.gameId) : ""}`, 200) },
   };

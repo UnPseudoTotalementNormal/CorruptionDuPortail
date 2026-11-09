@@ -345,6 +345,21 @@ namespace Tests.Editor.PlaytestLogs
         }
 
         [Test]
+        public void BugReport_CrashExcerptStartsAtTheCrashBlockAndMasksTheUserFolder()
+        {
+            string _log = "Loading scene\r\nCrash!!!\r\nat C:\\Users\\Flamy\\AppData\\game.dll\r\nat C:/Users/Flamy/x\r\n";
+            string _excerpt = BugReport.CrashExcerpt("noise\n" + _log, 6000);
+            StringAssert.StartsWith("Crash!!!", _excerpt);
+            StringAssert.DoesNotContain("Flamy", _excerpt);
+            StringAssert.Contains("Users\\~\\AppData", _excerpt);
+            StringAssert.DoesNotContain("\r", _excerpt);
+
+            // No crash block (a frozen game killed by hand): the last lines, where it hung.
+            Assert.AreEqual("456789", BugReport.CrashExcerpt("0123456789", 6));
+            Assert.AreEqual(string.Empty, BugReport.CrashExcerpt(null, 6000));
+        }
+
+        [Test]
         public void BugReport_FieldsMatchTheRulesAllowList()
         {
             var _report = new BugReport

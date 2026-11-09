@@ -1,0 +1,57 @@
+{
+  "name": "tooltip-counters",
+  "goal": "The two HUD counters in the top-right corner (corrupted total, robot visits) open their bubble on their LEFT (Poyo 2026-11-09: above, the corruption bubble covered the robot counter, so one could not go from one to the other). At night the real-input tour rests the virtual mouse on CorruptionInfo, then goes straight to RobotInfo (no stop in a corner): each bubble opens (capture tour-tooltip-<name>), the second one taking over directly. Host filmed at 30 fps, each bubble left 1.5 s on screen.",
+  "mode": "build",
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 900,
+  "video": true,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-tour-tooltip-targets",
+    "CorruptionInfo,RobotInfo",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes",
+    "-autoplay-video-fps",
+    "30",
+    "-autoplay-tour-dwell",
+    "1.5"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "tour.tooltip",
+      "detail": "^ok .*CorruptionInfo",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.tooltip",
+      "detail": "^ok .*RobotInfo",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

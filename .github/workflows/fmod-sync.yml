@@ -6,21 +6,10 @@ name: FMOD project in sync
 # path): commit the FMOD project together with the banks built from it. Reads the banks with the game's own FMOD
 # runtime (Windows DLL in the repo), no FMOD Studio needed.
 
+# Runs on Poyo's PC now (tools/build/local_ci.py, as a commit status): GitHub Actions was blocked by a billing
+# lock (2026-11-07). Kept by hand only.
 on:
-  push:
-    branches:
-      - Dev
-    paths:
-      - "FMODProject/**"
-      - "Assets/FMODBanks/**"
-      - "tools/fmod/banks.py"
-  pull_request:
-    branches:
-      - Dev
-    paths:
-      - "FMODProject/**"
-      - "Assets/FMODBanks/**"
-      - "tools/fmod/banks.py"
+  workflow_dispatch:
 
 jobs:
   check:

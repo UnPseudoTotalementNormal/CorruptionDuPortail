@@ -197,28 +197,9 @@ namespace Board.UI.PowerBar
             if (hoverTooltipComponent != null)
             {
                 hoverTooltipComponent.SetTooltipTitle(power.powerName.ToString());
-                
-                var _description = power.powerDescription.ToString();
-                
-                if (power.powerComponents.Count == 0)
-                {
-                    hoverTooltipComponent.SetTooltipDescription(_description);
-                    return;
-                }
-                
-                _description += "\n";
-                
-                for (var _index = 0; _index < power.powerComponents.Count; _index++)
-                {
-                    var _powerComponent = power.powerComponents[_index];
-                    if (_index > 0)
-                    {
-                        _description += ", ";
-                    }
-                    _description += $"<link=powercomponent_{power.ownerClientId.Value}_{power.NetworkObjectId}_{_index}>{_powerComponent.componentName.ToString()}</link>";
-                }
-                
-                hoverTooltipComponent.SetTooltipDescription(_description);
+                // Read when the bubble opens: {var:…} values follow the game.
+                Power _power = power;
+                hoverTooltipComponent.SetTooltipDescription(() => PowerTooltipText.Describe(_power));
             }
         }
 

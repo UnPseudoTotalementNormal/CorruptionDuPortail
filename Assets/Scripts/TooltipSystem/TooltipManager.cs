@@ -1,32 +1,50 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using DG.Tweening;
+using CorruptionDuPortail.Domain;
 using Diagnostics.Logs;
 using Extensions;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Serialization;
-using UnityEngine.UI;
 
 namespace TooltipSystem
 {
+    /// <summary>
+    /// The hover bubble (mockups infobulles v1: A1 parchment, T1 timing, K2 keyword cards, P0 beside the trigger).
+    /// One bubble and a few keyword cards, made once and reused. Triggers report the pointer
+    /// (<see cref="HoverTooltipComponent"/>); <see cref="TooltipHoverTimeline"/> decides when it opens and closes; each
+    /// link of the description gets its card beside the bubble, opened with it.
+    /// </summary>
     public class TooltipManager : MonoBehaviour
     {
         public static TooltipManager instance;
-        
-        [field: FormerlySerializedAs("<tooltipLinkReferenceHolder>k__BackingField")] [field:SerializeField] public TooltipLinkParser tooltipLinkParser { get; private set; }
-        
-        [SerializeField] private TooltipWindow tooltipPrefab;
-        
-        [SerializeField] private Transform tooltipCanvas;
-        
-        private List<TooltipInstanceInfo> tooltipInstances = new();
-        private TooltipWindow _keptOnScreenLogged;
 
-        // Story 11.4 (Epic 11 / D5): the link-colouring policy extracted to a pure EditMode-tested Domain POCO.
-        private const string LINK_COLOR_HEX = "6fb5d1";
-        private readonly CorruptionDuPortail.Domain.TooltipLinkFormatter _linkFormatter = new();
+        [field: FormerlySerializedAs("<tooltipLinkReferenceHolder>k__BackingField")] [field:SerializeField] public TooltipLinkParser tooltipLinkParser { get; private set; }
+
+        [SerializeField] private TooltipWindow tooltipPrefab;
+
+        [SerializeField] private Transform tooltipCanvas;
+
+        private const string LINK_COLOR_HEX = "7a1f12";
+        private const float FADE_IN = 0.12f;
+        private const float FADE_OUT = 0.1f;
+        private const float SLIDE = 6f;
+        private const float KEYWORD_GAP = 12f;
+
+        private readonly TooltipLinkFormatter _linkFormatter = new();
+        private readonly TooltipHoverTimeline _timeline = new();
+        private readonly List<TooltipWindow> _keywordCards = new();
+        private readonly Vector3[] _corners = new Vector3[4];
+        private Vector2[] _cardSizes = new Vector2[0];
+
+        private Canvas _canvas;
+        private TooltipWindow _bubble;
+        private int _keywordCount;
+
+        private HoverTooltipComponent _hovered;
+        private HoverTooltipComponent _shown;
+        private HoverTooltipComponent _dismissed;
+        private RectTransform[] _anchorRects;
+        private Renderer[] _anchorRenderers;
+        private bool _keptOnScreenLogged;
 
         private void Awake()
         {
@@ -36,6 +54,7 @@ namespace TooltipSystem
                 return;
             }
             instance = this;
+            _canvas = tooltipCanvas != null ? tooltipCanvas.GetComponentInParent<Canvas>() : null;
         }
 
         private void OnDestroy()
@@ -46,166 +65,188 @@ namespace TooltipSystem
             }
         }
 
-        private void Update()
+        internal void PointerEntered(HoverTooltipComponent _trigger)
         {
-            foreach (var _tooltipInstanceInfo in tooltipInstances.ToList())
-            {
-                if (_tooltipInstanceInfo.linkedGameObject == null)
-                {
-                    CloseTooltip(_tooltipInstanceInfo.tooltipWindow, _tooltipInstanceInfo);
-                    return;
-                }
-                
-                PlaceTooltip(_tooltipInstanceInfo.linkedTooltipTrigger, _tooltipInstanceInfo.linkedGameObject, _tooltipInstanceInfo.tooltipWindow);
-                
-                if (_tooltipInstanceInfo.isMouseOverLinkedGameObject || _tooltipInstanceInfo.isMouseOverTooltipWindow 
-                                                                     || IsTooltipOpenForGameObject(_tooltipInstanceInfo.tooltipWindow.gameObject))
-                {
-                    _tooltipInstanceInfo.tooltipNoHoverTimer = _tooltipInstanceInfo.tooltipNoHoverTime;
-                    continue;
-                }
-
-                _tooltipInstanceInfo.tooltipNoHoverTimer -= Time.deltaTime;
-
-                if (_tooltipInstanceInfo.tooltipNoHoverTimer <= 0)
-                {
-                    CloseTooltip(_tooltipInstanceInfo.tooltipWindow, _tooltipInstanceInfo);
-                }
-            }
+            _hovered = _trigger;
         }
 
-        public TooltipWindow CreateNewTooltipFromGameObject(GameObject _linkedGameObject, string _tooltipTitle, string _tooltipDescription)
+        internal void PointerExited(HoverTooltipComponent _trigger)
         {
-            ITooltipTrigger _tooltipTrigger = _linkedGameObject.GetComponent<ITooltipTrigger>();
-            
-            Assert.IsNotNull(_tooltipTrigger, $"GameObject {_linkedGameObject.name} does not have a component that implements ITooltipTrigger. It is required to use CreateNewTooltipFromGameObject."); 
-            TooltipWindow _newTooltip = Instantiate(tooltipPrefab, tooltipCanvas);
-            
-            _newTooltip.TitleText.text = _tooltipTitle;
-            _newTooltip.DescriptionText.text = _tooltipDescription;
-            _newTooltip.DescriptionText.text = _linkFormatter.WrapLinksWithColor(_tooltipDescription, LINK_COLOR_HEX);
-            _newTooltip.tooltipOffsetDirection = _tooltipTrigger.tooltipOffsetDirection;
-            
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_newTooltip.GetComponent<RectTransform>());
-            
-            var _tooltipInstanceInfo = new TooltipInstanceInfo(_linkedGameObject, _newTooltip);
-            tooltipInstances.Add(_tooltipInstanceInfo);
-
-            _tooltipTrigger.onMouseEnterTrigger += () => { OnMouseEnterComponent(_tooltipInstanceInfo); };
-            _tooltipTrigger.onMouseExitTrigger += () => { OnMouseExitComponent(_tooltipInstanceInfo); };
-            _tooltipTrigger.onTooltipForceClose += () => { CloseTooltip(_newTooltip, _tooltipInstanceInfo); };
-            
-            _newTooltip.onMouseEnterTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = true; };
-            _newTooltip.onMouseExitTrigger += () => { _tooltipInstanceInfo.isMouseOverTooltipWindow = false; };
-            
-            _newTooltip.transform.localScale = Vector3.zero;
-            _newTooltip.transform.DOScale(Vector3.one, 0.35f).SetEase(Ease.OutQuint);
-            
-            PlaceTooltip(_tooltipTrigger, _linkedGameObject, _newTooltip);
-            
-            return _newTooltip;
+            if (_hovered == _trigger) _hovered = null;
+            if (_dismissed == _trigger) _dismissed = null;
         }
 
-        private void OnMouseEnterComponent(TooltipInstanceInfo _tooltipInstanceInfo)
+        internal void TriggerGone(HoverTooltipComponent _trigger)
         {
-            if (!_tooltipInstanceInfo.tooltipWindow)
-            {
-                return;
-            }
-            
-            _tooltipInstanceInfo.isMouseOverLinkedGameObject = true;
+            PointerExited(_trigger);
+            if (_shown == _trigger) Hide("trigger.gone");
         }
 
-        private void OnMouseExitComponent(TooltipInstanceInfo _tooltipInstanceInfo)
+        internal void ContentChanged(HoverTooltipComponent _trigger)
         {
-            if (!_tooltipInstanceInfo.tooltipWindow)
-            {
-                return;
-            }
-            
-            _tooltipInstanceInfo.isMouseOverLinkedGameObject = false;
+            if (_shown == _trigger && _trigger.HasContent) Fill(_trigger);
         }
-        
-        public void CloseTooltip(TooltipWindow _tooltip, TooltipInstanceInfo _tooltipInstanceInfo = null)
-        {
-            if (!_tooltip)
-            {
-                return;
-            }
 
-            tooltipInstances.Remove(_tooltipInstanceInfo ?? tooltipInstances.Find(x => x.tooltipWindow == _tooltip));
-            _tooltipInstanceInfo.tooltipWindow.enabled = false;
-
-            _tooltip.transform.DOScale(Vector3.zero, 0.35f).SetEase(Ease.OutQuint).onComplete = () =>
-            {
-                Destroy(_tooltip.gameObject);
-            };
-        }
-        
         public bool IsTooltipOpenForGameObject(GameObject _linkedGameObject)
         {
-            return tooltipInstances.Any(x => x.linkedGameObject == _linkedGameObject);
+            return _shown != null && _shown.gameObject == _linkedGameObject;
         }
-        
-        public TooltipInstanceInfo GetTooltipInstanceInfo(GameObject gameObject)
+
+        private void Update()
         {
-            return tooltipInstances.FirstOrDefault(x => x.linkedGameObject == gameObject);
+            if (!ReferenceEquals(_shown, null) && _shown == null)
+            {
+                Hide("trigger.destroyed");
+            }
+
+            // A click on what the bubble describes (using a power opens its target picker) puts the bubble away until
+            // the pointer leaves that trigger.
+            var _pointer = UnityEngine.InputSystem.Pointer.current;
+            if (_shown != null && _pointer != null && _pointer.press.wasPressedThisFrame)
+            {
+                _dismissed = _shown;
+                Hide("click");
+            }
+
+            HoverTooltipComponent _candidate = _hovered != null && _hovered.isActiveAndEnabled && _hovered != _dismissed
+                                               && _hovered.HasContent ? _hovered : null;
+            switch (_timeline.Tick(_candidate != null ? _candidate.GetHashCode() : 0, Time.unscaledTime))
+            {
+                case TooltipAction.Show:
+                    Show(_candidate);
+                    break;
+                case TooltipAction.Hide:
+                    HideVisuals("left");
+                    break;
+            }
         }
-        
-        private void PlaceTooltip(ITooltipTrigger _tooltipTrigger, GameObject _linkedGameObject, TooltipWindow _newTooltip)
+
+        private void LateUpdate()
         {
-            Canvas.ForceUpdateCanvases();
-            RectTransform _tooltipRect = _newTooltip.GetComponent<RectTransform>();
-            var (_tooltipBoundingBoxSize, _tooltipScreenPos) = 
-                GetScreenBoundingBoxAndCenter(_tooltipRect.GetComponentsInChildren<RectTransform>());
-            
-            // Check if the linked game object is a UI element (has RectTransform)
-            RectTransform _linkedRectTransform = _linkedGameObject.GetComponent<RectTransform>();
-            Vector2 _componentBoundingBoxSize;
-            Vector2 _componentScreenPos;
-
-            RectTransform _boundsOverride = _tooltipTrigger.TooltipBoundsOverride;
-
-            if (_boundsOverride != null)
+            if (_shown != null)
             {
-                // Anchor to a fixed rect (e.g. a resting slot) so animated visuals don't drag the tooltip.
-                (_componentBoundingBoxSize, _componentScreenPos) =
-                    GetScreenBoundingBoxAndCenter(new[] { _boundsOverride }, Camera.main);
+                Place();
             }
-            else if (_linkedRectTransform != null)
+        }
+
+        private void Show(HoverTooltipComponent _trigger)
+        {
+            if (_shown != null && _shown != _trigger)
             {
-                (_componentBoundingBoxSize, _componentScreenPos) =
-                    GetScreenBoundingBoxAndCenter(_linkedGameObject.GetComponentsInChildren<RectTransform>(), Camera.main);
+                GameLog.Info("ui", "ui.tooltip.close", "target", _shown.name, "reason", "switch");
             }
-            else
+            _shown = _trigger;
+            _anchorRects = _trigger.TooltipBoundsOverride == null && _trigger.GetComponent<RectTransform>() != null
+                ? _trigger.GetComponentsInChildren<RectTransform>() : null;
+            _anchorRenderers = _trigger.TooltipBoundsOverride == null && _anchorRects == null
+                ? _trigger.GetComponentsInChildren<Renderer>() : null;
+            _keptOnScreenLogged = false;
+
+            Fill(_trigger);
+            Place();
+            _bubble.FadeIn(FADE_IN, SLIDE);
+            for (int _i = 0; _i < _keywordCount; _i++) _keywordCards[_i].FadeIn(FADE_IN, SLIDE);
+
+            GameLog.Info("ui", "ui.tooltip.open", "target", _trigger.name, "title", _trigger.Title, "keywords", _keywordCount);
+        }
+
+        private void Fill(HoverTooltipComponent _trigger)
+        {
+            string _description = _trigger.Description;
+            Bubble().SetContent(_trigger.Title,
+                string.IsNullOrEmpty(_description) ? null : _linkFormatter.WrapLinksWithColor(_description, LINK_COLOR_HEX), false);
+
+            int _previous = _keywordCount;
+            _keywordCount = 0;
+            foreach (string _id in _linkFormatter.ExtractLinkIds(_description))
             {
-                // 3D Object - project all 8 world-AABB corners so the screen box matches the on-screen
-                // silhouette. Projecting only min/max is wrong under perspective (diagonal corners differ
-                // in depth and don't bound the projection).
-                Bounds _worldBounds = _linkedGameObject.transform.GetWorldBounds();
-                if (!_worldBounds.TryGetScreenBounds(Camera.main, out _componentBoundingBoxSize, out _componentScreenPos))
+                TooltipReference _reference = tooltipLinkParser != null ? tooltipLinkParser.GetTooltipReference(_id) : null;
+                if (_reference == null)
                 {
-                    // Fully behind the camera (or no camera) - fall back to the bounds-center projection.
-                    _componentScreenPos = RectTransformUtility.WorldToScreenPoint(Camera.main, _worldBounds.center);
-                    _componentBoundingBoxSize = Vector2.zero;
+                    GameLog.Warn("ui", "ui.tooltip.keyword.missing", "target", _trigger.name, "link", _id);
+                    continue;
                 }
+                TooltipWindow _card = KeywordCard(_keywordCount++);
+                _card.SetContent(_reference.title,
+                    string.IsNullOrEmpty(_reference.description) ? null : _linkFormatter.WrapLinksWithColor(_reference.description, LINK_COLOR_HEX), true);
+                if (_bubble.gameObject.activeSelf && _keywordCount > _previous) _card.FadeIn(FADE_IN, 0f);
             }
-            
-            Vector2 _wanted = _componentScreenPos
-                + _tooltipTrigger.tooltipOffsetDirection * (_componentBoundingBoxSize / 2f + _tooltipBoundingBoxSize / 2f)
-                + _tooltipTrigger.tooltipPixelOffset;
-            (Vector2 _placed, bool _flipped) = KeepOnScreen(_componentScreenPos, _componentBoundingBoxSize,
-                _tooltipBoundingBoxSize, _tooltipTrigger.tooltipOffsetDirection, _tooltipTrigger.tooltipPixelOffset,
-                new Vector2(Screen.width, Screen.height));
-            // Placed every frame while it grows: once per tooltip, or it fills the playtest log (~90 lines a hover).
-            if (_placed != _wanted && _keptOnScreenLogged != _newTooltip)
-            {
-                _keptOnScreenLogged = _newTooltip;
-                GameLog.Info("ui", "ui.tooltip.kept.on.screen", "target", _linkedGameObject.name, "flipped", _flipped,
-                    "from", _wanted, "to", _placed);
-            }
+            for (int _i = _keywordCount; _i < _previous; _i++) if (_keywordCards[_i] != null) _keywordCards[_i].FadeOut(FADE_OUT);
+        }
 
-            _tooltipRect.position = _placed;
+        private void Hide(string _reason)
+        {
+            if (_timeline.Hide(Time.unscaledTime) == TooltipAction.Hide)
+            {
+                HideVisuals(_reason);
+            }
+        }
+
+        private void HideVisuals(string _reason)
+        {
+            if (!ReferenceEquals(_shown, null))
+            {
+                GameLog.Info("ui", "ui.tooltip.close", "target", _shown != null ? _shown.name : "destroyed", "reason", _reason);
+            }
+            _shown = null;
+            _anchorRects = null;
+            _anchorRenderers = null;
+            if (_bubble != null) _bubble.FadeOut(FADE_OUT);
+            for (int _i = 0; _i < _keywordCount; _i++) if (_keywordCards[_i] != null) _keywordCards[_i].FadeOut(FADE_OUT);
+            _keywordCount = 0;
+        }
+
+        private TooltipWindow Bubble()
+        {
+            if (_bubble == null)
+            {
+                _bubble = Instantiate(tooltipPrefab, tooltipCanvas);
+                _bubble.name = "TooltipBubble";
+                _bubble.gameObject.SetActive(false);
+            }
+            return _bubble;
+        }
+
+        private TooltipWindow KeywordCard(int _index)
+        {
+            while (_keywordCards.Count <= _index)
+            {
+                TooltipWindow _card = Instantiate(tooltipPrefab, tooltipCanvas);
+                _card.name = "TooltipKeyword" + _keywordCards.Count;
+                _card.gameObject.SetActive(false);
+                _keywordCards.Add(_card);
+            }
+            return _keywordCards[_index];
+        }
+
+        private void Place()
+        {
+            float _scale = _canvas != null ? _canvas.scaleFactor : 1f;
+            Vector2 _screen = new Vector2(Screen.width, Screen.height);
+            (Vector2 _triggerSize, Vector2 _triggerCentre) = TriggerScreenBox();
+            Vector2 _bubbleSize = _bubble.Rect.rect.size * _scale;
+            Vector2 _direction = _shown.tooltipOffsetDirection.sqrMagnitude > 0f ? _shown.tooltipOffsetDirection.normalized : Vector2.up;
+
+            (Vector2 _placed, bool _flipped) = KeepOnScreen(_triggerCentre, _triggerSize, _bubbleSize, _direction,
+                _shown.tooltipPixelOffset, _screen);
+            if (_flipped && !_keptOnScreenLogged)
+            {
+                _keptOnScreenLogged = true;
+                GameLog.Info("ui", "ui.tooltip.kept.on.screen", "target", _shown.name, "to", _placed);
+            }
+            _bubble.Rect.position = _placed + Vector2.down * (_bubble.Slide * _scale);
+
+            if (_keywordCount == 0)
+            {
+                return;
+            }
+            if (_cardSizes.Length < _keywordCount) _cardSizes = new Vector2[_keywordCount];
+            for (int _i = 0; _i < _keywordCount; _i++) _cardSizes[_i] = _keywordCards[_i].Rect.rect.size * _scale;
+            Vector2[] _centres = KeywordCardCentres(_placed, _bubbleSize, _cardSizes, _keywordCount, KEYWORD_GAP * _scale, _screen);
+            for (int _i = 0; _i < _keywordCount; _i++)
+            {
+                _keywordCards[_i].Rect.position = _centres[_i] + Vector2.down * (_keywordCards[_i].Slide * _scale);
+            }
         }
 
         /// <summary>
@@ -239,89 +280,90 @@ namespace TooltipSystem
                 Mathf.Clamp(_centre.y, _half.y, Mathf.Max(_half.y, _screen.y - _half.y))), _flipped);
         }
 
-        private (Vector2 screenBoundingBoxSize, Vector2 screenPos) GetScreenBoundingBoxAndCenter(RectTransform[] _targetRects, Camera _camera = null)
+        /// <summary>
+        /// Centres (screen pixels, y up) of the keyword cards beside a bubble: right of it, tops aligned with the
+        /// bubble's top and stacked down; on its left when the right side of the screen has no room; each kept inside
+        /// the screen vertically.
+        /// </summary>
+        public static Vector2[] KeywordCardCentres(Vector2 _bubbleCentre, Vector2 _bubbleSize, Vector2[] _cardSizes,
+            int _count, float _gap, Vector2 _screen)
         {
-            if (_targetRects.Length == 0)
-            {
-                return (Vector2.zero, Vector2.zero);
-            }
+            var _centres = new Vector2[_count];
+            float _widest = 0f;
+            for (int _i = 0; _i < _count; _i++) _widest = Mathf.Max(_widest, _cardSizes[_i].x);
+            bool _right = _bubbleCentre.x + _bubbleSize.x / 2f + _gap + _widest <= _screen.x;
 
-            Canvas parentCanvas = _targetRects[0].GetComponentInParent<Canvas>();
-            if (!parentCanvas)
+            float _top = _bubbleCentre.y + _bubbleSize.y / 2f;
+            for (int _i = 0; _i < _count; _i++)
             {
-                return (Vector2.zero, Vector2.zero);
+                Vector2 _size = _cardSizes[_i];
+                float _x = _right
+                    ? _bubbleCentre.x + _bubbleSize.x / 2f + _gap + _size.x / 2f
+                    : _bubbleCentre.x - _bubbleSize.x / 2f - _gap - _size.x / 2f;
+                float _y = Mathf.Clamp(_top - _size.y / 2f, _size.y / 2f, Mathf.Max(_size.y / 2f, _screen.y - _size.y / 2f));
+                _centres[_i] = new Vector2(_x, _y);
+                _top -= _size.y + _gap;
             }
-
-            Vector3 _min = Vector3.positiveInfinity;
-            Vector3 _max = Vector3.negativeInfinity;
-            Vector3[] _corners = new Vector3[4];
-
-            // WorldSpace: use WorldToScreenPoint
-            if (parentCanvas.renderMode == RenderMode.WorldSpace)
-            {
-                foreach (var _rect in _targetRects)
-                {
-                    _rect.GetWorldCorners(_corners);
-                    foreach (var _corner in _corners)
-                    {
-                        _min = Vector3.Min(_min, _corner);
-                        _max = Vector3.Max(_max, _corner);
-                    }
-                }
-                Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
-                Vector2 _screenMin = RectTransformUtility.WorldToScreenPoint(_camera, _min);
-                Vector2 _screenMax = RectTransformUtility.WorldToScreenPoint(_camera, _max);
-                Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_screenMax.x - _screenMin.x), Mathf.Abs(_screenMax.y - _screenMin.y));
-                Vector2 _screenPos = RectTransformUtility.WorldToScreenPoint(_camera, _boundingBoxCenter);
-                return (_screenBoundingBoxSize, _screenPos);
-            }
-            // ScreenSpace Overlay or Camera: use local positions in the Canvas
-            else
-            {
-                foreach (var _rect in _targetRects)
-                {
-                    _rect.GetWorldCorners(_corners);
-                    for (int i = 0; i < 4; i++)
-                    {
-                        // Convert corners to Canvas coordinates
-                        Vector2 canvasPos = Vector2.zero;
-                        if (parentCanvas.renderMode == RenderMode.ScreenSpaceCamera && parentCanvas.worldCamera != null)
-                        {
-                            canvasPos = RectTransformUtility.WorldToScreenPoint(parentCanvas.worldCamera, _corners[i]);
-                        }
-                        else // ScreenSpaceOverlay
-                        {
-                            canvasPos = RectTransformUtility.WorldToScreenPoint(null, _corners[i]);
-                        }
-                        _min = Vector3.Min(_min, canvasPos);
-                        _max = Vector3.Max(_max, canvasPos);
-                    }
-                }
-                Vector3 _boundingBoxCenter = (_min + _max) * 0.5f;
-                Vector2 _screenBoundingBoxSize = new Vector2(Mathf.Abs(_max.x - _min.x), Mathf.Abs(_max.y - _min.y));
-                Vector2 _screenPos = new Vector2(_boundingBoxCenter.x, _boundingBoxCenter.y);
-                return (_screenBoundingBoxSize, _screenPos);
-            }
+            return _centres;
         }
-    }
 
-    public class TooltipInstanceInfo
-    {
-        public GameObject linkedGameObject;
-        public ITooltipTrigger linkedTooltipTrigger;
-        public TooltipWindow tooltipWindow;
-        public bool isMouseOverLinkedGameObject = true;
-        public bool isMouseOverTooltipWindow = false;
-
-        public float tooltipNoHoverTimer;
-        public float tooltipNoHoverTime = 0; // Time before tooltip closes when not hovered
-        
-        public TooltipInstanceInfo(GameObject _linkedGameObject, TooltipWindow _tooltipWindow)
+        private (Vector2 size, Vector2 centre) TriggerScreenBox()
         {
-            linkedGameObject = _linkedGameObject;
-            linkedTooltipTrigger = _linkedGameObject.GetComponent<ITooltipTrigger>();
-            tooltipWindow = _tooltipWindow;
-            tooltipNoHoverTimer = tooltipNoHoverTime;
+            Camera _camera = Camera.main;
+            if (_shown.TooltipBoundsOverride != null)
+            {
+                // Anchor to a fixed rect (e.g. a resting slot) so animated visuals don't drag the tooltip.
+                return RectsScreenBox(_shown.TooltipBoundsOverride, null, _camera);
+            }
+            if (_anchorRects != null)
+            {
+                return RectsScreenBox(null, _anchorRects, _camera);
+            }
+
+            // 3D object: project all 8 world-AABB corners so the screen box matches the on-screen silhouette.
+            Bounds _worldBounds = new Bounds(_shown.transform.position, Vector3.zero);
+            bool _first = true;
+            foreach (Renderer _renderer in _anchorRenderers)
+            {
+                if (_renderer == null) continue;
+                if (_first) { _worldBounds = _renderer.bounds; _first = false; }
+                else _worldBounds.Encapsulate(_renderer.bounds);
+            }
+            if (!_worldBounds.TryGetScreenBounds(_camera, out Vector2 _size, out Vector2 _centre))
+            {
+                // Fully behind the camera (or no camera) - fall back to the bounds-centre projection.
+                return (Vector2.zero, RectTransformUtility.WorldToScreenPoint(_camera, _worldBounds.center));
+            }
+            return (_size, _centre);
+        }
+
+        private (Vector2 size, Vector2 centre) RectsScreenBox(RectTransform _single, RectTransform[] _rects, Camera _camera)
+        {
+            RectTransform _firstRect = _single != null ? _single : _rects.Length > 0 ? _rects[0] : null;
+            Canvas _parentCanvas = _firstRect != null ? _firstRect.GetComponentInParent<Canvas>() : null;
+            if (_parentCanvas == null)
+            {
+                return (Vector2.zero, Vector2.zero);
+            }
+            Camera _projection = _parentCanvas.renderMode == RenderMode.WorldSpace ? _camera
+                : _parentCanvas.renderMode == RenderMode.ScreenSpaceCamera ? _parentCanvas.worldCamera : null;
+
+            Vector2 _min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            Vector2 _max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            int _count = _single != null ? 1 : _rects.Length;
+            for (int _r = 0; _r < _count; _r++)
+            {
+                RectTransform _rect = _single != null ? _single : _rects[_r];
+                if (_rect == null) continue;
+                _rect.GetWorldCorners(_corners);
+                for (int _c = 0; _c < 4; _c++)
+                {
+                    Vector2 _point = RectTransformUtility.WorldToScreenPoint(_projection, _corners[_c]);
+                    _min = Vector2.Min(_min, _point);
+                    _max = Vector2.Max(_max, _point);
+                }
+            }
+            return float.IsInfinity(_min.x) ? (Vector2.zero, Vector2.zero) : (_max - _min, (_min + _max) / 2f);
         }
     }
 }

@@ -221,6 +221,11 @@ and then say which extension would cover it (and add it to the backlog table).
 - Separate: **game bugs** (with root cause if proven — instrument with a tagged log before theorising),
   **tool problems** (fix them), and **design observations** (overlaps, layout — report only, design is owned by the
   game designer).
+- **A finished visible feature proven by the run: send the proof to Poyo unasked, before writing the answer.** A short
+  clip (ffmpeg `-ss/-t`, h264 crf 24, < 10 MB) to his Discord DM through the Robot bot (it also lands in the Clawd
+  « Médias » tab), and the key capture with the Médias tab's `send.py`; one sentence each (task, what to look at).
+  Never work / tuning / network runs. Recipes: memories `reference_discord_dm_poyo_videos`, `reference_medias_tab_send`.
+  The `media_reminder` hook reminds it after every filmed PASS (forgotten on the tooltip rework, 2026-11-09).
 - Never commit `AutoplayRuns/` or editor import noise; stage explicit files only, and only when the user says so.
 
 ## 6. Work merged → park the worktree (reversible)

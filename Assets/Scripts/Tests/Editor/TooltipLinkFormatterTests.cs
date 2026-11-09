@@ -49,5 +49,21 @@ namespace Tests.Editor
                 "<color=#ff0000><link=x>X</link></color>",
                 _formatter.WrapLinksWithColor("<link=x>X</link>", "ff0000"));
         }
+
+        [Test]
+        public void LinkIds_AreListedInReadingOrder_EachOnce()
+        {
+            CollectionAssert.AreEqual(
+                new[] { "powercomponent_3_41_0", "corruption" },
+                _formatter.ExtractLinkIds(
+                    "Texte.\n<link=powercomponent_3_41_0>En chaîne</link>, <link=\"corruption\">Corruption</link> <link=corruption>x</link>"));
+        }
+
+        [Test]
+        public void LinkIds_OfATextWithoutLinks_AreEmpty()
+        {
+            Assert.IsEmpty(_formatter.ExtractLinkIds("plain description, no links"));
+            Assert.IsEmpty(_formatter.ExtractLinkIds(null));
+        }
     }
 }

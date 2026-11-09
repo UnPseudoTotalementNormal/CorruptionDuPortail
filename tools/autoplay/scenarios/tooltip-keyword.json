@@ -1,0 +1,54 @@
+{
+  "name": "tooltip-keyword",
+  "goal": "Hover bubble (mockups infobulles v1: A1 parchment, T1 timing, K2 keyword cards, P0 beside the trigger): the host (filmed at 1280 x 720, 30 fps) holds the Mage Occulte; at night the real-input tour rests the virtual mouse on a power object whose text has a keyword (Corruption Ciblée -> Concentration): the parchment bubble opens after the 0.3 s rest with the keyword card beside it (capture tour-tooltip, 0.2 s after the opening), and closes once the pointer leaves (GameLog ui.tooltip.open / ui.tooltip.close). Filmed at 30 fps with the bubble left 1.5 s on screen, for the fade in and out.",
+  "mode": "net",
+  "clients": 1,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 900,
+  "video": true,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes",
+    "-autoplay-force-roles",
+    "Mage",
+    "-autoplay-role-holder",
+    "host",
+    "-autoplay-video-fps",
+    "30",
+    "-autoplay-tour-dwell",
+    "1.5"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "tour.tooltip",
+      "detail": "^ok .*PowerBar",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "event",
+      "kind": "tour.error",
+      "process": "any",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Infobulles au survol : refonte</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  @font-face { font-family: "Liberation"; src: url("../fonts/LiberationSans.ttf"); }
+  .ib-bg { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; pointer-events: none; user-select: none; }
+  .ib-hit { position: absolute; }
+  .screen { touch-action: manipulation; }
+
+  /* one bubble */
+  .ib-tip { position: absolute; left: 0; top: 0; width: 380px; pointer-events: none; z-index: 5; transform-origin: 50% 50%; }
+  .ib-tip.ib-short { width: auto; max-width: 380px; }
+  .ib-t { text-align: center; }
+  .ib-b { margin-top: 8px; }
+  .ib-b p { margin: 0 0 10px; }
+  .ib-b p:last-child { margin-bottom: 0; }
+  .ib-kw { white-space: nowrap; }
+
+  /* X0 today: black box, default font, underlined title, blue links */
+  .ib-x0 { background: #000; color: #fff; font-family: "Liberation", sans-serif; padding: 14px 20px 18px; }
+  .ib-x0 .ib-t { font-size: 30px; text-decoration: underline; line-height: 1.15; }
+  .ib-x0 .ib-b { font-size: 24px; line-height: 1.22; text-align: justify; }
+  .ib-x0 .ib-kw { color: #6fb5d1; }
+  .ib-x0 .ib-sep { height: 2px; background: #fff; margin: 12px 0 8px; opacity: .6; }
+
+  /* A1 parchment slip */
+  .ib-a1 { background: url("../common/parchment.webp") center / 100% 100%; color: #2b1d12; padding: 22px 28px 24px;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .75)); }
+  .ib-a1 .ib-t { font: 31px/1.1 "Fell", serif; color: #3a2414; }
+  .ib-a1 .ib-b { font: 23px/1.28 "Garamond", serif; }
+  .ib-a1 .ib-kw { color: #7a1f12; }
+  .ib-a1 .ib-sep { height: 14px; background: url("../attribution-roles/img/divider.webp") center / contain no-repeat; margin: 10px 0 6px; opacity: .8; }
+
+  /* A2 dark leather, gold title */
+  .ib-a2 { background: url("../common/leather.webp") center / 100% 100%; color: #efe3d0; padding: 22px 28px 24px;
+    filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .8)); }
+  .ib-a2 .ib-t { font: 31px/1.1 "Fell", serif; color: #e8a33c; }
+  .ib-a2 .ib-b { font: 23px/1.28 "Garamond", serif; }
+  .ib-a2 .ib-kw { color: #e8a33c; }
+  .ib-a2 .ib-sep { height: 1px; background: #e8a33c; opacity: .45; margin: 14px 0 10px; }
+
+  /* A3 no box: text on the table, like the counters and the day texts */
+  .ib-a3 { color: #fff3da; padding: 6px 4px; text-shadow: 0 2px 4px #000, 0 0 14px rgba(0, 0, 0, .95), 0 0 26px rgba(0, 0, 0, .9); }
+  .ib-a3::before { content: ""; position: absolute; inset: -26px -34px; z-index: -1;
+    background: radial-gradient(closest-side, rgba(0, 0, 0, .78), rgba(0, 0, 0, .55) 70%, rgba(0, 0, 0, 0)); }
+  .ib-a3 .ib-t { font: 33px/1.1 "Fell", serif; }
+  .ib-a3 .ib-b { font: 24px/1.28 "Garamond", serif; }
+  .ib-a3 .ib-kw { color: #e8a33c; }
+  .ib-a3 .ib-sep { height: 1px; background: #fff3da; opacity: .35; margin: 12px 0 8px; }
+
+  /* keyword under the text (K1) */
+  .ib-kt { font: 25px/1.1 "Fell", serif; margin-bottom: 4px; }
+  .ib-a1 .ib-kt { color: #7a1f12; }
+  .ib-a2 .ib-kt, .ib-a3 .ib-kt { color: #e8a33c; }
+  .ib-x0 .ib-kt { color: #6fb5d1; font: 24px "Liberation", sans-serif; }
+  .ib-kb { font: 21px/1.28 "Garamond", serif; }
+  .ib-x0 .ib-kb { font: 22px/1.22 "Liberation", sans-serif; text-align: justify; }
+  /* hoverable keywords (K3) */
+  .ib-k3 .ib-kw { text-decoration: underline dotted; text-underline-offset: 4px; }
+  /* side keyword card (K2, K3) and nested bubble (K0): smaller */
+  .ib-tip.ib-side { width: 300px; }
+  .ib-tip.ib-side .ib-t { font-size: 25px; }
+  .ib-tip.ib-side .ib-b { font-size: 20px; }
+
+  .ib-cursor { position: absolute; left: 0; top: 0; width: 26px; height: 38px; z-index: 9; pointer-events: none; display: none; }
+  .ib-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px;
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ib-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .ib-bar button.on { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Les infobulles au survol, refaites</h1>
+  <p><b>Ce qui change.</b> La bulle qui s'ouvre sur un objet de pouvoir, un compteur ou un portrait du liège : son aspect, le moment où elle s'ouvre et se ferme, les mots-clés (« En chaîne », « Concentration »), et où elle se pose. Survole les objets dans chaque cadre (au téléphone : touche-les), ou lance « Démo ».</p>
+  <p><b>Ailleurs.</b> <a href="https://www.megacrit.com/">Slay the Spire</a> : au survol d'une carte, chaque mot-clé a son encadré posé à côté, sans second survol. <a href="https://forum.paradoxplaza.com/forum/developer-diary/ck3-dev-diary-16-tutorials-and-tooltips-and-encyclopedias-oh-my.1345581/">Crusader Kings III</a> : infobulles dans les infobulles, qui se figent après un délai (ou au clic molette) pour qu'on puisse y entrer. Windows et les navigateurs : un court délai avant la première bulle, puis on passe d'un élément voisin à l'autre sans attendre.</p>
+  <p><b>Aujourd'hui.</b> La bulle s'ouvre dès qu'on frôle un objet (balayer la rangée la fait clignoter), grossit depuis son centre en 0,35 s en glissant vers sa place, et se ferme dès qu'on sort. Boîte noire, police par défaut, titre souligné, liens bleus. Pour lire un mot-clé il faut monter la souris dans la bulle, et la seconde bulle s'ouvre par-dessus la table, au-dessus de la première.</p>
+  <p><b>La scène.</b> Première nuit, tu joues le Mage Occulte : tes deux objets de pouvoir sont devant toi (la main, « Étreintes des ombres » ; la gueule, « Corruption Ciblée »). Tu hésites, tu passes la souris de l'un à l'autre, puis sur les compteurs en haut à droite.</p>
+  <p><b>Sans question.</b> Une seule bulle réutilisée au lieu d'en créer et détruire une à chaque survol ; sa place calculée une fois par image sans reconstruire tout l'écran ; deux bugs corrigés (fermeture qui plante quand la bulle n'est plus suivie, abonnements qui s'empilent à chaque survol) ; la description d'un pouvoir écrite à un seul endroit (aujourd'hui trois copies) ; la bulle se ferme quand un choix de cible s'ouvre ; ouvertures et fermetures dans les logs de playtest. Les textes ne changent pas.</p>
+</header>
+
+<section>
+  <h2>1. L'aspect de la bulle</h2>
+  <div class="ib-bar" data-group="look"><button data-demo>▶ Démo</button><button data-slow>Ralenti</button></div>
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">La boîte noire d'aujourd'hui, police par défaut, liens bleus.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"x0","timing":"t1","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Fiche de parchemin (par défaut)</span></div>
+    <p class="vdesc">Le parchemin du grimoire, titre en Fell, texte à l'encre en Garamond. Elle se lit comme une note posée sur la table.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Cuir sombre</span></div>
+    <p class="vdesc">La couverture de cuir du livre des personnages, titre de la couleur des compteurs. Plus discrète sur la table sombre.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a2","timing":"t1","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Sans boîte</span></div>
+    <p class="vdesc">Le texte seul sur la table, avec l'ombre des textes du jour. Rien ne cache le bois, mais il se lit moins bien sur une carte claire.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a3","timing":"t1","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Quand elle s'ouvre et se ferme</h2>
+  <p>Lance la démo : le curseur s'arrête sur la main, passe à la gueule, balaie vite la rangée du bas, puis monte aux compteurs.</p>
+  <div class="ib-bar" data-group="timing"><button data-demo>▶ Démo</button><button data-slow>Ralenti</button></div>
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Ouverte dès le premier frôlement, elle grossit depuis son centre et glisse vers sa place ; fermée dès qu'on sort.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t0","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Petit délai, puis passage direct (par défaut)</span></div>
+    <p class="vdesc">Elle attend 0,3 s sur l'objet avant de s'ouvrir en fondu, ce qui évite le clignotement quand on balaie. Une fois une bulle ouverte, l'objet voisin ouvre la sienne sans attendre.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Tout de suite, en fondu</span></div>
+    <p class="vdesc">Comme aujourd'hui sans délai, mais un fondu court à la place du grossissement : elle apparaît déjà à sa place.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t2","kw":"k0","place":"p0","open":"hand"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Les mots-clés d'un pouvoir</h2>
+  <p>« Corruption Ciblée » a la règle « Concentration ». La démo ouvre la bulle puis va lire le mot-clé.</p>
+  <div class="ib-bar" data-group="kw"><button data-demo>▶ Démo</button><button data-slow>Ralenti</button></div>
+  <div class="variant" data-id="K0">
+    <div class="vhead"><span class="vid">K0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">On monte la souris dans la bulle jusqu'au mot : sa bulle s'ouvre au-dessus de la première.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k0","place":"p0","open":"ball","kwopen":"conc"}'></div></div>
+  </div>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Expliqué dans la même bulle (par défaut)</span></div>
+    <p class="vdesc">La règle est écrite sous la description, tout se lit d'un coup et la souris n'a plus à entrer dans la bulle.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k1","place":"p0","open":"ball"}'></div></div>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Encadré à côté, tout de suite</span></div>
+    <p class="vdesc">Comme Slay the Spire : chaque mot-clé a sa petite fiche posée à côté de la bulle, ouverte en même temps.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k2","place":"p0","open":"ball"}'></div></div>
+  </div>
+  <div class="variant" data-id="K3">
+    <div class="vhead"><span class="vid">K3</span><span class="vname">Au survol du mot, à côté</span></div>
+    <p class="vdesc">Le mot est souligné en pointillés ; le survoler ouvre sa fiche à côté, à sa hauteur. La bulle attend 0,4 s quand on la quitte, le temps d'aller lire la fiche.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k3","place":"p0","open":"ball","kwopen":"conc"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4. Où elle se pose</h2>
+  <div class="ib-bar" data-group="place"><button data-demo>▶ Démo</button><button data-slow>Ralenti</button></div>
+  <div class="variant" data-id="P0">
+    <div class="vhead"><span class="vid">P0</span><span class="vname">Collée à l'objet (actuel, par défaut)</span></div>
+    <p class="vdesc">Au-dessus de l'objet, retournée en dessous quand elle sortirait de l'écran (compteurs, portraits du liège).</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k1","place":"p0","open":"ball"}'></div></div>
+  </div>
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Toujours au même endroit</span></div>
+    <p class="vdesc">Dans la marge gauche, à côté de la table : l'œil sait où lire et la bulle ne cache jamais une carte.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k1","place":"p1","open":"ball"}'></div></div>
+  </div>
+  <div class="variant" data-id="P2">
+    <div class="vhead"><span class="vid">P2</span><span class="vname">Au bout du curseur</span></div>
+    <p class="vdesc">Elle suit la souris, juste au-dessus et à droite de la pointe.</p>
+    <div class="screen"><div class="stage" data-cfg='{"look":"a1","timing":"t1","kw":"k1","place":"p2","open":"ball"}'></div></div>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque sur l'ensemble ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  // Night capture of the game (1600 x 900): the two power objects, the counters, the cork portraits.
+  const TRIG = {
+    hand:  { r: [628, 728, 716, 852] },
+    ball:  { r: [774, 746, 904, 890] },
+    robot: { r: [1416, 104, 1540, 176] },
+    corr:  { r: [1424, 208, 1582, 270] },
+    fake:  { r: [1150, 114, 1230, 188] },
+  };
+  // Real texts of the game (prefabs ChainedByTheShadows / TargetedCorruption, PCChainer / PCConcentrated, GameScene, CharactersBarObject).
+  const KW = {
+    chain: { t: "En chaîne", b: "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à 2 fois." },
+    conc: { t: "Concentration", b: "Termine le tour ; si « Étreintes des ombres » n'est pas utilisé, il apprend également le rôle du joueur, puis finit son tour." },
+  };
+  const TIPS = {
+    hand: { t: "Étreintes des ombres", b: ["Chaque nuit, il peut essayer de deviner le rôle d'un joueur pour le corrompre. S'il réussit, il peut recommencer une deuxième fois."], kw: ["chain"] },
+    ball: { t: "Corruption Ciblée", b: ["Il corrompt un joueur.", "S'il n'a pas utilisé « Étreintes des ombres » ce tour-ci, il apprend également le rôle du joueur, puis finit son tour."], kw: ["conc"] },
+    robot: { t: "Nombre de personnes ayant interagi avec le robot cette nuit" },
+    corr: { t: "Nombre total de corrompus" },
+    fake: { t: "Rôle factice", b: ["Personne ne joue ce rôle dans cette partie."] },
+  };
+  const LEFT_MARGIN = { x: 18, y: 300, w: 300 };   // P1: the margin left of the table, above the power bar
+  const CURSOR = '<svg viewBox="0 0 26 38" width="26" height="38"><path d="M2 2 L2 30 L9 23 L14 35 L19 33 L14 21 L24 21 Z" fill="#fff" stroke="#000" stroke-width="2" stroke-linejoin="round"/></svg>';
+
+  const stages = [];
+  let slow = 1;
+
+  const center = r => ({ x: (r[0] + r[2]) / 2, y: (r[1] + r[3]) / 2 });
+  const inR = (p, r, pad = 0) => p && p.x >= r[0] - pad && p.x <= r[2] + pad && p.y >= r[1] - pad && p.y <= r[3] + pad;
+
+  function tipHtml(key, cfg) {
+    const d = TIPS[key];
+    let h = '<div class="ib-t">' + d.t + "</div>";
+    if (!d.b) return h;
+    h += '<div class="ib-b">' + d.b.map(s => "<p>" + s + "</p>").join("");
+    if (d.kw && cfg.kw !== "k1") h += "<p>" + d.kw.map(k => '<span class="ib-kw" data-kw="' + k + '">' + KW[k].t + "</span>").join(", ") + "</p>";
+    h += "</div>";
+    if (d.kw && cfg.kw === "k1") d.kw.forEach(k => { h += '<div class="ib-sep"></div><div class="ib-kt">' + KW[k].t + '</div><div class="ib-kb">' + KW[k].b + "</div>"; });
+    return h;
+  }
+
+  function makeTip(S, html, side) {
+    const el = document.createElement("div");
+    el.className = "ib-tip ib-" + S.cfg.look + " ib-" + S.cfg.kw + (side ? " ib-side" : "");
+    el.innerHTML = html;
+    if (!el.querySelector(".ib-b") && !side) el.classList.add("ib-short");
+    S.stage.appendChild(el);
+    return el;
+  }
+
+  // appear / disappear, per timing variant
+  function animIn(S, el) {
+    if (S.instant) return;   // opened at rest on load: already in place (overview, captures)
+    const t = S.cfg.timing;
+    if (t === "t0") {
+      el.style.transform = "scale(0)";
+      el.getBoundingClientRect();
+      el.style.transition = "transform " + 350 * slow + "ms cubic-bezier(.22,1,.36,1)";
+      el.style.transform = "scale(1)";
+    } else {
+      const ms = (t === "t1" ? 120 : 80) * slow;
+      el.style.opacity = 0; el.style.translate = t === "t1" ? "0 6px" : "0 0";
+      el.getBoundingClientRect();
+      el.style.transition = "opacity " + ms + "ms ease-out, translate " + ms + "ms ease-out";
+      el.style.opacity = 1; el.style.translate = "0 0";
+    }
+  }
+  function animOut(S, el) {
+    const t = S.cfg.timing;
+    if (t === "t0") {
+      el.style.transition = "transform " + 350 * slow + "ms cubic-bezier(.22,1,.36,1)";
+      el.style.transform = "scale(0)";
+      setTimeout(() => el.remove(), 360 * slow);
+    } else {
+      const ms = (t === "t1" ? 100 : 60) * slow;
+      el.style.transition = "opacity " + ms + "ms ease-in";
+      el.style.opacity = 0;
+      setTimeout(() => el.remove(), ms + 20);
+    }
+  }
+
+  function scaleOf(el) {
+    const m = getComputedStyle(el).transform;
+    if (!m || m === "none") return 1;
+    const v = m.match(/matrix\(([^,]+)/);
+    return v ? Math.abs(parseFloat(v[1])) : 1;
+  }
+
+  // Today's placement: beside the trigger in its direction (up), flipped on an axis where it does not fit, then clamped.
+  function keepOnScreen(tc, ts, ws, dir) {
+    const gap = { x: ts.x / 2 + ws.x / 2, y: ts.y / 2 + ws.y / 2 };
+    let c = { x: tc.x + dir.x * gap.x, y: tc.y + dir.y * gap.y };
+    const out = { x: c.x - ws.x / 2 < 0 || c.x + ws.x / 2 > 1600, y: c.y - ws.y / 2 < 0 || c.y + ws.y / 2 > 900 };
+    if (out.x && dir.x) dir = { x: -dir.x, y: dir.y };
+    if (out.y && dir.y) dir = { x: dir.x, y: -dir.y };
+    c = { x: tc.x + dir.x * gap.x, y: tc.y + dir.y * gap.y };
+    return { x: Math.min(Math.max(c.x, ws.x / 2), 1600 - ws.x / 2), y: Math.min(Math.max(c.y, ws.y / 2), 900 - ws.y / 2) };
+  }
+
+  function placeMain(S) {
+    const M = S.main, el = M.el;
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let x, y;
+    if (S.cfg.place === "p1") {
+      x = LEFT_MARGIN.x; y = LEFT_MARGIN.y;
+      el.style.width = LEFT_MARGIN.w + "px";
+    } else if (S.cfg.place === "p2" && S.ptr) {
+      x = Math.min(Math.max(S.ptr.x + 18, 8), 1600 - w - 8);
+      y = Math.min(Math.max(S.ptr.y - h - 14, 8), 900 - h - 8);
+    } else if (S.cfg.place === "p2" && M.last) {
+      x = M.last.x; y = M.last.y;
+    } else {
+      const r = TRIG[M.key].r;
+      // today the size is measured on the growing bubble: it slides outward while it grows (T0)
+      const k = S.cfg.timing === "t0" ? scaleOf(el) : 1;
+      const c = keepOnScreen(center(r), { x: r[2] - r[0], y: r[3] - r[1] }, { x: w * k, y: h * k }, { x: 0, y: -1 });
+      x = c.x - w / 2; y = c.y - h / 2;
+    }
+    el.style.left = x + "px"; el.style.top = y + "px";
+    M.last = { x, y };
+    M.rect = [x, y, x + w, y + h];
+  }
+
+  function placeSide(S) {
+    const M = S.main;
+    S.sides.forEach((sd, i) => {
+      const el = sd.el, w = el.offsetWidth, h = el.offsetHeight;
+      let x, y;
+      if (S.cfg.kw === "k0") {
+        const c = keepOnScreen(center(M.rect), { x: M.rect[2] - M.rect[0], y: M.rect[3] - M.rect[1] }, { x: w, y: h }, { x: 0, y: -1 });
+        x = c.x - w / 2; y = c.y - h / 2;
+      } else {
+        x = M.rect[2] + 10;
+        if (x + w > 1592) x = M.rect[0] - 10 - w;
+        y = S.cfg.kw === "k3" && sd.anchor ? sd.anchor - 20 : M.rect[1] + i * (h + 10);
+        y = Math.min(Math.max(y, 8), 900 - h - 8);
+      }
+      el.style.left = x + "px"; el.style.top = y + "px";
+      sd.rect = [x, y, x + w, y + h];
+    });
+  }
+
+  function kwUnder(S, p) {
+    if (!S.main || !p) return null;
+    for (const sp of S.main.el.querySelectorAll(".ib-kw")) {
+      const r = [sp.offsetLeft, sp.offsetTop, sp.offsetLeft + sp.offsetWidth, sp.offsetTop + sp.offsetHeight];
+      const m = S.main.rect;
+      if (inR(p, [m[0] + r[0], m[1] + r[1], m[0] + r[2], m[1] + r[3]], 4)) return { id: sp.dataset.kw, y: m[1] + r[1] };
+    }
+    return null;
+  }
+  function kwCenter(S, id) {
+    if (!S.main) return null;
+    const sp = S.main.el.querySelector('.ib-kw[data-kw="' + id + '"]');
+    if (!sp) return center(S.main.rect);
+    return { x: S.main.rect[0] + sp.offsetLeft + sp.offsetWidth / 2, y: S.main.rect[1] + sp.offsetTop + sp.offsetHeight / 2 };
+  }
+
+  function openMain(S, key, now) {
+    const el = makeTip(S, tipHtml(key, S.cfg));
+    S.main = { key, el, born: now };
+    placeMain(S);
+    if (S.cfg.kw === "k2" && TIPS[key].kw) TIPS[key].kw.forEach(k => openSide(S, k, null));
+    animIn(S, el);
+  }
+  function closeMain(S, now) {
+    if (!S.main) return;
+    animOut(S, S.main.el);
+    S.sides.forEach(sd => animOut(S, sd.el));
+    S.sides = []; S.main = null; S.lastClose = now; S.leaveSince = null;
+  }
+  function openSide(S, id, anchor) {
+    const el = makeTip(S, '<div class="ib-t">' + KW[id].t + '</div><div class="ib-b"><p>' + KW[id].b + "</p></div>", true);
+    S.sides.push({ id, el, anchor });
+    placeSide(S);
+    animIn(S, el);
+  }
+  function closeSides(S) { S.sides.forEach(sd => animOut(S, sd.el)); S.sides = []; }
+
+  function tick(S, now) {
+    const p = S.ptr;
+    let trig = null;
+    if (p) for (const k in TRIG) if (inR(p, TRIG[k].r)) trig = k;
+    const onMain = S.main && inR(p, S.main.rect);
+    const onSide = S.sides.some(sd => inR(p, sd.rect));
+    const nested = S.cfg.kw === "k0" || S.cfg.kw === "k3";
+
+    // keywords you hover (K0 today, K3)
+    if (S.main && nested) {
+      const kw = onMain ? kwUnder(S, p) : null;
+      if (kw && !(S.sides[0] && S.sides[0].id === kw.id)) { closeSides(S); openSide(S, kw.id, kw.y); }
+      else if (!kw && S.sides.length && !onSide && !onMain) {
+        if (S.cfg.kw === "k0") closeSides(S);
+        else if (!S.sideLeave) S.sideLeave = now;
+        else if (now - S.sideLeave > 400 * slow) { closeSides(S); S.sideLeave = null; }
+      }
+      if (onMain || onSide) S.sideLeave = null;
+    }
+
+    let want = trig;
+    if (!want && S.main && (onMain || onSide)) want = S.main.key;
+    if (!want && S.main && S.cfg.kw === "k3" && S.sideLeave && now - S.sideLeave <= 400 * slow) want = S.main.key;
+    if (!want && S.main && S.cfg.kw === "k3" && S.graceUntil && now < S.graceUntil) want = S.main.key;
+    const cur = S.main && S.main.key;
+    if (S.cfg.kw === "k3" && cur && want === cur) S.graceUntil = now + 400 * slow;
+
+    if (S.cfg.timing !== "t1") {
+      if (want !== cur) { closeMain(S, now); if (want) openMain(S, want, now); }
+    } else if (want === cur) {
+      S.pending = null; S.leaveSince = null;
+    } else if (want) {
+      S.leaveSince = null;
+      if (cur || now - S.lastClose < 500 * slow) { closeMain(S, now); openMain(S, want, now); S.pending = null; }
+      else if (S.pending !== want) { S.pending = want; S.pendingSince = now; }
+      else if (now - S.pendingSince >= 300 * slow) { openMain(S, want, now); S.pending = null; }
+    } else {
+      S.pending = null;
+      if (cur) {
+        if (!S.leaveSince) S.leaveSince = now;
+        else if (now - S.leaveSince >= 150 * slow) closeMain(S, now);
+      }
+    }
+    if (S.main) { placeMain(S); placeSide(S); }
+    if (S.cursorOn) { S.cursor.style.display = "block"; S.cursor.style.left = p.x - 2 + "px"; S.cursor.style.top = p.y - 2 + "px"; }
+    else S.cursor.style.display = "none";
+  }
+
+  // pointer: the mouse moves it, a finger sets it (tap an object to see its bubble)
+  function stagePoint(S, e) {
+    const r = S.stage.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * 1600 / r.width, y: (e.clientY - r.top) * 900 / r.height };
+  }
+
+  document.querySelectorAll(".stage[data-cfg]").forEach(stage => {
+    const cfg = JSON.parse(stage.dataset.cfg);
+    stage.innerHTML = '<img class="ib-bg" src="img/nuit.webp" alt="">';
+    const cursor = document.createElement("div");
+    cursor.className = "ib-cursor"; cursor.innerHTML = CURSOR; stage.appendChild(cursor);
+    const S = { stage, cfg, cursor, ptr: null, main: null, sides: [], lastClose: -1e9, group: stage.closest("section").querySelector(".ib-bar")?.dataset.group, demo: false };
+    stages.push(S);
+    const screen = stage.parentElement;
+    screen.addEventListener("pointermove", e => { if (e.pointerType === "mouse" && !S.demo) { S.ptr = stagePoint(S, e); S.cursorOn = false; } });
+    screen.addEventListener("pointerleave", e => { if (e.pointerType === "mouse" && !S.demo) S.ptr = null; });
+    screen.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" && !S.demo) { S.ptr = stagePoint(S, e); S.cursorOn = false; } });
+    // opened at rest, for the overview and the captures
+    if (cfg.open) {
+      S.instant = true;
+      setTimeout(() => { S.instant = false; }, 600);
+      S.ptr = center(TRIG[cfg.open].r);
+      openMain(S, cfg.open, performance.now());
+      if (cfg.kwopen && (cfg.kw === "k0" || cfg.kw === "k3")) {
+        requestAnimationFrame(() => requestAnimationFrame(() => { S.ptr = kwCenter(S, cfg.kwopen); }));
+      }
+    }
+  });
+
+  (function loop(now) { stages.forEach(S => tick(S, now)); requestAnimationFrame(loop); })(performance.now());
+
+  // demo: the same cursor path in every frame of a section, at the same instant
+  const PATHS = {
+    look: [["at", { x: 1000, y: 620 }], ["go", "hand", 600], ["wait", 1800], ["go", "ball", 500], ["wait", 1800], ["go", "robot", 900], ["wait", 1800], ["go", "fake", 600], ["wait", 1800], ["go", { x: 1000, y: 600 }, 600]],
+    timing: [["at", { x: 1000, y: 620 }], ["go", "hand", 700], ["wait", 1600], ["go", "ball", 400], ["wait", 1600], ["go", { x: 1100, y: 600 }, 500], ["wait", 900],
+      ["go", "hand", 350], ["go", "ball", 160], ["go", { x: 1000, y: 820 }, 160], ["wait", 900], ["go", "robot", 900], ["wait", 1300], ["go", "corr", 250], ["wait", 1500], ["go", { x: 1100, y: 500 }, 500]],
+    kw: [["at", { x: 1000, y: 620 }], ["go", "ball", 700], ["wait", 1000], ["go", "kw:conc", 700], ["wait", 2200], ["go", "side", 500], ["wait", 2000], ["go", { x: 1150, y: 560 }, 500]],
+    place: [["at", { x: 1000, y: 620 }], ["go", "hand", 700], ["wait", 1500], ["go", "ball", 500], ["wait", 1500], ["go", { x: 880, y: 700 }, 300], ["go", "robot", 900], ["wait", 1500], ["go", "fake", 600], ["wait", 1500], ["go", { x: 1000, y: 600 }, 600]],
+  };
+  function resolve(S, tgt) {
+    if (typeof tgt === "object") return tgt;
+    if (TRIG[tgt]) return center(TRIG[tgt].r);
+    if (tgt.startsWith("kw:")) return kwCenter(S, tgt.slice(3)) || S.ptr;
+    if (tgt === "side") return S.sides[0] ? center(S.sides[0].rect) : S.ptr;
+    return S.ptr;
+  }
+  async function runDemo(group, btn) {
+    const list = stages.filter(S => S.group === group);
+    btn.classList.add("on");
+    list.forEach(S => { S.demo = true; S.cursorOn = true; closeMain(S, performance.now()); });
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    for (const step of PATHS[group]) {
+      if (step[0] === "at") { list.forEach(S => S.ptr = { ...step[1] }); await sleep(400 * slow); }
+      else if (step[0] === "wait") await sleep(step[1] * slow);
+      else {
+        const from = list.map(S => ({ ...S.ptr })), to = list.map(S => resolve(S, step[1]));
+        const dur = step[2] * slow, t0 = performance.now();
+        await new Promise(res => {
+          (function f(now) {
+            const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+            list.forEach((S, i) => { S.ptr = { x: from[i].x + (to[i].x - from[i].x) * e, y: from[i].y + (to[i].y - from[i].y) * e }; });
+            if (k < 1) requestAnimationFrame(f); else res();
+          })(performance.now());
+        });
+      }
+    }
+    list.forEach(S => { S.demo = false; S.cursorOn = false; });
+    btn.classList.remove("on");
+  }
+  document.querySelectorAll(".ib-bar").forEach(bar => {
+    const demo = bar.querySelector("[data-demo]"), sl = bar.querySelector("[data-slow]");
+    demo.addEventListener("click", () => { if (!demo.classList.contains("on")) runDemo(bar.dataset.group, demo); });
+    sl.addEventListener("click", () => {
+      slow = slow === 1 ? 4 : 1;
+      document.querySelectorAll("[data-slow]").forEach(b => b.classList.toggle("on", slow !== 1));
+    });
+  });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

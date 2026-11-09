@@ -116,7 +116,7 @@ namespace Network
                             Debug.LogWarning($"{LogTag} Connected via fallback '{_connectionType}' — UDP looks blocked on this network.");
                         }
 
-                        GameLog.Info("net", "relay.join.done", "code", _joinCode, "protocol", _connectionType);
+                        GameLog.Info("net", "relay.join.done", "code", _joinCode, "protocol", _connectionType, "region", _allocation.Region);
                         return RelayConnectResult.Succeeded();
                     }
 
@@ -231,7 +231,9 @@ namespace Network
                             Debug.LogWarning($"{LogTag} Hosting via fallback '{_connectionType}' — UDP looks blocked on this network.");
                         }
 
-                        GameLog.Info("net", "relay.host.ready", "code", _joinCode, "protocol", _connectionType);
+                        // The region the host's Relay landed in: every client's ping goes through it (playtest 2026-11-01: 480 ms
+                        // round trips in two games out of three, 60 ms in the third, same players).
+                        GameLog.Info("net", "relay.host.ready", "code", _joinCode, "protocol", _connectionType, "region", _allocation.Region);
                         return _joinCode;
                     }
                     catch (RelayServiceException e)

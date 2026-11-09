@@ -324,6 +324,72 @@ namespace Autoplay
             }
         }
 
+        /// <summary>
+        /// Lobby (lever lobby-cat): the tablet's « Mon chat » tab by real clicks. Opens the tab, wears « Petit sourire » and
+        /// « Sans yeux », shows « Tenue » (its « Sans tenue » first), goes back to « Rôles ». The own avatar must end up
+        /// wearing the look. Journals <c>lobby.cat open|mouth|eyes|back ok|miss</c> and <c>lobby.cat-look</c>.
+        /// </summary>
+        public async UniTask<bool> LobbyDressCat()
+        {
+            await AcquireInput();
+            try
+            {
+                Func<string, bool> _worn = _name => LobbyRoot()?.Q<Label>(className: "cat-custo__current")?.text == _name;
+                Func<string, Func<VisualElement, VisualElement>> _tab = _text => _root =>
+                    _root.Query<Button>(className: "lobby-roles__tab").ToList().FirstOrDefault(_b => _b.text == _text);
+                Func<string, Func<VisualElement, VisualElement>> _part = _text => _root =>
+                    _root.Query<Label>(className: "cat-custo__tab").ToList().FirstOrDefault(_l => _l.text == _text);
+                Func<string, Func<VisualElement, VisualElement>> _item = _text => _root =>
+                    _root.Query<VisualElement>(className: "cat-custo__cell").ToList()
+                        .FirstOrDefault(_c => _c.Q<Label>(className: "cat-custo__cell-name")?.text == _text);
+
+                bool _opened = await ClickLobbyElement(_tab("Mon chat"), "lobby-cat-tab", () => LobbyRoot()?.Q(className: "lobby-roles__cat") != null);
+                Journal.Record("lobby.cat", $"open {(_opened ? "ok" : "miss")}");
+                if (!_opened)
+                {
+                    return false;
+                }
+                await UniTask.Delay(TimeSpan.FromSeconds(1f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                capture.Request("lobby-cat-open", 0f);
+
+                bool _mouth = await ClickLobbyElement(_part("Bouche"), "lobby-cat-part-mouth", () => _worn("Sans bouche") || _worn("Petit sourire"))
+                              && await ClickLobbyElement(_item("Petit sourire"), "lobby-cat-smile", () => _worn("Petit sourire"));
+                Journal.Record("lobby.cat", $"mouth {(_mouth ? "ok" : "miss")}");
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                capture.Request("lobby-cat-mouth", 0f);
+
+                bool _eyes = await ClickLobbyElement(_part("Yeux"), "lobby-cat-part-eyes", () => !_worn("Petit sourire"))
+                             && await ClickLobbyElement(_item("Sans yeux"), "lobby-cat-no-eyes", () => _worn("Sans yeux"));
+                Journal.Record("lobby.cat", $"eyes {(_eyes ? "ok" : "miss")}");
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                capture.Request("lobby-cat-eyes", 0f);
+
+                await ClickLobbyElement(_part("Tenue"), "lobby-cat-part-outfit", () => !_worn("Sans yeux"));
+                await UniTask.Delay(TimeSpan.FromSeconds(0.5f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                capture.Request("lobby-cat-outfit", 0f);
+
+                // The look reached the server and came back on this player's own avatar.
+                string _saved = Avatars.Cosmetics.CatLookStore.Load().Encode();
+                Avatars.PlayerAvatar _own = FindObjectsByType<Avatars.PlayerAvatar>(FindObjectsSortMode.None)
+                    .FirstOrDefault(_a => _a.ownerClientId.Value == Unity.Netcode.NetworkManager.Singleton.LocalClientId);
+                float _deadline = Time.realtimeSinceStartup + 5f;
+                while (_own != null && _own.CatLook.Encode() != _saved && Time.realtimeSinceStartup < _deadline)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+                }
+                bool _replicated = _own != null && _own.CatLook.Encode() == _saved;
+                Journal.Record("lobby.cat-look", $"{(_replicated ? "ok" : "miss")} saved={_saved} avatar={(_own != null ? _own.CatLook.Encode() : "none")}");
+
+                bool _back = await ClickLobbyElement(_tab("Rôles"), "lobby-cat-back", () => LobbyRoot()?.Q(className: "lobby-roles__cat") == null);
+                Journal.Record("lobby.cat", $"back {(_back ? "ok" : "miss")}");
+                return _mouth && _eyes && _replicated && _back;
+            }
+            finally
+            {
+                inputBusy = false;
+            }
+        }
+
         /// <summary>The footer's status line (ready count or the composition error), for a start that never comes.</summary>
         public string LobbyStatus()
             => LobbyRoot()?.Q<Label>(className: "lobby-roles__reason")?.text ?? "none";

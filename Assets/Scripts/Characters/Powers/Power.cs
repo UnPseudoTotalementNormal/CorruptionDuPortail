@@ -357,6 +357,21 @@ namespace Characters.Powers
             return !_requireAwake || !hasToBeAwakened || _owner.isAwakened.Value;
         }
 
+        /// <summary>
+        /// Client mirror of the server's owner check: why the owner could no longer act on a power already started
+        /// (put to sleep at the layer timeout, chained, eliminated), null while he still can. The server only cancels
+        /// its own copy at sleep, so a picker left open on the owner's screen would send a use refused in silence.
+        /// </summary>
+        public string OwnerStoppedActingReason()
+        {
+            Character _owner = ownerCharacter;
+            if (!_owner) return "no-owner";
+            if (_owner.isChained.Value) return "chained";
+            if (_owner.isEliminated.Value) return "eliminated";
+            if (hasToBeAwakened && !_owner.isAwakened.Value) return "asleep";
+            return null;
+        }
+
         private bool RejectUse(string _reason)
         {
             GameLog.Warn("power", "power.rejected", "power", powerName.ToString(), "owner", ownerClientId.Value, "reason", _reason,

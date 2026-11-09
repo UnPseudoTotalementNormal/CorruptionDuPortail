@@ -1,0 +1,30 @@
+{
+  "name": "lobby-cat-tablet",
+  "goal": "T3, mockup chat-tablette v1 T2: on the lobby tablet, the host and a real client open the « Mon chat » tab by real clicks, wear « Petit sourire » and « Sans yeux », see « Tenue » last with « Sans tenue » first, and go back to « Rôles ». Each one's own avatar comes back from the server wearing the look; the other process's GameLog shows it applied on that seat (avatar.cosmetics.applied, read with logs.py --local). The captures lobby-cat-* are the evidence for the look. Dragging the cat is not played: the virtual input has no press-and-hold.",
+  "mode": "net",
+  "clients": 1,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 900,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-lobby-ui",
+    "-autoplay-lobby-cat",
+    "-autoplay-cat-look",
+    "0.0.0.0",
+    "-autoplay-fast-fakes",
+    "-autoplay-max-days",
+    "1"
+  ],
+  "expect": [
+    { "type": "outcome", "value": "Completed", "process": "all" },
+    { "type": "event", "kind": "lobby.cat", "detail": "^open ok", "process": "all", "min": 1 },
+    { "type": "event", "kind": "lobby.cat", "detail": "^mouth ok", "process": "all", "min": 1 },
+    { "type": "event", "kind": "lobby.cat", "detail": "^eyes ok", "process": "all", "min": 1 },
+    { "type": "event", "kind": "lobby.cat", "detail": "^back ok", "process": "all", "min": 1 },
+    { "type": "event", "kind": "lobby.cat-look", "detail": "^ok saved=0\\.0\\.7\\.6", "process": "all", "min": 1 },
+    { "type": "event", "kind": "input.miss", "process": "any", "min": 0, "max": 0 },
+    { "type": "desync", "max": 0 },
+    { "type": "noErrors", "process": "all", "ignore": ["CardEffect(TechnoBeacon|BoolEnabler): effectData", "ClientLoadedSynchronization"] }
+  ]
+}

@@ -1,3 +1,5 @@
+using System;
+
 namespace Avatars
 {
     /// <summary>
@@ -23,5 +25,16 @@ namespace Avatars
         /// </summary>
         public static string ResolveLabel(string pseudo) =>
             string.IsNullOrWhiteSpace(pseudo) ? string.Empty : pseudo.Trim();
+
+        /// <summary>
+        /// World scale of a TextMeshPro label of <paramref name="fontSize"/> (one em = a tenth of its font size, in world
+        /// units at scale 1) so its em takes <paramref name="screenShare"/> of the screen's height at
+        /// <paramref name="depth"/> along the view of a camera of vertical field <paramref name="fovDegrees"/>.
+        /// </summary>
+        public static float ScaleForScreenShare(float screenShare, float fovDegrees, float depth, float fontSize)
+        {
+            double visibleHeight = 2.0 * Math.Max(0.01f, depth) * Math.Tan(fovDegrees * 0.5 * Math.PI / 180.0);
+            return (float)(screenShare * visibleHeight / (Math.Max(0.01f, fontSize) * 0.1f));
+        }
     }
 }

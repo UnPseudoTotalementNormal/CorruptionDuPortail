@@ -93,6 +93,7 @@ The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode 
 | `bash` from Python on Windows | resolves to WSL's `System32\bash.exe` | call Git Bash explicitly (`C:\Program Files\Git\bin\bash.exe`) |
 | Git Bash paths in native Python | `/c/Users/…` unreadable | use `pwd -W` (`C:/Users/…`) |
 | PowerShell variables | case-insensitive: `$clientArgs` overwrites a `$ClientArgs` parameter | distinct names |
+| `unityctl.sh build` after a first build | the editor re-saves guarded settings, the next build exits 4 and keeps the old player (the exe's date never changes, even on a real build): a run then tests old code | never mask its exit code (`\| tail`), chain with `&&` on `PIPESTATUS`; `git checkout` the settings; check the run's own log (e.g. `[DAYRING]`) |
 | `core.autocrlf=true` worktrees | FMOD macOS `Info.plist` rewritten CRLF → blocking "Repair FMOD libraries" dialog | `.gitattributes` keeps them LF |
 
 ## 5. Ports

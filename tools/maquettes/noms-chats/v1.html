@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noms au-dessus des chats, le jour</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "NcLiberation"; src: url("../fonts/LiberationSans.ttf"); }
+  @font-face { font-family: "NcGaramond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .nc-shot { position: absolute; inset: 0; width: 1600px; height: 900px; display: block; }
+  .nc-name { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; color: #d8d4cc; font-family: "NcLiberation"; pointer-events: none; }
+  .nc-garamond .nc-name { font-family: "NcGaramond"; }
+  .nc-layer { position: absolute; inset: 0; }
+  .nc-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 14px 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .nc-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .nc-group span { color: var(--soft); }
+  .nc-group button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .nc-group button.on { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Noms au-dessus des chats, le jour</h1>
+  <p><b>Référence.</b> Dans Among Us, de mémoire, le nom reste petit au-dessus de chaque personnage. Je ne l'ai pas revérifié en jeu.</p>
+  <p><b>Aujourd'hui.</b> Le nom est un objet de la scène : sa taille dépend de la distance. Maintenant que les chats sont proches, à 4 joueurs les noms se chevauchent et sortent de l'écran.</p>
+  <p><b>La scène.</b> Vote du premier jour, cercle de la PR #188, puis un voisin enchaîné. Un vrai pseudo est souvent plus court que ceux d'autoplay : essaie les deux longueurs.</p>
+  <p><b>Sans question.</b> Le pseudo reste aussi sur la carte de chaque joueur. Son propre nom ne s'affiche jamais. Le chat enchaîné ne montre pas de nom, sa carte le donne.</p>
+
+  <div class="nc-bar">
+    <div class="nc-group" id="nc-count"><span>Joueurs</span>
+      <button data-v="4">4</button><button data-v="6">6</button><button data-v="8">8</button>
+    </div>
+    <div class="nc-group" id="nc-moment"><span>Moment</span>
+      <button data-v="repos">Vote</button><button data-v="chaine">Chat enchaîné</button>
+    </div>
+    <div class="nc-group" id="nc-long"><span>Pseudos</span>
+      <button data-v="long">Longs</button><button data-v="court">Courts</button>
+    </div>
+  </div>
+
+  <h2>Comment montrer les noms ?</h2>
+
+  <div class="variant" data-id="N0">
+    <div class="vhead"><span class="vid">N0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Grand de près, petit de loin.</p>
+    <div class="screen"><div class="stage" data-mode="world"></div></div>
+  </div>
+
+  <div class="variant" data-id="N1">
+    <div class="vhead"><span class="vid">N1</span><span class="vname">Même taille à l'écran (par défaut)</span></div>
+    <p class="vdesc">Tous les noms ont la même petite taille, près ou loin. Ils ne sortent de l'écran qu'avec leur chat.</p>
+    <div class="screen"><div class="stage" data-mode="fixed"></div></div>
+  </div>
+
+  <div class="variant" data-id="N2">
+    <div class="vhead"><span class="vid">N2</span><span class="vname">Seulement sur le chat visé</span></div>
+    <p class="vdesc">Rien par défaut, le nom vient quand on vise un chat. Passe le doigt ou la souris sur la scène.</p>
+    <div class="screen"><div class="stage" data-mode="hover"></div></div>
+  </div>
+
+  <div class="variant" data-id="N3">
+    <div class="vhead"><span class="vid">N3</span><span class="vname">Plus petit, toujours selon la distance</span></div>
+    <p class="vdesc">Les noms actuels divisés par trois : les plus loin restent les plus petits.</p>
+    <div class="screen"><div class="stage" data-mode="small"></div></div>
+  </div>
+
+  <h2>Avec quelle police ?</h2>
+
+  <div class="variant" data-id="P0">
+    <div class="vhead"><span class="vid">P0</span><span class="vname">Actuelle : Liberation Sans</span></div>
+    <div class="screen"><div class="stage" data-mode="fixed"></div></div>
+  </div>
+
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">EB Garamond, livrée avec le jeu (par défaut)</span></div>
+    <div class="screen"><div class="stage nc-garamond" data-mode="fixed"></div></div>
+  </div>
+
+  <h2>Une remarque ?</h2>
+  <textarea id="global" rows="3" placeholder="Remarque libre"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</div>
+<script>
+(() => {
+  const state = { n: 4, moment: "repos", long: "long" };
+  const longNames = ["Autoplayclient1", "Autoplayclient2", "Autoplayclient3", "Simulated Player", "Autoplayhost", "Le Grand Poyo 42", "Wouh le Terrible"];
+  const shortNames = ["Wouh", "Alex", "Poyo", "Lili", "Max", "Nina", "Tom"];
+  const FOCAL = 900 / (2 * Math.tan(20 * Math.PI / 180));
+  const PITCH = -2.6 * Math.PI / 180;
+  const LABEL_ABOVE_EYE = 5; // metres, measured on the in-game capture
+  const WORLD_FONT = 3660; // font pixels x metres, measured on the in-game capture
+
+  function seats() {
+    const n = state.n, t = Math.min(1, (n - 4) / 6);
+    const d = 32 + (37.09 - 32) * t, r = 12 + (37.09 - 12) * t;
+    const list = [];
+    for (let k = 1; k < n; k++) {
+      if (state.moment === "chaine" && k === 1) continue;
+      const a = 2 * Math.PI * k / n, x = r * Math.sin(a), z = d - r * Math.cos(a);
+      const dist = Math.hypot(x, z);
+      const elev = Math.atan2(LABEL_ABOVE_EYE, z);
+      list.push({
+        k, dist,
+        x: 800 + FOCAL * x / z,
+        y: 450 - FOCAL * Math.tan(elev + PITCH),
+        name: (state.long === "long" ? longNames : shortNames)[k - 1],
+      });
+    }
+    return list;
+  }
+
+  function fontSize(mode, seat) {
+    if (mode === "world") return WORLD_FONT / seat.dist;
+    if (mode === "small") return WORLD_FONT / 3 / seat.dist;
+    return 34;
+  }
+
+  function drawNames(stage, hoveredK) {
+    const layer = stage.querySelector(".nc-layer");
+    layer.textContent = "";
+    const mode = stage.dataset.mode;
+    seats().forEach(seat => {
+      if (mode === "hover" && seat.k !== hoveredK) return;
+      const el = document.createElement("div");
+      el.className = "nc-name";
+      el.textContent = seat.name;
+      el.style.left = seat.x + "px";
+      el.style.top = seat.y + "px";
+      el.style.fontSize = fontSize(mode, seat) + "px";
+      layer.appendChild(el);
+    });
+  }
+
+  const stages = [...document.querySelectorAll(".stage")];
+  stages.forEach(stage => {
+    const img = document.createElement("img");
+    img.className = "nc-shot";
+    img.alt = "";
+    const layer = document.createElement("div");
+    layer.className = "nc-layer";
+    stage.append(img, layer);
+    if (stage.dataset.mode === "hover") {
+      const aim = e => {
+        const box = stage.getBoundingClientRect();
+        const px = (e.clientX - box.left) / box.width * 1600;
+        let best = null, bestGap = 170;
+        seats().forEach(seat => {
+          const gap = Math.abs(seat.x - px);
+          if (gap < bestGap) { bestGap = gap; best = seat.k; }
+        });
+        stage.dataset.hovered = best === null ? "" : best;
+        drawNames(stage, best);
+      };
+      stage.addEventListener("pointermove", aim);
+      stage.addEventListener("pointerdown", aim);
+    }
+  });
+
+  function render() {
+    stages.forEach(stage => {
+      stage.querySelector("img").src = `img/base_${state.n}_${state.moment}.jpg`;
+      const first = seats().reduce((a, b) => (a && Math.abs(a.x - 800) > Math.abs(b.x - 800) ? a : b), null);
+      drawNames(stage, stage.dataset.mode === "hover" && first ? first.k : null);
+    });
+    const mark = (id, value) => document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("on", b.dataset.v === String(value)));
+    mark("nc-count", state.n);
+    mark("nc-moment", state.moment);
+    mark("nc-long", state.long);
+  }
+
+  const bind = (id, apply) => document.querySelector("#" + id).addEventListener("click", e => {
+    if (e.target.dataset.v) { apply(e.target.dataset.v); render(); }
+  });
+  bind("nc-count", v => { state.n = +v; });
+  bind("nc-moment", v => { state.moment = v; });
+  bind("nc-long", v => { state.long = v; });
+  render();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

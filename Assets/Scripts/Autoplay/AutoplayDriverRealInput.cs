@@ -310,8 +310,8 @@ namespace Autoplay
             }
         }
 
-        // The board's skip button, "Passer le vote" during the vote (a vote for SKIP_VOTE_ID; the direct path
-        // abstains instead). It is the night's "Arrêter l'éveil" button: the vote screen has no Skip button of its own.
+        // The skip button (a vote for SKIP_VOTE_ID; the direct path abstains instead): by day the one on the table in the
+        // middle of the circle, else the board's own, the night's "Arrêter l'éveil" button.
         private async UniTaskVoid SkipVoteByClick(Character _voter)
         {
             ulong _id = _voter.ownerClientId.Value;
@@ -319,13 +319,22 @@ namespace Autoplay
             try
             {
                 await PrepareSeat(_id);
-                Presentation.DayCatVoting _day = FindAnyObjectByType<Presentation.DayCatVoting>();
-                if (CurrentState is VoteState _vote && _vote.voteOnCats && _day != null)
+                Presentation.DaySkipTable _table = FindAnyObjectByType<Presentation.DaySkipTable>();
+                if (CurrentState is VoteState _vote && _vote.voteOnCats && _table != null)
                 {
-                    // T23: by day the board's skip button went with the table; skipping is a key (P).
-                    await UniTask.Delay(TimeSpan.FromSeconds(3), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
-                    await VirtualInput.PressKey(_day.SkipKey).WithCancellation(Cancel);
-                    _clicked = await WaitForEffect($"vote-skip {_id}", $"key={_day.SkipKey}", () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
+                    // T27: by day the skip button stands on its table in the middle of the circle; wait for it to rise.
+                    float _deadline = Time.realtimeSinceStartup + 8f;
+                    while (!_table.IsUp && Time.realtimeSinceStartup < _deadline)
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+                    }
+                    capture.Request($"vote-skip-aim-{_id}", 0f);
+                    _clicked = await ClickTarget(_table.Button, $"vote-skip {_id}", () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
+                    // Still this seat's view (the next possessed seat waits for inputBusy): the button down, for it alone.
+                    await UniTask.Delay(TimeSpan.FromSeconds(1), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    capture.Request($"vote-skip-pressed-{_id}", 0f);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.5), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    CaptureSkipRecap(_table, _id).Forget();
                 }
                 else
                 {
@@ -347,6 +356,20 @@ namespace Autoplay
                 inputBusy = false;
             }
             Journal.Record("vote.skip.click", $"{_id} via={(_clicked ? "click" : "none")}");
+        }
+
+        // The recap's number of skips above the cards, once it shows.
+        private async UniTaskVoid CaptureSkipRecap(Presentation.DaySkipTable _table, ulong _id)
+        {
+            float _deadline = Time.realtimeSinceStartup + 120f;
+            while (_table != null && !_table.RecapShown && Time.realtimeSinceStartup < _deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+            }
+            if (_table != null && _table.RecapShown)
+            {
+                capture.Request($"vote-skip-recap-{_id}", 0.2f);
+            }
         }
 
         // The Mage clicks a character's card on the board; the role half goes through the (real-input) picker.

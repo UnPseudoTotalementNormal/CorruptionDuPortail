@@ -175,6 +175,8 @@ namespace Avatars.Cosmetics.EditorTools
                 ["Mage Eyes"] = Copy(EyesMaterialPath, "Mage Eyes", "Cat_Mage_Eyes"),
                 ["Galactic Mouth"] = Mouth(Copy(BodyMaterialPath, "Galactic Mouth", "Cat_Galactic_Mouth")),
                 ["Mage Mouth"] = Mouth(Copy(BodyMaterialPath, "Mage Mouth", "Cat_Mage_Mouth")),
+                // The Mage's first mouth (replaced in the Drive 2026-10-26, asked back by the team), on the Mage's card.
+                ["Smile Mouth"] = Mouth(Copy(BodyMaterialPath, "Smile Mouth", "Cat_Smile_Mouth")),
                 ["Choked Mouth"] = Mouth(Copy(BodyMaterialPath, "Choked Mouth", "Cat_Choked_Mouth")),
                 ["Drunk Mouth"] = Mouth(Copy(BodyMaterialPath, "Drunk Mouth", "Cat_Drunk_Mouth")),
                 ["Sad Mouth"] = Mouth(Copy(BodyMaterialPath, "Sad Mouth", "Cat_Sad_Mouth")),
@@ -296,6 +298,8 @@ namespace Avatars.Cosmetics.EditorTools
                 Hair(Fur(2, "Galactique", "Galactic", materials["Galactic Fur"]), materials["Galactic Hair"]),
                 Fur(3, "Mage", "Mage", materials["Mage Fur"]),
 
+                // In the screen's order: the « Sans … » first (ids stay put: saved looks keep their meaning).
+                Parts(CatSlot.Outfit, 4, "Sans tenue", null),
                 Parts(CatSlot.Outfit, 0, "Cape et nœud rouge", "Outfit_BlackWhite", "Robe", "Ribbon", "Bell"),
                 Parts(CatSlot.Outfit, 1, "Cape ardente", "Outfit_Fiery",
                     "Fiery Cape", "Fiery Cape Top", "Fiery Fur Neck", "Fiery Medal", "Fiery Metal Decorations"),
@@ -304,8 +308,8 @@ namespace Avatars.Cosmetics.EditorTools
                     "Mage Cape Bottom", "Mage Cape Top", "Mage Cape Star", "Mage Head Star"),
                 Parts(CatSlot.Outfit, 5, "Tenue de chef", "Outfit_Chef",
                     "Chef Apron", "Chef Shirt", "Chef Bow Neck", "Chef Bow Tie", "Chef Sleeves"),
-                Parts(CatSlot.Outfit, 4, "Sans tenue", null),
 
+                Parts(CatSlot.Eyes, 7, "Sans yeux", null),
                 Blink(Parts(CatSlot.Eyes, 0, "Yeux de la portée", "Eyes_BlackWhite", "BW Eyes Expressive"), "BW Eyes Closed"),
                 Parts(CatSlot.Eyes, 1, "Yeux ardents", "Eyes_Fiery", "Fiery Eyes Neutral"),
                 Parts(CatSlot.Eyes, 2, "Yeux galactiques", "Eyes_Galactic", "Galactic Eyes", "Galactic Mid"),
@@ -315,6 +319,7 @@ namespace Avatars.Cosmetics.EditorTools
                 Parts(CatSlot.Eyes, 6, "Yeux boutons", null, "Full Button Eyes"),
 
                 Parts(CatSlot.Mouth, 0, "Sans bouche", null),
+                PartMaterial(Parts(CatSlot.Mouth, 6, "Petit sourire", "Mouth_Smile", "Mage Mouth"), materials["Smile Mouth"]),
                 Parts(CatSlot.Mouth, 1, "Sourire galactique", "Mouth_Galactic", "Galactic Mouth"),
                 Parts(CatSlot.Mouth, 2, "Bouche de mage", "Mouth_Mage", "Mage Mouth"),
                 Parts(CatSlot.Mouth, 3, "Bouche étouffée", null, "Choked Mouth"),
@@ -338,6 +343,12 @@ namespace Avatars.Cosmetics.EditorTools
         private static CatCosmeticItem Hair(CatCosmeticItem item, Material hair)
         {
             item.hairMaterial = hair;
+            return item;
+        }
+
+        private static CatCosmeticItem PartMaterial(CatCosmeticItem item, Material material)
+        {
+            item.partMaterial = material;
             return item;
         }
 

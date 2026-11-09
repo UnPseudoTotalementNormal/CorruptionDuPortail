@@ -18,7 +18,7 @@ The build runs in its own process, so notifications keep flowing during a build.
 
 | Step | How |
 |---|---|
-| Trigger | `watch` polls `origin/Main` every 2 min (scheduled task « CdP Local CI », at logon) |
+| Trigger | `watch` polls `origin/Main` every 2 min (started at logon by `CdP Local CI.cmd` in the Startup folder) |
 | « 🔨 Builds démarrées » | webhook **Dev** (#dev), author = commit author, full commit message |
 | Builds | Unity in batchmode, `CdpBuild.BuildFromCommandLine -cdpFlavor relay\|steam -cdpLogs on -buildVersion 0.0.<commits>` (the version game-ci used), in its own checkout `<repo>-ci` (detached worktree, its Library kept between builds), below normal priority |
 | Files | zips `CorruptionDuPortail_b<n>.zip` / `CorruptionDuPortail_Steam_b<n>.zip` (inside: `StandaloneWindows64/`, like the old artifact) on Google Drive, `Corruption du Portail - Builds/b<n>/`, shared by link; Unity logs in `b<n>/logs/` |
@@ -37,7 +37,8 @@ Setup (done once on Poyo's PC, 2026-11-09):
 - rclone remote `gdrive` (`rclone config create gdrive drive scope=drive.file`, account azertizeryt@gmail.com):
   sees only the files it created. rclone warns its shared Google client id retires during 2026: when uploads stop,
   create an own client id (https://rclone.org/drive/#making-your-own-client-id) and `rclone config update gdrive`.
-- `python tools/build/local_ci.py install`, then `schtasks /Run /TN "CdP Local CI"`.
+- `python tools/build/local_ci.py install`: starts the watcher with the PC's own Python (`pythonw`, not a venv)
+  and puts `CdP Local CI.cmd` in the Startup folder (an ONLOGON scheduled task needs admin rights).
 
 The PC must be on (and logged in) for a build to happen; a push while it is off is built at the next start.
 `Build.yml` only runs by hand now (`workflow_dispatch`), so the two never post twice.

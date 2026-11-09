@@ -20,8 +20,8 @@ user's own editor, and without ever being blocked by a modal dialog. Verified on
 # Optional, saves a long first import on a fresh worktree: seed its Library from the main checkout.
 # Exclude compiled assemblies, the Bee cache and the pipeline port file (see traps below).
 # Same thing in one command: tools/autoplay/unityctl.sh unpark (and `park` frees it again once the work is merged).
-robocopy "<main>\Library" "<worktree>\Library" /E /MT:16 /XF *.lock UnityLockfile /XD ScriptAssemblies Bee Pipeline
-# (robocopy exit code 1 = files copied = success)
+MSYS_NO_PATHCONV=1 robocopy "<main>\Library" "<worktree>\Library" /E /MT:16 /XF *.lock UnityLockfile /XD ScriptAssemblies Bee Pipeline
+# (robocopy exit code 1 = files copied = success; without MSYS_NO_PATHCONV, Git Bash turns /E into a path: exit 16)
 
 # Never keep a copied port file: it points at the MAIN editor.
 rm -f Library/Pipeline/.unity-pipeline-port
@@ -86,11 +86,14 @@ The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode 
 | Copied Library with its `ScriptAssemblies` / `Bee` | script↔class mapping of the other checkout; a prefab loses a component (seen: `TransformCompositorComponent` on `Card` → NRE → game stalled) | exclude them when seeding (recommended, not yet re-verified from scratch); repair: `CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)` then force-reimport the script and the prefabs |
 | Copied `.unity-pipeline-port` | CLI calls with `--project-path <worktree>` reach the main editor | delete it before launching |
 | Cold GUI open of a seeded Library | assets imported before scripts load: settings re-saved gutted (`FMODStudioSettings.asset` 517 → 5 lines = no audio in builds) | open headless only; `git checkout` such files; `unityctl.sh build` refuses to build if guarded settings drifted from git |
+| `
+` in `eval --code` | the CLI turns it into a real newline inside a C# string: "Newline in constant" | build separators with another character in eval scripts |
 | Recompiling during a PlayMode run | domain reload kills the run (no report) and can leak its UDP socket | `unityctl.sh compile` refuses while a run is in flight; autoplay picks a free port |
 | Editor import noise | ~228 `.shadergraph.meta`, `link.xml` deletion, FMOD cache, URP/Graphics settings rewritten | never commit them: stage explicit files only; `git checkout -- Assets/AddressableAssetsData/link.xml*` |
 | `bash` from Python on Windows | resolves to WSL's `System32\bash.exe` | call Git Bash explicitly (`C:\Program Files\Git\bin\bash.exe`) |
 | Git Bash paths in native Python | `/c/Users/…` unreadable | use `pwd -W` (`C:/Users/…`) |
 | PowerShell variables | case-insensitive: `$clientArgs` overwrites a `$ClientArgs` parameter | distinct names |
+| `unityctl.sh build` after a first build | the editor re-saves guarded settings, the next build exits 4 and keeps the old player (the exe's date never changes, even on a real build): a run then tests old code | never mask its exit code (`\| tail`), chain with `&&` on `PIPESTATUS`; `git checkout` the settings; check the run's own log (e.g. `[DAYRING]`) |
 | `core.autocrlf=true` worktrees | FMOD macOS `Info.plist` rewritten CRLF → blocking "Repair FMOD libraries" dialog | `.gitattributes` keeps them LF |
 
 ## 5. Ports

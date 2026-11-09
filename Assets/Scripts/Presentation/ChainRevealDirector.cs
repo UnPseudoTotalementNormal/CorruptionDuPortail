@@ -31,16 +31,31 @@ namespace Presentation
         private const string GettingChained2 = "Getting Chained 2";
         private const string ChainedIdle = "Chained Idle";
 
+        // The sounds after the lift, in order: the release, the impact, the get-up.
+        private static readonly (float At, string Name)[] Beats =
+        {
+            (ChainRevealTimeline.Release, "release"),
+            (ChainRevealTimeline.Impact, "impact"),
+            (ChainRevealTimeline.GetUp, "getup"),
+        };
+
         [SerializeField] private AvatarVisibilityController _visibility;
         [Tooltip("The day's rows (T23): the chained player's card leaves its row for the moment.")]
         [SerializeField] private DayScreenRows _dayRows;
         [Tooltip("The day's table transition: the moment waits for the table to be gone, and ends under its black.")]
         [SerializeField] private DayTableTransition _day;
         [SerializeField] private CatSpotlights _spotlights;
+        [Tooltip("The cats sit on chairs (T33): the floor is this far under their seat.")]
+        [SerializeField] private float _seatHeight = 10f;
         [Tooltip("The light that follows the chained cat (the room is dark). Off outside the moment.")]
         [SerializeField] private Light _light;
+        [Tooltip("The lift and the hover, from the start until the release.")]
         [SerializeField] private EventReference _liftSound;
+        [Tooltip("The force lets go: the cat starts falling.")]
+        [SerializeField] private EventReference _releaseSound;
         [SerializeField] private EventReference _splatSound;
+        [Tooltip("The freeze ends: the cat gets up.")]
+        [SerializeField] private EventReference _getUpSound;
 
         [Header("Where it floats (in cat heights)")]
         [Tooltip("Height of the cat model at scale 1 (the avatar's scale multiplies it).")]
@@ -113,8 +128,8 @@ namespace Presentation
             AvatarHopMotion _hop = _avatar != null ? _avatar.GetComponentInChildren<AvatarHopMotion>() : null;
             bool _self = _avatar != null && _avatar.IsOwner;
 
-            // ---- where: the middle of the circle (the day's circle is sized for it, Poyo 2026-10-21); still around the
-            // table, on the line from this player's eye to the middle, as far as it needs to fit
+            // ---- where: on the line from this player's eye to the middle, as far as it needs to fit: by day the distance
+            // the day's circle gives it (the middle at a full table, past it when few players sit closer)
             Vector3 _eye = _camera.transform.position;
             Vector3 _centre = _manager.RingCenter ?? _eye + _camera.transform.forward * 20f;
             Vector3 _toCentre = _centre - _eye;
@@ -125,7 +140,7 @@ namespace Presentation
             float _scale = _self ? _manager.SeatedAvatarScale : 1f;
             float _catHeight = _avatar != null ? _catHeightAtScale1 * _avatar.transform.lossyScale.y * _scale : _fallbackCatHeight;
             float _distance = _manager.DayRingActive
-                ? _ringDistance
+                ? _manager.DayChainDistance
                 : ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _manager.DayScreenShare);
             float _floor = _avatar != null ? _avatar.transform.position.y : _centre.y;
             Vector3 _hover = new Vector3(_eye.x, _floor, _eye.z) + _ahead * _distance;
@@ -155,12 +170,12 @@ namespace Presentation
                     BeginCat(_avatar, _self);
                     _audio?.PlayOneShot(_liftSound);
                 }
-                bool _splatched = false;
+                int _beat = 0;
                 for (float _t = 0f; _t < _end; _t += Time.deltaTime)
                 {
                     float _travel = ChainRevealTimeline.Travel(_t);
                     Vector3 _feet = Vector3.Lerp(_seatPosition, _hover, _travel);
-                    _feet.y = _floor + ChainRevealTimeline.Height(_t) * _lift;
+                    _feet.y = _floor + ChainRevealTimeline.FeetHeight(_t, _lift, _seatHeight);
                     if (_hop != null)
                     {
                         _hop.SetWorldPose(_feet, Quaternion.Slerp(_seatRotation, _facing, _travel), Mathf.Lerp(1f, _scale, _travel));
@@ -193,11 +208,12 @@ namespace Presentation
                     {
                         _dayRows.SetAway(true);
                     }
-                    if (!_splatched && _avatar != null && _t >= ChainRevealTimeline.Impact)
+                    // Each sound on its beat of the timeline, from the game's clock: it stays on the picture if a frame drags.
+                    if (_avatar != null && _beat < Beats.Length && _t >= Beats[_beat].At)
                     {
-                        _splatched = true;
-                        _audio?.PlayOneShot(_splatSound);
-                        Debug.Log($"[CHAINREVEAL] seat {_seat}: splatch");
+                        _audio?.PlayOneShot(_beat == 0 ? _releaseSound : _beat == 1 ? _splatSound : _getUpSound);
+                        Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.beat", "seat", _seat, "beat", Beats[_beat].Name, "t", _t);
+                        _beat++;
                     }
                     await UniTask.Yield(PlayerLoopTiming.Update, _ct);
                 }
@@ -222,6 +238,8 @@ namespace Presentation
             }
         }
 
+        private AvatarNameplate _nameplate;
+
         private void BeginCat(PlayerAvatar _avatar, bool _self)
         {
             _animator = _avatar.GetComponentInChildren<Animator>();
@@ -242,6 +260,11 @@ namespace Presentation
                 _visibility.SetFeatured(_avatar);
             }
             _spotlights.Lifted = _avatar;
+            _nameplate = _avatar.GetComponent<AvatarNameplate>();
+            if (_nameplate != null)
+            {
+                _nameplate.SetHiddenForReveal(true);
+            }
             _chains = _avatar.GetComponentInChildren<CatChains>();
             if (_chains != null)
             {
@@ -266,6 +289,11 @@ namespace Presentation
             {
                 _chains.EndReveal(); // it keeps them, even if the moment was cut short
                 _chains = null;
+            }
+            if (_nameplate != null)
+            {
+                _nameplate.SetHiddenForReveal(false);
+                _nameplate = null;
             }
             _visibility.SetFeatured(null);
             _dayRows.SetAway(false);

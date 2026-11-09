@@ -21,7 +21,8 @@ namespace VoiceSystem
         /// <summary>Opens / closes the microphone.</summary>
         bool Recording { get; set; }
 
-        /// <summary>Appends the compressed voice captured since the last call to <paramref name="into"/>. Returns the byte count.</summary>
+        /// <summary>Appends the compressed voice captured since the last call to <paramref name="into"/>, as one packet that
+        /// <see cref="Decode"/> takes whole (never glued to another one). Returns the byte count.</summary>
         int ReadCaptured(MemoryStream into);
 
         /// <summary>Replaces <paramref name="pcm"/> with the PCM16 mono decoding of a received packet. Returns the byte count.</summary>

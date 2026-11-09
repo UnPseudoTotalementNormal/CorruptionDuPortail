@@ -91,7 +91,14 @@ namespace UI.Lobby
 
                 bool result = await JoinLobby(currentLobbySelected, password);
 
-                loadingCanvasGroup.DoHideGroup();
+                // A successful join has already unloaded the menu scene: this panel and its widgets are destroyed
+                // objects, and hiding them threw an NRE logged as a failed join (playtest 2026-11-01).
+                if (this == null)
+                {
+                    return;
+                }
+
+                HideLoadingSafe();
 
                 if (!result)
                 {
@@ -111,8 +118,11 @@ namespace UI.Lobby
             {
                 Debug.LogError($"Échec de la connexion au lobby avec mot de passe: {e}");
                 GameLog.Error("net", "join.failed", "reason", e.Message, "type", e.GetType().Name, "path", "password");
-                loadingCanvasGroup.DoHideGroup();
-                passwordInputField.text = "";
+                HideLoadingSafe();
+                if (passwordInputField != null)
+                {
+                    passwordInputField.text = "";
+                }
             }
             finally
             {

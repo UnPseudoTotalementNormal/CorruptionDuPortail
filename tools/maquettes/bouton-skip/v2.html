@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T27 : le bouton pour passer le vote, au milieu du cercle</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .bs-layer { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; pointer-events: none; }
+  .bs-world { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  .bs-world.bs-smooth { transition: transform .45s ease-in-out; }
+  .bs-under { position: absolute; left: 0; top: 900px; width: 1600px; height: 900px; transform: scaleY(-1); pointer-events: none; }
+  .bs-lit { filter: drop-shadow(0 0 2px #fff3da) drop-shadow(0 0 7px rgba(255, 243, 218, .75)); }
+  .bs-hit { position: absolute; cursor: pointer; z-index: 2; }
+  .bs-text { position: absolute; transform: translateX(-50%); white-space: nowrap; font-family: "Garamond", serif; color: #fff3da;
+    font-size: 34px; text-shadow: 0 2px 5px rgba(0, 0, 0, .95); pointer-events: none; opacity: 0; transition: opacity .2s; }
+  .bs-text.on { opacity: 1; }
+  .bs-big { text-align: center; line-height: 1; }
+  .bs-big b { display: block; font-size: 86px; font-weight: 400; }
+  .bs-big span { font-size: 28px; }
+  .bs-reticle { position: absolute; left: 794px; top: 444px; width: 12px; height: 12px; background: #ffcb3c; pointer-events: none; }
+  .bs-ring { position: absolute; pointer-events: none; }
+  .bs-black { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; background: #000; opacity: 0; pointer-events: none; }
+  .bs-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .bs-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .bs-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .bs-words { font-size: 16px; color: var(--fg); margin: 0; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>T27 : l'ensemble choisi, et le nombre de skips au récap</h1>
+  <p><b>Déjà choisi (v1).</b> H3 table vraiment basse, T1 guéridon, B2 palet de bois gravé, C1 un clic, E1 elle s'enfonce dans le sol, K2 plus de touche P, R1 « Skips : 3 ».</p>
+  <p><b>Aujourd'hui.</b> R1 était dessiné sur la table de H2, avec son passage entre les cartes. Sur la table de H3 le bouton est derrière les cartes au repos, donc le texte au-dessus de lui aussi : il faut décider où il va.</p>
+  <p><b>La scène.</b> Premier jour, 8 joueurs, le vote vient de finir, 3 joueurs ont passé. Tout le monde regarde droit devant.</p>
+  <p><b>Sans question.</b> Le viseur atteint le bouton en baissant la tête de 14°, la limite est à 40°. Sans la touche P, les signes Tab et E remontent d'un cran. H4 revenue à sa place de départ et sans pouce : ignorée.</p>
+</header>
+
+<section>
+  <h2>L'ensemble, pendant le vote</h2>
+  <p>Regarde ce que ça donne une fois tout assemblé. Rien à voter si ça te va.</p>
+  <div class="bs-bar" data-moments="A1">
+    <button data-m="repos" class="on">Au repos</button><button data-m="regard">Tête baissée pour voir les chats</button><button data-m="vise">Viseur sur le bouton</button><button data-m="presse">Après le clic</button>
+  </div>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Ce qui sera codé (par défaut)</span></div>
+    <p class="vdesc">Au repos, le palet se devine entre les deux rangées, et plus rien à l'écran ne dit qu'on peut passer le vote.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h3","btn":"bois","nop":true}'></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Où écrire « Skips : 3 » au récap ?</h2>
+  <div class="variant" data-id="S1">
+    <div class="vhead"><span class="vid">S1</span><span class="vname">Le passage s'ouvre pour le récap (par défaut)</span></div>
+    <p class="vdesc">Les cartes s'écartent le temps du récap : on voit le bouton et le texte juste au-dessus, comme tu l'as demandé. Elles se referment ensuite.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h3","btn":"bois","nop":true,"gap":125,"recap":"r1"}'></div></div>
+  </div>
+  <div class="variant" data-id="S2">
+    <div class="vhead"><span class="vid">S2</span><span class="vname">Au-dessus des cartes</span></div>
+    <p class="vdesc">Les cartes ne bougent pas. Le texte est dans l'axe du bouton mais loin de lui, devant le visage du chat d'en face.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h3","btn":"bois","nop":true,"recap":"r1","textY":480}'></div></div>
+  </div>
+  <div class="variant" data-id="S3">
+    <div class="vhead"><span class="vid">S3</span><span class="vname">Par-dessus les cartes</span></div>
+    <p class="vdesc">Les cartes ne bougent pas. Le texte est juste au-dessus du bouton, mais écrit sur deux cartes.</p>
+    <div class="screen"><div class="stage" data-scene='{"h":"h3","btn":"bois","nop":true,"recap":"r1","textY":672}'></div></div>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque sur l'ensemble ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  // Bounding boxes of the renders, stage pixels (tools: Blender, the day's camera at 8 players).
+  const BTN = { h3: [731, 721, 869, 788], h5: [731, 653, 869, 719], h10: [732, 486, 868, 550] };
+  const REGARD = -140;
+  const img = (src, cls) => { const i = new Image(); i.src = "img/" + src; i.className = cls || "bs-layer"; i.alt = ""; i.draggable = false; return i; };
+  const scenes = [];
+
+  function build(stage) {
+    const o = Object.assign({ table: "rond", btn: "rouge", gap: 0, moment: "repos" }, JSON.parse(stage.dataset.scene));
+    const world = document.createElement("div"); world.className = "bs-world bs-smooth";
+    const bg = img("bg_repos.jpg"); const under = img("bg_regard.jpg", "bs-under");
+    world.append(bg, under);
+    let btn = null, hit = null, label = null, box = null;
+    if (o.h !== "none") {
+      box = BTN[o.h];
+      world.append(img(`table_${o.table}_${o.h}.webp`));
+      btn = img(`btn_${o.btn}_${o.h}_haut.webp`);
+      world.append(btn);
+      label = document.createElement("div"); label.className = "bs-text";
+      label.style.left = "800px"; label.style.top = (box[1] - 54) + "px";
+      label.textContent = o.hold ? "Maintenir pour skip le vote" : "Cliquer pour skip le vote";
+      world.append(label);
+      hit = document.createElement("div"); hit.className = "bs-hit";
+      hit.style.cssText = `left:${box[0] - 10}px;top:${box[1] - 10}px;width:${box[2] - box[0] + 20}px;height:${box[3] - box[1] + 20}px`;
+      world.append(hit);
+    }
+    stage.append(world);
+    if (o.h === "none") {
+      const place = img("place_table.webp", "place");
+      Object.assign(place.dataset, { name: "table", x: 800, y: 900, scale: 1, scaleMin: .5, scaleMax: 1.6 });
+      stage.append(place);
+    }
+    const shiftGap = (name, dir) => { const l = img(name); l.style.transform = `translateX(${dir * o.gap}px)`; return l; };
+    const recap = !!o.recap;
+    stage.append(shiftGap(recap ? "cards_rl.webp" : "cards_l.webp", -1), shiftGap(recap ? "cards_rr.webp" : "cards_r.webp", 1), img("row2.webp"), img(o.nop ? "hints_nop.webp" : "hints.webp"));
+    const reticle = document.createElement("div"); reticle.className = "bs-reticle"; stage.append(reticle);
+
+    if (o.recap === "r0") {
+      const t = document.createElement("div"); t.className = "bs-text on"; t.style.cssText = "left:800px;top:868px;font-size:26px;z-index:-1;opacity:.35";
+      t.textContent = "Skip votes: 3"; stage.append(t);
+    } else if (o.recap) {
+      label.classList.add("on");
+      if (o.textY) { stage.append(label); label.style.top = o.textY + "px"; }
+      if (o.recap === "r1") label.textContent = "Skips : 3";
+      else { label.classList.add("bs-big"); label.innerHTML = "<b>3</b><span>skips</span>"; label.style.top = (box[1] - 112) + "px"; }
+    }
+
+    const s = { o, world, bg, btn, label, hit, box, pressed: false, hover: false, moment: o.moment, stage };
+    s.apply = () => {
+      if (!box) { world.style.transform = ""; return; }
+      let y = 0, src = "bg_repos.jpg";
+      const aim = s.moment === "vise" || s.moment === "presse";
+      if (s.moment === "regard") { y = REGARD; src = "bg_regard.jpg"; }
+      if (aim) { y = 450 - (box[1] + box[3]) / 2; src = "bg_regard.jpg"; }
+      bg.src = "img/" + src;
+      world.style.transform = `translateY(${src === "bg_regard.jpg" ? y : 0}px)`;
+      if (src === "bg_regard.jpg") {
+        // The renders follow the world; the regard image already slid by REGARD.
+        bg.style.transform = `translateY(${-REGARD}px)`;
+      } else bg.style.transform = "";
+      const pressed = s.pressed || s.moment === "presse";
+      btn.src = `img/btn_${o.btn}_${o.h}_${pressed ? "bas" : "haut"}.webp`;
+      const pointed = aim || s.hover;
+      btn.classList.toggle("bs-lit", (pointed && !o.recap) || pressed);
+      if (!o.recap) {
+        label.classList.toggle("on", pointed && !pressed);
+      }
+    };
+    if (hit && !o.recap) {
+      hit.addEventListener("pointerenter", () => { s.hover = true; s.apply(); });
+      hit.addEventListener("pointerleave", () => { s.hover = false; s.apply(); });
+      if (o.hold) {
+        let timer = 0;
+        hit.addEventListener("pointerdown", () => { timer = setTimeout(() => { s.pressed = !s.pressed; s.apply(); }, 1000); });
+        ["pointerup", "pointerleave"].forEach(e => hit.addEventListener(e, () => clearTimeout(timer)));
+      } else hit.addEventListener("click", () => { s.pressed = !s.pressed; s.apply(); });
+    }
+    s.apply();
+    scenes.push(s);
+    return s;
+  }
+
+  document.querySelectorAll(".stage[data-scene]").forEach(build);
+
+  // Key moments of the height section.
+  const param = new URLSearchParams(location.search);
+  const setMoment = m => scenes.filter(s => s.stage.closest(".variant").dataset.id === "A1").forEach(s => { s.moment = m; s.pressed = false; s.apply(); });
+  const bar = document.querySelector("[data-moments]");
+  bar.addEventListener("click", e => {
+    const m = e.target.dataset.m; if (!m) return;
+    bar.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === e.target));
+    setMoment(m);
+  });
+  if (param.get("m")) setMoment(param.get("m"));
+
+  // Free placement: what the height means in the world (eye 11.3 m, 37.1 m from the middle, field 40°, rest 2.56° up).
+  document.addEventListener("mockplace", e => {
+    const el = e.target; const top = e.detail.y - 247 * e.detail.scale;
+    const below = Math.atan((top - 450) / 450 * Math.tan(20 * Math.PI / 180)) - 2.56 * Math.PI / 180;
+    const metres = 11.3 - 37.1 * Math.tan(below);
+    el.dataset.info = `haut du bouton à ${metres.toFixed(1)} m du sol, plateau ${(7.2 * e.detail.scale).toFixed(1)} m de large`;
+  });
+
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La scène de la chaîne (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+  .bs-film-box { position: sticky; top: 64px; z-index: 4; background: #0d0b09; border-radius: 6px; margin: 0 0 18px; }
+  .bs-film-box video { display: block; width: 100%; max-width: 960px; margin: 0 auto; }
+</style>
+</head>
+<body data-subject="t19-sons">
+
+<header class="page">
+  <h1>La scène de la chaîne (tour 2)</h1>
+  <p><b>Tour 1 :</b> le tic-tac A2 est dans le jeu (PR #181). Aucune levée ni chute ne collait : un seul fichier
+     étiré sur une scène de 7 secondes rate ses moments.</p>
+  <p><b>Ce qui change :</b> la scène a maintenant quatre temps forts, chacun avec son son, joué par le jeu à son
+     instant exact : la levée et le vol (0 s), le lâcher (4,8 s), l'impact (5,21 s), le relevé (5,96 s). Chaque son
+     est monté dans FMOD en couches, chaque couche à son moment : les menottes claquent quand les chaînes
+     apparaissent sur la patte droite, la gauche, puis le corps.</p>
+  <p><b>Sans question :</b> la vidéo est la vraie scène, filmée en partie automatique. « Sur la vidéo » la rejoue
+     avec cette proposition à son moment et, pour les autres temps forts, celles que tu as aimées (sinon celles par
+     défaut). Sons de Freesound, CC0 ou CC BY (crédités), au volume « plus présent » que tu as choisi au tour 1.</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" id="bs-all">▶ La scène avec mes choix</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<div class="bs-film-box"><video id="film" src="audio/scene.mp4" muted playsinline preload="auto"></video></div>
+
+<section>
+  <h2>La levée et le vol, de 0 à 4,8 s</h2>
+  <div class="variant" data-id="L0">
+    <div class="vhead"><span class="vid">L0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play bs-film" data-beat="L" data-take="B0">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/B0.ogg">▶ Seul</button>
+  </div>
+  <div class="variant" data-id="L1">
+    <div class="vhead"><span class="vid">L1</span><span class="vname">Force obscure (par défaut)</span></div>
+    <p class="vdesc">Un grondement magique qui culmine quand le chat arrive en haut ; une menotte claque sur chaque patte puis autour du corps, au moment où les chaînes apparaissent ; une présence sombre pendant que sa carte se montre.</p>
+    <button class="bs-play bs-film" data-beat="L" data-take="L1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/L1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/L1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/oldestmillennial/sounds/533025/" target="_blank">Dark Teleport.wav</a>, oldestmillennial, CC BY 3.0 ;
+       <a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">CHAINHndl_Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0 ;
+       <a href="https://freesound.org/people/rahulsawla_/sounds/748866/" target="_blank">Unseen Evil Lurking</a>, rahulsawla_, CC0</p>
+  </div>
+  <div class="variant" data-id="L2">
+    <div class="vhead"><span class="vid">L2</span><span class="vname">Souffle grave</span></div>
+    <p class="vdesc">Une cymbale à l'envers descendue de cinq demi-tons qui gonfle jusqu'en haut ; les mêmes menottes ; une nappe qui ondule pendant le vol.</p>
+    <button class="bs-play bs-film" data-beat="L" data-take="L2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/L2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/L2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/deleted_user_7146007/sounds/383903/" target="_blank">Reverse Crash Cymbal Projection</a>, deleted_user_7146007, CC0 ;
+       <a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">CHAINHndl_Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0 ;
+       <a href="https://freesound.org/people/DneproMan/sounds/394119/" target="_blank">The Witch house_3.wav</a>, DneproMan, CC0</p>
+  </div>
+  <div class="variant" data-id="L3">
+    <div class="vhead"><span class="vid">L3</span><span class="vname">Montée métallique</span></div>
+    <p class="vdesc">Des résonances de métal qui grimpent ; les mêmes menottes ; la présence sombre, plus basse.</p>
+    <button class="bs-play bs-film" data-beat="L" data-take="L3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/L3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/L3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/eldiariosonoro_/sounds/545798/" target="_blank">Metallic Horror Riser FX.wav</a>, eldiariosonoro_, CC0 ;
+       <a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">CHAINHndl_Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0 ;
+       <a href="https://freesound.org/people/rahulsawla_/sounds/748866/" target="_blank">Unseen Evil Lurking</a>, rahulsawla_, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Le lâcher, à 4,8 s</h2>
+  <div class="variant" data-id="R0">
+    <div class="vhead"><span class="vid">R0</span><span class="vname">Rien</span></div>
+    <p class="vdesc">Comme aujourd'hui : silence jusqu'à l'impact.</p>
+    <button class="bs-play bs-film" data-beat="R" data-take="">▶ Sur la vidéo</button>
+  </div>
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Souffle de chute (par défaut)</span></div>
+    <p class="vdesc">Un souffle d'air qui accompagne la chute, et les chaînes qui se relâchent.</p>
+    <button class="bs-play bs-film" data-beat="R" data-take="R1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/R1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/R1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/newagesoup/sounds/377830/" target="_blank">long wispy woosh1.wav</a>, newagesoup, CC BY 4.0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167372/" target="_blank">Steel chain being dropped and dragged</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Chute brève</span></div>
+    <p class="vdesc">Un sifflement court et plus grave, et les chaînes qui se relâchent.</p>
+    <button class="bs-play bs-film" data-beat="R" data-take="R2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/R2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/R2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/MrFossy/sounds/590599/" target="_blank">SFX_WHOOSHYKORN_falling_06.wav</a>, MrFossy, CC0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167372/" target="_blank">Steel chain being dropped and dragged</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Les chaînes seules</span></div>
+    <p class="vdesc">Juste les chaînes qui se relâchent, sans souffle.</p>
+    <button class="bs-play bs-film" data-beat="R" data-take="R3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/R3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/R3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/ani_music/sounds/167372/" target="_blank">Steel chain being dropped and dragged</a>, ani_music, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>L'impact, à 5,21 s</h2>
+  <div class="variant" data-id="I0">
+    <div class="vhead"><span class="vid">I0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le son provisoire fabriqué à la main.</p>
+    <button class="bs-play bs-film" data-beat="I" data-take="C0">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/C0.ogg">▶ Seul</button>
+  </div>
+  <div class="variant" data-id="I1">
+    <div class="vhead"><span class="vid">I1</span><span class="vname">Chute lourde</span></div>
+    <p class="vdesc">Le corps qui s'écrase sur le plancher, les chaînes qui tombent avec lui.</p>
+    <button class="bs-play bs-film" data-beat="I" data-take="I1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/I1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/I1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/courtneyeck/sounds/673424/" target="_blank">Falling body hits the floor</a>, courtneyeck, CC0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167373/" target="_blank">Steel chain being dropped</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="I2">
+    <div class="vhead"><span class="vid">I2</span><span class="vname">Chute et splatch (par défaut)</span></div>
+    <p class="vdesc">La même chute avec un splatch mouillé par-dessus : lourd et drôle à la fois.</p>
+    <button class="bs-play bs-film" data-beat="I" data-take="I2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/I2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/I2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/courtneyeck/sounds/673424/" target="_blank">Falling body hits the floor</a>, courtneyeck, CC0 ;
+       <a href="https://freesound.org/people/nebulasnails/sounds/495118/" target="_blank">Wet Splat 1.mp3</a>, nebulasnails, CC0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167373/" target="_blank">Steel chain being dropped</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="I3">
+    <div class="vhead"><span class="vid">I3</span><span class="vname">Écrasé</span></div>
+    <p class="vdesc">Un écrasement mou, le corps qui retombe, des chaînes plus claires.</p>
+    <button class="bs-play bs-film" data-beat="I" data-take="I3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/I3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/I3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Bertsz/sounds/500912/" target="_blank">Squish impact</a>, Bertsz, CC0 ;
+       <a href="https://freesound.org/people/000600/sounds/187136/" target="_blank">BodyFall.wav</a>, 000600, CC0 ;
+       <a href="https://freesound.org/people/Logicogonist/sounds/799421/" target="_blank">chaindrop 1</a>, Logicogonist, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Il se relève, à 5,96 s</h2>
+  <div class="variant" data-id="G0">
+    <div class="vhead"><span class="vid">G0</span><span class="vname">Rien</span></div>
+    <p class="vdesc">Comme aujourd'hui.</p>
+    <button class="bs-play bs-film" data-beat="G" data-take="">▶ Sur la vidéo</button>
+  </div>
+  <div class="variant" data-id="G1">
+    <div class="vhead"><span class="vid">G1</span><span class="vname">Chaînes et tissu (par défaut)</span></div>
+    <p class="vdesc">Ses chaînes cliquettent quand il se redresse, un froissement de tissu.</p>
+    <button class="bs-play bs-film" data-beat="G" data-take="G1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/G1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/G1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">CHAINHndl_Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0 ;
+       <a href="https://freesound.org/people/martian/sounds/19291/" target="_blank">foley cloth rustle.wav</a>, martian, CC0</p>
+  </div>
+  <div class="variant" data-id="G2">
+    <div class="vhead"><span class="vid">G2</span><span class="vname">Tissu seul</span></div>
+    <p class="vdesc">Juste un froissement de tissu.</p>
+    <button class="bs-play bs-film" data-beat="G" data-take="G2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/G2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/G2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/martian/sounds/19291/" target="_blank">foley cloth rustle.wav</a>, martian, CC0</p>
+  </div>
+  <div class="variant" data-id="G3">
+    <div class="vhead"><span class="vid">G3</span><span class="vname">Chaînes seules</span></div>
+    <p class="vdesc">Un cliquetis de chaînes plus léger.</p>
+    <button class="bs-play bs-film" data-beat="G" data-take="G3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/G3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/G3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">CHAINHndl_Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume de toute la scène</h2>
+  <p>Avec ce que tu as aimé ci-dessus.</p>
+  <div class="variant" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-level" data-db="-4">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-level" data-db="0">▶ Toute la scène</button>
+  </div>
+  <div class="variant" data-id="W3">
+    <div class="vhead"><span class="vid">W3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-level" data-db="4">▶ Toute la scène</button>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Un moment à revoir, un son à chercher ailleurs ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null, musicGain = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicGain = audio().createGain(); musicNode.connect(musicGain).connect(audio().destination);
+    musicNode.start(); return 0.8;  // let the music settle before the sound
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  async function play(src, vol, at) {
+    const buf = await load(src), node = audio().createBufferSource(), g = audio().createGain();
+    node.buffer = buf; g.gain.value = vol; node.connect(g).connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration;
+  }
+  const liked = (prefix, fallback) => {
+    const v = [...document.querySelectorAll('.variant[data-id^="' + prefix + '"]')]
+      .find(v => v.querySelector(".vote .like.on"));
+    return v ? v.dataset.id : fallback;
+  };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  const film = document.getElementById("film");
+  const T0 = 1.0, AT = {"L": 0.0, "R": 4.8, "I": 5.21, "G": 5.96}, DEF = {"L": "L1", "R": "R1", "I": "I2", "G": "G1"};
+  const NOW = { L0: "B0", I0: "C0", R0: null, G0: null };  // what the game plays today
+  function stopFilm() { stopAll(); film.pause(); }
+  document.getElementById("bs-stop").onclick = stopFilm;
+  // The film from 0, each beat's take scheduled at its time (the chain reveal starts T0 into the film).
+  async function scene(pick, gain) {
+    audio().resume(); stopFilm();
+    await startMusic();
+    film.currentTime = 0; await film.play();
+    const now = audio().currentTime - film.currentTime;
+    for (const b in AT) {
+      const take = b in pick ? pick[b] : liked(b, DEF[b]);
+      const src = take in NOW ? NOW[take] : take;
+      if (src) play("audio/" + src + ".ogg", gain, Math.max(0, now + T0 + AT[b] - audio().currentTime));
+    }
+  }
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume(); stopFilm();
+    const wait = await startMusic();
+    play(b.dataset.src, 1, wait);
+  });
+  document.querySelectorAll(".bs-film").forEach(b => b.onclick = () =>
+    scene({ [b.dataset.beat]: b.closest(".variant").dataset.id }, 1));
+  document.getElementById("bs-all").onclick = () => scene({}, 1);
+  document.querySelectorAll(".bs-level").forEach(b => b.onclick = () => scene({}, Math.pow(10, parseFloat(b.dataset.db) / 20)));
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

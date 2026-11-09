@@ -1,6 +1,7 @@
 using Avatars.Cosmetics;
 using CorruptionDuPortail.Domain;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UI.CatCustomization
 {
@@ -18,6 +19,10 @@ namespace UI.CatCustomization
         [Tooltip("Where the stage is built, out of every menu camera's sight.")]
         [SerializeField] private Vector3 stagePosition = new(0f, -1000f, 0f);
 
+        [Tooltip("In a scene with a world of its own (the lobby tablet): built on first SetLive, asleep the rest of the " +
+                 "time, and its light only lights this stage's camera.")]
+        [SerializeField] private bool onDemand;
+
         [SerializeField] private Vector2Int textureSize = new(900, 1100);
 
         [Tooltip("Vertical field of view of the stage camera.")]
@@ -29,6 +34,8 @@ namespace UI.CatCustomization
         private Transform _turntable;
         private CatAppearance _appearance;
         private Camera _camera;
+        private GameObject _stageRoot;
+        private Light _key;
         private RenderTexture _texture;
         private float _yaw;
 
@@ -48,13 +55,14 @@ namespace UI.CatCustomization
 
         private void Awake()
         {
-            Build();
+            if (!onDemand) Build();
             CatLookStore.Changed += Apply;
         }
 
         private void OnDestroy()
         {
             CatLookStore.Changed -= Apply;
+            RenderPipelineManager.beginCameraRendering -= LightOnlyThisStage;
             if (_texture != null)
             {
                 _texture.Release();
@@ -64,11 +72,25 @@ namespace UI.CatCustomization
 
         public void Apply(CatLook look)
         {
+            if (onDemand && _texture == null) return; // loads the saved look when it is built
             Build();
             if (_appearance != null)
             {
                 _appearance.Apply(look);
             }
+        }
+
+        /// <summary>Wakes the stage while its texture is on screen; asleep, its camera costs nothing.</summary>
+        public void SetLive(bool live)
+        {
+            if (live) Build();
+            if (_stageRoot != null && _stageRoot.activeSelf != live) _stageRoot.SetActive(live);
+        }
+
+        // Called before the camera culls its lights: every other camera of the scene renders without this one.
+        private void LightOnlyThisStage(ScriptableRenderContext context, Camera rendering)
+        {
+            if (_key != null) _key.enabled = rendering == _camera;
         }
 
         /// <summary>Turns the cat on itself (drag on the customization screen).</summary>
@@ -97,6 +119,7 @@ namespace UI.CatCustomization
             var root = new GameObject("CatPreviewStage (runtime)");
             root.transform.SetParent(transform, false);
             root.transform.position = stagePosition;
+            _stageRoot = root;
 
             _turntable = new GameObject("Turntable").transform;
             _turntable.SetParent(root.transform, false);
@@ -157,6 +180,11 @@ namespace UI.CatCustomization
             key.type = LightType.Directional;
             key.intensity = 1.2f;
             key.color = new Color(1f, 0.93f, 0.84f);
+            if (onDemand)
+            {
+                _key = key;
+                RenderPipelineManager.beginCameraRendering += LightOnlyThisStage;
+            }
 
             ResetYaw();
             Apply(CatLookStore.Load());

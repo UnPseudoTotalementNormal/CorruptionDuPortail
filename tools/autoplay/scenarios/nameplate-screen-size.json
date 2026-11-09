@@ -1,0 +1,30 @@
+{
+ "name": "nameplate-screen-size",
+ "goal": "Names over the cats in the seated day view (maquettes noms-chats v1: N1 + P1): every name in EB Garamond takes the same height on screen near or far, none is huge or cut because of its size; the chained cat shows no name while it floats, and gets it back on its seat (GameLog avatar.nameplate.reveal hidden=true then false, on every process). A real client holds Abyss and every bot votes it. Judge the pov-black-rest capture and the film.",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "timescale": 1,
+ "timeout": 1200,
+ "video": true,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-pov-tour",
+  "-autoplay-cat-look",
+  "varied",
+  "-autoplay-max-days",
+  "2",
+  "-autoplay-fast-fakes",
+  "-autoplay-force-roles",
+  "Abyss",
+  "-autoplay-role-holder",
+  "client",
+  "-autoplay-vote-focus",
+  "Abyss"
+ ],
+ "expect": [
+  {"type": "outcome", "value": "Completed", "process": "all"},
+  {"type": "event", "kind": "pov.tour", "detail": "avatars=4", "process": "host", "min": 1, "max": 1},
+  {"type": "noErrors", "process": "all", "ignore": ["ClientLoadedSynchronization"]}
+ ]
+}

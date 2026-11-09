@@ -1,0 +1,199 @@
+{
+ "why": "Board T19 chain reveal: real sounds on the scene's four beats instead of Claude's two synthesized placeholders. Round 1 (one file per moment) refused: a 7 s scene needs its moments. Round 2 picked by ear on the film of the scene, tools/maquettes/t19-sons/v2.html (2026-11-02): L1 dark force + a cuff on each paw then the body + a dark presence while the card shows, R1 falling air + chains slack, I3 squashed (R3 chains alone kept aside), G1 chains and cloth, W2 level. Each part normalized alone to the table target; the layered events (chain-reveal.engine.json) give the balance and the timing; each event lands on -20 (W2).",
+ "out": "FMODProject/Corrupted/Assets/SoundMaker/chain-reveal",
+ "event_targets": {
+  "event:/Interface/ChainLift": -20.0,
+  "event:/Interface/ChainRelease": -20.0,
+  "event:/Interface/ChainSplat": -20.0,
+  "event:/Interface/ChainGetUp": -20.0
+ },
+ "aside": {
+  "R3": "the chains alone at the release (Poyo: 'j'aime bien aussi, garde-le de c\u00f4t\u00e9'): chain_slack at 0 dB"
+ },
+ "sounds": [
+  {
+   "name": "rise_dark",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs533025.ogg",
+     "start": 2.0,
+     "end": 4.3,
+     "fade_in": 0.3,
+     "fade_out": 0.25,
+     "highpass": 60
+    }
+   ],
+   "event": "event:/Interface/ChainLift"
+  },
+  {
+   "name": "chain_1",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs798137.ogg",
+     "start": 0.13,
+     "end": 0.95,
+     "fade_out": 0.2,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainLift"
+  },
+  {
+   "name": "chain_2",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs798137.ogg",
+     "start": 2.53,
+     "end": 3.6,
+     "fade_out": 0.3,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainLift"
+  },
+  {
+   "name": "chain_3",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs798137.ogg",
+     "start": 4.94,
+     "end": 6.3,
+     "fade_out": 0.35,
+     "highpass": 120
+    }
+   ],
+   "event": "event:/Interface/ChainLift"
+  },
+  {
+   "name": "drone_evil",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs748866.ogg",
+     "start": 0.3,
+     "end": 3.6,
+     "fade_in": 0.8,
+     "fade_out": 0.9,
+     "highpass": 40
+    }
+   ],
+   "event": "event:/Interface/ChainLift"
+  },
+  {
+   "name": "woosh_wispy",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs377830.ogg",
+     "start": 0.15,
+     "end": 1.0,
+     "fade_in": 0.05,
+     "fade_out": 0.3,
+     "highpass": 120
+    }
+   ],
+   "event": "event:/Interface/ChainRelease"
+  },
+  {
+   "name": "chain_slack",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs167372.ogg",
+     "start": 0.0,
+     "end": 0.66,
+     "fade_out": 0.2,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainRelease"
+  },
+  {
+   "name": "squish",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs500912.ogg",
+     "start": 0.13,
+     "end": 1.0,
+     "fade_out": 0.4,
+     "highpass": 80
+    }
+   ],
+   "event": "event:/Interface/ChainSplat"
+  },
+  {
+   "name": "bodyfall",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs187136.ogg",
+     "start": 0.35,
+     "end": 0.96,
+     "fade_out": 0.25,
+     "highpass": 50
+    }
+   ],
+   "event": "event:/Interface/ChainSplat"
+  },
+  {
+   "name": "chain_drop2",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs799421.ogg",
+     "start": 0.0,
+     "end": 0.9,
+     "fade_out": 0.3,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainSplat"
+  },
+  {
+   "name": "chain_4",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs798137.ogg",
+     "start": 7.66,
+     "end": 8.6,
+     "fade_out": 0.3,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainGetUp"
+  },
+  {
+   "name": "cloth",
+   "category": "table",
+   "mono": true,
+   "layers": [
+    {
+     "src": "../work/chain-reveal/raw/fs19291.ogg",
+     "start": 0.45,
+     "end": 1.6,
+     "fade_in": 0.03,
+     "fade_out": 0.3,
+     "highpass": 150
+    }
+   ],
+   "event": "event:/Interface/ChainGetUp"
+  }
+ ]
+}

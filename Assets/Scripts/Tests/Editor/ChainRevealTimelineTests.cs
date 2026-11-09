@@ -35,6 +35,17 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void SoundBeats_FollowEachOther_BeforeTheBlack()
+        {
+            // ChainRevealDirector plays one sound on each: the release, the impact, the get-up.
+            Assert.That(ChainRevealTimeline.Release, Is.GreaterThan(ChainRevealTimeline.LiftEnd));
+            Assert.That(ChainRevealTimeline.Impact, Is.GreaterThan(ChainRevealTimeline.Release));
+            Assert.That(ChainRevealTimeline.GetUp, Is.EqualTo(ChainRevealTimeline.Flat + ChainRevealTimeline.FreezeSeconds).Within(1e-5f));
+            Assert.That(ChainRevealTimeline.GetUp, Is.GreaterThan(ChainRevealTimeline.Impact));
+            Assert.That(ChainRevealTimeline.GetUp, Is.LessThan(ChainRevealTimeline.BlackOut), "the cat gets up before the black");
+        }
+
+        [Test]
         public void Fall_Accelerates()
         {
             float t0 = ChainRevealTimeline.Release, t1 = (t0 + ChainRevealTimeline.Impact) / 2f;
@@ -98,6 +109,18 @@ namespace Tests.Editor
             Assert.That(today, Is.EqualTo(30f).Within(0.5f));
             // A big circle (Poyo: then D1): the middle itself.
             Assert.That(ChainRevealTimeline.HoverDistance(60f, 14.85f, 40f, 0.68f), Is.EqualTo(60f));
+        }
+
+        [Test]
+        public void FeetHeight_RisesFromTheSeatThenLandsOnTheFloorBelowIt()
+        {
+            const float Lift = 9f, Seat = 10f;
+            Assert.AreEqual(0f, ChainRevealTimeline.FeetHeight(0f, Lift, Seat), 1e-4f, "starts on its seat");
+            float _before = ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Release - 1e-3f, Lift, Seat);
+            float _after = ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Release + 1e-3f, Lift, Seat);
+            Assert.AreEqual(_before, _after, 0.05f, "no jump when it is released");
+            Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Impact, Lift, Seat), 1e-4f, "on the floor");
+            Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.BlackOut, Lift, Seat), 1e-4f, "stays there");
         }
     }
 }

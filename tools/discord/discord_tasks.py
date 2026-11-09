@@ -72,7 +72,7 @@ class Client:
     def __init__(self, token):
         self.headers = {"Authorization": f"Bot {token}", "User-Agent": "DiscordBot (cdp-task-reader, 2)"}
 
-    def get(self, path, params=None, allow_403=False):
+    def get(self, path, params=None, allow_403=False, allow_404=False):
         url = API + path
         if params:
             url += "?" + urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
@@ -85,7 +85,7 @@ class Client:
                     retry = json.load(e).get("retry_after", 1)
                     time.sleep(float(retry) + 0.1)
                     continue
-                if e.code == 403 and allow_403:
+                if (e.code == 403 and allow_403) or (e.code == 404 and allow_404):
                     return None
                 body = e.read().decode("utf-8", "replace")[:300]
                 sys.exit(f"HTTP {e.code} on GET {path}: {body}")
@@ -172,8 +172,9 @@ class Board:
                 break
             before = page[-1]["id"]
         # Forum starter post has id == thread id; fetch it if it fell outside history.
+        # A deleted starter post answers 404: the thread still lives, read the rest.
         if not any(m["id"] == thread_id for m in msgs):
-            starter = self.api.get(f"/channels/{thread_id}/messages/{thread_id}", allow_403=True)
+            starter = self.api.get(f"/channels/{thread_id}/messages/{thread_id}", allow_403=True, allow_404=True)
             if isinstance(starter, dict) and starter.get("id"):
                 msgs.append(starter)
         return sorted(msgs, key=lambda m: int(m["id"]))

@@ -36,7 +36,7 @@ namespace Autoplay
     /// Game options (<c>-autoplay-&lt;key&gt;</c>): <c>role</c> (host|client), <c>clients</c>, <c>players</c>, <c>bots</c>,
     /// <c>connect</c>, <c>visual-picker</c>, <c>vote-focus &lt;role text&gt;</c> (all bots vote that role: forces a situation).
     /// <para>Scenario levers: <c>force-roles A,B</c> (role-name fragments guaranteed in the composition),
-    /// <c>fast-fakes</c> (fake roles go back to sleep after ~1 s — test speed only), <c>max-days N</c> (stop after day N), <c>role-holder host|client|bot</c> (who must hold the forced roles — otherwise the run fails fast with
+    /// <c>fast-fakes</c> (fake roles go back to sleep after ~1 s — test speed only), <c>compact-night</c> (the "Nuit rapide" lobby option: 3 grouped calls), <c>max-days N</c> (stop after day N), <c>role-holder host|client|bot</c> (who must hold the forced roles — otherwise the run fails fast with
     /// "composition mismatch" so the launcher retries another seed), <c>netsim delay,jitter,loss</c> (Multiplayer Tools
     /// Network Simulator on this process), <c>quit-at &lt;phase text&gt;</c> (a client leaves mid-game on purpose),
     /// <c>target-focus</c> / <c>target-focus-power</c> (deterministic power targets), <c>chat</c> (bots write in their
@@ -542,6 +542,16 @@ namespace Autoplay
                 // A role card face on the tablet opens the role detail overlay (screen-space UI Toolkit), then close it.
                 yield return driver.LobbyPeekRoleCard().ToCoroutine(null, _e => InputError(_context, "lobby-role-card", _e));
             }
+            if (LobbyUi(_context) && _context.Config.Flag("lobby-cat"))
+            {
+                yield return driver.LobbyDressCat().ToCoroutine(null, _e => InputError(_context, "lobby-cat", _e));
+            }
+            if (_context.Config.Flag("compact-night"))
+            {
+                // T29 "Nuit rapide": the host's lobby option, set like the tablet's "Autres options" choice does.
+                CompositionRoot.For(networkManager).GameSettingsManager.RequestSetCompactNight(true);
+                _context.Journal.Record("option.compact-night", CompositionRoot.For(networkManager).GameSettingsManager.CompactNight.ToString());
+            }
             AutoplayComposition.WriteRolePool(_rolePool, System.IO.Path.Combine(_context.Journal.OutputDirectory, "roles.json"));
 
             string _forced = _context.Config.Option("force-roles");
@@ -622,6 +632,10 @@ namespace Autoplay
                 // first when the lobby is played through the tablet).
                 if (LobbyUi(_context))
                 {
+                    if (_context.Config.Flag("lobby-cat"))
+                    {
+                        yield return driver.LobbyDressCat().ToCoroutine(null, _e => InputError(_context, "lobby-cat", _e));
+                    }
                     yield return driver.LobbyReady().ToCoroutine(null, _e => InputError(_context, "lobby-ready", _e));
                 }
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),

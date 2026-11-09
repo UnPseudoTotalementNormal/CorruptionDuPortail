@@ -51,6 +51,19 @@ namespace Avatars
         // The cat model's dresser (on the Cat_Avatar child). Null-tolerant: an unwired avatar keeps its default cat.
         [SerializeField] private CatAppearance _catAppearance;
 
+        // APPENDED (board T33): its chair, the artist's. A sibling of the cat's visual: it stays on the seat when the
+        // chained cat flies off, and takes no part in the cat's outline. Local-only cosmetic.
+        [SerializeField] private GameObject _chair;
+
+        /// <summary>Shown while seated, not while walking around in the lobby.</summary>
+        public void SetChairShown(bool _shown)
+        {
+            if (_chair != null && _chair.activeSelf != _shown)
+            {
+                _chair.SetActive(_shown);
+            }
+        }
+
         // Animator wiring for emotes: an integer param selects WHICH emote. LOOP emotes ride the "Emoting" bool
         // (held true → the emote clip loops; false → back to Idle); ONE-SHOT emotes fire the momentary "Emote"
         // trigger (play once → exit-time → Idle). Names must match the Cat_Avatar Animator. Non-trigger params
@@ -231,10 +244,23 @@ namespace Avatars
             CatLookPacked.OnValueChanged += OnCatLookChanged;
             ApplyCatLook(CatLookPacked.Value);
             SubmitLook(CatLookStore.Load());
+            CatLookStore.Changed += OnSavedLookChanged;
         }
 
-        /// <summary>Owner-only: proposes <paramref name="_look"/> to the server (sent at spawn with the saved look).
-        /// No-op on non-owners.</summary>
+        // The player dressed his cat on the lobby tablet: everyone sees it at once. Only his own avatar: the Host also
+        // owns the simulated players' avatars.
+        private void OnSavedLookChanged(CatLook _look)
+        {
+            if (!IsOwner || ownerClientId.Value != NetworkManager.LocalClientId)
+            {
+                return;
+            }
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.cosmetics.resubmit", "seat", ownerClientId.Value, "look", _look.Encode());
+            SubmitLook(_look);
+        }
+
+        /// <summary>Owner-only: proposes <paramref name="_look"/> to the server (sent at spawn with the saved look, then at
+        /// each change). No-op on non-owners.</summary>
         public void SubmitLook(CatLook _look)
         {
             if (IsOwner)
@@ -246,6 +272,7 @@ namespace Avatars
         public override void OnNetworkDespawn()
         {
             CatLookPacked.OnValueChanged -= OnCatLookChanged;
+            CatLookStore.Changed -= OnSavedLookChanged;
             base.OnNetworkDespawn();
         }
 

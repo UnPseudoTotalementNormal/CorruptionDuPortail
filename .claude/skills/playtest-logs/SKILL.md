@@ -125,6 +125,13 @@ added). Read it first: when the new gap is of a kind already listed (same sort o
 the per-feature rule is not enough there → fix the harness too (a `log_guard` check, a CLAUDE.md or
 project-context.md line, a skill step) and say so.
 
+## 5. Mark the handled reports
+
+A report or crash alert is handled once its fix is committed (or the cause is proven and nothing is to fix): put a ✅
+on its Discord alert, `python tools/logs/logs.py resolve <report id>` (the id is on each `reports` line, which also
+shows `✅ handled` for the ones done). Only the reports really handled: a crash whose cause is still unknown, or a
+message with no bug in it (« coucou »), gets none.
+
 Other tools:
 - Rules check (after editing `firebase/firestore.rules`, deploy `firebase deploy --only firestore`):
   `python tools/logs/check_rules.py` (all PASS).

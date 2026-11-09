@@ -57,7 +57,9 @@
 .lobby-roles__controls,
 .lobby-roles__status,
 .lobby-roles .lobby-roles__start,
-.lobby-roles__options {
+.lobby-roles__options,
+.lobby-roles__cat .cat-custo__tabs,
+.lobby-roles__cat .cat-custo__cell {
     background-color: rgb(240, 229, 203);
     border-width: 1px;
     border-color: rgba(90, 60, 30, 0.35);
@@ -393,6 +395,102 @@
     font-size: 25px;
     color: rgb(138, 74, 28);
     -unity-text-align: middle-left;
+}
+.lobby-roles__options-check {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.lobby-roles__options-check Label {
+    font-size: 25px;
+    color: var(--cdp-color-ink);
+}
+.lobby-roles__options-check:hover .lobby-roles__start-box {
+    border-color: rgb(138, 16, 16);
+}
+
+/* ---- "Mon chat": the main menu's customization on the cork (mockup chat-tablette v1 T2), its CatCustomization.uss
+ * places and sizes taken back to the tablet's 1440 x 912 page. ---- */
+.lobby-roles__cat {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+}
+/* The stage's texture leaves a wide margin over the cat: bigger than the page and pulled up-left, clipped by it. */
+.lobby-roles__cat .cat-custo__cat {
+    left: -26px;
+    top: -148px;
+    width: 785px;
+    height: 960px;
+}
+/* The cat's shadow on the cork (asked by Poyo, 2026-11-04: it anchors the cat in the room): a little lower and right. */
+.lobby-roles__cat .lobby-roles__cat-shadow {
+    translate: 10px 18px;
+    -unity-background-image-tint-color: rgb(0, 0, 0);
+    opacity: 0.6;
+    filter: blur(12px);
+}
+.lobby-roles__cat .cat-custo__panel {
+    left: 640px;
+    top: 10px;
+    width: 730px;
+    bottom: 0;
+}
+.lobby-roles__cat .cat-custo__tabs {
+    align-self: flex-start;
+    padding: 4px 8px 0 26px;
+    rotate: 0.4deg;
+}
+.lobby-roles__cat .cat-custo__tab {
+    font-size: 38px;
+    color: var(--cdp-color-ink-soft);
+    margin: 0 30px 0 0;
+    padding: 0 0 4px 0;
+}
+.lobby-roles__cat .cat-custo__tab:hover {
+    color: var(--cdp-color-ink);
+}
+.lobby-roles__cat .cat-custo__tab--on,
+.lobby-roles__cat .cat-custo__tab--on:hover {
+    color: var(--cdp-color-ink);
+    border-color: rgb(138, 16, 16);
+}
+.lobby-roles__cat .cat-custo__current {
+    align-self: flex-start;
+    font-size: 30px;
+    color: var(--cdp-color-ink);
+    margin: 14px 0 22px 0;
+    padding: 2px 16px;
+    rotate: -0.5deg;
+}
+.lobby-roles__cat .cat-custo__cell {
+    width: 166px;
+    margin: 12px 12px 20px 0; /* 4 per row: 4 x (166 + 12) = 712 px inside the 730 px panel minus its 14 px scroller */
+    padding: 6px 4px 8px 4px;
+}
+.lobby-roles__cat .cat-custo__cell--on {
+    border-width: 3px;
+    border-color: rgb(138, 16, 16);
+}
+.lobby-roles__cat .cat-custo__cell-box {
+    width: 152px;
+    height: 142px;
+    border-width: 0;
+    background-color: rgb(72, 58, 44);
+}
+.lobby-roles__cat .cat-custo__cell-icon {
+    width: 140px;
+    height: 131px;
+}
+.lobby-roles__cat .cat-custo__cell-none {
+    color: rgb(190, 165, 130);
+}
+.lobby-roles__cat .cat-custo__cell-name,
+.lobby-roles__cat .cat-custo__cell:hover .cat-custo__cell-name,
+.lobby-roles__cat .cat-custo__cell--on .cat-custo__cell-name {
+    font-size: 23px;
+    color: var(--cdp-color-ink);
+    margin: 6px 0 0 0;
 }
 
 /* ---- thin ink scrollbar (as on the role sheet) ---- */

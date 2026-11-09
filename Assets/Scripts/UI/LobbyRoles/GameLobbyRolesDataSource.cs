@@ -162,6 +162,18 @@ namespace UI.LobbyRoles
             lobbyState.ForceStart();
         }
 
+        public bool GetCompactNight() => _manager != null && _manager.CompactNight;
+
+        public void RequestSetCompactNight(bool compact)
+        {
+            if (_manager == null)
+            {
+                Diagnostics.Logs.GameLog.Info("lobby", "lobby.option.refused", "option", "compactNight", "value", compact, "reason", "no-manager");
+                return;
+            }
+            _manager.RequestSetCompactNight(compact);
+        }
+
         public void RequestSetMax(RoleID id, int max)
         {
             LogRoleChange(id, "max", max);

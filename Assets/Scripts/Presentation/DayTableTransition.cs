@@ -16,7 +16,8 @@ namespace Presentation
     /// Embodied mode: the chainings, the vote and its recap) the cards fly from the table to the screen (<see cref="DayScreenRows"/>),
     /// then the dark swallows the table (T3): under the black the table and the cork disappear, the players move to the
     /// day's bigger circle (<see cref="AvatarManager.SetDayRing"/>), the vote candle goes down to the floor; when the cats'
-    /// lights come back only the players are left, in a circle, and the view rises from the table to its middle (K2).
+    /// lights come back only the players are left, in a circle. The view is put on them under that same black, and never
+    /// moves in sight: the mouse is the player's (Poyo 2026-11-04, replaces K2's rise).
     /// When the day ends the dark brings the table back, then the cards fly back onto it.
     /// Local presentation only; reacts to the camera mode the arbiter broadcasts.
     /// </summary>
@@ -30,8 +31,6 @@ namespace Presentation
         [SerializeField] private List<GameObject> _tableParts = new();
         [Tooltip("World UI lying on the table that would float without it (the powers bar, the skip button).")]
         [SerializeField] private List<GameObject> _tableUi = new();
-        [Tooltip("Seconds for the view to rise to the cats.")]
-        [SerializeField] private float _riseSeconds = 1.2f;
         [Tooltip("Seconds the cards fly before the dark comes.")]
         [SerializeField] private float _cardsFlightSeconds = 1.1f;
         [SerializeField] private float _toBlackSeconds = 0.35f;
@@ -130,10 +129,10 @@ namespace Presentation
             if (!await Wait(_cardsFlightSeconds, _run, _alive)) return;
             if (!await Fade(1f, _toBlackSeconds, _run, _alive)) return;
             ShowTable(false);
-            if (!await Wait(_blackHoldSeconds, _run, _alive)) return;
-            if (!await Fade(0f, _fromBlackSeconds, _run, _alive)) return;
             AvatarManager _manager = AvatarManager.For(NetworkManager.Singleton);
-            _embodiedCamera.SetRestPitch(_manager != null ? _manager.DayRestPitch : _nightRestPitch, _riseSeconds);
+            _embodiedCamera.SetRestPitch(_manager != null ? _manager.DayRestPitch : _nightRestPitch);
+            if (!await Wait(_blackHoldSeconds, _run, _alive)) return;
+            await Fade(0f, _fromBlackSeconds, _run, _alive);
         }
 
         private async UniTaskVoid EndDay(int _run, CancellationToken _alive)
@@ -147,14 +146,14 @@ namespace Presentation
             {
                 if (!await Fade(1f, _toBlackSeconds, _run, _alive)) return;
                 ShowTable(true);
-                _embodiedCamera.SetRestPitch(_nightRestPitch, 0f);
+                _embodiedCamera.SetRestPitch(_nightRestPitch);
                 if (!await Wait(_blackHoldSeconds, _run, _alive)) return;
                 if (!await Fade(0f, _fromBlackSeconds, _run, _alive)) return;
             }
             else
             {
                 ShowTable(true);
-                _embodiedCamera.SetRestPitch(_nightRestPitch, 0f);
+                _embodiedCamera.SetRestPitch(_nightRestPitch);
                 SetBlack(0f);
             }
         }

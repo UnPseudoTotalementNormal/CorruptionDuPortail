@@ -195,5 +195,72 @@ namespace Tests.PlayMode
 
             _manager.OnSettingsChanged -= Handler;
         }
+    
+        // T29 "Nuit rapide": off by default, the host switches it on, readers see it and the tablet is told to refresh.
+        [UnityTest]
+        public IEnumerator CompactNight_OffByDefault_HostSwitchesIt_RaisesEvent()
+        {
+            Assert.IsFalse(_manager.CompactNight, "The classic night is the default.");
+
+            int _changedCount = 0;
+            void Handler() => _changedCount++;
+            _manager.OnSettingsChanged += Handler;
+
+            _manager.RequestSetCompactNight(true);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(
+                () => _changedCount >= 1, 3f, "OnSettingsChanged did not fire when the night option changed.");
+            Assert.IsTrue(_manager.CompactNight, "The host's choice is the replicated value.");
+
+            _changedCount = 0;
+            _manager.RequestSetCompactNight(true);
+            yield return null;
+            Assert.AreEqual(0, _changedCount, "Choosing the current night again changes nothing.");
+
+            _manager.OnSettingsChanged -= Handler;
+        }
+
+        // T29: with the option on, the night follows the compact order and a call lasts 45 s at most.
+        [UnityTest]
+        public IEnumerator CompactNight_AwakeningFollowsTheCompactOrder_AndCapsTheCallAt45s()
+        {
+            RoleDataObject _first = ScriptableObject.CreateInstance<RoleDataObject>();
+            _first.role = new Role { roleID = RoleID.Messager, roleName = "Messager" };
+            RoleDataObject _late = ScriptableObject.CreateInstance<RoleDataObject>();
+            _late.role = new Role { roleID = RoleID.Repenti, roleName = "Repenti" };
+
+            AwakeningState _awakening = ScriptableObject.CreateInstance<AwakeningState>();
+            _awakening.gameSettingsManager = _manager;
+            _awakening.awakeningOrder = new List<AwakeningLayerObject>
+            {
+                new() { awakeningCharacters = new List<RoleDataObject> { _first } },
+                new() { awakeningCharacters = new List<RoleDataObject> { _late } },
+            };
+            _awakening.compactAwakeningOrder = new List<AwakeningLayerObject>
+            {
+                new() { awakeningCharacters = new List<RoleDataObject> { _first, _late } },
+            };
+
+            var _powerGo = new GameObject("Power");
+            Power _power = _powerGo.AddComponent<Power>();
+            _power.maxWaitTime = 60f;
+            var _role = new Role { roleID = RoleID.Repenti, roleName = "Repenti" };
+            _role.powers.Add(_power);
+
+            Assert.AreEqual(1, _awakening.GetAwakeningLayerIndex(_late.role), "Classic night: the Repenti wakes on the second call.");
+            Assert.AreEqual(60f, _awakening.CalculateAwakeningTimer(new List<Role> { _role }), "Classic night: the power's own wait.");
+
+            _manager.RequestSetCompactNight(true);
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _manager.CompactNight, 3f, "The night option did not switch.");
+
+            Assert.AreSame(_awakening.compactAwakeningOrder, _awakening.ActiveOrder, "Compact night: the compact order is followed.");
+            Assert.AreEqual(0, _awakening.GetAwakeningLayerIndex(_late.role), "Compact night: the Repenti wakes with the Messager.");
+            Assert.AreEqual(AwakeningState.CompactLayerMaxTime, _awakening.CalculateAwakeningTimer(new List<Role> { _role }),
+                "Compact night: a call lasts 45 s at most.");
+
+            Object.Destroy(_powerGo);
+            Object.Destroy(_awakening);
+            Object.Destroy(_first);
+            Object.Destroy(_late);
+        }
     }
 }

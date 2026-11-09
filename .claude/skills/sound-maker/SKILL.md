@@ -3,7 +3,7 @@ name: sound-maker
 description: Give the game a new or better sound effect — search free sound libraries on the internet (Freesound first, then Kenney, Sonniss, OpenGameArt, Pixabay), keep only licenses a sold game may use, shape the takes (cut, layer, pitch, filter), level them to the game's own loudness per category so nothing jumps out, let Poyo pick by ear on a listening page, then put them in FMOD (event, random takes, pitch/volume variation, bus, bank), build, check, and record the credits. Use when the user asks for a sound ("trouve un son pour…", "fais-moi un son de…", "remplace le son provisoire", "il manque un son quand…", "sound effect", "SFX", "bruitage", "ce son est trop fort / pas harmonisé", "harmonise les volumes"), or when a feature being coded needs a sound that does not exist yet.
 metadata:
   template: sound-maker
-  template-version: 1.0.1
+  template-version: 1.0.2
 ---
 
 # Sound maker (Corruption du Portail)
@@ -25,6 +25,12 @@ listening page. Tool: `tools/sound/sound.py` (its README: recipe format, loudnes
 - Its **category** in `tools/sound/loudness.json`: it sets the target loudness. A sound heard often (a click, a
   tick) needs several takes and random variation.
 - What plays today: render it to a file, it is the « Actuel » variant.
+- **A scene, not a click** (an animation of several seconds with strong moments: something rises, falls, hits):
+  never one file stretched over it, it misses the moments (chain reveal round 1, 2026-11-02: every take refused).
+  Read the scene's times in the code (a timeline class, the animation's events), write them down as a table
+  (t → what we see → sound), and list the parts each moment needs (a rise, metal closing on each cue, a drone, an
+  air movement, an impact, a cloth). One event **per beat** that the code plays at that beat's time (step 5), each
+  event built in **layers** in FMOD from one take per part.
 
 ## 2. Search
 
@@ -53,6 +59,10 @@ listening page. Tool: `tools/sound/sound.py` (its README: recipe format, loudnes
   layer when one source lacks weight.
 - `sound.py make <W>/drafts.json`, then `sheet` on the result: every take is on its category's target (loudest
   400 ms, true peak under -1 dBTP). No rumble left, no noise before the hit.
+- A scene: first an `elements.json` recipe (one shaped take per part, each normalized alone), then each beat's
+  variants assembled from those elements (`src` = the element wav, `delay` = its start, `gain` = its volume): the
+  very numbers the layered FMOD spec will use, so what Poyo hears is what FMOD will play. Place each part on its
+  cue measured in the code (onsets of the source: where the hit really is), not by eye.
 
 ## 4. Pick by ear (maquettes site)
 
@@ -64,6 +74,9 @@ rules (read `retours.txt`, never re-ask the same choices). Reference page: `tool
 - Played through Web Audio **at the volume the game uses**, with the game's music underneath (a toggle) and a
   sound of the game to compare: loudness is judged in context, not alone.
 - A level section (quieter / as is / louder): the voted level becomes the recipe's `target_max_m`.
+- A scene is judged **on its picture**: film it (the `autoplay` skill, `"video": true`; its `GameLog` gives the
+  moment it starts in the film), and the page plays the film with each variant scheduled by Web Audio at its beat
+  (one section per beat; the others on their default). A sound alone cannot be judged against a timing.
 - Captures of the page in `captures/v<N>/`, link bare on its line in the message.
 
 ## 5. Integrate
@@ -77,7 +90,8 @@ rules (read `retours.txt`, never re-ask the same choices). Reference page: `tool
 - `tools/sound/engine.py` = FMOD. A spec next to the recipe, `tools/sound/recipes/<subject>.engine.json`
   (format: `tools/sound/README.md`): existing event = replaced in place (GUID, effects, code references kept); new
   event = created in its folder, bus `bus:/Sfx` (or Music), bank. Several takes = random multi; `pitch_random` /
-  `volume_random` for sounds heard often.
+  `volume_random` for sounds heard often. A scene's beat = a layered event (`layers`: a track per part at its
+  `start`, its `volume`; the event's `volume` brings the whole onto target after `check`).
 - `sound.py fmod <spec>` runs FMOD Studio's command line (FMOD Studio must be closed), builds **every** bank and
   checks banks against the project (`tools/fmod/README.md`).
 - `sound.py check <event>...`: renders the built event with the game's FMOD runtime and compares it with its target

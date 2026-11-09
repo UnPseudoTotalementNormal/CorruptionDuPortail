@@ -43,5 +43,34 @@ namespace Tests.Editor
             Assert.AreEqual(1920f - 300f, _centre.x, 0.001f);
             Assert.LessOrEqual(_centre.y + 40f, Screen.y);
         }
+
+        [Test]
+        public void KeywordCards_StackOnTheRight_TopsAlignedWithTheBubble()
+        {
+            Vector2[] _centres = TooltipManager.KeywordCardCentres(new Vector2(800f, 500f), new Vector2(456f, 360f),
+                new[] { new Vector2(360f, 220f), new Vector2(360f, 120f) }, 2, 12f, Screen);
+
+            Assert.AreEqual(800f + 228f + 12f + 180f, _centres[0].x, 0.001f);
+            Assert.AreEqual(500f + 180f - 110f, _centres[0].y, 0.001f);
+            Assert.AreEqual(500f + 180f - 220f - 12f - 60f, _centres[1].y, 0.001f);
+        }
+
+        [Test]
+        public void KeywordCards_GoLeft_WhenTheRightHasNoRoom()
+        {
+            Vector2[] _centres = TooltipManager.KeywordCardCentres(new Vector2(1600f, 500f), new Vector2(456f, 360f),
+                new[] { new Vector2(360f, 220f) }, 1, 12f, Screen);
+
+            Assert.AreEqual(1600f - 228f - 12f - 180f, _centres[0].x, 0.001f);
+        }
+
+        [Test]
+        public void KeywordCard_BelowTheScreen_IsKeptInside()
+        {
+            Vector2[] _centres = TooltipManager.KeywordCardCentres(new Vector2(800f, 150f), new Vector2(456f, 200f),
+                new[] { new Vector2(360f, 400f) }, 1, 12f, Screen);
+
+            Assert.AreEqual(200f, _centres[0].y, 0.001f);
+        }
     }
 }

@@ -24,7 +24,7 @@ namespace Autoplay
     /// and input field, Tab again), and at the vote recap the emote wheel (hold T, turn, release). Each step journals
     /// <c>tour.&lt;step&gt; ok|miss</c> next to the usual <c>input.click</c> / <c>input.miss</c>.
     /// Not covered (known gaps): typing / sending in the chat (TMP_InputField reads IMGUI events, send needs a legacy
-    /// Return), the notes ribbon (not placed in any scene), nested tooltip links (legacy Input.mousePosition).
+    /// Return), the notes ribbon (not placed in any scene).
     /// </summary>
     public sealed partial class AutoplayDriver
     {
@@ -104,6 +104,16 @@ namespace Autoplay
             }
         }
 
+        // A trigger the pointer can reach, the richest first: a power with keywords (bubble + keyword cards), then any
+        // power or text with a description, then a title alone (counters).
+        private static HoverTooltipComponent ReachableTooltipTrigger()
+        {
+            return FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
+                .Where(_t => _t.isActiveAndEnabled && _t.HasContent)
+                .OrderByDescending(_t => (_t.Description ?? string.Empty).Contains("<link") ? 2 : string.IsNullOrEmpty(_t.Description) ? 0 : 1)
+                .FirstOrDefault(_t => AutoplayUiLocator.Locate(_t.gameObject) is var _p && _p.found && string.IsNullOrEmpty(_p.reason));
+        }
+
         private async UniTask TourTooltip()
         {
             // Wait (bounded) for something with a tooltip to be on screen and reachable (power bar, role cards…).
@@ -111,9 +121,7 @@ namespace Autoplay
             float _waitUntil = Time.realtimeSinceStartup + 6f;
             while (_trigger == null && Time.realtimeSinceStartup < _waitUntil)
             {
-                _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
-                    .Where(_t => _t.isActiveAndEnabled)
-                    .FirstOrDefault(_t => AutoplayUiLocator.Locate(_t.gameObject) is var _p && _p.found && string.IsNullOrEmpty(_p.reason));
+                _trigger = ReachableTooltipTrigger();
                 if (_trigger == null)
                 {
                     await UniTask.Delay(TimeSpan.FromSeconds(0.25f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
@@ -136,9 +144,7 @@ namespace Autoplay
             for (int _retry = 0; _trigger == null && _retry < 5; _retry++)
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(0.3f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
-                _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
-                    .Where(_t => _t.isActiveAndEnabled)
-                    .FirstOrDefault(_t => AutoplayUiLocator.Locate(_t.gameObject) is var _p && _p.found && string.IsNullOrEmpty(_p.reason));
+                _trigger = ReachableTooltipTrigger();
                 _hovered = _trigger != null && await HoverTarget(_trigger.gameObject, "tooltip", 0f);
             }
             if (_trigger == null)
@@ -155,7 +161,9 @@ namespace Autoplay
             TourStep("tooltip", _open, $"target={AutoplayUiLocator.PathOf(_trigger.gameObject)}");
             if (_open)
             {
-                capture.Request("tour-tooltip", 0f);
+                // The bubble fades in (0.12 s): shoot once it is fully there.
+                capture.Request("tour-tooltip", 0.2f);
+                await TourDwell();
             }
             // Leave it: back to a corner, so the tooltip closes before the next step.
             await VirtualInput.MoveTo(new Vector2(4f, Screen.height - 4f), options.pointerMoveSeconds).WithCancellation(Cancel);

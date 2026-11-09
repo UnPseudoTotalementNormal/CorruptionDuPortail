@@ -19,14 +19,14 @@
   ],
   [
    "table",
-   "VoteCandle|VoteClock|ChainLift|ChainSplat"
+   "VoteCandle|VoteClock|Chain(Lift|Release|Splat|GetUp)"
   ],
   [
    "ui",
    "^event:/Interface/"
   ]
  ],
- "exclude": "VoteClock|ChainLift|ChainSplat",
+ "exclude": "^$",
  "measured": "2026-10-28",
  "targets": {
   "ui": {
@@ -50,7 +50,7 @@
  },
  "targets_why": {
   "ui": "median of the team's clicks (menus, messages, cards, light buttons)",
-  "table": "no team sound yet (the candle, clock and chain sounds are Claude's placeholders): set between the clicks (-29) and the game moments (-19.5), a cue on the table is heard but never covers a voice",
+  "table": "no team sound yet (the candle, clock and chain reveal are sound-maker picks): set between the clicks (-29) and the game moments (-19.5), a cue on the table is heard but never covers a voice",
   "announce": "median of the chaining announcement and the opening",
   "power": "median of the 23 role power sounds",
   "ambience": "median of the 3 ambiences (they range widely, -42 to -12: judge by ear)",

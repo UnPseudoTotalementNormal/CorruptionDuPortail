@@ -61,6 +61,19 @@ namespace Avatars
         [SerializeField] private float _maxPitch = 60f;
         [Tooltip("Starting pitch (deg) on activation — a slight downward tilt reads the emote well.")]
         [SerializeField] private float _startPitch = 15f;
+        [Header("Walls")]
+        [Tooltip("Layers that stop the orbit: the room walls, ceiling, floor and table. The cats' own colliders are " +
+                 "always ignored.")]
+        [SerializeField] private LayerMask _blockingLayers = 1;
+        [Tooltip("Radius (m) of the sphere swept from the cat to the camera; the camera stops this far from a wall.")]
+        [SerializeField] private float _collisionRadius = 1f;
+        [Tooltip("Share of the orbit radius regained per second once the wall is out of the way. Getting closer is " +
+                 "instant so the camera never shows the other side of a wall.")]
+        [SerializeField] private float _radiusReturnSpeed = 2f;
+
+        [Header("Transition")]
+        [Tooltip("Blend time (s) into and out of the emote view. The brain's default 0.75 s felt slow for an emote.")]
+        [SerializeField] private float _blendTime = 0.25f;
         [SerializeField] private int _activePriority = 200;
         [SerializeField] private int _inactivePriority = -100;
 
@@ -75,6 +88,10 @@ namespace Avatars
         // re-measuring every frame would make the camera creep/jitter while the emote plays.
         private float _autoPivotHeight;
         private float _autoDistance;
+        // Radius actually used this frame: the framing radius shortened by the walls, eased back out.
+        private float _currentRadius;
+        private bool _blockedLogged;
+        private readonly RaycastHit[] _hits = new RaycastHit[16];
 
         /// <summary>Whether the emote orbit camera is currently outranking the other cameras.</summary>
         public bool IsActive => _active;
@@ -86,6 +103,23 @@ namespace Avatars
         {
             Assert.IsNotNull(_camera, "AvatarEmoteOrbitCamera._camera is not wired — wire the emote orbit CinemachineCamera.");
             Deactivate();
+            CinemachineCore.GetBlendOverride += OverrideBlend;
+        }
+
+        private void OnDestroy()
+        {
+            CinemachineCore.GetBlendOverride -= OverrideBlend;
+        }
+
+        // Shorter blend into and out of the emote view; every other transition keeps the brain's default.
+        private CinemachineBlendDefinition OverrideBlend(ICinemachineCamera _from, ICinemachineCamera _to,
+            CinemachineBlendDefinition _default, Object _owner)
+        {
+            if (_camera == null || (!ReferenceEquals(_from, _camera) && !ReferenceEquals(_to, _camera)))
+            {
+                return _default;
+            }
+            return new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, _blendTime);
         }
 
         /// <summary>Arbiter contract (mirror <see cref="AvatarEmbodiedCamera.SetActive"/>): on iff the local
@@ -115,6 +149,14 @@ namespace Avatars
             _seeded = false;
             _manager = null;
             _pitch = _startPitch;
+            _blockedLogged = false;
+            // Place the camera on the activation frame: the brain updates before our LateUpdate, so without this it
+            // would start the blend towards wherever the camera was left after the previous emote.
+            TryBind();
+            if (_bound)
+            {
+                UpdatePose();
+            }
         }
 
         private void Deactivate()
@@ -160,6 +202,11 @@ namespace Avatars
             _yaw += _delta.x * _yawSensitivity;
             _pitch = Mathf.Clamp(_pitch - _delta.y * _pitchSensitivity, _minPitch, _maxPitch);
 
+            UpdatePose();
+        }
+
+        private void UpdatePose()
+        {
             // Frame on the visual CENTRE at a radius that clears the model. The raw root pivot is at the FEET and
             // a fixed radius can land inside the mesh, so auto-framing measures the renderer bounds instead.
             float _height = _autoFrame ? _autoPivotHeight : _pivotHeight;
@@ -167,7 +214,48 @@ namespace Avatars
 
             Vector3 _pivot = _boundAvatar.transform.position + Vector3.up * _height;
             EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _radius, out Vector3 _position, out Quaternion _rotation);
+
+            // Stop in front of the walls: closer at once, back out smoothly when the wall is no longer in the way.
+            float _clear = ClearRadius(_pivot, _position - _pivot, _radius, out Collider _blocker);
+            _currentRadius = _clear < _currentRadius
+                ? _clear
+                : Mathf.MoveTowards(_currentRadius, _clear, _radiusReturnSpeed * _radius * Time.deltaTime);
+            if (_blocker != null && !_blockedLogged)
+            {
+                _blockedLogged = true;
+                Diagnostics.Logs.GameLog.Info("camera", "camera.emote.orbit-blocked",
+                    "by", _blocker.name, "radius", _radius, "clear", _clear);
+            }
+            if (_currentRadius < _radius)
+            {
+                EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _currentRadius, out _position, out _rotation);
+            }
             _camera.transform.SetPositionAndRotation(_position, _rotation);
+        }
+
+        // Distance from the pivot the camera can reach along _offset before a blocking collider (not a cat's own).
+        internal float ClearRadius(Vector3 _pivot, Vector3 _offset, float _radius, out Collider _blocker)
+        {
+            _blocker = null;
+            if (_radius <= 0f || _offset.sqrMagnitude < 1e-6f)
+            {
+                return _radius;
+            }
+            int _count = Physics.SphereCastNonAlloc(_pivot, _collisionRadius, _offset.normalized, _hits, _radius,
+                _blockingLayers, QueryTriggerInteraction.Ignore);
+            float _clear = _radius;
+            for (int _i = 0; _i < _count; _i++)
+            {
+                RaycastHit _hit = _hits[_i];
+                // distance 0 = the sphere already overlaps it at the pivot (the cat's own body, the seat): not a wall.
+                if (_hit.distance <= 0f || _hit.distance >= _clear || _hit.collider.GetComponentInParent<PlayerAvatar>() != null)
+                {
+                    continue;
+                }
+                _clear = _hit.distance;
+                _blocker = _hit.collider;
+            }
+            return Mathf.Max(0f, _clear);
         }
 
         /// <summary>
@@ -244,6 +332,7 @@ namespace Avatars
                     _manager = _resolved;
                     _bound = true;
                     MeasureAutoFrame(_avatar);
+                    _currentRadius = _autoFrame ? _autoDistance : _distance;
                     if (!_seeded)
                     {
                         // Camera in FRONT of the avatar = its facing yaw + 180 (behind the pivot's back would be

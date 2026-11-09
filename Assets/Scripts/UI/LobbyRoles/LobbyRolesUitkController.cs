@@ -1,8 +1,11 @@
 using System.Collections.Generic;
+using Avatars.Cosmetics;
 using Characters;
 using Characters.Assets;
 using CorruptionDuPortail.Domain;
+using Smartphone;
 using UI.Cards;
+using UI.CatCustomization;
 using UI.RoleCard;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -75,6 +78,9 @@ namespace UI.LobbyRoles
         private const string OptionsClass = "lobby-roles__options";
         private const string OptionsTitleClass = "lobby-roles__options-title";
         private const string OptionsBtnClass = "lobby-roles__options-btn";
+        private const string OptionsCheckClass = "lobby-roles__options-check";
+        private const string CatPageClass = "lobby-roles__cat";
+        private const string CatShadowClass = "lobby-roles__cat-shadow";
         private const string CardSlotClass = "lobby-roles__card-slot";
         private const string ReadPaperClass = "lobby-roles__paper--read";
         private const string StatusClass = "lobby-roles__status";
@@ -88,9 +94,11 @@ namespace UI.LobbyRoles
         private const int KeyFactionTab = 50;
         private const int KeyStatus = 60;
         private const int KeyReady = 61;
+        private const int KeyCatCell = 300;
 
         private const int TabAttribution = 0;
         private const int TabOptions = 2;
+        private const int TabCat = 3;
 
         private const float CardWidth = 120f; // matches .lobby-roles__unit width; the card derives its 5:7 height
         private const float CardNameSize = 12f; // the name stays on two lines at this card width
@@ -114,6 +122,15 @@ namespace UI.LobbyRoles
         [Tooltip("The screen-space RoleCard overlay opened when a card is tapped (reused as-is). Null = tap does nothing.")]
         [SerializeField] private RoleCardController _roleCardOverlay;
 
+        [Tooltip("Every cosmetic of the cat. Null (harness) = no « Mon chat » tab.")]
+        [SerializeField] private CatCosmeticsCatalog _catCatalog;
+
+        [Tooltip("The player's cat filmed for the « Mon chat » tab (on demand: awake only while the tab shows).")]
+        [SerializeField] private CatPreviewStage _catStage;
+
+        [Tooltip("Optional: the tablet app of this board; closed, the cat of the « Mon chat » tab sleeps.")]
+        [SerializeField] private SmartphoneApp _ownerApp;
+
         private const float PoolOpacity = 1f;
         private const float DimOpacity = 0.3f;  // roles out of the pool read as clearly muted at a glance
         private const int CardFadeMs = 200;     // opacity transition when a role enters/leaves the pool
@@ -134,6 +151,12 @@ namespace UI.LobbyRoles
         // drop back crooked and rise again under a still pointer.
         private int? _liftedKey;
 
+        // The « Mon chat » page: built once, kept across rebuilds (it holds the drag of the cat and reads no lobby data).
+        private VisualElement _catPage;
+        private VisualElement _catShadow;
+        private CatCustomizationPanel _catPanel;
+        private bool _catLive;
+
         private void OnEnable() => TryInitialize();
         private void Start() => TryInitialize();
 
@@ -143,12 +166,34 @@ namespace UI.LobbyRoles
         private void Update()
         {
             if (_initialized && !_everBuilt) Rebuild();
+            UpdateCatStage();
         }
 
         private void OnDisable()
         {
             if (_data != null) _data.OnChanged -= Rebuild;
             _initialized = false;
+            SetCatLive(false);
+        }
+
+        // The stage films only while its page is on the open tablet (the board stays enabled during the whole game).
+        private void UpdateCatStage()
+        {
+            bool live = _activeTab == TabCat && _catPanel != null && (_ownerApp == null || _ownerApp.IsOpen);
+            SetCatLive(live);
+            if (!live) return;
+            _catPanel.Tick();
+            // The panel renders into a texture: show the cat's new frame, and its shadow's (a filter caches its result).
+            _catPage.MarkDirtyRepaint();
+            _catShadow.MarkDirtyRepaint();
+        }
+
+        private void SetCatLive(bool live)
+        {
+            if (live == _catLive) return;
+            _catLive = live;
+            if (_catStage != null) _catStage.SetLive(live);
+            if (!live && _catPanel != null) _catPanel.Close();
         }
 
         private void TryInitialize()
@@ -183,6 +228,8 @@ namespace UI.LobbyRoles
             _root.pickingMode = PickingMode.Ignore;
             _everBuilt = true;
 
+            if (_activeTab == TabCat && _catPage != null && _catPage.parent == _root) return;
+
             // Preserve the scroll position across the full rebuild (a stepper click raises OnChanged → Rebuild;
             // recreating the ScrollView would otherwise snap the grid back to the top).
             float savedScrollY = _scroll != null ? _scroll.scrollOffset.y : 0f;
@@ -207,6 +254,12 @@ namespace UI.LobbyRoles
             if (_activeTab == TabOptions)
             {
                 _root.Add(BuildOptions());
+                return;
+            }
+
+            if (_activeTab == TabCat)
+            {
+                _root.Add(CatPage());
                 return;
             }
 
@@ -248,11 +301,17 @@ namespace UI.LobbyRoles
             tabs.AddToClassList(TabsClass);
             tabs.Add(Tab("Rôles", TabAttribution));
             tabs.Add(Tab("Autres options", TabOptions));
+            if (_catCatalog != null && _catStage != null) tabs.Add(Tab("Mon chat", TabCat));
             return tabs;
 
             VisualElement Tab(string label, int index)
             {
-                var tab = new Button(() => { _activeTab = index; Rebuild(); }) { text = label };
+                var tab = new Button(() =>
+                {
+                    Diagnostics.Logs.GameLog.Info("ui", "ui.lobbyroles.tab", "tab", label);
+                    _activeTab = index;
+                    Rebuild();
+                }) { text = label };
                 tab.AddToClassList(TextBtnClass);
                 tab.AddToClassList(TitleClass);
                 tab.AddToClassList(TabClass);
@@ -261,13 +320,72 @@ namespace UI.LobbyRoles
             }
         }
 
-        // ---- "Autres options": the host-only dev "Démarrage forcé" (skips the all-ready condition; the server still
-        // re-validates the composition). Non-host tablets show the page empty.
+        // ---- "Mon chat": the main menu's customization on the tablet (mockup chat-tablette v1 T2): same places, the cat
+        // right on the cork, the tabs and the vignettes on pinned paper.
+        private VisualElement CatPage()
+        {
+            if (_catPage == null)
+            {
+                _catPage = new VisualElement { pickingMode = PickingMode.Ignore };
+                _catPage.AddToClassList(CatPageClass);
+
+                // Its shadow on the cork: the same filmed silhouette, black and blurred (USS), so it follows every move.
+                _catShadow = new VisualElement { pickingMode = PickingMode.Ignore };
+                _catShadow.AddToClassList("cat-custo__cat");
+                _catShadow.AddToClassList(CatShadowClass);
+                _catPage.Add(_catShadow);
+
+                var cat = new VisualElement();
+                cat.AddToClassList("cat-custo__cat");
+                _catPage.Add(cat);
+
+                var panel = new VisualElement { pickingMode = PickingMode.Ignore };
+                panel.AddToClassList("cat-custo__panel");
+                var tabs = new VisualElement { pickingMode = PickingMode.Ignore };
+                tabs.AddToClassList("cat-custo__tabs");
+                panel.Add(tabs);
+                var current = new Label { pickingMode = PickingMode.Ignore };
+                current.AddToClassList("cat-custo__current");
+                current.AddToClassList(ReadPaperClass);
+                panel.Add(current);
+                var scroll = new ScrollView(ScrollViewMode.Vertical);
+                scroll.AddToClassList("cat-custo__scroll");
+                scroll.AddToClassList(ScrollClass);
+                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                var cells = new VisualElement { pickingMode = PickingMode.Ignore };
+                cells.AddToClassList("cat-custo__grid");
+                scroll.Add(cells);
+                panel.Add(scroll);
+                _catPage.Add(panel);
+
+                _catPanel = new CatCustomizationPanel(_catCatalog, _catStage, cat, tabs, current, cells, (cell, index) =>
+                {
+                    PinnedPaper.Pin(cell, PinnedPaper.PinX(KeyCatCell + index));
+                    Lift(cell, KeyCatCell + index);
+                });
+            }
+            Diagnostics.Logs.GameLog.Info("ui", "ui.cosmetic.open", "where", "tablet");
+            SetCatLive(true);
+            _catPanel.Open();
+            _catShadow.style.backgroundImage = Background.FromRenderTexture(_catStage.Texture);
+            return _catPage;
+        }
+
+        // ---- "Autres options" (host only): the night order (classic or the compact 3-call "Nuit rapide", T29), then
+        // the dev "Démarrage forcé" (skips the all-ready condition; the server still re-validates the composition).
+        // Non-host tablets show the page empty.
         private VisualElement BuildOptions()
         {
             var options = new VisualElement();
             options.AddToClassList(OptionsClass);
             if (!_data.IsHost()) return options;
+
+            var nightTitle = new Label("Nuit");
+            nightTitle.AddToClassList(TitleClass);
+            nightTitle.AddToClassList(OptionsTitleClass);
+            options.Add(nightTitle);
+
+            options.Add(Checkbox("Rapide, en 3 appels", _data.GetCompactNight(), _data.RequestSetCompactNight));
 
             var title = new Label("Options de développement");
             title.AddToClassList(TitleClass);
@@ -279,6 +397,25 @@ namespace UI.LobbyRoles
             force.AddToClassList(OptionsBtnClass);
             options.Add(force);
             return options;
+        }
+
+        // The ink checkbox of "Je suis prêt" (box + red tick), for an option; the click → OnChanged → Rebuild.
+        private Button Checkbox(string label, bool on, System.Action<bool> set)
+        {
+            var check = new Button(() => set(!on));
+            check.AddToClassList(TextBtnClass);
+            check.AddToClassList(OptionsCheckClass);
+            var box = new VisualElement { pickingMode = PickingMode.Ignore };
+            box.AddToClassList(StartBoxClass);
+            if (on)
+            {
+                var tick = new VisualElement { pickingMode = PickingMode.Ignore };
+                tick.AddToClassList(StartTickClass);
+                box.Add(tick);
+            }
+            check.Add(box);
+            check.Add(new Label(label) { pickingMode = PickingMode.Ignore });
+            return check;
         }
 
         // ---- counters ----

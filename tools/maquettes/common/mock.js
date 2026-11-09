@@ -126,6 +126,11 @@
 
     const send = document.getElementById("send");
     const label = send.textContent;
+    // A vote or remark changed after a send is not sent yet: the button must say so, not stay on "Envoyé ✓"
+    // (otherwise a remark typed after sending is never sent, and nothing shows it).
+    const unsent = () => { if (send.textContent !== label) send.textContent = label; };
+    document.addEventListener("input", unsent);
+    document.addEventListener("click", e => { if (e.target.closest(".vote")) unsent(); });
     send.onclick = async () => {
       const lines = [];
       document.querySelectorAll(".variant").forEach(v => {
@@ -139,6 +144,10 @@
         if (!placeSaved[placeId(el)]) return; // never moved: nothing chosen
         lines.push((variant ? variant.dataset.id + " " : "") + "placement " + (el.dataset.name || "objet") + " : x=" + el.dataset.px +
           " y=" + el.dataset.py + " taille=" + (+el.dataset.ps).toFixed(2) + (el.dataset.info ? " (" + el.dataset.info + ")" : ""));
+      });
+      // anything the page set in data-retour inside a variant (a camera framing, a setting): sent as is
+      document.querySelectorAll(".variant [data-retour]").forEach(el => {
+        if (el.dataset.retour) lines.push(el.closest(".variant").dataset.id + " " + el.dataset.retour);
       });
       if ((saved._global || "").trim()) lines.push("Général : " + saved._global.trim());
       if (!lines.length) { send.textContent = "Rien à envoyer pour l’instant"; setTimeout(() => send.textContent = label, 2000); return; }

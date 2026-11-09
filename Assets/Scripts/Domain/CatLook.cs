@@ -19,7 +19,7 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public struct CatLook : IEquatable<CatLook>
     {
-        public static readonly CatSlot[] Slots = { CatSlot.Fur, CatSlot.Outfit, CatSlot.Eyes, CatSlot.Mouth };
+        public static readonly CatSlot[] Slots = { CatSlot.Fur, CatSlot.Eyes, CatSlot.Mouth, CatSlot.Outfit };
 
         /// <summary>The cat everyone had before customization: black and white fur, red bow cape, its own eyes, no mouth.</summary>
         public static CatLook Default => new CatLook(0, 0, 0, 0);

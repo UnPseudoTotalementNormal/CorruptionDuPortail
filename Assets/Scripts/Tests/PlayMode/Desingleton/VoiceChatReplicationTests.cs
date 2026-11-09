@@ -32,13 +32,32 @@ namespace Tests.PlayMode.Desingleton
 
         private sealed class RecordingCodec : IVoiceCodec
         {
+            public const int ChunkBytes = 5;
+
             public readonly List<byte[]> Decoded = new();
+
+            /// <summary>Like Steam while someone speaks: every read hands out one new packet.</summary>
+            public bool Emitting;
+
+            private byte _nextChunk;
 
             public bool IsAvailable => true;
             public int SampleRate => 24000;
             public bool Recording { get; set; }
 
-            public int ReadCaptured(MemoryStream into) => 0;
+            public int ReadCaptured(MemoryStream into)
+            {
+                if (!Emitting)
+                {
+                    return 0;
+                }
+                _nextChunk++;
+                for (int i = 0; i < ChunkBytes; i++)
+                {
+                    into.WriteByte(_nextChunk);
+                }
+                return ChunkBytes;
+            }
 
             public int Decode(byte[] compressed, int length, MemoryStream pcm)
             {
@@ -145,6 +164,23 @@ namespace Tests.PlayMode.Desingleton
             CollectionAssert.AreEqual(new[] { ClientNm.LocalClientId }, _hostVoice.ListenersOf(HostNm.LocalClientId));
             CollectionAssert.AreEqual(new[] { HostNm.LocalClientId }, _hostVoice.ListenersOf(ClientNm.LocalClientId));
             yield return null;
+        }
+
+        // Steam cannot decode two of its packets glued together: the reads of several frames sent as one packet made
+        // every voice fail to decode (playtest 2026-10-31, voice.decode.failed on both sides).
+        [UnityTest]
+        public IEnumerator Capture_SendsEachReadAsItsOwnPacket()
+        {
+            _clientCodec.Emitting = true;
+            yield return NetworkTestHelper.WaitUntilOrTimeout(() => _hostCodec.Decoded.Count >= 3, 5f,
+                "The host never received the client's captured voice.");
+            _clientCodec.Emitting = false;
+
+            foreach (byte[] _packet in _hostCodec.Decoded)
+            {
+                Assert.AreEqual(RecordingCodec.ChunkBytes, _packet.Length,
+                    "A voice packet must carry exactly one read of the microphone, never several glued together.");
+            }
         }
     }
 }

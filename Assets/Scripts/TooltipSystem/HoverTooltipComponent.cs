@@ -1,17 +1,16 @@
 using System;
-using System.Collections;
-using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace TooltipSystem
 {
-    public class HoverTooltipComponent : MonoBehaviour, ITooltipTrigger, IPointerEnterHandler, IPointerExitHandler
+    /// <summary>
+    /// Something that shows a bubble when the pointer rests on it (power object, counter, cork portrait). It only
+    /// reports the pointer to <see cref="TooltipManager"/>, which decides when the bubble opens, closes and where it goes.
+    /// A trigger with neither title nor description never opens one.
+    /// </summary>
+    public class HoverTooltipComponent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
-        public event Action onMouseEnterTrigger;
-        public event Action onMouseExitTrigger;
-        public event Action onTooltipForceClose;
-
         [SerializeField] private string tooltipTitle;
         [SerializeField] private string tooltipDescription;
         [field:SerializeField] public Vector2 tooltipOffsetDirection { get; set; } = Vector2.up;
@@ -25,43 +24,50 @@ namespace TooltipSystem
         [SerializeField] private RectTransform tooltipBoundsOverride;
         public RectTransform TooltipBoundsOverride => tooltipBoundsOverride;
 
-        private void Start()
-        {
-            tooltipOffsetDirection.Normalize();
-        }
+        // Read when the bubble opens, so a text built from live game state ({var:…}) is never stale.
+        private Func<string> descriptionSource;
+
+        public string Title => tooltipTitle;
+        public string Description => descriptionSource != null ? descriptionSource() : tooltipDescription;
+        public bool HasContent => !string.IsNullOrEmpty(tooltipTitle) || !string.IsNullOrEmpty(Description);
 
         public void SetTooltipTitle(string _title)
         {
             tooltipTitle = _title;
+            NotifyChanged();
         }
-        
+
         public void SetTooltipDescription(string _description)
         {
             tooltipDescription = _description;
+            descriptionSource = null;
+            NotifyChanged();
+        }
+
+        public void SetTooltipDescription(Func<string> _source)
+        {
+            descriptionSource = _source;
+            NotifyChanged();
         }
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            onMouseEnterTrigger?.Invoke();
-
-            if (TooltipManager.instance.IsTooltipOpenForGameObject(gameObject))
-            {
-                return;
-            }
-            
-            TooltipWindow _newTooltip = TooltipManager.instance.CreateNewTooltipFromGameObject(gameObject, tooltipTitle, tooltipDescription);
+            if (TooltipManager.instance != null) TooltipManager.instance.PointerEntered(this);
         }
-        
+
         public void OnPointerExit(PointerEventData _eventData)
         {
-            onMouseExitTrigger?.Invoke();
+            if (TooltipManager.instance != null) TooltipManager.instance.PointerExited(this);
         }
 
         private void OnDisable()
         {
-            onTooltipForceClose?.Invoke();
+            if (TooltipManager.instance != null) TooltipManager.instance.TriggerGone(this);
         }
-        
-        
+
+        private void NotifyChanged()
+        {
+            if (TooltipManager.instance != null) TooltipManager.instance.ContentChanged(this);
+        }
     }
 }

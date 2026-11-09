@@ -1,0 +1,129 @@
+{
+ "bank": "ChainReveal",
+ "events": [
+  {
+   "path": "event:/Interface/ChainLift",
+   "bus": "bus:/Sfx",
+   "volume": 2.8,
+   "layers": [
+    {
+     "name": "Rise",
+     "files": [
+      "SoundMaker/chain-reveal/rise_dark.wav"
+     ],
+     "start": 0,
+     "volume": 0
+    },
+    {
+     "name": "Cuff right paw",
+     "files": [
+      "SoundMaker/chain-reveal/chain_1.wav"
+     ],
+     "start": 0.78,
+     "volume": -5
+    },
+    {
+     "name": "Cuff left paw",
+     "files": [
+      "SoundMaker/chain-reveal/chain_2.wav"
+     ],
+     "start": 1.26,
+     "volume": -5
+    },
+    {
+     "name": "Chain body",
+     "files": [
+      "SoundMaker/chain-reveal/chain_3.wav"
+     ],
+     "start": 1.55,
+     "volume": -3
+    },
+    {
+     "name": "Drone",
+     "files": [
+      "SoundMaker/chain-reveal/drone_evil.wav"
+     ],
+     "start": 1.8,
+     "volume": -9
+    }
+   ]
+  },
+  {
+   "path": "event:/Interface/ChainRelease",
+   "bus": "bus:/Sfx",
+   "volume": 2.8,
+   "layers": [
+    {
+     "name": "Fall air",
+     "files": [
+      "SoundMaker/chain-reveal/woosh_wispy.wav"
+     ],
+     "start": 0,
+     "volume": 0
+    },
+    {
+     "name": "Chains slack",
+     "files": [
+      "SoundMaker/chain-reveal/chain_slack.wav"
+     ],
+     "start": 0,
+     "volume": -4
+    }
+   ]
+  },
+  {
+   "path": "event:/Interface/ChainSplat",
+   "bus": "bus:/Sfx",
+   "volume": 1.5,
+   "layers": [
+    {
+     "name": "Squish",
+     "files": [
+      "SoundMaker/chain-reveal/squish.wav"
+     ],
+     "start": 0,
+     "volume": 0
+    },
+    {
+     "name": "Body",
+     "files": [
+      "SoundMaker/chain-reveal/bodyfall.wav"
+     ],
+     "start": 0,
+     "volume": -3
+    },
+    {
+     "name": "Chains on floor",
+     "files": [
+      "SoundMaker/chain-reveal/chain_drop2.wav"
+     ],
+     "start": 0.03,
+     "volume": -4
+    }
+   ]
+  },
+  {
+   "path": "event:/Interface/ChainGetUp",
+   "bus": "bus:/Sfx",
+   "volume": 3.4,
+   "layers": [
+    {
+     "name": "Chains",
+     "files": [
+      "SoundMaker/chain-reveal/chain_4.wav"
+     ],
+     "start": 0,
+     "volume": 0
+    },
+    {
+     "name": "Cloth",
+     "files": [
+      "SoundMaker/chain-reveal/cloth.wav"
+     ],
+     "start": 0.05,
+     "volume": -6
+    }
+   ]
+  }
+ ]
+}

@@ -23,6 +23,9 @@ Unity **6000.5.0f1** · URP 17.5 · NGO 2.12 (+ Multiplayer Tools 2.2.8, bump to
 2. **`IsLocalOrSimulated(clientId)`, never `IsLocalClient`.**
 3. **Server authority.** Game state mutated server-side only; clients propose via `ServerRpc`. `NetworkVariable` write perm stays `Server`. Sole sanctioned exception: cosmetic gaze `SeatedYaw/Pitch` (owner-write).
 4. **UniTask only** (never `Task`, never new coroutines). Every `.Forget()` in a MonoBehaviour chains `this.GetCancellationTokenOnDestroy()`. Tweens: `AwaitForComplete(ct)`, never `AsyncWaitForCompletion()`.
+   **A join/connect await can unload the menu scene under you** (NGO loads GameScene on success): after it, check
+   `if (this == null) return;` before touching any serialized widget, in every join path (list, password, invite). The
+   NRE otherwise reads as a failed join, or worse, aborts a good connection (password path, playtest 2026-11-01).
 5. **FMOD via `AudioSystem/GameAudioManager`**, never `AudioSource`. `GameAudioManager` must stay no-op-safe without FMOD (EditMode tests). Event refs must exist in `Assets/FMODBanks/` (else runtime `EVENT_NOTFOUND`).
 6. **Depend on injected slices, never locators** (see DI below).
 
@@ -197,6 +200,9 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   A tween on the root fights it (the T23 screen row stacked every card at the centre, back side out). Move a card through
   its Transform layer only; after a `SetParent` call `ApplyComposedTransform()` before tweening; put a size on the PARENT
   (the flip lifts a card 4 parent units, so it must keep the table's proportions).
+- **A dealt card's Transform layer is at its place before the card is**: they wait stacked in the middle of the table
+  until the deal, and the first night starts as they leave. To measure the table, wait for `BoardManager.CardsAtRest()`
+  (reads the card itself): the vote candle measured a free table and stood on a card at 14 seats, T33.
 - **Board card layout values are measured, never guessed** (`CardLayout.GridFor`). Free band of the top view at 1600 × 900: z ≈ +9.8 (characters bar) to −13.6 (bottom HUD / skip button); a hovered card grows ~1.1× and its vote count text slides to 6.89 × scale under the card's centre. Each guess so far hid something (V3 spacing 10.3: near-line panels under the bottom HUD at 12 seats). Any change: `CardLayoutTests` constraints, then `tools/autoplay/sweep_card_visibility.py` (every size, PASS with `--effects-see-through`).
 
 ## Code organization
@@ -223,6 +229,10 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - **New `.cs` files (tests especially): create via Unity** (`unity command create_script`). A file written from disk can sit in the AssetDatabase yet be excluded from compilation: 0 errors, tests in no suite.
 - 2-NM fixture (`MultiClientGameFixture`): network tests always run on **UTP loopback**, never Steam. `IsOwner` is false on client replicas, so drive owner assertions from the host. `ClientCm.GetCharacter` returns the **host** object; the real client replica is `ClientNm.SpawnManager.SpawnedObjects[netId].GetComponent<Character>()`. The real prod `NetworkBehaviour` can be spawned in both NMs via `BuildExtraNetworkPrefabs`.
 - `TestStaticReset.ResetAll` is opt-in, not automatic (auto-reset broke leak-dependent tests; resetting only at Desingleton teardown gives a false green).
+- A fake of a third-party SDK (Steam, FMOD, Relay) must enforce the real API's contract, not just record: the voice
+  fake read nothing and decoded anything, so tests stayed green while every Steam packet failed to decode (several
+  `GetVoice` reads glued into one packet, playtest 2026-10-31). Write down the contract on the interface
+  (`IVoiceCodec.ReadCaptured`: one read = one packet) and make the fake fail when it is broken.
 - Never `WaitForSeconds` / real-time waits in tests. PlayMode flake: port 7777 bind.
 - CI test runner is off (`unity-tests.yml` `if: false`) → run tests locally before a PR.
 - Claude never enters Play mode or builds a player: verify via tests + console; playtests are Poyo's.
@@ -231,4 +241,4 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 
 - Wake-up is sequential (`awakeningOrder`), so heal/corrupt never race; there is no victory tie-break.
 - Mage auto-skip after its 2 powers is by design.
-- In-game skip = sleep only; the real vote-skip path is dead code (deferred, design-owned).
+- By day the vote is skipped on the button in the middle of the circle (`DaySkipTable`, T27); at night the board's button is sleep only.

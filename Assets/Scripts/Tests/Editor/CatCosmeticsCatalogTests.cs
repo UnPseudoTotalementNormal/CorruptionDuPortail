@@ -158,6 +158,60 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void Screen_ShowsTheOutfitLast_AndEachSansFirst()
+        {
+            // Asked by the team (T3, 2026-11-01): « Tenue » after the eyes and the mouths, « Sans … » top left.
+            Assert.AreEqual(CatSlot.Outfit, CatLook.Slots[CatLook.Slots.Length - 1]);
+            CatCosmeticsCatalog catalog = Catalog;
+            foreach (CatSlot slot in CatLook.Slots)
+            {
+                List<CatCosmeticItem> items = catalog.ItemsOf(slot);
+                foreach (CatCosmeticItem empty in items.Where(i => i.slot != CatSlot.Fur && i.parts.Length == 0))
+                    Assert.AreSame(items[0], empty, $"{slot}: '{empty.displayName}' is not first");
+            }
+            Assert.IsTrue(catalog.ItemsOf(CatSlot.Eyes).Any(i => i.parts.Length == 0), "no « Sans yeux »");
+        }
+
+        [Test]
+        public void SansYeux_ShowsNoEyes_AndCannotBlink()
+        {
+            CatCosmeticsCatalog catalog = Catalog;
+            _cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            var appearance = _cat.GetComponent<CatAppearance>();
+            CatCosmeticItem none = catalog.ItemsOf(CatSlot.Eyes).First(i => i.parts.Length == 0);
+            appearance.Apply(CatLook.Default.With(CatSlot.Eyes, none.id));
+            Assert.AreEqual(none.id, appearance.Current.Eyes, "the look fell back to the default eyes");
+            foreach (CatCosmeticItem eyes in catalog.ItemsOf(CatSlot.Eyes))
+                foreach (string part in eyes.parts)
+                    Assert.IsFalse(appearance.Part(part).activeInHierarchy, $"'{part}' shown on a cat without eyes");
+            Assert.IsFalse(appearance.CanBlink);
+        }
+
+        [Test]
+        public void TwoMouthsSharingACard_EachWearItsOwnMaterial()
+        {
+            // « Petit sourire » is the Mage's first mouth, on the Mage's card: going back to the Mage restores its texture.
+            CatCosmeticsCatalog catalog = Catalog;
+            CatCosmeticItem smile = catalog.ItemsOf(CatSlot.Mouth).First(i => i.partMaterial != null);
+            CatCosmeticItem mage = catalog.ItemsOf(CatSlot.Mouth).First(i => i != smile && i.parts.SequenceEqual(smile.parts));
+            _cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            var appearance = _cat.GetComponent<CatAppearance>();
+
+            appearance.Apply(CatLook.Default.With(CatSlot.Mouth, mage.id));
+            Renderer card = appearance.Part(mage.parts[0]).GetComponent<Renderer>();
+            Material own = card.sharedMaterial;
+            Assert.AreNotSame(smile.partMaterial, own);
+
+            appearance.Apply(CatLook.Default.With(CatSlot.Mouth, smile.id));
+            Assert.IsTrue(card.gameObject.activeInHierarchy);
+            Assert.AreSame(smile.partMaterial, card.sharedMaterial);
+
+            appearance.Apply(CatLook.Default.With(CatSlot.Mouth, mage.id));
+            Assert.IsTrue(card.gameObject.activeInHierarchy);
+            Assert.AreSame(own, card.sharedMaterial);
+        }
+
+        [Test]
         public void HiddenParts_StayHidden_TheBlackAndWhiteEyesBlink_AndKeepTheirAngryShape()
         {
             CatCosmeticsCatalog catalog = Catalog;

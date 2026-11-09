@@ -1,0 +1,108 @@
+{
+ "why": "Board T19 vote clock: real ticks instead of Claude's synthesized placeholders. Picked by ear on tools/maquettes/t19-sons/v1.html (2026-11-02): A2 the antique wall clock, V2 level as is (table target). Three takes per side, cut from the same clock, so a tick heard every second never repeats exactly.",
+ "out": "FMODProject/Corrupted/Assets/SoundMaker/vote-clock",
+ "sounds": [
+  {
+   "name": "clock_tic_1",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTic",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 1.681,
+     "end": 1.841,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  },
+  {
+   "name": "clock_tic_2",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTic",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 2.839,
+     "end": 2.999,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  },
+  {
+   "name": "clock_tic_3",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTic",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 3.996,
+     "end": 4.156,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  },
+  {
+   "name": "clock_tac_1",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTac",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 1.142,
+     "end": 1.302,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  },
+  {
+   "name": "clock_tac_2",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTac",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 2.3,
+     "end": 2.46,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  },
+  {
+   "name": "clock_tac_3",
+   "category": "table",
+   "mono": true,
+   "event": "event:/Interface/VoteClockTac",
+   "layers": [
+    {
+     "src": "../work/vote-clock/raw/fs456236.ogg",
+     "start": 3.462,
+     "end": 3.622,
+     "fade_in": 0.005,
+     "fade_out": 0.09,
+     "highpass": 150,
+     "lowpass": 9000
+    }
+   ]
+  }
+ ]
+}

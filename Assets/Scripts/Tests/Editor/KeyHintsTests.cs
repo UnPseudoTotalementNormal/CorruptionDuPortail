@@ -103,7 +103,6 @@ namespace Tests.Editor
         [TestCase(KeyHintAction.ReportBug, KeyHintGroup.Corner)]
         [TestCase(KeyHintAction.PlayersRow, KeyHintGroup.Vote)]
         [TestCase(KeyHintAction.RolesRow, KeyHintGroup.Vote)]
-        [TestCase(KeyHintAction.SkipVote, KeyHintGroup.Vote)]
         [TestCase(KeyHintAction.OpenTablet, KeyHintGroup.Other)]
         [TestCase(KeyHintAction.NextScreen, KeyHintGroup.Other)]
         [TestCase(KeyHintAction.Speak, KeyHintGroup.Other)]
@@ -114,15 +113,14 @@ namespace Tests.Editor
         }
 
         [Test]
-        public void DayVote_SkipKeyAfterTheDayKeys()
+        public void DayVote_DayKeysFirst()
         {
             var _hints = new List<KeyHintAction>();
             CorruptionDuPortail.Domain.KeyHints.For(
-                new KeyHintContext(true, false, false, false, false, false, true, false, dayRowsAvailable: true,
-                    skipVoteAvailable: true),
+                new KeyHintContext(true, false, false, false, false, false, true, false, dayRowsAvailable: true),
                 _hints);
             CollectionAssert.AreEqual(
-                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow, KeyHintAction.SkipVote,
+                new[] { KeyHintAction.PlayersRow, KeyHintAction.RolesRow,
                         KeyHintAction.OpenTablet, KeyHintAction.Menu },
                 _hints);
         }
@@ -131,7 +129,6 @@ namespace Tests.Editor
         public void Night_NoDayKeys()
         {
             CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.PlayersRow);
-            CollectionAssert.DoesNotContain(For(speak: true), KeyHintAction.SkipVote);
         }
 
         [TestCase("Digit1", "&", "1")] // AZERTY prints & on the 1 key

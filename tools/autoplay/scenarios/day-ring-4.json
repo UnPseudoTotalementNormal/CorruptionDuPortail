@@ -1,0 +1,47 @@
+{
+ "name": "day-ring-4",
+ "goal": "Day circle at 4 seats: 4 real players, simulated bots fill the table without a seated cat since the classic preset starts at 5 (maquettes cercle-jour v1: B loosened, G0, view put under the black). The GameLog avatar.dayring.size says seats=4, player=32, others=12; camera.embodied.rest-pitch comes once at day start, under the dark, with no rise afterwards; the first vote's seated view (pov-black-rest) shows the three cats whole on screen; a real client holds Abyss and every bot votes it: its chained cat fills about 60 % of the screen, clear of the far cat. Judge the pov-black-rest capture and the film.",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "timescale": 1,
+ "timeout": 1200,
+ "video": true,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-pov-tour",
+  "-autoplay-cat-look",
+  "varied",
+  "-autoplay-max-days",
+  "2",
+  "-autoplay-fast-fakes",
+  "-autoplay-force-roles",
+  "Abyss",
+  "-autoplay-role-holder",
+  "client",
+  "-autoplay-vote-focus",
+  "Abyss"
+ ],
+ "expect": [
+  {
+   "type": "outcome",
+   "value": "Completed",
+   "process": "all"
+  },
+  {
+   "type": "event",
+   "kind": "pov.tour",
+   "detail": "avatars=4",
+   "process": "host",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "type": "noErrors",
+   "process": "all",
+   "ignore": [
+    "ClientLoadedSynchronization"
+   ]
+  }
+ ]
+}

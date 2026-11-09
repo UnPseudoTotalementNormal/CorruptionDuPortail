@@ -24,7 +24,8 @@ namespace Avatars
     /// <see cref="_fontSize"/>: this component runs in edit mode too (<c>[ExecuteAlways]</c>) so tweaking that
     /// field updates the label's font size live, WYSIWYG. At runtime it also fills the text, gates visibility,
     /// and billboards the label toward the camera. Parent the label under the avatar ROOT (not a rig bone) so
-    /// head yaw/pitch never drags it; the runtime billboard overrides only its rotation, never its transform.
+    /// head yaw/pitch never drags it. In the seated view every name takes the same height on screen, near or far
+    /// (mockups noms-chats v1: N1); walking around, the label keeps its transform.
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(PlayerAvatar))]
@@ -41,16 +42,36 @@ namespace Avatars
         [Tooltip("Font size applied to the label. Driven by the script (live in edit mode); you keep the child's transform.")]
         [SerializeField] private float _fontSize = 8f;
 
+        [Tooltip("Seated view: share of the screen's height a name's font takes, near or far (mockups noms-chats v1: N1).")]
+        [SerializeField] private float _seatedScreenShare = 0.038f;
+
         private PlayerAvatar _avatar;
         private LobbyPlayerInfoHolder _holder;
         private Camera _cam;
 
         private bool _initialized;
         private bool _localSuppressed; // this is my OWN avatar → never show a plate
+        private bool _hiddenForReveal;
+        private Vector3 _labelScale = Vector3.one;
+
+        /// <summary>The chained cat shows no name while it floats (its card says it): T19, mockups noms-chats v1.</summary>
+        public void SetHiddenForReveal(bool _hidden)
+        {
+            if (_hiddenForReveal == _hidden)
+            {
+                return;
+            }
+            _hiddenForReveal = _hidden;
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.nameplate.reveal", "seat", _avatar != null ? _avatar.ownerClientId.Value : 0UL, "hidden", _hidden);
+        }
 
         private void Awake()
         {
             _avatar = GetComponent<PlayerAvatar>();
+            if (_label != null)
+            {
+                _labelScale = _label.transform.localScale;
+            }
             if (Application.isPlaying)
             {
                 SetLabelActive(false); // hidden until the first-person gate says otherwise
@@ -173,7 +194,7 @@ namespace Avatars
                 return;
             }
 
-            bool _show = NameplatePolicy.ShouldShow(false, IsFirstPerson());
+            bool _show = NameplatePolicy.ShouldShow(false, IsFirstPerson()) && !_hiddenForReveal;
             SetLabelActive(_show);
             if (!_show)
             {
@@ -193,6 +214,20 @@ namespace Avatars
             Transform _t = _label.transform;
             Vector3 _awayFromCamera = _t.position - _camera.transform.position;
             _t.rotation = Quaternion.LookRotation(_awayFromCamera, _camera.transform.up);
+            ApplyScale(_t, _camera, _awayFromCamera);
+        }
+
+        private void ApplyScale(Transform _t, Camera _camera, Vector3 _awayFromCamera)
+        {
+            if (_cameraModeChannel == null || !_cameraModeChannel.SeatedFirstPersonLive || _t.parent == null)
+            {
+                _t.localScale = _labelScale;
+                return;
+            }
+            float _world = NameplatePolicy.ScaleForScreenShare(_seatedScreenShare, _camera.fieldOfView,
+                Vector3.Dot(_awayFromCamera, _camera.transform.forward), _fontSize);
+            float _parent = Mathf.Max(0.001f, Mathf.Abs(_t.parent.lossyScale.y));
+            _t.localScale = Vector3.one * (_world / _parent);
         }
 
         private void OnDestroy()

@@ -7,10 +7,10 @@ Claude (then Codex, then Gemini, prompt .github/changelog-prompt.md), Discord "b
 Same embeds as the workflows, field for field.
 
     python tools/build/local_ci.py watch            every 2 min: Dev push / PR notifications, FMOD checks, and a
-                                                    build per new Main head (scheduled task)
+                                                    build per new Main head (started at logon, see install)
     python tools/build/local_ci.py build [sha]      build one commit now (default origin/Main)
     python tools/build/local_ci.py status           state, last builds
-    python tools/build/local_ci.py install          scheduled task "CdP Local CI" (at logon, pythonw watch)
+    python tools/build/local_ci.py install          start the watcher now and at every logon (Startup folder)
 
 Needs: Unity (version of ProjectSettings/ProjectVersion.txt, licensed on this PC), git, rclone remote `gdrive`
 (Drive scope drive.file), the `claude` CLI (codex / gemini as fallbacks), DISCORD_DEV_WEBHOOK and
@@ -443,21 +443,43 @@ def status():
     print(json.dumps({k: v for k, v in state.items() if k != "history"}, indent=2))
     for h in state.get("history", [])[-8:]:
         print(h)
-    print("running" if os.path.exists(LOCK_FILE) else "idle", "| checkout", CHECKOUT)
+    print("building" if os.path.exists(LOCK_FILE) else "idle", "| watcher pids", running() or "none", "| checkout", CHECKOUT)
+
+
+def system_pythonw():
+    """The PC's own Python (never a project's venv: the CLI may run from one)."""
+    root = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python")
+    for d in sorted(os.listdir(root), reverse=True) if os.path.isdir(root) else []:
+        exe = os.path.join(root, d, "pythonw.exe")
+        if os.path.exists(exe):
+            return exe
+    return os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
 
 
 def install():
-    pyw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
-    script = os.path.abspath(__file__).replace(os.path.abspath(REPO), MAIN_REPO)
-    run(["schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RL", "LIMITED", "/TN", "CdP Local CI",
-         "/TR", f'"{pyw}" "{script}" watch'])
-    print("scheduled task 'CdP Local CI' created; start it now with: schtasks /Run /TN \"CdP Local CI\"")
+    """Starts the watcher at every logon (Startup folder: no admin rights, unlike an ONLOGON scheduled task) and now."""
+    script = os.path.join(MAIN_REPO, "tools", "build", "local_ci.py")
+    startup = os.path.join(os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
+    launcher = os.path.join(startup, "CdP Local CI.cmd")
+    with open(launcher, "w", encoding="utf-8", newline="\r\n") as f:
+        f.write(f'@start "" "{system_pythonw()}" "{script}" watch\n')
+    subprocess.Popen([system_pythonw(), script, "watch"], creationflags=0x00000008 | 0x00000200 if os.name == "nt" else 0)
+    print(f"watcher started; {launcher} starts it at every logon")
+
+
+def running():
+    """The watcher's process, if any (by command line)."""
+    done = run(["powershell", "-NoProfile", "-Command",
+                "Get-CimInstance Win32_Process -Filter \"Name like 'python%'\" | Where-Object { $_.CommandLine -like '*local_ci.py*watch*' } | Select-Object -ExpandProperty ProcessId"], check=False)
+    return [int(x) for x in done.stdout.split() if x.isdigit()]
 
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "watch":
+        if any(pid != os.getpid() for pid in running()):
+            sys.exit(0)  # one watcher at a time
         watch()
     elif cmd == "build":
         build(sys.argv[2] if len(sys.argv) > 2 else None)

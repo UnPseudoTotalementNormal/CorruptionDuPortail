@@ -77,7 +77,7 @@ The autoplay framework is the package `com.unpseudo.autoplay`, its own repositor
 `Packages/manifest.json`: generic changes go there (never edit `Library/PackageCache`), see `tools/autoplay/REFERENCE.md`.
 
 Tester builds (Relay + Steam, Discord announcement, changelog) run on Poyo's PC, not GitHub Actions: every new
-`origin/Main` commit is built by `tools/build/local_ci.py` (scheduled task, zips on Google Drive; `status` to follow a
+`origin/Main` commit is built by `tools/build/local_ci.py` (watcher started at logon, zips on Google Drive; `status` to follow a
 build, `tools/build/README.md`). `Build.yml` is manual only.
 
 Playtest bug reports (Wouh on Discord…): read what the game recorded online first, with the `playtest-logs` skill

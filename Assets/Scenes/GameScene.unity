@@ -22227,9 +22227,7 @@ MonoBehaviour:
   _dayRows: {fileID: 1466880943}
   _day: {fileID: 1466880946}
   _spotlights: {fileID: 1299616908}
-  _embodiedCamera: {fileID: 1861743663}
   _seatHeight: 10
-  _landingMarginDegrees: 10
   _light: {fileID: 1135911439}
   _liftSound:
     Guid:

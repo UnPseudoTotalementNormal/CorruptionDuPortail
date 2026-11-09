@@ -122,12 +122,5 @@ namespace Tests.Editor
             Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Impact, Lift, Seat), 1e-4f, "on the floor");
             Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.BlackOut, Lift, Seat), 1e-4f, "stays there");
         }
-
-        [Test]
-        public void FallLookPitch_IsWhatKeepsTheLandingOnScreen()
-        {
-            Assert.AreEqual(30.2f - 15f, ChainRevealTimeline.FallLookPitch(22.4f, 38.5f, 40f, 5f), 0.1f);
-            Assert.Less(ChainRevealTimeline.FallLookPitch(2f, 38.5f, 40f, 5f), 0f, "already on screen: nothing to do");
-        }
     }
 }

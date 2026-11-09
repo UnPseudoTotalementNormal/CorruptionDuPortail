@@ -97,37 +97,20 @@ namespace TooltipSystem
                 return null;
             }
             
-            var _tooltipReference = new TooltipReference()
+            return new TooltipReference()
             {
                 title = _power.powerName.ToString(),
-                description = _power.powerDescription.ToString(),
+                description = PowerTooltipText.Describe(_power),
             };
-            
-            List<PowerComponent> _powerComponents = _power.powerComponents.ToList();
-            
-            if (_powerComponents.Count == 0)
-            {
-                return _tooltipReference;
-            }
-
-            _tooltipReference.description += "\n";
-            
-            for (var _index = 0; _index < _powerComponents.Count; _index++)
-            {
-                var _powerComponent = _powerComponents[_index];
-                if (_index > 0)
-                {
-                    _tooltipReference.description += ", ";
-                }
-                _tooltipReference.description += $"<link=powercomponent_{_ownerClientId}_{_power.NetworkObjectId}_{_index}>{_powerComponent.componentName.ToString()}</link>";
-            }
-
-            _tooltipReference.description = ParseText(_power, _tooltipReference.description);
-            
-            return _tooltipReference;
         }
         
         public string ParseText(Object _parsingObject, string _text, bool _deepParsing = true)
+        {
+            return ParseVars(_parsingObject, _text, _deepParsing);
+        }
+
+        /// <summary>Fills the {var:name} of a text with the fields / properties of <paramref name="_parsingObject"/>.</summary>
+        public static string ParseVars(Object _parsingObject, string _text, bool _deepParsing = true)
         {
             string _textOriginal = _text;
             int _iterationLimit = 10;
@@ -169,7 +152,7 @@ namespace TooltipSystem
             return _text;
         }
         
-        private object GetVarValue(Object _parsingObject, string _varName)
+        private static object GetVarValue(Object _parsingObject, string _varName)
         {
             var _type = _parsingObject.GetType();
             
@@ -217,7 +200,7 @@ namespace TooltipSystem
             return _varValue;
         }
         
-        private List<string> GetTextBetweenBraces(string _text)
+        private static List<string> GetTextBetweenBraces(string _text)
         {
             var _matches = System.Text.RegularExpressions.Regex.Matches(_text, @"\{([^}]*)\}");
             return _matches.Select(m => m.Groups[1].Value).ToList();

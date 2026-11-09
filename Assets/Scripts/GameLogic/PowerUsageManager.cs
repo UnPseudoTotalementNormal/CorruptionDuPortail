@@ -97,7 +97,19 @@ namespace GameLogic
                 currentPower = null;
                 return;
             }
-            
+
+            // Playtest 2026-11-01: the layer timed out while the Incomplet / the Mage Occulte was still in the picker;
+            // it stayed open after the sleep banner, the late pick was refused by the server and nothing said so.
+            string _stopped = currentPower.OwnerStoppedActingReason();
+            if (_stopped != null)
+            {
+                Diagnostics.Logs.GameLog.Info("power", "power.cancel.owner", "power", currentPower.powerName.ToString(),
+                    "owner", currentPower.ownerClientId.Value, "reason", _stopped);
+                currentPower.Cancel();
+                currentPower = null;
+                return;
+            }
+
             currentPower.UsingPowerUpdate();
         }
     }

@@ -233,7 +233,7 @@ def build(sha=None):
         save_state(state)
         start = time.time()
         subject = git("log", "-1", "--format=%B", sha)
-        actor = git("log", "-1", "--format=%an", sha)
+        actor = login_of(sha)  # the workflow showed the GitHub login
         # The build's Drive folder plays the part of the workflow run page (the embeds' title link).
         folder_url = ""
         try:

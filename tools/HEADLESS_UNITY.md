@@ -86,6 +86,8 @@ The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode 
 | Copied Library with its `ScriptAssemblies` / `Bee` | script↔class mapping of the other checkout; a prefab loses a component (seen: `TransformCompositorComponent` on `Card` → NRE → game stalled) | exclude them when seeding (recommended, not yet re-verified from scratch); repair: `CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)` then force-reimport the script and the prefabs |
 | Copied `.unity-pipeline-port` | CLI calls with `--project-path <worktree>` reach the main editor | delete it before launching |
 | Cold GUI open of a seeded Library | assets imported before scripts load: settings re-saved gutted (`FMODStudioSettings.asset` 517 → 5 lines = no audio in builds) | open headless only; `git checkout` such files; `unityctl.sh build` refuses to build if guarded settings drifted from git |
+| `
+` in `eval --code` | the CLI turns it into a real newline inside a C# string: "Newline in constant" | build separators with another character in eval scripts |
 | Recompiling during a PlayMode run | domain reload kills the run (no report) and can leak its UDP socket | `unityctl.sh compile` refuses while a run is in flight; autoplay picks a free port |
 | Editor import noise | ~228 `.shadergraph.meta`, `link.xml` deletion, FMOD cache, URP/Graphics settings rewritten | never commit them: stage explicit files only; `git checkout -- Assets/AddressableAssetsData/link.xml*` |
 | `bash` from Python on Windows | resolves to WSL's `System32\bash.exe` | call Git Bash explicitly (`C:\Program Files\Git\bin\bash.exe`) |

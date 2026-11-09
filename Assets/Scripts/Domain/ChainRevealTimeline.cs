@@ -109,6 +109,21 @@ namespace CorruptionDuPortail.Domain
             return top * (1f - fall * fall);
         }
 
+        /// <summary>
+        /// Height of its feet above its seat (T33, the cats sit on chairs above the floor): it rises by <paramref name="lift"/>
+        /// like <see cref="Height"/>, then falls past its seat to the floor, <paramref name="seatHeight"/> below it.
+        /// </summary>
+        public static float FeetHeight(float t, float lift, float seatHeight)
+        {
+            float height = Height(t);
+            if (t < Release)
+            {
+                return height * lift;
+            }
+            float top = 1f + BobShare * (float)Math.Sin((Release - LiftEnd) * 2.4f);
+            return -seatHeight + height / top * (top * lift + seatHeight);
+        }
+
         /// <summary>Share [0, 1] of the way from the card's row slot to the front of the cat.</summary>
         public static float CardFlight(float t)
         {

@@ -138,6 +138,40 @@ public class BoardManager : NetworkBehaviour
     /// <summary>T23: by day the cards leave the table for a row on screen (DayScreenRows). Null = the table's layout.</summary>
     public Board.ICardLayoutOverride cardLayoutOverride { get; set; }
 
+    /// <summary>
+    /// True once every player's card has landed on its place on the table: dealt, and back from the day's rows. What
+    /// stands on the table waits for this before measuring the free places.
+    /// </summary>
+    public bool CardsAtRest()
+    {
+        int _count = visibleCards.Count;
+        if (_count == 0 || _count != CharacterQuery.GetCharacters(false).Count(_c => !_c.isFake))
+        {
+            return false;
+        }
+        CardGrid _grid = _cardLayout.GridFor(_count, cardGridPreset);
+        Vector3 _origin = spawnCardPosition.localPosition;
+        float _centreX = (_origin.x + maxCardPosition.localPosition.x) / 2f;
+        for (int _i = 0; _i < _count; _i++)
+        {
+            Card _card = visibleCards[_i];
+            if (_card == null || _card.transform.parent != transform)
+            {
+                return false;
+            }
+            // The card itself, not its Transform layer: dealt cards wait stacked in the middle of the table with their layer
+            // already at its place (seen at 14 seats: the candle measured a free table).
+            CardPlacement _place = _cardLayout.Place(_i, _count, _grid, _origin.x, _origin.y, _origin.z, _centreX);
+            Vector3 _target = transform.TransformPoint(new Vector3(_place.X, _place.Y, _place.Z));
+            Vector3 _at = _card.transform.position;
+            if (Mathf.Abs(_at.x - _target.x) > 0.1f || Mathf.Abs(_at.z - _target.z) > 0.1f)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void PlaceAllCardsToPosition()
     {
         if (cardLayoutOverride != null && cardLayoutOverride.PlaceCards(visibleCards))

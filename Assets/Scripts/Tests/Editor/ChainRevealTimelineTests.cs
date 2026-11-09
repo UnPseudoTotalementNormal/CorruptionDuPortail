@@ -110,5 +110,17 @@ namespace Tests.Editor
             // A big circle (Poyo: then D1): the middle itself.
             Assert.That(ChainRevealTimeline.HoverDistance(60f, 14.85f, 40f, 0.68f), Is.EqualTo(60f));
         }
+
+        [Test]
+        public void FeetHeight_RisesFromTheSeatThenLandsOnTheFloorBelowIt()
+        {
+            const float Lift = 9f, Seat = 10f;
+            Assert.AreEqual(0f, ChainRevealTimeline.FeetHeight(0f, Lift, Seat), 1e-4f, "starts on its seat");
+            float _before = ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Release - 1e-3f, Lift, Seat);
+            float _after = ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Release + 1e-3f, Lift, Seat);
+            Assert.AreEqual(_before, _after, 0.05f, "no jump when it is released");
+            Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.Impact, Lift, Seat), 1e-4f, "on the floor");
+            Assert.AreEqual(-Seat, ChainRevealTimeline.FeetHeight(ChainRevealTimeline.BlackOut, Lift, Seat), 1e-4f, "stays there");
+        }
     }
 }

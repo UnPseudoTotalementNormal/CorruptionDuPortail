@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &57826940232916256
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7371737402249488356}
+  m_Layer: 7
+  m_Name: Holder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7371737402249488356
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 57826940232916256}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.21643962, z: 0, w: 0.976296}
+  m_LocalPosition: {x: 0.00000011920929, y: -0.00000035762787, z: 0}
+  m_LocalScale: {x: 1.0897334, y: 1.0897334, z: 1.0897334}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2071594716715562548}
+  m_Father: {fileID: 1728890793041387644}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8887689614875055902
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1728890793041387644}
+  - component: {fileID: 7417258946681632978}
+  m_Layer: 7
+  m_Name: PowerObject_ArcaneCube
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1728890793041387644
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8887689614875055902}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7371737402249488356}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &7417258946681632978
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8887689614875055902}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.8988266, y: 2.1358757, z: 2.9120677}
+  m_Center: {x: 0, y: 1.0679379, z: 0}
+--- !u!1001 &1960597553012888031
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7371737402249488356}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.00000027233415
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.9799986
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.00000057031457
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.0000000754979
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -6.1232336e-17
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 6.1232336e-17
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_Name
+      value: ArcaneCube
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+--- !u!4 &2071594716715562548 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4ad991a498e980e4682d317e5fa8c32b, type: 3}
+  m_PrefabInstance: {fileID: 1960597553012888031}
+  m_PrefabAsset: {fileID: 0}

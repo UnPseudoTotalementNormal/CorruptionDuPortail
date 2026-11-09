@@ -51,6 +51,19 @@ namespace Avatars
         // The cat model's dresser (on the Cat_Avatar child). Null-tolerant: an unwired avatar keeps its default cat.
         [SerializeField] private CatAppearance _catAppearance;
 
+        // APPENDED (board T33): its chair, the artist's. A sibling of the cat's visual: it stays on the seat when the
+        // chained cat flies off, and takes no part in the cat's outline. Local-only cosmetic.
+        [SerializeField] private GameObject _chair;
+
+        /// <summary>Shown while seated, not while walking around in the lobby.</summary>
+        public void SetChairShown(bool _shown)
+        {
+            if (_chair != null && _chair.activeSelf != _shown)
+            {
+                _chair.SetActive(_shown);
+            }
+        }
+
         // Animator wiring for emotes: an integer param selects WHICH emote. LOOP emotes ride the "Emoting" bool
         // (held true → the emote clip loops; false → back to Idle); ONE-SHOT emotes fire the momentary "Emote"
         // trigger (play once → exit-time → Idle). Names must match the Cat_Avatar Animator. Non-trigger params

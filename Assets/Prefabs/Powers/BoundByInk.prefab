@@ -685,7 +685,7 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
-  power3DObjectPrefab: {fileID: 0}
+  power3DObjectPrefab: {fileID: 5248318139302726770, guid: 2dd0cf50bbf588b4fa6a862ce7ea87c8, type: 3}
   maxWaitTime: 60
   isPassive: 0
   hasToBeAwakened: 1

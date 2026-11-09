@@ -45,6 +45,8 @@ namespace Presentation
         [Tooltip("The day's table transition: the moment waits for the table to be gone, and ends under its black.")]
         [SerializeField] private DayTableTransition _day;
         [SerializeField] private CatSpotlights _spotlights;
+        [Tooltip("The cats sit on chairs (T33): the floor is this far under their seat.")]
+        [SerializeField] private float _seatHeight = 10f;
         [Tooltip("The light that follows the chained cat (the room is dark). Off outside the moment.")]
         [SerializeField] private Light _light;
         [Tooltip("The lift and the hover, from the start until the release.")]
@@ -173,7 +175,7 @@ namespace Presentation
                 {
                     float _travel = ChainRevealTimeline.Travel(_t);
                     Vector3 _feet = Vector3.Lerp(_seatPosition, _hover, _travel);
-                    _feet.y = _floor + ChainRevealTimeline.Height(_t) * _lift;
+                    _feet.y = _floor + ChainRevealTimeline.FeetHeight(_t, _lift, _seatHeight);
                     if (_hop != null)
                     {
                         _hop.SetWorldPose(_feet, Quaternion.Slerp(_seatRotation, _facing, _travel), Mathf.Lerp(1f, _scale, _travel));

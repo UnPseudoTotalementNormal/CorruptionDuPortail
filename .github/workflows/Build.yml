@@ -1,9 +1,9 @@
 name: Build
 
+# Builds run on Poyo's PC now (tools/build/local_ci.py, same Discord messages): GitHub Actions was blocked by a
+# billing lock (2026-11-07). Kept by hand only, so a lifted lock never posts every build twice.
 on:
-  push:
-    branches:
-      - Main
+  workflow_dispatch:
 
 # Two Windows builds of the same commit, sent together to Discord:
 # - Relay: UGS login + UGS lobbies + Unity Relay. Several copies run on one PC (tests).

@@ -20,7 +20,28 @@
         ]
       }
     ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail/.claude/tools/session_worktree.py\" clean --background",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"C:/Users/azert/Documents/PROJECTS/Unity/CorruptionDuPortail/.claude/tools/worktree_guard.py\"",
+            "timeout": 20
+          }
+        ]
+      },
       {
         "matcher": "Bash|PowerShell",
         "hooks": [

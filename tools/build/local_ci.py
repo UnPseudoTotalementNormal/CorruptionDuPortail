@@ -475,7 +475,8 @@ def running():
 
 
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding="utf-8")
+    if sys.stdout is not None:  # None under pythonw (no console): the watcher runs there
+        sys.stdout.reconfigure(encoding="utf-8")
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "watch":
         if any(pid != os.getpid() for pid in running()):

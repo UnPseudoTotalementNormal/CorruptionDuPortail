@@ -264,7 +264,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `real-input-actions` | every power, card pick, vote (reticle), sleep and the Mage's portal card is a real click with its effect, host + 3 real clients, real devices disabled; vote skip through the board's skip button ("Passer le vote") must be a real click; only one exempted, warned design finding: role-picker cards off screen |
 | `real-input-mask` | breakage test: a covered sleep button fails as `input.miss hit=…AutoplayMask` |
 | `real-input-tour` | tooltip, pause menu + audio slider + Escape, tablet + chat app, emote wheel by real input on every screen; a client leaves through the pause menu and is chained |
-| `tooltip-keyword` | a real client holds the Mage Occulte: resting the virtual mouse on Corruption Ciblée opens the parchment bubble with its keyword card (Concentration) beside it, then it closes; filmed |
+| `tooltip-keyword` | a real client holds the Mage Occulte: resting the virtual mouse on Corruption Ciblée opens the parchment bubble with its keyword card (Concentration) beside it, then it closes; client filmed at 30 fps (640 x 360: `make_videos.py` keeps the first frame's size) |
 | `key-hints-tour` | filmed real client: each key the corner hints show (Tab, arrow, Escape, T) does what its drawing says; the video shows the hints change (tablet open / closed, pause menu, seated vote) |
 | `real-input-lobby` | lobby by mouse on the tablet: "Classique" composition, role card overlay (screen-space UI Toolkit) opened and closed, wheel + "Au moins" "›", every "Prêt", start by `TryAutoStart` |
 | `real-input-menu` | first screen captured; a refused join's notification is above the login screen and closes on Dismiss |

@@ -115,13 +115,28 @@ namespace Avatars
 
         private void OpenWheel()
         {
-            Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.open");
             _open = true;
             _stick = Vector2.zero;
             _highlighted = EmoteWheelSelection.None;
+            // A chained cat may only cry: the other emotes are greyed, never hidden (Wouh, T3).
+            bool _chained = ResolveLocalAvatar() is { IsChained: true };
+            int _count = wheel != null ? wheel.Count : 0;
+            _disabled = new bool[_count];
+            for (int _i = 0; _i < _count; _i++)
+            {
+                EmoteDefinition _emote = wheel.GetEmote(_i);
+                _disabled[_i] = _chained && _emote != null && !PlayerAvatar.EmoteAllowedWhileChained(_emote.animatorEmoteId);
+            }
+            Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.open", "chained", _chained);
             wheel?.Open();
+            wheel?.SetDisabled(_disabled);
             Opened?.Invoke();
         }
+
+        // Greyed slots of the open wheel: pointing at one selects nothing.
+        private bool[] _disabled = System.Array.Empty<bool>();
+
+        private bool IsDisabled(int index) => index >= 0 && index < _disabled.Length && _disabled[index];
 
         // Compute the pointed-at emote and highlight it. Locked cursor = accumulated mouse-delta stick;
         // free cursor = pointer offset from screen centre (hover). Both feed the same selection math.
@@ -145,6 +160,10 @@ namespace Avatars
             }
 
             int _index = EmoteWheelSelection.SelectionIndex(_direction, wheel.Count, deadzone);
+            if (IsDisabled(_index))
+            {
+                _index = EmoteWheelSelection.None;
+            }
             wheel.SetSelection(_index);
             _highlighted = _index;
         }
@@ -166,6 +185,11 @@ namespace Avatars
                     : EmoteWheelSelection.SelectionIndex(
                         Cursor.lockState == CursorLockMode.Locked ? _stick : PointerDirection(),
                         wheel.Count, deadzone);
+                if (IsDisabled(_index))
+                {
+                    Diagnostics.Logs.GameLog.Info("emote", "emote.pick.refused", "index", _index, "reason", "chained");
+                    _index = EmoteWheelSelection.None;
+                }
                 EmoteDefinition _emote = wheel.GetEmote(_index);
                 if (_emote == null)
                 {

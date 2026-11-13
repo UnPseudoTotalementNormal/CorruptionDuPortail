@@ -33,6 +33,7 @@ namespace UI.EmoteWheel
         private const string SlotIconPlaceholderClass = "emote-wheel__slot-icon--placeholder";
         private const string SlotLabelClass = "emote-wheel__slot-label";
         private const string SlotSelectedClass = "emote-wheel__slot--selected";
+        private const string SlotDisabledClass = "emote-wheel__slot--disabled";
         private const string CaptionHiddenClass = "emote-wheel__label--hidden";
 
         // Exit transition length (opacity) + buffer before we collapse (display:none), mirroring the RoleCard.
@@ -65,6 +66,9 @@ namespace UI.EmoteWheel
 
         [Tooltip("Fill of the hovered/selected sector's band.")]
         [SerializeField] private Color bandHighlightColor = new(0.85f, 0.70f, 0.25f, 0.80f);
+
+        [Tooltip("Fill of a greyed sector's band (an emote not allowed now: a chained cat may only cry).")]
+        [SerializeField] private Color bandDisabledColor = new(0.05f, 0.05f, 0.07f, 0.25f);
 
         [Tooltip("Sector separators + ring outlines.")]
         [SerializeField] private Color separatorColor = new(0.95f, 0.95f, 0.95f, 0.55f);
@@ -107,6 +111,7 @@ namespace UI.EmoteWheel
         // Per-sector highlight amount [0..1] the painter lerps the band colour with; animated toward the target
         // (selected = 1, rest = 0) by a paused-when-idle scheduler so the hover colour fades instead of snapping.
         private float[] _sectorT;
+        private bool[] _sectorDisabled = System.Array.Empty<bool>();
         private IVisualElementScheduledItem _bandAnim;
 
         /// <summary>Number of emotes in the wheel (0 if unwired) — <see cref="EmoteWheelInput"/> reads it for the selection math.</summary>
@@ -380,7 +385,8 @@ namespace UI.EmoteWheel
                 }
 
                 float _t = _sectorT != null && _i < _sectorT.Length ? _sectorT[_i] : 0f;
-                _p.fillColor = Color.Lerp(bandColor, bandHighlightColor, _t);
+                bool _off = _i < _sectorDisabled.Length && _sectorDisabled[_i];
+                _p.fillColor = _off ? bandDisabledColor : Color.Lerp(bandColor, bandHighlightColor, _t);
                 FillAnnularSector(_p, _center, _rOut, _rIn, _a0, _a1);
             }
 
@@ -482,6 +488,21 @@ namespace UI.EmoteWheel
             _root.RemoveFromClassList(CollapsedClass);
             // Drop the fade class next frame so the 0→1 opacity transition runs.
             _root.schedule.Execute(() => _root.RemoveFromClassList(HiddenClass));
+        }
+
+        /// <summary>Greys the slots flagged in <paramref name="disabled"/> (by index; missing = enabled). Call after
+        /// <see cref="Open"/>: the input never selects a greyed slot.</summary>
+        public void SetDisabled(IReadOnlyList<bool> disabled)
+        {
+            int _count = _slots.Count;
+            _sectorDisabled = new bool[_count];
+            for (int _i = 0; _i < _count; _i++)
+            {
+                _sectorDisabled[_i] = disabled != null && _i < disabled.Count && disabled[_i];
+                _slots[_i].EnableInClassList(SlotDisabledClass, _sectorDisabled[_i]);
+                if (_i < _labels.Count) _labels[_i].EnableInClassList(SlotDisabledClass, _sectorDisabled[_i]);
+            }
+            _donut?.MarkDirtyRepaint();
         }
 
         /// <summary>Animate the wheel out; it collapses (display:none) once the exit finishes.</summary>

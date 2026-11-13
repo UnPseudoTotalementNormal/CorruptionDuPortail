@@ -34,7 +34,8 @@ namespace Tests.Editor
                 .Where(c => !c.name.StartsWith("__preview")).ToList();
             Assert.AreEqual(13, clips.Count, "Cat_Animations_v2.fbx should hold the 13 actions of the artist's files");
             var played = new HashSet<Motion>(Machine.states.Select(s => s.state.motion));
-            foreach (AnimationClip clip in clips)
+            // "Fiery Idle Test" played « Pose ardente », removed from the game (T3, 2026-11-05).
+            foreach (AnimationClip clip in clips.Where(c => c.name != "Fiery Idle Test"))
                 Assert.IsTrue(played.Contains(clip), $"clip '{clip.name}' is played by no state");
             Assert.AreEqual("Idle", Machine.defaultState.name);
             Assert.AreEqual("Idle", Machine.defaultState.motion.name);
@@ -72,7 +73,10 @@ namespace Tests.Editor
         public void EveryWheelEmote_LeadsFromIdle_ToAStateOfItsOwn()
         {
             var set = AssetDatabase.LoadAssetAtPath<EmoteSet>(EmoteSetPath);
-            Assert.GreaterOrEqual(set.Count, 4);
+            Assert.GreaterOrEqual(set.Count, 3);
+            // « Pose ardente » removed at the team's request (T3, 2026-11-05): neither in the wheel nor in the Animator.
+            Assert.IsFalse(set.Emotes.Any(e => e.animatorEmoteId == 4 || e.displayName == "Pose ardente"), "Pose ardente is back in the wheel");
+            Assert.IsFalse(Machine.states.Any(s => s.state.name == "Fiery Idle"), "Fiery Idle is back in the Animator");
             foreach (EmoteDefinition emote in set.Emotes)
             {
                 StringAssert.DoesNotContain("—", emote.displayName);
@@ -95,8 +99,20 @@ namespace Tests.Editor
                 Assert.AreEqual("Getting Chained", first.destinationState.name, $"{from}: chained must be checked first");
                 Assert.IsTrue(first.conditions.Any(c => c.parameter == "Chained" && c.mode == AnimatorConditionMode.If));
             }
-            Assert.IsTrue(State("Chained Idle").transitions.Any(t => t.destinationState.name == "Chained Struggle"
-                && t.conditions.Any(c => c.parameter == "Emoting")), "an emote tried while chained must play the struggle");
+            // T3 (2026-11-05): a chained cat may only cry; the struggle stays, played by the chained pose itself.
+            AnimatorStateTransition[] chained = State("Chained Idle").transitions;
+            Assert.IsTrue(chained.Any(t => t.destinationState.name == "Chained Crying"
+                && t.conditions.Any(c => c.parameter == "Emoting" && c.mode == AnimatorConditionMode.If)
+                && t.conditions.Any(c => c.parameter == "EmoteId" && Mathf.Approximately(c.threshold, 2f))), "a chained cat must cry");
+            Assert.IsTrue(chained.Any(t => t.destinationState.name == "Chained Struggle" && t.hasExitTime && t.conditions.Length == 0),
+                "the chained pose must play the struggle on its own");
+            Assert.IsFalse(chained.Any(t => t.destinationState.name != "Chained Crying"
+                && t.conditions.Any(c => c.parameter == "Emoting" || c.parameter == "Emote")), "only crying answers an emote while chained");
+            Assert.AreEqual("Crying", State("Chained Crying").tag, "the tears follow the Crying tag");
+            Assert.IsTrue(State("Chained Crying").transitions.Any(t => t.destinationState.name == "Idle"
+                && t.conditions.Any(c => c.parameter == "Chained" && c.mode == AnimatorConditionMode.IfNot)), "unchained while crying");
+            Assert.IsTrue(PlayerAvatar.EmoteAllowedWhileChained(2));
+            Assert.IsFalse(PlayerAvatar.EmoteAllowedWhileChained(1) || PlayerAvatar.EmoteAllowedWhileChained(3));
             Assert.IsTrue(State("Idle").transitions.Any(t => t.destinationState.name == "Pulls Tablet Out"
                                                              && t.conditions.Any(c => c.parameter == "Tablet")));
             Assert.IsTrue(State("Look at Tablet Idle").transitions.Any(t => t.destinationState.name == "Putting Table Away"));

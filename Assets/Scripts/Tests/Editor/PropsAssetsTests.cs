@@ -18,7 +18,36 @@ namespace Tests.Editor
         private const string ObjectsDir = "Assets/Prefabs/PowersBar/3DModels";
 
         // Still the default model: their objects are not delivered yet.
-        private static readonly string[] AwaitingTheirObject = { "CardsShuffling", "Omniscience" };
+        private static readonly string[] AwaitingTheirObject = { "CardsShuffling" };
+
+        // The role -> object rows of the artist's asset tracker (T33, Corrompu_Suivi_Assets_3D.xlsx): the game designer's
+        // choice, not ours. A new tracker means new rows here, then Tools > Props > Rebuild assets.
+        private static readonly (string Power, string Object)[] TrackerRows =
+        {
+            ("TargetedCorruption", "PowerObject_Corruptor"), // Occult Mage n°1: two corruptors
+            ("EmbraceOfShadows", "PowerObject_ArcaneCube"), // Occult Mage n°2: red arcane cube
+            ("ChainedByTheShadows", "PowerObject_ChainPile"), // Abyss: chain on the floor
+            ("Omniscience", "PowerObject_Totem"), // Robot: MissingNo-like glitch
+            ("DroolyHealing", "PowerObject_CrystalBall"), // Gloubi: magic ball
+            ("Blessing", "PowerObject_LeafHeart"), // Dryad: leaf heart
+            ("PersonalBeacons", "PowerObject_BeaconRobot"), // Technomancer: one-wheeled robot with beacons
+            ("LackOfAffection", "PowerObject_TeddyBear"), // Orphan: teddy bear
+            ("Reincarnation", "PowerObject_PurpleHand"), // Incomplete: divine purple hand
+            ("BoundByInk", "PowerObject_Bell"), // Doorman's bell, Messenger's animation
+            ("CursedVision", "PowerObject_CrystalSkull"), // Repentant: crystal skull
+            ("ClandestineObservation", "PowerObject_Sniper"), // Bounty Hunter: sniper rifle
+        };
+
+        [Test]
+        public void EachRolesPower_HasTheObjectOfTheArtistsTracker()
+        {
+            foreach ((string _powerName, string _objectName) in TrackerRows)
+            {
+                var _power = AssetDatabase.LoadAssetAtPath<GameObject>($"{PowersDir}/{_powerName}.prefab").GetComponentInChildren<Power>(true);
+                Assert.IsNotNull(_power.power3DObjectPrefab, $"{_powerName} has no 3D object");
+                Assert.AreEqual(_objectName, _power.power3DObjectPrefab.name, $"{_powerName}: the tracker gives it {_objectName}");
+            }
+        }
 
         [Test]
         public void EveryActivePower_HasItsObject_ExceptTheOnesNotDelivered()
@@ -41,6 +70,20 @@ namespace Tests.Editor
                     Assert.IsNotNull(_power.power3DObjectPrefab, $"{_name} has no 3D object");
                 }
             }
+        }
+
+        [Test]
+        public void TechnomancerBeacon_IsTheArtistsModel_OffUntilItsTargetIsCorrupted()
+        {
+            var _prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CardEffects/BeaconEffect.prefab");
+            var _effect = new SerializedObject(_prefab.GetComponentInChildren<Board.Components.CardEffectTechnoBeacon>(true));
+            var _renderer = _effect.FindProperty("targetRenderer").objectReferenceValue as MeshRenderer;
+            Assert.IsNotNull(_renderer, "targetRenderer not wired");
+            Assert.AreEqual("Beacon", _renderer.GetComponent<MeshFilter>().sharedMesh.name, "the artist's beacon, not the placeholder");
+            var _off = (Material)_effect.FindProperty("notCorruptedMaterial").objectReferenceValue;
+            var _lit = (Material)_effect.FindProperty("corruptedMaterial").objectReferenceValue;
+            Assert.IsFalse(_off.IsKeywordEnabled("_EMISSION"), "healthy target: the beacon is off (asset tracker)");
+            Assert.IsTrue(_lit.IsKeywordEnabled("_EMISSION"), "corrupted target: the beacon lights up red");
         }
 
         [Test]

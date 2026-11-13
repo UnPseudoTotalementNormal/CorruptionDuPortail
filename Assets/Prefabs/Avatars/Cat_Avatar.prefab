@@ -991,6 +991,7 @@ GameObject:
   - component: {fileID: 8874405462709290909}
   - component: {fileID: 4055872417862776525}
   - component: {fileID: 4646036212626112835}
+  - component: {fileID: 4143377294341683634}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1066,13 +1067,6 @@ MonoBehaviour:
     Layer: 0
     OriginatingState: 2081823275
     DestinationState: 2050359991
-    TransitionDuration: 0.15
-    TriggerNameHash: -1434604862
-    TransitionIndex: 1
-  - IsCrossFadeExit: 0
-    Layer: 0
-    OriginatingState: 197392919
-    DestinationState: -272827106
     TransitionDuration: 0.15
     TriggerNameHash: -1434604862
     TransitionIndex: 1
@@ -1230,6 +1224,25 @@ MonoBehaviour:
   holdSeconds: 0.4
   rollDegrees: 4
   nodDegrees: 3
+--- !u!114 &4143377294341683634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d45b36c758815e47ab176b2daf19427, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.AvatarArmAim
+  _armBone: {fileID: 3328508734952375920}
+  _animator: {fileID: 3870855746124023605}
+  _yawAcrossBody: 40
+  _yawAwayFromBody: 75
+  _pitchLimit: 40
+  _aimEaseSpeed: 12
+  _fadeSeconds: 0.35
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

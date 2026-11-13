@@ -72,6 +72,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 14
@@ -685,12 +688,16 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
-  power3DObjectPrefab: {fileID: 7992490236785543304, guid: ac5531c291a1e7b4c930676f7a71a536, type: 3}
+  power3DObjectPrefab: {fileID: 5488769974721750583, guid: 0c87eb0015e02aa479c68bf102d3657b, type: 3}
   maxWaitTime: 60
   isPassive: 0
+  hideFromRoleCard: 0
   hasToBeAwakened: 1
   targetIncludeFlags: -2147483400
   powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   maxPowerUse: 1
   powerUseRegenPerAwakening: -1
@@ -708,6 +715,37 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 0}
+  grantOrder:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  passiveOverride:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  marqueSourceId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   powerComponents: []
   idHolderServer: 0
   pickerDescription: "Choisissez le r\xF4le dans lequel vous r\xE9incarner."

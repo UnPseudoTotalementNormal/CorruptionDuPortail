@@ -30,6 +30,8 @@ namespace Board.UI.PowerBar.EditorTools
             public Color Emission = Color.black;
             public bool EmissionFromTexture;
             public float Alpha = 1f;
+            public bool AlphaFromTexture; // blended by the base map's alpha (the board's translucent slime)
+            // Prop_<Texture>_Normal / _Gloss / _Emission are picked up when tools/art/props/prepare_textures.py made them.
         }
 
         // Blender material name -> look. Same names as the FBX's material slots. The game has no reflections
@@ -40,9 +42,10 @@ namespace Board.UI.PowerBar.EditorTools
         private static readonly Dictionary<string, Look> Looks = new Dictionary<string, Look>
         {
             ["Arcane Cube"] = new Look { Texture = "Prop_ArcaneCube" },
-            ["Arcane Cube Emission"] = new Look { Texture = "Prop_ArcaneCube", EmissionFromTexture = true, Emission = Color.white * 7.2f },
+            ["Arcane Cube Emission"] = new Look { Texture = "Prop_ArcaneCube", EmissionFromTexture = true, Emission = Color.white * 17.2f },
+            ["Beacon"] = new Look { Texture = "Prop_Beacon", Roughness = 0.276f, Emission = Color.white * 4.2f },
             ["Bell"] = new Look { Texture = "Prop_Bell", Metallic = 0.717f, Roughness = 0.393f },
-            ["Bloom"] = new Look { Colour = new Color(0.1f, 0.05f, 0.03f), Emission = new Color(1f, 0.42f, 0.173f) * 3.08f },
+            ["Leaf Heart"] = new Look { Colour = new Color(0.1f, 0.05f, 0.03f), Emission = new Color(1f, 0.42f, 0.173f) * 3.08f },
             ["Button Eyes"] = new Look { Colour = new Color(0.029f, 0.025f, 0.026f), Roughness = 0.4f },
             ["Candle Bit"] = new Look { Colour = new Color(0.003f, 0.003f, 0.003f), Roughness = 0.788f },
             ["Candle Plate"] = new Look { Colour = new Color(0.356f, 0.222f, 0.142f), Metallic = 0.82f, Roughness = 0.413f },
@@ -57,12 +60,14 @@ namespace Board.UI.PowerBar.EditorTools
             ["Leaves"] = new Look { Colour = new Color(0.72f, 0.47f, 0.13f), Metallic = 0.6f, Roughness = 0.45f },
             ["Leaves 2"] = new Look { Colour = new Color(0.55f, 0.33f, 0.09f), Metallic = 0.6f, Roughness = 0.5f },
             ["Purple Hand"] = new Look { Texture = "Prop_PurpleHand" },
+            ["Robot"] = new Look { Texture = "Prop_BeaconRobot", Emission = Color.white * 27f },
             ["Sniper"] = new Look { Texture = "Prop_Sniper", Roughness = 0.361f },
             ["Table"] = new Look { Texture = "Prop_Table", Roughness = 0.724f },
             ["Teddy Bear"] = new Look { Texture = "Prop_TeddyBear" },
             ["Timer"] = new Look { Texture = "Prop_Timer", Roughness = 0.363f },
             ["Timer Glass"] = new Look { Colour = new Color(0.8f, 0.8f, 0.8f), Alpha = 0.23f },
-            ["Wooden Board"] = new Look { Texture = "Prop_WoodenBoard", Roughness = 0.696f },
+            ["Totem"] = new Look { Texture = "Prop_Totem", Emission = Color.white * 14.8f },
+            ["Wooden Board"] = new Look { Texture = "Prop_WoodenBoard", AlphaFromTexture = true },
         };
 
         private sealed class PowerObject
@@ -85,25 +90,31 @@ namespace Board.UI.PowerBar.EditorTools
             ["PowerObject_Sniper"] = new PowerObject { Model = "Sniper", Size = 3f, Euler = new Vector3(70f, 25f, 0f) },
             ["PowerObject_TeddyBear"] = new PowerObject { Model = "TeddyBear", Size = 2.1f, Euler = new Vector3(108f, 0f, 0f) },
             ["PowerObject_WoodenBoard"] = new PowerObject { Model = "WoodenBoard", Size = 2.8f, Euler = new Vector3(0f, 0f, 0f) },
+            ["PowerObject_BeaconRobot"] = new PowerObject { Model = "BeaconRobot", Size = 2.3f, Euler = new Vector3(105f, 0f, 0f) },
+            ["PowerObject_Totem"] = new PowerObject { Model = "Totem", Size = 2.4f, Euler = new Vector3(105f, 0f, 0f) },
         };
 
-        // Objects voted on the mockups objets-alex v1 (M2). The Robot's and Luma's keep the default model until delivered.
+        // Who gets which object: the asset tracker of the board task T33 (Corrompu_Suivi_Assets_3D.xlsx, one row per role's
+        // power-up). Not in it, kept from the mockups objets-alex v1: the Oracle's ball and the Jailer's chains. The tracker's
+        // Doorman bell pairs with the Messenger's animation row. Luma's card is not delivered: the default model.
+        // Ugës's wooden board holds his copied powers: not a power's object.
         private static readonly Dictionary<string, string> PowerAssignments = new Dictionary<string, string>
         {
-            ["EmbraceOfShadows"] = "PowerObject_PurpleHand",
-            ["TargetedCorruption"] = "PowerObject_Corruptor",
+            ["TargetedCorruption"] = "PowerObject_Corruptor", // Occult Mage n°1
+            ["EmbraceOfShadows"] = "PowerObject_ArcaneCube", // Occult Mage n°2
             ["CorruptingMark"] = "PowerObject_Corruptor",
-            ["ChainedByTheShadows"] = "PowerObject_ChainPile",
+            ["ChainedByTheShadows"] = "PowerObject_ChainPile", // Abyss
             ["TruthChains"] = "PowerObject_ChainPile",
-            ["DroolyHealing"] = "PowerObject_WoodenBoard",
-            ["Blessing"] = "PowerObject_LeafHeart",
-            ["PersonalBeacons"] = "PowerObject_ArcaneCube",
-            ["LackOfAffection"] = "PowerObject_TeddyBear",
-            ["ClandestineObservation"] = "PowerObject_Sniper",
+            ["Omniscience"] = "PowerObject_Totem", // Robot
+            ["DroolyHealing"] = "PowerObject_CrystalBall", // Gloubi's magic ball
+            ["Blessing"] = "PowerObject_LeafHeart", // Dryad
+            ["PersonalBeacons"] = "PowerObject_BeaconRobot", // Technomancer
+            ["LackOfAffection"] = "PowerObject_TeddyBear", // Orphan
+            ["Reincarnation"] = "PowerObject_PurpleHand", // Incomplete
+            ["BoundByInk"] = "PowerObject_Bell", // Doorman / Messenger
+            ["CursedVision"] = "PowerObject_CrystalSkull", // Repentant
+            ["ClandestineObservation"] = "PowerObject_Sniper", // Bounty Hunter
             ["HighPriorityBounty"] = "PowerObject_Sniper",
-            ["Reincarnation"] = "PowerObject_CrystalBall",
-            ["BoundByInk"] = "PowerObject_Bell",
-            ["CursedVision"] = "PowerObject_CrystalSkull",
             ["VisionOfTheImpossible"] = "PowerObject_CrystalBall",
         };
 
@@ -339,12 +350,16 @@ namespace Board.UI.PowerBar.EditorTools
             // A power object is 2 units wide on a 1080p screen: 1024 is plenty. The table and the chairs fill the view.
             bool _large = _path.EndsWith("Prop_Table.png") || _path.EndsWith("Prop_Chair.png");
             int _size = _large ? 2048 : 1024;
-            if (_importer.maxTextureSize == _size && _importer.sRGBTexture && _importer.mipmapEnabled)
+            bool _normal = _path.EndsWith("_Normal.png");
+            bool _colour = !_normal && !_path.EndsWith("_Gloss.png");
+            TextureImporterType _type = _normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            if (_importer.maxTextureSize == _size && _importer.sRGBTexture == _colour && _importer.mipmapEnabled && _importer.textureType == _type)
             {
                 return;
             }
+            _importer.textureType = _type;
             _importer.maxTextureSize = _size;
-            _importer.sRGBTexture = true;
+            _importer.sRGBTexture = _colour;
             _importer.mipmapEnabled = true;
             _importer.SaveAndReimport();
         }
@@ -366,13 +381,23 @@ namespace Board.UI.PowerBar.EditorTools
                 Debug.LogError($"[Props] texture missing: {_look.Texture}");
             }
 
-            bool _transparent = _look.Alpha < 1f;
+            Texture2D _normalMap = MapOf(_look, "Normal");
+            Texture2D _glossMap = MapOf(_look, "Gloss");
+            Texture2D _emissionMap = _look.EmissionFromTexture ? _texture : MapOf(_look, "Emission");
+
+            bool _transparent = _look.Alpha < 1f || _look.AlphaFromTexture;
             _material.SetTexture("_BaseMap", _texture);
             Color _colour = _look.Colour;
             _colour.a = _look.Alpha;
             _material.SetColor("_BaseColor", _colour);
             _material.SetFloat("_Metallic", Mathf.Min(_look.Metallic, MetallicCap));
-            _material.SetFloat("_Smoothness", 1f - _look.Roughness);
+            // With a gloss map the smoothness is its alpha times this.
+            _material.SetFloat("_Smoothness", _glossMap ? 1f : 1f - _look.Roughness);
+            _material.SetTexture("_MetallicGlossMap", _glossMap);
+            SetKeyword(_material, "_METALLICSPECGLOSSMAP", _glossMap);
+            _material.SetTexture("_BumpMap", _normalMap);
+            _material.SetFloat("_BumpScale", 1f);
+            SetKeyword(_material, "_NORMALMAP", _normalMap);
 
             _material.SetFloat("_Surface", _transparent ? 1f : 0f);
             _material.SetFloat("_Blend", 0f);
@@ -387,9 +412,14 @@ namespace Board.UI.PowerBar.EditorTools
             SetKeyword(_material, "_EMISSION", _glows);
             _material.globalIlluminationFlags = _glows ? MaterialGlobalIlluminationFlags.RealtimeEmissive : MaterialGlobalIlluminationFlags.EmissiveIsBlack;
             _material.SetColor("_EmissionColor", _look.Emission);
-            _material.SetTexture("_EmissionMap", _look.EmissionFromTexture ? _texture : null);
+            _material.SetTexture("_EmissionMap", _emissionMap);
             EditorUtility.SetDirty(_material);
             return _material;
+        }
+
+        private static Texture2D MapOf(Look _look, string _kind)
+        {
+            return _look.Texture == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>($"{TexturesDir}/{_look.Texture}_{_kind}.png");
         }
 
         private static void SetKeyword(Material _material, string _keyword, bool _on)

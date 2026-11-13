@@ -73,6 +73,20 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void TechnomancerBeacon_IsTheArtistsModel_OffUntilItsTargetIsCorrupted()
+        {
+            var _prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/CardEffects/BeaconEffect.prefab");
+            var _effect = new SerializedObject(_prefab.GetComponentInChildren<Board.Components.CardEffectTechnoBeacon>(true));
+            var _renderer = _effect.FindProperty("targetRenderer").objectReferenceValue as MeshRenderer;
+            Assert.IsNotNull(_renderer, "targetRenderer not wired");
+            Assert.AreEqual("Beacon", _renderer.GetComponent<MeshFilter>().sharedMesh.name, "the artist's beacon, not the placeholder");
+            var _off = (Material)_effect.FindProperty("notCorruptedMaterial").objectReferenceValue;
+            var _lit = (Material)_effect.FindProperty("corruptedMaterial").objectReferenceValue;
+            Assert.IsFalse(_off.IsKeywordEnabled("_EMISSION"), "healthy target: the beacon is off (asset tracker)");
+            Assert.IsTrue(_lit.IsKeywordEnabled("_EMISSION"), "corrupted target: the beacon lights up red");
+        }
+
+        [Test]
         public void EveryPowerObject_CanBeClickedAndKeepsItsSizeOnTheBar()
         {
             foreach (string _guid in AssetDatabase.FindAssets("PowerObject_ t:Prefab", new[] { ObjectsDir }))

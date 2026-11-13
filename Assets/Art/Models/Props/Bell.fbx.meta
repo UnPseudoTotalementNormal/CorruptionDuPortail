@@ -22,6 +22,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Beacon Off
+    second: {fileID: 2100000, guid: 5b922311668821341b50d78137ae3687, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Bell
     second: {fileID: 2100000, guid: 59d9c0623a8791d46ba16e92c95b4bb4, type: 2}
   - first:

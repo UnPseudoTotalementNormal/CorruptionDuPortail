@@ -44,6 +44,9 @@ namespace Board.UI.PowerBar.EditorTools
             ["Arcane Cube"] = new Look { Texture = "Prop_ArcaneCube" },
             ["Arcane Cube Emission"] = new Look { Texture = "Prop_ArcaneCube", EmissionFromTexture = true, Emission = Color.white * 17.2f },
             ["Beacon"] = new Look { Texture = "Prop_Beacon", Roughness = 0.276f, Emission = Color.white * 4.2f },
+            // Not a slot of the file: the Technomancer's beacon on a card is off until its target is corrupted (tracker).
+            // Its bulb is red in the texture too: darkened, so an off beacon never reads as a red one.
+            ["Beacon Off"] = new Look { Texture = "Prop_Beacon", Colour = new Color(0.25f, 0.25f, 0.25f), Roughness = 0.276f },
             ["Bell"] = new Look { Texture = "Prop_Bell", Metallic = 0.717f, Roughness = 0.393f },
             ["Leaf Heart"] = new Look { Colour = new Color(0.1f, 0.05f, 0.03f), Emission = new Color(1f, 0.42f, 0.173f) * 3.08f },
             ["Button Eyes"] = new Look { Colour = new Color(0.029f, 0.025f, 0.026f), Roughness = 0.4f },
@@ -165,7 +168,51 @@ namespace Board.UI.PowerBar.EditorTools
             AssetDatabase.SaveAssets();
             AssignPowerObjects();
             WirePlayerAvatar();
+            WireBeaconEffect();
             AssetDatabase.SaveAssets();
+        }
+
+        private const string BeaconEffectPath = "Assets/Prefabs/CardEffects/BeaconEffect.prefab";
+        // Upright on the card (the effect root's +Y is the card's normal), its foot near where the placeholder sphere was:
+        // a little inwards and up the card, so seen from above the bulb stays inside the edge and off the role's name.
+        private const float BeaconHeight = 3.2f;
+        private const float BeaconInwards = 0.65f;
+        private const float BeaconUp = 0.8f;
+
+        /// <summary>
+        /// The Technomancer's beacon on a card (CardEffectTechnoBeacon): the artist's model instead of the placeholder cube and
+        /// sphere, off on a healthy target and lit red on a corrupted one.
+        /// </summary>
+        private static void WireBeaconEffect()
+        {
+            GameObject _contents = PrefabUtility.LoadPrefabContents(BeaconEffectPath);
+            Transform _holder = _contents.transform.Find("BeaconModel");
+            for (int _i = _holder.childCount - 1; _i >= 0; _i--)
+            {
+                Object.DestroyImmediate(_holder.GetChild(_i).gameObject);
+            }
+            // Measured upright at the origin, before going under the tilted holder.
+            var _beacon = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>($"{ModelsDir}/Beacon.fbx"), _contents.scene);
+            _beacon.name = "Beacon";
+            float _height = BoundsOf(_beacon).size.y;
+            _beacon.transform.SetParent(_holder, false);
+            _beacon.transform.localScale = Vector3.one * (BeaconHeight / _height);
+            _beacon.transform.localRotation = Quaternion.Inverse(_holder.localRotation);
+            Vector3 _foot = new Vector3(_holder.localPosition.x - BeaconInwards, 0f, _holder.localPosition.z + BeaconUp);
+            _beacon.transform.position = _contents.transform.TransformPoint(_foot);
+
+            var _off = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsDir}/Prop_BeaconOff.mat");
+            var _lit = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsDir}/Prop_Beacon.mat");
+            var _renderer = _beacon.GetComponentInChildren<MeshRenderer>();
+            _renderer.sharedMaterial = _off;
+            var _effect = new SerializedObject(_contents.GetComponentInChildren<Board.Components.CardEffectTechnoBeacon>(true));
+            _effect.FindProperty("notCorruptedMaterial").objectReferenceValue = _off;
+            _effect.FindProperty("corruptedMaterial").objectReferenceValue = _lit;
+            _effect.FindProperty("targetRenderer").objectReferenceValue = _renderer;
+            _effect.ApplyModifiedPropertiesWithoutUndo();
+
+            PrefabUtility.SaveAsPrefabAsset(_contents, BeaconEffectPath);
+            PrefabUtility.UnloadPrefabContents(_contents);
         }
 
         private static void AssignPowerObjects()

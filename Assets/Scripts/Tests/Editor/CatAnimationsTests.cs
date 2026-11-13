@@ -119,6 +119,42 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void TheAccusingArm_IsWired_AndTurnsLikeTheHead()
+        {
+            // T3 (Wouh 2026-11-05): "la tête tourne mais pas le bras". The arm the clip points with follows the look.
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath);
+            var aim = prefab.GetComponent<AvatarArmAim>();
+            Assert.IsNotNull(aim, "Cat_Avatar has no AvatarArmAim");
+            var so = new SerializedObject(aim);
+            var arm = (Transform)so.FindProperty("_armBone").objectReferenceValue;
+            Assert.AreEqual("Arm1.L", arm != null ? arm.name : null, "the Accusing clip points with the left arm");
+            Assert.IsNotNull(so.FindProperty("_animator").objectReferenceValue);
+            foreach (string accusing in new[] { "Accusing", "Accused Idle" })
+                Assert.AreEqual(AvatarArmAim.AccuseTag, State(accusing).tag, $"{accusing}: the arm aims on this tag");
+
+            // The arm hangs on -x: a positive yaw swings it across the body, held at 40°; away from it, up to 75°.
+            Assert.AreEqual(40f, AvatarArmAim.ClampYaw(70f, 1f, 40f, 75f), 1e-4f);
+            Assert.AreEqual(-75f, AvatarArmAim.ClampYaw(-90f, 1f, 40f, 75f), 1e-4f);
+            Assert.AreEqual(-40f, AvatarArmAim.ClampYaw(-70f, -1f, 40f, 75f), 1e-4f);
+            Assert.AreEqual(20f, AvatarArmAim.ClampYaw(20f, 1f, 40f, 75f), 1e-4f);
+
+            // Same turn as the head: a 90° yaw in the body frame takes a forward-pointing bone to the body's right.
+            var body = new GameObject("body").transform;
+            var bone = new GameObject("bone").transform;
+            try
+            {
+                body.rotation = Quaternion.Euler(0f, 30f, 0f);
+                bone.SetParent(body, false);
+                AvatarArmAim.Aim(bone, body, 90f, 0f);
+                Assert.Less(Vector3.Distance(body.right, bone.forward), 1e-3f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(body.gameObject);
+            }
+        }
+
+        [Test]
         public void TheNewParameters_AreSynchronizedByTheNetworkAnimator()
         {
             GameObject cat = AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath);

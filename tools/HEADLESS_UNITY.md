@@ -78,6 +78,10 @@ The wrapper `tools/autoplay/unityctl.sh` does all of this: `compile`, `editmode 
   destroys the camera. Needs `-batchmode` without `-nographics`. Both calls may answer "Main thread operation timed
   out after 5000ms" while the work still completes: check the scene path / the PNG files. Put back anything changed
   for the shot and never save the scene afterwards (UI layout rebuilds dirty prefab instances).
+- **Posing a skinned model for a still render** (`clip.SampleAnimation`, bones moved by hand): without the player loop
+  the skinning is not recomputed before `Camera.Render()`, so skinned meshes keep the previous pose while meshes parented
+  to a bone follow (the cat's ears and whiskers floated off its head). Set
+  `SkinnedMeshRenderer.forceMatrixRecalculationPerRender = true` on every skinned renderer before each render.
 
 ## 4. Traps (each one was hit)
 

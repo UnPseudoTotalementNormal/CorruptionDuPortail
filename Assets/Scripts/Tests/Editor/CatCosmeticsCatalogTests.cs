@@ -111,6 +111,49 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void EveryOutfit_RidesOnlyBonesTheEmotesMove()
+        {
+            // The capes, the chef's apron / shirt / collar hung on the artist's cape bones (Cape_MCH…), which no clip of
+            // the game moves, and the chef's sleeves rigidly on one arm bone: the body came out of them in every emote
+            // (Wouh 2026-11-11, T3). Bound, every vertex of a skinned cosmetic rides the bones the cat's own skin rides.
+            CatCosmeticsCatalog catalog = Catalog;
+            var animated = new HashSet<string>();
+            foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath("Assets/Art/Models/Cat_Animations_v2.fbx"))
+                if (asset is AnimationClip clip && !clip.name.StartsWith("__preview"))
+                    foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(clip))
+                        animated.Add(binding.path.Substring(binding.path.LastIndexOf('/') + 1));
+            Assert.IsTrue(animated.Contains("Spine2") && animated.Contains("Arm2.L"), "the emote clips key no spine / arm bone");
+
+            _cat = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath));
+            _cat.GetComponent<CatAppearance>().Apply(CatLook.Default); // edit mode: no Awake, Apply binds
+            Dictionary<string, Renderer> renderers = _cat.GetComponentsInChildren<Renderer>(true)
+                .GroupBy(r => r.name).ToDictionary(g => g.Key, g => g.First());
+
+            var checkedParts = new List<string>();
+            foreach (CatCosmeticItem item in catalog.ItemsOf(CatSlot.Outfit))
+                foreach (string part in item.parts)
+                {
+                    if (!renderers.TryGetValue(part, out Renderer renderer) || !(renderer is SkinnedMeshRenderer skinned)
+                        || skinned.bones.Length == 0 || skinned.sharedMesh == null || skinned.sharedMesh.blendShapeCount > 0)
+                        continue;
+                    Transform[] bones = skinned.bones;
+                    var still = new HashSet<string>();
+                    foreach (BoneWeight w in skinned.sharedMesh.boneWeights)
+                    {
+                        void Check(int bone, float weight)
+                        {
+                            if (weight > 0.01f && !animated.Contains(bones[bone].name)) still.Add(bones[bone].name);
+                        }
+                        Check(w.boneIndex0, w.weight0); Check(w.boneIndex1, w.weight1);
+                        Check(w.boneIndex2, w.weight2); Check(w.boneIndex3, w.weight3);
+                    }
+                    Assert.IsEmpty(still, $"'{part}' hangs on bones no emote moves: {string.Join(", ", still)}");
+                    checkedParts.Add(part);
+                }
+            CollectionAssert.IsSupersetOf(checkedParts, new[] { "Chef Apron", "Chef Shirt", "Chef Sleeves", "Fiery Cape", "Mage Cape Bottom" });
+        }
+
+        [Test]
         public void Apply_ShowsExactlyTheChosenParts_SkinnedOnTheCatSkeleton()
         {
             CatCosmeticsCatalog catalog = Catalog;

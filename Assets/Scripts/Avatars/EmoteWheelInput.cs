@@ -85,13 +85,22 @@ namespace Avatars
                 return;
             }
 
-            if (_pressed && !_open && IsFirstPersonLive())
+            if (_pressed && !_open)
             {
-                OpenWheel();
-            }
-            else if (_pressed && !_open && !Presentation.DayScreenRows.IsTyping())
-            {
-                Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.refused", "reason", cameraModeChannel == null ? "unwired" : "not-first-person");
+                // E is a letter: typed in a text field (the chat, the bug report) it must not open the wheel, nor
+                // under a window that holds the cursor (pause menu, bug report) (playtest report 2026-11-13).
+                string _refusal = Presentation.DayScreenRows.IsTyping() ? "typing"
+                    : IsOverlayOpen() ? "overlay"
+                    : !IsFirstPersonLive() ? (cameraModeChannel == null ? "unwired" : "not-first-person")
+                    : null;
+                if (_refusal == null)
+                {
+                    OpenWheel();
+                }
+                else if (_refusal != "typing")
+                {
+                    Diagnostics.Logs.GameLog.Info("emote", "emote.wheel.refused", "reason", _refusal);
+                }
             }
 
             if (_open && _held)
@@ -112,6 +121,18 @@ namespace Avatars
         private bool IsFirstPersonLive() =>
             cameraModeChannel != null
             && (cameraModeChannel.SeatedFirstPersonLive || cameraModeChannel.Current == CameraMode.FreeRoam);
+
+        private AvatarCameraArbiter _arbiter;
+
+        // A full-screen window holds the cursor (the arbiter's overlays): the wheel stays shut under it.
+        private bool IsOverlayOpen()
+        {
+            if (_arbiter == null)
+            {
+                _arbiter = FindAnyObjectByType<AvatarCameraArbiter>();
+            }
+            return _arbiter != null && _arbiter.IsOverlayOpenBesides(this);
+        }
 
         private void OpenWheel()
         {

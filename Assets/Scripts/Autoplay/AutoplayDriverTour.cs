@@ -419,6 +419,13 @@ namespace Autoplay
                     {
                         await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
                     }
+                    if (_started)
+                    {
+                        // What the player sees of their own emote once the blend into the orbit view is over.
+                        await UniTask.Delay(TimeSpan.FromSeconds(0.8f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                        capture.Request("tour-emote-view", 0f);
+                        RecordEmoteView();
+                    }
                 }
                 finally
                 {
@@ -437,6 +444,32 @@ namespace Autoplay
             {
                 inputBusy = false;
             }
+        }
+
+        // What renders the emote view: every enabled camera, and the local cat's renderers (shown, layer, bounds).
+        private void RecordEmoteView()
+        {
+            var _text = new System.Text.StringBuilder();
+            foreach (Camera _camera in Camera.allCameras)
+            {
+                _text.Append($"cam {_camera.name} depth={_camera.depth} pos={_camera.transform.position} fwd={_camera.transform.forward} " +
+                             $"mask={_camera.cullingMask} near={_camera.nearClipPlane} far={_camera.farClipPlane} | ");
+            }
+            Avatars.AvatarManager _manager = Avatars.AvatarManager.For(Unity.Netcode.NetworkManager.Singleton);
+            if (_manager != null)
+            {
+                foreach (Avatars.PlayerAvatar _avatar in _manager.GetAvatars())
+                {
+                    if (_avatar == null || !_avatar.IsOwner) continue;
+                    _text.Append($"own root={_avatar.transform.position} scale={_avatar.transform.lossyScale} active={_avatar.gameObject.activeInHierarchy} | ");
+                    foreach (Renderer _renderer in _avatar.GetComponentsInChildren<Renderer>(true))
+                    {
+                        if (!_renderer.gameObject.activeInHierarchy) continue;
+                        _text.Append($"{_renderer.name} on={_renderer.enabled} layer={_renderer.gameObject.layer} c={_renderer.bounds.center} e={_renderer.bounds.extents}; ");
+                    }
+                }
+            }
+            Journal.Record("tour.emote-view", _text.ToString());
         }
 
         // Hold the wheel's key (E), turn the virtual stick with mouse deltas, release (the key is released even when cancelled).

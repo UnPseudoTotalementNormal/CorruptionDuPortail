@@ -70,5 +70,32 @@ namespace Tests.Editor.Avatars
             Assert.That(_blocker, Is.Null);
             Assert.That(_clear, Is.EqualTo(30f));
         }
+
+        // The day's rows of cards hang under the rendering camera: they moved with it, and stopping in front of them
+        // walked the camera into the cat's head (playtest report 2026-11-13).
+        [Test]
+        public void Orbit_IgnoresWhatHangsUnderTheRenderingCamera()
+        {
+            _camera = new GameObject("EmoteOrbitCamera");
+            AvatarEmoteOrbitCamera _orbit = _camera.AddComponent<AvatarEmoteOrbitCamera>();
+            var _view = new GameObject("MainView");
+            _avatar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _avatar.transform.SetParent(_view.transform, false);
+            _avatar.transform.position = new Vector3(0f, 0f, -10f);
+            _avatar.transform.localScale = new Vector3(20f, 20f, 1f);
+            Physics.SyncTransforms();
+            try
+            {
+                float _clear = _orbit.ClearRadius(Vector3.zero, Vector3.back, 30f, out Collider _blocker, _view.transform);
+
+                Assert.That(_blocker, Is.Null);
+                Assert.That(_clear, Is.EqualTo(30f));
+            }
+            finally
+            {
+                _avatar = null;
+                Object.DestroyImmediate(_view);
+            }
+        }
     }
 }

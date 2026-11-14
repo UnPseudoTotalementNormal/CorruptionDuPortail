@@ -84,12 +84,19 @@ namespace Presentation
                 return;
             }
 
-            // Every seated cat but the player's own (the camera sits in its head).
+            // Every seated cat but the player's own (the camera sits in its head), unless the player watches their own
+            // cat emote: on the black of the seated view it stood unlit, black on black (playtest report 2026-11-13).
+            bool _ownerLit = OwnerEmoteViewActive();
+            if (_ownerLit != _ownerLitLogged)
+            {
+                _ownerLitLogged = _ownerLit;
+                Diagnostics.Logs.GameLog.Info("camera", "cat.light.owner", "lit", _ownerLit);
+            }
             _avatars.Clear();
             IReadOnlyList<PlayerAvatar> _live = _manager.GetAvatars();
             for (int _i = 0; _i < _live.Count; _i++)
             {
-                if (_live[_i] != null && !_live[_i].IsOwner && _live[_i] != Lifted)
+                if (_live[_i] != null && (!_live[_i].IsOwner || _ownerLit) && _live[_i] != Lifted)
                 {
                     _avatars.Add(_live[_i]);
                 }
@@ -113,6 +120,19 @@ namespace Presentation
                 _light.transform.SetPositionAndRotation(_pose.position, _pose.rotation);
             }
             ShowLights(_avatars.Count);
+        }
+
+        private AvatarEmoteOrbitCamera _emoteCamera;
+        private bool _ownerLitLogged;
+
+        // The emote's third-person view shows the player's own cat.
+        private bool OwnerEmoteViewActive()
+        {
+            if (_emoteCamera == null)
+            {
+                _emoteCamera = FindAnyObjectByType<AvatarEmoteOrbitCamera>();
+            }
+            return _emoteCamera != null && _emoteCamera.IsActive;
         }
 
         // Eases the pointed cat's light up and the others back down.

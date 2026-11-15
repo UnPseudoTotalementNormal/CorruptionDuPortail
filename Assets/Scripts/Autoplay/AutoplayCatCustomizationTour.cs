@@ -105,7 +105,7 @@ namespace Autoplay
         /// <summary>
         /// <c>-autoplay-cat-anims</c>: the customization screen's cat plays every animation of the artist (the game's
         /// Cat_Avatar Animator, driven like the game drives it): the emotes 1-4 (coucou, crying with tears, accusing
-        /// with the frown, fiery pose), chained then an emote tried while chained (struggle), the tablet. Journals
+        /// with the frown), chained then crying while chained, the tablet. Journals
         /// <c>catanim.&lt;state&gt; ok|miss</c> (the Animator really reached the state) and captures each.
         /// </summary>
         public static IEnumerator RunAnimations(AutoplayVirtualInput _input, AutoplayJournal _journal, AutoplayCapture _capture)
@@ -138,7 +138,7 @@ namespace Autoplay
             _journal.Record("catanim.idle", $"{(_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle") ? "ok" : "miss")}");
             yield return Pause(2f);
 
-            var _emotes = new (int id, string state)[] { (1, "WaveLoop"), (2, "Crying"), (3, "Accused Idle"), (4, "Fiery Idle") };
+            var _emotes = new (int id, string state)[] { (1, "WaveLoop"), (2, "Crying"), (3, "Accused Idle") };
             foreach ((int _id, string _state) in _emotes)
             {
                 _animator.SetInteger("EmoteId", _id);
@@ -155,12 +155,11 @@ namespace Autoplay
             yield return Pause(4.5f);
             _journal.Record("catanim.Chained Idle", Reached(_animator, "Chained Idle"));
             _capture.Request("catanim-chained", 0f);
-            _animator.SetInteger("EmoteId", 1);
-            _animator.SetBool("Emoting", true); // an emote tried while chained
-            yield return Pause(0.25f);
-            _journal.Record("catanim.Chained Struggle", Reached(_animator, "Chained Struggle"));
-            _capture.Request("catanim-struggle", 0f);
+            _animator.SetInteger("EmoteId", 2);
+            _animator.SetBool("Emoting", true); // the only emote of a chained cat: crying
             yield return Pause(1.5f);
+            _journal.Record("catanim.Chained Crying", Reached(_animator, "Chained Crying"));
+            _capture.Request("catanim-chained-crying", 0f);
             _animator.SetBool("Emoting", false);
             yield return Pause(1f);
             _animator.SetBool("Chained", false);

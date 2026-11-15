@@ -1,0 +1,32 @@
+{
+  "name": "emote-day-2p",
+  "goal": "Playtest report 2026-11-13 (Coucou, 2 players): by day an emote left the player 'stuck in their own face'. Two real players (host + 1 client; the simulated bots fill the table without a seated cat, so the day circle has 2 cats as in the report) play day 1 by real input; at the vote recap the emote wheel plays an emote and tour-emote-view shows what the player sees once the blend into the orbit view is over: their own cat whole, from the front, not the inside of a model. camera.emote.orbit-blocked tells where the orbit stopped.",
+  "mode": "net",
+  "clients": 1,
+  "seed": 1113,
+  "timescale": 4,
+  "timeout": 900,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-max-days",
+    "1"
+  ],
+  "expect": [
+    {
+      "type": "event",
+      "kind": "tour.emote",
+      "detail": "^ok",
+      "process": "any",
+      "min": 1
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

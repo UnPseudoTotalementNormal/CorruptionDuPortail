@@ -6,9 +6,9 @@ namespace Avatars.Cosmetics
 {
     /// <summary>
     /// Dresses a cat model (Cat_Avatar, in game and in the menu) from a <see cref="CatLook"/>. On Awake the parts of
-    /// the catalog's cosmetics model are bound once onto this cat: its skinned meshes take this skeleton's bones (by
-    /// name), its static meshes move under the same-named bone, and the bones this skeleton lacks (the capes') are
-    /// grafted under their parent. Then <see cref="Apply"/> only switches parts on and off and puts the fur material.
+    /// the catalog's cosmetics model are bound once onto this cat: its skinned meshes take the weights of this cat's own
+    /// skin (FollowBody), its static meshes move under the same-named bone, and the bones this skeleton lacks (the
+    /// capes') are grafted under their parent. Then <see cref="Apply"/> only switches parts on and off and puts the fur material.
     ///
     /// Parts are hidden by deactivating their GameObject, never through <c>Renderer.enabled</c>: the avatar visibility
     /// controller owns that flag (first-person body, emote fade) and would turn a hidden part back on.
@@ -16,9 +16,12 @@ namespace Avatars.Cosmetics
     public class CatAppearance : MonoBehaviour
     {
         private const string SkeletonRootName = "Root";
-        private const string SkinName = "Body";
-        // A cosmetic with at least this share of its vertices on the skeleton's root alone does not follow the body.
-        private const float LooseShare = 0.01f;
+        // The cat's own skin, whose weights the clothes take (FollowBody): the body for every piece, the arms only for a
+        // piece worn on the arms (sleeves), else a torso piece next to an arm (the apron's ties) left with the paw.
+        private const string BodySkinName = "Body";
+        private const string ArmsSkinName = "Arms";
+        // Skin vertices blended for each vertex of a piece of clothing.
+        private const int SkinNeighbours = 4;
 
         [SerializeField] private CatCosmeticsCatalog catalog;
 
@@ -256,8 +259,7 @@ namespace Avatars.Cosmetics
             }
 
             // 2) The parts: skinned meshes take this skeleton, static ones hang on the same-named bone.
-            SkinnedMeshRenderer skin = FindSkin(source.transform);
-            bones.TryGetValue(SkeletonRootName, out Transform skeletonRoot);
+            List<SkinnedMeshRenderer> skin = FindSkin(source.transform);
             foreach (Renderer renderer in sourceParts)
             {
                 // A mesh with blend shapes only (no bones) imports as skinned too: it hangs on its bone like a static one.
@@ -278,7 +280,7 @@ namespace Avatars.Cosmetics
                         skinned.rootBone = root;
                     }
                     skinned.transform.SetParent(transform, false);
-                    FollowBody(skinned, skin, skeletonRoot);
+                    FollowBody(skinned, skin, bones);
                 }
                 else if (renderer.transform.parent != null && !HasRenderer(renderer.transform.parent)
                          && bones.TryGetValue(renderer.transform.parent.name, out Transform bone))
@@ -297,97 +299,94 @@ namespace Avatars.Cosmetics
             DestroyObject(source);
         }
 
-        // The cat's own body mesh (not the cosmetics model's).
-        private SkinnedMeshRenderer FindSkin(Transform source)
+        // The cat's own skin (not the cosmetics model's): its body, and its arms after it.
+        private List<SkinnedMeshRenderer> FindSkin(Transform source)
         {
-            foreach (SkinnedMeshRenderer r in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            var skin = new List<SkinnedMeshRenderer>();
+            foreach (string skinName in new[] { BodySkinName, ArmsSkinName })
             {
-                if (r.name == SkinName && !r.transform.IsChildOf(source)) return r;
+                foreach (SkinnedMeshRenderer r in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    if (r.name == skinName && !r.transform.IsChildOf(source) && r.sharedMesh != null)
+                    {
+                        skin.Add(r);
+                        break;
+                    }
+                }
             }
-            return null;
+            return skin;
         }
 
-        // Some cosmetics were exported with vertices on the skeleton's root alone (the galactic bow: 71 % of them): they
-        // went along with the cat but not with its body (leaning, the chained crush, Poyo 2026-10-22). Those vertices take
-        // the bones of the nearest point of the cat's skin, and the mesh is bound again on the pose it is drawn in now, so
-        // nothing moves on the spot. A copy of the mesh, this cat's own.
-        private void FollowBody(SkinnedMeshRenderer part, SkinnedMeshRenderer skin, Transform skeletonRoot)
+        // A piece worn on the arms: every vertex of it hangs mostly on an arm bone (the chef's sleeves).
+        private static bool WornOnTheArms(SkinnedMeshRenderer part)
+        {
+            Transform[] bones = part.bones;
+            foreach (BoneWeight w in part.sharedMesh.boneWeights)
+            {
+                if (w.boneIndex0 < 0 || w.boneIndex0 >= bones.Length || bones[w.boneIndex0] == null) return false;
+                string bone = bones[w.boneIndex0].name;
+                if (!bone.StartsWith("Arm") && !bone.StartsWith("Hand")) return false;
+            }
+            return true;
+        }
+
+        // How a cosmetics mesh follows the cat's skin: the same for every cat (same model, same rest pose), computed
+        // once per mesh. Bone weights index BoneNames.
+        private sealed class SkinFit
+        {
+            public string[] BoneNames;
+            public BoneWeight[] Weights;
+        }
+
+        private static readonly Dictionary<Mesh, SkinFit> Fits = new();
+
+        // The clothes of the cosmetics model do not follow the body by their own weights: the capes, the chef's apron,
+        // shirt and collar, the galactic bow ride the cape bones of the artist's rig (Cape_MCH…, driven by constraints in
+        // Blender, never by the game's animations) or the skeleton's root, and the chef's sleeves were hung rigidly on
+        // the nearest arm bone at export. The body bent under them and came out of them in every emote (Wouh
+        // 2026-11-11, T3) or stayed still in the chained crush (galactic bow, Poyo 2026-10-22). Every vertex takes the
+        // bones of the nearest points of the cat's skin, blended by distance, so the cloth deforms exactly like the
+        // body under it; the mesh is bound again on the pose it is drawn in now (the rest pose, in Awake), so nothing
+        // moves on the spot. A copy of the mesh, this cat's own.
+        private void FollowBody(SkinnedMeshRenderer part, List<SkinnedMeshRenderer> skin, Dictionary<string, Transform> bones)
         {
             Mesh mesh = part.sharedMesh;
-            if (mesh == null || skin == null || skin.sharedMesh == null || skeletonRoot == null || mesh.blendShapeCount > 0)
-            {
-                return;
-            }
-            Transform[] bones = part.bones;
-            int root = System.Array.IndexOf(bones, skeletonRoot);
-            BoneWeight[] weights = mesh.boneWeights;
-            if (root < 0 || weights.Length != mesh.vertexCount)
-            {
-                return;
-            }
-            var loose = new List<int>();
-            for (int i = 0; i < weights.Length; i++)
-            {
-                if (weights[i].boneIndex0 == root && weights[i].weight0 > 0.5f) loose.Add(i);
-            }
-            if (loose.Count == 0 || loose.Count < LooseShare * weights.Length)
+            if (mesh == null || skin.Count == 0 || mesh.blendShapeCount > 0 || mesh.boneWeights.Length != mesh.vertexCount)
             {
                 return;
             }
 
-            // Both meshes as drawn now. Baked without scale: the skeleton's own scale is already in the vertices; only
-            // the renderer's place and turn are left to apply.
+            // The part as drawn now. Baked without scale: the skeleton's own scale is already in the vertices; only the
+            // renderer's place and turn are left to apply.
             var baked = new Mesh();
             part.BakeMesh(baked, false);
             Vector3[] partVertices = baked.vertices;
             Vector3[] partNormals = baked.normals;
             Vector4[] partTangents = baked.tangents;
-            skin.BakeMesh(baked, false);
-            Vector3[] skinVertices = baked.vertices;
+            Transform pt = part.transform;
+
+            if (!Fits.TryGetValue(mesh, out SkinFit fit))
+            {
+                bool arms = WornOnTheArms(part);
+                fit = FitToSkin(part, partVertices, arms ? skin : skin.FindAll(r => r.name == BodySkinName), baked);
+                Fits[mesh] = fit;
+                Diagnostics.Logs.GameLog.Info("avatar", "avatar.cosmetics.fit-to-skin", "part", part.name,
+                    "vertices", partVertices.Length, "arms", arms, "bones", fit != null ? string.Join("+", fit.BoneNames) : "none");
+            }
             if (Application.isPlaying) Destroy(baked); else DestroyImmediate(baked);
-            BoneWeight[] skinWeights = skin.sharedMesh.boneWeights;
-            Transform[] skinBones = skin.bones;
-            Transform pt = part.transform, st = skin.transform;
-            var skinWorld = new Vector3[skinVertices.Length];
-            for (int j = 0; j < skinVertices.Length; j++) skinWorld[j] = st.position + st.rotation * skinVertices[j];
-            var boneIndex = new Dictionary<Transform, int>();
-            for (int b = 0; b < bones.Length; b++)
-            {
-                if (bones[b] != null && !boneIndex.ContainsKey(bones[b])) boneIndex[bones[b]] = b;
-            }
-
-            bool Map(int skinBone, out int partBone)
-            {
-                partBone = 0;
-                return skinBone >= 0 && skinBone < skinBones.Length && skinBones[skinBone] != null
-                    && boneIndex.TryGetValue(skinBones[skinBone], out partBone);
-            }
-
-            int moved = 0;
-            foreach (int i in loose)
-            {
-                Vector3 at = pt.position + pt.rotation * partVertices[i];
-                int nearest = -1;
-                float best = float.MaxValue;
-                for (int j = 0; j < skinWorld.Length && j < skinWeights.Length; j++)
-                {
-                    float d = (skinWorld[j] - at).sqrMagnitude;
-                    if (d < best) { best = d; nearest = j; }
-                }
-                if (nearest < 0) continue;
-                BoneWeight w = skinWeights[nearest];
-                if (!Map(w.boneIndex0, out int b0) || !Map(w.boneIndex1, out int b1) || !Map(w.boneIndex2, out int b2)
-                    || !Map(w.boneIndex3, out int b3))
-                {
-                    continue;
-                }
-                w.boneIndex0 = b0; w.boneIndex1 = b1; w.boneIndex2 = b2; w.boneIndex3 = b3;
-                weights[i] = w;
-                moved++;
-            }
-            if (moved == 0)
+            if (fit == null)
             {
                 return;
+            }
+
+            var partBones = new Transform[fit.BoneNames.Length];
+            for (int b = 0; b < partBones.Length; b++)
+            {
+                if (!bones.TryGetValue(fit.BoneNames[b], out partBones[b]))
+                {
+                    Debug.LogError($"[CatAppearance] Bone '{fit.BoneNames[b]}' of the skin not on the cat: '{part.name}' keeps its own weights.", this);
+                    return;
+                }
             }
 
             // Bound on the pose drawn now: each bone's bind is where it stands, the vertices where they are drawn.
@@ -397,23 +396,125 @@ namespace Avatars.Cosmetics
             {
                 vertices[i] = new Vector3(partVertices[i].x / scale.x, partVertices[i].y / scale.y, partVertices[i].z / scale.z);
             }
-            Matrix4x4[] old = mesh.bindposes;
-            var bindposes = new Matrix4x4[bones.Length];
-            for (int b = 0; b < bones.Length; b++)
+            var bindposes = new Matrix4x4[partBones.Length];
+            for (int b = 0; b < partBones.Length; b++)
             {
-                bindposes[b] = bones[b] != null ? bones[b].worldToLocalMatrix * pt.localToWorldMatrix
-                    : (b < old.Length ? old[b] : Matrix4x4.identity);
+                bindposes[b] = partBones[b].worldToLocalMatrix * pt.localToWorldMatrix;
             }
             Mesh copy = Instantiate(mesh);
             copy.name = mesh.name + " (follows the body)";
             copy.vertices = vertices;
             if (partNormals.Length == vertices.Length) copy.normals = partNormals;
             if (partTangents.Length == vertices.Length) copy.tangents = partTangents;
-            copy.boneWeights = weights;
+            copy.boneWeights = fit.Weights;
             copy.bindposes = bindposes;
             copy.RecalculateBounds();
+            part.bones = partBones;
             part.sharedMesh = copy;
             _rebound.Add(copy);
+        }
+
+        // Each vertex of the part: the bone weights of its SkinNeighbours nearest skin vertices, blended by inverse
+        // squared distance, the 4 heaviest kept. Positions in the cat's own space, so the fit holds for every cat.
+        private SkinFit FitToSkin(SkinnedMeshRenderer part, Vector3[] partVertices, List<SkinnedMeshRenderer> skin, Mesh baked)
+        {
+            var skinPoints = new List<Vector3>();
+            var skinWeights = new List<BoneWeight>();
+            var skinBones = new List<Transform[]>();
+            var skinOf = new List<int>();
+            for (int s = 0; s < skin.Count; s++)
+            {
+                SkinnedMeshRenderer r = skin[s];
+                r.BakeMesh(baked, false);
+                Vector3[] vs = baked.vertices;
+                BoneWeight[] ws = r.sharedMesh.boneWeights;
+                if (ws.Length != vs.Length) continue;
+                Transform st = r.transform;
+                for (int j = 0; j < vs.Length; j++)
+                {
+                    skinPoints.Add(transform.InverseTransformPoint(st.position + st.rotation * vs[j]));
+                    skinWeights.Add(ws[j]);
+                    skinOf.Add(skinBones.Count);
+                }
+                skinBones.Add(r.bones);
+            }
+            if (skinPoints.Count < SkinNeighbours)
+            {
+                return null;
+            }
+
+            var names = new List<string>();
+            var index = new Dictionary<string, int>();
+            int IndexOf(Transform bone)
+            {
+                if (!index.TryGetValue(bone.name, out int i))
+                {
+                    i = names.Count;
+                    names.Add(bone.name);
+                    index[bone.name] = i;
+                }
+                return i;
+            }
+
+            var weights = new BoneWeight[partVertices.Length];
+            var nearest = new int[SkinNeighbours];
+            var distances = new float[SkinNeighbours];
+            var sum = new Dictionary<int, float>();
+            Transform pt = part.transform;
+            for (int v = 0; v < partVertices.Length; v++)
+            {
+                Vector3 at = transform.InverseTransformPoint(pt.position + pt.rotation * partVertices[v]);
+                for (int k = 0; k < SkinNeighbours; k++) { nearest[k] = -1; distances[k] = float.MaxValue; }
+                for (int j = 0; j < skinPoints.Count; j++)
+                {
+                    float d = (skinPoints[j] - at).sqrMagnitude;
+                    if (d >= distances[SkinNeighbours - 1]) continue;
+                    int k = SkinNeighbours - 1;
+                    while (k > 0 && distances[k - 1] > d)
+                    {
+                        distances[k] = distances[k - 1];
+                        nearest[k] = nearest[k - 1];
+                        k--;
+                    }
+                    distances[k] = d;
+                    nearest[k] = j;
+                }
+
+                sum.Clear();
+                for (int k = 0; k < SkinNeighbours; k++)
+                {
+                    if (nearest[k] < 0) continue;
+                    float share = 1f / (distances[k] + 1e-12f);
+                    BoneWeight w = skinWeights[nearest[k]];
+                    Transform[] sb = skinBones[skinOf[nearest[k]]];
+                    void Add(int bone, float weight)
+                    {
+                        if (weight <= 0f || bone < 0 || bone >= sb.Length || sb[bone] == null) return;
+                        int i = IndexOf(sb[bone]);
+                        sum[i] = (sum.TryGetValue(i, out float x) ? x : 0f) + weight * share;
+                    }
+                    Add(w.boneIndex0, w.weight0); Add(w.boneIndex1, w.weight1);
+                    Add(w.boneIndex2, w.weight2); Add(w.boneIndex3, w.weight3);
+                }
+                weights[v] = Heaviest(sum);
+            }
+            return new SkinFit { BoneNames = names.ToArray(), Weights = weights };
+        }
+
+        // The 4 heaviest bones of a blend, normalized, heaviest first (Unity's order).
+        private static BoneWeight Heaviest(Dictionary<int, float> sum)
+        {
+            var top = new List<KeyValuePair<int, float>>(sum);
+            top.Sort((a, b) => b.Value.CompareTo(a.Value));
+            float total = 0f;
+            for (int k = 0; k < top.Count && k < 4; k++) total += top[k].Value;
+            var w = new BoneWeight();
+            if (total <= 0f) return w;
+            if (top.Count > 0) { w.boneIndex0 = top[0].Key; w.weight0 = top[0].Value / total; }
+            if (top.Count > 1) { w.boneIndex1 = top[1].Key; w.weight1 = top[1].Value / total; }
+            if (top.Count > 2) { w.boneIndex2 = top[2].Key; w.weight2 = top[2].Value / total; }
+            if (top.Count > 3) { w.boneIndex3 = top[3].Key; w.weight3 = top[3].Value / total; }
+            return w;
         }
 
         // Gone at once, not at the end of the frame: the cat's other components (idle motion, head look) scan its

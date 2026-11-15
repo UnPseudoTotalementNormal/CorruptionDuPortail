@@ -17,6 +17,12 @@ eyes (`Simple`, `Bored`, `Full Button`: flat shapes at the origin in the file, p
 plain eyes, mirrored), the universal mouths (`Choked`, `Drunk`, `Sad`: the mage mouth card with each texture), the
 tears' emitter (Head bone) and card (from `Animations/Cat_Animations 2.blend`).
 
+The clothes' weights from the file do not survive in the game: the capes, the chef's apron / shirt / collar ride the
+cape bones (`Cape_MCH…`, driven by constraints in Blender, never by the game's clips) and the sleeves are rigid. In
+Unity, `CatAppearance` re-skins every skinned cosmetic on the cat's own skin (nearest `Body` vertices, plus `Arms` for a
+piece worn on the arms) so the cloth bends with the body in the emotes; the test
+`EveryOutfit_RidesOnlyBonesTheEmotesMove` guards it. A new piece of clothing needs nothing more.
+
 ## 2. Animations
 
 `blender -b "Animations/Cat_Animations 2.blend" --python export_animations.py -- <repo>/Assets/Art/Models/Cat_Animations_v2.fbx`

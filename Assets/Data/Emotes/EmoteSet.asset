@@ -28,8 +28,3 @@ MonoBehaviour:
     animatorEmoteId: 3
     loops: 1
     oneShotSeconds: 2
-  - displayName: Pose ardente
-    icon: {fileID: 0}
-    animatorEmoteId: 4
-    loops: 1
-    oneShotSeconds: 2

@@ -122,6 +122,11 @@
     scale: 1.14 1.14;
 }
 
+/* Greyed slot and its label (an emote not allowed now: a chained cat may only cry). */
+.emote-wheel__slot--disabled {
+    opacity: 0.3;
+}
+
 /* Release confirmation (icon + name) — a top-level element the controller animates from the chosen sector to
  * the centre while scaling + fading. Centred origin; the controller drives translate/scale/opacity. */
 .emote-confirm {

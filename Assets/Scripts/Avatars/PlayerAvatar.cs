@@ -112,6 +112,13 @@ namespace Avatars
         /// <see cref="StopEmote"/>); ONE-SHOT fires the momentary <c>Emote</c> trigger. No-op on non-owners.
         /// Values come from the wheel's <see cref="EmoteDefinition"/>.
         /// </summary>
+        /// <summary>A chained cat may only cry (T3, Wouh 2026-11-05): the wheel greys the others, the server refuses them.</summary>
+        public static bool EmoteAllowedWhileChained(int _emoteId) => _emoteId == CryEmoteId;
+
+        /// <summary>This body plays the chained animations (the Animator's Chained bool, synced to every client).</summary>
+        public bool IsChained => _networkAnimator != null && _networkAnimator.Animator != null
+                                 && _networkAnimator.Animator.GetBool(ChainedParam);
+
         public void RequestEmote(int _emoteId, bool _loops)
         {
             if (!IsOwner)
@@ -145,6 +152,11 @@ namespace Avatars
                 Diagnostics.Logs.GameLog.Warn("emote", "emote.play.refused", "seat", ownerClientId.Value, "emote", _emoteId, "reason", "no-animator");
                 return;
             }
+            if (IsChained && !EmoteAllowedWhileChained(_emoteId))
+            {
+                Diagnostics.Logs.GameLog.Warn("emote", "emote.play.refused", "seat", ownerClientId.Value, "emote", _emoteId, "reason", "chained");
+                return;
+            }
             Diagnostics.Logs.GameLog.Info("emote", "emote.play", "seat", ownerClientId.Value, "emote", _emoteId, "loops", _loops);
             _networkAnimator.Animator.SetInteger(EmoteIdParam, _emoteId);
             if (_loops)
@@ -175,6 +187,7 @@ namespace Avatars
         // T23 (mockups jour-pov v1 V2): the "Accuser" emote of the Cat_Avatar Animator (Accusing, then held in Accused
         // Idle while Emoting stays true), shown by a cat that voted when the vote is not anonymous.
         private const int AccuseEmoteId = 3;
+        private const int CryEmoteId = 2;
         private bool _accusing;
 
         /// <summary>Server: this body holds the accusing pose while <paramref name="_accuse"/> (AvatarManager follows

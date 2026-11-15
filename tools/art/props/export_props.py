@@ -37,6 +37,9 @@ PROPS = {
     "TeddyBear": "Teddy Bear Head",
     "LeafHeart": "Leaf Heart",
     "ArcaneCube": "Arcane Cube",
+    "BeaconRobot": "Robot Body",
+    "Totem": "Totem",
+    "Beacon": "Beacon",
 }
 
 

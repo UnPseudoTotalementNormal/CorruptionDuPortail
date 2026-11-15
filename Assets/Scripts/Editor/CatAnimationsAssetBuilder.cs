@@ -15,8 +15,10 @@ namespace Avatars.Cosmetics.EditorTools
     ///
     /// Animator: Idle plays the artist's Idle (AvatarIdleMotion adds its procedural motion on top). Emotes by EmoteId,
     /// held by the Emoting bool: 1 Coucou (Wave), 2 Pleurer (Crying, with tears), 3 Accuser (Accusing then Accused
-    /// Idle), 4 Pose ardente (Fiery Idle Test). Chained bool (server, from the seat's character): Getting Chained then
-    /// Chained Idle, an emote tried while chained = Chained Struggle. Tablet bool (owner): Pulls Tablet Out, Look at
+    /// Idle). "Pose ardente" (Fiery Idle Test, id 4) was removed at the team's request (T3, 2026-11-05): id 4 stays
+    /// retired. Chained bool (server, from the seat's character): Getting Chained then
+    /// Chained Idle, which plays the struggle every few loops; a chained cat may only cry (Chained Crying, the other
+    /// emotes are greyed in the wheel and refused by the server, T3 2026-11-05). Tablet bool (owner): Pulls Tablet Out, Look at
     /// Tablet Idle, Putting Table Away. Chained wins over everything. Intentions: the artist's asset tracker
     /// (_bmad-output/art-references/cats/Corrupted Deadlines.pdf).
     /// </summary>
@@ -28,8 +30,13 @@ namespace Avatars.Cosmetics.EditorTools
         private const string CatPrefabPath = "Assets/Prefabs/Avatars/Cat_Avatar.prefab";
         private const string GameScenePath = "Assets/Scenes/GameScene.unity";
 
+        // Pleurer: the only emote of a chained cat (PlayerAvatar.EmoteAllowedWhileChained).
+        private const float ChainedCryEmoteId = 2f;
+        // The chained pose plays the struggle after this many loops of itself.
+        private const float StruggleEveryLoops = 3f;
+
         private static readonly HashSet<string> Loops = new()
-            { "Idle", "Wave", "Crying", "Accused Idle", "Chained Idle", "Look at Tablet Idle", "Fiery Idle Test" };
+            { "Idle", "Wave", "Crying", "Accused Idle", "Chained Idle", "Look at Tablet Idle" };
 
         [MenuItem("Tools/Cat Cosmetics/Rebuild animations")]
         public static void RebuildAnimations()
@@ -111,25 +118,28 @@ namespace Avatars.Cosmetics.EditorTools
             // "Angry": the eyes frown (CatFrown, the artist's note on Accusing: "furrowed brows").
             AnimatorState accusing = State("Accusing", "Accusing", 600, 40, "Angry");
             AnimatorState accused = State("Accused Idle", "Accused Idle", 850, 40, "Angry");
-            AnimatorState fiery = State("Fiery Idle", "Fiery Idle Test", 600, 120);
             AnimatorState gettingChained = State("Getting Chained", "Getting Chained", 0, 250);
             AnimatorState gettingChained2 = State("Getting Chained 2", "Getting Chained 2", 0, 330);
             AnimatorState chainedIdle = State("Chained Idle", "Chained Idle", 0, 410);
             AnimatorState struggle = State("Chained Struggle", "Chained Struggle", 250, 410);
+            AnimatorState chainedCrying = State("Chained Crying", "Crying", 250, 490, "Crying");
             AnimatorState tabletOut = State("Pulls Tablet Out", "Pulls Tablet Out", 600, 250);
             AnimatorState tabletIdle = State("Look at Tablet Idle", "Look at Tablet Idle", 600, 330);
             AnimatorState tabletAway = State("Putting Table Away", "Putting Table Away", 600, 410);
 
             // Chained first: it wins over emotes and the tablet (transitions are checked in order).
-            foreach (AnimatorState from in new[] { idle, wave, waveLoop, crying, accusing, accused, fiery, tabletOut, tabletIdle, tabletAway })
+            foreach (AnimatorState from in new[] { idle, wave, waveLoop, crying, accusing, accused, tabletOut, tabletIdle, tabletAway })
                 Go(from, gettingChained, null, ("Chained", AnimatorConditionMode.If, 0f));
             Go(gettingChained, gettingChained2, 1f);
             Go(gettingChained2, chainedIdle, 1f);
-            // The artist's tracker: chained = the default pose; an emote tried while chained replays the struggle.
-            Go(chainedIdle, struggle, null, ("Emoting", AnimatorConditionMode.If, 0f));
-            Go(chainedIdle, struggle, null, ("Emote", AnimatorConditionMode.If, 0f));
+            // The artist's tracker: chained = the default pose, with the struggle. The team (T3, 2026-11-05): keep the
+            // struggle, but a chained cat may only cry: crying while chained, the struggle every 3 loops of the pose.
+            Go(chainedIdle, chainedCrying, null, ("Emoting", AnimatorConditionMode.If, 0f),
+                ("EmoteId", AnimatorConditionMode.Equals, ChainedCryEmoteId));
+            Go(chainedCrying, chainedIdle, null, ("Emoting", AnimatorConditionMode.IfNot, 0f));
+            Go(chainedIdle, struggle, StruggleEveryLoops);
             Go(struggle, chainedIdle, 1f);
-            foreach (AnimatorState from in new[] { gettingChained, gettingChained2, chainedIdle, struggle })
+            foreach (AnimatorState from in new[] { gettingChained, gettingChained2, chainedIdle, struggle, chainedCrying })
                 Go(from, idle, null, ("Chained", AnimatorConditionMode.IfNot, 0f));
 
             // Emotes: the one-shot coucou (Emote trigger), the held ones (Emoting bool), by EmoteId.
@@ -140,7 +150,6 @@ namespace Avatars.Cosmetics.EditorTools
             HeldEmote(idle, accusing, accused, 3);
             Go(accusing, accused, 1f);
             Go(accusing, idle, null, ("Emoting", AnimatorConditionMode.IfNot, 0f));
-            HeldEmote(idle, fiery, fiery, 4);
 
             // Tablet.
             Go(idle, tabletOut, null, ("Tablet", AnimatorConditionMode.If, 0f));
@@ -183,7 +192,7 @@ namespace Avatars.Cosmetics.EditorTools
             var set = AssetDatabase.LoadAssetAtPath<EmoteSet>(EmoteSetPath);
             var so = new SerializedObject(set);
             SerializedProperty list = so.FindProperty("_emotes");
-            var emotes = new (string name, int id)[] { ("Coucou", 1), ("Pleurer", 2), ("Accuser", 3), ("Pose ardente", 4) };
+            var emotes = new (string name, int id)[] { ("Coucou", 1), ("Pleurer", 2), ("Accuser", 3) };
             list.arraySize = emotes.Length;
             for (int i = 0; i < emotes.Length; i++)
             {

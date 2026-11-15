@@ -1,9 +1,9 @@
 name: DevPush
 
+# Runs on Poyo's PC now (tools/build/local_ci.py, same message): GitHub Actions was blocked by a billing lock
+# (2026-11-07). Kept by hand only, so a lifted lock never posts twice.
 on:
-  push:
-    branches:
-      - Dev
+  workflow_dispatch:
 
 jobs:
   notif-push-direct:

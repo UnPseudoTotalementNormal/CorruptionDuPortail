@@ -186,6 +186,12 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   how a player clicks something (new clickable, layer, mask, reticle): run autoplay `real-input-actions`, the only
   check that clicks for real. Default autoplay votes and powers call the game directly and pass anyway.
 - With a `PhysicsRaycaster` present, `IsPointerOverGameObject()` is true over 3D objects → useless as an "over UI" test.
+- **A letter or digit key read from `Keyboard.current` fires while the player types** (chat, bug report): gate it on
+  `DayScreenRows.IsTyping()`, and on `AvatarCameraArbiter.IsOverlayOpenBesides` when a window holding the cursor must
+  stop it. Missed twice: push-to-talk V opened the mic, E played an emote per letter typed (report 2026-11-13).
+- **The day's rows of cards hang under the rendering camera** (`DayScreenRows`, Default layer). A cast or a check around
+  the camera hits them wherever it moves: skip colliders under `Camera.main` (the emote orbit walked into the cat's
+  head, 2026-11-13).
 - **Cat materials are on `Corruption/Cat Toon`**, set by `CatToonLook` (`Tools > Cat Cosmetics > Apply toon look`). A new
   cat material made by hand or by an import stays on another shader: old look, no glow, and no emote dither fade. Add
   it to `CatToonLook`'s table (`CatToonLookTests` fails otherwise). Its flat half is lit by the game only: an unlit cat

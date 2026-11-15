@@ -17,6 +17,16 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Beacon
+    second: {fileID: 2100000, guid: ad75814053d382749aa067606f36f69a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Beacon Off
+    second: {fileID: 2100000, guid: 5b922311668821341b50d78137ae3687, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Bell
     second: {fileID: 2100000, guid: 59d9c0623a8791d46ba16e92c95b4bb4, type: 2}
   - first:
@@ -77,6 +87,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Leaf Heart
+    second: {fileID: 2100000, guid: 92ecc6231fc84b649872dbfc7c637ffe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Leaves
     second: {fileID: 2100000, guid: 6ec56cecc061dd24fbce0b0b055e98ad, type: 2}
   - first:
@@ -89,6 +104,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: Purple Hand
     second: {fileID: 2100000, guid: 98ebe3a064b848a4fbde6b8aae7d2a4f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Robot
+    second: {fileID: 2100000, guid: 5b44d45457a6f044ab86ee65bb375465, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
@@ -119,6 +139,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: Timer Glass
     second: {fileID: 2100000, guid: 646a678617adbd548a16e296c11161be, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Totem
+    second: {fileID: 2100000, guid: 558b80f80149311438fc606c9178cbed, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule

@@ -3527,7 +3527,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::TooltipSystem.HoverTooltipComponent
   tooltipTitle: Nombre total de corrompus
   tooltipDescription: 
-  <tooltipOffsetDirection>k__BackingField: {x: 0, y: 1}
+  <tooltipOffsetDirection>k__BackingField: {x: -1, y: 0}
   <tooltipPixelOffset>k__BackingField: {x: 0, y: 0}
   tooltipBoundsOverride: {fileID: 0}
 --- !u!1 &392292192
@@ -6389,7 +6389,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::TooltipSystem.HoverTooltipComponent
   tooltipTitle: Nombre de personnes ayant interagi avec le robot cette nuit
   tooltipDescription: 
-  <tooltipOffsetDirection>k__BackingField: {x: 0, y: 1}
+  <tooltipOffsetDirection>k__BackingField: {x: -1, y: 0}
   <tooltipPixelOffset>k__BackingField: {x: 0, y: 0}
   tooltipBoundsOverride: {fileID: 0}
 --- !u!1 &704980997

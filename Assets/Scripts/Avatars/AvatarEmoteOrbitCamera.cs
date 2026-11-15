@@ -150,6 +150,7 @@ namespace Avatars
             _manager = null;
             _pitch = _startPitch;
             _blockedLogged = false;
+            _poseLogged = false;
             // Place the camera on the activation frame: the brain updates before our LateUpdate, so without this it
             // would start the blend towards wherever the camera was left after the previous emote.
             TryBind();
@@ -216,7 +217,8 @@ namespace Avatars
             EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _radius, out Vector3 _position, out Quaternion _rotation);
 
             // Stop in front of the walls: closer at once, back out smoothly when the wall is no longer in the way.
-            float _clear = ClearRadius(_pivot, _position - _pivot, _radius, out Collider _blocker);
+            float _clear = ClearRadius(_pivot, _position - _pivot, _radius, out Collider _blocker,
+                Camera.main != null ? Camera.main.transform : null);
             _currentRadius = _clear < _currentRadius
                 ? _clear
                 : Mathf.MoveTowards(_currentRadius, _clear, _radiusReturnSpeed * _radius * Time.deltaTime);
@@ -231,10 +233,34 @@ namespace Avatars
                 EmoteOrbit.ComputePose(_pivot, _yaw, _pitch, _currentRadius, out _position, out _rotation);
             }
             _camera.transform.SetPositionAndRotation(_position, _rotation);
+            if (!_poseLogged)
+            {
+                _poseLogged = true;
+                Vector3 _avatarPosition = _boundAvatar.transform.position;
+                Vector3 _cameraPosition = _position;
+                Collider _hit = _blocker;
+                Vector3 _eye = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+                Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("camera", "camera.emote.pose",
+                    "avatar", _avatarPosition, "pivot", _pivot, "camera", _cameraPosition, "radius", _radius, "current", _currentRadius, "eye", _eye,
+                    "blocker", _hit != null ? PathOf(_hit.transform) : null));
+            }
         }
 
-        // Distance from the pivot the camera can reach along _offset before a blocking collider (not a cat's own).
-        internal float ClearRadius(Vector3 _pivot, Vector3 _offset, float _radius, out Collider _blocker)
+        private bool _poseLogged;
+
+        private static string PathOf(Transform _transform)
+        {
+            string _path = _transform.name;
+            for (Transform _t = _transform.parent; _t != null; _t = _t.parent)
+            {
+                _path = _t.name + "/" + _path;
+            }
+            return _path;
+        }
+
+        // Distance from the pivot the camera can reach along _offset before a blocking collider (not a cat's own, nor one
+        // hanging under _view, the camera that renders).
+        internal float ClearRadius(Vector3 _pivot, Vector3 _offset, float _radius, out Collider _blocker, Transform _view = null)
         {
             _blocker = null;
             if (_radius <= 0f || _offset.sqrMagnitude < 1e-6f)
@@ -248,7 +274,11 @@ namespace Avatars
             {
                 RaycastHit _hit = _hits[_i];
                 // distance 0 = the sphere already overlaps it at the pivot (the cat's own body, the seat): not a wall.
-                if (_hit.distance <= 0f || _hit.distance >= _clear || _hit.collider.GetComponentInParent<PlayerAvatar>() != null)
+                // What hangs under the rendering camera (the day's rows of cards) moves with it: stopping in front of it
+                // pulled the camera closer, the cards followed, until the camera sat inside the cat's head (playtest
+                // report 2026-11-13).
+                if (_hit.distance <= 0f || _hit.distance >= _clear || _hit.collider.GetComponentInParent<PlayerAvatar>() != null
+                    || (_view != null && _hit.collider.transform.IsChildOf(_view)))
                 {
                     continue;
                 }

@@ -29,6 +29,16 @@ import time
 import urllib.request
 import zipfile
 
+if os.name == "nt":
+    # The watcher runs under pythonw: every console child (git, rclone, robocopy, claude…) would otherwise open its
+    # own terminal window — about 30 per build. CREATE_NO_WINDOW on every child, whatever the call site.
+    class _NoWindowPopen(subprocess.Popen):
+        def __init__(self, *args, **kwargs):
+            kwargs["creationflags"] = kwargs.get("creationflags", 0) | 0x08000000
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = _NoWindowPopen
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 MAIN_REPO = os.path.abspath(os.path.join(subprocess.run(

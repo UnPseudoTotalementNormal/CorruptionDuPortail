@@ -77,24 +77,25 @@ namespace Board.UI.PowerBar.EditorTools
         {
             public string Model;
             public float Size; // longest side on the table, world units (BasePower = 2)
-            public Vector3 Euler; // tilt towards the night's camera: above the table's middle, so at the bar it looks from the far side
+            public Vector3 Euler; // its pose on the table, as a real object would rest (no tilt to face the camera): yaw 180 turns
+            // the front towards the table's middle, where the night's camera is; what cannot stand lies flat
         }
 
         private static readonly Dictionary<string, PowerObject> PowerObjects = new Dictionary<string, PowerObject>
         {
             ["PowerObject_ArcaneCube"] = new PowerObject { Model = "ArcaneCube", Size = 2.2f, Euler = new Vector3(0f, 25f, 0f) },
-            ["PowerObject_Bell"] = new PowerObject { Model = "Bell", Size = 2f, Euler = new Vector3(95f, 0f, 0f) },
+            ["PowerObject_Bell"] = new PowerObject { Model = "Bell", Size = 2f, Euler = new Vector3(0f, 0f, 0f) },
             ["PowerObject_ChainPile"] = new PowerObject { Model = "ChainPile", Size = 2.6f, Euler = new Vector3(0f, 0f, 0f) },
-            ["PowerObject_Corruptor"] = new PowerObject { Model = "Corruptor", Size = 2.2f, Euler = new Vector3(108f, 0f, 0f) },
-            ["PowerObject_CrystalBall"] = new PowerObject { Model = "CrystalBall", Size = 2.2f, Euler = new Vector3(105f, 0f, 0f) },
-            ["PowerObject_CrystalSkull"] = new PowerObject { Model = "CrystalSkull", Size = 2.1f, Euler = new Vector3(102f, 0f, 0f) },
-            ["PowerObject_LeafHeart"] = new PowerObject { Model = "LeafHeart", Size = 2.3f, Euler = new Vector3(105f, 0f, 0f) },
-            ["PowerObject_PurpleHand"] = new PowerObject { Model = "PurpleHand", Size = 2.3f, Euler = new Vector3(105f, 0f, 0f) },
-            ["PowerObject_Sniper"] = new PowerObject { Model = "Sniper", Size = 3f, Euler = new Vector3(70f, 25f, 0f) },
-            ["PowerObject_TeddyBear"] = new PowerObject { Model = "TeddyBear", Size = 2.1f, Euler = new Vector3(108f, 0f, 0f) },
+            ["PowerObject_Corruptor"] = new PowerObject { Model = "Corruptor", Size = 2.2f, Euler = new Vector3(0f, 180f, 0f) },
+            ["PowerObject_CrystalBall"] = new PowerObject { Model = "CrystalBall", Size = 2.2f, Euler = new Vector3(0f, 180f, 0f) },
+            ["PowerObject_CrystalSkull"] = new PowerObject { Model = "CrystalSkull", Size = 2.1f, Euler = new Vector3(0f, 180f, 0f) },
+            ["PowerObject_LeafHeart"] = new PowerObject { Model = "LeafHeart", Size = 2.3f, Euler = new Vector3(90f, 0f, 0f) },
+            ["PowerObject_PurpleHand"] = new PowerObject { Model = "PurpleHand", Size = 2.3f, Euler = new Vector3(-90f, 180f, 0f) },
+            ["PowerObject_Sniper"] = new PowerObject { Model = "Sniper", Size = 3f, Euler = new Vector3(90f, 25f, 0f) },
+            ["PowerObject_TeddyBear"] = new PowerObject { Model = "TeddyBear", Size = 2.1f, Euler = new Vector3(0f, 180f, 0f) },
             ["PowerObject_WoodenBoard"] = new PowerObject { Model = "WoodenBoard", Size = 2.8f, Euler = new Vector3(0f, 0f, 0f) },
-            ["PowerObject_BeaconRobot"] = new PowerObject { Model = "BeaconRobot", Size = 2.3f, Euler = new Vector3(105f, 0f, 0f) },
-            ["PowerObject_Totem"] = new PowerObject { Model = "Totem", Size = 2.4f, Euler = new Vector3(105f, 0f, 0f) },
+            ["PowerObject_BeaconRobot"] = new PowerObject { Model = "BeaconRobot", Size = 2.3f, Euler = new Vector3(0f, 180f, 0f) },
+            ["PowerObject_Totem"] = new PowerObject { Model = "Totem", Size = 2.4f, Euler = new Vector3(0f, 180f, 0f) },
         };
 
         // Who gets which object: the asset tracker of the board task T33 (Corrompu_Suivi_Assets_3D.xlsx, one row per role's

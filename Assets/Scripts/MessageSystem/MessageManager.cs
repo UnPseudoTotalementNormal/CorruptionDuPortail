@@ -98,6 +98,13 @@ namespace MessageSystem
         [Rpc(SendTo.Server)]
         public void SendMessageRpc(ulong _sender, FixedString512Bytes _message)
         {
+            // T36: a player's words never carry the marks of a translation token (the journal would show them as glyphs).
+            string _typed = _message.ToString();
+            string _clean = CorruptionDuPortail.Domain.Localization.Loc.StripMarks(_typed);
+            if (!ReferenceEquals(_typed, _clean))
+            {
+                _message = new FixedString512Bytes(_clean);
+            }
             Diagnostics.Logs.GameLog.Info("message", "message.delivered", "from", _sender, "text", _message.ToString(), "day", Loop.currentDay);
             messagesToReveal.Add(new MessageInfo(_sender, _message, Loop.currentDay));
         }

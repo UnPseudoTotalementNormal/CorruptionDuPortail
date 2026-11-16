@@ -21,5 +21,18 @@ namespace CorruptionDuPortail.Domain
             // The French source reads pseudo + LeftSuffix: keep the two in step.
             return hasLeft ? Loc.Tr("{0} (parti)", pseudo) : pseudo;
         }
+
+        /// <summary>
+        /// The same name for a text that travels or outlives a language change (an argument of <c>Loc.Token</c> or
+        /// <c>SetLoc</c>): its game wording is a token, read in each reader's language.
+        /// </summary>
+        public static string FormatToken(bool hasEntry, string pseudo, bool hasLeft)
+        {
+            if (!hasEntry || string.IsNullOrWhiteSpace(pseudo))
+            {
+                return Loc.Token(MissingLabel);
+            }
+            return hasLeft ? Loc.Token("{0} (parti)", pseudo) : pseudo;
+        }
     }
 }

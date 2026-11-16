@@ -31,6 +31,6 @@ public class TakeDownThePortalTextTitle : MonoBehaviour
         // CharacterManager, so it resolves through the sanctioned CompositionRoot.For(Singleton) instead of the
         // CharacterManager God-Object façade. Behaviour-identical (one production NM).
         textTitle.SetLoc("{0} doit abattre le portail.",
-            CompositionRoot.For(NetworkManager.Singleton).CharacterQuery.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo());
+            CompositionRoot.For(NetworkManager.Singleton).CharacterQuery.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudoToken());
     }
 }

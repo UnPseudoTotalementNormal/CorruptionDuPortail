@@ -112,7 +112,7 @@ namespace Characters.Powers
                 {
                     // T36: a token, read by each player in his language.
                     message = Loc.Token("{0} à été soigné(e) pendant la nuit avec {1}",
-                        _healedCharacter.GetOwnerPseudo(), Loc.Token(powerName.ToString())),
+                        _healedCharacter.GetOwnerPseudoToken(), Loc.Token(powerName.ToString())),
                     senderClientId = GameValues.CHAT_SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };

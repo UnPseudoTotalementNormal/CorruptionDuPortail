@@ -1,3 +1,4 @@
+using Localization;
 using System.Linq;
 using Characters;
 using GameLogic;
@@ -25,7 +26,7 @@ namespace UI.Components
 
             int _corruptedAmount = _characters.Count(_c => _c.isCorrupted.Value);
             int _totalAmount = _characters.Count();
-            corruptionText.text = $"<color=red>{_corruptedAmount} sur {_totalAmount}</color> non-anomalies ont été corrompues.";
+            corruptionText.SetLoc("<color=red>{0} sur {1}</color> non-anomalies ont été corrompues.", _corruptedAmount, _totalAmount);
         }
         
         public override void HideEvent()

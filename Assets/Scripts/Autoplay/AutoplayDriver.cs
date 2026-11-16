@@ -1029,7 +1029,8 @@ namespace Autoplay
                 return;
             }
 
-            string _text = _message.message.ToString();
+            // T36: the server writes translation tokens; the journal keeps the French sentence (the analyzers read it).
+            string _text = CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_message.message.ToString());
             int _start = _text.IndexOf("[ap:", StringComparison.Ordinal);
             int _end = _start >= 0 ? _text.IndexOf(']', _start) : -1;
             string _token = _end > _start ? _text.Substring(_start + 1, _end - _start - 1) : "-";

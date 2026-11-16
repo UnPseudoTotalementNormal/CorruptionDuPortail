@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 
 namespace CorruptionDuPortail.Domain.Powers.Decisions
@@ -25,7 +26,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
                 effects.Add(new RevealInfo(ctx.TargetSlot, RevealField.RoleRevealed, RevealVisibility.Personal, ctx.OwnerSlot, true));
                 effects.Add(new SetBlessed(ctx.TargetSlot));
                 effects.Add(new ChatBroadcast(
-                    $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} est maintenant béni.", ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
+                    Loc.Token("{0} est maintenant béni.", ctx.Roster.PseudoOf(ctx.TargetSlot)), ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
             }
             return PowerOutcome.Accept(effects, roleGuessed ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }

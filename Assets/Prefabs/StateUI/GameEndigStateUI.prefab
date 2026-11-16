@@ -129,6 +129,27 @@ MonoBehaviour:
   hoverColor: {r: 0.3292097, g: 0.509434, b: 0.39615014, a: 1}
   disabledColor: {r: 0.13608047, g: 0.20754719, b: 0.16262524, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -205,6 +226,7 @@ GameObject:
   - component: {fileID: 598473270658180509}
   - component: {fileID: 3690541782819982664}
   - component: {fileID: 4624389978658995962}
+  - component: {fileID: 5776748971283990803}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -297,6 +319,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -330,6 +353,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &5776748971283990803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3065015332544757298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &3530068333681691846
 GameObject:
   m_ObjectHideFlags: 0
@@ -341,6 +376,7 @@ GameObject:
   - component: {fileID: 2970307594860455039}
   - component: {fileID: 8320908177092094643}
   - component: {fileID: 4925583666856843863}
+  - component: {fileID: 2940590108057413799}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -433,6 +469,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -466,6 +503,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2940590108057413799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530068333681691846}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &4316038992594077676
 GameObject:
   m_ObjectHideFlags: 0
@@ -517,6 +566,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameManager: {fileID: 0}
+  characterManager: {fileID: 0}
   owningGameState: {fileID: 0}
   canvasGroup: {fileID: 110046594514647348}
   instantShowOnStateStart: 0

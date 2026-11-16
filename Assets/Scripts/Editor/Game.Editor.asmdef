@@ -10,7 +10,11 @@
         "Unity.Addressables",
         "Unity.ResourceManager",
         "Unity.Netcode.Runtime",
-        "Unity.Netcode.Components"
+        "Unity.Netcode.Components",
+        "Unity.TextMeshPro",
+        "Unity.Collections",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"

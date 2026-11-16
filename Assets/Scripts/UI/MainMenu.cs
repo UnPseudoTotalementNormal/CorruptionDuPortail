@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
@@ -76,6 +77,7 @@ namespace UI
             quitGameButton.onClick.AddListener(OnQuitGameButtonClicked);
 
             SteamInvites.JoinRequested += OnSteamJoinRequested;
+            Loc.LanguageChanged += OnLanguageChanged;
             OnSteamJoinRequested(); // a request made before the menu loaded (Steam started the game to join a friend)
         }
 
@@ -91,7 +93,7 @@ namespace UI
             {
                 Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
                 GameLog.Info("net", "steam.join.request", "lobby", _lobbyId, "source", "menu", "ignored", true, "reason", "menu busy");
-                LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
+                LobbyManager.instance?.ReportError(Loc.Tr(LobbySelectionPanel.BusyForInviteMessage));
                 return;
             }
 
@@ -150,6 +152,7 @@ namespace UI
 
             GameObject _copy = Instantiate(openJoinMenu.gameObject, openJoinMenu.transform.parent);
             _copy.name = "RoleBookButton";
+            _roleBookButton = _copy;
             var _rect = (RectTransform)_copy.transform;
             var _source = (RectTransform)openJoinMenu.transform;
             _rect.anchorMin = Vector2.zero;
@@ -159,7 +162,7 @@ namespace UI
             _rect.sizeDelta = _source.sizeDelta;
             foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
             {
-                _label.text = "Personnages";
+                _label.text = Loc.Tr("Personnages");
                 _label.enableWordWrapping = false;
                 _label.fontSizeMax = _label.fontSize;
                 _label.fontSizeMin = _label.fontSize * 0.5f;
@@ -215,7 +218,8 @@ namespace UI
             _lineRect.sizeDelta = new Vector2(_rect.sizeDelta.x * 0.4f, _screenHeight * 0.05f);
             _lineRect.anchoredPosition = Vector2.zero;
             var _text = _line.GetComponent<TextMeshProUGUI>();
-            _text.text = "Personnaliser mon chat";
+            _text.text = Loc.Tr("Personnaliser mon chat");
+            _menuCatLabel = _text;
             if (_model != null)
             {
                 _text.font = _model.font;
@@ -261,9 +265,37 @@ namespace UI
             _hiddenForOverlay.Clear();
         }
 
+        // ---- Language: the labels written by this menu follow a change made in the options ----
+
+        private GameObject _roleBookButton;
+        private TMP_Text _menuCatLabel;
+
+        private void OnLanguageChanged()
+        {
+            if (_roleBookButton != null)
+            {
+                foreach (TMP_Text _label in _roleBookButton.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    _label.text = Loc.Tr("Personnages");
+                }
+            }
+            if (_menuCatLabel != null)
+            {
+                _menuCatLabel.text = Loc.Tr("Personnaliser mon chat");
+            }
+            if (_rejoinButton != null)
+            {
+                foreach (TMP_Text _label in _rejoinButton.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    _label.text = Loc.Tr("Rejoindre la partie en cours");
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             SteamInvites.JoinRequested -= OnSteamJoinRequested;
+            Loc.LanguageChanged -= OnLanguageChanged;
             if (roleBook != null)
             {
                 roleBook.Opened -= HideMenuForOverlay;
@@ -309,7 +341,7 @@ namespace UI
             _rect.anchoredPosition = new Vector2(0f, -_source.rect.height * 0.8f);
             foreach (TMP_Text _label in _copy.GetComponentsInChildren<TMP_Text>(true))
             {
-                _label.text = "Rejoindre la partie en cours";
+                _label.text = Loc.Tr("Rejoindre la partie en cours");
                 _label.enableWordWrapping = false;
                 _label.fontSizeMax = _label.fontSize;
                 _label.fontSizeMin = _label.fontSize * 0.5f;
@@ -522,7 +554,7 @@ namespace UI
                     // has no field to type one.
                     if (_lobby.HasPassword)
                     {
-                        LobbyManager.instance.ReportError(SteamConnector.PasswordNeedsListMessage);
+                        LobbyManager.instance.ReportError(Loc.Tr(SteamConnector.PasswordNeedsListMessage));
                         throw new System.Exception(SteamConnector.PasswordNeedsListMessage);
                     }
                     if (!SteamConnector.StartClient(NetworkManager.Singleton, _lobby, null))
@@ -664,7 +696,7 @@ namespace UI
                 _lobbySettings.maxPlayers = 15;
                 _lobbySettings.data = new Dictionary<string, string>()
                 {
-                    { nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), "Français" }
+                    { nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), Localization.LocalizationRuntime.NativeName(Loc.Language) }
                 };
                 GameLog.Info("net", "host.start", "mode", LogTransportMode(), "hasPassword", password != null,
                     "maxPlayers", _lobbySettings.maxPlayers);

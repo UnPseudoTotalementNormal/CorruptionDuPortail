@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using System.Collections.Generic;
@@ -198,7 +199,7 @@ namespace UI.EmoteWheel
                 // --- Label: OUTSIDE the outer edge, positioned radially (consistent for every sector). ---
                 if (showSectorLabels)
                 {
-                    var _label = new Label(_emote != null ? _emote.displayName : string.Empty);
+                    var _label = new Label().SetLoc(_emote != null ? _emote.displayName : string.Empty);
                     _label.AddToClassList(SlotLabelClass);
                     _label.pickingMode = PickingMode.Ignore;
                     _label.style.position = Position.Absolute;
@@ -290,7 +291,7 @@ namespace UI.EmoteWheel
             _confirmIcon.style.backgroundImage = _placeholder
                 ? StyleKeyword.None
                 : new StyleBackground(_emote.icon);
-            _confirmLabel.text = _emote.displayName ?? string.Empty;
+            _confirmLabel.SetLoc(_emote.displayName ?? string.Empty);
 
             _confirmT = 0f;
             _confirm.style.display = DisplayStyle.Flex;
@@ -555,7 +556,7 @@ namespace UI.EmoteWheel
             {
                 EmoteDefinition _emote = GetEmote(index);
                 bool _has = _emote != null && !string.IsNullOrEmpty(_emote.displayName);
-                _caption.text = _has ? _emote.displayName : string.Empty;
+                _caption.SetLoc(_has ? _emote.displayName : string.Empty);
                 _caption.EnableInClassList(CaptionHiddenClass, !_has);
             }
         }

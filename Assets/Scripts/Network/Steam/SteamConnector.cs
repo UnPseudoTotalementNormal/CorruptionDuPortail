@@ -20,7 +20,7 @@ namespace Network.Steam
     public static class SteamConnector
     {
         public const string PasswordNeedsListMessage =
-            "Cette partie a un mot de passe : rejoins-la depuis la liste des parties.";
+            "Cette partie a un mot de passe : rejoins-la depuis la liste des parties."; // loc
 
         /// <summary>Starts the host. Returns its SteamID64, to publish in the lobby, or null on failure.</summary>
         /// <param name="lobbyPassword">Checked by the connection approval (Steam lobbies have none); null = open.</param>

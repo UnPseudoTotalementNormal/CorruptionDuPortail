@@ -1,0 +1,1564 @@
+{
+  "entries": [
+    {
+      "fr": "Server",
+      "en": "Server"
+    },
+    {
+      "fr": "Version différente de l'hôte, mets ton jeu à jour.",
+      "en": "Your version differs from the host's. Update your game."
+    },
+    {
+      "fr": "Pas assez de rôles possibles : {0} pour {1}.",
+      "en": "Not enough possible roles: {0} for {1}."
+    },
+    {
+      "fr": "Aucun rôle {0} dans la partie (il en faut au moins {1}).",
+      "en": "No {0} role in the game (at least {1} needed)."
+    },
+    {
+      "fr": "Pas assez de rôles {0} : {1} pour un minimum de {2}.",
+      "en": "Not enough {0} roles: {1} for a minimum of {2}."
+    },
+    {
+      "fr": "Retire un rôle {0} garanti ou ajoute un joueur.",
+      "en": "Remove a guaranteed {0} role or add a player."
+    },
+    {
+      "fr": "Retire un rôle garanti ou ajoute un joueur.",
+      "en": "Remove a guaranteed role or add a player."
+    },
+    {
+      "fr": "Trop de rôles garantis : {0} pour {1}. {2}",
+      "en": "Too many guaranteed roles: {0} for {1}. {2}"
+    },
+    {
+      "fr": "{0} joueur",
+      "en": "{0} player"
+    },
+    {
+      "fr": "{0} joueurs",
+      "en": "{0} players"
+    },
+    {
+      "fr": "Anomalie",
+      "en": "Anomaly"
+    },
+    {
+      "fr": "Élu",
+      "en": "Chosen"
+    },
+    {
+      "fr": "Marginal",
+      "en": "Outsider"
+    },
+    {
+      "fr": "Connexion échouée : la partie a mis trop de temps à charger.",
+      "en": "Connection failed: the game took too long to load."
+    },
+    {
+      "fr": "Connexion expirée : l'hôte n'a pas répondu.",
+      "en": "Connection timed out: the host did not answer."
+    },
+    {
+      "fr": "Échap",
+      "en": "Esc"
+    },
+    {
+      "fr": "Entrée",
+      "en": "Enter"
+    },
+    {
+      "fr": "Espace",
+      "en": "Space"
+    },
+    {
+      "fr": "Mot de passe incorrect.",
+      "en": "Wrong password."
+    },
+    {
+      "fr": "Joueur ?",
+      "en": "Player ?"
+    },
+    {
+      "fr": "{0} (parti)",
+      "en": "{0} (left)"
+    },
+    {
+      "fr": "Connexion à l'hôte perdue",
+      "en": "Connection to the host lost"
+    },
+    {
+      "fr": "La partie a déjà commencé.",
+      "en": "The game has already started."
+    },
+    {
+      "fr": "Cliquer pour skip le vote",
+      "en": "Click to skip the vote"
+    },
+    {
+      "fr": "Skips : {0}",
+      "en": "Skips: {0}"
+    },
+    {
+      "fr": "Réessayer",
+      "en": "Retry"
+    },
+    {
+      "fr": "Already signed in. (Somehow ???)",
+      "en": "Already signed in. (Somehow ???)"
+    },
+    {
+      "fr": "Sign-in failed for an unknown reason.",
+      "en": "Sign-in failed for an unknown reason."
+    },
+    {
+      "fr": "Set username failed: {0}",
+      "en": "Set username failed: {0}"
+    },
+    {
+      "fr": "Sign-in failed: {0}",
+      "en": "Sign-in failed: {0}"
+    },
+    {
+      "fr": "Personnages",
+      "en": "Characters"
+    },
+    {
+      "fr": "Personnaliser mon chat",
+      "en": "Customize my cat"
+    },
+    {
+      "fr": "Rejoindre la partie en cours",
+      "en": "Rejoin the game in progress"
+    },
+    {
+      "fr": "Vous vous éveillez",
+      "en": "You awaken"
+    },
+    {
+      "fr": "Vous vous rendormez",
+      "en": "You fall back asleep"
+    },
+    {
+      "fr": "Arrêter l'éveil",
+      "en": "End awakening"
+    },
+    {
+      "fr": "Passer le vote",
+      "en": "Skip the vote"
+    },
+    {
+      "fr": "Lié par l'encre",
+      "en": "Bound by Ink"
+    },
+    {
+      "fr": "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique).",
+      "en": "The role {0} is not in play: you temporarily copy its power “{1}” (single use)."
+    },
+    {
+      "fr": "Le rôle {0} n'est pas en jeu : vous copiez temporairement ses pouvoirs « {1} » (usage unique chacun).",
+      "en": "The role {0} is not in play: you temporarily copy its powers “{1}” (single use each)."
+    },
+    {
+      "fr": "Le rôle {0} n'est pas en jeu : sa marque vous donne une copie du pouvoir « {1} » (usage unique).",
+      "en": "The role {0} is not in play: its mark gives you a copy of the power “{1}” (single use)."
+    },
+    {
+      "fr": "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier.",
+      "en": "The selected role is not in play, but it has no active power to copy."
+    },
+    {
+      "fr": "{0} à été soigné(e) pendant la nuit avec {1}",
+      "en": "{0} was healed during the night with {1}"
+    },
+    {
+      "fr": "Si {0} est enchainé, {1} hérite de \"{2}\".",
+      "en": "If {0} is chained, {1} inherits \"{2}\"."
+    },
+    {
+      "fr": "Le robot a un nouvel état de corruption: {0}",
+      "en": "The robot has a new corruption state: {0}"
+    },
+    {
+      "fr": "{0} a un nouvel état de corruption: {1}",
+      "en": "{0} has a new corruption state: {1}"
+    },
+    {
+      "fr": "Les Anomalies gagnent quand tous les joueurs sont corrompus.",
+      "en": "The Anomalies win when every player is corrupted."
+    },
+    {
+      "fr": "Les Élus gagnent quand toutes les Anomalies sont enchaînées.",
+      "en": "The Chosen win when every Anomaly is chained."
+    },
+    {
+      "fr": "Il gagne s'il se fait enchaîner.",
+      "en": "He wins if he gets chained."
+    },
+    {
+      "fr": "Il gagne si l'élu qu'il a piraté se fait enchaîner.",
+      "en": "He wins if the Chosen he hacked gets chained."
+    },
+    {
+      "fr": "Qu'est-ce qui s'est passé ?",
+      "en": "What happened?"
+    },
+    {
+      "fr": "Envoyer",
+      "en": "Send"
+    },
+    {
+      "fr": "Signaler un bug",
+      "en": "Report a bug"
+    },
+    {
+      "fr": "Annuler",
+      "en": "Cancel"
+    },
+    {
+      "fr": "Envoyé, merci",
+      "en": "Sent, thank you"
+    },
+    {
+      "fr": "Pas envoyé",
+      "en": "Not sent"
+    },
+    {
+      "fr": "Envoi…",
+      "en": "Sending…"
+    },
+    {
+      "fr": "Envoyer ({0})",
+      "en": "Send ({0})"
+    },
+    {
+      "fr": "Le nom du lobby ne peut pas être vide",
+      "en": "The lobby name cannot be empty"
+    },
+    {
+      "fr": "Le nombre de joueurs doit être entre 2 et 20",
+      "en": "The number of players must be between 2 and 20"
+    },
+    {
+      "fr": "Le mot de passe doit contenir au moins 8 caractères",
+      "en": "The password must be at least 8 characters long"
+    },
+    {
+      "fr": "Le mot de passe doit contenir au plus {0} caractères",
+      "en": "The password must be at most {0} characters long"
+    },
+    {
+      "fr": "Impossible de créer le lobby: {0}",
+      "en": "Could not create the lobby: {0}"
+    },
+    {
+      "fr": "Impossible de récupérer les lobbies: {0}",
+      "en": "Could not fetch the lobbies: {0}"
+    },
+    {
+      "fr": "L'ID du lobby ne peut pas être vide",
+      "en": "The lobby ID cannot be empty"
+    },
+    {
+      "fr": "Impossible de rejoindre le lobby: {0}",
+      "en": "Could not join the lobby: {0}"
+    },
+    {
+      "fr": "Le code du lobby ne peut pas être vide",
+      "en": "The lobby code cannot be empty"
+    },
+    {
+      "fr": "Code invalide ou lobby introuvable: {0}",
+      "en": "Invalid code or lobby not found: {0}"
+    },
+    {
+      "fr": "Impossible de rejoindre la partie: {0}",
+      "en": "Could not join the game: {0}"
+    },
+    {
+      "fr": "Impossible de quitter le lobby: {0}",
+      "en": "Could not leave the lobby: {0}"
+    },
+    {
+      "fr": "Impossible de supprimer le lobby: {0}",
+      "en": "Could not delete the lobby: {0}"
+    },
+    {
+      "fr": "Connexion au lobby perdue: {0}",
+      "en": "Connection to the lobby lost: {0}"
+    },
+    {
+      "fr": "Aucun lobby actif",
+      "en": "No active lobby"
+    },
+    {
+      "fr": "Impossible de verrouiller le lobby: {0}",
+      "en": "Could not lock the lobby: {0}"
+    },
+    {
+      "fr": "Steam n'a pas pu créer le lobby.",
+      "en": "Steam could not create the lobby."
+    },
+    {
+      "fr": "Lobby introuvable.",
+      "en": "Lobby not found."
+    },
+    {
+      "fr": "aucune partie ouverte avec ce code.",
+      "en": "no open game with this code."
+    },
+    {
+      "fr": "la partie n'existe plus.",
+      "en": "the game no longer exists."
+    },
+    {
+      "fr": "la partie n'existe plus ou Steam ne répond pas.",
+      "en": "the game no longer exists or Steam is not responding."
+    },
+    {
+      "fr": "ce n'est pas une partie de Corruption du Portail.",
+      "en": "this is not a Corruption du Portail game."
+    },
+    {
+      "fr": "Lobby quitté.",
+      "en": "Lobby left."
+    },
+    {
+      "fr": "la partie est pleine.",
+      "en": "the game is full."
+    },
+    {
+      "fr": "Steam refuse l'accès à cette partie.",
+      "en": "Steam denies access to this game."
+    },
+    {
+      "fr": "tu as été banni de cette partie.",
+      "en": "you have been banned from this game."
+    },
+    {
+      "fr": "un joueur de cette partie t'a bloqué (ou tu l'as bloqué) sur Steam.",
+      "en": "a player in this game has blocked you (or you blocked them) on Steam."
+    },
+    {
+      "fr": "trop de tentatives, réessaie dans un instant.",
+      "en": "too many attempts, try again in a moment."
+    },
+    {
+      "fr": "erreur Steam ({0}).",
+      "en": "Steam error ({0})."
+    },
+    {
+      "fr": "Cette partie a un mot de passe : rejoins-la depuis la liste des parties.",
+      "en": "This game has a password: join it from the game list."
+    },
+    {
+      "fr": "Inviter des amis",
+      "en": "Invite friends"
+    },
+    {
+      "fr": "L'overlay Steam est désactivé : invite tes amis depuis ta liste d'amis Steam.",
+      "en": "The Steam overlay is disabled: invite your friends from your Steam friends list."
+    },
+    {
+      "fr": "Tu es déjà dans une partie : quitte-la pour rejoindre ton ami.",
+      "en": "You are already in a game: leave it to join your friend."
+    },
+    {
+      "fr": "Steam n'est pas lancé. Lance Steam, puis réessaie.",
+      "en": "Steam is not running. Start Steam, then try again."
+    },
+    {
+      "fr": "Pelage",
+      "en": "Fur"
+    },
+    {
+      "fr": "Tenue",
+      "en": "Outfit"
+    },
+    {
+      "fr": "Yeux",
+      "en": "Eyes"
+    },
+    {
+      "fr": "Bouche",
+      "en": "Mouth"
+    },
+    {
+      "fr": "Joueurs / Rôles",
+      "en": "Players / Roles"
+    },
+    {
+      "fr": "Camp",
+      "en": "Faction"
+    },
+    {
+      "fr": "⚠  Contradiction dans tes déductions",
+      "en": "⚠  Contradiction in your deductions"
+    },
+    {
+      "fr": "Sûr",
+      "en": "Sure"
+    },
+    {
+      "fr": "peut être",
+      "en": "maybe"
+    },
+    {
+      "fr": "Pas lui",
+      "en": "Not them"
+    },
+    {
+      "fr": "É",
+      "en": "C"
+    },
+    {
+      "fr": "M",
+      "en": "O"
+    },
+    {
+      "fr": "A",
+      "en": "A"
+    },
+    {
+      "fr": "Inconnu",
+      "en": "Unknown"
+    },
+    {
+      "fr": "Clic : voter",
+      "en": "Click: vote"
+    },
+    {
+      "fr": "Rôles",
+      "en": "Roles"
+    },
+    {
+      "fr": "Autres options",
+      "en": "Other options"
+    },
+    {
+      "fr": "Mon chat",
+      "en": "My cat"
+    },
+    {
+      "fr": "Nuit",
+      "en": "Night"
+    },
+    {
+      "fr": "Rapide, en 3 appels",
+      "en": "Fast, in 3 calls"
+    },
+    {
+      "fr": "Options de développement",
+      "en": "Development options"
+    },
+    {
+      "fr": "Démarrage forcé",
+      "en": "Force start"
+    },
+    {
+      "fr": "Joueurs",
+      "en": "Players"
+    },
+    {
+      "fr": "Garantis",
+      "en": "Guaranteed"
+    },
+    {
+      "fr": "Rôles possibles",
+      "en": "Possible roles"
+    },
+    {
+      "fr": "Compositions",
+      "en": "Setups"
+    },
+    {
+      "fr": "Personnalisée",
+      "en": "Custom"
+    },
+    {
+      "fr": "Au plus",
+      "en": "At most"
+    },
+    {
+      "fr": "Au moins",
+      "en": "At least"
+    },
+    {
+      "fr": "{0} joueur prêt sur {1}",
+      "en": "{0} player ready out of {1}"
+    },
+    {
+      "fr": "{0} joueurs prêts sur {1}",
+      "en": "{0} players ready out of {1}"
+    },
+    {
+      "fr": "Je suis prêt",
+      "en": "I am ready"
+    },
+    {
+      "fr": "Anomalies",
+      "en": "Anomalies"
+    },
+    {
+      "fr": "Élus",
+      "en": "Chosen"
+    },
+    {
+      "fr": "Marginaux",
+      "en": "Outsiders"
+    },
+    {
+      "fr": "Oui",
+      "en": "Yes"
+    },
+    {
+      "fr": "Non",
+      "en": "No"
+    },
+    {
+      "fr": "Non spécifiée",
+      "en": "Not specified"
+    },
+    {
+      "fr": "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant.",
+      "en": "A connection is already in progress: try joining your friend again in a moment."
+    },
+    {
+      "fr": "TOUR {0}",
+      "en": "TURN {0}"
+    },
+    {
+      "fr": "<color={2}>{0}/{1}</color> <color={3}>corrompu</color>",
+      "en": "<color={2}>{0}/{1}</color> <color={3}>corrupted</color>"
+    },
+    {
+      "fr": "<color={2}>{0}/{1}</color> <color={3}>corrompus</color>",
+      "en": "<color={2}>{0}/{1}</color> <color={3}>corrupted</color>"
+    },
+    {
+      "fr": "<color={0}>Personne</color> n'a ciblé le <color={1}>Robot</color>",
+      "en": "<color={0}>Nobody</color> targeted the <color={1}>Robot</color>"
+    },
+    {
+      "fr": "<color={1}>{0}</color> joueur a ciblé le <color={2}>Robot</color>",
+      "en": "<color={1}>{0}</color> player targeted the <color={2}>Robot</color>"
+    },
+    {
+      "fr": "<color={1}>{0}</color> joueurs ont ciblé le <color={2}>Robot</color>",
+      "en": "<color={1}>{0}</color> players targeted the <color={2}>Robot</color>"
+    },
+    {
+      "fr": "restant: ∞",
+      "en": "left: ∞"
+    },
+    {
+      "fr": "restant: {0}",
+      "en": "left: {0}"
+    },
+    {
+      "fr": "{0} doit abattre le portail.",
+      "en": "{0} must take down the portal."
+    },
+    {
+      "fr": "Pouvoirs",
+      "en": "Powers"
+    },
+    {
+      "fr": "Pouvoir",
+      "en": "Power"
+    },
+    {
+      "fr": "Condition de victoire",
+      "en": "Victory condition"
+    },
+    {
+      "fr": "Passif",
+      "en": "Passive"
+    },
+    {
+      "fr": "‹ Maintenir V ›",
+      "en": "‹ Hold V ›"
+    },
+    {
+      "fr": "‹ Toujours ouvert ›",
+      "en": "‹ Always open ›"
+    },
+    {
+      "fr": "Skip",
+      "en": "Skip"
+    },
+    {
+      "fr": "Rôle factice",
+      "en": "Fake role"
+    },
+    {
+      "fr": "Personne ne joue ce rôle dans cette partie.",
+      "en": "Nobody plays this role in this game."
+    },
+    {
+      "fr": "Éliminé",
+      "en": "Eliminated"
+    },
+    {
+      "fr": "Enchaîné",
+      "en": "Chained"
+    },
+    {
+      "fr": "N'a pas voté",
+      "en": "Has not voted"
+    },
+    {
+      "fr": "Votes: {0}",
+      "en": "Votes: {0}"
+    },
+    {
+      "fr": "A voté",
+      "en": "Has voted"
+    },
+    {
+      "fr": "Termine le tour ; si \"{var:precedentPowerName}\" n'est pas utilisé,",
+      "en": "Ends the turn; if \"{var:precedentPowerName}\" is not used, "
+    },
+    {
+      "fr": "Hérité",
+      "en": "Inherited"
+    },
+    {
+      "fr": "Non hérité",
+      "en": "Not inherited"
+    },
+    {
+      "fr": "Aucun personnage n'est éligible pour hériter du pouvoir {0}.",
+      "en": "No character is eligible to inherit the power {0}."
+    },
+    {
+      "fr": "{0} est maintenant béni.",
+      "en": "{0} is now blessed."
+    },
+    {
+      "fr": "Vous avez correctement deviné que {0} est {1}.",
+      "en": "You correctly guessed that {0} is {1}."
+    },
+    {
+      "fr": "Votre supposition était incorrecte, {0} n'est pas {1}.",
+      "en": "Your guess was wrong, {0} is not {1}."
+    },
+    {
+      "fr": "Le role {0} n'a ciblé aucun rôle.",
+      "en": "The role {0} targeted no role."
+    },
+    {
+      "fr": "Le role {0} a ciblé ces rôles:",
+      "en": "The role {0} targeted these roles:"
+    },
+    {
+      "fr": "Parmi les joueurs observés, {0} sont des élus.",
+      "en": "Among the observed players, {0} are Chosen."
+    },
+    {
+      "fr": "{0} est un élu.",
+      "en": "{0} is a Chosen."
+    },
+    {
+      "fr": "{0} n'est pas un élu.",
+      "en": "{0} is not a Chosen."
+    },
+    {
+      "fr": "{0} était le robot et a été éliminé par {1}.",
+      "en": "{0} was the robot and was eliminated by {1}."
+    },
+    {
+      "fr": "Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
+      "en": "Your target was not the robot. You will be chained at the end of the awakening."
+    },
+    {
+      "fr": "{0} est venu(e) vous voir...",
+      "en": "{0} came to see you..."
+    },
+    {
+      "fr": "Quelqu'un est venu vous voir...",
+      "en": "Someone came to see you..."
+    },
+    {
+      "fr": "{0} sera lié par les chaînes de la vérité.",
+      "en": "{0} will be bound by the chains of truth."
+    },
+    {
+      "fr": "{0} est l'un de ces personnages.",
+      "en": "{0} is one of these characters."
+    },
+    {
+      "fr": "Aucun personnage n'a été trouvé.",
+      "en": "No character was found."
+    },
+    {
+      "fr": "<color=red>{0} sur {1}</color> non-anomalies ont été corrompues.",
+      "en": "<color=red>{0} out of {1}</color> non-anomalies have been corrupted."
+    },
+    {
+      "fr": "ANOMALY",
+      "en": "ANOMALY"
+    },
+    {
+      "fr": "CHOSEN",
+      "en": "CHOSEN"
+    },
+    {
+      "fr": "MARGINAL",
+      "en": "MARGINAL"
+    },
+    {
+      "fr": "UNKNOWN",
+      "en": "UNKNOWN"
+    },
+    {
+      "fr": "General",
+      "en": "General"
+    },
+    {
+      "fr": "AnomalyOnly",
+      "en": "Anomalies"
+    },
+    {
+      "fr": "Null",
+      "en": "Null"
+    },
+    {
+      "fr": "Abyss, L'Extension du Néant",
+      "en": "Abyss, the Extension of the Void"
+    },
+    {
+      "fr": "Luma, la croupière",
+      "en": "Luma, the Croupier"
+    },
+    {
+      "fr": "Dr Gloubi",
+      "en": "Dr Gloubi"
+    },
+    {
+      "fr": "La Dryade",
+      "en": "The Dryad"
+    },
+    {
+      "fr": "Le Gardien",
+      "en": "The Guardian"
+    },
+    {
+      "fr": "Geôlier",
+      "en": "Jailer"
+    },
+    {
+      "fr": "L'Incomplet",
+      "en": "The Incomplete"
+    },
+    {
+      "fr": "Va'ahl, Le Mage Occulte",
+      "en": "Va'ahl, the Occult Mage"
+    },
+    {
+      "fr": "Le Messager",
+      "en": "The Messenger"
+    },
+    {
+      "fr": "Mo'orkn l'Affamé",
+      "en": "Mo'orkn the Starved"
+    },
+    {
+      "fr": "ORIGINE, l'Omniscient",
+      "en": "ORIGIN, the Omniscient"
+    },
+    {
+      "fr": "Nara, l'oracle brisée",
+      "en": "Nara, the Broken Oracle"
+    },
+    {
+      "fr": "L'Orpheline",
+      "en": "The Orphan"
+    },
+    {
+      "fr": "Le Repenti",
+      "en": "The Penitent"
+    },
+    {
+      "fr": "Le Robot",
+      "en": "The Robot"
+    },
+    {
+      "fr": "Le Technomancien",
+      "en": "The Technomancer"
+    },
+    {
+      "fr": "La Chasseuse de Prime",
+      "en": "The Bounty Hunter"
+    },
+    {
+      "fr": "Ugës, l'Imposteur",
+      "en": "Ugës, the Impostor"
+    },
+    {
+      "fr": "Il commence corrompu.",
+      "en": "He starts corrupted."
+    },
+    {
+      "fr": "Il voit quels joueurs sont corrompus.",
+      "en": "He sees which players are corrupted."
+    },
+    {
+      "fr": "Les <i>Anomalies</i> se connaissent et communiquent entre elles.",
+      "en": "The <i>Anomalies</i> know each other and talk among themselves."
+    },
+    {
+      "fr": "Les <i>Anomalies</i> connaissent autant de <i>rôles factices</i> que leur nombre dans la partie.",
+      "en": "The <i>Anomalies</i> know as many <i>fake roles</i> as there are Anomalies in the game."
+    },
+    {
+      "fr": "Le robot est constamment <i>piraté</i>.",
+      "en": "The robot is constantly <i>hacked</i>."
+    },
+    {
+      "fr": "Il peut envoyer un message anonyme par nuit.",
+      "en": "He can send one anonymous message per night."
+    },
+    {
+      "fr": "Il commence avec une balise sur lui-même.",
+      "en": "He starts with a beacon on himself."
+    },
+    {
+      "fr": "Il sait quand le <i>Robot</i> est corrompu.",
+      "en": "He knows when the <i>Robot</i> is corrupted."
+    },
+    {
+      "fr": "Elle apprend quels rôles élus l'ont ciblée cette nuit.",
+      "en": "She learns which Chosen roles targeted her this night."
+    },
+    {
+      "fr": "Il connaît l'état de corruption et de soin des différents élus.",
+      "en": "He knows the corruption and healing state of the various Chosen."
+    },
+    {
+      "fr": "Elle connaît l'état de corruption et de soin des différents élus.",
+      "en": "She knows the corruption and healing state of the various Chosen."
+    },
+    {
+      "fr": "Il commence la partie corrompu et connaît son propre état de corruption.",
+      "en": "He starts the game corrupted and knows his own corruption state."
+    },
+    {
+      "fr": "Classique",
+      "en": "Classic"
+    },
+    {
+      "fr": "Compo officielle ⢵ joueurs",
+      "en": "Official setup, ⢵ players"
+    },
+    {
+      "fr": "Compo officielle ⢶ joueurs",
+      "en": "Official setup, ⢶ players"
+    },
+    {
+      "fr": "Compo officielle ⢷ joueurs",
+      "en": "Official setup, ⢷ players"
+    },
+    {
+      "fr": "Compo officielle ⢸ joueurs",
+      "en": "Official setup, ⢸ players"
+    },
+    {
+      "fr": "Compo officielle ⢹ joueurs",
+      "en": "Official setup, ⢹ players"
+    },
+    {
+      "fr": "Compo officielle ⢱0 joueurs",
+      "en": "Official setup, ⢱0 players"
+    },
+    {
+      "fr": "Compo officielle ⢱1 joueurs",
+      "en": "Official setup, ⢱1 players"
+    },
+    {
+      "fr": "Compo officielle ⢱2 joueurs",
+      "en": "Official setup, ⢱2 players"
+    },
+    {
+      "fr": "Compo officielle ⢱3 joueurs",
+      "en": "Official setup, ⢱3 players"
+    },
+    {
+      "fr": "Compo officielle ⢱4 joueurs",
+      "en": "Official setup, ⢱4 players"
+    },
+    {
+      "fr": "Noir et blanc",
+      "en": "Black and white"
+    },
+    {
+      "fr": "Ardent",
+      "en": "Blazing"
+    },
+    {
+      "fr": "Galactique",
+      "en": "Galactic"
+    },
+    {
+      "fr": "Mage",
+      "en": "Mage"
+    },
+    {
+      "fr": "Sans tenue",
+      "en": "No outfit"
+    },
+    {
+      "fr": "Cape et nœud rouge",
+      "en": "Cape and red bow"
+    },
+    {
+      "fr": "Cape ardente",
+      "en": "Blazing cape"
+    },
+    {
+      "fr": "Nœud galactique",
+      "en": "Galactic bow"
+    },
+    {
+      "fr": "Cape de mage",
+      "en": "Mage cape"
+    },
+    {
+      "fr": "Tenue de chef",
+      "en": "Chef outfit"
+    },
+    {
+      "fr": "Sans yeux",
+      "en": "No eyes"
+    },
+    {
+      "fr": "Yeux de la portée",
+      "en": "Litter eyes"
+    },
+    {
+      "fr": "Yeux ardents",
+      "en": "Blazing eyes"
+    },
+    {
+      "fr": "Yeux galactiques",
+      "en": "Galactic eyes"
+    },
+    {
+      "fr": "Yeux de mage",
+      "en": "Mage eyes"
+    },
+    {
+      "fr": "Yeux simples",
+      "en": "Simple eyes"
+    },
+    {
+      "fr": "Yeux blasés",
+      "en": "Jaded eyes"
+    },
+    {
+      "fr": "Yeux boutons",
+      "en": "Button eyes"
+    },
+    {
+      "fr": "Sans bouche",
+      "en": "No mouth"
+    },
+    {
+      "fr": "Petit sourire",
+      "en": "Small smile"
+    },
+    {
+      "fr": "Sourire galactique",
+      "en": "Galactic smile"
+    },
+    {
+      "fr": "Bouche de mage",
+      "en": "Mage mouth"
+    },
+    {
+      "fr": "Bouche étouffée",
+      "en": "Muffled mouth"
+    },
+    {
+      "fr": "Bouche ivre",
+      "en": "Drunk mouth"
+    },
+    {
+      "fr": "Bouche triste",
+      "en": "Sad mouth"
+    },
+    {
+      "fr": "Coucou",
+      "en": "Wave"
+    },
+    {
+      "fr": "Pleurer",
+      "en": "Cry"
+    },
+    {
+      "fr": "Accuser",
+      "en": "Accuse"
+    },
+    {
+      "fr": "Auto Corruption",
+      "en": "Self-Corruption"
+    },
+    {
+      "fr": "Bénédiction",
+      "en": "Blessing"
+    },
+    {
+      "fr": "Elle peut tenter de deviner le rôle d'un autre élu pour le soigner de la corruption et qu'il soit immunisé au pouvoir \"Corruption Ciblée\" du Mage Occulte pour la partie.\n\nAttention : elle ne peut pas cibler des élus ayant déjà été soignés cette partie ou qui ont été enchaînés.",
+      "en": "She can try to guess another Chosen's role to heal them of corruption and make them immune to the Occult Mage's \"Targeted Corruption\" power for the rest of the game.\n\nWarning: she cannot target Chosen who have already been healed this game or who have been chained."
+    },
+    {
+      "fr": "Choisissez un joueur à bénir.",
+      "en": "Choose a player to bless."
+    },
+    {
+      "fr": "Choisissez le rôle supposé de ce joueur.",
+      "en": "Choose this player's supposed role."
+    },
+    {
+      "fr": "Chaque soir, il peut rendre visite à un joueur différent. Ainsi, il crée un groupe privé où lui et l'invité peuvent discuter jusqu'à la prochaine nuit.",
+      "en": "Each evening, he can visit a different player. This creates a private group where he and his guest can talk until the next night."
+    },
+    {
+      "fr": "Choisissez un joueur à lier par l'encre.",
+      "en": "Choose a player to bind by ink."
+    },
+    {
+      "fr": "Mélange des cartes",
+      "en": "Card Shuffling"
+    },
+    {
+      "fr": "Elle choisit un rôle élu :\n\nSi le rôle est présent dans la partie : Luma doit deviner à quel joueur il appartient.\n\nSi le rôle est absent de la partie : Luma obtient une copie de ses pouvoirs à utilisation unique.",
+      "en": "She picks a Chosen role:\n\nIf the role is in the game: Luma must guess which player it belongs to.\n\nIf the role is not in the game: Luma gets a single-use copy of its powers."
+    },
+    {
+      "fr": "Choisissez un rôle à deviner.",
+      "en": "Choose a role to guess."
+    },
+    {
+      "fr": "Choisissez le joueur qui possède ce rôle.",
+      "en": "Choose the player who has this role."
+    },
+    {
+      "fr": "Enchaîné par les Ombres",
+      "en": "Chained by the Shadows"
+    },
+    {
+      "fr": "Chaque nuit, il peut essayer de deviner le rôle d'un joueur qui n'est pas corrompu. S'il réussit, il le corrompt et l'<i>enchaîne</i> (si c'est un élu).\n\nSi Abyss est la seule Anomalie en jeu, ce pouvoir peut être réutilisé une deuxième fois par tour en cas de réussite.",
+      "en": "Each night, he can try to guess the role of a player who is not corrupted. If he succeeds, he corrupts them and <i>chains</i> them (if they are a Chosen).\n\nIf Abyss is the only Anomaly in play, this power can be used a second time in the same turn after a success."
+    },
+    {
+      "fr": "Choisissez un joueur à enchaîner.",
+      "en": "Choose a player to chain."
+    },
+    {
+      "fr": "Observation Clandestine",
+      "en": "Clandestine Observation"
+    },
+    {
+      "fr": "Ciblez autant de joueurs qu'il y a de <i>non-élus</i> dans la partie, et apprenez combien il y a d'élus parmi ces joueurs.\n\n<i>Non-élu</i> : Anomalie + Marginal.",
+      "en": "Target as many players as there are <i>non-Chosen</i> in the game, and learn how many Chosen are among them.\n\n<i>Non-Chosen</i>: Anomaly + Outsider."
+    },
+    {
+      "fr": "Marque corruptrice",
+      "en": "Corrupting Mark"
+    },
+    {
+      "fr": "Il choisit une cible et la corrompt.",
+      "en": "He picks a target and corrupts it."
+    },
+    {
+      "fr": "Choisissez un joueur à corrompre.",
+      "en": "Choose a player to corrupt."
+    },
+    {
+      "fr": "Corruption insight",
+      "en": "Corruption Insight"
+    },
+    {
+      "fr": "Permet de connaitre l'état de corruption des joueurs.",
+      "en": "Reveals the corruption state of the players."
+    },
+    {
+      "fr": "Savoir de la corruption",
+      "en": "Corruption Knowledge"
+    },
+    {
+      "fr": "Connaît l'état de corruption et de soin des différents élus.",
+      "en": "Knows the corruption and healing state of the various Chosen."
+    },
+    {
+      "fr": "Paranoïa de la corruption",
+      "en": "Corruption Paranoia"
+    },
+    {
+      "fr": "Il connaît son propre état de corruption.",
+      "en": "He knows his own corruption state."
+    },
+    {
+      "fr": "Vision Maudite",
+      "en": "Cursed Vision"
+    },
+    {
+      "fr": "Chaque soir, il cible un joueur et apprend si c'est un élu ou non, puis le <u>corrompt</u> !\n\n(Attention : mieux vaut ne pas l'utiliser à chaque nuit.)",
+      "en": "Each evening, he targets a player and learns whether they are a Chosen or not, then <u>corrupts</u> them!\n\n(Warning: better not use it every night.)"
+    },
+    {
+      "fr": "Choisissez un joueur sur lequel utiliser votre vision.",
+      "en": "Choose a player to use your vision on."
+    },
+    {
+      "fr": "Soin Baveux",
+      "en": "Drooly Healing"
+    },
+    {
+      "fr": "Gloubi peut tenter de deviner le rôle d'un autre élu pour le soigner de la corruption et qu'il soit innocenté publiquement au réveil.\n\nAttention : il ne peut pas cibler des élus ayant déjà été soignés cette partie ou qui ont été enchaînés.",
+      "en": "Gloubi can try to guess another Chosen's role to heal them of corruption and have them publicly cleared at wake-up.\n\nWarning: he cannot target Chosen who have already been healed this game or who have been chained."
+    },
+    {
+      "fr": "Choisissez un joueur à soigner.",
+      "en": "Choose a player to heal."
+    },
+    {
+      "fr": "Étreintes des ombres",
+      "en": "Embrace of Shadows"
+    },
+    {
+      "fr": "Chaque nuit, il peut essayer de deviner le rôle d'un joueur pour le corrompre. S'il réussit, il peut recommencer une deuxième fois.",
+      "en": "Each night, he can try to guess a player's role to corrupt them. If he succeeds, he can do it a second time."
+    },
+    {
+      "fr": "En chaîne",
+      "en": "Chaining"
+    },
+    {
+      "fr": "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à {var:maxChain} fois.",
+      "en": "When this power succeeds, it can be used again, up to {var:maxChain} times."
+    },
+    {
+      "fr": "Oeil du néant",
+      "en": "Eye of the Void"
+    },
+    {
+      "fr": "Prime Prioritaire",
+      "en": "High-Priority Bounty"
+    },
+    {
+      "fr": "À son éveil, elle peut désamorcer un joueur. Si c'est le Robot, il est publiquement éliminé au réveil. Sinon, elle est enchainée.",
+      "en": "On her awakening, she can defuse a player. If it is the Robot, it is publicly eliminated at wake-up. Otherwise, she gets chained."
+    },
+    {
+      "fr": "Choisissez un joueur pour l'éliminer.",
+      "en": "Choose a player to eliminate."
+    },
+    {
+      "fr": "Messages infini",
+      "en": "Infinite Messages"
+    },
+    {
+      "fr": "Manque d'affection",
+      "en": "Lack of Affection"
+    },
+    {
+      "fr": "Chaque soir, elle visite un joueur et peut lui envoyer sa propre identité (ainsi que son état de corruption).\n\nSi ce joueur n'est pas un élu, il ne recevra que la visite et non l'identité.",
+      "en": "Each evening, she visits a player and may send them her own identity (along with her corruption state).\n\nIf this player is not a Chosen, they only receive the visit, not the identity."
+    },
+    {
+      "fr": "Choisissez un joueur à aller voir.",
+      "en": "Choose a player to visit."
+    },
+    {
+      "fr": "Héritage",
+      "en": "Legacy"
+    },
+    {
+      "fr": "Marque d'Hurluberluges",
+      "en": "Mark of Hurluberluges"
+    },
+    {
+      "fr": "Au premier tour, Ugës acquiert aléatoirement jusqu'à trois pouvoirs d'élus à usage unique.\n\nÀ partir du second tour, il peut utiliser une fois par nuit l'un de ces pouvoirs stockés. Chaque pouvoir ne peut être utilisé qu'une fois.\n\nNB : les pouvoirs ne peuvent être que ceux d'élus présents dans la partie, et même ceux n'ayant pas été attribués à un joueur.",
+      "en": "On the first turn, Ugës randomly acquires up to three single-use Chosen powers.\n\nFrom the second turn on, he can use one of these stored powers once per night. Each power can only be used once.\n\nNote: the powers can only be those of Chosen roles present in the game, including those not assigned to any player."
+    },
+    {
+      "fr": "Piratage",
+      "en": "Hacking"
+    },
+    {
+      "fr": "Il cible un joueur, apprend son rôle et le <i>pirate</i> pour la journée (si c'est un élu).\n\n<i>Pirater :</i> lorsqu'un joueur piraté se fait <i>enchaîner</i>, le Robot gagne la partie.",
+      "en": "He targets a player, learns their role and <i>hacks</i> them for the day (if they are a Chosen).\n\n<i>Hack:</i> when a hacked player gets <i>chained</i>, the Robot wins the game."
+    },
+    {
+      "fr": "Choisissez un joueur à hacker.",
+      "en": "Choose a player to hack."
+    },
+    {
+      "fr": "Balises Personnelles",
+      "en": "Personal Beacons"
+    },
+    {
+      "fr": "Chaque soir, il pose une <i>balise</i> sur un joueur.\n\n<b>Balise :</b> les balises détectent les <i>élus</i> corrompus (seulement), permettant de les innocenter.",
+      "en": "Each evening, he places a <i>beacon</i> on a player.\n\n<b>Beacon:</b> beacons detect corrupted <i>Chosen</i> (only), which lets him clear them."
+    },
+    {
+      "fr": "Choisissez un joueur sur lequel placer une balise.",
+      "en": "Choose a player to place a beacon on."
+    },
+    {
+      "fr": "Réincarnation",
+      "en": "Reincarnation"
+    },
+    {
+      "fr": "Il peut copier tout les pouvoirs d’un autre élu disponible pour le reste de la partie\n\nIl continuera la partie sous l’identité de l’incomplet.",
+      "en": "He can copy all the powers of another available Chosen for the rest of the game\n\nHe carries on the game under the identity of the Incomplete."
+    },
+    {
+      "fr": "Choisissez le rôle dans lequel vous réincarner.",
+      "en": "Choose the role to reincarnate into."
+    },
+    {
+      "fr": "Abattre le portail",
+      "en": "Take Down the Portal"
+    },
+    {
+      "fr": "Lorsque le joueur se fait enchaîner, le joueur pourra abattre le portail pour gagner",
+      "en": "When the player gets chained, the player can take down the portal to win"
+    },
+    {
+      "fr": "Paranoïa [WIP]",
+      "en": "Paranoia [WIP]"
+    },
+    {
+      "fr": "Elle apprend quels rôles l'ont ciblée cette nuit.",
+      "en": "She learns which roles targeted her this night."
+    },
+    {
+      "fr": "Corruption Ciblée",
+      "en": "Targeted Corruption"
+    },
+    {
+      "fr": "Il corrompt un joueur.\n\nS'il n'a pas utilisé \"Étreintes des ombres\" ce tour-ci, il apprend également le rôle du joueur, puis finit son tour.",
+      "en": "He corrupts a player.\n\nIf he has not used \"Embrace of Shadows\" this turn, he also learns the player's role, then ends his turn."
+    },
+    {
+      "fr": "il apprend également le rôle du joueur corrompu.",
+      "en": "he also learns the corrupted player's role."
+    },
+    {
+      "fr": "Concentration",
+      "en": "Concentration"
+    },
+    {
+      "fr": "Chaines de la vérité",
+      "en": "Chains of Truth"
+    },
+    {
+      "fr": "Une fois par partie, il peut cibler un joueur et si c’est une anomalie, il l’enchaine.",
+      "en": "Once per game, he can target a player; if it is an Anomaly, he chains them."
+    },
+    {
+      "fr": "Choisissez un joueur à lier par les chaînes de la vérité.",
+      "en": "Choose a player to bind with the chains of truth."
+    },
+    {
+      "fr": "Vision de l'impossible",
+      "en": "Vision of the Impossible"
+    },
+    {
+      "fr": "A son éveil, elle choisit deux joueurs et propose deux rôles Élus qu'ils pourraient potentiellement avoir.\n\nElle obtient, sans précision, une confirmation sur la véracité de ses prédictions.",
+      "en": "On her awakening, she picks two players and proposes two Chosen roles they might have.\n\nShe gets a confirmation, without details, of whether her predictions are true."
+    },
+    {
+      "fr": "Choisissez vos cibles.",
+      "en": "Choose your targets."
+    },
+    {
+      "fr": "Choisissez les rôles supposés.",
+      "en": "Choose the supposed roles."
+    },
+    {
+      "fr": "Menu",
+      "en": "Menu"
+    },
+    {
+      "fr": "Messages anonymes",
+      "en": "Anonymous messages"
+    },
+    {
+      "fr": "Flèches ou Q / D : tourner les pages     Échap : fermer",
+      "en": "Arrows or Q / D: turn the pages     Esc: close"
+    },
+    {
+      "fr": "Livre des",
+      "en": "Book of"
+    },
+    {
+      "fr": "Corruption du Portail",
+      "en": "Corruption du Portail"
+    },
+    {
+      "fr": "Rôle factice : personne ne le joue dans cette partie",
+      "en": "Fake role: nobody plays it in this game"
+    },
+    {
+      "fr": "Il corrompt un joueur.",
+      "en": "He corrupts a player."
+    },
+    {
+      "fr": "Corruption",
+      "en": "Corruption"
+    },
+    {
+      "fr": "Chaque joueur peut être corrompu, lorsque tout les joueurs non-anomalie sont corrompu, les anomalies gagnent",
+      "en": "Each player can be corrupted; when all non-anomaly players are corrupted, the Anomalies win"
+    },
+    {
+      "fr": "Nombre total de corrompus",
+      "en": "Total number of corrupted players"
+    },
+    {
+      "fr": "Nombre de personnes ayant interagi avec le robot cette nuit",
+      "en": "Number of people who interacted with the robot this night"
+    },
+    {
+      "fr": "Choissisez un rôle !",
+      "en": "Choose a role!"
+    },
+    {
+      "fr": "Choissisez un joueur !",
+      "en": "Choose a player!"
+    },
+    {
+      "fr": "Moi",
+      "en": "Me"
+    },
+    {
+      "fr": "Voter",
+      "en": "Vote"
+    },
+    {
+      "fr": "Back",
+      "en": "Back"
+    },
+    {
+      "fr": "Enter text...",
+      "en": "Enter text..."
+    },
+    {
+      "fr": "Attribution de rôle",
+      "en": "Role assignment"
+    },
+    {
+      "fr": "Autres options...",
+      "en": "Other options..."
+    },
+    {
+      "fr": "Rejoindre",
+      "en": "Join"
+    },
+    {
+      "fr": "Nom",
+      "en": "Name"
+    },
+    {
+      "fr": "Privé",
+      "en": "Private"
+    },
+    {
+      "fr": "Langue",
+      "en": "Language"
+    },
+    {
+      "fr": "Refresh",
+      "en": "Refresh"
+    },
+    {
+      "fr": "Lobbies",
+      "en": "Lobbies"
+    },
+    {
+      "fr": "Nombre",
+      "en": "Count"
+    },
+    {
+      "fr": "Principal",
+      "en": "Master"
+    },
+    {
+      "fr": "Musique",
+      "en": "Music"
+    },
+    {
+      "fr": "Sfx",
+      "en": "SFX"
+    },
+    {
+      "fr": "Voix",
+      "en": "Voice"
+    },
+    {
+      "fr": "Micro",
+      "en": "Mic"
+    },
+    {
+      "fr": "Corruptions",
+      "en": "Corruptions"
+    },
+    {
+      "fr": "Titre",
+      "en": "Title"
+    },
+    {
+      "fr": "Vous vous éveillez...",
+      "en": "You awaken..."
+    },
+    {
+      "fr": "Terminer la partie",
+      "en": "End the game"
+    },
+    {
+      "fr": "Gagnants",
+      "en": "Winners"
+    },
+    {
+      "fr": "Vous avez le rôle de...",
+      "en": "Your role is..."
+    },
+    {
+      "fr": "Start Game",
+      "en": "Start Game"
+    },
+    {
+      "fr": "Main Menu",
+      "en": "Main Menu"
+    },
+    {
+      "fr": "Host",
+      "en": "Host"
+    },
+    {
+      "fr": "Quitter",
+      "en": "Quit"
+    },
+    {
+      "fr": "Menu d'hebergement",
+      "en": "Host menu"
+    },
+    {
+      "fr": "Options du lobby",
+      "en": "Lobby options"
+    },
+    {
+      "fr": "Nom du lobby...",
+      "en": "Lobby name..."
+    },
+    {
+      "fr": "Mot de passe... (ou non)",
+      "en": "Password... (or none)"
+    },
+    {
+      "fr": "Heberger",
+      "en": "Host"
+    },
+    {
+      "fr": "Menu de connection",
+      "en": "Join menu"
+    },
+    {
+      "fr": "Rejoindre avec un code",
+      "en": "Join with a code"
+    },
+    {
+      "fr": "Entrer le code...",
+      "en": "Enter the code..."
+    },
+    {
+      "fr": "Rejoindre avec code",
+      "en": "Join with code"
+    },
+    {
+      "fr": "Mot de passe",
+      "en": "Password"
+    },
+    {
+      "fr": "Se connecter",
+      "en": "Connect"
+    },
+    {
+      "fr": "Entrez un mot de passe",
+      "en": "Enter a password"
+    },
+    {
+      "fr": "Mot de passe...",
+      "en": "Password..."
+    },
+    {
+      "fr": "Login",
+      "en": "Login"
+    },
+    {
+      "fr": "Entrez votre pseudo...",
+      "en": "Enter your nickname..."
+    },
+    {
+      "fr": "Envoyer un message anonyme",
+      "en": "Send an anonymous message"
+    },
+    {
+      "fr": "Tableau des interactions",
+      "en": "Interaction table"
+    },
+    {
+      "fr": "Essais (vue du jour)",
+      "en": "Trials (day view)"
+    },
+    {
+      "fr": "Cartes levées en vue première personne",
+      "en": "Cards raised in first-person view"
+    },
+    {
+      "fr": "Table ronde",
+      "en": "Round table"
+    },
+    {
+      "fr": "Message anonyme",
+      "en": "Anonymous message"
+    },
+    {
+      "fr": "Messages anonymes révélés",
+      "en": "Revealed anonymous messages"
+    },
+    {
+      "fr": "Quitter la partie",
+      "en": "Leave the game"
+    },
+    {
+      "fr": " », « ",
+      "en": "”, “"
+    },
+    {
+      "fr": "« {0} »",
+      "en": "“{0}”"
+    },
+    {
+      "fr": "Options",
+      "en": "Options"
+    },
+    {
+      "fr": "OK",
+      "en": "OK"
+    },
+    {
+      "fr": "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel: {var:legacyStatus}.",
+      "en": "If a {var:legacyRoleName} is chained, the power becomes usable.\nCurrent state: {var:legacyStatus}."
+    },
+    {
+      "fr": "Si ce personnage est enchaîné, {var:legacyRoleName} héritera de ce pouvoir.",
+      "en": "If this character is chained, {var:legacyRoleName} will inherit this power."
+    }
+  ]
+}

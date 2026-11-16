@@ -12,8 +12,8 @@ namespace Characters.Powers.PowerComponents
 
         private void Reset()
         {
-            componentName = "En chaîne";
-            description = "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à {var:maxChain} fois.";
+            componentName = "En chaîne"; // loc (editor default: the text then lives on the prefab)
+            description = "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à {var:maxChain} fois."; // loc (editor default: the text then lives on the prefab)
         }
 
         protected override void Init()

@@ -24,7 +24,7 @@ namespace Extensions
 
             // NET-03: same display rule as every name surface ("Joueur ?" when missing, "(parti)" marker after a leave).
             LobbyPlayerInfoHolder _holder = LobbyPlayerInfoHolder.instance;
-            return _holder != null ? _holder.GetDisplayPseudo(_clientId) : CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
+            return _holder != null ? _holder.GetDisplayPseudo(_clientId) : CorruptionDuPortail.Domain.Localization.Loc.Tr(CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel);
         }
     }
 }

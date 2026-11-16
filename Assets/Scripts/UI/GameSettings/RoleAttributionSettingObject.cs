@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using Characters;
@@ -47,7 +48,7 @@ namespace UI.GameSettings
             // bounce a redundant write back into the manager (and loop on the replication callback).
             roleNumberToAttributeSlider.SetValueWithoutNotify(_count);
             roleNumberToAttributeValueText.text = _count.ToString();
-            roleNameText.text = roleDataObject.role.roleName.ToString();
+            roleNameText.SetLoc(roleDataObject.role.roleName.ToString());
         }
 
         private void OnRoleToAttributeValueChanged(float _number)

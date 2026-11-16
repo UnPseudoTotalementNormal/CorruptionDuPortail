@@ -1,3 +1,4 @@
+using Localization;
 using System.Collections.Generic;
 using Characters;
 using GameLogic;
@@ -49,10 +50,10 @@ namespace UI
         {
             if (_current > INFINITE_MESSAGE_THRESHOLD)
             {
-                messageLeftText.text = "restant: ∞";
+                messageLeftText.SetLoc("restant: ∞");
                 return;
             }
-            messageLeftText.text = $"restant: {_current}";
+            messageLeftText.SetLoc("restant: {0}", _current);
         }
     }
 }

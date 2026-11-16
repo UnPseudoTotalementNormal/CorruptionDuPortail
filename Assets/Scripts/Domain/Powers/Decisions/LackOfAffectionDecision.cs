@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using Characters;
 using CorruptionDuPortail.Domain.PlayerIcons;
@@ -36,7 +37,9 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             }
             if (ctx.IsTrueLocalTarget)
             {
-                string line = chosen ? $"{ctx.Roster.RoleNameOf(ctx.OwnerSlot)} est venu(e) vous voir..." : "Quelqu'un est venu vous voir...";
+                string line = chosen
+                    ? Loc.Token("{0} est venu(e) vous voir...", Loc.Token(ctx.Roster.RoleNameOf(ctx.OwnerSlot)))
+                    : Loc.Token("Quelqu'un est venu vous voir...");
                 effects.Add(new ChatLocal(line, ChatWindows.Server));
             }
             // The target's view: the Orpheline's thumbnail carries her icon until the next night starts.

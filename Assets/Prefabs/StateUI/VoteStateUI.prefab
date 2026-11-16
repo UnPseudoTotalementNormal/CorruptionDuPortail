@@ -51,6 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   gameManager: {fileID: 0}
+  characterManager: {fileID: 0}
   owningGameState: {fileID: 0}
   canvasGroup: {fileID: 4936872615445173801}
   instantShowOnStateStart: 0
@@ -67,6 +68,7 @@ GameObject:
   - component: {fileID: 1495983828967293262}
   - component: {fileID: 3287764834092008131}
   - component: {fileID: 4827443390319173043}
+  - component: {fileID: 91127624796727655}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -159,6 +161,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -192,6 +195,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &91127624796727655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1830676475893352398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &4429746014147207853
 GameObject:
   m_ObjectHideFlags: 0
@@ -341,6 +356,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -429,6 +445,27 @@ MonoBehaviour:
   hoverColor: {r: 0.69803923, g: 0.69803923, b: 0.69803923, a: 1}
   disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   panelImage: {fileID: 0}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls:

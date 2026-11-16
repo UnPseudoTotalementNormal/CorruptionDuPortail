@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using Characters;
@@ -20,8 +21,8 @@ namespace Board.UI
     /// </summary>
     public class SkipButton : MonoBehaviour
     {
-        private const string StopAwakeningLabel = "Arrêter l'éveil";
-        private const string SkipVoteLabel = "Passer le vote";
+        private const string StopAwakeningLabel = "Arrêter l'éveil"; // loc
+        private const string SkipVoteLabel = "Passer le vote"; // loc
 
         private CustomButton customButton;
         private TMP_Text label;
@@ -63,7 +64,7 @@ namespace Board.UI
             }
 
             shownState = state;
-            if (label != null) label.text = state.Mode == SkipButtonMode.SkipVote ? SkipVoteLabel : StopAwakeningLabel;
+            if (label != null) label.SetLoc(state.Mode == SkipButtonMode.SkipVote ? SkipVoteLabel : StopAwakeningLabel);
             customButton.SetInteractable(state.Interactable);
         }
 

@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using Characters;
 
@@ -108,7 +109,7 @@ namespace CorruptionDuPortail.Domain
             {
                 failures.Add(new CompositionFailure(
                     "coverage",
-                    $"Pas assez de rôles possibles : {totalMax} pour {Players(players)}.",
+                    Loc.Tr("Pas assez de rôles possibles : {0} pour {1}.", totalMax, Players(players)),
                     null));
             }
 
@@ -152,8 +153,8 @@ namespace CorruptionDuPortail.Domain
                         failures.Add(new CompositionFailure(
                             "faction-capacity",
                             factionMax == 0
-                                ? $"Aucun rôle {Label(fm.Faction)} dans la partie (il en faut au moins {fm.Min})."
-                                : $"Pas assez de rôles {Label(fm.Faction)} : {factionMax} pour un minimum de {fm.Min}.",
+                                ? Loc.Tr("Aucun rôle {0} dans la partie (il en faut au moins {1}).", Label(fm.Faction), fm.Min)
+                                : Loc.Tr("Pas assez de rôles {0} : {1} pour un minimum de {2}.", Label(fm.Faction), factionMax, fm.Min),
                             fm.Faction));
                     }
 
@@ -183,11 +184,11 @@ namespace CorruptionDuPortail.Domain
                 }
 
                 string hint = worst.HasValue
-                    ? $"Retire un rôle {Label(worst.Value)} garanti ou ajoute un joueur."
-                    : "Retire un rôle garanti ou ajoute un joueur.";
+                    ? Loc.Tr("Retire un rôle {0} garanti ou ajoute un joueur.", Label(worst.Value))
+                    : Loc.Tr("Retire un rôle garanti ou ajoute un joueur.");
                 failures.Add(new CompositionFailure(
                     "guaranteed-fit",
-                    $"Trop de rôles garantis : {guaranteed} pour {Players(players)}. {hint}",
+                    Loc.Tr("Trop de rôles garantis : {0} pour {1}. {2}", guaranteed, Players(players), hint),
                     worst));
             }
 
@@ -208,16 +209,17 @@ namespace CorruptionDuPortail.Domain
         }
 
         // "1 joueur" / "8 joueurs": player-facing reasons use real plurals, never "joueur(s)".
-        private static string Players(int count) => count > 1 ? $"{count} joueurs" : $"{count} joueur";
+        private static string Players(int count) => Loc.Plural(count, "{0} joueur", "{0} joueurs");
 
+        // T36: the reasons are shown to the player who edits the composition, in the language of this machine.
         // Domain-level fallback labels for logs/reasons. The UI mirror may localise via FactionDatabase.
         private static string Label(FactionType faction)
         {
             switch (faction)
             {
-                case FactionType.anomaly: return "Anomalie";
-                case FactionType.chosen: return "Élu";
-                case FactionType.marginal: return "Marginal";
+                case FactionType.anomaly: return Loc.Tr("Anomalie");
+                case FactionType.chosen: return Loc.Tr("Élu");
+                case FactionType.marginal: return Loc.Tr("Marginal");
                 default: return faction.ToString();
             }
         }

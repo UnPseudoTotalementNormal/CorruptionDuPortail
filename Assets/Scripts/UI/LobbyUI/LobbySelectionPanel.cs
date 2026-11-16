@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
@@ -139,7 +140,7 @@ namespace UI.Lobby
             if (_isJoining)
             {
                 GameLog.Info("net", "join.refused", "reason", "busy", "path", "invite", "lobby", _lobbyId);
-                ReportJoinFailure(BusyForInviteMessage);
+                ReportJoinFailure(Loc.Tr(BusyForInviteMessage));
                 return;
             }
             _isJoining = true;
@@ -188,7 +189,7 @@ namespace UI.Lobby
             }
         }
 
-        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant.";
+        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant."; // loc
 
         private void OnConnectButtonClicked()
         {
@@ -357,7 +358,7 @@ namespace UI.Lobby
             if (lobby.IsLocked)
             {
                 GameLog.Info("net", "join.refused", "reason", "lobby locked", "path", "list", "lobby", lobby.Id);
-                ReportJoinFailure(ConnectionApprovalGate.GameInProgressReason);
+                ReportJoinFailure(Loc.Tr(ConnectionApprovalGate.GameInProgressReason));
                 loadingCanvasGroup.DoHideGroup();
                 return false;
             }

@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using Avatars.Cosmetics;
 using Characters;
@@ -157,7 +158,13 @@ namespace UI.LobbyRoles
         private CatCustomizationPanel _catPanel;
         private bool _catLive;
 
-        private void OnEnable() => TryInitialize();
+        private void OnEnable()
+        {
+            // T36: every text is written by Rebuild, so a language change is one more reason to rebuild.
+            Loc.LanguageChanged += Rebuild;
+            TryInitialize();
+        }
+
         private void Start() => TryInitialize();
 
         // Retry until the first successful build: the panel tree may not be ready on the frame the data source
@@ -171,6 +178,7 @@ namespace UI.LobbyRoles
 
         private void OnDisable()
         {
+            Loc.LanguageChanged -= Rebuild;
             if (_data != null) _data.OnChanged -= Rebuild;
             _initialized = false;
             SetCatLive(false);
@@ -299,9 +307,9 @@ namespace UI.LobbyRoles
         {
             var tabs = new VisualElement();
             tabs.AddToClassList(TabsClass);
-            tabs.Add(Tab("Rôles", TabAttribution));
-            tabs.Add(Tab("Autres options", TabOptions));
-            if (_catCatalog != null && _catStage != null) tabs.Add(Tab("Mon chat", TabCat));
+            tabs.Add(Tab(Loc.Tr("Rôles"), TabAttribution));
+            tabs.Add(Tab(Loc.Tr("Autres options"), TabOptions));
+            if (_catCatalog != null && _catStage != null) tabs.Add(Tab(Loc.Tr("Mon chat"), TabCat));
             return tabs;
 
             VisualElement Tab(string label, int index)
@@ -380,19 +388,19 @@ namespace UI.LobbyRoles
             options.AddToClassList(OptionsClass);
             if (!_data.IsHost()) return options;
 
-            var nightTitle = new Label("Nuit");
+            var nightTitle = new Label(Loc.Tr("Nuit"));
             nightTitle.AddToClassList(TitleClass);
             nightTitle.AddToClassList(OptionsTitleClass);
             options.Add(nightTitle);
 
-            options.Add(Checkbox("Rapide, en 3 appels", _data.GetCompactNight(), _data.RequestSetCompactNight));
+            options.Add(Checkbox(Loc.Tr("Rapide, en 3 appels"), _data.GetCompactNight(), _data.RequestSetCompactNight));
 
-            var title = new Label("Options de développement");
+            var title = new Label(Loc.Tr("Options de développement"));
             title.AddToClassList(TitleClass);
             title.AddToClassList(OptionsTitleClass);
             options.Add(title);
 
-            var force = new Button(() => _data.RequestForceStart()) { text = "Démarrage forcé" };
+            var force = new Button(() => _data.RequestForceStart()) { text = Loc.Tr("Démarrage forcé") };
             force.AddToClassList(TextBtnClass);
             force.AddToClassList(OptionsBtnClass);
             options.Add(force);
@@ -424,9 +432,9 @@ namespace UI.LobbyRoles
             var tally = new VisualElement { pickingMode = PickingMode.Ignore };
             tally.AddToClassList(TallyClass);
 
-            tally.Add(Cell("Joueurs", players, false, null, true));
-            tally.Add(Cell("Garantis", totalForced, totalForced > players, null, false));
-            tally.Add(Cell("Rôles possibles", totalMax, totalMax < players, null, false));
+            tally.Add(Cell(Loc.Tr("Joueurs"), players, false, null, true));
+            tally.Add(Cell(Loc.Tr("Garantis"), totalForced, totalForced > players, null, false));
+            tally.Add(Cell(Loc.Tr("Rôles possibles"), totalMax, totalMax < players, null, false));
             foreach (FactionType faction in FactionOrder)
             {
                 perFactionMax.TryGetValue(faction, out int m);
@@ -472,7 +480,7 @@ namespace UI.LobbyRoles
             var column = new VisualElement();
             column.AddToClassList(PresetsClass);
 
-            var title = new Label("Compositions") { pickingMode = PickingMode.Ignore };
+            var title = new Label(Loc.Tr("Compositions")) { pickingMode = PickingMode.Ignore };
             title.AddToClassList(TitleClass);
             title.AddToClassList(PresetsTitleClass);
             title.AddToClassList(ReadPaperClass);
@@ -481,7 +489,7 @@ namespace UI.LobbyRoles
             for (int i = 0; i < presets.Count; i++)
             {
                 int idx = i;
-                var row = new Button(() => _data.ApplyPreset(idx)) { text = presets[i].Name }; // apply → OnChanged → Rebuild
+                var row = new Button(() => _data.ApplyPreset(idx)) { text = Loc.Tr(presets[i].Name) }; // apply → OnChanged → Rebuild
                 row.AddToClassList(TextBtnClass);
                 row.AddToClassList(PresetRowClass);
                 if (presets[i].IsClassic) row.AddToClassList(PresetClassicClass);
@@ -497,7 +505,7 @@ namespace UI.LobbyRoles
 
             if (active < 0)
             {
-                var custom = new Label("Personnalisée") { pickingMode = PickingMode.Ignore };
+                var custom = new Label(Loc.Tr("Personnalisée")) { pickingMode = PickingMode.Ignore };
                 custom.AddToClassList(PresetRowClass);
                 custom.AddToClassList(PresetRowActiveClass);
                 PinnedPaper.Pin(custom, PinnedPaper.PinX(KeyCustomPreset));
@@ -567,7 +575,7 @@ namespace UI.LobbyRoles
             Sprite portrait = _portraitTable != null
                 ? _portraitTable.Get((CharacterPortraitsValues.CharacterPortraits)role.PortraitId)
                 : null;
-            RoleCardElement card = new RoleCardElement().SetName(role.Name).SetPortrait(portrait).SetWidth(CardWidth).SetNameSize(CardNameSize);
+            RoleCardElement card = new RoleCardElement().SetName(Loc.Tr(role.Name)).SetPortrait(portrait).SetWidth(CardWidth).SetNameSize(CardNameSize);
 
             // Animate the pool ↔ dimmed opacity. A full Rebuild recreates the card on every stepper click, so a USS
             // transition never fires (no resolved "from" value on a newborn element — see the investigation case
@@ -592,10 +600,10 @@ namespace UI.LobbyRoles
 
             var controls = new VisualElement();
             controls.AddToClassList(ControlsClass);
-            controls.Add(Stepper("Au plus", role.Max, role.Max <= 0, role.Max >= 15, false,
+            controls.Add(Stepper(Loc.Tr("Au plus"), role.Max, role.Max <= 0, role.Max >= 15, false,
                 () => _data.RequestSetMax(role.Id, role.Max - 1),
                 () => _data.RequestSetMax(role.Id, role.Max + 1)));
-            controls.Add(Stepper("Au moins", role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
+            controls.Add(Stepper(Loc.Tr("Au moins"), role.Forced, role.Forced <= 0, role.Forced >= role.Max, true,
                 () => _data.RequestSetForced(role.Id, role.Forced - 1),
                 () => _data.RequestSetForced(role.Id, role.Forced + 1)));
             unit.Add(controls);
@@ -668,7 +676,7 @@ namespace UI.LobbyRoles
             // valid (both re-checked server-side). Each player readies only themselves via the toggle below.
             int readyCount = _data.GetReadyCount();
             string status = validation.IsValid
-                ? $"{readyCount} {(readyCount > 1 ? "joueurs prêts" : "joueur prêt")} sur {players}"
+                ? Loc.Tr(Loc.IsSingular(Loc.Language, readyCount) ? "{0} joueur prêt sur {1}" : "{0} joueurs prêts sur {1}", readyCount, players)
                 : validation.FirstReason;
 
             // Two papers: the status is only read (kraft), the checkbox is clicked (cream). The label sits in its own
@@ -699,7 +707,7 @@ namespace UI.LobbyRoles
                 box.Add(tick);
             }
             toggle.Add(box);
-            var text = new Label("Je suis prêt") { pickingMode = PickingMode.Ignore };
+            var text = new Label(Loc.Tr("Je suis prêt")) { pickingMode = PickingMode.Ignore };
             text.AddToClassList(TitleClass);
             toggle.Add(text);
             PinnedPaper.Pin(toggle, PinnedPaper.PinX(KeyReady));
@@ -751,13 +759,13 @@ namespace UI.LobbyRoles
             {
                 switch (faction)
                 {
-                    case FactionType.anomaly: return "Anomalies";
-                    case FactionType.chosen: return "Élus";
-                    case FactionType.marginal: return "Marginaux";
+                    case FactionType.anomaly: return Loc.Tr("Anomalies");
+                    case FactionType.chosen: return Loc.Tr("Élus");
+                    case FactionType.marginal: return Loc.Tr("Marginaux");
                 }
             }
             if (_factionDatabase != null && _factionDatabase.TryGet(faction, out FactionData data) && !string.IsNullOrEmpty(data.displayName))
-                return data.displayName;
+                return Loc.Tr(data.displayName);
             return faction.ToString();
         }
 

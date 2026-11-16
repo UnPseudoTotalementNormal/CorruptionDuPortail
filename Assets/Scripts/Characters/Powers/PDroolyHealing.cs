@@ -1,4 +1,5 @@
-﻿#region
+﻿using CorruptionDuPortail.Domain.Localization;
+#region
 
 using System;
 using System.Collections.Generic;
@@ -109,7 +110,9 @@ namespace Characters.Powers
                 }
                 var _chatMessage = new ChatMessage
                 {
-                    message = $"{_healedCharacter.GetOwnerPseudo()} à été soigné(e) pendant la nuit avec {powerName.ToString()}",
+                    // T36: a token, read by each player in his language.
+                    message = Loc.Token("{0} à été soigné(e) pendant la nuit avec {1}",
+                        _healedCharacter.GetOwnerPseudo(), Loc.Token(powerName.ToString())),
                     senderClientId = GameValues.CHAT_SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };

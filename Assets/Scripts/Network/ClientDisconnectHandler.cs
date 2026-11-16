@@ -1,6 +1,7 @@
 #region
 
 using System.Collections.Generic;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Network.Services;
 using Unity.Netcode;
@@ -62,7 +63,7 @@ namespace Network
     {
         private const string LogTag = "[LEAVE][PHASE3]";
         private const int MainMenuSceneIndex = 1; // BootScene=0, MainMenu=1, GameScene=2 (build settings)
-        private const string HostLostMessage = "Connexion à l'hôte perdue";
+        private const string HostLostMessage = "Connexion à l'hôte perdue"; // loc
         private const float NotificationSeconds = 6f;
 
         // NOT named "instance"/"Instance": that would trip StaticSingletonCensusGuardTests. This is only a
@@ -362,7 +363,7 @@ namespace Network
             // started, loading too long). Show that reason instead of a misleading "host lost". Read BEFORE
             // ReturnToMenu shuts NGO down.
             string _reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
-            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? _reason : HostLostMessage;
+            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? Loc.ShowForeign(_reason) : Loc.Tr(HostLostMessage);
 
             // Best-effort: drop the cloud lobby so we don't linger as a ghost member.
             TryLeaveLobby();
@@ -477,7 +478,7 @@ namespace Network
             _btnText.font = _font;
             _btnText.alignment = TextAnchor.MiddleCenter;
             _btnText.color = Color.white;
-            _btnText.text = "OK";
+            _btnText.text = Loc.Tr("OK");
             var _btrt = _btnTextGo.GetComponent<RectTransform>();
             _btrt.anchorMin = Vector2.zero;
             _btrt.anchorMax = Vector2.one;

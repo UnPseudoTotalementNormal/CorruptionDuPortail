@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using CorruptionDuPortail.Domain.Powers.State;
 using System.Collections.Generic;
 
@@ -17,8 +18,8 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
         {
             var guess = ctx.State<ICardsShufflingGuess>();
             string message = guess.IsCorrect
-                ? $"Vous avez correctement deviné que {guess.ClickedPseudo} est {guess.GuessRoleName}."
-                : $"Votre supposition était incorrecte, {guess.ClickedPseudo} n'est pas {guess.GuessRoleName}.";
+                ? Loc.Token("Vous avez correctement deviné que {0} est {1}.", guess.ClickedPseudo, Loc.Token(guess.GuessRoleName))
+                : Loc.Token("Votre supposition était incorrecte, {0} n'est pas {1}.", guess.ClickedPseudo, Loc.Token(guess.GuessRoleName));
 
             var effects = new List<EffectDescriptor> { new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot) };
             if (guess.IsCorrect)
@@ -28,14 +29,14 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             }
             else if (guess.TargetedRoleNames.Count == 0)
             {
-                message += $"\nLe role {guess.GuessRoleName} n'a ciblé aucun rôle.";
+                message += "\n" + Loc.Token("Le role {0} n'a ciblé aucun rôle.", Loc.Token(guess.GuessRoleName));
             }
             else
             {
-                message += $"\nLe role {guess.GuessRoleName} a ciblé ces rôles:";
+                message += "\n" + Loc.Token("Le role {0} a ciblé ces rôles:", Loc.Token(guess.GuessRoleName));
                 foreach (var roleName in guess.TargetedRoleNames)
                 {
-                    message += $"\n- {roleName}";
+                    message += "\n- " + Loc.Token(roleName);
                 }
             }
             effects.Add(new ChatBroadcast(message, ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));

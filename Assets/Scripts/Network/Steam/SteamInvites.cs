@@ -2,6 +2,7 @@
 
 using System;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Localization;
 using Diagnostics.Logs;
 using Network.Services;
 using Steamworks;
@@ -21,7 +22,7 @@ namespace Network.Steam
     /// </summary>
     public static class SteamInvites
     {
-        public const string AlreadyInGameMessage = "Tu es déjà dans une partie : quitte-la pour rejoindre ton ami.";
+        public const string AlreadyInGameMessage = "Tu es déjà dans une partie : quitte-la pour rejoindre ton ami."; // loc
 
         /// <summary>A join request is waiting. Raised on the main thread (callbacks pumped by SteamRuntime).</summary>
         public static event System.Action JoinRequested;
@@ -79,7 +80,7 @@ namespace Network.Steam
                 GameLog.Info("net", "steam.join.request", "lobby", lobbyId.ToString(), "source", source, "ignored", true, "reason", "already in a game");
                 if (LobbyManager.instance != null)
                 {
-                    LobbyManager.instance.ReportError(AlreadyInGameMessage);
+                    LobbyManager.instance.ReportError(Loc.Tr(AlreadyInGameMessage));
                 }
                 return;
             }

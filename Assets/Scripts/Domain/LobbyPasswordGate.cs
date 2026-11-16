@@ -10,7 +10,7 @@ namespace CorruptionDuPortail.Domain
     /// </summary>
     public static class LobbyPasswordGate
     {
-        public const string WrongPasswordReason = "Mot de passe incorrect.";
+        public const string WrongPasswordReason = "Mot de passe incorrect."; // loc
 
         public static bool Accepts(string required, string given)
         {

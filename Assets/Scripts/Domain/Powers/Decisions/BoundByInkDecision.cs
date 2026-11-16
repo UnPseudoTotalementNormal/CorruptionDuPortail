@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using CorruptionDuPortail.Domain.Powers.State;
 
 namespace CorruptionDuPortail.Domain.Powers.Decisions
@@ -16,7 +17,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             int chatId = ctx.State<IInkChatState>()?.ChatId ?? -1;
             return PowerOutcome.Accept(
                 new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),
-                new DiscoverChat(chatId, "Lié par l'encre", PowerEffectAudience.Specific(ctx.TargetSlot)),
+                new DiscoverChat(chatId, Loc.Token("Lié par l'encre"), PowerEffectAudience.Specific(ctx.TargetSlot)),
                 new RegisterInkTarget(ctx.TargetSlot));
         }
     }

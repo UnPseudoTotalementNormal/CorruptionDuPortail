@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using System;
 using Characters.Powers.Target;
@@ -164,7 +165,7 @@ namespace Characters.Powers
             
             powerChatId.Value = _chatId;
             usedBoundByInkIds.Add(_chatId);
-            chatManager.GrantChannelServer(_chatId, "Lié par l'encre", ownerClientId.Value); // NET-11: server membership
+            chatManager.GrantChannelServer(_chatId, Loc.Token("Lié par l'encre"), ownerClientId.Value); // NET-11: server membership
         }
 
         protected override void StopUse()

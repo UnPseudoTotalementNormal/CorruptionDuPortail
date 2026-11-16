@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Linq;
 using GameLogic;
 
@@ -7,14 +8,14 @@ namespace Characters.Powers.PowerComponents
     {
         public RoleID legacyRoleID;
         public string legacyRoleName => legacyRoleID.ToString();
-        public string legacyStatus => hasLegacyBeenInherited ? "Hérité" : "Non hérité";
+        public string legacyStatus => hasLegacyBeenInherited ? Loc.Tr("Hérité") : Loc.Tr("Non hérité");
         
         public bool hasLegacyBeenInherited = false;
         
         private void Reset()
         {
-            componentName = "Héritage";
-            description = "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel: {var:legacyStatus}.";
+            componentName = "Héritage"; // loc (editor default: the text then lives on the prefab)
+            description = "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel: {var:legacyStatus}."; // loc (editor default: the text then lives on the prefab)
         }
         
         protected override void Awake()

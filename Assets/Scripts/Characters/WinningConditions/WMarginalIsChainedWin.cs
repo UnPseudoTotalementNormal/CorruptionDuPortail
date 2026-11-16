@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using CorruptionDuPortail.Domain;
 using GameLogic;
@@ -7,7 +8,7 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WMarginalIsChainedWin : WinningCondition
     {
-        public override string Description => "Il gagne s'il se fait enchaîner.";
+        public override string Description => Loc.Tr("Il gagne s'il se fait enchaîner.");
 
         public override WinningTeam GetWinningTeam()
         {

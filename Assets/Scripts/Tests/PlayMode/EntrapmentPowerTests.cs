@@ -366,7 +366,7 @@ namespace Tests.PlayMode
             bool received = false;
             ulong sender = 0;
             string message = null;
-            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; message = _m.message.ToString(); };
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; message = CorruptionDuPortail.Domain.Localization.Loc.Resolve(_m.message.ToString()); }; // what the player reads
 
             ReflectionHelper.InvokePrivateMethod(power, "ObserveServerRpc", new object[] { new ulong[] { 4321, 4322 } });
             yield return null;
@@ -429,7 +429,7 @@ namespace Tests.PlayMode
             bool received = false;
             ulong sender = 0;
             string body = null;
-            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; body = _m.message.ToString(); };
+            ChatManager.instance.onChatMessageReceived += _m => { received = true; sender = _m.senderClientId; body = CorruptionDuPortail.Domain.Localization.Loc.Resolve(_m.message.ToString()); }; // what the player reads
 
             var _guessedCharacterIds = new[] { match.ownerClientId.Value, other.ownerClientId.Value };
             var _guessedRoles = new[] { new Role { roleID = RoleID.Omniscient } };

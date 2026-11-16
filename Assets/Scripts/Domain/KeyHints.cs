@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 
 namespace CorruptionDuPortail.Domain
@@ -124,11 +125,11 @@ namespace CorruptionDuPortail.Domain
             switch (keyName)
             {
                 case "Tab": return "Tab";
-                case "Escape": return "Échap";
+                case "Escape": return Loc.Tr("Échap");
                 case "Digit1": case "Numpad1": return "1";
                 case "Digit2": case "Numpad2": return "2";
-                case "Enter": return "Entrée";
-                case "Space": return "Espace";
+                case "Enter": return Loc.Tr("Entrée");
+                case "Space": return Loc.Tr("Espace");
                 case "LeftArrow": return "←";
                 case "RightArrow": return "→";
                 case "UpArrow": return "↑";

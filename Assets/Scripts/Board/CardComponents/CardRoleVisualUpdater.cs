@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using System.Collections.Generic;
 using AYellowpaper.SerializedCollections;
@@ -51,7 +52,8 @@ namespace Board.CardComponents
 
         public void SetRoleText(string _roleText)
         {
-            visualComponents.cardRoleText.text = _roleText;
+            // T36: a role name is a French game text, shown in the player's language.
+            visualComponents.cardRoleText.SetLoc(_roleText);
         }
         
         public void SetUnknownWithPseudo(string _pseudo)

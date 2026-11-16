@@ -1159,6 +1159,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1545,6 +1546,7 @@ MonoBehaviour:
   <chatScrollbar>k__BackingField: {fileID: 2096408691506358700}
   <scrollbarBottomThreshold>k__BackingField: 0.075
   discoveredChatButtonPrefab: {fileID: 1298378506885670401, guid: c17c67dc2bcc9b54684bdf2d1c8f6d1b, type: 3}
+  isFullScreen: 0
   fullScreenSwitchDuration: 0.5
   visibilityToggleButtonRectTransform: {fileID: 8027546609859980787}
 --- !u!1 &6548530706417301886
@@ -1815,6 +1817,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2059,6 +2062,7 @@ GameObject:
   - component: {fileID: 7814698604737834187}
   - component: {fileID: 5858670594138340101}
   - component: {fileID: 1492839068016644752}
+  - component: {fileID: 7893879958292616516}
   m_Layer: 5
   m_Name: Placeholder
   m_TagString: Untagged
@@ -2151,6 +2155,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2204,6 +2209,18 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &7893879958292616516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7748896521537988042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &7958983219223367789
 GameObject:
   m_ObjectHideFlags: 0

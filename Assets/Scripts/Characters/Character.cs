@@ -292,7 +292,7 @@ namespace Characters
             EnsureRosterSubscription();
             if (lobbyPlayerInfoHolder == null)
             {
-                return CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
+                return CorruptionDuPortail.Domain.Localization.Loc.Tr(CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel);
             }
             bool _hasEntry = lobbyPlayerInfoHolder.TryGetPlayerInfo(ownerClientId.Value, out Network.Player.PlayerInfo _info);
             return CorruptionDuPortail.Domain.PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);

@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System;
@@ -98,7 +100,25 @@ namespace UI.RoleBook
         public event Action Opened;
         public event Action Closed;
 
-        private void OnEnable() => TryInitialize();
+        private void OnEnable()
+        {
+            Loc.LanguageChanged += OnLanguageChanged;
+            TryInitialize();
+        }
+
+        private void OnDisable() => Loc.LanguageChanged -= OnLanguageChanged;
+
+        // T36: the cover and the hint come from the UXML, the ribbons and the two pages are written again.
+        private void OnLanguageChanged()
+        {
+            if (!_initialized) return;
+            LocalizedUitk.Localize(_root);
+            BuildRibbons(_root.Q<VisualElement>("book-ribbons"));
+            if (_pages.Count == 0) return;
+            int page = Mathf.Clamp(_current, 0, _pages.Count - 1);
+            SetLeft(page);
+            SetRight(page);
+        }
 
         // UIDocument builds its tree in its own OnEnable (order not guaranteed): Start is the fallback.
         private void Start() => TryInitialize();
@@ -134,6 +154,7 @@ namespace UI.RoleBook
 
             BuildPages();
             BuildRibbons(_root.Q<VisualElement>("book-ribbons"));
+            LocalizedUitk.Localize(_root); // the cover and the hint written in RoleBook.uxml
             _root.pickingMode = PickingMode.Ignore;
             _initialized = true;
         }
@@ -177,7 +198,7 @@ namespace UI.RoleBook
                     icon.pickingMode = PickingMode.Ignore;
                     ribbon.Add(icon);
                 }
-                var label = new Label(data != null ? data.displayName : faction.ToString());
+                var label = new Label(data != null ? Loc.Tr(data.displayName) : faction.ToString());
                 label.AddToClassList(RibbonLabelClass);
                 label.pickingMode = PickingMode.Ignore;
                 ribbon.Add(label);

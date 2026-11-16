@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using CorruptionDuPortail.Domain.Localization;
 using DG.Tweening;
 using Diagnostics.Logs;
 using Network;
@@ -114,7 +115,7 @@ namespace ChatSystem
             }
             CustomButton _newButton = Instantiate(discoveredChatButtonPrefab, discoveredChatLayoutTransform);
             chatButtons[_chatId] = _newButton;
-            _newButton.GetComponentInChildren<TMP_Text>().text = ChatManager.instance.GetChatWindow(_chatId).chatName.ToString();
+            _newButton.GetComponentInChildren<TMP_Text>().text = ChannelTitle(ChatManager.instance.GetChatWindow(_chatId));
             _newButton.onButtonClicked += () =>
             {
                 ChatManager.instance.ChangeActiveChat(_chatId);
@@ -158,7 +159,36 @@ namespace ChatSystem
             }
             
             RedrawChatMessages();
-            chatTitleText.text = _newObservedChat.chatName.ToString();
+            chatTitleText.text = ChannelTitle(_newObservedChat);
+        }
+
+        // T36: a channel name is a French game text ("General", a power's channel sent as a token by the server).
+        private static string ChannelTitle(ChatWindow _window) => Loc.Show(_window.chatName.ToString());
+
+        private void OnEnable() => Loc.LanguageChanged += OnLanguageChanged;
+
+        private void OnDisable() => Loc.LanguageChanged -= OnLanguageChanged;
+
+        // T36: the messages are kept as the server sent them (tokens), so the whole panel can be written again in the
+        // new language.
+        private void OnLanguageChanged()
+        {
+            if (ChatManager.instance == null)
+            {
+                return;
+            }
+            foreach (KeyValuePair<int, CustomButton> _pair in chatButtons)
+            {
+                if (_pair.Value != null)
+                {
+                    _pair.Value.GetComponentInChildren<TMP_Text>().text = ChannelTitle(ChatManager.instance.GetChatWindow(_pair.Key));
+                }
+            }
+            if (observedChatWindow != null)
+            {
+                chatTitleText.text = ChannelTitle(observedChatWindow);
+                RedrawChatMessages();
+            }
         }
 
         private void RedrawChatMessages()
@@ -186,15 +216,21 @@ namespace ChatSystem
         {
             float _oldScrollbarValue = chatScrollbar.value;
             
-            string _senderName = _chatMessage.senderClientId == GameValues.CHAT_SERVER_CLIENT_ID 
-                ? "Server" 
+            bool _fromServer = _chatMessage.senderClientId == GameValues.CHAT_SERVER_CLIENT_ID;
+            string _senderName = _fromServer
+                ? Loc.Tr("Server")
                 : LobbyPlayerInfoHolder.instance != null
                     ? LobbyPlayerInfoHolder.instance.GetDisplayPseudo(_chatMessage.senderClientId)
-                    : CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
-            
+                    : Loc.Tr(CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel);
+
             TMP_Text _chatText = Instantiate(chatTextPrefab, layoutTransform);
 
-            _chatText.text = $"{_senderName}: {_chatMessage.message}";
+            // T36: the server writes tokens, shown here in this player's language. A player's own words are never
+            // translated, and can never pass for a token.
+            string _body = _fromServer
+                ? Loc.Resolve(_chatMessage.message.ToString())
+                : Loc.StripMarks(_chatMessage.message.ToString());
+            _chatText.text = $"{_senderName}: {_body}";
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(layoutTransform);
             

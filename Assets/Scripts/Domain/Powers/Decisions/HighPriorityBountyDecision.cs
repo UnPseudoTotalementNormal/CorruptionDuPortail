@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 
 namespace CorruptionDuPortail.Domain.Powers.Decisions
@@ -20,7 +21,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             {
                 effects.Add(new SetEliminated(ctx.TargetSlot));
                 effects.Add(new ChatBroadcast(
-                    $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} était le robot et a été éliminé par {ctx.Roster.RoleNameOf(ctx.OwnerSlot)}.",
+                    Loc.Token("{0} était le robot et a été éliminé par {1}.", ctx.Roster.PseudoOf(ctx.TargetSlot), Loc.Token(ctx.Roster.RoleNameOf(ctx.OwnerSlot))),
                     ChatWindows.Server, PowerEffectAudience.All));
                 effects.Add(new RevealPublic(ctx.TargetSlot, RevealField.RoleRevealed));
             }
@@ -28,7 +29,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             {
                 effects.Add(new AddToChain(ctx.OwnerSlot));
                 effects.Add(new ChatBroadcast(
-                    "Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.",
+                    Loc.Token("Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil."),
                     ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
             }
             effects.Add(RequestCharacterRefresh.Instance);

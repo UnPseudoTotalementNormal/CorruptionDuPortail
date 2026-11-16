@@ -52,7 +52,7 @@ namespace Characters.Powers
                 {
                     var _guessedCharacter = characterManager.GetCharacter(_guessedCharacterId, false);
                     bool _matches = _pendingGuessedRoles.Any(_r => _r.IsTheSameRole(_guessedCharacter.role));
-                    _guesses.Add(new VisionGuess((int)_guessedCharacterId, _matches, _guessedCharacter.GetOwnerPseudo()));
+                    _guesses.Add(new VisionGuess((int)_guessedCharacterId, _matches, _guessedCharacter.GetOwnerPseudoToken())); // goes into a chat token
                 }
                 return _guesses;
             }

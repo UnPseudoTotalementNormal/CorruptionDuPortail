@@ -1,3 +1,4 @@
+using Localization;
 using Characters;
 using CorruptionDuPortail.Domain;
 using Extensions;
@@ -49,8 +50,8 @@ namespace UI
         [SerializeField] private Color textColor = new(0.227f, 0.141f, 0.078f, 1f);
         [SerializeField] private Color rollerColor = new(0.79f, 0.64f, 0.42f, 1f);
 
-        [SerializeField] private string wakeText = "Vous vous éveillez";
-        [SerializeField] private string sleepText = "Vous vous rendormez";
+        [SerializeField] private string wakeText = "Vous vous éveillez"; // loc
+        [SerializeField] private string sleepText = "Vous vous rendormez"; // loc
         [Tooltip("Seconds the wake parchment stays whole (unrolling included) before it burns.")]
         [SerializeField] private float wakeWholeSeconds = 2.5f;
         [Tooltip("Seconds the sleep parchment stays whole (unrolling included) before it burns.")]
@@ -156,13 +157,18 @@ namespace UI
             Show(_text, _wholeSeconds);
         }
 
+        // The French source of the banner on screen (the label holds it translated).
+        private string shownText;
+
         // Playtest log only: which banner (never the whole text).
         private string BannerKind(string _text) => _text == wakeText ? "wake" : _text == sleepText ? "sleep" : "other";
 
         private void Show(string _text, float _wholeSeconds)
         {
             Diagnostics.Logs.GameLog.Info("ui", "ui.banner.start", "kind", BannerKind(_text), "seconds", _wholeSeconds);
-            label.text = _text;
+            // T36: wakeText / sleepText are French game texts (authored on the scene object).
+            shownText = _text;
+            label.SetLoc(_text);
             wholeSeconds = _wholeSeconds;
             elapsed = 0f;
             burning = false;
@@ -189,7 +195,7 @@ namespace UI
             Apply(_frame);
             if (_frame.Done)
             {
-                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.end", "kind", BannerKind(label.text), "seconds", elapsed);
+                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.end", "kind", BannerKind(shownText), "seconds", elapsed);
                 playing = false;
                 canvas.enabled = false;
                 if (pendingText != null)

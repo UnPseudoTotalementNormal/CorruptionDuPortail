@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,7 +46,11 @@ namespace TooltipSystem
                 return GetPowerComponentTooltipReference(_linkKey);
             }
             
-            return textTooltipReferences.GetValueOrDefault(_linkKey);
+            // T36: a keyword card authored in the scene, shown in the player's language.
+            TooltipReference _authored = textTooltipReferences.GetValueOrDefault(_linkKey);
+            return _authored == null
+                ? null
+                : new TooltipReference { title = Loc.Tr(_authored.title), description = Loc.Tr(_authored.description) };
         }
 
         private TooltipReference GetPowerComponentTooltipReference(string _linkKey)
@@ -74,7 +79,7 @@ namespace TooltipSystem
             
             var _tooltipReference = new TooltipReference()
             {
-                title = _powerComponent.componentName.ToString(),
+                title = Loc.Tr(_powerComponent.componentName.ToString()),
                 description = _powerComponent.description.ToString(),
             };
             
@@ -99,7 +104,7 @@ namespace TooltipSystem
             
             return new TooltipReference()
             {
-                title = _power.powerName.ToString(),
+                title = Loc.Tr(_power.powerName.ToString()),
                 description = PowerTooltipText.Describe(_power),
             };
         }
@@ -109,9 +114,18 @@ namespace TooltipSystem
             return ParseVars(_parsingObject, _text, _deepParsing);
         }
 
-        /// <summary>Fills the {var:name} of a text with the fields / properties of <paramref name="_parsingObject"/>.</summary>
+        /// <summary>
+        /// Fills the {var:name} of a text with the fields / properties of <paramref name="_parsingObject"/>.
+        /// T36: <paramref name="_text"/> is the French text authored on the asset; it is translated first, so the
+        /// translation keeps the same {var:name}. A value read from a property comes as that property gives it: one
+        /// that returns a game text translates it itself (PLegacy.effectDescription).
+        /// </summary>
         public static string ParseVars(Object _parsingObject, string _text, bool _deepParsing = true)
         {
+            if (!IsLoneVar(_text))
+            {
+                _text = Loc.Tr(_text);
+            }
             string _textOriginal = _text;
             int _iterationLimit = 10;
             int _iterationCount = 0;
@@ -200,6 +214,17 @@ namespace TooltipSystem
             return _varValue;
         }
         
+        // "{var:effectDescription}": the whole text is one variable, there is nothing to translate.
+        private static bool IsLoneVar(string _text)
+        {
+            if (string.IsNullOrEmpty(_text))
+            {
+                return true;
+            }
+            string _trimmed = _text.Trim();
+            return _trimmed.Length > 2 && _trimmed[0] == '{' && _trimmed.IndexOf('}') == _trimmed.Length - 1;
+        }
+
         private static List<string> GetTextBetweenBraces(string _text)
         {
             var _matches = System.Text.RegularExpressions.Regex.Matches(_text, @"\{([^}]*)\}");

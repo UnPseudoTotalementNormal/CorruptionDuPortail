@@ -55,8 +55,8 @@ namespace Board.UI.CharacterBar
                  "GD \"rôle factice en noir et blanc\"). Wire Assets/Shaders/UI_Grayscale.mat.")]
         [SerializeField] private Material knownFakeMaterial;
 
-        private const string KnownFakeTooltipTitle = "Rôle factice";
-        private const string KnownFakeTooltipDescription = "Personne ne joue ce rôle dans cette partie.";
+        private const string KnownFakeTooltipTitle = "Rôle factice"; // loc (translated by the tooltip)
+        private const string KnownFakeTooltipDescription = "Personne ne joue ce rôle dans cette partie."; // loc (translated by the tooltip)
 
         private Material _baseMaterial;
         private bool _baseMaterialCaptured;

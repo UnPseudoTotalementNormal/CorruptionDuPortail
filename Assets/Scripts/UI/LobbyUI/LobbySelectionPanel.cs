@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using Network;
@@ -188,7 +189,7 @@ namespace UI.Lobby
             }
         }
 
-        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant.";
+        public const string BusyForInviteMessage = "Une connexion est déjà en cours : réessaie de rejoindre ton ami dans un instant."; // loc
 
         private void OnConnectButtonClicked()
         {

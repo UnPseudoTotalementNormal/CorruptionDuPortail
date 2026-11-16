@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8667382963614816963}
   - component: {fileID: 3474913807113440346}
   - component: {fileID: 7474552961643193063}
+  - component: {fileID: 9214823739265660662}
   m_Layer: 5
   m_Name: ChatId
   m_TagString: Untagged
@@ -103,6 +104,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -136,6 +138,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &9214823739265660662
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3212566629372020385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &4663763921143108706
 GameObject:
   m_ObjectHideFlags: 0
@@ -265,6 +279,27 @@ MonoBehaviour:
   hoverColor: {r: 0.46226418, g: 0.46226418, b: 0.46226418, a: 1}
   disabledColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
   panelImage: {fileID: 927039439325292937}
+  clickSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  hoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  unHoverSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   onButtonClickedUnityEvent:
     m_PersistentCalls:
       m_Calls: []

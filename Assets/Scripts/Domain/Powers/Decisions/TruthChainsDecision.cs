@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using Characters;
 
@@ -20,7 +21,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             {
                 effects.Add(new AddToChain(ctx.TargetSlot));
                 effects.Add(new ChatSendServer(
-                    $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} sera lié par les chaînes de la vérité.", ChatWindows.Server));
+                    Loc.Token("{0} sera lié par les chaînes de la vérité.", ctx.Roster.PseudoOf(ctx.TargetSlot)), ChatWindows.Server));
             }
             return PowerOutcome.Accept(effects, caughtAnomaly ? PowerVerdict.Correct : PowerVerdict.Incorrect);
         }

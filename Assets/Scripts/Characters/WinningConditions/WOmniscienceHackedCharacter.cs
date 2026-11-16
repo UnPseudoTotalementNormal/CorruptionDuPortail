@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using Characters.Powers;
 using CorruptionDuPortail.Domain;
@@ -13,7 +14,7 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WOmniscienceHackedCharacter : WinningCondition
     {
-        public override string Description => "Il gagne si l'élu qu'il a piraté se fait enchaîner.";
+        public override string Description => Loc.Tr("Il gagne si l'élu qu'il a piraté se fait enchaîner.");
 
         public override WinningTeam GetWinningTeam()
         {

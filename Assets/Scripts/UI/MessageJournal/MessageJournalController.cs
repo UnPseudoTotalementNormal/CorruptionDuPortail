@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using System.Linq;
 using Avatars;
@@ -47,14 +49,24 @@ namespace UI.MessageJournal
 
         private void OnEnable()
         {
+            Loc.LanguageChanged += OnLanguageChanged;
             TryInitialize();
             Subscribe();
+        }
+
+        // T36: the title comes from the UXML, every turn is written again.
+        private void OnLanguageChanged()
+        {
+            if (!_initialized) return;
+            LocalizedUitk.Localize(_root);
+            Rebuild();
         }
 
         private void Start() => TryInitialize();
 
         private void OnDisable()
         {
+            Loc.LanguageChanged -= OnLanguageChanged;
             Unsubscribe();
             arbiter?.SetOverlayOpen(this, false);
         }
@@ -90,6 +102,7 @@ namespace UI.MessageJournal
             _turns = _root.Q<VisualElement>("journal-turns");
             _root.pickingMode = PickingMode.Ignore;
             _root.RegisterCallback<PointerDownEvent>(OnRootPointerDown);
+            LocalizedUitk.Localize(_root); // the title written in MessageJournal.uxml
 
             _dataSource = dataSourceBehaviour as IMessageJournalDataSource;
             _initialized = true;
@@ -219,7 +232,7 @@ namespace UI.MessageJournal
             _div.AddToClassList("journal__turn-div");
             var _lineLeft = new VisualElement();
             _lineLeft.AddToClassList("journal__turn-line");
-            var _label = new Label($"TOUR {_turn.day}");
+            var _label = new Label(Loc.Tr("TOUR {0}", _turn.day));
             _label.AddToClassList("journal__turn-label");
             if (_isNewest)
             {
@@ -238,7 +251,7 @@ namespace UI.MessageJournal
 
             foreach (string _message in _turn.messages)
             {
-                var _msg = new Label($"« {_message} »");
+                var _msg = new Label(Loc.Tr("« {0} »", _message)); // the quotation marks of the language
                 _msg.AddToClassList("journal__msg");
                 _entry.Add(_msg);
             }
@@ -247,8 +260,12 @@ namespace UI.MessageJournal
 
         private static string BuildStatText(JournalTurnView _turn)
         {
-            string _corrupt = $"<color={NumberHex}>{_turn.corruptedCount}/{_turn.nonAnomalyTotal}</color> " +
-                              $"<color={CorruptHex}>{CorruptWord(_turn.corruptedCount)}</color>";
+            // T36: one source per whole clause ({2}, {3} = the colours), so each language orders its own words.
+            string _corrupt = Loc.Tr(
+                Loc.IsSingular(Loc.Language, _turn.corruptedCount)
+                    ? "<color={2}>{0}/{1}</color> <color={3}>corrompu</color>" // loc
+                    : "<color={2}>{0}/{1}</color> <color={3}>corrompus</color>", // loc
+                _turn.corruptedCount, _turn.nonAnomalyTotal, NumberHex, CorruptHex);
             if (!_turn.hasRobot)
             {
                 return _corrupt;
@@ -256,17 +273,17 @@ namespace UI.MessageJournal
             return $"{_corrupt}<color={SepHex}>   |   </color>{RobotClause(_turn.robotTargetCount)}";
         }
 
-        private static string CorruptWord(int _count) => _count > 1 ? "corrompus" : "corrompu";
-
         private static string RobotClause(int _count)
         {
-            string _robot = $"<color={RobotHex}>Robot</color>";
             if (_count <= 0)
             {
-                return $"<color={NumberHex}>Personne</color> n'a ciblé le {_robot}";
+                return Loc.Tr("<color={0}>Personne</color> n'a ciblé le <color={1}>Robot</color>", NumberHex, RobotHex);
             }
-            string _verb = _count > 1 ? "joueurs ont" : "joueur a";
-            return $"<color={NumberHex}>{_count}</color> {_verb} ciblé le {_robot}";
+            return Loc.Tr(
+                Loc.IsSingular(Loc.Language, _count)
+                    ? "<color={1}>{0}</color> joueur a ciblé le <color={2}>Robot</color>" // loc
+                    : "<color={1}>{0}</color> joueurs ont ciblé le <color={2}>Robot</color>", // loc
+                _count, NumberHex, RobotHex);
         }
 
         private void AnimateWriteIn(VisualElement _entry)

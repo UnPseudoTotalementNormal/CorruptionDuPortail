@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using Characters;
@@ -29,6 +30,7 @@ public class TakeDownThePortalTextTitle : MonoBehaviour
         // Story 12.3: prefab-resident UI leaf (StateUI prefab) — a [SerializeField] can't ref the scene
         // CharacterManager, so it resolves through the sanctioned CompositionRoot.For(Singleton) instead of the
         // CharacterManager God-Object façade. Behaviour-identical (one production NM).
-        textTitle.text = CompositionRoot.For(NetworkManager.Singleton).CharacterQuery.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudo() + " doit abattre le portail.";
+        textTitle.SetLoc("{0} doit abattre le portail.",
+            CompositionRoot.For(NetworkManager.Singleton).CharacterQuery.GetCharacter(_takeDownThePortalState.mageCharacterOwnerId).GetOwnerPseudoToken());
     }
 }

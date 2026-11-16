@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,14 +53,14 @@ namespace Board.UI.VoteCanvas
             card.onCardUnhovered += OnCardUnhovered;
             if (card.characterInfo.isEliminated.Value)
             {
-                votesText.text = "Éliminé";
-                voteButton.GetComponentInChildren<TMP_Text>().text = "Éliminé";
+                votesText.SetLoc("Éliminé");
+                voteButton.GetComponentInChildren<TMP_Text>().SetLoc("Éliminé");
                 return;
             }
 
             if (card.characterInfo.isChained.Value)
             {
-                voteButton.GetComponentInChildren<TMP_Text>().text = "Enchaîné";
+                voteButton.GetComponentInChildren<TMP_Text>().SetLoc("Enchaîné");
             }
             else if (_withVoteButton)
             {
@@ -91,22 +92,22 @@ namespace Board.UI.VoteCanvas
             {
                 return;
             }
-            votesText.text = "N'a pas voté";
+            votesText.SetLoc("N'a pas voté");
         }
         
         public void ShowVoteCount(bool _useVoteStartValue)
         {
             if ((_useVoteStartValue && isEliminatedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isEliminated.Value))
             {
-                votesText.text = "Éliminé";
+                votesText.SetLoc("Éliminé");
             }
             else if ((_useVoteStartValue && isChainedOnVoteStart) || (!_useVoteStartValue && card.characterInfo.isChained.Value))
             {
-                votesText.text = "Enchaîné";
+                votesText.SetLoc("Enchaîné");
             }
             else
             {
-                votesText.text = $"Votes: {voteCount}";
+                votesText.SetLoc("Votes: {0}", voteCount);
             }
         }
         
@@ -117,7 +118,7 @@ namespace Board.UI.VoteCanvas
                 voteCount = voters.Count;
             }
             bool _hasVoted = _votes.Any(_vote => _vote.Value.Contains(card.characterInfo.ownerClientId.Value));
-            votesText.text = (_hasVoted) ? "A voté" : "N'a pas voté";
+            votesText.SetLoc(_hasVoted ? "A voté" : "N'a pas voté"); // loc
         }
         
         private void OnVoteButtonClicked()

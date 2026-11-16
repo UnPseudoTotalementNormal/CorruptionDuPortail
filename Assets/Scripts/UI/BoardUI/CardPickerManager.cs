@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -473,9 +474,11 @@ namespace UI.BoardUI
             }
 
             if (instructionTitle)
-                instructionTitle.text = _type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle;
+                // T36: the titles (authored on the scene object) and the step descriptions (authored on each power) are
+                // French game texts.
+                instructionTitle.SetLoc(_type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle);
             if (instructionDescription && _description != null)
-                instructionDescription.text = _description;
+                instructionDescription.SetLoc(_description);
 
             instructionCanvasGroup.DOKill();
             instructionCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);

@@ -362,7 +362,7 @@ namespace Autoplay
             {
                 int _active = _manager.activeChatId;
                 string[] _otherNames = _manager.discoveredChatIds.Where(_id => _id != _active)
-                    .Select(_id => _manager.GetChatWindow(_id)?.chatName.ToString()).Where(_n => !string.IsNullOrEmpty(_n)).ToArray();
+                    .Select(_id => CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_manager.GetChatWindow(_id)?.chatName.ToString())).Where(_n => !string.IsNullOrEmpty(_n)).ToArray();
                 CustomButton _tab = _chat.GetComponentsInChildren<CustomButton>()
                     .FirstOrDefault(_b => _b.GetComponentInChildren<TMP_Text>() is TMP_Text _label && _otherNames.Contains(_label.text));
                 if (_tab != null)

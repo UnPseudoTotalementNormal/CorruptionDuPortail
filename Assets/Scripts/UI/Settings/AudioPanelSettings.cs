@@ -1,3 +1,4 @@
+using Localization;
 using FMODUnity;
 using TMPro;
 using UnityEngine;
@@ -9,8 +10,8 @@ namespace UI.Settings
 {
     public class AudioPanelSettings : MonoBehaviour
     {
-        private const string HoldToTalkLabel = "‹ Maintenir V ›";
-        private const string OpenMicLabel = "‹ Toujours ouvert ›";
+        private const string HoldToTalkLabel = "‹ Maintenir V ›"; // loc
+        private const string OpenMicLabel = "‹ Toujours ouvert ›"; // loc
 
         [SerializeField] private Slider masterVolumeSlider;
         [SerializeField] private Slider musicVolumeSlider;
@@ -92,7 +93,7 @@ namespace UI.Settings
         private void RefreshVoice()
         {
             _voiceVolumeSlider.SetValueWithoutNotify(_voiceOptions.Volume);
-            _micModeLabel.text = _voiceOptions.OpenMic ? OpenMicLabel : HoldToTalkLabel;
+            _micModeLabel.SetLoc(_voiceOptions.OpenMic ? OpenMicLabel : HoldToTalkLabel);
         }
 
         private float DbToLinear(float _db)

@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using Avatars;
 using CorruptionDuPortail.Domain;
@@ -38,7 +40,7 @@ namespace UI.KeyHints
         private static readonly Color InkColor = new(0.918f, 0.863f, 0.749f, 1f); // #eadcbf
         private static readonly Color ShadowColor = new(0f, 0f, 0f, 0.8f);
         // "Clic : voter": just under the reticle, fully lit (it is read at the moment of aiming).
-        private const string VoteAimText = "Clic : voter";
+        private const string VoteAimText = "Clic : voter"; // loc
         private static readonly Vector2 VoteAimOffset = new(0f, -37f);
         private const int VoteAimFontSize = 26;
         private static readonly Color VoteAimColor = new(1f, 0.953f, 0.855f, 1f); // #fff3da
@@ -100,6 +102,13 @@ namespace UI.KeyHints
             Assert.IsNotNull(_font, "KeyHintsHud._font is not wired — wire EB Garamond.");
             Build();
         }
+
+        // T36: the key names ("Échap") are written when a hint shows; a language change writes them all again.
+        private void OnEnable() => Loc.LanguageChanged += OnLanguageChanged;
+
+        private void OnDisable() => Loc.LanguageChanged -= OnLanguageChanged;
+
+        private void OnLanguageChanged() => _shown.Clear();
 
         private void Start()
         {
@@ -270,7 +279,7 @@ namespace UI.KeyHints
             _labelRect.anchoredPosition = VoteAimOffset;
             _labelRect.sizeDelta = new Vector2(400f, 40f);
             var _label = _labelRect.gameObject.AddComponent<Text>();
-            _label.text = VoteAimText;
+            _label.SetLoc(VoteAimText);
             _label.font = _font;
             _label.fontSize = VoteAimFontSize;
             _label.color = VoteAimColor;

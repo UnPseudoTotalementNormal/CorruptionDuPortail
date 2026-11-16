@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3218184054583477531}
   - component: {fileID: 7380074444494163590}
   - component: {fileID: 5045755991212804881}
+  - component: {fileID: 469491854914973699}
   m_Layer: 0
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -103,6 +104,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -136,6 +138,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &469491854914973699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880213918366926438}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &3685332307377509774
 GameObject:
   m_ObjectHideFlags: 0

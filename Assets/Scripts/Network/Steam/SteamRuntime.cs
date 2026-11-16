@@ -20,7 +20,7 @@ namespace Network.Steam
     /// </summary>
     public sealed class SteamRuntime : MonoBehaviour
     {
-        public const string NotRunningMessage = "Steam n'est pas lancé. Lance Steam, puis réessaie.";
+        public const string NotRunningMessage = "Steam n'est pas lancé. Lance Steam, puis réessaie."; // loc
 
         /// <summary>The Steam client answered: profile, lobbies and the Steam relay are usable.</summary>
         public static bool IsReady => SteamClient.IsValid;

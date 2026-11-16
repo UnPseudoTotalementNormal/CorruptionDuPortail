@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Linq;
 using Characters;
 
@@ -18,7 +19,7 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             // Copy the roster out of the `in` parameter — an `in`/`ref` param can't be captured in a lambda.
             IRosterView roster = ctx.Roster;
             int chosenCount = ctx.TargetSlots.Count(slot => roster.FactionOf(slot) == FactionType.chosen);
-            string message = $"Parmi les joueurs observés, {chosenCount} sont des élus.";
+            string message = Loc.Token("Parmi les joueurs observés, {0} sont des élus.", chosenCount);
             return PowerOutcome.Accept(new ChatBroadcast(message, ChatWindows.Server, PowerEffectAudience.Specific(ctx.OwnerSlot)));
         }
     }

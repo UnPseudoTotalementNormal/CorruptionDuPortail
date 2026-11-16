@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CorruptionDuPortail.Domain;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Diagnostics.Logs;
 using GameLogic;
@@ -52,7 +53,7 @@ namespace Network.Services
             Lobby? _created = await SteamMatchmaking.CreateLobbyAsync(settings.maxPlayers);
             if (!_created.HasValue)
             {
-                throw new LobbyBackendException("Steam n'a pas pu créer le lobby.");
+                throw new LobbyBackendException("Steam n'a pas pu créer le lobby."); // loc
             }
 
             Lobby _lobby = _created.Value;
@@ -111,7 +112,7 @@ namespace Network.Services
             RequireSteam();
             if (!ulong.TryParse(lobbyId, out ulong _id))
             {
-                throw new LobbyBackendException("Lobby introuvable.", lobbyGone: true);
+                throw new LobbyBackendException("Lobby introuvable.", lobbyGone: true); // loc
             }
 
             var _lobby = new Lobby(_id);
@@ -141,7 +142,7 @@ namespace Network.Services
             if (_found == null || _found.Length == 0)
             {
                 // Steam only lists joinable lobbies: a started game is not found either.
-                throw new LobbyBackendException("aucune partie ouverte avec ce code.", lobbyGone: true);
+                throw new LobbyBackendException("aucune partie ouverte avec ce code.", lobbyGone: true); // loc
             }
             return await JoinByIdAsync(IdOf(_found[0]), null);
         }
@@ -155,7 +156,7 @@ namespace Network.Services
             }
             if (!ulong.TryParse(lobbyId, out ulong _id))
             {
-                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true); // loc
             }
 
             // Steam only knows a foreign lobby's data after asking for it; the answer comes as a data-changed callback.
@@ -173,13 +174,13 @@ namespace Network.Services
             {
                 if (!_lobby.Refresh())
                 {
-                    throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+                    throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true); // loc
                 }
                 await _arrived.Task.Timeout(TimeSpan.FromSeconds(LobbyDataTimeoutSeconds));
             }
             catch (TimeoutException)
             {
-                throw new LobbyBackendException("la partie n'existe plus ou Steam ne répond pas.", lobbyGone: true);
+                throw new LobbyBackendException("la partie n'existe plus ou Steam ne répond pas.", lobbyGone: true); // loc
             }
             finally
             {
@@ -190,11 +191,11 @@ namespace Network.Services
             string _tag = _lobby.GetData(GameKey);
             if (string.IsNullOrEmpty(_tag))
             {
-                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true);
+                throw new LobbyBackendException("la partie n'existe plus.", lobbyGone: true); // loc
             }
             if (_tag != GameTag)
             {
-                throw new LobbyBackendException("ce n'est pas une partie de Corruption du Portail.", lobbyGone: true);
+                throw new LobbyBackendException("ce n'est pas une partie de Corruption du Portail.", lobbyGone: true); // loc
             }
             return ToGameLobby(_lobby);
         }
@@ -203,7 +204,7 @@ namespace Network.Services
         {
             if (!joined.TryGetValue(lobby.Id, out Lobby _lobby))
             {
-                throw new LobbyBackendException("Lobby quitté.", lobbyGone: true);
+                throw new LobbyBackendException("Lobby quitté.", lobbyGone: true); // loc
             }
             // Members follow the host's lock: no "Rejoindre la partie" on their profile once the game started.
             PublishJoin(_lobby, _lobby.GetData(LockedKey) != "1");
@@ -279,27 +280,28 @@ namespace Network.Services
 
         private static string IdOf(Lobby lobby) => lobby.Id.Value.ToString();
 
+        // French fragments, translated where LobbyManager shows them after its own prefix (Loc.TrQuiet of the message).
         private static string DescribeJoinFailure(RoomEnter result)
         {
             switch (result)
             {
                 case RoomEnter.DoesntExist:
-                    return "la partie n'existe plus.";
+                    return "la partie n'existe plus."; // loc
                 case RoomEnter.Full:
-                    return "la partie est pleine.";
+                    return "la partie est pleine."; // loc
                 case RoomEnter.NotAllowed:
                 case RoomEnter.Limited:
-                    return "Steam refuse l'accès à cette partie.";
+                    return "Steam refuse l'accès à cette partie."; // loc
                 case RoomEnter.Banned:
                 case RoomEnter.CommunityBan:
-                    return "tu as été banni de cette partie.";
+                    return "tu as été banni de cette partie."; // loc
                 case RoomEnter.MemberBlockedYou:
                 case RoomEnter.YouBlockedMember:
-                    return "un joueur de cette partie t'a bloqué (ou tu l'as bloqué) sur Steam.";
+                    return "un joueur de cette partie t'a bloqué (ou tu l'as bloqué) sur Steam."; // loc
                 case RoomEnter.RatelimitExceeded:
-                    return "trop de tentatives, réessaie dans un instant.";
+                    return "trop de tentatives, réessaie dans un instant."; // loc
                 default:
-                    return $"erreur Steam ({result}).";
+                    return Loc.Token("erreur Steam ({0}).", result);
             }
         }
 

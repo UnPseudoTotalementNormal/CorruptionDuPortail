@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 namespace CorruptionDuPortail.Domain
 {
     /// <summary>
@@ -13,10 +14,10 @@ namespace CorruptionDuPortail.Domain
     public static class JoinFailureMessage
     {
         /// <summary>Shown when synchronization started but never finished — an honest load that got stuck.</summary>
-        public const string StuckLoadMessage = "Connexion échouée : la partie a mis trop de temps à charger.";
+        public const string StuckLoadMessage = "Connexion échouée : la partie a mis trop de temps à charger."; // loc
 
         /// <summary>Shown when the host never answered at all within the approval window.</summary>
-        public const string SilentHostMessage = "Connexion expirée : l'hôte n'a pas répondu.";
+        public const string SilentHostMessage = "Connexion expirée : l'hôte n'a pas répondu."; // loc
 
         /// <param name="_disconnectReason">The server-supplied rejection reason, or null/empty when there is none.</param>
         /// <param name="_reason">The phase in which the wait gave up, used only as a fallback.</param>
@@ -28,6 +29,7 @@ namespace CorruptionDuPortail.Domain
                 return _disconnectReason;
             }
 
+            // T36: French sources, like the server's reasons: translated where they are displayed (Loc.ShowForeign).
             return _reason == ConnectFailReason.TotalTimeout
                 ? StuckLoadMessage
                 : SilentHostMessage;

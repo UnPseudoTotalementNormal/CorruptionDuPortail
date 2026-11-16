@@ -1,4 +1,5 @@
 using System;
+using CorruptionDuPortail.Domain.Localization;
 using DG.Tweening;
 using Network;
 using Network.Services;
@@ -32,13 +33,31 @@ namespace UI.LobbyUI
             joinButton.onClick.AddListener(OnJoinClicked);
         }
 
+        private void OnEnable()
+        {
+            Loc.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnDisable()
+        {
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            if (lobby != null)
+            {
+                Setup(lobby);
+            }
+        }
+
         public void Setup(GameLobby lobby)
         {
             this.lobby = lobby;
             lobbyNameText.text = lobby.Name;
-            lobbyPrivateText.text = lobby.HasPassword ? "Oui" : "Non";
+            lobbyPrivateText.text = lobby.HasPassword ? Loc.Tr("Oui") : Loc.Tr("Non");
             
-            string langue = "Non spécifiée";
+            string langue = Loc.Tr("Non spécifiée");
             if (lobby.TryGetData(nameof(LobbyCreationSettings.LobbyCustomDataKeys.Language), out string value))
             {
                 langue = value;

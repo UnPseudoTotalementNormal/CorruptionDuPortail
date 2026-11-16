@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using Characters.Powers;
@@ -43,7 +44,7 @@ namespace Board.UI.PowerBar
             // Mise à jour du nom
             if (powerNameText != null)
             {
-                powerNameText.text = power.powerName.ToString();
+                powerNameText.SetLoc(power.powerName.ToString());
             }
 
             SetTooltip();

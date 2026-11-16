@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -189,15 +190,19 @@ namespace Characters.Powers
         [SerializeField] private string guessCharacterPickerDescription;
 
         // {0} = nom du rôle copié, {1} = nom(s) du ou des pouvoirs copiés.
+        // T36: French sources, sent as tokens (each player reads them in his language). A wording changed on the
+        // prefab needs its entry in the translation table (LocalizationCoverageTests lists it).
         [SerializeField] private string copyObtainedMessage =
-            "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique).";
+            "Le rôle {0} n'est pas en jeu : vous copiez temporairement son pouvoir « {1} » (usage unique)."; // loc
         [SerializeField] private string copiesObtainedMessage =
-            "Le rôle {0} n'est pas en jeu : vous copiez temporairement ses pouvoirs « {1} » (usage unique chacun).";
+            "Le rôle {0} n'est pas en jeu : vous copiez temporairement ses pouvoirs « {1} » (usage unique chacun)."; // loc
         // {0} = nom du rôle copié (Ugës), {1} = nom du pouvoir tiré au hasard.
         [SerializeField] private string marqueCopyObtainedMessage =
-            "Le rôle {0} n'est pas en jeu : sa marque vous donne une copie du pouvoir « {1} » (usage unique).";
+            "Le rôle {0} n'est pas en jeu : sa marque vous donne une copie du pouvoir « {1} » (usage unique)."; // loc
         [SerializeField] private string noActivePowerToCopyMessage =
-            "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier.";
+            "Le rôle sélectionné n'est pas en jeu, mais n'a aucun pouvoir actif à copier."; // loc
+        // Between two power names of copiesObtainedMessage (the quotes around the list are in the sentence).
+        private const string PowerNamesSeparator = " », « "; // loc
 
         // Server-only. Rôle élu piochée absent (fausse carte) : donne à Luma une copie one-shot de CHACUN de ses
         // pouvoirs actifs (texte du GD : « une copie de ses pouvoirs à utilisation unique »), dans l'ordre du rôle.
@@ -225,15 +230,15 @@ namespace Characters.Powers
                 string _single = PMarqueHurluberluges.GrantSingleCopyServer(characterManager, (int)ownerClientId.Value,
                     Power.ConfigureAsOneShotStolenCopy, "melange");
                 _message = _single != null
-                    ? string.Format(marqueCopyObtainedMessage, _fakeCharacter.role.roleName.ToString(), _single)
-                    : noActivePowerToCopyMessage;
+                    ? Loc.Token(marqueCopyObtainedMessage, Loc.Token(_fakeCharacter.role.roleName.ToString()), Loc.Token(_single))
+                    : Loc.Token(noActivePowerToCopyMessage);
             }
             else if (_picks.Count == 0)
             {
                 Debug.Log("[LUMA] Mélange des cartes : fausse carte élue sans pouvoir actif copiable.");
                 GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
                     "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", 0, "reason", "no-active-power"));
-                _message = noActivePowerToCopyMessage;
+                _message = Loc.Token(noActivePowerToCopyMessage);
             }
             else
             {
@@ -248,8 +253,9 @@ namespace Characters.Powers
                 GameLog.Guarded(() => GameLog.Info("power", "power.luma.copy", "owner", ownerClientId.Value,
                     "fakeRole", _fakeCharacter.role.roleName.ToString(), "count", _names.Count, "powers", _names,
                     "copiedMelange", isStolenCopy.Value));
-                _message = string.Format(_names.Count == 1 ? copyObtainedMessage : copiesObtainedMessage,
-                    _fakeCharacter.role.roleName.ToString(), string.Join(" », « ", _names));
+                _message = Loc.Token(_names.Count == 1 ? copyObtainedMessage : copiesObtainedMessage,
+                    Loc.Token(_fakeCharacter.role.roleName.ToString()),
+                    string.Join(Loc.Token(PowerNamesSeparator), _names.Select(_name => Loc.Token(_name))));
             }
 
             ChatMessage _chat = new ChatMessage

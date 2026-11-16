@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System;
@@ -12,7 +13,7 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WChosenChainedAllAnomaly : WinningCondition
     {
-        public override string Description => "Les Élus gagnent quand toutes les Anomalies sont enchaînées.";
+        public override string Description => Loc.Tr("Les Élus gagnent quand toutes les Anomalies sont enchaînées.");
 
         public override WinningTeam GetWinningTeam()
         {

@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,8 +28,12 @@ namespace TooltipSystem
         // Read when the bubble opens, so a text built from live game state ({var:…}) is never stale.
         private Func<string> descriptionSource;
 
-        public string Title => tooltipTitle;
-        public string Description => descriptionSource != null ? descriptionSource() : tooltipDescription;
+        // T36: the title and the description are French game texts (authored here, or handed over by code: a power's
+        // name), shown in the player's language. A description source builds its text itself, already translated.
+        public string Title => Loc.Tr(tooltipTitle);
+        /// <summary>The title as authored (French): what a log records, the same on every machine.</summary>
+        public string SourceTitle => tooltipTitle;
+        public string Description => descriptionSource != null ? descriptionSource() : Loc.Tr(tooltipDescription);
         public bool HasContent => !string.IsNullOrEmpty(tooltipTitle) || !string.IsNullOrEmpty(Description);
 
         public void SetTooltipTitle(string _title)

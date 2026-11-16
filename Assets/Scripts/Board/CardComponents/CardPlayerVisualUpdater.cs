@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using System.Collections.Generic;
@@ -37,7 +38,8 @@ namespace Board.CardComponents
 
         public void SetRoleText(string _roleText)
         {
-            _visualComponents.cardRoleText.text = _roleText;
+            // T36: a role name is a French game text, shown in the player's language.
+            _visualComponents.cardRoleText.SetLoc(_roleText);
         }
 
         public void SetFaction(FactionType _factionType)

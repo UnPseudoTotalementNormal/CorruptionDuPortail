@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CorruptionDuPortail.Domain.Localization;
 using DG.Tweening;
 using Diagnostics.Logs;
 using Extensions;
@@ -71,16 +72,39 @@ public class LoginMenu : MonoBehaviour
         loadingCanvasGroup.DoHideGroup(0);
         loginCanvasGroup.DoShowGroup(0);
         usernameInputField.gameObject.SetActive(false);
-        TMP_Text _buttonLabel = loginButton.GetComponentInChildren<TMP_Text>(true);
-        if (_buttonLabel != null)
-        {
-            _buttonLabel.text = "Réessayer";
-        }
         loginButton.onClick.RemoveAllListeners();
         loginButton.onClick.AddListener(EnterWithSteamProfile);
         errorText.DOKill(true);
         errorText.alpha = 1;
-        errorText.text = SteamRuntime.NotRunningMessage;
+        steamNoticeShown = true;
+        WriteSteamNotice();
+    }
+
+    // The Steam notice stays on screen until Steam runs: it follows a language change.
+    private bool steamNoticeShown;
+
+    private void WriteSteamNotice()
+    {
+        if (!steamNoticeShown)
+        {
+            return;
+        }
+        TMP_Text _buttonLabel = loginButton.GetComponentInChildren<TMP_Text>(true);
+        if (_buttonLabel != null)
+        {
+            _buttonLabel.text = Loc.Tr("Réessayer");
+        }
+        errorText.text = Loc.Tr(SteamRuntime.NotRunningMessage);
+    }
+
+    private void OnEnable()
+    {
+        Loc.LanguageChanged += WriteSteamNotice;
+    }
+
+    private void OnDisable()
+    {
+        Loc.LanguageChanged -= WriteSteamNotice;
     }
 
     private async Task Init()
@@ -124,7 +148,7 @@ public class LoginMenu : MonoBehaviour
         {
             if (AuthenticationService.Instance.IsSignedIn)
             {
-                DisplayError("Already signed in. (Somehow ???)");
+                DisplayError("Already signed in. (Somehow ???)"); // loc
                 return false;
             }
 
@@ -142,7 +166,7 @@ public class LoginMenu : MonoBehaviour
 
             if (!AuthenticationService.Instance.IsSignedIn)
             {
-                DisplayError("Sign-in failed for an unknown reason.");
+                DisplayError("Sign-in failed for an unknown reason."); // loc
                 return false;
             }
             
@@ -158,14 +182,14 @@ public class LoginMenu : MonoBehaviour
             }
             catch (Exception e)
             {
-                DisplayError($"Set username failed: {e.Message}");
+                DisplayError(Loc.Token("Set username failed: {0}", e.Message));
                 return false;
             }
             return true;
         }
         catch (Exception e)
         {
-            DisplayError($"Sign-in failed: {e.Message}");
+            DisplayError(Loc.Token("Sign-in failed: {0}", e.Message));
             
             return false;
         }
@@ -212,7 +236,7 @@ public class LoginMenu : MonoBehaviour
     {
         // Every login failure goes through here (already signed in, sign-in, set username).
         GameLog.Warn("net", "auth.failed", "mode", "ugs", "reason", message);
-        errorText.text = message;
+        errorText.text = Loc.ShowForeign(message); // logged as it came (French source / token), shown translated
         errorText.DOKill(true);
         errorText.alpha = 1;
         errorText.DOFade(0, 2f).SetDelay(3f);

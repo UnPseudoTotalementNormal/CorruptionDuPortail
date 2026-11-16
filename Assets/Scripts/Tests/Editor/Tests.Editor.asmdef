@@ -5,6 +5,7 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Game",
+        "Game.Editor",
         "CorruptionDuPortail.Domain",
         "DOTween",
         "DOTween.Runtime",

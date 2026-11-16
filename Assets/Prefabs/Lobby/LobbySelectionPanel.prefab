@@ -86,6 +86,7 @@ GameObject:
   - component: {fileID: 2020997114681392396}
   - component: {fileID: 5945730797774060677}
   - component: {fileID: 6894249743136987513}
+  - component: {fileID: 2821575039319695009}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -178,6 +179,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -211,6 +213,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2821575039319695009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2733653372120545983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &3678225562976612143
 GameObject:
   m_ObjectHideFlags: 0
@@ -343,6 +357,7 @@ GameObject:
   - component: {fileID: 3943865637243892563}
   - component: {fileID: 1283154460039173249}
   - component: {fileID: 4262180860589908725}
+  - component: {fileID: 2910015247478908489}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -435,6 +450,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -468,6 +484,18 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2910015247478908489
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4088314738606962400}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43dfb9c5d3f9cba48a12d4557b609c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Localization.LocalizedLabel
 --- !u!1 &4723373664145119716
 GameObject:
   m_ObjectHideFlags: 0

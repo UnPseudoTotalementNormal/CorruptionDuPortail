@@ -157,6 +157,9 @@ namespace UI
             Show(_text, _wholeSeconds);
         }
 
+        // The French source of the banner on screen (the label holds it translated).
+        private string shownText;
+
         // Playtest log only: which banner (never the whole text).
         private string BannerKind(string _text) => _text == wakeText ? "wake" : _text == sleepText ? "sleep" : "other";
 
@@ -164,6 +167,7 @@ namespace UI
         {
             Diagnostics.Logs.GameLog.Info("ui", "ui.banner.start", "kind", BannerKind(_text), "seconds", _wholeSeconds);
             // T36: wakeText / sleepText are French game texts (authored on the scene object).
+            shownText = _text;
             label.SetLoc(_text);
             wholeSeconds = _wholeSeconds;
             elapsed = 0f;
@@ -191,7 +195,7 @@ namespace UI
             Apply(_frame);
             if (_frame.Done)
             {
-                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.end", "kind", BannerKind(label.text), "seconds", elapsed);
+                Diagnostics.Logs.GameLog.Info("ui", "ui.banner.end", "kind", BannerKind(shownText), "seconds", elapsed);
                 playing = false;
                 canvas.enabled = false;
                 if (pendingText != null)

@@ -93,7 +93,7 @@ namespace UI
             {
                 Debug.Log($"[STEAM] Join request for lobby {_lobbyId} ignored: the menu is already hosting or joining.");
                 GameLog.Info("net", "steam.join.request", "lobby", _lobbyId, "source", "menu", "ignored", true, "reason", "menu busy");
-                LobbyManager.instance?.ReportError(Loc.Tr(LobbySelectionPanel.BusyForInviteMessage));
+                LobbyManager.instance?.ReportError(LobbySelectionPanel.BusyForInviteMessage);
                 return;
             }
 
@@ -554,7 +554,7 @@ namespace UI
                     // has no field to type one.
                     if (_lobby.HasPassword)
                     {
-                        LobbyManager.instance.ReportError(Loc.Tr(SteamConnector.PasswordNeedsListMessage));
+                        LobbyManager.instance.ReportError(SteamConnector.PasswordNeedsListMessage);
                         throw new System.Exception(SteamConnector.PasswordNeedsListMessage);
                     }
                     if (!SteamConnector.StartClient(NetworkManager.Singleton, _lobby, null))

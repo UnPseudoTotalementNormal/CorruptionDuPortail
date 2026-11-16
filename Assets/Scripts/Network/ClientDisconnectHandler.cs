@@ -363,7 +363,7 @@ namespace Network
             // started, loading too long). Show that reason instead of a misleading "host lost". Read BEFORE
             // ReturnToMenu shuts NGO down.
             string _reason = NetworkManager.Singleton != null ? NetworkManager.Singleton.DisconnectReason : null;
-            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? Loc.ShowForeign(_reason) : Loc.Tr(HostLostMessage);
+            string _message = CorruptionDuPortail.Domain.RelayFallbackPolicy.HasServerReason(_reason) ? _reason : HostLostMessage;
 
             // Best-effort: drop the cloud lobby so we don't linger as a ghost member.
             TryLeaveLobby();
@@ -495,7 +495,8 @@ namespace Network
                 return;
             }
 
-            _notificationText.text = _message;
+            // T36: the message is a French source, a token or the server's own words; shown in the player's language.
+            _notificationText.text = Loc.ShowForeign(_message);
             _notificationPanel.SetActive(true);
 
             CancelInvoke(nameof(HideNotification));

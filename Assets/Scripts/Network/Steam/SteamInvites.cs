@@ -80,7 +80,7 @@ namespace Network.Steam
                 GameLog.Info("net", "steam.join.request", "lobby", lobbyId.ToString(), "source", source, "ignored", true, "reason", "already in a game");
                 if (LobbyManager.instance != null)
                 {
-                    LobbyManager.instance.ReportError(Loc.Tr(AlreadyInGameMessage));
+                    LobbyManager.instance.ReportError(AlreadyInGameMessage);
                 }
                 return;
             }

@@ -148,7 +148,7 @@ public class LoginMenu : MonoBehaviour
         {
             if (AuthenticationService.Instance.IsSignedIn)
             {
-                DisplayError(Loc.Tr("Already signed in. (Somehow ???)"));
+                DisplayError("Already signed in. (Somehow ???)"); // loc
                 return false;
             }
 
@@ -166,7 +166,7 @@ public class LoginMenu : MonoBehaviour
 
             if (!AuthenticationService.Instance.IsSignedIn)
             {
-                DisplayError(Loc.Tr("Sign-in failed for an unknown reason."));
+                DisplayError("Sign-in failed for an unknown reason."); // loc
                 return false;
             }
             
@@ -182,14 +182,14 @@ public class LoginMenu : MonoBehaviour
             }
             catch (Exception e)
             {
-                DisplayError(Loc.Tr("Set username failed: {0}", e.Message));
+                DisplayError(Loc.Token("Set username failed: {0}", e.Message));
                 return false;
             }
             return true;
         }
         catch (Exception e)
         {
-            DisplayError(Loc.Tr("Sign-in failed: {0}", e.Message));
+            DisplayError(Loc.Token("Sign-in failed: {0}", e.Message));
             
             return false;
         }
@@ -236,7 +236,7 @@ public class LoginMenu : MonoBehaviour
     {
         // Every login failure goes through here (already signed in, sign-in, set username).
         GameLog.Warn("net", "auth.failed", "mode", "ugs", "reason", message);
-        errorText.text = message;
+        errorText.text = Loc.ShowForeign(message); // logged as it came (French source / token), shown translated
         errorText.DOKill(true);
         errorText.alpha = 1;
         errorText.DOFade(0, 2f).SetDelay(3f);

@@ -260,8 +260,7 @@ namespace ChatSystem
             }
 
             GameLog.Guarded(() => GameLog.Info("chat", "chat.message", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId,
-                "public", _membership.IsPublic(_chatMessage.chatId),
-                "text", CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_chatMessage.message.ToString())));
+                "public", _membership.IsPublic(_chatMessage.chatId), "text", _chatMessage.message.ToString()));
             if (_membership.IsPublic(_chatMessage.chatId))
             {
                 ReceiveChatMessageRpc(_chatMessage);

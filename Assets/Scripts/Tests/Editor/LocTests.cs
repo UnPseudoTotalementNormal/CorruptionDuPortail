@@ -180,6 +180,40 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void QuietToken_TranslatesWhatTheTableKnows_AndLeavesTheRestAlone()
+        {
+            Loc.SetLanguage(GameLanguage.English);
+            string _ours = Loc.Token("{0} est un élu.", Loc.QuietToken("Rôles"));
+            string _foreign = Loc.Token("{0} est un élu.", Loc.QuietToken("HTTP 429 Too Many Requests"));
+
+            Assert.AreEqual("Roles is a chosen one.", Loc.Resolve(_ours));
+            Assert.AreEqual("HTTP 429 Too Many Requests is a chosen one.", Loc.Resolve(_foreign));
+            CollectionAssert.IsEmpty(Loc.MissingTexts, "an unknown reason is no missing translation");
+            Assert.AreEqual(Loc.Token("Gardien"), Loc.QuietToken(Loc.Token("Gardien")), "a token is not wrapped again");
+            Assert.AreEqual("Rôles", Loc.StripMarks(Loc.QuietToken("Rôles")));
+        }
+
+        [Test]
+        public void ALog_ReadsTheSameWhateverThePlayersLanguage()
+        {
+            Loc.SetLanguage(GameLanguage.English);
+            int _raised = 0;
+            Loc.LanguageChanged += () => _raised++;
+            string _token = Loc.Token("{0} était le robot et a été éliminé par {1}.", "Bob", Loc.Token("Gardien"));
+
+            // What the log sink writes for a travelling text…
+            Assert.AreEqual("Bob était le robot et a été éliminé par Gardien.", Loc.ResolveSource(_token));
+            // …and what a log argument computed from game state reads (GameLog.Guarded).
+            string _computed = null;
+            Loc.InSource(() => _computed = Loc.Tr("Rôles") + " / " + Loc.Plural(2, "{0} joueur", "{0} joueurs"));
+            Assert.AreEqual("Rôles / 2 joueurs", _computed);
+
+            Assert.AreEqual(GameLanguage.English, Loc.Language, "the player's language is back");
+            Assert.AreEqual("Roles", Loc.Tr("Rôles"));
+            Assert.AreEqual(0, _raised, "nothing on screen was told to rewrite itself");
+        }
+
+        [Test]
         public void HasTranslation_FrenchAlwaysHasOne()
         {
             Assert.IsTrue(Loc.HasTranslation(GameLanguage.French, "N'importe quoi"));

@@ -140,7 +140,7 @@ namespace UI.Lobby
             if (_isJoining)
             {
                 GameLog.Info("net", "join.refused", "reason", "busy", "path", "invite", "lobby", _lobbyId);
-                ReportJoinFailure(Loc.Tr(BusyForInviteMessage));
+                ReportJoinFailure(BusyForInviteMessage);
                 return;
             }
             _isJoining = true;
@@ -358,7 +358,7 @@ namespace UI.Lobby
             if (lobby.IsLocked)
             {
                 GameLog.Info("net", "join.refused", "reason", "lobby locked", "path", "list", "lobby", lobby.Id);
-                ReportJoinFailure(Loc.Tr(ConnectionApprovalGate.GameInProgressReason));
+                ReportJoinFailure(ConnectionApprovalGate.GameInProgressReason);
                 loadingCanvasGroup.DoHideGroup();
                 return false;
             }

@@ -186,7 +186,12 @@ A text written the old way compiles, reads fine in French and stays French for a
   translated label without its component, any broken `{0}` / `{var:x}` / tag, any leftover entry. Run it after touching
   a text; a sample text of a label that code replaces goes in `Scripts/Editor/LocalizationPlaceholders.json`.
 - Tests and autoplay run in French (`LocalizationTestSetup`, `-autoplay*` on the command line); `-lang en` forces a run.
-- Logs and autoplay journals record a travelling text in French (`Loc.ResolveSource`), never the raw token.
+- **Logs never depend on the player's language.** The log sink writes a token as its French sentence, and
+  `GameLog.Guarded(() => …)` computes its arguments in French (`Loc.InSource`). Never pass a translated text to a
+  log (`Loc.Tr(…)`, a label's `.text`, a tooltip `Title`): pass the French source or the token. An error text that
+  is both shown and logged (`OnLobbyError`, `ReportError`, `DisplayError`) is a French source or a `Loc.Token`,
+  translated by its display (`Loc.ShowForeign`); a backend / SDK reason inside it is a `Loc.QuietToken`.
+  Autoplay journals record French the same way (`Loc.ResolveSource`).
 - Enforced by `.claude/tools/loc_guard.py` (hook: at each edit of a game `.cs`, and blocking at `git commit`): a French
   literal, or a worded literal handed to `.text =` / `new Label(` / a chat or error message, on a line without `Loc.` /
   `SetLoc`. Marks on the line: `// loc` (a game text translated where it is displayed), `// loc-ok` (no player reads it).

@@ -21,18 +21,18 @@ namespace CorruptionDuPortail.Domain
 
         /// <param name="_disconnectReason">The server-supplied rejection reason, or null/empty when there is none.</param>
         /// <param name="_reason">The phase in which the wait gave up, used only as a fallback.</param>
-        /// <returns>The server reason when present, otherwise wording picked by failure phase; in the player's language.</returns>
+        /// <returns>The server reason when present, otherwise wording picked by failure phase.</returns>
         public static string Build(string _disconnectReason, ConnectFailReason _reason)
         {
             if (!string.IsNullOrEmpty(_disconnectReason))
             {
-                // T36: the server sends its reasons as French game texts; shown here in this player's language.
-                return Loc.ShowForeign(_disconnectReason);
+                return _disconnectReason;
             }
 
-            return Loc.Tr(_reason == ConnectFailReason.TotalTimeout
+            // T36: French sources, like the server's reasons: translated where they are displayed (Loc.ShowForeign).
+            return _reason == ConnectFailReason.TotalTimeout
                 ? StuckLoadMessage
-                : SilentHostMessage);
+                : SilentHostMessage;
         }
     }
 }

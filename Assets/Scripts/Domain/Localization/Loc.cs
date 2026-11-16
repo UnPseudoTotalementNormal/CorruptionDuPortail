@@ -27,6 +27,8 @@ namespace CorruptionDuPortail.Domain.Localization
         public const char TokenSeparator = '\u0002';
         /// <summary>Closes a token.</summary>
         public const char TokenEnd = '\u0003';
+        /// <summary>Opens a token whose text is translated only if the table knows it (<see cref="QuietToken"/>).</summary>
+        public const char QuietTokenStart = '\u0004';
 
         private static readonly Dictionary<GameLanguage, Dictionary<string, string>> s_tables =
             new Dictionary<GameLanguage, Dictionary<string, string>>();
@@ -142,7 +144,8 @@ namespace CorruptionDuPortail.Domain.Localization
         }
 
         /// <summary>True when <paramref name="text"/> carries at least one token.</summary>
-        public static bool HasToken(string text) => !string.IsNullOrEmpty(text) && text.IndexOf(TokenStart) >= 0;
+        public static bool HasToken(string text) =>
+            !string.IsNullOrEmpty(text) && (text.IndexOf(TokenStart) >= 0 || text.IndexOf(QuietTokenStart) >= 0);
 
         /// <summary>
         /// Replaces every token of <paramref name="text"/> by its text in the current language. A text without token
@@ -198,6 +201,38 @@ namespace CorruptionDuPortail.Domain.Localization
             }
         }
 
+        /// <summary>
+        /// Runs <paramref name="action"/> with French as the language, without telling anyone: for what must read the
+        /// same on every machine (the arguments of a log).
+        /// </summary>
+        public static void InSource(Action action)
+        {
+            GameLanguage current = s_language;
+            s_language = GameLanguage.French;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                s_language = current;
+            }
+        }
+
+        /// <summary>
+        /// A token for a text that may be a game text or not (the reason of a backend error: a French fragment of ours,
+        /// or the words of an SDK): translated on display when the table knows it, left as is otherwise, never recorded
+        /// as missing. A text that already carries a token is returned untouched.
+        /// </summary>
+        public static string QuietToken(string text)
+        {
+            if (string.IsNullOrEmpty(text) || HasToken(text))
+            {
+                return text;
+            }
+            return QuietTokenStart + text + TokenEnd;
+        }
+
         /// <summary>Removes the token characters from a text a player typed: a player cannot forge a token.</summary>
         public static string StripMarks(string playerText)
         {
@@ -205,14 +240,15 @@ namespace CorruptionDuPortail.Domain.Localization
             {
                 return playerText;
             }
-            if (playerText.IndexOf(TokenStart) < 0 && playerText.IndexOf(TokenSeparator) < 0 && playerText.IndexOf(TokenEnd) < 0)
+            if (playerText.IndexOf(TokenStart) < 0 && playerText.IndexOf(TokenSeparator) < 0 && playerText.IndexOf(TokenEnd) < 0 &&
+                playerText.IndexOf(QuietTokenStart) < 0)
             {
                 return playerText;
             }
             var builder = new StringBuilder(playerText.Length);
             foreach (char c in playerText)
             {
-                if (c != TokenStart && c != TokenSeparator && c != TokenEnd)
+                if (c != TokenStart && c != TokenSeparator && c != TokenEnd && c != QuietTokenStart)
                 {
                     builder.Append(c);
                 }
@@ -227,10 +263,10 @@ namespace CorruptionDuPortail.Domain.Localization
             while (index < text.Length)
             {
                 char c = text[index];
-                if (c == TokenStart)
+                if (c == TokenStart || c == QuietTokenStart)
                 {
                     index++;
-                    builder.Append(ReadToken(text, ref index));
+                    builder.Append(ReadToken(text, ref index, c == TokenStart));
                     continue;
                 }
                 if (insideToken && (c == TokenSeparator || c == TokenEnd))
@@ -243,7 +279,7 @@ namespace CorruptionDuPortail.Domain.Localization
         }
 
         // index is just after a TokenStart. Reads the source and the arguments, consumes the TokenEnd.
-        private static string ReadToken(string text, ref int index)
+        private static string ReadToken(string text, ref int index, bool reportMissing)
         {
             var part = new StringBuilder();
             ResolveInto(text, ref index, part, true);
@@ -264,7 +300,7 @@ namespace CorruptionDuPortail.Domain.Localization
             {
                 index++;
             }
-            string translated = Translate(source, true);
+            string translated = Translate(source, reportMissing);
             return args == null ? translated : Format(translated, args.ToArray());
         }
 

@@ -147,7 +147,7 @@ namespace TooltipSystem
             _bubble.FadeIn(FADE_IN, SLIDE);
             for (int _i = 0; _i < _keywordCount; _i++) _keywordCards[_i].FadeIn(FADE_IN, SLIDE);
 
-            GameLog.Info("ui", "ui.tooltip.open", "target", _trigger.name, "title", _trigger.Title, "keywords", _keywordCount);
+            GameLog.Info("ui", "ui.tooltip.open", "target", _trigger.name, "title", _trigger.SourceTitle, "keywords", _keywordCount);
         }
 
         private void Fill(HoverTooltipComponent _trigger)

@@ -301,7 +301,7 @@ namespace Network.Services
                 case RoomEnter.RatelimitExceeded:
                     return "trop de tentatives, réessaie dans un instant."; // loc
                 default:
-                    return Loc.Tr("erreur Steam ({0}).", result);
+                    return Loc.Token("erreur Steam ({0}).", result);
             }
         }
 

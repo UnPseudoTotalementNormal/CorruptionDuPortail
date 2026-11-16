@@ -102,7 +102,7 @@ namespace Network.Steam
             if (!SteamUtils.IsOverlayEnabled)
             {
                 GameLog.Info("ui", "ui.steam.invite.refused", "reason", "overlay disabled", "lobby", _lobby.Id);
-                _lobbyManager.ReportError(Loc.Tr(OverlayDisabledMessage));
+                _lobbyManager.ReportError(OverlayDisabledMessage);
                 return;
             }
             GameLog.Info("ui", "ui.steam.invite", "lobby", _lobby.Id);

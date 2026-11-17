@@ -3,7 +3,7 @@ name: maquettes
 description: Have Poyo pick a game screen on mockups before coding it — an HTML page of numbered variants drawn as real 16:9 game screens (real art, real menu background, interactive when the screen is), opened on his phone through "Aperçu de l'appli" or in a browser, with 👍/👎 votes and remarks sent back to Claude, one capture per variant, then the choice recorded. Use for any new screen or visible UI change of the game ("fais-moi des maquettes", "maquette", "montre-moi avant de coder", "mockups", "propose plusieurs designs"), and before coding any new interface (the ui-slop rule says to show mockups first) — without waiting for him to say « maquettes », also in the middle of another skill or task that leads to a visible change.
 metadata:
   template: maquettes
-  template-version: 1.9.1
+  template-version: 1.10.0
 ---
 
 # Maquettes (Corruption du Portail)
@@ -82,6 +82,14 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
   duration), not only the ideal moment: the bugs after the code came from there.
 - Real media and content: a video plays; a text a model will write is written by that model (its real
   prompt), otherwise the variant says it is a target.
+- **A section that decides the shape of the screen** (where the thing goes, which layout) is marked
+  `<section data-forme="P1 P2 P3">` (the variants the others can be drawn in; no list: all of them), and each
+  section that depends on it `<section data-suit>`. Its frames are drawn in each of those layouts: one frame per
+  layout (`<div class="screen" data-dans="P1">`, the kit hides the others), or redrawn by the page on the
+  `mockforme` event (`detail {forme, section}`, fired from the section). The kit shows them in the last 👍 of the
+  deciding section (else its « (par défaut) »), writes above each one « Dessinée dans P3 » with a way to see it in
+  another without changing his vote, and his feedback says which one he looked at. Never a dependent section drawn
+  in a single layout: the other choice would make everything else wrong. Capture: `?only=C2&forme=P3`.
 - Same moment and same data on every frame of a section; real texts, real art, nothing « Lorem ». The
   colors, fonts and images are the game's: no invented palette.
 - Plan for growth: a screen listing content that will grow (cosmetics, roles…) shows it full (real
@@ -109,6 +117,10 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
   page writes it on every change, he has nothing to copy.
 - Bottom: `<textarea id="global">` (free remark) and `<button id="send">`.
 - `?only=E1` shows that frame alone (captures).
+- On a phone a frame is about the size of the screen: the kit lets him pinch the page with two fingers (it
+  shrinks, kept from one page to the next) and puts « Taille réelle | En entier » under the title for `.phone`
+  frames (each one shrunk to fit the screen with its variant's name). Nothing to plan in the page but its
+  `header.page h1`; `?only=` captures stay full size.
 
 ## 3. Reread, check, capture
 

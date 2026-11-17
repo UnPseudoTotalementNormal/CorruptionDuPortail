@@ -42,3 +42,10 @@ footer.send label { color: var(--soft); }
 .place-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; color: var(--soft); font-size: 14px; }
 .place-row input { flex: 1; accent-color: var(--accent); }
 .place-row button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; cursor: pointer; }
+/* ---------- sections that follow the layout section, zoom on a phone (mock.js) ---------- */
+.mock-suit { color:var(--soft); font-size:14px; margin:-4px 16px 10px; line-height:1.6; }
+.mock-suit span[data-voir] { color:var(--accent); cursor:pointer; margin-left:10px; }
+.mock-suit span[data-voir].on { color:var(--fg); font-weight:600; cursor:default; }
+.mock-taille { display:flex; width:fit-content; margin:6px 0 4px; }
+.mock-pct { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--fg); color:var(--bg); font-size:14px; padding:7px 14px; border-radius:12px; opacity:0; transition:opacity .25s; pointer-events:none; z-index:30; }
+.mock-pct.on { opacity:1; }

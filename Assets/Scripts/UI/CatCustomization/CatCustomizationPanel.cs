@@ -144,6 +144,7 @@ namespace UI.CatCustomization
                 tab.EnableInClassList("cat-custo__tab--on", slot == _openSlot);
                 CatSlot captured = slot;
                 tab.RegisterCallback<ClickEvent>(_ => ShowSlot(captured));
+                tab.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
                 _tabs.Add(tab);
             }
 
@@ -190,6 +191,7 @@ namespace UI.CatCustomization
             CatSlot slot = item.slot;
             byte id = item.id;
             cell.RegisterCallback<ClickEvent>(_ => Choose(slot, id));
+            cell.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             return cell;
         }
 

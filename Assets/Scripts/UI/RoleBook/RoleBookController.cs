@@ -147,6 +147,8 @@ namespace UI.RoleBook
             _shadowLeft = _root.Q<VisualElement>("book-shadow-left");
 
             _cornerLeft.RegisterCallback<ClickEvent>(_ => TurnPage(-1));
+            _cornerLeft.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
+            _cornerRight.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             _cornerRight.RegisterCallback<ClickEvent>(_ => TurnPage(1));
             _root.Q<Button>("book-close").clicked += Close;
             // A click on the dark backdrop (not on the book) closes it.
@@ -189,6 +191,7 @@ namespace UI.RoleBook
                 ribbon.AddToClassList(RibbonClass);
                 ribbon.style.unityBackgroundImageTintColor = Color.Lerp(RoleSheet.FactionColor(assets, faction), Color.black, 0.35f);
                 ribbon.RegisterCallback<ClickEvent>(_ => GoTo(first));
+                ribbon.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
 
                 if (data != null && data.icon != null)
                 {

@@ -287,6 +287,7 @@ public class BoardManager : NetworkBehaviour
         if (_assignCardToBoard)
         {
             _card.onCardClicked += OnCardClicked;
+            _card.SetClickListenedQuery(() => onCardClicked != null); // the cat paw: does anyone take a card click?
             _card.onCardHovered += OnCardHovered;
             _card.onCardUnhovered += OnCardUnhovered;
             onCardSpawned?.Invoke(_card);

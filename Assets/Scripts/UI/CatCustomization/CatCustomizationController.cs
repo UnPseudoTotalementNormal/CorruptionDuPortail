@@ -67,6 +67,7 @@ namespace UI.CatCustomization
             _panel = new CatCustomizationPanel(catalog, stage, _root.Q<VisualElement>("cat-view"),
                 _root.Q<VisualElement>("cat-tabs"), _root.Q<Label>("cat-current"), _root.Q<VisualElement>("cat-cells"));
             _root.Q<Label>("cat-back").RegisterCallback<ClickEvent>(_ => Close());
+            _root.Q<Label>("cat-back").AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
 
             LocalizedUitk.Localize(_root);
             _root.pickingMode = PickingMode.Ignore;

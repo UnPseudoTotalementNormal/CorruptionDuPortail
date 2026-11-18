@@ -589,6 +589,7 @@ namespace UI.LobbyRoles
                 card.experimental.animation.Start(prev, target, CardFadeMs, (e, v) => e.style.opacity = v).Ease(Easing.OutCubic);
 
             RoleID clickedId = role.Id;
+            card.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             card.RegisterCallback<ClickEvent>(_ => OpenDetail(clickedId)); // tap the card face → role detail overlay
             // A dark slot behind the card: a role out of the pool fades into it, never into the cork.
             var slot = new VisualElement { pickingMode = PickingMode.Ignore };

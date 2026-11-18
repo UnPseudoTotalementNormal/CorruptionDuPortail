@@ -21,7 +21,8 @@ namespace Board
     /// Main card class.
     /// Orchestrates the different components (visual, animation, sound) without containing their logic.
     /// </summary>
-    public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    public class Card : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler,
+        global::UI.CatPaw.ICursorHint
     {
         [Header("Core References")]
         [SerializeField] private Canvas cardCanvas;
@@ -373,6 +374,30 @@ namespace Board
         #endregion
 
         #region Pointer Event Handlers
+
+        /// <summary>
+        /// The cat paw over a card: while a picker is open, claws on the cards it offers and the cross on the others;
+        /// otherwise claws only when something listens to card clicks (the portal's pick), else the resting paw (a card
+        /// is voted through its own button).
+        /// </summary>
+        public global::UI.CatPaw.CursorHint CursorHint
+        {
+            get
+            {
+                global::UI.BoardUI.CardPickerManager _picker = global::UI.BoardUI.CardPickerManager.instance;
+                if (_picker != null && _picker.IsPickerActive)
+                {
+                    return _picker.IsCardPickable(this) ? global::UI.CatPaw.CursorHint.Clickable : global::UI.CatPaw.CursorHint.Refused;
+                }
+                return clickListened != null && clickListened()
+                    ? global::UI.CatPaw.CursorHint.Clickable : global::UI.CatPaw.CursorHint.None;
+            }
+        }
+
+        // Pushed by its creator (BoardManager.AddNewCard, lane B like Initialize): whether a card click is awaited.
+        private Func<bool> clickListened;
+
+        public void SetClickListenedQuery(Func<bool> _query) => clickListened = _query;
 
         public void OnPointerClick(PointerEventData _eventData)
         {

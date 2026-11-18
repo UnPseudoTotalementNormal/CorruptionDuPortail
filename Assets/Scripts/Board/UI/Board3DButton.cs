@@ -32,7 +32,7 @@ namespace Board.UI
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class Board3DButton : MonoBehaviour,
-        IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+        IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler, global::UI.CatPaw.ICursorHint
     {
         [Tooltip("Invisible logic-only CustomButton this forwards clicks to (holds the TryOpenPanel wiring).")]
         [SerializeField] private CustomButton targetButton;
@@ -57,6 +57,11 @@ namespace Board.UI
         // Mirrors the CustomButton's own enabled gate (e.g. AnonymeMessageButton disables itself when the
         // player may not send a message this turn) so the 3D model refuses hover/click in exactly the same cases.
         private bool Interactable => targetButton == null || targetButton.isActiveAndEnabled;
+
+        /// <summary>The cat paw: the cross when the button behind refuses (gone, or greyed out).</summary>
+        public global::UI.CatPaw.CursorHint CursorHint =>
+            Interactable && (targetButton == null || targetButton.Interactable)
+                ? global::UI.CatPaw.CursorHint.Clickable : global::UI.CatPaw.CursorHint.Refused;
 
         private void Awake()
         {

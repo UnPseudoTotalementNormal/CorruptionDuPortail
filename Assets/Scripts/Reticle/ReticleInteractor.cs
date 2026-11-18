@@ -54,6 +54,8 @@ namespace Reticle
         private GameObject _worldHandler;
         private PointerEventData _pointerData;
         private readonly List<RaycastResult> _uiResults = new();
+        private const float PawPressHold = 0.15f; // the pressed paw stays a moment after a quick click
+        private float _pressedAt = -10f;
 
         private void Awake()
         {
@@ -99,7 +101,7 @@ namespace Reticle
                 ResetTrack(_bodyHover, ref _bodyHandler);
                 ResetTrack(_uiHover, ref _uiHandler);
                 ResetTrack(_worldHover, ref _worldHandler);
-                _hud?.SetOver(false);
+                _hud?.SetPaw(UI.CatPaw.PawState.Idle);
                 if (_confirmAction != null && _confirmAction.action != null)
                 {
                     _confirmAction.action.Disable();
@@ -122,7 +124,10 @@ namespace Reticle
             UpdateTrack(_uiHover, ref _uiHandler, _ui);
             UpdateTrack(_worldHover, ref _worldHandler, _world);
 
-            _hud?.SetOver(_bodyHandler != null || _uiHandler != null || _worldHandler != null);
+            // The paw (maquettes curseur-patte v1, R2): what the click would take decides it, same priority as the click.
+            GameObject _aimed = _uiHandler != null ? _uiHandler : (_worldHandler != null ? _worldHandler : _bodyHandler);
+            bool _pressing = Time.unscaledTime - _pressedAt < PawPressHold;
+            _hud?.SetPaw(UI.CatPaw.CursorHints.Paw(UI.CatPaw.CursorHints.Of(_aimed), _pressing));
 
             // Confirm → click priority: a uGUI control (vote/skip button) first, then a 3D interactable
             // (power / board 3D button), then the body (card) underneath. Only with a locked cursor: otherwise the
@@ -130,6 +135,7 @@ namespace Reticle
             // or the reticle clicking the screen centre while the player clicks elsewhere).
             if (ConfirmPressed() && ShouldDispatchClick(Cursor.lockState == CursorLockMode.Locked))
             {
+                _pressedAt = Time.unscaledTime;
                 GameObject _clickTarget = _uiHandler != null ? _uiHandler
                     : (_worldHandler != null ? _worldHandler : _bodyHandler);
                 if (_clickTarget != null)

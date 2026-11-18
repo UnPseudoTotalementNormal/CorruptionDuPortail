@@ -19,8 +19,13 @@ namespace Board.UI.PowerBar
     /// <summary>
     /// Implémentation 3D de PowersBarObject utilisant des objets 3D dans le monde
     /// </summary>
-    public class PowerBarObject3D : PowersBarObject, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
+    public class PowerBarObject3D : PowersBarObject, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler,
+        global::UI.CatPaw.ICursorHint
     {
+        // Every live power object, so the cat paw can show its cross over one that cannot be used (it has no collider
+        // then, the mouse ray goes through it).
+        private static readonly System.Collections.Generic.List<PowerBarObject3D> s_live = new();
+
         [SerializeField] private Transform modelParentTransform;
         private Collider powerCollider;
         private HoverTooltipComponent hoverTooltipComponent;
@@ -206,6 +211,36 @@ namespace Board.UI.PowerBar
         protected override void UpdatePowerDisplay()
         {
             if (power == null) return;
+        }
+
+        private void OnEnable() => s_live.Add(this);
+
+        private void OnDisable() => s_live.Remove(this);
+
+        /// <summary>The cat paw: the power clicks while its collider is on (PowersBar keeps it on only while CanUse).</summary>
+        public global::UI.CatPaw.CursorHint CursorHint =>
+            powerCollider != null && powerCollider.enabled ? global::UI.CatPaw.CursorHint.Clickable : global::UI.CatPaw.CursorHint.Refused;
+
+        /// <summary>A power object that cannot be used under this ray (its renderers' bounds), for the cat paw's cross.</summary>
+        public static bool InertUnder(Ray _ray, out string _name)
+        {
+            _name = null;
+            foreach (PowerBarObject3D _p in s_live)
+            {
+                if (_p == null || _p.powerCollider == null || _p.powerCollider.enabled || _p.power == null)
+                {
+                    continue;
+                }
+                foreach (Renderer _r in _p.GetComponentsInChildren<Renderer>())
+                {
+                    if (_r.enabled && _r.bounds.IntersectRay(_ray))
+                    {
+                        _name = _p.name;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public override void SetInteractable(bool _interactable)

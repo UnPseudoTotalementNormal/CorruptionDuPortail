@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le cri du chat qui s'écrase (tour 4)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+  .bs-film-box { position: sticky; top: 64px; z-index: 4; background: #0d0b09; border-radius: 6px; margin: 0 0 18px; }
+  .bs-film-box video { display: block; width: 100%; max-width: 960px; margin: 0 auto; }
+</style>
+</head>
+<body data-subject="t19-sons">
+
+<header class="page">
+  <h1>Le cri du chat qui s'écrase (tour 4)</h1>
+  <p><b>Tour 3 :</b> compris de travers, le bruit d'impact I3 reste tel quel. On ajoute par-dessus un cri du chat
+     au moment où il touche le sol.</p>
+  <p><b>Ce qui change :</b> à chaque enchaînement, le jeu tire un cri au hasard parmi ceux que tu gardes, joué avec
+     I3, un peu plus haut ou plus bas à chaque fois. Mets 👍 à tous ceux à garder.</p>
+  <p><b>Sans question :</b> « Sur la vidéo » rejoue la scène avec ce cri et I3 à l'impact (5,21 s). Sons de
+     Freesound, CC0 ou CC BY (crédités), au volume des autres voix des chats.</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" id="bs-random">▶ La scène, un cri au hasard</button>
+  <button class="bs-play" id="bs-five">▶ Cinq chutes au hasard de suite</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<div class="bs-film-box"><video id="film" src="audio/scene.mp4" muted playsinline preload="auto"></video></div>
+
+<section>
+  <h2>Les cris à garder</h2>
+  <div class="variant" data-id="Y1">
+    <div class="vhead"><span class="vid">Y1</span><span class="vname">Miaou bref et sec</span></div>
+    <button class="bs-play bs-film" data-take="Y1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/Y1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/Y1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Mafon2/sounds/436540/" target="_blank">Short Sharp Meow</a>, Mafon2, CC0</p>
+  </div>
+  <div class="variant" data-id="Y2">
+    <div class="vhead"><span class="vid">Y2</span><span class="vname">Cri de douleur</span></div>
+    <button class="bs-play bs-film" data-take="Y2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/Y2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/Y2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/InspectorJ/sounds/415209/" target="_blank">Cat, Screaming, A.wav</a>, InspectorJ, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="Y3">
+    <div class="vhead"><span class="vid">Y3</span><span class="vname">Petit « mrrp » étouffé</span></div>
+    <button class="bs-play bs-film" data-take="Y3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/Y3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/Y3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/TRNGLE/sounds/368012/" target="_blank">Meow 6.wav</a>, TRNGLE, CC BY 3.0</p>
+  </div>
+  <div class="variant" data-id="Y4">
+    <div class="vhead"><span class="vid">Y4</span><span class="vname">Grognement vexé</span></div>
+    <button class="bs-play bs-film" data-take="Y4">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/Y4.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/Y4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/TRNGLE/sounds/368011/" target="_blank">Meow 8.wav</a>, TRNGLE, CC BY 3.0</p>
+  </div>
+  <div class="variant" data-id="Y5">
+    <div class="vhead"><span class="vid">Y5</span><span class="vname">Miaou plaintif</span></div>
+    <button class="bs-play bs-film" data-take="Y5">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/Y5.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/Y5.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/TRNGLE/sounds/368007/" target="_blank">Meow 3.wav</a>, TRNGLE, CC BY 3.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume du cri, face à l'impact</h2>
+  <p>La scène avec un cri au hasard parmi tes 👍.</p>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-level" data-db="-4">▶ La scène</button>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-level" data-db="0">▶ La scène</button>
+  </div>
+  <div class="variant" data-id="V3">
+    <div class="vhead"><span class="vid">V3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-level" data-db="4">▶ La scène</button>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Un cri à chercher ailleurs, une autre idée ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicNode.connect(audio().destination); musicNode.start(); return 0.8;
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  // rate: the game's random pitch (about one semitone either way)
+  async function play(src, at, rate, vol) {
+    const buf = await load(src), node = audio().createBufferSource(), g = audio().createGain();
+    node.buffer = buf; node.playbackRate.value = rate || 1; g.gain.value = vol || 1; node.connect(g).connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration / (rate || 1);
+  }
+  const jitter = () => Math.pow(2, (Math.random() * 2 - 1) / 12);
+  // The pool: every take with a 👍, else all of them.
+  const pool = () => {
+    const all = [...document.querySelectorAll('.variant[data-id^="Y"]')].map(v => v.dataset.id);
+    const kept = all.filter(id => document.querySelector('.variant[data-id="' + id + '"] .vote .like.on'));
+    return kept.length ? kept : all;
+  };
+  const pick = () => { const p = pool(); return p[Math.floor(Math.random() * p.length)]; };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  const film = document.getElementById("film");
+  // The other beats as chosen in round 2; the reveal starts T0 into the film.
+  // The cry rides the impact event: +1.5 dB (the event's volume), a hair after the hit.
+  const T0 = 1.0, OTHERS = { L1: 0.0, R1: 4.8, I3: 5.21, G1: 5.96 }, CRY = 5.24, CRY_GAIN = Math.pow(10, 1.5 / 20);
+  function stopFilm() { stopAll(); film.pause(); }
+  document.getElementById("bs-stop").onclick = stopFilm;
+  async function scene(take, rate, db) {
+    audio().resume(); stopFilm();
+    await startMusic();
+    film.currentTime = 0; await film.play();
+    const now = audio().currentTime - film.currentTime, at = t => Math.max(0, now + T0 + t - audio().currentTime);
+    for (const k in OTHERS) play("audio/" + k + ".ogg", at(OTHERS[k]));
+    play("audio/" + take + ".ogg", at(CRY), rate, CRY_GAIN * Math.pow(10, (db || 0) / 20));
+  }
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume(); stopFilm();
+    play(b.dataset.src, await startMusic());
+  });
+  document.querySelectorAll(".bs-film").forEach(b => b.onclick = () => scene(b.dataset.take, 1));
+  document.querySelectorAll(".bs-level").forEach(b => b.onclick = () => scene(pick(), jitter(), parseFloat(b.dataset.db)));
+  document.getElementById("bs-random").onclick = () => scene(pick(), jitter());
+  document.getElementById("bs-five").onclick = async () => {
+    audio().resume(); stopFilm();
+    let t = await startMusic();
+    for (let i = 0; i < 5; i++) {
+      const d = await play("audio/I3.ogg", t); play("audio/" + pick() + ".ogg", t + 0.03, jitter(), CRY_GAIN); t += d + 1.0;
+    }
+  };
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

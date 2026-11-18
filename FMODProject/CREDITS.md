@@ -6,6 +6,15 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## CC BY 3.0
 
+- **[Meow 3.wav](https://freesound.org/people/TRNGLE/sounds/368007/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_plaint.wav (event:/Interface/ChainSplat)`
+  - changes: fall_cry_plaint: cut 0.29-0.75 s, filtered, faded, loudness normalized
+- **[Meow 6.wav](https://freesound.org/people/TRNGLE/sounds/368012/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_mrrp.wav (event:/Interface/ChainSplat)`
+  - changes: fall_cry_mrrp: cut 0.5-0.71 s, filtered, faded, loudness normalized
+- **[Meow 8.wav](https://freesound.org/people/TRNGLE/sounds/368011/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_growl.wav (event:/Interface/ChainSplat)`
+  - changes: fall_cry_growl: cut 0.12-0.55 s, filtered, faded, loudness normalized
 - **[Cat single meow 2](https://freesound.org/people/ebcrosby/sounds/334434/)** by [ebcrosby](https://freesound.org/people/ebcrosby/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/meow.wav (event:/Cats/Meow)`
   - changes: meow: cut 0.26-0.98 s, filtered, faded, loudness normalized
@@ -15,6 +24,9 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## CC BY 4.0
 
+- **[Cat, Screaming, A.wav](https://freesound.org/people/InspectorJ/sounds/415209/)** by [InspectorJ](https://freesound.org/people/InspectorJ/) (Freesound, [license](https://creativecommons.org/licenses/by/4.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_pain.wav (event:/Interface/ChainSplat)`
+  - changes: fall_cry_pain: cut 0.35-0.95 s, filtered, faded, loudness normalized
 - **[CHAINHndl_Chain Metal Rattle 01_KVV AUDIO_FREE](https://freesound.org/people/KVV_Audio/sounds/798137/)** by [KVV_Audio](https://freesound.org/people/KVV_Audio/) (Freesound, [license](https://creativecommons.org/licenses/by/4.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_1.wav (event:/Interface/ChainLift)`, `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_2.wav (event:/Interface/ChainLift)`, `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_3.wav (event:/Interface/ChainLift)`, `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_4.wav (event:/Interface/ChainGetUp)`
   - changes: chain_1: cut 0.13-0.95 s, filtered, faded, loudness normalized; chain_2: cut 2.53-3.6 s, filtered, faded, loudness normalized; chain_3: cut 4.94-6.3 s, filtered, faded, loudness normalized; chain_4: cut 7.66-8.6 s, filtered, faded, loudness normalized
@@ -42,6 +54,9 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 - **[chaindrop 1](https://freesound.org/people/Logicogonist/sounds/799421/)** by [Logicogonist](https://freesound.org/people/Logicogonist/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_drop2.wav (event:/Interface/ChainSplat)`
   - changes: chain_drop2: cut 0.0-0.9 s, filtered, faded, loudness normalized
+- **[Short Sharp Meow](https://freesound.org/people/Mafon2/sounds/436540/)** by [Mafon2](https://freesound.org/people/Mafon2/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_sharp.wav (event:/Interface/ChainSplat)`
+  - changes: fall_cry_sharp: cut 0.02-0.26 s, filtered, faded, loudness normalized
 - **[catmeow1](https://freesound.org/people/Yoyodaman234/sounds/156643/)** by [Yoyodaman234](https://freesound.org/people/Yoyodaman234/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_low.wav (event:/Cats/Cry)`
   - changes: cry_low: cut 0.0-0.86 s, pitched -3 semitones, filtered, faded, loudness normalized
@@ -66,4 +81,4 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## Line for the credits players see
 
-Sounds: KVV_Audio (Freesound), ebcrosby (Freesound), newagesoup (Freesound), oldestmillennial (Freesound), straget (Freesound).
+Sounds: InspectorJ (Freesound), KVV_Audio (Freesound), TRNGLE (Freesound), ebcrosby (Freesound), newagesoup (Freesound), oldestmillennial (Freesound), straget (Freesound).

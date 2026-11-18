@@ -263,6 +263,81 @@
    ],
    "changes": "accuse_angry: cut 0.15-1.3 s, filtered, faded, loudness normalized",
    "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 436540,
+   "title": "Short Sharp Meow",
+   "author": "Mafon2",
+   "author_url": "https://freesound.org/people/Mafon2/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Mafon2/sounds/436540/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_sharp.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_sharp: cut 0.02-0.26 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 415209,
+   "title": "Cat, Screaming, A.wav",
+   "author": "InspectorJ",
+   "author_url": "https://freesound.org/people/InspectorJ/",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "url": "https://freesound.org/people/InspectorJ/sounds/415209/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_pain.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_pain: cut 0.35-0.95 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 368012,
+   "title": "Meow 6.wav",
+   "author": "TRNGLE",
+   "author_url": "https://freesound.org/people/TRNGLE/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/TRNGLE/sounds/368012/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_mrrp.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_mrrp: cut 0.5-0.71 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 368011,
+   "title": "Meow 8.wav",
+   "author": "TRNGLE",
+   "author_url": "https://freesound.org/people/TRNGLE/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/TRNGLE/sounds/368011/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_growl.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_growl: cut 0.12-0.55 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 368007,
+   "title": "Meow 3.wav",
+   "author": "TRNGLE",
+   "author_url": "https://freesound.org/people/TRNGLE/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/TRNGLE/sounds/368007/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_plaint.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_plaint: cut 0.29-0.75 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
   }
  ]
 }

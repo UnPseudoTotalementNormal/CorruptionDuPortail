@@ -99,6 +99,20 @@
      ],
      "start": 0.03,
      "volume": -4
+    },
+    {
+     "name": "Cat cry",
+     "files": [
+      "SoundMaker/cat-fall/fall_cry_sharp.wav",
+      "SoundMaker/cat-fall/fall_cry_pain.wav",
+      "SoundMaker/cat-fall/fall_cry_mrrp.wav",
+      "SoundMaker/cat-fall/fall_cry_growl.wav",
+      "SoundMaker/cat-fall/fall_cry_plaint.wav"
+     ],
+     "start": 0.03,
+     "volume": 0,
+     "pitch_random": 1,
+     "volume_random": 1.5
     }
    ]
   },

@@ -13,7 +13,8 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public class CustomButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+    public class CustomButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler,
+        CatPaw.ICursorHint
     {
         private Color baseColor;
         [SerializeField] private Color hoverColor = new Color(0.8f , 0.8f, 0.8f, 1);
@@ -52,6 +53,9 @@ namespace UI
             Interactable = _interactable;
             if (panelImage != null) panelImage.DOColor(RestColor, 0.2f).SetLink(gameObject);
         }
+
+        /// <summary>The cat paw: claws while it clicks, the cross while greyed out.</summary>
+        public CatPaw.CursorHint CursorHint => Interactable ? CatPaw.CursorHint.Clickable : CatPaw.CursorHint.Refused;
 
         private Color RestColor => Interactable ? baseColor : disabledColor;
 

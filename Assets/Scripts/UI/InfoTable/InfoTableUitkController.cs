@@ -294,6 +294,7 @@ namespace UI.InfoTable
                 // Container tile holds the faction ICON (or a "?" text fallback for Inconnu / iconless faction).
                 var camp = new VisualElement();
                 camp.AddToClassList(CampCellClass);
+                camp.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
                 int piCamp = pi;
                 // Manual cycle only while the row isn't found — a found row's camp is auto-derived (locked).
                 camp.RegisterCallback<ClickEvent>(_ =>
@@ -373,6 +374,7 @@ namespace UI.InfoTable
             int pi = playerIndex;
             int ri = roleIndex;
             CellState s = state;
+            seg.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             seg.RegisterCallback<ClickEvent>(_ =>
             {
                 Diagnostics.Logs.GameLog.Info("ui", "ui.infotable.cell", "row", pi, "col", ri, "state", s);

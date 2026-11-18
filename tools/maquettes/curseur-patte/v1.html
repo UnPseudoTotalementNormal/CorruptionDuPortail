@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le curseur devient une patte de chat</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cp-bg { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 800px 450px; transition: transform .35s ease-in-out; }
+  .cp-stage { cursor: none; touch-action: none; }
+  .cp-paw { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .6)); }
+  .cp-paw.cp-hide { display: none; }
+  .cp-arrow { position: absolute; left: 0; top: 0; width: 22px; pointer-events: none; z-index: 5; }
+  .cp-sq { position: absolute; left: 794px; top: 444px; width: 12px; height: 12px; pointer-events: none; z-index: 5; transition: transform .08s; }
+  .cp-dot { position: absolute; left: 796px; top: 446px; width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .7); pointer-events: none; z-index: 5; } /* slop-ok: a round dot, not a pill */
+  .cp-hl { position: absolute; pointer-events: none; box-shadow: 0 0 0 3px #ffcb3c, 0 0 18px rgba(255, 203, 60, .6); opacity: 0; transition: opacity .12s; }
+  .cp-hl.on { opacity: 1; }
+  .cp-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cp-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .cp-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .cp-legend { display: flex; gap: 22px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .cp-legend figure { margin: 0; text-align: center; color: var(--soft); font-size: 14px; }
+  .cp-legend img { height: 64px; display: block; margin: 0 auto 4px; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Le curseur devient une patte de chat</h1>
+  <p><b>La demande.</b> Remplacer le curseur de la souris par les pattes de chat que Wouh a dessinées (fil T9, 15/11), et en vue assise remplacer le carré blanc du centre par la patte.</p>
+  <div class="cp-legend">
+    <figure><img src="img/patte_idle.png" alt="">patte</figure>
+    <figure><img src="img/patte_griffes.png" alt="">griffes</figure>
+    <figure><img src="img/patte_clic.png" alt="">appuyée</figure>
+    <figure><img src="img/patte_interdit.png" alt="">croix</figure>
+  </div>
+  <p><b>Référence.</b> Les jeux à curseur dessiné changent d'image selon ce qu'il y a dessous : Diablo et Hades (main ou épée qui s'allume sur un ennemi), Inscryption (main qui se ferme en prenant une carte), Stardew Valley (gant, puis main ouverte sur ce qui se ramasse, rouge sur ce qui est refusé). En vue à la première personne (Inscryption, Phasmophobia), le point du centre change de forme seulement sur ce qui se prend.</p>
+  <p><b>Aujourd'hui.</b> Souris libre (menus, salon, tablette, vue de nuit) : la flèche de Windows. Vue assise : la souris est verrouillée, un carré blanc de 12 px au centre, qui grossit et jaunit sur une carte ou un bouton.</p>
+  <p><b>La scène.</b> Nuit, 8 joueurs, le Mage occulte cherche qui viser avec la souris ; le lendemain, au vote, il tourne la tête vers une carte en vue assise.</p>
+  <p><b>Sans question.</b> Le bout de l'orteil en haut à gauche est le point qui clique, comme la pointe d'une flèche. La patte vaut partout où la souris est libre, menus compris. Les images de Wouh, détourées, restent provisoires : il pourra les remplacer sans toucher au code.</p>
+  <p>Passe la souris (ou le doigt) sur les écrans : la patte suit et réagit pour de vrai.</p>
+</header>
+
+<div class="cp-bar">
+  <span>Moment :</span>
+  <button data-m="repos" class="on">Au repos</button><button data-m="survol">Sur une carte</button><button data-m="clic">Clic</button><button data-m="refus">Sur ce qui est refusé</button>
+</div>
+
+<section>
+  <h2>Souris libre : quelles pattes ?</h2>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">La flèche de Windows.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="arrow"></div></div>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Une seule patte</span></div>
+    <p class="vdesc">La patte au repos partout, elle ne change jamais. Ce qui se clique se montre seul (contour jaune), comme aujourd'hui.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="1"></div></div>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Patte, appuyée au clic</span></div>
+    <p class="vdesc">La patte au repos ; au clic, la patte appuyée avec ses traits jaunes, un court instant.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="2"></div></div>
+  </div>
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Les quatre pattes (par défaut)</span></div>
+    <p class="vdesc">Griffes sorties sur ce qui se clique, appuyée au clic, croix sur ce qui ne se clique pas maintenant (pouvoir épuisé, sa propre carte quand le pouvoir ne la vise pas).</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="4"></div></div>
+  </div>
+  <div class="variant" data-id="C4">
+    <div class="vhead"><span class="vid">C4</span><span class="vname">Griffes seulement pour viser un joueur</span></div>
+    <p class="vdesc">Les griffes sortent seulement sur une carte qu'un pouvoir peut viser ; sur un bouton ou un menu, la patte reste au repos. Appuyée au clic, croix sur le refusé.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="4cards"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Vue assise : que devient le carré blanc ?</h2>
+  <div class="variant" data-id="R0">
+    <div class="vhead"><span class="vid">R0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Carré blanc, plus gros et jaune sur une carte ou un bouton.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="reticle" data-set="square"></div></div>
+  </div>
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Patte tout le temps (par défaut)</span></div>
+    <p class="vdesc">Le carré devient la patte, toujours là. Sur ce qui se prend, elle sort les griffes ; au clic, elle appuie.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="reticle" data-set="paw"></div></div>
+  </div>
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Petit point, patte au survol</span></div>
+    <p class="vdesc">Au repos un petit point rond qui ne cache rien ; la patte griffes sorties apparaît seulement sur ce qui se prend.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="reticle" data-set="dot"></div></div>
+  </div>
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Rien au repos, patte au survol</span></div>
+    <p class="vdesc">L'écran est vide quand on regarde les chats ; la patte n'apparaît que sur ce qui se prend.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="reticle" data-set="none"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Quelle taille ?</h2>
+  <p>Pour la souris comme pour la vue assise. Tailles sur un écran 1080p.</p>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Petite, 32 px</span></div>
+    <p class="vdesc">La taille d'une flèche de Windows.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="4" data-size="32"></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Moyenne, 48 px (par défaut)</span></div>
+    <p class="vdesc">On voit la patte sans qu'elle cache le nom d'une carte.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="4" data-size="48"></div></div>
+  </div>
+  <div class="variant" data-id="T3">
+    <div class="vhead"><span class="vid">T3</span><span class="vname">Grande, 64 px</span></div>
+    <p class="vdesc">On lit bien les griffes et la croix, elle couvre un bout de carte.</p>
+    <div class="screen"><div class="stage cp-stage" data-kind="cursor" data-set="4" data-size="64"></div></div>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque sur l'ensemble ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  const IMG = { idle: "img/patte_idle.png", griffes: "img/patte_griffes.png", clic: "img/patte_clic.png", interdit: "img/patte_interdit.png" };
+  // Source sizes (px) and the click point (the top-left toe tip) in each image.
+  const SRC = { idle: [392, 376, 34, 58], griffes: [422, 387, 52, 92], clic: [470, 383, 62, 160], interdit: [390, 374, 34, 58] };
+  const K1080 = 900 / 1080; // stage px per 1080p px
+  const ARROW = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 19"><path d="M1 1v15l3.6-3.4 2.4 5.4 2.2-1-2.4-5.3H12z" fill="#fff" stroke="#000" stroke-width="1"/></svg>');
+
+  // Night top view (1280x720 capture scaled 1.25): cards and the end-of-turn button.
+  const s = 1.25;
+  const nightCards = [268, 395, 520, 646, 771, 897].map((x, i) => ({ x: x * s, y: 205 * s, w: 115 * s, h: 158 * s, ok: i !== 3, card: true }))
+    .concat([520, 646].map(x => ({ x: x * s, y: 427 * s, w: 115 * s, h: 158 * s, ok: true, card: true })));
+  const nightBtn = { x: 1044 * s, y: 650 * s, w: 66 * s, h: 70 * s, ok: true, card: false };
+  const nightTargets = nightCards.concat([nightBtn]);
+  // Fixed pointer positions per key moment (night view).
+  const MOM_CURSOR = { repos: [560, 560], survol: [610, 330], clic: [610, 330], refus: [880, 330] };
+
+  const stages = [...document.querySelectorAll(".cp-stage")];
+  let moment = "repos";
+  const live = new Map(); // stage -> {x, y, down}
+
+  function build(st) {
+    const kind = st.dataset.kind;
+    const bg = document.createElement("img");
+    bg.className = "cp-bg";
+    bg.src = kind === "cursor" ? "img/nuit.jpg" : "img/vote.jpg";
+    st.appendChild(bg);
+    const hl = document.createElement("div");
+    hl.className = "cp-hl";
+    st.appendChild(hl);
+    st._hl = hl; st._bg = bg;
+    if (st.dataset.set === "arrow") {
+      const a = document.createElement("img"); a.className = "cp-arrow"; a.src = ARROW; st.appendChild(a); st._arrow = a;
+    } else if (st.dataset.set === "square") {
+      const q = document.createElement("div"); q.className = "cp-sq"; st.appendChild(q); st._sq = q;
+    } else {
+      if (st.dataset.set === "dot") { const d = document.createElement("div"); d.className = "cp-dot"; st.appendChild(d); st._dot = d; }
+      const p = document.createElement("img"); p.className = "cp-paw"; st.appendChild(p); st._paw = p;
+    }
+    const pos = e => {
+      const r = st.getBoundingClientRect(), k = r.width / 1600;
+      return [(e.clientX - r.left) / k, (e.clientY - r.top) / k];
+    };
+    st.addEventListener("pointermove", e => { const l = live.get(st) || {}; [l.x, l.y] = pos(e); live.set(st, l); draw(st); });
+    st.addEventListener("pointerdown", e => {
+      const l = live.get(st) || {}; [l.x, l.y] = pos(e); l.down = true; live.set(st, l); draw(st);
+      clearTimeout(st._t); st._t = setTimeout(() => { l.down = false; draw(st); }, 180);
+    });
+    st.addEventListener("pointerleave", () => { live.delete(st); draw(st); });
+  }
+
+  function hit(x, y) { return nightTargets.find(t => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h); }
+
+  function pawState(set, target, down) {
+    if (set === "1") return "idle";
+    if (set === "2") return down ? "clic" : "idle";
+    if (!target) return "idle";
+    if (!target.ok) return "interdit";
+    if (down) return "clic";
+    if (set === "4cards" && !target.card) return "idle";
+    return "griffes";
+  }
+
+  function placePaw(img, state, x, y, sizePx) {
+    const [w, h, hx, hy] = SRC[state];
+    const k = (sizePx * K1080) / SRC.idle[1]; // every state scaled like the idle paw (same paw size)
+    img.src = IMG[state];
+    img.style.width = (w * k) + "px";
+    img.style.left = (x - hx * k) + "px";
+    img.style.top = (y - hy * k) + "px";
+  }
+
+  function draw(st) {
+    const kind = st.dataset.kind, set = st.dataset.set, size = +(st.dataset.size || 48);
+    const l = live.get(st);
+    if (kind === "cursor") {
+      let x, y, down;
+      if (l) { x = l.x; y = l.y; down = l.down; } else { [x, y] = MOM_CURSOR[moment]; down = moment === "clic"; }
+      const t = hit(x, y);
+      st._hl.classList.toggle("on", !!(t && t.ok));
+      if (t) Object.assign(st._hl.style, { left: t.x + "px", top: t.y + "px", width: t.w + "px", height: t.h + "px" });
+      if (st._arrow) { st._arrow.style.left = x + "px"; st._arrow.style.top = y + "px"; return; }
+      placePaw(st._paw, pawState(set, t, down), x, y, size);
+      return;
+    }
+    // Seated view: the head turns, the aim stays at the centre. Live pointer = where the head looks.
+    let down, refused = false, sx, sy;
+    const MOM_HEAD = { repos: [0, 180], survol: [-100, 0], clic: [-100, 0], refus: [240, 0] };
+    if (l) { sx = (800 - l.x) * 0.3; sy = (450 - l.y) * 0.3; down = l.down; }
+    else { [sx, sy] = MOM_HEAD[moment]; down = moment === "clic"; refused = moment === "refus"; }
+    st._bg.style.transform = `scale(1.45) translate(${sx}px, ${sy}px)`;
+    // Image point under the centre (scale is around the centre): p = centre - shift.
+    const cx = 800 - sx, cy = 450 - sy;
+    // Cards in vote.jpg: top row (y 375-525), bottom row (y 570-790). The first two (revealed, own side) refuse.
+    const cards = [[205, 385, 375, 525, 0], [400, 590, 375, 525, 0], [607, 790, 375, 525, 1], [808, 990, 375, 525, 1],
+      [1010, 1190, 375, 525, 1], [1210, 1395, 375, 525, 1], [552, 788, 570, 790, 1], [812, 1048, 570, 790, 1]];
+    const c = cards.find(([a, b, t, u]) => cx >= a && cx <= b && cy >= t && cy <= u);
+    const over = !!c;
+    if (l && c && !c[4]) refused = true;
+    const state = !over ? "idle" : (refused ? "interdit" : (down ? "clic" : "griffes"));
+    if (st._sq) {
+      st._sq.style.background = over ? "#ffd94d" : "rgba(255,255,255,.7)";
+      st._sq.style.transform = over ? "scale(1.6)" : "none";
+      return;
+    }
+    const show = set === "paw" || over;
+    st._paw.classList.toggle("cp-hide", !show);
+    if (st._dot) st._dot.style.display = over ? "none" : "block";
+    if (show) placePaw(st._paw, set === "paw" ? state : (state === "idle" ? "griffes" : state), 800, 450, size);
+  }
+
+  if (new URLSearchParams(location.search).get("only")) document.head.insertAdjacentHTML("beforeend", "<style>.cp-bg{transition:none!important}</style>");
+  stages.forEach(build);
+  stages.forEach(draw);
+
+  const bar = document.querySelector(".cp-bar");
+  function setMoment(m) {
+    moment = m;
+    bar.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+    stages.forEach(draw);
+  }
+  bar.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setMoment(b.dataset.m); });
+  const at = new URLSearchParams(location.search).get("m");
+  if (at) setMoment(at);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La chute de l'enchaîné, plusieurs sons (tour 3)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+  .bs-film-box { position: sticky; top: 64px; z-index: 4; background: #0d0b09; border-radius: 6px; margin: 0 0 18px; }
+  .bs-film-box video { display: block; width: 100%; max-width: 960px; margin: 0 auto; }
+</style>
+</head>
+<body data-subject="t19-sons">
+
+<header class="page">
+  <h1>La chute de l'enchaîné, plusieurs sons (tour 3)</h1>
+  <p><b>Aujourd'hui :</b> quand le chat enchaîné s'écrase au sol (5,21 s), le jeu joue toujours le même son, I3
+     « Écrasé », choisi au tour 2.</p>
+  <p><b>Ce qui change :</b> à chaque enchaînement, le jeu tire une chute au hasard parmi celles que tu gardes, et la
+     fait varier un peu de hauteur. Mets 👍 à toutes celles à garder (I3 compris si tu veux le garder) : elles
+     entrent toutes dans le tirage.</p>
+  <p><b>Sans question :</b> chaque chute est un corps qui tombe, un écrasement mou et des chaînes qui touchent le sol,
+     pris à des sons différents. Même volume que I3. Les autres moments de la scène restent ceux du tour 2. Sons de
+     Freesound, CC0 ou CC BY (crédités).</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" id="bs-random">▶ La scène, une chute au hasard</button>
+  <button class="bs-play" id="bs-five">▶ Cinq chutes au hasard de suite</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<div class="bs-film-box"><video id="film" src="audio/scene.mp4" muted playsinline preload="auto"></video></div>
+
+<section>
+  <h2>Les chutes à garder</h2>
+  <div class="variant" data-id="I3">
+    <div class="vhead"><span class="vid">I3</span><span class="vname">Écrasé (actuel)</span></div>
+    <button class="bs-play bs-film" data-take="I3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/I3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/I3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Bertsz/sounds/500912/" target="_blank">Squish impact</a>, Bertsz, CC0 ;
+       <a href="https://freesound.org/people/000600/sounds/187136/" target="_blank">BodyFall.wav</a>, 000600, CC0 ;
+       <a href="https://freesound.org/people/Logicogonist/sounds/799421/" target="_blank">chaindrop 1</a>, Logicogonist, CC0</p>
+  </div>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Lourd dans la terre</span></div>
+    <button class="bs-play bs-film" data-take="K1">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K1.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/leonelmail/sounds/504626/" target="_blank">BODY FALL - V HVY - DIRT</a>, leonelmail, CC0 ;
+       <a href="https://freesound.org/people/nebulasnails/sounds/495118/" target="_blank">Wet Splat 1.mp3</a>, nebulasnails, CC0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167373/" target="_blank">Steel chain being dropped</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Sur le plancher, menottes</span></div>
+    <button class="bs-play bs-film" data-take="K2">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K2.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Breviceps/sounds/447922/" target="_blank">Thud / Falling on wooden floor</a>, Breviceps, CC0 ;
+       <a href="https://freesound.org/people/HonorHunter/sounds/271666/" target="_blank">Tomato squish;wet.wav</a>, HonorHunter, CC0 ;
+       <a href="https://freesound.org/people/zaqqazlowell/sounds/581268/" target="_blank">shackles.wav</a>, zaqqazlowell, CC0</p>
+  </div>
+  <div class="variant" data-id="K3">
+    <div class="vhead"><span class="vid">K3</span><span class="vname">Tout mou, façon dessin animé</span></div>
+    <button class="bs-play bs-film" data-take="K3">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K3.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/BewareOfTheElmo/sounds/739009/" target="_blank">Limp Mass Hit Floor</a>, BewareOfTheElmo, CC BY 4.0 ;
+       <a href="https://freesound.org/people/Breviceps/sounds/445118/" target="_blank">Cartoon - Splat!</a>, Breviceps, CC0 ;
+       <a href="https://freesound.org/people/KVV_Audio/sounds/798137/" target="_blank">Chain Metal Rattle 01</a>, KVV_Audio, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="K4">
+    <div class="vhead"><span class="vid">K4</span><span class="vname">Chute sourde, chaînes qui traînent</span></div>
+    <button class="bs-play bs-film" data-take="K4">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K4.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/courtneyeck/sounds/673424/" target="_blank">Falling body hits the floor</a>, courtneyeck, CC0 ;
+       <a href="https://freesound.org/people/Breviceps/sounds/447929/" target="_blank">Step on a slug (Splat!) 1</a>, Breviceps, CC0 ;
+       <a href="https://freesound.org/people/ani_music/sounds/167372/" target="_blank">Steel chain being dropped and dragged</a>, ani_music, CC0</p>
+  </div>
+  <div class="variant" data-id="K5">
+    <div class="vhead"><span class="vid">K5</span><span class="vname">Effondré, chaînes en cascade</span></div>
+    <button class="bs-play bs-film" data-take="K5">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K5.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K5.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Kneeling/sounds/502553/" target="_blank">goblin-fall.mp3</a>, Kneeling, CC0 ;
+       <a href="https://freesound.org/people/Bertsz/sounds/500912/" target="_blank">Squish impact</a>, Bertsz, CC0 ;
+       <a href="https://freesound.org/people/Kneeling/sounds/643863/" target="_blank">pickingchain.ogg</a>, Kneeling, CC0</p>
+  </div>
+  <div class="variant" data-id="K6">
+    <div class="vhead"><span class="vid">K6</span><span class="vname">Plus léger, plus aigu</span></div>
+    <button class="bs-play bs-film" data-take="K6">▶ Sur la vidéo</button> <button class="bs-play" data-src="audio/K6.ogg">▶ Seul</button>
+    <img class="bs-wave" src="audio/K6.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/deleted_user_2104797/sounds/346694/" target="_blank">Body fall_02.wav</a>, deleted_user_2104797, CC0 ;
+       <a href="https://freesound.org/people/nebulasnails/sounds/495118/" target="_blank">Wet Splat 1.mp3</a>, nebulasnails, CC0 ;
+       <a href="https://freesound.org/people/Logicogonist/sounds/799421/" target="_blank">chaindrop 1</a>, Logicogonist, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Une chute à chercher ailleurs, une autre idée ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicNode.connect(audio().destination); musicNode.start(); return 0.8;
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  // rate: the game's random pitch (about one semitone either way)
+  async function play(src, at, rate) {
+    const buf = await load(src), node = audio().createBufferSource();
+    node.buffer = buf; node.playbackRate.value = rate || 1; node.connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration / (rate || 1);
+  }
+  const jitter = () => Math.pow(2, (Math.random() * 2 - 1) / 12);
+  // The pool: every take with a 👍, else all of them.
+  const pool = () => {
+    const all = [...document.querySelectorAll(".variant[data-id]")].map(v => v.dataset.id);
+    const kept = all.filter(id => document.querySelector('.variant[data-id="' + id + '"] .vote .like.on'));
+    return kept.length ? kept : all;
+  };
+  const pick = () => { const p = pool(); return p[Math.floor(Math.random() * p.length)]; };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  const film = document.getElementById("film");
+  // The other beats as chosen in round 2; the reveal starts T0 into the film.
+  const T0 = 1.0, OTHERS = { L1: 0.0, R1: 4.8, G1: 5.96 }, IMPACT = 5.21;
+  function stopFilm() { stopAll(); film.pause(); }
+  document.getElementById("bs-stop").onclick = stopFilm;
+  async function scene(take, rate) {
+    audio().resume(); stopFilm();
+    await startMusic();
+    film.currentTime = 0; await film.play();
+    const now = audio().currentTime - film.currentTime, at = t => Math.max(0, now + T0 + t - audio().currentTime);
+    for (const k in OTHERS) play("audio/" + k + ".ogg", at(OTHERS[k]));
+    play("audio/" + take + ".ogg", at(IMPACT), rate);
+  }
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume(); stopFilm();
+    play(b.dataset.src, await startMusic());
+  });
+  document.querySelectorAll(".bs-film").forEach(b => b.onclick = () => scene(b.dataset.take, 1));
+  document.getElementById("bs-random").onclick = () => scene(pick(), jitter());
+  document.getElementById("bs-five").onclick = async () => {
+    audio().resume(); stopFilm();
+    let t = await startMusic();
+    for (let i = 0; i < 5; i++) t += await play("audio/" + pick() + ".ogg", t, jitter()) + 1.0;
+  };
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

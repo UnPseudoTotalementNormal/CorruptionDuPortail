@@ -1,5 +1,5 @@
 {
- "why": "Board T3 (Poyo 2026-11-18): the chained cat also cries when it crashes on the floor, several cries drawn at random so the moment never repeats, on top of the impact I3 kept from round 2. Picked by ear on tools/maquettes/t19-sons/v4.html (2026-11-18, 'c'est nickel': all five, level as is). Round 3 (v3, other impacts replacing I3) was a misunderstanding.",
+ "why": "Board T3 (Poyo 2026-11-18): the chained cat also cries when it crashes on the floor, several cries drawn at random so the moment never repeats, on top of the impact I3 kept from round 2. Picked by ear on tools/maquettes/t19-sons/v4.html (2026-11-18, Y1 sharp meow, Y2 pained scream, Y4 vexed growl, V2 level as is). Round 3 (v3, other impacts replacing I3) was a misunderstanding.",
  "out": "FMODProject/Corrupted/Assets/SoundMaker/cat-fall",
  "sounds": [
   {
@@ -35,22 +35,6 @@
    "event": "event:/Interface/ChainSplat"
   },
   {
-   "name": "fall_cry_mrrp",
-   "category": "cat",
-   "mono": true,
-   "layers": [
-    {
-     "src": "../work/cat-fall/raw/fs368012.ogg",
-     "start": 0.5,
-     "end": 0.71,
-     "fade_in": 0.01,
-     "fade_out": 0.06999999999999999,
-     "highpass": 200
-    }
-   ],
-   "event": "event:/Interface/ChainSplat"
-  },
-  {
    "name": "fall_cry_growl",
    "category": "cat",
    "mono": true,
@@ -61,22 +45,6 @@
      "end": 0.55,
      "fade_in": 0.01,
      "fade_out": 0.14333333333333334,
-     "highpass": 200
-    }
-   ],
-   "event": "event:/Interface/ChainSplat"
-  },
-  {
-   "name": "fall_cry_plaint",
-   "category": "cat",
-   "mono": true,
-   "layers": [
-    {
-     "src": "../work/cat-fall/raw/fs368007.ogg",
-     "start": 0.29,
-     "end": 0.75,
-     "fade_in": 0.01,
-     "fade_out": 0.15333333333333335,
      "highpass": 200
     }
    ],

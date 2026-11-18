@@ -194,7 +194,10 @@ Mocking up another app than the session's: with that app's maquettes skill, in i
   silently.
 - Nothing new in `retours.txt` while he says he voted: do not code; look at
   `tools/maquettes/retours.log` (received, ignored, in which folder) and `/qui`, tell him, and ask
-  what the button says (the text to paste if it is there).
+  what the button says (the text to paste if it is there). « C'est nickel » with no send read is not a
+  vote either: never guess « all of them » (2026-11-18, his 👍 landed in the main checkout's file a moment
+  later, two cries he had left out went into the game). A subject that exists in the main checkout gets its
+  `retours.txt` there, even when the page is served from a worktree: read both.
 
 **Rounds that go fast**
 - A round of edits shows again only what is still open, the choices made already in (said at the top).

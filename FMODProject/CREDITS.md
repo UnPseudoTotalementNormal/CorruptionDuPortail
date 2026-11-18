@@ -6,12 +6,6 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## CC BY 3.0
 
-- **[Meow 3.wav](https://freesound.org/people/TRNGLE/sounds/368007/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
-  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_plaint.wav (event:/Interface/ChainSplat)`
-  - changes: fall_cry_plaint: cut 0.29-0.75 s, filtered, faded, loudness normalized
-- **[Meow 6.wav](https://freesound.org/people/TRNGLE/sounds/368012/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
-  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_mrrp.wav (event:/Interface/ChainSplat)`
-  - changes: fall_cry_mrrp: cut 0.5-0.71 s, filtered, faded, loudness normalized
 - **[Meow 8.wav](https://freesound.org/people/TRNGLE/sounds/368011/)** by [TRNGLE](https://freesound.org/people/TRNGLE/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_growl.wav (event:/Interface/ChainSplat)`
   - changes: fall_cry_growl: cut 0.12-0.55 s, filtered, faded, loudness normalized

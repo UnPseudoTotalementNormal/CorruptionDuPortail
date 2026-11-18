@@ -105,9 +105,7 @@
      "files": [
       "SoundMaker/cat-fall/fall_cry_sharp.wav",
       "SoundMaker/cat-fall/fall_cry_pain.wav",
-      "SoundMaker/cat-fall/fall_cry_mrrp.wav",
-      "SoundMaker/cat-fall/fall_cry_growl.wav",
-      "SoundMaker/cat-fall/fall_cry_plaint.wav"
+      "SoundMaker/cat-fall/fall_cry_growl.wav"
      ],
      "start": 0.03,
      "volume": 0,

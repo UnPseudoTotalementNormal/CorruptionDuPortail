@@ -188,6 +188,81 @@
    ],
    "changes": "cloth: cut 0.45-1.6 s, filtered, faded, loudness normalized",
    "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 334434,
+   "title": "Cat single meow 2",
+   "author": "ebcrosby",
+   "author_url": "https://freesound.org/people/ebcrosby/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/ebcrosby/sounds/334434/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/meow.wav (event:/Cats/Meow)"
+   ],
+   "changes": "meow: cut 0.26-0.98 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 64015,
+   "title": "kitten20.wav",
+   "author": "Department64",
+   "author_url": "https://freesound.org/people/Department64/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Department64/sounds/64015/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_whimper.wav (event:/Cats/Cry)"
+   ],
+   "changes": "cry_whimper: cut 0.0-0.88 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 156643,
+   "title": "catmeow1",
+   "author": "Yoyodaman234",
+   "author_url": "https://freesound.org/people/Yoyodaman234/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Yoyodaman234/sounds/156643/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_low.wav (event:/Cats/Cry)"
+   ],
+   "changes": "cry_low: cut 0.0-0.86 s, pitched -3 semitones, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 146963,
+   "title": "catHisses1.wav",
+   "author": "Zabuhailo",
+   "author_url": "https://freesound.org/people/Zabuhailo/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Zabuhailo/sounds/146963/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_hiss.wav (event:/Cats/Accuse)"
+   ],
+   "changes": "accuse_hiss: cut 0.25-1.3 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 350411,
+   "title": "Angry Cat Meow",
+   "author": "bevibeldesign",
+   "author_url": "https://freesound.org/people/bevibeldesign/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/bevibeldesign/sounds/350411/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_angry.wav (event:/Cats/Accuse)"
+   ],
+   "changes": "accuse_angry: cut 0.15-1.3 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
   }
  ]
 }

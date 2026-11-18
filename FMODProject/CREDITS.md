@@ -6,6 +6,9 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## CC BY 3.0
 
+- **[Cat single meow 2](https://freesound.org/people/ebcrosby/sounds/334434/)** by [ebcrosby](https://freesound.org/people/ebcrosby/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/meow.wav (event:/Cats/Meow)`
+  - changes: meow: cut 0.26-0.98 s, filtered, faded, loudness normalized
 - **[Dark Teleport.wav](https://freesound.org/people/oldestmillennial/sounds/533025/)** by [oldestmillennial](https://freesound.org/people/oldestmillennial/) (Freesound, [license](https://creativecommons.org/licenses/by/3.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/rise_dark.wav (event:/Interface/ChainLift)`
   - changes: rise_dark: cut 2.0-4.3 s, filtered, faded, loudness normalized
@@ -30,15 +33,27 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 - **[Squish impact](https://freesound.org/people/Bertsz/sounds/500912/)** by [Bertsz](https://freesound.org/people/Bertsz/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/squish.wav (event:/Interface/ChainSplat)`
   - changes: squish: cut 0.13-1.0 s, filtered, faded, loudness normalized
+- **[kitten20.wav](https://freesound.org/people/Department64/sounds/64015/)** by [Department64](https://freesound.org/people/Department64/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_whimper.wav (event:/Cats/Cry)`
+  - changes: cry_whimper: cut 0.0-0.88 s, filtered, faded, loudness normalized
 - **[Candle flame flickers, blown out](https://freesound.org/people/DeqstersLab/sounds/826338/)** by [DeqstersLab](https://freesound.org/people/DeqstersLab/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/vote-candle/candle_snuff.wav (event:/Interface/VoteCandleSnuff)`
   - changes: candle_snuff: cut 1.05-2.05 s, filtered, faded, loudness normalized
 - **[chaindrop 1](https://freesound.org/people/Logicogonist/sounds/799421/)** by [Logicogonist](https://freesound.org/people/Logicogonist/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_drop2.wav (event:/Interface/ChainSplat)`
   - changes: chain_drop2: cut 0.0-0.9 s, filtered, faded, loudness normalized
+- **[catmeow1](https://freesound.org/people/Yoyodaman234/sounds/156643/)** by [Yoyodaman234](https://freesound.org/people/Yoyodaman234/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_low.wav (event:/Cats/Cry)`
+  - changes: cry_low: cut 0.0-0.86 s, pitched -3 semitones, filtered, faded, loudness normalized
+- **[catHisses1.wav](https://freesound.org/people/Zabuhailo/sounds/146963/)** by [Zabuhailo](https://freesound.org/people/Zabuhailo/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_hiss.wav (event:/Cats/Accuse)`
+  - changes: accuse_hiss: cut 0.25-1.3 s, filtered, faded, loudness normalized
 - **[Steel chain being dropped and dragged on a cardboard box](https://freesound.org/people/ani_music/sounds/167372/)** by [ani_music](https://freesound.org/people/ani_music/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/chain-reveal/chain_slack.wav (event:/Interface/ChainRelease)`
   - changes: chain_slack: cut 0.0-0.66 s, filtered, faded, loudness normalized
+- **[Angry Cat Meow](https://freesound.org/people/bevibeldesign/sounds/350411/)** by [bevibeldesign](https://freesound.org/people/bevibeldesign/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
+  - used in: `FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_angry.wav (event:/Cats/Accuse)`
+  - changes: accuse_angry: cut 0.15-1.3 s, filtered, faded, loudness normalized
 - **[Match Ignite (No Strike)](https://freesound.org/people/brachern/sounds/398448/)** by [brachern](https://freesound.org/people/brachern/) (Freesound, [license](https://creativecommons.org/publicdomain/zero/1.0/))
   - used in: `FMODProject/Corrupted/Assets/SoundMaker/vote-candle/candle_ignite.wav (event:/Interface/VoteCandleIgnite)`
   - changes: candle_ignite: cut 0.0-0.75 s, filtered, faded, loudness normalized
@@ -51,4 +66,4 @@ it was changed. CC BY sounds must keep their line in the credits players see.
 
 ## Line for the credits players see
 
-Sounds: KVV_Audio (Freesound), newagesoup (Freesound), oldestmillennial (Freesound), straget (Freesound).
+Sounds: KVV_Audio (Freesound), ebcrosby (Freesound), newagesoup (Freesound), oldestmillennial (Freesound), straget (Freesound).

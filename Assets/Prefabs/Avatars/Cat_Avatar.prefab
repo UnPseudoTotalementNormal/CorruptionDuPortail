@@ -992,6 +992,7 @@ GameObject:
   - component: {fileID: 4055872417862776525}
   - component: {fileID: 4646036212626112835}
   - component: {fileID: 4143377294341683634}
+  - component: {fileID: 6138799007198787635}
   m_Layer: 0
   m_Name: Cat_Avatar
   m_TagString: Untagged
@@ -1243,6 +1244,42 @@ MonoBehaviour:
   _pitchLimit: 40
   _aimEaseSpeed: 12
   _fadeSeconds: 0.35
+--- !u!114 &6138799007198787635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2649580169876941965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f81a3ff20fc808943ab65cd47aef501c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::Avatars.CatVoice
+  animator: {fileID: 3870855746124023605}
+  meow:
+    Guid:
+      Data1: -1620498265
+      Data2: 1094872289
+      Data3: 796080549
+      Data4: 579162205
+    Path: event:/Cats/Meow
+  cry:
+    Guid:
+      Data1: -1914302250
+      Data2: 1147243513
+      Data3: 1717244090
+      Data4: -220517334
+    Path: event:/Cats/Cry
+  accuse:
+    Guid:
+      Data1: -624242842
+      Data2: 1217193113
+      Data3: 181657496
+      Data4: -918888422
+    Path: event:/Cats/Accuse
+  cryEverySeconds: 4
+  accuseMaxDelay: 0.35
 --- !u!1 &2808907745388259465
 GameObject:
   m_ObjectHideFlags: 0

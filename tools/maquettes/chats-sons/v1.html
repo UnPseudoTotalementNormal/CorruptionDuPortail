@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les voix des chats (tour 1)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .bs-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+            padding: 10px 14px; margin: 0 0 18px; background: #16130f; border: 1px solid #3a3226; border-radius: 6px; }
+  .bs-bar label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .bs-play { font: inherit; font-size: 17px; padding: 10px 18px; margin: 4px 8px 4px 0; cursor: pointer;
+             background: #2a241b; color: #eadcbf; border: 1px solid #5a4c37; border-radius: 6px; }
+  .bs-play:active, .bs-play.on { background: #4a3d29; }
+  .bs-wave { display: block; width: 100%; max-width: 900px; height: 70px; margin: 6px 0 2px; opacity: .85;
+             image-rendering: auto; background: #0d0b09; border-radius: 4px; }
+  .bs-src { font-size: 14px; opacity: .7; margin: 4px 0 0; }
+  .bs-src a { color: inherit; }
+</style>
+</head>
+<body data-subject="chats-sons">
+
+<header class="page">
+  <h1>Les voix des chats (tour 1)</h1>
+  <p><b>Aujourd'hui :</b> les chats ne font aucun bruit. Chaque emote reçoit sa voix, entendue par toute la table.</p>
+  <p><b>Sans question :</b> sons de Freesound, licences CC0 ou CC BY seulement (auteurs CC BY crédités). Chacun est
+     coupé, nettoyé et mis au même volume que la bougie et l'horloge du vote. Dans le jeu, chaque lecture varie un peu
+     de hauteur pour que deux miaous ne soient jamais identiques.</p>
+</header>
+
+<div class="bs-bar">
+  <label><input type="checkbox" id="bs-music" checked> Avec la musique du jeu dessous</label>
+  <button class="bs-play" data-src="audio/clic.ogg">▶ Un clic de carte, pour comparer</button>
+  <button class="bs-play" id="bs-stop">■ Couper</button>
+</div>
+
+<section>
+  <h2>Coucou</h2>
+  <p>Le chat fait coucou : un miaou au moment où il lève la patte.</p>
+  <div class="variant" data-id="A1">
+    <div class="vhead"><span class="vid">A1</span><span class="vname">Miaou clair (par défaut)</span></div>
+    <p class="vdesc">Un miaou franc et net, de chat adulte.</p>
+    <button class="bs-play" data-src="audio/A1.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/steffcaffrey/sounds/479272/" target="_blank">New Cat Meow 1</a>, steffcaffrey, CC0</p>
+  </div>
+  <div class="variant" data-id="A2">
+    <div class="vhead"><span class="vid">A2</span><span class="vname">Miaou qui monte</span></div>
+    <p class="vdesc">Plus doux, la fin remonte comme une question.</p>
+    <button class="bs-play" data-src="audio/A2.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/nathan-osman/sounds/686775/" target="_blank">meow-1.wav</a>, nathan-osman, CC0</p>
+  </div>
+  <div class="variant" data-id="A3">
+    <div class="vhead"><span class="vid">A3</span><span class="vname">Miaou de chaton</span></div>
+    <p class="vdesc">Aigu et court, deux petites notes.</p>
+    <button class="bs-play" data-src="audio/A3.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Breviceps/sounds/448084/" target="_blank">Cute Kitten Meow</a>, Breviceps, CC0</p>
+  </div>
+  <div class="variant" data-id="A4">
+    <div class="vhead"><span class="vid">A4</span><span class="vname">Miaou rond</span></div>
+    <p class="vdesc">Plus grave et plus large.</p>
+    <button class="bs-play" data-src="audio/A4.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/A4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/ebcrosby/sounds/334434/" target="_blank">Cat single meow 2</a>, ebcrosby, CC BY 3.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Pleurer</h2>
+  <p>Le chat pleure (aussi enchaîné) : un sanglot au début, puis d'autres tant qu'il pleure.</p>
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Gémissement de chaton (par défaut)</span></div>
+    <p class="vdesc">Plaintif et aigu, le plus « triste ».</p>
+    <button class="bs-play" data-src="audio/B1.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Department64/sounds/64015/" target="_blank">kitten20.wav</a>, Department64, CC0</p>
+  </div>
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Miaou plaintif</span></div>
+    <p class="vdesc">Un long miaou qui traîne.</p>
+    <button class="bs-play" data-src="audio/B2.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Yoyodaman234/sounds/156643/" target="_blank">catmeow1</a>, Yoyodaman234, CC0</p>
+  </div>
+  <div class="variant" data-id="B3">
+    <div class="vhead"><span class="vid">B3</span><span class="vname">Pleurnichement imité</span></div>
+    <p class="vdesc">Fait par une voix humaine, très expressif.</p>
+    <button class="bs-play" data-src="audio/B3.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/qubodup/sounds/871577/" target="_blank">Sad Cat Meow (Human Made Sound)</a>, qubodup, CC0</p>
+  </div>
+  <div class="variant" data-id="B4">
+    <div class="vhead"><span class="vid">B4</span><span class="vname">Miaou plaintif, plus grave</span></div>
+    <p class="vdesc">Le B2 descendu de trois demi-tons : plus lourd, plus lent.</p>
+    <button class="bs-play" data-src="audio/B4.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/B4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Yoyodaman234/sounds/156643/" target="_blank">catmeow1</a>, Yoyodaman234, CC0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Accuser</h2>
+  <p>Le chat accuse, au moment où il pointe la patte. Après un vote public, tous ceux qui ont voté le font en même temps.</p>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Feulement (par défaut)</span></div>
+    <p class="vdesc">Le chat souffle, menaçant, sans miauler.</p>
+    <button class="bs-play" data-src="audio/C1.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/C1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/Zabuhailo/sounds/146963/" target="_blank">catHisses1.wav</a>, Zabuhailo, CC0</p>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Miaou en colère</span></div>
+    <p class="vdesc">Un miaou râpeux qui monte.</p>
+    <button class="bs-play" data-src="audio/C2.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/C2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/bevibeldesign/sounds/350411/" target="_blank">Angry Cat Meow</a>, bevibeldesign, CC0</p>
+  </div>
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">Miaou en colère puis feulement</span></div>
+    <p class="vdesc">Le C2 qui finit en souffle.</p>
+    <button class="bs-play" data-src="audio/C3.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/C3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/bevibeldesign/sounds/350411/" target="_blank">Angry Cat Meow</a>, bevibeldesign, CC0 ; <a href="https://freesound.org/people/Zabuhailo/sounds/146963/" target="_blank">catHisses1.wav</a>, Zabuhailo, CC0</p>
+  </div>
+  <div class="variant" data-id="C4">
+    <div class="vhead"><span class="vid">C4</span><span class="vname">Grognement</span></div>
+    <p class="vdesc">Un miaou bas et mécontent.</p>
+    <button class="bs-play" data-src="audio/C4.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/C4.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/TRNGLE/sounds/368006/" target="_blank">Meow 4.wav</a>, TRNGLE, CC BY 3.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Se débattre, enchaîné</h2>
+  <p>Le chat enchaîné se débat tout seul de temps en temps : un cri d'effort court.</p>
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">Cri étranglé (par défaut)</span></div>
+    <p class="vdesc">Un cri tendu, comme tiré par les chaînes.</p>
+    <button class="bs-play" data-src="audio/D1.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/D1.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/InspectorJ/sounds/415209/" target="_blank">Cat, Screaming, A.wav</a>, InspectorJ, CC BY 4.0</p>
+  </div>
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Râle d'effort</span></div>
+    <p class="vdesc">Une plainte rauque plus courte.</p>
+    <button class="bs-play" data-src="audio/D2.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/D2.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/bevibeldesign/sounds/350411/" target="_blank">Angry Cat Meow</a>, bevibeldesign, CC0</p>
+  </div>
+  <div class="variant" data-id="D3">
+    <div class="vhead"><span class="vid">D3</span><span class="vname">Cri bref</span></div>
+    <p class="vdesc">Un éclat court et aigu.</p>
+    <button class="bs-play" data-src="audio/D3.ogg">▶ Écouter</button>
+    <img class="bs-wave" src="audio/D3.png" alt="">
+    <p class="bs-src"><a href="https://freesound.org/people/InspectorJ/sounds/415209/" target="_blank">Cat, Screaming, A.wav</a>, InspectorJ, CC BY 4.0</p>
+  </div>
+</section>
+
+<section>
+  <h2>Pleurer longtemps</h2>
+  <p>Tant que le joueur garde l'emote, le chat pleure : à quel rythme reviennent les sanglots ? (le B choisi, sinon B1, sur 12 secondes)</p>
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Un seul, au début</span></div>
+    <button class="bs-play bs-cry" data-every="0">▶ 12 secondes de pleurs</button>
+  </div>
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Toutes les 4 secondes environ (par défaut)</span></div>
+    <button class="bs-play bs-cry" data-every="4">▶ 12 secondes de pleurs</button>
+  </div>
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Toutes les 2 secondes environ</span></div>
+    <button class="bs-play bs-cry" data-every="2">▶ 12 secondes de pleurs</button>
+  </div>
+</section>
+
+<section>
+  <h2>Le volume, dans la partie</h2>
+  <p>Joue les sons que tu as aimés (sinon ceux par défaut) l'un après l'autre, sur la musique du jeu.</p>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Plus discret</span></div>
+    <button class="bs-play bs-seq" data-db="-4">▶ Coucou, pleurer, accuser, se débattre</button>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Comme ça (par défaut)</span></div>
+    <button class="bs-play bs-seq" data-db="0">▶ Coucou, pleurer, accuser, se débattre</button>
+  </div>
+  <div class="variant" data-id="V3">
+    <div class="vhead"><span class="vid">V3</span><span class="vname">Plus présent</span></div>
+    <button class="bs-play bs-seq" data-db="4">▶ Coucou, pleurer, accuser, se débattre</button>
+  </div>
+</section>
+
+<section>
+  <h2>Une remarque ?</h2>
+  <textarea id="global" placeholder="Un son à chercher ailleurs, une autre idée ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  let ctx = null, musicNode = null;
+  const buffers = {}, playing = new Set();
+  const audio = () => ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const load = src => buffers[src] || (buffers[src] = fetch(src).then(r => r.arrayBuffer())
+    .then(b => new Promise((ok, ko) => audio().decodeAudioData(b, ok, ko))));
+  const music = document.getElementById("bs-music");
+  async function startMusic() {
+    if (!music.checked || musicNode) return 0;
+    const buf = await load("audio/musique.ogg");
+    musicNode = audio().createBufferSource(); musicNode.buffer = buf; musicNode.loop = true;
+    musicNode.connect(audio().destination); musicNode.start(); return 0.8;
+  }
+  function stopAll() {
+    playing.forEach(n => { try { n.stop(); } catch (e) {} }); playing.clear();
+    if (musicNode) { try { musicNode.stop(); } catch (e) {} musicNode = null; }
+  }
+  // rate: the game's random pitch (about one semitone either way)
+  async function play(src, vol, at, rate) {
+    const buf = await load(src), node = audio().createBufferSource(), g = audio().createGain();
+    node.buffer = buf; node.playbackRate.value = rate || 1; g.gain.value = vol;
+    node.connect(g).connect(audio().destination);
+    node.start(audio().currentTime + (at || 0)); playing.add(node); node.onended = () => playing.delete(node);
+    return buf.duration / (rate || 1);
+  }
+  const jitter = () => Math.pow(2, (Math.random() * 2 - 1) / 12);
+  const liked = (prefix, fallback) => {
+    const v = [...document.querySelectorAll('.variant[data-id^="' + prefix + '"]')]
+      .find(v => v.querySelector(".vote .like.on"));
+    return v ? v.dataset.id : fallback;
+  };
+  music.onchange = () => { if (!music.checked && musicNode) { musicNode.stop(); musicNode = null; } };
+  document.getElementById("bs-stop").onclick = stopAll;
+  document.querySelectorAll(".bs-play[data-src]").forEach(b => b.onclick = async () => {
+    audio().resume(); const wait = await startMusic();
+    play(b.dataset.src, 1, wait, b.dataset.src.includes("clic") ? 1 : jitter());
+  });
+  document.querySelectorAll(".bs-cry").forEach(b => b.onclick = async () => {
+    audio().resume(); const wait = await startMusic(), every = parseFloat(b.dataset.every), c = liked("B", "B1");
+    let t = wait;
+    do { await play("audio/" + c + ".ogg", 1, t, jitter()); t += every + (Math.random() - 0.5); } while (every > 0 && t < wait + 12);
+  });
+  document.querySelectorAll(".bs-seq").forEach(b => b.onclick = async () => {
+    audio().resume(); const gain = Math.pow(10, parseFloat(b.dataset.db) / 20);
+    let t = await startMusic();
+    for (const [p, f] of [["A", "A1"], ["B", "B1"], ["C", "C1"], ["D", "D1"]]) {
+      t += await play("audio/" + liked(p, f) + ".ogg", gain, t, jitter()) + 1.2;
+    }
+  });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

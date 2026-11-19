@@ -354,6 +354,14 @@ namespace Board.UI.CharacterBar
             }
         }
 
+        /// <summary>The icons this peer sees on this thumbnail right now (read by the portrait's marks bubble, T9).</summary>
+        public IReadOnlyList<Sprite> CurrentSprites()
+        {
+            if (_barObject == null) return _renderableSprites;
+            ResolveRenderableSprites();
+            return _renderableSprites;
+        }
+
         // This thumbnail's marked-player id, then the icons THIS peer is allowed to see on it, reduced to the
         // ones that resolve to a real sprite. A peer only ever holds its own slice, so there is nothing to
         // filter for privacy here.

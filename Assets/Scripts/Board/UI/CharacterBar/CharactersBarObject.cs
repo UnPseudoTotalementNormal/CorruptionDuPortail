@@ -1,6 +1,9 @@
 #region
 
 using System;
+using System.Collections.Generic;
+using Board;
+using CorruptionDuPortail.Domain.Localization;
 using Characters;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
@@ -117,6 +120,12 @@ namespace Board.UI.CharacterBar
 
         private void OnButtonHovered()
         {
+            List<MarksTooltipText.Mark> _marks = PortraitMarks();
+            if (_marks.Count > 0 && playerCharacter != null)
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.marks.hover", "where", "portrait", "player", playerCharacter.ownerClientId.Value,
+                    "marks", MarksTooltipText.Names(_marks));
+            }
             Transform _visual = HoverVisual;
             EnsureCamera();
             if (!_hasRestPose)
@@ -262,13 +271,39 @@ namespace Board.UI.CharacterBar
             }
             characterImage.material = _knownFake && knownFakeMaterial != null ? knownFakeMaterial : _baseMaterial;
 
-            if (_knownFake && _knownFakeTooltip == null)
+            // One bubble per portrait (T9, H2): « Rôle factice » when the local player knows it is fake, then the
+            // meaning of every mark on it (the Orpheline's bear, the Messager's phone, the eye, the corrupted lotus).
+            // Nothing to say, no bubble.
+            if (_knownFakeTooltip == null)
             {
                 _knownFakeTooltip = gameObject.AddComponent<HoverTooltipComponent>();
-                _knownFakeTooltip.SetTooltipTitle(KnownFakeTooltipTitle);
-                _knownFakeTooltip.SetTooltipDescription(KnownFakeTooltipDescription);
+                _knownFakeTooltip.SetTooltipDescription(PortraitTooltipText);
             }
-            if (_knownFakeTooltip != null) _knownFakeTooltip.enabled = _knownFake;
+            _isKnownFake = _knownFake;
+            _knownFakeTooltip.SetTooltipTitle(_knownFake ? KnownFakeTooltipTitle : string.Empty);
+        }
+
+        private bool _isKnownFake;
+
+        private List<MarksTooltipText.Mark> PortraitMarks()
+        {
+            var _marks = new List<MarksTooltipText.Mark>();
+            CharacterBarIconStack _stack = GetComponentInChildren<CharacterBarIconStack>(true);
+            if (_stack == null) return _marks;
+            foreach (Sprite _sprite in _stack.CurrentSprites())
+            {
+                MarksTooltipText.Mark? _mark = MarksTooltipText.ForPortraitIcon(_sprite);
+                if (_mark.HasValue) _marks.Add(_mark.Value);
+            }
+            return _marks;
+        }
+
+        private string PortraitTooltipText()
+        {
+            string _marks = MarksTooltipText.Rows(PortraitMarks());
+            if (!_isKnownFake) return _marks;
+            string _fake = Loc.Tr(KnownFakeTooltipDescription);
+            return string.IsNullOrEmpty(_marks) ? _fake : _fake + "\n\n" + _marks;
         }
         
         private void DoUpdateCharacter()

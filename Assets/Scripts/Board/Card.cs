@@ -26,6 +26,8 @@ namespace Board
     {
         [Header("Core References")]
         [SerializeField] private Canvas cardCanvas;
+        /// <summary>The card face's rect: what a bubble about this card sits beside (T9 marks bubble).</summary>
+        public RectTransform FaceRect => cardCanvas != null ? (RectTransform)cardCanvas.transform : null;
         [field:SerializeField] public VoteCanvas voteCanvas { get; private set; }
 
         

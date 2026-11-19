@@ -40,7 +40,8 @@ namespace Autoplay
 
             // Night, while none of this process's seats is awake (a fake-role layer on the host, a sleeping seat on a
             // client): free cursor, board view, no full-screen overlay (the recap's journal covers the HUD by design).
-            if (!tourDone && _state is AwakeningState && Time.time - stateEnterGameTime > options.thinkDelay && !AnyControlledAwake())
+            if (!tourDone && _state is AwakeningState && Time.time - stateEnterGameTime > options.thinkDelay && !AnyControlledAwake()
+                && (options.tourFromDay <= 0 || CompositionRoot.For(networkManager).GameManager is not { } _gm || _gm.currentDay >= options.tourFromDay))
             {
                 tourDone = true;
                 inputBusy = true;
@@ -180,8 +181,11 @@ namespace Autoplay
         {
             foreach (string _name in _names)
             {
+                // Several triggers share a name (every card is "Card(Clone)"): the richest one, as the default tour does.
                 HoverTooltipComponent _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
-                    .FirstOrDefault(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent);
+                    .Where(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent)
+                    .OrderByDescending(_t => (_t.Description ?? string.Empty).Length)
+                    .FirstOrDefault();
                 if (_trigger == null || TooltipManager.instance == null)
                 {
                     TourStep("tooltip", false, $"reason=no-trigger name={_name}");

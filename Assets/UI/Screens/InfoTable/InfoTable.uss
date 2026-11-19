@@ -243,6 +243,23 @@
     transition-timing-function: ease-out;
 }
 
+/* T9 maquettes menus v1 K2: each state is a pen stroke, tinted like the glyph it replaces (ghost, then near-black
+   on its filled tile once selected). */
+.info-table__seg {
+    background-repeat: no-repeat no-repeat;
+    background-position-x: center;
+    background-position-y: center;
+    background-size: contain;
+    -unity-background-image-tint-color: var(--cdp-color-info-ghost-glyph);
+}
+
+.info-table__seg--sure { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Coche.png"); }
+.info-table__seg--maybe { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Point.png"); }
+.info-table__seg--not { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Croix.png"); }
+
+.info-table__seg--selected {
+    -unity-background-image-tint-color: var(--cdp-color-info-glyph-on);
+}
 .info-table__seg:hover {
     border-color: var(--cdp-color-info-text);
     scale: 1.06 1.06;
@@ -422,12 +439,7 @@
 .roles-icon .info-table__name-cell { width: var(--cdp-info-namecol-icon); }
 .roles-icon .info-table__role-head { font-size: var(--cdp-info-rolehead-icon); padding: 4px 2px; }
 
-/* ---- Scroll bar (gold, thin) ---- */
+/* ---- Scroll bar: the thin cream stroke of every screen (Styles/scrollbar.uss, T9 D1) ---- */
 .info-table__scroll .unity-scroller--vertical {
     width: var(--cdp-info-scrollbar-w);
-}
-
-.info-table__scroll .unity-base-slider__dragger {
-    background-color: var(--cdp-color-info-frame);
-    border-radius: 4px;
 }

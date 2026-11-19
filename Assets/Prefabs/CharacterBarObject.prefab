@@ -405,6 +405,9 @@ MonoBehaviour:
   hoverCameraZoomDistance: 9
   hoverFaceCamera: 1
   hoverTweenDuration: 0.35
+  hoverHaloColor: {r: 1, g: 0.806, b: 0.325, a: 1}
+  hoverHaloSprite: {fileID: 21300000, guid: fa949eb51fd996245ae3c7e323d6dee3, type: 3}
+  hoverHaloReach: 0.2
   knownFakeMaterial: {fileID: 2100000, guid: 47409e2b52958f142ad506e8e7a96a7b, type: 2}
 --- !u!114 &6371621035504576672
 MonoBehaviour:

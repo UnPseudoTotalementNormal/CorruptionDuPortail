@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menus, fin de partie, portraits (T9 suite)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Lib"; src: url("../fonts/LiberationSans.ttf"); }
+  @font-face { font-family: "EBG"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  .mn-img { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  .mn-bgblur { position: absolute; inset: -20px; background: url(img/table_nuit.jpg) center / 1640px 940px; filter: blur(4px) brightness(.42); }
+  .mn-p3 .mn-bgblur { filter: blur(6px) brightness(.22); }
+  .mn-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .mn-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .mn-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .mn-bar .mn-sep { width: 1px; height: 26px; background: var(--line); margin: 0 6px; }
+
+  /* ---- shared: sliders, checkboxes, pickers ---- */
+  .mn-row { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .mn-lab { font: 34px "Fell", serif; color: var(--mn-ink); }
+  .mn-pick { font: 32px "Fell", serif; color: var(--mn-ink); cursor: pointer; user-select: none; width: 300px; text-align: center; }
+  .mn-pick em { font-style: normal; }
+  .mn-pick:hover { opacity: .7; }
+  .mn-sl { position: relative; width: 300px; height: 44px; cursor: pointer; touch-action: none; flex: none; }
+  .mn-sl b { position: absolute; display: block; }
+  .mn-sl--S0 .mn-tr { left: 0; right: 0; top: 18px; height: 8px; background: #cfcfcf; }
+  .mn-sl--S0 .mn-fi { left: 0; top: 18px; height: 8px; background: #fff; }
+  .mn-sl--S0 .mn-kn { top: 11px; width: 22px; height: 22px; margin-left: -11px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px #000a; } /* slop-ok: Unity's own knob, the current look */
+  .mn-sl--S1 .mn-tr { left: 0; right: 0; top: 21px; height: 2px; background: var(--mn-ink); opacity: .35; }
+  .mn-sl--S1 .mn-fi { left: 0; top: 19px; height: 5px; background: var(--mn-ink); }
+  .mn-sl--S1 .mn-kn { top: -6px; width: 50px; height: 52px; margin-left: -25px; background: url(../placeholders/img/icons/patte_repos.webp) center / contain no-repeat; transform: rotate(-10deg); filter: drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
+  .mn-sl--S1:active .mn-kn { background-image: url(../placeholders/img/icons/patte_clic.webp); }
+  .mn-sl--S2 { display: flex; align-items: center; gap: 0; justify-content: space-between; }
+  .mn-sl--S2 i { display: block; width: 9px; height: 30px; background: var(--mn-ink); opacity: .2; transform: skewX(-9deg); }
+  .mn-sl--S2 i:nth-child(3n) { height: 27px; } .mn-sl--S2 i:nth-child(4n+1) { height: 32px; }
+  .mn-sl--S2 i.on { opacity: 1; }
+  .mn-ck { position: relative; width: 30px; height: 30px; flex: none; cursor: pointer; }
+  .mn-ck--S0 { background: #fff; }
+  .mn-ck--S0.on::after { content: ""; position: absolute; left: 7px; top: 7px; width: 16px; height: 16px; background: #222; }
+  .mn-ck--S1, .mn-ck--S2 { border: 3px solid var(--mn-ink); box-sizing: border-box; }
+  .mn-ck--S1.on::after { content: ""; position: absolute; left: -6px; top: -14px; width: 44px; height: 44px; background: url(img/juste.webp) center / contain no-repeat; }
+  .mn-ck--S2.on::after { content: ""; position: absolute; left: -2px; top: -12px; width: 40px; height: 40px; background: var(--mn-ink);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M6 22 Q12 26 16 34 Q24 16 37 5' fill='none' stroke='black' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M6 22 Q12 26 16 34 Q24 16 37 5' fill='none' stroke='black' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+  .mn-trials { margin-top: 10px; }
+  .mn-trt { font: 26px "FellSC", serif; color: var(--mn-ink); opacity: .8; margin-bottom: 6px; }
+  .mn-tg { display: flex; align-items: center; gap: 14px; font: 25px "Fell", serif; color: var(--mn-ink); margin: 8px 0; cursor: pointer; }
+
+  /* ---- P1: a sheet pinned on the cork, like the lobby ---- */
+  .mn-board { position: absolute; left: 230px; top: 95px; width: 1140px; height: 710px; box-sizing: border-box; border: 20px solid #5b3a1f;
+    border-color: #6d4627 #4a2e17 #3e2612 #5b3a1f; background: url(../attribution-roles/img/cork.webp) 0 0 / 345px 233px; box-shadow: 0 10px 40px #000, inset 0 0 30px rgba(0,0,0,.55); }
+  .mn-sheet { position: absolute; left: 34px; top: 30px; width: 620px; height: 610px; box-sizing: border-box; padding: 40px 50px 30px;
+    background: url(../common/parchment.webp) center / 760px; box-shadow: 0 6px 14px rgba(0,0,0,.55); transform: rotate(-.6deg); --mn-ink: #3b2414; }
+  .mn-sheet h3 { margin: 0 0 8px; font: 46px "FellSC", serif; color: #7a2d16; text-align: center; }
+  .mn-pin { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e05040, #8d1e16 60%, #4a0c08); box-shadow: 0 2px 3px rgba(0,0,0,.6); } /* slop-ok: a pin head */
+  .mn-tag { position: absolute; width: 380px; height: 92px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+    background: #e9dfc9; box-shadow: 0 4px 8px rgba(0,0,0,.5); font: 38px "Fell", serif; color: #2b170b; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+  .mn-tag:hover { transform: translateY(-4px) rotate(var(--r)) !important; box-shadow: 0 10px 14px rgba(0,0,0,.5); color: #6b3a1c; }
+  .mn-note { position: absolute; left: 690px; top: 420px; width: 400px; box-sizing: border-box; padding: 26px 28px 18px; background: #d8c3a0; box-shadow: 0 4px 8px rgba(0,0,0,.5); transform: rotate(1.2deg); --mn-ink: #3a2412; }
+  .mn-note .mn-tg { font-size: 23px; }
+
+  /* ---- P2: the leather notebook ---- */
+  .mn-book { position: absolute; left: 150px; top: 60px; width: 1300px; height: 780px; box-sizing: border-box; padding: 34px 40px; display: flex; gap: 14px;
+    background: url(../common/leather.webp) center / 900px; border-radius: 16px; box-shadow: 0 14px 50px #000, inset 0 0 40px rgba(0,0,0,.6); }
+  .mn-page { flex: 1; box-sizing: border-box; padding: 44px 54px; background: url(../common/parchment.webp) center / 800px; box-shadow: inset 0 0 30px rgba(90,50,20,.35); --mn-ink: #3b2414; position: relative; }
+  .mn-page h3 { margin: 0 0 22px; font: 48px "FellSC", serif; color: #7a2d16; text-align: center; }
+  .mn-ent { font: 46px "Fell", serif; color: #3b2414; padding: 12px 0 12px 34px; cursor: pointer; position: relative; }
+  .mn-ent:hover { color: #8a5a34; }
+  .mn-ent.on::before { content: "\2767"; position: absolute; left: -4px; top: 14px; font-size: 34px; color: #7a2d16; }
+  .mn-page .mn-trials { position: absolute; left: 54px; right: 54px; bottom: 36px; }
+
+  /* ---- P3: bare words on the dark ---- */
+  .mn-list { position: absolute; left: 210px; top: 250px; }
+  .mn-w { font: 58px "Fell", serif; color: #f1e2c4; padding: 10px 0; cursor: pointer; text-shadow: 0 2px 10px #000; }
+  .mn-w:hover { color: #f0b85a; }
+  .mn-w.on { color: #f0b85a; }
+  .mn-o3 { position: absolute; left: 780px; top: 180px; width: 620px; --mn-ink: #f1e2c4; }
+  .mn-o3 h3 { margin: 0 0 14px; font: 44px "FellSC", serif; color: #f0b85a; }
+  .mn-o3 .mn-trials { margin-top: 40px; }
+
+  /* ---- end of game ---- */
+  .mn-dark { position: absolute; inset: 0; background: url(img/table_nuit.jpg) center / 1600px 900px; filter: blur(3px) brightness(.24) saturate(.6); }
+  .mn-black { position: absolute; inset: 0; background: #000; }
+  .mn-card { position: absolute; width: 167px; height: 230px; transform-origin: 50% 50%; }
+  .mn-card > img { width: 100%; height: 100%; display: block; }
+  .mn-cc { position: absolute; inset: 0; background: #160f0c; border: 3px solid #2a1d14; box-sizing: border-box; overflow: hidden; }
+  .mn-cc img { position: absolute; left: 8px; top: 26px; width: 145px; height: 172px; object-fit: cover; object-position: 50% 15%; }
+  .mn-cc .ps { position: absolute; left: 10px; top: 4px; font: 15px "Lib", sans-serif; color: #c0392b; }
+  .mn-cc .nm { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font: 15px/1.05 "Lib", sans-serif; color: #f0d9a8; }
+  .mn-lose { filter: grayscale(.85) brightness(.5); }
+  .mn-win-glow { box-shadow: 0 0 0 3px rgba(242,193,78,.85), 0 0 26px 8px rgba(242,193,78,.45); }
+  .mn-ban { position: absolute; left: 0; right: 0; top: 50px; text-align: center; }
+  .mn-ban img { height: 92px; vertical-align: middle; margin-right: 18px; }
+  .mn-ban .t { font: 76px "FellSC", serif; color: #f6e7c6; text-shadow: 0 3px 14px #000; vertical-align: middle; }
+  .mn-ban .me { display: block; font: italic 40px "Fell", serif; margin-top: 4px; }
+  .mn-gold { color: #f0b85a; } .mn-red { color: #e0604f; }
+  .mn-lbl { position: absolute; left: 0; right: 0; text-align: center; font: 30px "FellSC", serif; color: #b9a68c; }
+  .mn-plank { position: absolute; left: 635px; top: 770px; width: 330px; height: 110px; cursor: pointer; }
+  .mn-plank img { width: 100%; height: 100%; display: block; }
+  .mn-plank span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 34px "Fell", serif; color: #f6e7c6; text-shadow: 0 2px 0 #3a0d08, 0 0 6px #3a0d08; }
+  .mn-plank:hover { filter: brightness(1.15); }
+  .mn-sheet2 { position: absolute; left: 320px; top: 40px; width: 960px; height: 720px; box-sizing: border-box; padding: 34px 56px; background: url(../common/parchment.webp) center / 1000px; box-shadow: 0 10px 40px #000; }
+  .mn-sheet2 h3 { margin: 0; text-align: center; font: 58px "FellSC", serif; color: #2f5a35; }
+  .mn-sheet2 h3 img { height: 64px; vertical-align: -12px; margin-right: 12px; }
+  .mn-sheet2 .me { text-align: center; font: italic 34px "Fell", serif; margin: 2px 0 14px; }
+  .mn-sheet2 .mn-gold { color: #9a6a12; } .mn-sheet2 .mn-red { color: #8d1e16; }
+  .mn-r { display: flex; align-items: center; height: 62px; border-top: 1px solid rgba(80,50,25,.25); font: 28px "Fell", serif; color: #3b2414; position: relative; }
+  .mn-r .pt { width: 50px; height: 50px; object-fit: cover; object-position: 50% 12%; margin-right: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .mn-r .pp { width: 220px; font-family: "EBG", serif; } .mn-r .rl { width: 390px; font-style: italic; } .mn-r .cp { width: 52px; } .mn-r .cp img { height: 38px; }
+  .mn-r .st { font-size: 22px; color: #6b4a2a; }
+  .mn-r.lo { opacity: .45; }
+  .mn-r .paw { position: absolute; left: -50px; top: 9px; width: 44px; }
+  .mn-big { position: absolute; left: 0; right: 0; text-align: center; transform-origin: 50% 0; }
+  .mn-big .w { font: 170px "FellSC", serif; text-shadow: 0 4px 30px #000; line-height: 1; }
+  .mn-big .s { font: italic 40px "Fell", serif; color: #f6e7c6; }
+
+  /* ---- portraits hover ---- */
+  .mn-cork { position: absolute; left: 0; top: 0; width: 1600px; height: 330px; background: url(../attribution-roles/img/cork.webp) 0 0 / 345px 233px; box-shadow: 0 8px 20px #000; border-bottom: 14px solid #4a2e17; box-sizing: border-box; }
+  .mn-tile { position: absolute; top: 18px; width: 104px; height: 104px; background: #1d2421; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,.6); }
+  .mn-tile img { width: 84px; }
+  .mn-por { position: absolute; top: 150px; width: 112px; height: 112px; cursor: pointer; transition: transform .14s ease-out, box-shadow .14s, filter .14s; box-shadow: 0 3px 6px rgba(0,0,0,.6); }
+  .mn-por img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 14%; display: block; }
+  .mn-por.hov { transform: translateY(-16px) scale(1.28); z-index: 3; }
+  .mn-O0 .mn-por.hov { outline: 4px solid #ffd133; }
+  .mn-O1 .mn-por.hov { box-shadow: 0 0 0 5px #fff, 0 0 0 10px #1d1111, 0 10px 16px rgba(0,0,0,.6); }
+  .mn-O2 .mn-por.hov { box-shadow: 0 18px 22px rgba(0,0,0,.75); filter: brightness(1.12); }
+  .mn-O3 .mn-por.hov { box-shadow: 0 0 0 2px rgba(242,193,78,.95), 0 0 24px 8px rgba(242,193,78,.5); }
+
+  /* ---- info table glyphs ---- */
+  .mn-tab { position: absolute; left: 50px; top: 120px; width: 990px; background: #1b1813; border: 2px solid rgb(150,120,64); }
+  .mn-tr2 { display: flex; height: 92px; border-top: 1px solid #3a3226; }
+  .mn-tr2.hd { height: 80px; border-top: 0; }
+  .mn-tc { display: flex; align-items: center; justify-content: center; border-left: 1px solid #3a3226; font: 24px "Lib", sans-serif; color: #e6dccb; text-align: center; box-sizing: border-box; }
+  .mn-tc:first-child { border-left: 0; }
+  .mn-tc.c0 { width: 90px; } .mn-tc.c1 { width: 240px; } .mn-tc.cr { width: 165px; gap: 4px; }
+  .mn-tr2.hd .mn-tc { color: #b9ab92; font-size: 21px; line-height: 1.15; }
+  .mn-tr2.you { background: rgba(80,140,60,.35); }
+  .mn-tr2.you .c1 { color: #9be27e; }
+  .mn-g { width: 48px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+  .mn-K0 .mn-g { background: #2b2620; border: 1px solid #4a4134; font: 30px "Lib", sans-serif; color: #77705f; }
+  .mn-K0 .mn-g.on.ok { background: #5cb247; color: #fff; } .mn-K0 .mn-g.on.mb { background: #d9a832; color: #fff; } .mn-K0 .mn-g.on.no { background: #c0473f; color: #fff; }
+  .mn-K1 .mn-g img, .mn-K1 .mn-g svg, .mn-K2 .mn-g svg { width: 44px; height: 44px; opacity: .2; filter: grayscale(1); transition: transform .1s; }
+  .mn-K1 .mn-g.on img, .mn-K1 .mn-g.on svg { opacity: 1; filter: none; transform: scale(1.18); }
+  .mn-K2 .mn-g.on svg { opacity: 1; filter: none; transform: scale(1.12); }
+  .mn-g:hover img, .mn-g:hover svg { opacity: .6; }
+  .mn-leg { display: flex; justify-content: center; gap: 40px; padding: 18px 0; font: 26px "Lib", sans-serif; color: #e6dccb; }
+  .mn-leg span { display: flex; align-items: center; gap: 10px; }
+  .mn-leg .mn-g { width: 40px; height: 40px; cursor: default; }
+  .mn-K1 .mn-leg .mn-g img, .mn-K1 .mn-leg .mn-g svg, .mn-K2 .mn-leg .mn-g svg { opacity: 1; filter: none; width: 38px; height: 38px; transform: none; }
+  .mn-rs { position: absolute; left: 1080px; top: 120px; width: 470px; height: 330px; box-sizing: border-box; padding: 34px 30px; text-align: center; background: url(../common/parchment.webp) center / 700px; box-shadow: 0 6px 18px #000; }
+  .mn-rs .n { font: 38px "FellSC", serif; color: #8d1e16; }
+  .mn-rs .f { font: 22px "FellSC", serif; color: #6b4a2a; margin: 6px 0 10px; letter-spacing: 1px; }
+  .mn-stars { display: flex; justify-content: center; gap: 8px; height: 48px; align-items: center; }
+  .mn-stars svg { width: 46px; height: 46px; }
+  .mn-stars .tx { font: 34px "Lib", sans-serif; color: #b3261e; letter-spacing: 6px; }
+  .mn-rs .p { font: 25px "Fell", serif; color: #3b2414; text-align: left; margin-top: 18px; }
+  .mn-ready { position: absolute; left: 1100px; width: 280px; height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; box-sizing: border-box; background: #e9dfc9; box-shadow: 0 4px 8px rgba(0,0,0,.5); font: 28px "EBG", serif; color: #2b170b; }
+  .mn-ready .ck { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+  .mn-ready .ck svg, .mn-ready .ck img { width: 40px; height: 40px; }
+  .mn-ready .ck .tx { font: 30px "Lib", sans-serif; color: #b3261e; }
+
+  /* ---- scrollbars ---- */
+  .mn-chat { position: absolute; left: 250px; top: 100px; width: 1100px; height: 720px; background: #000; box-shadow: 0 0 0 26px #141210, 0 10px 40px #000; }
+  .mn-chat .hd { height: 70px; display: flex; align-items: center; justify-content: center; font: 34px "Lib", sans-serif; color: #fff; border-bottom: 16px solid #2a2a2a; }
+  .mn-msgs { position: absolute; left: 30px; right: 30px; top: 110px; height: 500px; overflow-y: scroll; font: 25px/1.5 "Lib", sans-serif; color: #eee; padding-right: 10px; }
+  .mn-msgs p { margin: 0 0 6px; } .mn-msgs b { color: #e8c37a; font-weight: normal; }
+  .mn-msgs .sv { color: #9a9a9a; font-style: italic; }
+  .mn-chat .in { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: #1c1c1c; border-top: 1px solid #333; font: italic 26px "Lib", sans-serif; color: #666; display: flex; align-items: center; padding-left: 10px; }
+  .mn-D0::-webkit-scrollbar { width: 22px; } .mn-D0::-webkit-scrollbar-track { background: #c8c8c8; } .mn-D0::-webkit-scrollbar-thumb { background: #f4f4f4; border: 1px solid #999; }
+  .mn-D1::-webkit-scrollbar { width: 6px; } .mn-D1::-webkit-scrollbar-track { background: rgba(241,226,196,.14); border-radius: 3px; } .mn-D1::-webkit-scrollbar-thumb { background: rgba(241,226,196,.55); border-radius: 3px; }
+  .mn-D2::-webkit-scrollbar { width: 10px; } .mn-D2::-webkit-scrollbar-track { background: rgba(150,120,64,.22); border-radius: 4px; } .mn-D2::-webkit-scrollbar-thumb { background: rgb(150,120,64); border-radius: 4px; }
+  .mn-D3::-webkit-scrollbar { width: 6px; } .mn-D3::-webkit-scrollbar-track { background: transparent; } .mn-D3::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+  .mn-D3:hover::-webkit-scrollbar-thumb, .mn-D3.mn-scrolling::-webkit-scrollbar-thumb { background: rgba(241,226,196,.55); }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Menus, fin de partie, portraits (T9 suite)</h1>
+  <p><b>La demande.</b> T9, « des placeholders plus jolis » : la page promise après le premier tour (voté et dans le jeu, PR #214 et #215). Les curseurs sont déjà faits (pattes de Wouh, PR #213), ils ne sont pas ici.</p>
+  <p><b>Aujourd'hui</b> (capturé ce soir sur le build T9) : la pause est faite de boîtes noires d'Unity en Liberation Sans (titre « Options », quatre curseurs blancs, « Micro », « Langue »), un encadré « Essais (vue du jour) », un bouton gris « Quitter la partie », et un carré rouge sans texte pour fermer. Les mêmes Options sont au menu principal. La fin de partie pose un bandeau noir « Gagnants », retourne les cartes des gagnants et affiche un bouton vert « Terminer la partie » chez l'hôte seulement ; personne ne voit quel camp a gagné ni s'il a gagné lui-même, les autres joueurs n'ont aucun bouton. Le bandeau des rôles se soulève au survol avec un contour jaune plat. Le tableur de la tablette met des ✓ ? ✗ de police dans des cases grises, la fiche de rôle ses ★ en texte. Les barres de défilement du chat et des listes sont celles d'Unity, blanches.</p>
+  <p><b>Référence.</b> <a href="https://among-us.fandom.com/wiki/Victory">Among Us</a> : « Victoire » ou « Défaite » plein écran, propre à chacun, puis les gagnants alignés ; l'hôte relance, les autres peuvent quitter. <a href="https://town-of-salem.fandom.com/wiki/Game_Over">Town of Salem</a> : la fin liste chaque joueur avec son rôle révélé et marque les gagnants. <a href="https://inscryption.fandom.com/wiki/Inscryption">Inscryption</a> : la pause et les options restent dans le décor (papier, bois, encre), jamais une fenêtre grise.</p>
+  <p><b>La scène.</b> Fin du jour 6, 8 joueurs, la vraie partie de ce soir : les deux Anomalies (Va'ahl et Abyss) sont enchaînées, les Élus gagnent. Tu es l'hôte, Dr Gloubi (Player236). En pause, tu as baissé la musique.</p>
+  <p><b>Sans question.</b> Tous ces écrans passent en IM Fell et sortent de Liberation Sans. « Sfx » devient « Effets », « peut être » devient « Peut-être ». Le menu principal reprend la même feuille d'Options que la pause. Tout texte passe par la traduction anglaise, chaque clic est journalisé.</p>
+  <p><b>Pas dans ce tour.</b> L'écran de connexion et les boutons blancs du menu principal, le panneau noir du chat lui-même (une autre page si tu veux). La bave à usage unique et le modèle de Luma sont de la 3D : rendus depuis Unity sur une page à part.</p>
+  <p>Tout réagit : survole, clique, tire les curseurs.</p>
+</header>
+
+<section id="s-pause" data-forme="P1 P2 P3">
+  <h2>1. Le menu pause (Échap)</h2>
+  <p>Ce choix décide aussi de la forme de la section 2.</p>
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Boîtes noires d'Unity, carré rouge pour fermer.</p>
+    <div class="screen"><div class="stage"><img class="mn-img" src="img/pause_actuel.jpg" alt=""></div></div>
+  </div>
+  <div class="variant" data-id="P1">
+    <div class="vhead"><span class="vid">P1</span><span class="vname">Feuille épinglée sur le liège (par défaut)</span></div>
+    <p class="vdesc">Le liège et les papiers du salon : les options sur un parchemin, les actions sur des étiquettes épinglées, les essais sur une note.</p>
+    <div class="screen"><div class="stage" data-pause="P1"></div></div>
+  </div>
+  <div class="variant" data-id="P2">
+    <div class="vhead"><span class="vid">P2</span><span class="vname">Carnet de cuir</span></div>
+    <p class="vdesc">Un carnet ouvert comme le grimoire du menu : les actions sur la page de gauche, les options sur celle de droite.</p>
+    <div class="screen"><div class="stage" data-pause="P2"></div></div>
+  </div>
+  <div class="variant" data-id="P3">
+    <div class="vhead"><span class="vid">P3</span><span class="vname">Des mots sur le noir</span></div>
+    <p class="vdesc">Le plus direct : la partie s'assombrit, les mots sont posés dessus, sans cadre ni papier.</p>
+    <div class="screen"><div class="stage" data-pause="P3"></div></div>
+  </div>
+</section>
+
+<section id="s-sliders" data-suit>
+  <h2>2. Les curseurs et les cases à cocher</h2>
+  <div class="variant" data-id="S0">
+    <div class="vhead"><span class="vid">S0</span><span class="vname">Actuel (blancs d'Unity)</span></div>
+    <p class="vdesc">Barre blanche et bouton rond, case blanche.</p>
+    <div class="screen"><div class="stage" data-slider="S0"></div></div>
+  </div>
+  <div class="variant" data-id="S1">
+    <div class="vhead"><span class="vid">S1</span><span class="vname">Trait d'encre et patte (par défaut)</span></div>
+    <p class="vdesc">Un trait d'encre ; on tire la patte de Wouh, qui appuie pendant qu'on la tient. La case cochée prend sa coche verte.</p>
+    <div class="screen"><div class="stage" data-slider="S1"></div></div>
+  </div>
+  <div class="variant" data-id="S2">
+    <div class="vhead"><span class="vid">S2</span><span class="vname">Encoches</span></div>
+    <p class="vdesc">Dix encoches à l'encre, on les remplit d'un clic ou en glissant ; coche tracée à la plume.</p>
+    <div class="screen"><div class="stage" data-slider="S2"></div></div>
+  </div>
+</section>
+
+<section id="s-fin">
+  <h2>3. L'écran de fin de partie</h2>
+  <div class="mn-bar" id="fin-bar"><span>Tu es :</span>
+    <button data-who="win" class="on">Dr Gloubi, l'hôte (gagnant)</button><button data-who="lose">Va'ahl (perdant)</button>
+    <span class="mn-sep"></span><span>Moment :</span>
+    <button data-at="0">Fin du vote</button><button data-at="900">L'annonce</button><button data-at="2200">Les cartes</button><button data-at="4300" class="on">Le bouton</button>
+    <button data-loop>▶ En boucle</button><button data-slow>Ralenti</button>
+  </div>
+  <div class="variant" data-id="E0">
+    <div class="vhead"><span class="vid">E0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Bandeau « Gagnants », les cartes des gagnants se retournent, bouton vert chez l'hôte seulement.</p>
+    <div class="screen"><div class="stage" data-end="E0"></div></div>
+  </div>
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Le camp en grand, puis les cartes (par défaut)</span></div>
+    <p class="vdesc">Le camp gagnant et ton résultat d'abord, puis les cartes des gagnants qui se retournent, les vaincus en petit dessous. La planche de Wouh sert de bouton.</p>
+    <div class="screen"><div class="stage" data-end="E1"></div></div>
+  </div>
+  <div class="variant" data-id="E2">
+    <div class="vhead"><span class="vid">E2</span><span class="vname">Le parchemin des rôles</span></div>
+    <p class="vdesc">Un parchemin liste les 8 joueurs avec leur rôle révélé, leur camp et leur état ; les vaincus pâlissent, ta ligne porte ta patte.</p>
+    <div class="screen"><div class="stage" data-end="E2"></div></div>
+  </div>
+  <div class="variant" data-id="E3">
+    <div class="vhead"><span class="vid">E3</span><span class="vname">Victoire ou Défaite d'abord</span></div>
+    <p class="vdesc">Un mot plein écran, le tien, puis il monte et la table montre toutes les cartes à leur place : gagnants dorés, vaincus éteints.</p>
+    <div class="screen"><div class="stage" data-end="E3"></div></div>
+  </div>
+</section>
+
+<section id="s-autres">
+  <h2>4. À la fin, ceux qui ne sont pas l'hôte</h2>
+  <p>Aujourd'hui seul l'hôte a un bouton, et « Terminer la partie » renvoie tout le monde au menu.</p>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel : rien</span></div>
+    <p class="vdesc">Ils regardent les cartes et attendent que l'hôte termine.</p>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Une phrase à la place du bouton</span></div>
+    <p class="vdesc">« L'hôte va terminer la partie. » écrit là où l'hôte a sa planche.</p>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Chacun peut quitter (par défaut)</span></div>
+    <p class="vdesc">Les autres ont la planche « Quitter la partie » (retour au menu, seul) ; l'hôte garde « Terminer la partie » qui renvoie tout le monde. C'est ce que montrent les cadres de la section 3 côté Va'ahl.</p>
+  </div>
+</section>
+
+<section id="s-portraits">
+  <h2>5. Le contour des portraits au survol</h2>
+  <p>Survole les portraits du bandeau (dessiné à plat ici, il est penché en jeu). Le liseré doré est déjà la marque de la Bénédiction (tour 1, B2).</p>
+  <div class="variant" data-id="O0">
+    <div class="vhead"><span class="vid">O0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le portrait se soulève, contour jaune plat de 4 px.</p>
+    <div class="screen"><div class="stage mn-O0" data-por></div></div>
+  </div>
+  <div class="variant" data-id="O1">
+    <div class="vhead"><span class="vid">O1</span><span class="vname">Bord d'autocollant (par défaut)</span></div>
+    <p class="vdesc">Le portrait soulevé prend le bord blanc et le trait noir des dessins de Wouh, comme les marques des cartes.</p>
+    <div class="screen"><div class="stage mn-O1" data-por></div></div>
+  </div>
+  <div class="variant" data-id="O2">
+    <div class="vhead"><span class="vid">O2</span><span class="vname">Sans contour</span></div>
+    <p class="vdesc">Il se soulève, s'éclaire un peu et projette son ombre ; aucun trait autour.</p>
+    <div class="screen"><div class="stage mn-O2" data-por></div></div>
+  </div>
+  <div class="variant" data-id="O3">
+    <div class="vhead"><span class="vid">O3</span><span class="vname">Halo des objets 3D</span></div>
+    <p class="vdesc">Le même halo jaune que les chats, la bougie ou le sac au survol : un seul langage pour « ce qu'on pointe ».</p>
+    <div class="screen"><div class="stage mn-O3" data-por></div></div>
+  </div>
+</section>
+
+<section id="s-glyphes">
+  <h2>6. Les ✓ ? ✗ du tableur, les ★ de la fiche, les ✓ du salon</h2>
+  <p>Clique les cases du tableur.</p>
+  <div class="variant" data-id="K0">
+    <div class="vhead"><span class="vid">K0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Signes de police dans des cases grises, la case choisie se colore.</p>
+    <div class="screen"><div class="stage mn-K0" data-glyph="K0"></div></div>
+  </div>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Autocollants de Wouh (par défaut)</span></div>
+    <p class="vdesc">La coche et la croix des verdicts (tour 1, K1), un « ? » et des étoiles dessinés pareil ; les signes non choisis restent en ombre grise.</p>
+    <div class="screen"><div class="stage mn-K1" data-glyph="K1"></div></div>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Tracés à la plume</span></div>
+    <p class="vdesc">Les signes sont écrits à la main, à l'encre ; la couleur ne vient que sur celui qu'on choisit.</p>
+    <div class="screen"><div class="stage mn-K2" data-glyph="K2"></div></div>
+  </div>
+</section>
+
+<section id="s-scroll">
+  <h2>7. Les barres de défilement</h2>
+  <p>Fais défiler le chat. Les deux styles déjà en jeu ailleurs sont D1 (fiche de rôle, salon) et D2 (tableur).</p>
+  <div class="variant" data-id="D0">
+    <div class="vhead"><span class="vid">D0</span><span class="vname">Actuel (blanche d'Unity)</span></div>
+    <p class="vdesc">Large barre blanche sur fond gris.</p>
+    <div class="screen"><div class="stage" data-scroll="D0"></div></div>
+  </div>
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">Trait fin, comme la fiche de rôle (par défaut)</span></div>
+    <p class="vdesc">6 px, couleur du texte, partout pareil.</p>
+    <div class="screen"><div class="stage" data-scroll="D1"></div></div>
+  </div>
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Dorée, comme le tableur</span></div>
+    <p class="vdesc">10 px, l'or du cadre du tableur, partout pareil.</p>
+    <div class="screen"><div class="stage" data-scroll="D2"></div></div>
+  </div>
+  <div class="variant" data-id="D3">
+    <div class="vhead"><span class="vid">D3</span><span class="vname">Cachée tant qu'on ne défile pas</span></div>
+    <p class="vdesc">Le trait fin n'apparaît qu'au survol ou pendant le défilement.</p>
+    <div class="screen"><div class="stage" data-scroll="D3"></div></div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose ? (un écran oublié, un texte, ce qui manque)</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const params = new URLSearchParams(location.search);
+  const ART = '../attribution-roles/img/';
+
+  // ---------- sliders, checkboxes, pickers ----------
+  function slider(style, val) {
+    const s = h('div', 'mn-sl mn-sl--' + style);
+    if (style === 'S2') for (let i = 0; i < 10; i++) s.appendChild(h('i'));
+    else s.innerHTML = '<b class="mn-tr"></b><b class="mn-fi"></b><b class="mn-kn"></b>';
+    const set = v => {
+      v = Math.max(0, Math.min(1, v));
+      if (style === 'S2') [...s.children].forEach((t, i) => t.classList.toggle('on', i < Math.round(v * 10)));
+      else { s.querySelector('.mn-fi').style.width = (v * 100) + '%'; s.querySelector('.mn-kn').style.left = (v * 100) + '%'; }
+    };
+    set(val);
+    const at = e => { const r = s.getBoundingClientRect(); set((e.clientX - r.left) / r.width); };
+    s.addEventListener('pointerdown', e => { s.setPointerCapture(e.pointerId); at(e); s.onpointermove = at; });
+    s.addEventListener('pointerup', () => { s.onpointermove = null; });
+    return s;
+  }
+  function options(style) {
+    const box = h('div', 'mn-opts');
+    [['Principal', .55], ['Musique', .1], ['Effets', .5], ['Voix', 1]].forEach(([n, v]) => {
+      const r = h('div', 'mn-row'); r.appendChild(h('span', 'mn-lab', n)); r.appendChild(slider(style, v)); box.appendChild(r);
+    });
+    [['Micro', ['Maintenir V', 'Toujours ouvert']], ['Langue', ['Français', 'English']]].forEach(([n, opts]) => {
+      const r = h('div', 'mn-row'); r.appendChild(h('span', 'mn-lab', n));
+      const p = h('span', 'mn-pick'); let i = 0;
+      const paint = () => { p.innerHTML = '‹ <em>' + opts[i] + '</em> ›'; };
+      paint(); p.onclick = () => { i = (i + 1) % opts.length; paint(); };
+      r.appendChild(p); box.appendChild(r);
+    });
+    return box;
+  }
+  function trials(style) {
+    const box = h('div', 'mn-trials');
+    box.appendChild(h('div', 'mn-trt', 'Essais (vue du jour)'));
+    [['Cartes levées en vue première personne', false], ['Table ronde', true]].forEach(([n, on]) => {
+      const r = h('div', 'mn-tg'); const c = h('span', 'mn-ck mn-ck--' + style + (on ? ' on' : ''));
+      r.appendChild(c); r.appendChild(h('span', '', n)); r.onclick = () => c.classList.toggle('on'); box.appendChild(r);
+    });
+    return box;
+  }
+  const pin = (x, y) => { const p = h('span', 'mn-pin'); p.style.left = x + 'px'; p.style.top = y + 'px'; return p; };
+
+  // ---------- pause ----------
+  function pause(st, forme, style) {
+    st.innerHTML = ''; st.className = 'stage mn-' + forme.toLowerCase();
+    st.appendChild(h('div', 'mn-bgblur'));
+    if (forme === 'P1') {
+      const b = h('div', 'mn-board'); st.appendChild(b);
+      const sh = h('div', 'mn-sheet'); sh.appendChild(h('h3', '', 'Options')); sh.appendChild(options(style)); sh.appendChild(pin(301, 10)); b.appendChild(sh);
+      ['Reprendre', 'Signaler un bug', 'Quitter la partie'].forEach((t, i) => {
+        const tg = h('div', 'mn-tag', t); const r = [-1.5, 1, -.8][i] + 'deg';
+        tg.style.setProperty('--r', r); tg.style.transform = 'rotate(' + r + ')';
+        tg.style.left = (700 + i * 6) + 'px'; tg.style.top = (40 + i * 118) + 'px'; tg.appendChild(pin(181, 8)); b.appendChild(tg);
+      });
+      const n = h('div', 'mn-note'); n.appendChild(trials(style)); n.appendChild(pin(191, 8)); b.appendChild(n);
+    } else if (forme === 'P2') {
+      const b = h('div', 'mn-book'); st.appendChild(b);
+      const L = h('div', 'mn-page'); L.appendChild(h('h3', '', 'Pause'));
+      ['Reprendre', 'Options', 'Signaler un bug', 'Quitter la partie'].forEach(t => {
+        const e = h('div', 'mn-ent' + (t === 'Options' ? ' on' : ''), t); L.appendChild(e);
+      });
+      L.appendChild(trials(style)); b.appendChild(L);
+      const R = h('div', 'mn-page'); R.appendChild(h('h3', '', 'Options')); R.appendChild(options(style)); b.appendChild(R);
+    } else {
+      const l = h('div', 'mn-list'); st.appendChild(l);
+      const o = h('div', 'mn-o3'); o.appendChild(h('h3', '', 'Options')); o.appendChild(options(style)); o.appendChild(trials(style)); st.appendChild(o);
+      ['Reprendre', 'Options', 'Signaler un bug', 'Quitter la partie'].forEach(t => {
+        const w = h('div', 'mn-w' + (t === 'Options' ? ' on' : ''), t); l.appendChild(w);
+        if (t === 'Options') w.onclick = () => { const on = w.classList.toggle('on'); o.style.visibility = on ? '' : 'hidden'; };
+      });
+    }
+  }
+  document.querySelectorAll('[data-pause]').forEach(st => pause(st, st.dataset.pause, 'S1'));
+  const sliderStages = [...document.querySelectorAll('[data-slider]')];
+  const drawSliders = f => sliderStages.forEach(st => pause(st, f, st.dataset.slider));
+  drawSliders(params.get('forme') || 'P1');
+  document.addEventListener('mockforme', e => { if (e.detail.section.id === 's-sliders') drawSliders(e.detail.forme); });
+
+  // ---------- end of game ----------
+  const PL = [
+    { p: 'Player236', role: 'Dr Gloubi', art: 'DrGloubi', crop: 'gloubi', win: true },
+    { p: 'Simulated 1', role: 'Le Messager', art: 'Messager', crop: 'messager', win: true, ch: true },
+    { p: 'Simulated 2', role: "L'Orpheline", art: 'Orpheline', crop: 'orpheline', win: true, ch: true },
+    { p: 'Simulated 3', role: "L'Incomplet", art: 'Incomplet', crop: 'incomplet', win: true, ch: true },
+    { p: 'Simulated 4', role: "Va'ahl, le Mage Occulte", art: 'MageOcculte', win: false, ch: true },
+    { p: 'Simulated 5', role: "Abyss, l'Extension du Néant", art: 'Abyss', win: false, ch: true },
+    { p: 'Simulated 6', role: 'Le Technomancien', art: 'Technomancien', crop: 'techno', win: true },
+    { p: 'Simulated 7', role: 'Luma, la croupière', art: 'Croupiere', crop: 'luma', win: true },
+  ];
+  const WIN = PL.filter(x => x.win), LOSE = PL.filter(x => !x.win);
+  function card(pl) {
+    const c = h('div', 'mn-card');
+    if (pl.crop) c.innerHTML = '<img src="img/carte_' + pl.crop + '.webp" alt="">';
+    else c.innerHTML = '<div class="mn-cc"><span class="ps">' + pl.p + '</span><img src="' + ART + pl.art + '.webp" alt=""><span class="nm">' + pl.role + '</span></div>';
+    return c;
+  }
+  const ease = x => 1 - Math.pow(1 - x, 3);
+  const ph = (t, s, d) => ease(Math.max(0, Math.min(1, (t - s) / d)));
+  const plank = (txt) => { const b = h('div', 'mn-plank', '<img src="img/planche.webp" alt=""><span>' + txt + '</span>'); return b; };
+  const meWord = who => who === 'win' ? '<span class="mn-gold">Victoire</span>' : '<span class="mn-red">Défaite</span>';
+  const plankTxt = who => who === 'win' ? 'Terminer la partie' : 'Quitter la partie';
+
+  const END = {
+    E0(st) {
+      st.innerHTML = '<img class="mn-img" src="img/fin_dos.jpg" alt=""><img class="mn-img" data-a src="img/fin_actuel.jpg" alt="">' +
+        '<div data-hide style="position:absolute;left:598px;top:690px;width:404px;height:88px;background:url(img/fin_actuel.jpg) -598px -598px / 1600px 900px"></div>';
+      const a = st.querySelector('[data-a]'), hide = st.querySelector('[data-hide]');
+      return (t, who) => { a.style.opacity = ph(t, 1000, 300); hide.style.display = who === 'win' ? 'none' : ''; };
+    },
+    E1(st) {
+      st.innerHTML = '<div class="mn-dark"></div>';
+      const ban = h('div', 'mn-ban'); st.appendChild(ban);
+      const cards = WIN.map((pl, i) => { const c = card(pl); c.style.left = (249 + i * 187) + 'px'; c.style.top = '290px'; st.appendChild(c); return c; });
+      const lbl = h('div', 'mn-lbl', 'Vaincus'); lbl.style.top = '552px'; st.appendChild(lbl);
+      const lc = LOSE.map((pl, i) => { const c = card(pl); c.classList.add('mn-lose'); c.style.left = (680 + i * 130) + 'px'; c.style.top = '545px'; st.appendChild(c); return c; });
+      const pk = plank(''); st.appendChild(pk);
+      return (t, who) => {
+        ban.innerHTML = '<img src="' + ART + 'LogoElu.webp" alt=""><span class="t">Les Élus l’emportent</span><span class="me">' + meWord(who) + '</span>';
+        const b = ph(t, 800, 500); ban.style.opacity = b; ban.style.transform = 'translateY(' + (1 - b) * -30 + 'px)';
+        cards.forEach((c, i) => { const p = ph(t, 2000 + i * 120, 420); c.style.opacity = p; c.style.transform = 'translateY(' + (1 - p) * 40 + 'px) rotateY(' + (1 - p) * 90 + 'deg)'; });
+        const l = ph(t, 3000, 400); lbl.style.opacity = l; lbl.style.top = '572px';
+        lc.forEach((c, i) => { c.style.opacity = l; c.style.top = '612px'; c.style.transform = 'scale(.62)'; c.style.transformOrigin = '50% 0'; c.style.left = (650 + i * 140) + 'px'; });
+        pk.querySelector('span').textContent = plankTxt(who); pk.style.opacity = ph(t, 4000, 400);
+      };
+    },
+    E2(st) {
+      st.innerHTML = '<div class="mn-dark"></div>';
+      const sh = h('div', 'mn-sheet2'); st.appendChild(sh);
+      sh.innerHTML = '<h3><img src="' + ART + 'LogoElu.webp" alt="">Les Élus l’emportent</h3><div class="me"></div>';
+      const rows = PL.map((pl, i) => {
+        const r = h('div', 'mn-r' + (pl.win ? '' : ' lo'));
+        r.innerHTML = (i === 0 ? '<img class="paw" src="img/patte_moi.webp" alt="">' : '') +
+          '<img class="pt" src="' + ART + pl.art + '.webp" alt=""><span class="pp">' + pl.p + '</span><span class="rl">' + pl.role + '</span>' +
+          '<span class="cp"><img src="' + ART + (pl.win ? 'LogoElu' : 'LogoAnomalie') + '.webp" alt=""></span><span class="st">' + (pl.ch ? 'Enchaîné' : '') + '</span>';
+        sh.appendChild(r); return r;
+      });
+      const pk = plank(''); st.appendChild(pk);
+      return (t, who) => {
+        sh.querySelector('.me').innerHTML = meWord(who);
+        const s = ph(t, 800, 500); sh.style.opacity = s; sh.style.transform = 'translateY(' + (1 - s) * 60 + 'px)';
+        rows.forEach((r, i) => { const p = ph(t, 1500 + i * 150, 300); r.style.opacity = p * (PL[i].win ? 1 : .45); r.style.transform = 'translateX(' + (1 - p) * -20 + 'px)'; });
+        pk.querySelector('span').textContent = plankTxt(who); pk.style.opacity = ph(t, 4000, 400); pk.style.top = '775px';
+      };
+    },
+    E3(st) {
+      st.innerHTML = '<div class="mn-dark"></div><div class="mn-black"></div>';
+      const blk = st.querySelector('.mn-black');
+      const pos = i => i < 6 ? [249 + i * 187, 300] : [249 + (i - 4) * 187, 560];
+      const cards = PL.map((pl, i) => { const c = card(pl); const [x, y] = pos(i); c.style.left = x + 'px'; c.style.top = y + 'px'; if (!pl.win) c.classList.add('mn-lose'); else c.classList.add('mn-win-glow'); st.appendChild(c); return c; });
+      const big = h('div', 'mn-big'); st.appendChild(big);
+      const pk = plank(''); st.appendChild(pk);
+      return (t, who) => {
+        big.innerHTML = '<div class="w">' + meWord(who) + '</div><div class="s">Les Élus l’emportent</div>';
+        blk.style.opacity = 1 - .45 * ph(t, 2400, 600);
+        const a = ph(t, 800, 600), m = ph(t, 2400, 600);
+        big.style.opacity = a; big.style.top = (330 - 300 * m) + 'px';
+        big.style.transform = 'scale(' + ((1.15 - .15 * a) * (1 - .55 * m)) + ')';
+        cards.forEach((c, i) => { const p = ph(t, 2700 + i * 100, 380); c.style.opacity = p; c.style.transform = 'rotateY(' + (1 - p) * 90 + 'deg)'; });
+        pk.querySelector('span').textContent = plankTxt(who); pk.style.opacity = ph(t, 4000, 400); pk.style.top = '790px';
+      };
+    },
+  };
+  const ends = [...document.querySelectorAll('[data-end]')].map(st => END[st.dataset.end](st));
+  let T = params.has('at') ? +params.get('at') : 4300, who = params.get('who') || 'win', loop = false, slow = false, last = 0;
+  const bar = document.getElementById('fin-bar');
+  const paintEnd = () => {
+    ends.forEach(f => f(T, who));
+    bar.querySelectorAll('[data-at]').forEach(b => b.classList.toggle('on', !loop && +b.dataset.at === T));
+    bar.querySelectorAll('[data-who]').forEach(b => b.classList.toggle('on', b.dataset.who === who));
+    bar.querySelector('[data-loop]').classList.toggle('on', loop);
+    bar.querySelector('[data-slow]').classList.toggle('on', slow);
+  };
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.at != null) { loop = false; T = +b.dataset.at; }
+    if (b.dataset.who) who = b.dataset.who;
+    if (b.hasAttribute('data-loop')) { loop = !loop; if (loop) { T = 0; last = performance.now(); requestAnimationFrame(tick); } }
+    if (b.hasAttribute('data-slow')) slow = !slow;
+    paintEnd();
+  });
+  function tick(now) {
+    if (!loop) return;
+    T += (now - last) * (slow ? .25 : 1); last = now;
+    if (T > 6000) T = 0;
+    paintEnd(); requestAnimationFrame(tick);
+  }
+  paintEnd();
+
+  // ---------- portraits ----------
+  const GROUPS = [['LogoElu', ['DrGloubi', 'Messager', 'Orpheline', 'Incomplet', 'Repenti']], ['LogoAnomalie', ['MageOcculte', 'Abyss']], ['LogoElu', ['Technomancien', 'Croupiere', 'Dryade', 'Gardien']]];
+  document.querySelectorAll('[data-por]').forEach(st => {
+    st.insertAdjacentHTML('beforeend', '<div class="mn-dark" style="top:330px"></div><div class="mn-cork"></div>');
+    const cork = st.querySelector('.mn-cork');
+    let x = 70; const all = [];
+    GROUPS.forEach(([logo, arts]) => {
+      const w = arts.length * 112 + (arts.length - 1) * 12;
+      const tile = h('div', 'mn-tile', '<img src="' + ART + logo + '.webp" alt="">'); tile.style.left = (x + w / 2 - 52) + 'px'; cork.appendChild(tile);
+      arts.forEach((a, i) => {
+        const p = h('div', 'mn-por', '<img src="' + ART + a + '.webp" alt="">'); p.style.left = (x + i * 124) + 'px'; cork.appendChild(p); all.push(p);
+        p.onmouseenter = () => { all.forEach(q => q.classList.remove('hov')); p.classList.add('hov'); };
+        p.onmouseleave = () => p.classList.remove('hov');
+      });
+      x += w + 60;
+    });
+    all[2].classList.add('hov');
+  });
+
+  // ---------- glyphs ----------
+  const INK = '#1d1111';
+  const stk = (d, fill) => '<svg viewBox="0 0 100 100"><g stroke-linejoin="round" stroke-linecap="round"><path d="' + d + '" fill="#fff" stroke="#fff" stroke-width="18"/><path d="' + d + '" fill="' + INK + '" stroke="' + INK + '" stroke-width="9"/><path d="' + d + '" fill="' + fill + '"/></g></svg>';
+  const stkTxt = (c, fill) => '<svg viewBox="0 0 100 100"><g font-family="Lib, sans-serif" font-weight="bold" font-size="86" text-anchor="middle" stroke-linejoin="round">' +
+    '<text x="50" y="84" fill="#fff" stroke="#fff" stroke-width="20">' + c + '</text><text x="50" y="84" fill="' + INK + '" stroke="' + INK + '" stroke-width="10">' + c + '</text><text x="50" y="84" fill="' + fill + '">' + c + '</text></g></svg>';
+  const STAR = 'M50 8 L61 38 L93 38 L67 57 L77 89 L50 70 L23 89 L33 57 L7 38 L39 38 Z';
+  const ink = (d, col, w) => '<svg viewBox="0 0 100 100"><path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const inkTxt = (c, col) => '<svg viewBox="0 0 100 100"><text x="50" y="82" font-family="EBG, serif" font-size="96" text-anchor="middle" fill="' + col + '">' + c + '</text></svg>';
+  const CHECK = 'M16 54 Q30 64 40 82 Q58 40 86 16', CROSS = 'M22 20 Q52 50 80 82 M80 20 Q50 48 22 82';
+  const GLY = {
+    K0: { ok: '✓', mb: '?', no: '✗' },
+    K1: { ok: '<img src="img/juste.webp" alt="">', mb: stkTxt('?', '#f2b630'), no: '<img src="img/faux.webp" alt="">' },
+    K2: { ok: ink(CHECK, '#6fbf5a', 11), mb: inkTxt('?', '#f2b630'), no: ink(CROSS, '#e83a3a', 11) },
+  };
+  const GHOST = { K2: { ok: ink(CHECK, '#e8dcc4', 8), mb: inkTxt('?', '#e8dcc4'), no: ink(CROSS, '#e8dcc4', 8) } };
+  const STARS = {
+    K0: '<span class="tx">★★★</span>',
+    K1: stk(STAR, '#f2c14e').repeat(3),
+    K2: ink(STAR, '#8d1e16', 5).repeat(3),
+  };
+  const READY = { K0: '<span class="tx">✓</span>', K1: '<img src="img/juste.webp" alt="">', K2: ink(CHECK, '#3b2414', 10) };
+  const COLS = ['Dr Gloubi', 'Le Messager', "L'Orphe­line", "Va'ahl, le Mage Occulte"];
+  const ROWS = [['Player236', 0], ['Simulated 1', 1], ['Simulated 2', 2], ['Simulated 3', 3], ['Simulated 4', 4]];
+  const SET = { '0,0': 'ok', '1,1': 'ok', '2,3': 'no', '4,3': 'mb', '3,1': 'no', '2,2': 'mb' };
+  document.querySelectorAll('[data-glyph]').forEach(st => {
+    const K = st.dataset.glyph, g = GLY[K], gh = (GHOST[K] || g);
+    const cell = (r, c) => {
+      const box = h('div', 'mn-tc cr');
+      ['ok', 'mb', 'no'].forEach(k => {
+        const on = SET[r + ',' + c] === k;
+        const b = h('div', 'mn-g ' + k + (on ? ' on' : ''), on ? g[k] : gh[k]);
+        b.onclick = () => {
+          const was = b.classList.contains('on');
+          box.querySelectorAll('.mn-g').forEach(o => { o.classList.remove('on'); o.innerHTML = gh[o.classList[1]]; });
+          if (!was) { b.classList.add('on'); b.innerHTML = g[k]; }
+        };
+        box.appendChild(b);
+      });
+      return box;
+    };
+    const tab = h('div', 'mn-tab');
+    const hd = h('div', 'mn-tr2 hd'); hd.appendChild(h('div', 'mn-tc c0', 'Camp')); hd.appendChild(h('div', 'mn-tc c1', 'Joueurs / Rôles'));
+    COLS.forEach(c => hd.appendChild(h('div', 'mn-tc cr', c))); tab.appendChild(hd);
+    ROWS.forEach(([name], r) => {
+      const row = h('div', 'mn-tr2' + (r === 0 ? ' you' : ''));
+      row.appendChild(h('div', 'mn-tc c0', r === 0 ? '<img src="' + ART + 'LogoElu.webp" style="height:44px" alt="">' : '?'));
+      row.appendChild(h('div', 'mn-tc c1', name));
+      COLS.forEach((_, c) => row.appendChild(cell(r, c))); tab.appendChild(row);
+    });
+    const leg = h('div', 'mn-leg');
+    [['ok', 'Sûr'], ['mb', 'Peut-être'], ['no', 'Pas lui']].forEach(([k, t]) => leg.appendChild(h('span', '', '<span class="mn-g ' + k + ' on">' + g[k] + '</span>' + t)));
+    tab.appendChild(leg); st.appendChild(tab);
+    const rs = h('div', 'mn-rs', '<div class="n">Va’ahl, le Mage Occulte</div><div class="f">Anomalie</div><div class="mn-stars">' + STARS[K] + '</div>' +
+      '<div class="p">Il commence corrompu. Il voit quels joueurs sont corrompus.</div>');
+    st.appendChild(rs);
+    ['Simulated 1', 'Simulated 2'].forEach((n, i) => {
+      const t = h('div', 'mn-ready', '<span>' + n + '</span><span class="ck">' + READY[K] + '</span>');
+      t.style.top = (500 + i * 84) + 'px'; t.style.transform = 'rotate(' + (i ? 1 : -1) + 'deg)'; st.appendChild(t);
+    });
+    st.insertAdjacentHTML('afterbegin', '<div class="mn-dark"></div>');
+  });
+
+  // ---------- scrollbars ----------
+  const MSG = [
+    ['sv', 'Le jour 4 se lève.'], ['Simulated 2', "J'ai rendu visite à Simulated 4 cette nuit."], ['Simulated 4', "Et alors ? Je dormais."],
+    ['Player236', 'Simulated 4 était éveillé à la nuit 2, je l’ai vu.'], ['Simulated 6', 'Le Robot n’a été touché par personne.'],
+    ['Simulated 5', 'On perd du temps, votons Simulated 3.'], ['Simulated 3', 'Pourquoi moi ? Je suis l’Incomplet.'],
+    ['Simulated 7', 'Deux corrompus sur six, il faut agir.'], ['sv', 'Le vote commence.'], ['Simulated 1', 'Je vote Simulated 4.'],
+    ['Simulated 2', 'Pareil.'], ['Simulated 4', 'Vous faites une erreur.'], ['sv', 'Simulated 4 est enchaîné.'],
+    ['sv', 'La nuit 5 tombe.'], ['sv', 'Le jour 5 se lève.'], ['Simulated 6', 'Encore une corruption cette nuit.'],
+    ['Simulated 5', 'C’est Simulated 7, elle parle trop.'], ['Player236', 'Abyss voit les corrompus, c’est toi, Simulated 5.'],
+    ['Simulated 7', 'Je vote Simulated 5.'], ['Simulated 3', 'Moi aussi.'], ['sv', 'Simulated 5 est enchaîné.'], ['sv', 'La nuit 6 tombe.'],
+  ];
+  document.querySelectorAll('[data-scroll]').forEach(st => {
+    st.innerHTML = '<div class="mn-dark"></div><div class="mn-chat"><div class="hd">Général</div><div class="mn-msgs mn-' + st.dataset.scroll + '"></div><div class="in">Enter text...</div></div>';
+    const m = st.querySelector('.mn-msgs');
+    MSG.forEach(([w, t]) => m.appendChild(h('p', w === 'sv' ? 'sv' : '', w === 'sv' ? t : '<b>' + w + '</b> : ' + t)));
+    requestAnimationFrame(() => { m.scrollTop = (m.scrollHeight - m.clientHeight) * .45; });
+    let to; m.addEventListener('scroll', () => { m.classList.add('mn-scrolling'); clearTimeout(to); to = setTimeout(() => m.classList.remove('mn-scrolling'), 700); });
+  });
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

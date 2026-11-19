@@ -1,0 +1,26 @@
+/* Every vertical scrollbar of the UI Toolkit screens (T9 maquettes menus v1 D1): the thin 6 px stroke of the role
+ * sheet, in the colour of the text it scrolls. A screen sets --cdp-scroll-thumb / --cdp-scroll-track on its root
+ * to match its surface (ink on parchment, cream on dark); the role sheet and the lobby keep their own ink rules. */
+.unity-scroller--vertical {
+    width: 6px;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+}
+
+.unity-scroller--vertical .unity-base-slider__tracker {
+    background-color: var(--cdp-scroll-track);
+    border-width: 0;
+    border-radius: 3px;
+}
+
+.unity-scroller--vertical #unity-dragger {
+    background-color: var(--cdp-scroll-thumb);
+    border-width: 0;
+    border-radius: 3px;
+    width: 6px;
+}
+
+.unity-scroller--vertical .unity-scroller__low-button,
+.unity-scroller--vertical .unity-scroller__high-button {
+    display: none;
+}

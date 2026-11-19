@@ -46,13 +46,18 @@ namespace Board.UI.CharacterBar
 
         [SerializeField] private float hoverTweenDuration = 0.35f;
 
-        [Tooltip("Coloured outline drawn around the portrait while hovered, on top of the zoom: tells the player " +
-                 "the portrait is clickable and opens the role card (GD request). Placeholder colour, design-owned.")]
-        [SerializeField] private Color hoverOutlineColor = new Color(1f, 0.82f, 0.2f, 1f);
+        [Tooltip("Halo drawn around the portrait while hovered, on top of the zoom: tells the player the portrait is " +
+                 "clickable and opens the role card (GD request). T9 maquettes menus v1 O3: the same yellow halo as the " +
+                 "3D objects under the pointer (PC_Renderer, Outline Hover), not a flat outline.")]
+        [SerializeField] private Color hoverHaloColor = new Color(1f, 0.806f, 0.325f, 1f);
 
-        [SerializeField] private float hoverOutlineWidth = 4f;
+        [Tooltip("Sliced halo sprite (Assets/Art/Sprites/T9/Halo_Survol.png): a thin line on the portrait's edge and a soft glow outside it.")]
+        [SerializeField] private Sprite hoverHaloSprite;
 
-        private Outline _hoverOutline;
+        [Tooltip("How far the glow reaches outside the portrait, as a share of its width.")]
+        [SerializeField] private float hoverHaloReach = 0.2f;
+
+        private Image _hoverHalo;
 
         [Tooltip("Greyscale material for a role the local player knows is fake (anomalies learn some at game start: " +
                  "GD \"rôle factice en noir et blanc\"). Wire Assets/Shaders/UI_Grayscale.mat.")]
@@ -100,13 +105,9 @@ namespace Board.UI.CharacterBar
             };
             customButton.onButtonHovered += OnButtonHovered;
             customButton.onButtonUnhovered += OnButtonUnhovered;
-            if (characterImage != null)
+            if (characterImage != null && hoverHaloSprite != null)
             {
-                _hoverOutline = characterImage.gameObject.AddComponent<Outline>();
-                _hoverOutline.effectColor = hoverOutlineColor;
-                _hoverOutline.effectDistance = new Vector2(hoverOutlineWidth, -hoverOutlineWidth);
-                _hoverOutline.useGraphicAlpha = false;
-                _hoverOutline.enabled = false;
+                _hoverHalo = BuildHoverHalo(characterImage, hoverHaloSprite, hoverHaloColor, hoverHaloReach);
             }
             // Story 7.4: CharactersBarObject is instantiated by TWO creators (CharactersBar + NoteRibbon),
             // so a single lane-B push is impractical; it resolves the (non-de-singletonised) revealer from
@@ -152,7 +153,7 @@ namespace Board.UI.CharacterBar
                 "seat", playerCharacter != null ? playerCharacter.ownerClientId.Value : ulong.MaxValue,
                 "rest", _mainCamera != null ? (Vector2)_mainCamera.WorldToViewportPoint(_restWorld) : Vector2.negativeInfinity));
             canvasObject.sortingOrder += 1;
-            if (_hoverOutline != null) _hoverOutline.enabled = true;
+            SetHoverHalo(true);
             onCharacterBarObjectHovered?.Invoke(playerCharacter);
         }
 
@@ -166,8 +167,38 @@ namespace Board.UI.CharacterBar
                 _visual.DOLocalRotateQuaternion(_restLocalRotation, hoverTweenDuration).SetEase(Ease.OutQuint);
             }
             canvasObject.sortingOrder -= 1;
-            if (_hoverOutline != null) _hoverOutline.enabled = false;
+            SetHoverHalo(false);
             onCharacterBarObjectUnhovered?.Invoke(playerCharacter);
+        }
+
+        // The halo is a child of the portrait image: it lifts and turns with it. Its sprite is transparent inside the
+        // line, so drawn on top it only rims the portrait. Never a raycast target (the button stays the portrait).
+        private static Image BuildHoverHalo(Image _portrait, Sprite _sprite, Color _color, float _reachShare)
+        {
+            // In the portrait's own units: its canvas may be scaled in the world.
+            float _reach = Mathf.Max(0.0001f, ((RectTransform)_portrait.transform).rect.width * _reachShare);
+            var _go = new GameObject("HoverHalo", typeof(RectTransform), typeof(Image));
+            var _rect = (RectTransform)_go.transform;
+            _rect.SetParent(_portrait.transform, false);
+            _rect.anchorMin = Vector2.zero;
+            _rect.anchorMax = Vector2.one;
+            _rect.offsetMin = new Vector2(-_reach, -_reach);
+            _rect.offsetMax = new Vector2(_reach, _reach);
+            var _image = _go.GetComponent<Image>();
+            _image.sprite = _sprite;
+            _image.type = Image.Type.Sliced;
+            // The sprite's glow is 40 px wide outside its line: scale its borders so the glow spans _reach.
+            _image.pixelsPerUnitMultiplier = 40f / _reach;
+            _image.raycastTarget = false;
+            _image.color = new Color(_color.r, _color.g, _color.b, 0f);
+            return _image;
+        }
+
+        private void SetHoverHalo(bool _on)
+        {
+            if (_hoverHalo == null) return;
+            _hoverHalo.DOKill();
+            _hoverHalo.DOFade(_on ? 1f : 0f, hoverTweenDuration * 0.6f).SetLink(_hoverHalo.gameObject);
         }
 
         private void EnsureCamera()

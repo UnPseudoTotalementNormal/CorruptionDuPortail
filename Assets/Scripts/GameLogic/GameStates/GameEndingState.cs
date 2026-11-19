@@ -45,39 +45,55 @@ namespace GameLogic.GameStates
 
         public async UniTaskVoid GameEndingAnimation()
         {
+            // T9 maquettes menus v1 E3: each player reads their own result first (EndGameAnnounce), then every card
+            // turns over at its place, the winners gold and the losers dimmed (before: only the winners' cards).
+            float _start = Time.realtimeSinceStartup;
+            var _winners = new HashSet<ulong>(winningTeams.Values.SelectMany(_ids => _ids));
+            ulong _local = CharacterQuery.GetLocalClientId();
+            var _announce = stateUI != null ? stateUI.GetComponentInChildren<UI.EndGame.EndGameAnnounce>(true) : null;
+            if (_announce != null)
+            {
+                _announce.Play(winningTeams.Keys.ToList(), _winners.Contains(_local));
+            }
+            else
+            {
+                GameLog.Warn("ui", "end.announce.missing", "reason", "no EndGameAnnounce on the state UI");
+            }
+
             // Tied to the board's lifetime: "Terminer la partie" during the animation unloads the scene (B10 / N4 family).
             var _boardAlive = boardManager.GetCancellationTokenOnDestroy();
             if (await boardManager.HideAllCards().AttachExternalCancellation(_boardAlive).SuppressCancellationThrow())
             {
                 return;
             }
-            
-            foreach (var _winningTeam in winningTeams)
+
+            var _characters = CharacterQuery.GetCharacters(false).Where(_c => _c != null && !_c.isFake).ToList();
+            foreach (var _character in _characters)
             {
-                foreach (var _playerId in _winningTeam.Value)
-                {
-                    var _character = CharacterQuery.GetCharacter(_playerId, false);
-                    if (_character == null)
-                    {
-                        continue;
-                    }
-                    
-                    var _newCard = boardManager.AddNewCard();
-                    _newCard.SetInfo(_character);
-                    _ = _newCard.ShowPseudoWithRevealedInfo();
-                    _ = _newCard.ShowBackSide(true);
-                }
+                var _newCard = boardManager.AddNewCard();
+                _newCard.SetInfo(_character);
+                _ = _newCard.ShowPseudoWithRevealedInfo();
+                _ = _newCard.ShowBackSide(true);
             }
-            
-            if (await UniTask.Delay(TimeSpan.FromSeconds(1), cancellationToken: _boardAlive).SuppressCancellationThrow())
+
+            float _wait = UI.EndGame.EndGameAnnounce.CardsAt - (Time.realtimeSinceStartup - _start);
+            if (_wait > 0f && await UniTask.Delay(TimeSpan.FromSeconds(_wait), cancellationToken: _boardAlive).SuppressCancellationThrow())
             {
                 return;
             }
 
             boardManager.PlaceAllCardsToPosition();
-            foreach (var _card in boardManager.visibleCards)
+            GameLog.Info("game", "end.cards", "count", boardManager.visibleCards.Count, "winners", _winners.Count);
+            foreach (var _card in boardManager.visibleCards.ToList())
             {
                 _ = _card.ShowFrontSide();
+                bool _won = _card.characterInfo != null && _winners.Contains(_card.characterInfo.ownerClientId.Value);
+                if (_announce != null) _announce.MarkCard(_card, _won);
+                if (await UniTask.Delay(TimeSpan.FromSeconds(UI.EndGame.EndGameAnnounce.CardStagger), cancellationToken: _boardAlive)
+                        .SuppressCancellationThrow())
+                {
+                    return;
+                }
             }
         }
         

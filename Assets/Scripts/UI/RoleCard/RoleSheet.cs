@@ -44,7 +44,6 @@ namespace UI.RoleCard
     public static class RoleSheet
     {
         private const string Bullet = "•";
-        private const string Star = "★";
         private const int DifficultyPips = 3;
         private const int LongNameThreshold = 18;
 
@@ -147,10 +146,11 @@ namespace UI.RoleCard
             host.Clear();
             for (var i = 1; i <= DifficultyPips; i++)
             {
-                var pip = new Label(Star);
+                // T9 maquettes menus v1 K2: a pen-drawn star (Plume_Etoile, USS), in the faction ink.
+                var pip = new VisualElement();
                 pip.AddToClassList("role-sheet__pip");
                 if (i > difficulty) pip.AddToClassList("role-sheet__pip--empty");
-                pip.style.color = ink;
+                pip.style.unityBackgroundImageTintColor = ink;
                 host.Add(pip);
             }
         }

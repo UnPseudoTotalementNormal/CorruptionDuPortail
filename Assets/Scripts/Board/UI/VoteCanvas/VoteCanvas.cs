@@ -130,6 +130,12 @@ namespace Board.UI.VoteCanvas
 
         private void OnCardHovered(Card _card)
         {
+            // The panel slides out to show the vote button. Without one (by day) only its text is out already: sliding
+            // further pushed "A voté" behind the roles' cork under the cards' row (T38).
+            if (!voteButton.gameObject.activeSelf)
+            {
+                return;
+            }
             rectTransform.DOAnchorPos(Vector2.zero, 0.5f).SetEase(Ease.OutQuint).SetLink(gameObject);
         }
 

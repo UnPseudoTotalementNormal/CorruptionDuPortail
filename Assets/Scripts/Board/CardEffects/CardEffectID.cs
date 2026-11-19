@@ -9,5 +9,7 @@ namespace Board
         Healed = 3,
         // Local to the Orpheline: she visited this player with Manque d'affection (the card, never the role).
         OrphelineVisit = 4,
+        // Local to the Messager: he linked this player with Lié par l'encre (T9, the phone).
+        MessagerLink = 5,
     }
 }

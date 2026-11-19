@@ -14,17 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::Avatars.EmoteSet
   _emotes:
   - displayName: Coucou
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 31a8045e21567b34bac27a3c4853ca32, type: 3}
     animatorEmoteId: 1
     loops: 1
     oneShotSeconds: 2
   - displayName: Pleurer
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 33f6d8e9b3f44e546ac1b062280d77e1, type: 3}
     animatorEmoteId: 2
     loops: 1
     oneShotSeconds: 2
   - displayName: Accuser
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: 9b62b911edd2f9347bc37e375615e220, type: 3}
     animatorEmoteId: 3
     loops: 1
     oneShotSeconds: 2

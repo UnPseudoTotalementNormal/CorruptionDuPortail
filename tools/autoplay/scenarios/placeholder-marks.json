@@ -1,0 +1,26 @@
+{
+  "name": "placeholder-marks",
+  "goal": "T9 (maquettes placeholders v1): the new marks on the host's screen, by real input. The host is the Dryade; the Messager and the Orpheline (bots) both target the host, so the host sees Wouh's phone on the Messager's thumbnail (Lié par l'encre, M2) and the bear on the Orpheline's thumbnail (O1). The host blesses someone (gold rim B2), sees the healed leaf (S2) and the sticker verdicts (K1), its own card carries the paw print instead of « Moi » (U2), the counters show Wouh's robot and corrupted lotus (C1), and the end-of-turn plank « Fin de tour » (F1) is on screen while the host is awake and slides out of it otherwise (D2). Checked on the captures; the run proves the link, the visit and the verdicts happened. The plank's real clicks (sleep, vote skip) are proven by real-input-actions (bots here use every power, so nobody sleeps by the button).",
+  "mode": "build",
+  "seed": 4601,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-force-roles", "Dryade,Messager,Orpheline",
+    "-autoplay-role-holder", "host,bot,bot",
+    "-autoplay-target-map", "encre=host;affection=host",
+    "-autoplay-power-use-probability", "1",
+    "-autoplay-max-days", "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "power.verdict", "detail": "Bénédiction", "min": 1},
+    {"type": "event", "kind": "power.start", "detail": "Lié par l'encre", "min": 1},
+    {"type": "event", "kind": "power.start", "detail": "Manque d'affection", "min": 1},
+    {"type": "event", "kind": "input.error", "min": 0, "max": 0},
+    {"type": "noErrors", "ignore": ["ClientLoadedSynchronization", "message header is corrupted"]}
+  ]
+}

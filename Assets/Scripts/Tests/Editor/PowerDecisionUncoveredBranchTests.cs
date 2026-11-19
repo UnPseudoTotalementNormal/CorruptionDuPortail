@@ -126,12 +126,14 @@ namespace Tests.Editor
         [Test]
         public void BoundByInk_NoInkChatState_ChatIdFallsBackToMinusOne()
         {
-            var o = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
+            var o = new BoundByInkDecision { IconId = 42, LinkCardEffectId = 5 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new DiscoverChat(-1, Loc.Token("Lié par l'encre"), PowerEffectAudience.Specific(1)),
                 new RegisterInkTarget(1),
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(5, 1, false, 0),
             }, o.Effects);
         }
     }

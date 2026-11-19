@@ -23,8 +23,17 @@ if [ "${1:-}" = "build" ]; then
   fi
   result="$ROOT/Builds/Autoplay/build-result.json"
   rm -f "$result"
-  UNITY_NO_BANNER=1 unity command --project-path "$ROOT" eval --result-only \
-    --code 'UnityEditor.EditorApplication.delayCall += CdpBuild.BuildAutoplay; return "queued";' >/dev/null || exit 3
+  # A busy editor (heavy CPU elsewhere, a scene loading) answers "Main thread operation timed out after 5000ms" while the
+  # delayCall still gets queued and the build still runs: wait for the result anyway. Any other failure is fatal and said.
+  if ! queued=$(UNITY_NO_BANNER=1 unity command --project-path "$ROOT" eval --result-only \
+      --code 'UnityEditor.EditorApplication.delayCall += CdpBuild.BuildAutoplay; return "queued";' 2>&1); then
+    if echo "$queued" | grep -q "timed out"; then
+      echo "build: the editor answered late (main thread busy); waiting for the build anyway" >&2
+    else
+      echo "build: could not queue the build in the editor:" >&2; echo "$queued" >&2
+      exit 3
+    fi
+  fi
   for _ in $(seq 1 360); do  # 30 min
     [ -f "$result" ] && break
     sleep 5

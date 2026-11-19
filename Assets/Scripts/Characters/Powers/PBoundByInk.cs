@@ -43,6 +43,10 @@ namespace Characters.Powers
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            // Opaque identities for the link marks (T9): the icon id resolves back to this power's bar sprite (the
+            // phone), the card effect id back to CardEffectID — same pattern as PLackOfAffection.
+            _decision.IconId = NetworkObjectId;
+            _decision.LinkCardEffectId = (int)Board.CardEffectID.MessagerLink;
             targetValidator.AddRule(ctx => TargetUtils.IsTargetValid(ctx.targetId, targetIncludeFlags, ctx.targetType));
             targetValidator.AddRule(ctx => !alreadyTargetedClients.Contains(ctx.targetId));
         }
@@ -90,6 +94,8 @@ namespace Characters.Powers
             // State goes into the context (the decision READS ctx.State<IInkChatState>().ChatId) and the
             // runtime (RegisterInkTarget WRITES the ink lists) — both resolve to this carrier via SelfState.
             var _selfState = SelfState;
+            Diagnostics.Logs.GameLog.Info("power", "power.ink.link", "owner", ownerClientId.Value, "target", _characterId,
+                "marks", "card-for-owner+thumbnail-for-target");
             RunDecisionEffects(_decision, new PowerContext(
                 ownerSlot: (int)ownerClientId.Value, targetSlot: (int)_characterId, state: _selfState), _selfState);
         }

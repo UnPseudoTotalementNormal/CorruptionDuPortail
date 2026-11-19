@@ -401,10 +401,6 @@
       "en": "Sure"
     },
     {
-      "fr": "peut être",
-      "en": "maybe"
-    },
-    {
       "fr": "Pas lui",
       "en": "Not them"
     },
@@ -1393,10 +1389,6 @@
       "en": "Music"
     },
     {
-      "fr": "Sfx",
-      "en": "SFX"
-    },
-    {
       "fr": "Voix",
       "en": "Voice"
     },
@@ -1419,10 +1411,6 @@
     {
       "fr": "Terminer la partie",
       "en": "End the game"
-    },
-    {
-      "fr": "Gagnants",
-      "en": "Winners"
     },
     {
       "fr": "Vous avez le rôle de...",
@@ -1627,6 +1615,58 @@
     {
       "fr": "Tu sais que ce rôle est corrompu.",
       "en": "You know this role is corrupted."
+    },
+    {
+      "fr": "Victoire",
+      "en": "Victory"
+    },
+    {
+      "fr": "Défaite",
+      "en": "Defeat"
+    },
+    {
+      "fr": "Un solitaire l’emporte",
+      "en": "A loner wins"
+    },
+    {
+      "fr": "{0} l’emportent",
+      "en": "{0} win"
+    },
+    {
+      "fr": "{0} et {1} l’emportent",
+      "en": "{0} and {1} win"
+    },
+    {
+      "fr": "Les Élus",
+      "en": "The Chosen"
+    },
+    {
+      "fr": "Les Anomalies",
+      "en": "The Anomalies"
+    },
+    {
+      "fr": "Les Marginaux",
+      "en": "The Outsiders"
+    },
+    {
+      "fr": "Les solitaires",
+      "en": "The loners"
+    },
+    {
+      "fr": "Reprendre",
+      "en": "Resume"
+    },
+    {
+      "fr": "L’hôte va terminer la partie.",
+      "en": "The host will end the game."
+    },
+    {
+      "fr": "Peut-être",
+      "en": "Maybe"
+    },
+    {
+      "fr": "Effets",
+      "en": "Effects"
     }
   ]
 }

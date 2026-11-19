@@ -27,9 +27,9 @@
                     </ui:VisualElement>
                     <ui:Label name="fake-badge" text="Rôle factice : personne ne le joue dans cette partie" class="role-sheet__fake cdp-is-collapsed" />
                     <ui:VisualElement name="difficulty" class="role-sheet__difficulty">
-                        <ui:Label text="★" class="role-sheet__pip" />
-                        <ui:Label text="★" class="role-sheet__pip" />
-                        <ui:Label text="★" class="role-sheet__pip" />
+                        <ui:VisualElement class="role-sheet__pip" />
+                        <ui:VisualElement class="role-sheet__pip" />
+                        <ui:VisualElement class="role-sheet__pip" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 

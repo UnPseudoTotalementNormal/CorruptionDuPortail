@@ -234,7 +234,7 @@ namespace Autoplay
                     await TourSlider(_panel);
                 }
 
-                Transform _exit = _panel.transform.Find("ExitButton");
+                Transform _exit = FindInPause(_panel.transform, "ExitButton");
                 bool _closed = await ClickTarget(_exit ? _exit.gameObject : null, "pause-close", () => !_panel.isPanelOpen);
                 TourStep("pause-close", _closed);
 
@@ -570,6 +570,16 @@ namespace Autoplay
             return true;
         }
 
+        // The pause menu's words sit in a list under the panel since T9 (maquettes menus v1 P3): look at every depth.
+        private static Transform FindInPause(Transform _panel, string _name)
+        {
+            foreach (Transform _t in _panel.GetComponentsInChildren<Transform>(true))
+            {
+                if (_t.name == _name) return _t;
+            }
+            return null;
+        }
+
         /// <summary>
         /// Real-input leave (lever quit-at with real input): pause button, then the pause menu's Leave button, as a
         /// player leaves. True once the client is disconnected; false = the caller shuts down directly.
@@ -587,7 +597,7 @@ namespace Autoplay
                     return false;
                 }
                 await UniTask.Delay(TimeSpan.FromSeconds(0.4f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
-                Transform _leave = _panel.transform.Find("LeaveGameButton");
+                Transform _leave = FindInPause(_panel.transform, "LeaveGameButton");
                 return await ClickTarget(_leave ? _leave.gameObject : null, "leave-button",
                     () => networkManager == null || !networkManager.IsConnectedClient);
             }

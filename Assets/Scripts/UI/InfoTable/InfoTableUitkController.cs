@@ -82,9 +82,11 @@ namespace UI.InfoTable
         private const int CompactAtRoles = 6;
         private const int IconAtRoles = 9;
 
-        private const string GlyphSure = "✓";
-        private const string GlyphMaybe = "?";
-        private const string GlyphNot = "✗";
+        // T9 maquettes menus v1 K2: the ✓ ? ✗ are pen strokes (Assets/Art/Sprites/T9/Plume_*.png, USS background
+        // images per segment class), no longer font glyphs.
+        private const string GlyphSure = "";
+        private const string GlyphMaybe = "";
+        private const string GlyphNot = "";
         private const string CollapsedClass = "cdp-is-collapsed";
 
         [SerializeField] private UIDocument _document;
@@ -423,7 +425,7 @@ namespace UI.InfoTable
             var legend = new VisualElement { name = "legend" };
             legend.AddToClassList(LegendClass);
             legend.Add(BuildLegendItem(SegSureClass, GlyphSure, "Sûr")); // loc
-            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "peut être")); // loc
+            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "Peut-être")); // loc
             legend.Add(BuildLegendItem(SegNotClass, GlyphNot, "Pas lui")); // loc
             footer.Add(legend);
 

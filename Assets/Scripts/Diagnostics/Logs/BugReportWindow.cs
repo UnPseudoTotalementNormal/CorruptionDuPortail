@@ -55,7 +55,7 @@ namespace Diagnostics.Logs
         private TextMeshProUGUI _sendText;
         private TextMeshProUGUI _titleText;
         private TextMeshProUGUI _cancelText;
-        private readonly System.Collections.Generic.List<Text> _menuLineLabels = new();
+        private readonly System.Collections.Generic.List<TMPro.TMP_Text> _menuLineLabels = new();
         private Texture2D _capture;
         private byte[] _jpg;
         private bool _busy;
@@ -95,7 +95,7 @@ namespace Diagnostics.Logs
             if (_titleText != null) _titleText.text = Loc.Tr(Title);
             if (_cancelText != null) _cancelText.text = Loc.Tr(CancelLabel);
             _menuLineLabels.RemoveAll(_gone => _gone == null); // pause menus of unloaded scenes
-            foreach (Text _label in _menuLineLabels) _label.text = Loc.Tr(MenuLineLabel);
+            foreach (TMPro.TMP_Text _label in _menuLineLabels) _label.text = Loc.Tr(MenuLineLabel);
         }
 
         private void Update()
@@ -292,7 +292,8 @@ namespace Diagnostics.Logs
                 {
                     foreach (LeaveGameButton _leave in _rootObject.GetComponentsInChildren<LeaveGameButton>(true))
                     {
-                        if (_leave.transform.parent == null || _leave.transform.parent.name != "PausePanel") continue;
+                        PanelComponent _pause = _leave.GetComponentInParent<PanelComponent>(true);
+                        if (_pause == null || _pause.name != "PausePanel") continue;
                         AddMenuLine(_leave);
                     }
                 }
@@ -303,7 +304,8 @@ namespace Diagnostics.Logs
             }
         }
 
-        /// <summary>« Signaler un bug » under « Quitter la partie »: a copy of that button, without its leave behaviour.</summary>
+        /// <summary>« Signaler un bug » just before « Quitter la partie » in the pause menu's list of words (T9 maquettes
+        /// menus v1 P3): a copy of that button, without its leave behaviour.</summary>
         private void AddMenuLine(LeaveGameButton _leave)
         {
             Transform _panel = _leave.transform.parent;
@@ -315,19 +317,20 @@ namespace Diagnostics.Logs
             var _button = _line.GetComponent<CustomButton>();
             _button.onButtonClickedUnityEvent = new UnityEvent();
             _line.name = "ReportBugButton";
-            Text _label = _line.GetComponentInChildren<Text>(true);
+            TMPro.TMP_Text _label = _line.GetComponentInChildren<TMPro.TMP_Text>(true);
             if (_label != null)
             {
+                // This line follows the language itself (_menuLineLabels): the copied label's own pass would put the
+                // leave button's text back.
+                DestroyImmediate(_label.GetComponent<Localization.LocalizedLabel>());
                 _label.text = Loc.Tr(MenuLineLabel);
                 _menuLineLabels.Add(_label);
             }
-            var _source = (RectTransform)_leave.transform;
-            var _rect = (RectTransform)_line.transform;
             _line.transform.SetParent(_panel, false);
-            _line.transform.SetSiblingIndex(_leave.transform.GetSiblingIndex() + 1);
-            _rect.anchoredPosition = _source.anchoredPosition - new Vector2(0f, _source.rect.height + 12f);
+            // The words are laid out by the list: « Signaler un bug » comes just before « Quitter la partie ».
+            _line.transform.SetSiblingIndex(_leave.transform.GetSiblingIndex());
             Destroy(_holder);
-            CanvasGroup _menu = _panel.GetComponent<CanvasGroup>();
+            CanvasGroup _menu = _leave.GetComponentInParent<PanelComponent>(true).GetComponent<CanvasGroup>();
             _button.onButtonClicked += () => Open(_menu).Forget();
         }
 

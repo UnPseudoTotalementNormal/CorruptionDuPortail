@@ -64,15 +64,14 @@
     text-overflow: ellipsis;
 }
 
-/* The same red ink tick as "Je suis prêt" on the tablet. */
+/* The same red ink tick as "Je suis prêt" on the tablet: a pen stroke (T9 maquettes menus v1 K2). */
 .lobby-players__tick {
     position: absolute;
-    right: 12px;
-    top: 3px;
-    width: 9px;
-    height: 18px;
-    border-right-width: 3px;
-    border-bottom-width: 3px;
-    border-color: rgb(138, 16, 16);
-    rotate: 40deg;
+    right: 8px;
+    top: -2px;
+    width: 26px;
+    height: 26px;
+    background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Coche.png");
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(138, 16, 16);
 }

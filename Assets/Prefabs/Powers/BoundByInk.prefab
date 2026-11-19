@@ -72,6 +72,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 16
@@ -688,9 +691,13 @@ MonoBehaviour:
   power3DObjectPrefab: {fileID: 5248318139302726770, guid: 2dd0cf50bbf588b4fa6a862ce7ea87c8, type: 3}
   maxWaitTime: 60
   isPassive: 0
+  hideFromRoleCard: 0
   hasToBeAwakened: 1
   targetIncludeFlags: 254
   powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   maxPowerUse: 1
   powerUseRegenPerAwakening: -1
@@ -708,6 +715,37 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 21300000, guid: 8632ccb6d08c14e48854763f7bd593b0, type: 3}
+  grantOrder:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  passiveOverride:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  marqueSourceId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   powerComponents: []
   idHolderServer: 0
   pickerDescription: "Choisissez un joueur \xE0 lier par l'encre."

@@ -599,12 +599,14 @@ namespace Tests.Editor
         public void BoundByInk_TargetsDiscoversRegisters()
         {
             var state = new FakeState().With<IInkChatState>(new FakeInk { ChatId = 515100 });
-            var outcome = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            var outcome = new BoundByInkDecision { IconId = 42, LinkCardEffectId = 5 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
                 new DiscoverChat(515100, Loc.Token("Lié par l'encre"), PowerEffectAudience.Specific(1)),
                 new RegisterInkTarget(1),
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(5, 1, false, 0),
             }, outcome.Effects);
         }
 

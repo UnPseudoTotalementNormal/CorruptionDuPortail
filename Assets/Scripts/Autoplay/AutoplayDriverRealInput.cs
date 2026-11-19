@@ -76,6 +76,19 @@ namespace Autoplay
             await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
         }
 
+        // T9: the end-of-turn plank slides in from under the screen when its seat wakes up (0.35 s). A player sees it
+        // arrive before clicking; the bot waits the same way instead of clicking it while it is still off screen.
+        private async UniTask WaitSkipButtonSettled(SkipButton _button)
+        {
+            if (_button == null) return;
+            float _until = Time.realtimeSinceStartup + 2f;
+            await UniTask.Yield(PlayerLoopTiming.Update, Cancel); // the button reads the new seat's state on its Update
+            while (!_button.IsSettled && Time.realtimeSinceStartup < _until)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
+            }
+        }
+
         private async UniTaskVoid SleepByClick(Character _character)
         {
             inputBusy = true;
@@ -85,6 +98,7 @@ namespace Autoplay
             {
                 await PrepareSeat(_id);
                 SkipButton _button = FindAnyObjectByType<SkipButton>(FindObjectsInactive.Include);
+                await WaitSkipButtonSettled(_button);
                 _clicked = await ClickTarget(_button ? _button.gameObject : null, $"sleep {_id}",
                     () => !_character || !_character.isAwakened.Value);
             }
@@ -339,6 +353,7 @@ namespace Autoplay
                 else
                 {
                     SkipButton _button = FindAnyObjectByType<SkipButton>(FindObjectsInactive.Include);
+                    await WaitSkipButtonSettled(_button);
                     _clicked = await ClickTarget(_button ? _button.gameObject : null, $"vote-skip {_id}",
                         () => HasVoted(_id, VoteState.SKIP_VOTE_ID));
                 }

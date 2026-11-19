@@ -3184,16 +3184,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.937, g: 0.541, b: 0.173, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: 3a6d1d992308d674fbc0f67770b4db7c, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -4158,7 +4158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::Board.UI.CharacterBar.CorruptionIconDriver
   characterManager: {fileID: 1541735909}
-  corruptionSprite: {fileID: 21300000, guid: 25eb58769ba58d641bcb5d985aafdcd2, type: 3}
+  corruptionSprite: {fileID: 21300000, guid: c4ae70c8d9c88034c9110442ea8b2be4, type: 3}
   cardEffectManager: {fileID: 541973516}
 --- !u!1 &465352332
 GameObject:
@@ -4817,6 +4817,9 @@ MonoBehaviour:
     - Key: 4
       Value:
         cardEffectPrefab: {fileID: 7796531256758399116, guid: 14c4a0a00c9042f0b0ac10b9d8e1f786, type: 3}
+    - Key: 5
+      Value:
+        cardEffectPrefab: {fileID: 7796531256758399116, guid: 8908d45f3b3044469013b04ff0da1504, type: 3}
 --- !u!1 &552546343
 GameObject:
   m_ObjectHideFlags: 0
@@ -14065,7 +14068,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 25eb58769ba58d641bcb5d985aafdcd2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c4ae70c8d9c88034c9110442ea8b2be4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -16882,14 +16885,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::UI.PowerFeedback.VerdictIconFeedback
   playOnCorrect: 1
   playOnIncorrect: 1
-  correctSpriteOverride: {fileID: 0}
-  incorrectSpriteOverride: {fileID: 0}
-  correctColor: {r: 0.42, g: 0.92, b: 0.52, a: 1}
-  incorrectColor: {r: 0.95, g: 0.35, b: 0.35, a: 1}
+  correctSpriteOverride: {fileID: 21300000, guid: 4a0e6491cbe6bd046aee8d871d789ed6, type: 3}
+  incorrectSpriteOverride: {fileID: 21300000, guid: fead763be1cc62a498a3a638c5341e6b, type: 3}
+  correctColor: {r: 1, g: 1, b: 1, a: 1}
+  incorrectColor: {r: 1, g: 1, b: 1, a: 1}
   fadeInDuration: 0.16
   holdDuration: 0.36
   fadeOutDuration: 0.45
-  peakAlpha: 0.9
+  peakAlpha: 1
   startScale: 0.55
   endScale: 1
   exitScale: 1.12
@@ -17235,8 +17238,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 656, y: 0}
-  m_SizeDelta: {x: 100, y: 105}
+  m_AnchoredPosition: {x: 556, y: 0}
+  m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1237554687
 MonoBehaviour:
@@ -17250,8 +17253,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff4bd586021a412a86fcc554911f67a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hoverColor: {r: 0.78, g: 0.34, b: 0.3, a: 1}
-  disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  hoverColor: {r: 1, g: 1, b: 1, a: 1}
+  disabledColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   panelImage: {fileID: 0}
   clickSound:
     Guid:
@@ -17289,6 +17292,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afac7a3f86bb40047a752e3e0d8a69ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  slideDuration: 0.35
+  labelOutlineColor: {r: 0.23, g: 0.05, b: 0.03, a: 1}
+  labelOutlineWidth: 0.22
   characterManager: {fileID: 1541735909}
   gameManager: {fileID: 704980999}
 --- !u!1 &1246065860
@@ -18246,14 +18252,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.62, g: 0.2, b: 0.18, a: 1}
+  m_Color: {r: 0.86, g: 0.86, b: 0.86, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: a0c049fc150b17c4ba348f0003d6cc9f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -22097,17 +22103,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Arr\xEAter l'\xE9veil"
+  m_text: Fin de tour
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: fef2948399c2e66408d4c72f40672c35, type: 2}
+  m_sharedMaterial: {fileID: 8926710239446074940, guid: fef2948399c2e66408d4c72f40672c35, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0.965, g: 0.906, b: 0.776, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -22124,12 +22130,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32.55
+  m_fontSize: 51.6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 44
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -22141,7 +22147,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -22163,7 +22169,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 28, y: 12, z: 28, w: 14}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -22557,7 +22563,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1707264693
 RectTransform:
   m_ObjectHideFlags: 0

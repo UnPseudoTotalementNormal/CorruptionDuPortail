@@ -1559,6 +1559,74 @@
     {
       "fr": "Si ce personnage est enchaîné, {var:legacyRoleName} héritera de ce pouvoir.",
       "en": "If this character is chained, {var:legacyRoleName} will inherit this power."
+    },
+    {
+      "fr": "Vision maudite",
+      "en": "Cursed Vision"
+    },
+    {
+      "fr": "Le Repenti a vu que ce joueur n'est pas un élu.",
+      "en": "The Penitent saw that this player is not a Chosen."
+    },
+    {
+      "fr": "Le Repenti a vu un élu.",
+      "en": "The Penitent saw a Chosen."
+    },
+    {
+      "fr": "Visite de l'Orpheline",
+      "en": "The Orphan's visit"
+    },
+    {
+      "fr": "Tu as rendu visite à ce joueur.",
+      "en": "You visited this player."
+    },
+    {
+      "fr": "Le Messager a lié ce joueur par l'encre.",
+      "en": "The Messenger bound this player by ink."
+    },
+    {
+      "fr": "Soigné",
+      "en": "Healed"
+    },
+    {
+      "fr": "Ce joueur a été soigné.",
+      "en": "This player has been healed."
+    },
+    {
+      "fr": "La Dryade a béni ce joueur.",
+      "en": "The Dryad blessed this player."
+    },
+    {
+      "fr": "Balise",
+      "en": "Beacon"
+    },
+    {
+      "fr": "Le Technomancien a posé une balise sur ce joueur.",
+      "en": "The Technomancer put a beacon on this player."
+    },
+    {
+      "fr": "L'Orpheline est venue te voir cette nuit.",
+      "en": "The Orphan came to see you tonight."
+    },
+    {
+      "fr": "Le Messager t'a lié par l'encre : il peut t'écrire cette nuit.",
+      "en": "The Messenger bound you by ink: he can write to you tonight."
+    },
+    {
+      "fr": "Ciblée",
+      "en": "Targeted"
+    },
+    {
+      "fr": "Ce rôle t'a ciblée cette nuit.",
+      "en": "This role targeted you tonight."
+    },
+    {
+      "fr": "Corrompu",
+      "en": "Corrupted"
+    },
+    {
+      "fr": "Tu sais que ce rôle est corrompu.",
+      "en": "You know this role is corrupted."
     }
   ]
 }

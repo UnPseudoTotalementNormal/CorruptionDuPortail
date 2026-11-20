@@ -332,6 +332,11 @@ namespace Autoplay
                 yield return LoginThroughMenu(_context);
                 if (_context.Failed) yield break;
             }
+            else if (SteamList(_context))
+            {
+                yield return WaitSteamSignIn(_context);
+                if (_context.Failed) yield break;
+            }
             if (isClient)
             {
                 connectPort = _port;
@@ -346,11 +351,16 @@ namespace Autoplay
                     yield return JoinThroughMenuByCode(_context);
                     yield break;
                 }
+                if (SteamList(_context))
+                {
+                    yield return JoinThroughLobbyList(_context);
+                    yield break;
+                }
                 yield return Connect(_context, _port);
                 yield break;
             }
 
-            if (Relay(_context))
+            if (Relay(_context) || SteamList(_context))
             {
                 yield return HostThroughMenu(_context);
                 yield break;
@@ -1591,6 +1601,83 @@ namespace Autoplay
             // Same as the direct connect: host-loss expectations (expect-host-loss) only arm once connected.
             everConnected = true;
             _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through Relay (lobby {_code})");
+        }
+
+        // Scenario lever "steam-list" (Steam build only, each process on its own Steam account): the host clicks Host
+        // (Steam lobby + Steam Datagram Relay, journals "relay.lobby <code>"), the client opens Rejoindre, waits for
+        // the row of that code in the main menu's lobby list (LobbySelectionPanel, Steam lobby search), clicks it,
+        // then Connect. Everything clicked with the virtual devices; no login (the Steam profile signs in).
+        private static bool SteamList(AutoplayContext _context) => _context.Config.Flag("steam-list");
+
+        private IEnumerator WaitSteamSignIn(AutoplayContext _context)
+        {
+            if (!GameFlavor.IsSteam)
+            {
+                _context.Fail("steam-list: this is not a Steam build (CDP_STEAM)");
+                yield break;
+            }
+            CanvasGroup _overlay = null;
+            yield return _context.WaitFor(() =>
+            {
+                LoginMenu _login = UnityEngine.Object.FindAnyObjectByType<LoginMenu>();
+                _overlay = _login != null ? PrivateField<CanvasGroup>(_login, "menuCanvasGroup") : null;
+                return _overlay != null && !_overlay.blocksRaycasts;
+            }, 60f, "steam-list: the Steam sign-in never hid the login screen (is Steam running?)");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("login.ok", "Steam profile");
+            yield return new WaitForSecondsRealtime(0.6f);
+        }
+
+        private IEnumerator JoinThroughLobbyList(AutoplayContext _context)
+        {
+            string _code = _context.Config.Option("join-code");
+            global::UI.MainMenu _menu = UnityEngine.Object.FindAnyObjectByType<global::UI.MainMenu>();
+            if (string.IsNullOrEmpty(_code) || _menu == null)
+            {
+                _context.Fail($"steam-list: no lobby code to look for (join-code='{_code}') or no main menu");
+                yield break;
+            }
+            CanvasGroup _joinPanel = UnityEngine.Object.FindObjectsByType<CanvasGroup>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                .FirstOrDefault(_g => _g.name == "JoinPanel");
+            bool _ok = false;
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-join-open", PrivateField<Button>(_menu, "openJoinMenu").gameObject,
+                () => _joinPanel == null || (_joinPanel.blocksRaycasts && _joinPanel.alpha > 0.5f), _r => _ok = _r);
+            if (!_ok) { _context.Fail("steam-list: the Join panel did not open"); yield break; }
+
+            global::UI.Lobby.LobbySelectionPanel _browser = UnityEngine.Object.FindFirstObjectByType<global::UI.Lobby.LobbySelectionPanel>(FindObjectsInactive.Include);
+            if (_browser == null) { _context.Fail("steam-list: no LobbySelectionPanel in the menu"); yield break; }
+            var _entries = PrivateField<System.Collections.Generic.Dictionary<string, global::UI.LobbyUI.LobbyEntryUI>>(_browser, "existingEntries");
+            global::UI.LobbyUI.LobbyEntryUI _row = null;
+            float _since = Time.realtimeSinceStartup;
+            // The list refreshes itself every 7 s; the host's lobby must show up with its code.
+            yield return _context.WaitFor(() =>
+            {
+                _row = _entries?.Values.FirstOrDefault(_e => _e != null && PrivateField<Network.Services.GameLobby>(_e, "lobby")?.Code == _code);
+                return _row != null;
+            }, 60f, $"steam-list: the host's lobby (code {_code}) never showed in the lobby list ({_entries?.Count ?? 0} other lobby(ies) listed)");
+            if (_context.Failed) yield break;
+            _context.Journal.Record("steam.list", string.Format(CultureInfo.InvariantCulture, "code {0} listed after {1:0.0}s among {2}",
+                _code, Time.realtimeSinceStartup - _since, _entries.Count));
+
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-list-row", PrivateField<Button>(_row, "joinButton").gameObject,
+                () => true, _r => _ok = _r);
+            if (!_ok) { _context.Fail("steam-list: the lobby row could not be clicked"); yield break; }
+            yield return new WaitForSecondsRealtime(0.3f);
+            yield return AutoplayMenuTour.Click(realInput, _context.Journal, "menu-list-connect", PrivateField<Button>(_browser, "connectButton").gameObject,
+                () => true, _r => _ok = _r);
+            if (!_ok) { _context.Fail("steam-list: the Connect button could not be clicked"); yield break; }
+            _context.Journal.Record("relay.join", _code);
+
+            yield return _context.WaitFor(() =>
+            {
+                gameManager = CompositionRoot.For(networkManager).GameManager;
+                characterManager = CompositionRoot.For(networkManager).CharacterManager;
+                return networkManager.IsConnectedClient && gameManager != null && gameManager.IsSpawned && characterManager != null &&
+                       characterManager.GetCharacters(false).Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId);
+            }, 150f, "steam-list: the client never joined the host's game from the lobby list");
+            if (_context.Failed) yield break;
+            everConnected = true;
+            _context.Journal.Record("connected", $"as client {networkManager.LocalClientId} through Steam (lobby list, code {_code})");
         }
 
         // Clicks the field, types the text with the virtual keyboard; a TMP field (IMGUI key events) gets the same key

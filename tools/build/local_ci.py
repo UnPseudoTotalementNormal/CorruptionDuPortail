@@ -41,10 +41,10 @@ if os.name == "nt":
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-MAIN_REPO = os.path.abspath(os.path.join(subprocess.run(
+# --git-common-dir is relative to REPO in the main checkout (".git"): resolve it against REPO, never the current
+# directory (the logon watcher starts in C:\Windows\System32 and looked for the repository there, 2026-11-15..21).
+MAIN_REPO = os.path.abspath(os.path.join(REPO, subprocess.run(
     ["git", "-C", REPO, "rev-parse", "--git-common-dir"], capture_output=True, text=True).stdout.strip() or ".git", ".."))
-if not os.path.isabs(MAIN_REPO):
-    MAIN_REPO = os.path.abspath(os.path.join(REPO, MAIN_REPO))
 CHECKOUT = os.path.join(os.path.dirname(MAIN_REPO), os.path.basename(MAIN_REPO) + "-ci")
 STATE_DIR = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "CdpLocalCI")
 STATE_FILE = os.path.join(STATE_DIR, "state.json")

@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System;
@@ -97,7 +99,18 @@ namespace UI.RoleCard
         private void OnEnable()
         {
             if (charactersBar != null) charactersBar.onCharacterBarClicked += OnCharacterBarClicked;
+            Loc.LanguageChanged += OnLanguageChanged;
             TryInitialize();
+        }
+
+        // T36: the card shown (if any) is written again in the new language, with the labels of the UXML.
+        private Role _boundRole;
+
+        private void OnLanguageChanged()
+        {
+            if (_root == null) return;
+            LocalizedUitk.Localize(_root);
+            if (_boundRole != null) Bind(_boundRole);
         }
 
         // Start is a fallback: UIDocument builds its rootVisualElement in its OWN OnEnable, and the order
@@ -147,6 +160,7 @@ namespace UI.RoleCard
             // so picking is Ignore until Open() (then Position so the scrim catches the dismiss click).
             _root.pickingMode = PickingMode.Ignore;
             _root.RegisterCallback<PointerDownEvent>(OnRootPointerDown);
+            LocalizedUitk.Localize(_root); // the labels written in RoleCard.uxml
 
             _initialized = true;
         }
@@ -154,6 +168,7 @@ namespace UI.RoleCard
         private void OnDisable()
         {
             if (charactersBar != null) charactersBar.onCharacterBarClicked -= OnCharacterBarClicked;
+            Loc.LanguageChanged -= OnLanguageChanged;
             arbiter?.SetOverlayOpen(this, false);
         }
 
@@ -237,10 +252,11 @@ namespace UI.RoleCard
 
         private void Bind(Role role)
         {
+            _boundRole = role;
             RoleSheetAssets assets = Assets;
             Color faction = RoleSheet.FactionColor(assets, role.factionType);
             Color ink = RoleSheet.InkOf(faction);
-            string roleName = role.roleName.ToString();
+            string roleName = Loc.Tr(role.roleName.ToString());
 
             RoleSheet.SetName(_roleName, roleName);
             _roleName.style.color = ink;
@@ -260,7 +276,7 @@ namespace UI.RoleCard
             RoleSheet.FillPowers(_powers, powers, ink);
             if (_powersLabel != null)
             {
-                _powersLabel.text = powers.Count > 1 ? "Pouvoirs" : "Pouvoir";
+                _powersLabel.text = Loc.Tr(powers.Count > 1 ? "Pouvoirs" : "Pouvoir");
                 _powersLabel.style.color = ink;
             }
             _powersBlock?.EnableInClassList(CollapsedClass, powers.Count == 0);

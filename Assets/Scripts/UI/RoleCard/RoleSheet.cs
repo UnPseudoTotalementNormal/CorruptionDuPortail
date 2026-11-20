@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System.Collections.Generic;
@@ -43,7 +44,6 @@ namespace UI.RoleCard
     public static class RoleSheet
     {
         private const string Bullet = "•";
-        private const string Star = "★";
         private const int DifficultyPips = 3;
         private const int LongNameThreshold = 18;
 
@@ -67,13 +67,15 @@ namespace UI.RoleCard
         {
             FactionData data = assets.Faction(faction);
             if (data != null)
-                return string.IsNullOrEmpty(data.tagline) ? data.displayName : $"{data.displayName} : {data.tagline}";
+                return string.IsNullOrEmpty(data.tagline)
+                    ? Loc.Tr(data.displayName)
+                    : $"{Loc.Tr(data.displayName)} : {Loc.Tr(data.tagline)}";
             return faction switch
             {
-                FactionType.anomaly => "Anomalie",
-                FactionType.chosen => "Élu",
-                FactionType.marginal => "Marginal",
-                _ => "Inconnu"
+                FactionType.anomaly => Loc.Tr("Anomalie"),
+                FactionType.chosen => Loc.Tr("Élu"),
+                FactionType.marginal => Loc.Tr("Marginal"),
+                _ => Loc.Tr("Inconnu")
             };
         }
 
@@ -92,6 +94,7 @@ namespace UI.RoleCard
         // authored value. Without this, every passive power of those cards read as a numbered active power.
         private static bool AuthoredIsPassive(Power p) => p.gameObject.scene.IsValid() ? p.authoredIsPassive : p.isPassive;
 
+        // T36: the lines are the French texts authored on the assets; FillPassives shows them in the player's language.
         public static List<string> PassiveLines(Role role, RoleCardTexts texts) =>
             texts != null && texts.TryGetPassives(role.roleID, out IReadOnlyList<string> authored)
                 ? authored.ToList()
@@ -103,6 +106,7 @@ namespace UI.RoleCard
         /// <summary>
         /// How the role wins, from the game rules: each WinningCondition's own wording, then the hidden win-objective
         /// powers (hideFromRoleCard, e.g. the Mage Occulte's "Abattre le portail"). Duplicates dropped, each line a sentence.
+        /// In the player's language (T36): a condition words itself translated, a power's text is translated here.
         /// </summary>
         public static List<string> VictoryLines(Role role)
         {
@@ -111,7 +115,7 @@ namespace UI.RoleCard
                 foreach (var condition in role.winningConditions)
                     AddLine(condition?.Description);
             foreach (Power power in role.powers)
-                if (power != null && power.hideFromRoleCard) AddLine(power.powerDescription.ToString());
+                if (power != null && power.hideFromRoleCard) AddLine(Loc.Tr(power.powerDescription.ToString()));
             return lines;
 
             void AddLine(string line)
@@ -142,10 +146,11 @@ namespace UI.RoleCard
             host.Clear();
             for (var i = 1; i <= DifficultyPips; i++)
             {
-                var pip = new Label(Star);
+                // T9 maquettes menus v1 K2: a pen-drawn star (Plume_Etoile, USS), in the faction ink.
+                var pip = new VisualElement();
                 pip.AddToClassList("role-sheet__pip");
                 if (i > difficulty) pip.AddToClassList("role-sheet__pip--empty");
-                pip.style.color = ink;
+                pip.style.unityBackgroundImageTintColor = ink;
                 host.Add(pip);
             }
         }
@@ -169,7 +174,7 @@ namespace UI.RoleCard
                 var bullet = new Label(Bullet);
                 bullet.AddToClassList("role-sheet__passive-bullet");
                 bullet.style.color = ink;
-                var text = new Label(line);
+                var text = new Label(Loc.Tr(line));
                 text.AddToClassList("role-sheet__passive-text");
                 row.Add(bullet);
                 row.Add(text);
@@ -190,10 +195,10 @@ namespace UI.RoleCard
                 var num = new Label(Roman(index++));
                 num.AddToClassList("role-sheet__power-num");
                 num.style.color = ink;
-                var title = new Label(power.powerName.ToString());
+                var title = new Label(Loc.Tr(power.powerName.ToString()));
                 title.AddToClassList("role-sheet__power-title");
                 title.style.color = ink;
-                var desc = new Label(power.powerDescription.ToString());
+                var desc = new Label(Loc.Tr(power.powerDescription.ToString()));
                 desc.AddToClassList("role-sheet__power-desc");
                 head.Add(num);
                 head.Add(title);
@@ -218,7 +223,7 @@ namespace UI.RoleCard
             root.AddToClassList("role-sheet__identity");
 
             Sprite portrait = assets.Portraits != null ? assets.Portraits.Get(role.rolePortrait) : null;
-            RoleCardElement card = RoleCardElement.Create(role.roleName.ToString(), portrait, faction).SetWidth(cardWidth);
+            RoleCardElement card = RoleCardElement.Create(Loc.Tr(role.roleName.ToString()), portrait, faction).SetWidth(cardWidth);
             card.AddToClassList("role-sheet__card");
             root.Add(card);
 
@@ -232,7 +237,7 @@ namespace UI.RoleCard
 
             var name = new Label();
             name.AddToClassList("role-sheet__name");
-            SetName(name, role.roleName.ToString());
+            SetName(name, Loc.Tr(role.roleName.ToString()));
             name.style.color = ink;
             root.Add(name);
 
@@ -261,7 +266,7 @@ namespace UI.RoleCard
             {
                 var block = new VisualElement();
                 block.AddToClassList("role-sheet__victory");
-                var label = new Label("Condition de victoire");
+                var label = new Label(Loc.Tr("Condition de victoire"));
                 label.AddToClassList("role-sheet__victory-label");
                 var text = new Label(string.Join("\n", victory));
                 text.AddToClassList("role-sheet__victory-text");
@@ -275,7 +280,7 @@ namespace UI.RoleCard
             List<string> passives = PassiveLines(role, assets.Texts);
             if (passives.Count > 0)
             {
-                scroll.Add(Section("Passif", ink));
+                scroll.Add(Section(Loc.Tr("Passif"), ink));
                 var list = new VisualElement();
                 list.AddToClassList("role-sheet__passive");
                 FillPassives(list, passives, ink);
@@ -285,7 +290,7 @@ namespace UI.RoleCard
             List<Power> powers = ActivePowers(role);
             if (powers.Count > 0)
             {
-                scroll.Add(Section(powers.Count > 1 ? "Pouvoirs" : "Pouvoir", ink));
+                scroll.Add(Section(Loc.Tr(powers.Count > 1 ? "Pouvoirs" : "Pouvoir"), ink));
                 var list = new VisualElement();
                 FillPowers(list, powers, ink);
                 scroll.Add(list);

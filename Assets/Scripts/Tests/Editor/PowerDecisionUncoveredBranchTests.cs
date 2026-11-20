@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
@@ -115,7 +116,7 @@ namespace Tests.Editor
             var o = new LackOfAffectionDecision().Decide(new PowerContext(ownerSlot: 5, targetSlot: 1, isTrueLocalTarget: true, roster: r));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatLocal("Quelqu'un est venu vous voir...", ChatWindows.Server),
+                new ChatLocal(Loc.Token("Quelqu'un est venu vous voir..."), ChatWindows.Server),
                 new AddPlayerIcon(0, 5, 1, PlayerIconLifetime.ClearAtAwakeningStart),
                 new AddCardEffect(0, 1, false, 5),
             }, o.Effects);
@@ -125,12 +126,14 @@ namespace Tests.Editor
         [Test]
         public void BoundByInk_NoInkChatState_ChatIdFallsBackToMinusOne()
         {
-            var o = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
+            var o = new BoundByInkDecision { IconId = 42, LinkCardEffectId = 5 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
-                new DiscoverChat(-1, "Lié par l'encre", PowerEffectAudience.Specific(1)),
+                new DiscoverChat(-1, Loc.Token("Lié par l'encre"), PowerEffectAudience.Specific(1)),
                 new RegisterInkTarget(1),
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(5, 1, false, 0),
             }, o.Effects);
         }
     }

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 using Characters;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -79,9 +82,11 @@ namespace UI.InfoTable
         private const int CompactAtRoles = 6;
         private const int IconAtRoles = 9;
 
-        private const string GlyphSure = "✓";
-        private const string GlyphMaybe = "?";
-        private const string GlyphNot = "✗";
+        // T9 maquettes menus v1 K2: the ✓ ? ✗ are pen strokes (Assets/Art/Sprites/T9/Plume_*.png, USS background
+        // images per segment class), no longer font glyphs.
+        private const string GlyphSure = "";
+        private const string GlyphMaybe = "";
+        private const string GlyphNot = "";
         private const string CollapsedClass = "cdp-is-collapsed";
 
         [SerializeField] private UIDocument _document;
@@ -137,7 +142,29 @@ namespace UI.InfoTable
                 _data.OnNamesChanged += RefreshNames;
             }
             _model.OnChanged += Render;
+            Loc.LanguageChanged += OnLanguageChanged;
             TryInitialize();
+        }
+
+        // T36: a rebuild would wipe the player's notes, so the texts are written again in place: the labels written
+        // with SetLoc follow by themselves, the role headers (text + tooltip) and what Render writes are redone here.
+        private readonly List<KeyValuePair<Label, InfoTableRole>> _roleHeads = new List<KeyValuePair<Label, InfoTableRole>>();
+
+        private void OnLanguageChanged()
+        {
+            foreach (KeyValuePair<Label, InfoTableRole> head in _roleHeads)
+            {
+                WriteRoleHead(head.Key, head.Value);
+            }
+            if (_cellEls != null) Render();
+        }
+
+        private static void WriteRoleHead(Label roleHead, InfoTableRole role)
+        {
+            string name = Loc.Tr(role.RoleName);
+            string text = role.Capacity > 1 ? $"{name} ×{role.Capacity}" : name;
+            roleHead.text = text;
+            roleHead.tooltip = text;   // full name on hover — survives the compact/icon role tiers
         }
 
         // NET-03: a pseudo changed (late arrival, rename, player left) — update the name labels in place. A rebuild
@@ -171,6 +198,7 @@ namespace UI.InfoTable
                 _data.OnNamesChanged -= RefreshNames;
             }
             _model.OnChanged -= Render;
+            Loc.LanguageChanged -= OnLanguageChanged;
         }
 
         private void TryInitialize()
@@ -217,19 +245,20 @@ namespace UI.InfoTable
             var header = new VisualElement { name = "header-row" };
             header.AddToClassList(HeaderRowClass);
             // Leftmost "Camp" column header (feedback item 1): a coarse faction guess per player.
-            var campCorner = new Label("Camp");
+            var campCorner = new Label().SetLoc("Camp");
             campCorner.AddToClassList(CampCornerClass);
             header.Add(campCorner);
-            var corner = new Label("Joueurs / Rôles");
+            var corner = new Label().SetLoc("Joueurs / Rôles");
+            _roleHeads.Clear();
             corner.AddToClassList(CornerClass);
             header.Add(corner);
             for (int ri = 0; ri < roleCount; ri++)
             {
                 InfoTableRole role = _model.Roles[ri];
-                string text = role.Capacity > 1 ? $"{role.RoleName} ×{role.Capacity}" : role.RoleName;
-                var roleHead = new Label(text);
+                var roleHead = new Label();
+                WriteRoleHead(roleHead, role);
+                _roleHeads.Add(new KeyValuePair<Label, InfoTableRole>(roleHead, role));
                 roleHead.AddToClassList(RoleHeadClass);
-                roleHead.tooltip = text;   // full name on hover — survives the compact/icon role tiers
                 header.Add(roleHead);
             }
             frame.Add(header);
@@ -267,6 +296,7 @@ namespace UI.InfoTable
                 // Container tile holds the faction ICON (or a "?" text fallback for Inconnu / iconless faction).
                 var camp = new VisualElement();
                 camp.AddToClassList(CampCellClass);
+                camp.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
                 int piCamp = pi;
                 // Manual cycle only while the row isn't found — a found row's camp is auto-derived (locked).
                 camp.RegisterCallback<ClickEvent>(_ =>
@@ -346,6 +376,7 @@ namespace UI.InfoTable
             int pi = playerIndex;
             int ri = roleIndex;
             CellState s = state;
+            seg.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             seg.RegisterCallback<ClickEvent>(_ =>
             {
                 Diagnostics.Logs.GameLog.Info("ui", "ui.infotable.cell", "row", pi, "col", ri, "state", s);
@@ -361,7 +392,7 @@ namespace UI.InfoTable
             var footer = new VisualElement { name = "footer" };
             footer.AddToClassList(FooterClass);
 
-            _banner = new Label("⚠  Contradiction dans tes déductions");
+            _banner = new Label().SetLoc("⚠  Contradiction dans tes déductions");
             _banner.AddToClassList(BannerClass);
             footer.Add(_banner);
 
@@ -377,7 +408,7 @@ namespace UI.InfoTable
                 // context bar (owner decision). Capacity is fixed at build, so this never needs re-toggling.
                 if (_model.Roles[ri].Capacity <= 1) chip.AddToClassList(CollapsedClass);
 
-                var chipName = new Label(_model.Roles[ri].RoleName);
+                var chipName = new Label().SetLoc(_model.Roles[ri].RoleName);
                 chipName.AddToClassList(ChipNameClass);
 
                 var chipCount = new Label($"0/{_model.Roles[ri].Capacity}");
@@ -393,9 +424,9 @@ namespace UI.InfoTable
 
             var legend = new VisualElement { name = "legend" };
             legend.AddToClassList(LegendClass);
-            legend.Add(BuildLegendItem(SegSureClass, GlyphSure, "Sûr"));
-            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "peut être"));
-            legend.Add(BuildLegendItem(SegNotClass, GlyphNot, "Pas lui"));
+            legend.Add(BuildLegendItem(SegSureClass, GlyphSure, "Sûr")); // loc
+            legend.Add(BuildLegendItem(SegMaybeClass, GlyphMaybe, "Peut-être")); // loc
+            legend.Add(BuildLegendItem(SegNotClass, GlyphNot, "Pas lui")); // loc
             footer.Add(legend);
 
             _root.Add(footer);
@@ -412,7 +443,7 @@ namespace UI.InfoTable
             mark.AddToClassList(SegSelectedClass);   // legend marks always read as "on"
             mark.pickingMode = PickingMode.Ignore;
 
-            var text = new Label(label);
+            var text = new Label().SetLoc(label);
 
             item.Add(mark);
             item.Add(text);
@@ -610,18 +641,19 @@ namespace UI.InfoTable
 
         private static string CampGlyph(FactionType f) => f switch
         {
-            FactionType.chosen => "É",
-            FactionType.marginal => "M",
-            FactionType.anomaly => "A",
+            // T36: the faction's initial, in the player's language.
+            FactionType.chosen => Loc.Tr("É"),
+            FactionType.marginal => Loc.Tr("M"),
+            FactionType.anomaly => Loc.Tr("A"),
             _ => "?",
         };
 
         private static string CampLabel(FactionType f) => f switch
         {
-            FactionType.chosen => "Élu",
-            FactionType.marginal => "Marginal",
-            FactionType.anomaly => "Anomalie",
-            _ => "Inconnu",
+            FactionType.chosen => Loc.Tr("Élu"),
+            FactionType.marginal => Loc.Tr("Marginal"),
+            FactionType.anomaly => Loc.Tr("Anomalie"),
+            _ => Loc.Tr("Inconnu"),
         };
 
         private void RenderFooter()

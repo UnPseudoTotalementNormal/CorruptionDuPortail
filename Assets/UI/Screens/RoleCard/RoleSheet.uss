@@ -73,10 +73,12 @@
     justify-content: center;
 }
 
+/* T9 maquettes menus v1 K2: pen-drawn stars, tinted with the faction ink by code. */
 .role-sheet__pip {
-    -unity-font-definition: url("project://database/Assets/TextMesh%20Pro/Fonts/LiberationSans.ttf");
-    font-size: 18px;
-    -unity-text-align: middle-center;
+    width: 22px;
+    height: 22px;
+    background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Etoile.png");
+    -unity-background-scale-mode: scale-to-fit;
     padding: 0;
     margin: 0 2px;
 }

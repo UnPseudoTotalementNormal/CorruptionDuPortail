@@ -1,0 +1,37 @@
+{
+ "bank": "Cats",
+ "events": [
+  {
+   "path": "event:/Cats/Meow",
+   "files": [
+    "SoundMaker/cat-voices/meow.wav"
+   ],
+   "bus": "bus:/Sfx",
+   "pitch_random": 1,
+   "volume_random": 1.5,
+   "volume": 1.5
+  },
+  {
+   "path": "event:/Cats/Cry",
+   "files": [
+    "SoundMaker/cat-voices/cry_whimper.wav",
+    "SoundMaker/cat-voices/cry_low.wav"
+   ],
+   "bus": "bus:/Sfx",
+   "pitch_random": 1,
+   "volume_random": 1.5,
+   "volume": 1.5
+  },
+  {
+   "path": "event:/Cats/Accuse",
+   "files": [
+    "SoundMaker/cat-voices/accuse_hiss.wav",
+    "SoundMaker/cat-voices/accuse_angry.wav"
+   ],
+   "bus": "bus:/Sfx",
+   "pitch_random": 1,
+   "volume_random": 1.5,
+   "volume": 1.5
+  }
+ ]
+}

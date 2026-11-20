@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Linq;
 using ChatSystem;
 using GameLogic;
@@ -52,7 +53,7 @@ namespace Characters.Powers.PowerComponents
                     "legacyRole", legacyRoleName, "heir", null, "reason", "no-eligible-heir");
                 chatManager.ReceiveChatMessageRpc(
                     new ChatMessage(ChatManager.SERVER_CLIENT_ID,
-                        $"Aucun personnage n'est éligible pour hériter du pouvoir {power.powerName}.",
+                        Loc.Token("Aucun personnage n'est éligible pour hériter du pouvoir {0}.", Loc.Token(power.powerName.ToString())),
                         (int)ChatWindowIDs.Server),
                     characterManager.GetSafeRpcTarget(ownerClientId)
                     );
@@ -67,8 +68,8 @@ namespace Characters.Powers.PowerComponents
 
         private void Reset()
         {
-            componentName = "Héritage";
-            description = "Si ce personnage est enchaîné, {var:legacyRoleName} héritera de ce pouvoir.";
+            componentName = "Héritage"; // loc (editor default: the text then lives on the prefab)
+            description = "Si ce personnage est enchaîné, {var:legacyRoleName} héritera de ce pouvoir."; // loc (editor default: the text then lives on the prefab)
         }
     }
 }

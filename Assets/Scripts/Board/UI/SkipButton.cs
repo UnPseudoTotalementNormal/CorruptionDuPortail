@@ -1,7 +1,9 @@
+using Localization;
 #region
 
 using Characters;
 using CorruptionDuPortail.Domain;
+using DG.Tweening;
 using GameLogic;
 using GameLogic.GameStates;
 using TMPro;
@@ -14,18 +16,26 @@ using UnityEngine.Assertions;
 namespace Board.UI
 {
     /// <summary>
-    /// The board's single skip button: "Arrêter l'éveil" at night, "Passer le vote" during the vote (it replaced the
-    /// vote screen's own Skip button). Red while it can be used, grey and inert once used or when it has nothing to
-    /// do (rule in <see cref="SkipButtonPolicy"/>).
+    /// The board's single skip button: "Fin de tour" at night, "Passer le vote" during the vote (it replaced the
+    /// vote screen's own Skip button). Wouh's wooden plank (T9, maquettes placeholders v1 F1): on screen while it can
+    /// be used, slid down out of the screen once used or when it has nothing to do (D2; rule in
+    /// <see cref="SkipButtonPolicy"/>).
     /// </summary>
     public class SkipButton : MonoBehaviour
     {
-        private const string StopAwakeningLabel = "Arrêter l'éveil";
-        private const string SkipVoteLabel = "Passer le vote";
+        private const string StopAwakeningLabel = "Fin de tour"; // loc
+        private const string SkipVoteLabel = "Passer le vote"; // loc
 
         private CustomButton customButton;
         private TMP_Text label;
         private SkipButtonState? shownState;
+        private RectTransform rect;
+        private float shownY;
+
+        // D2: the plank slides out under the screen's bottom edge when it has nothing to do, and back up when it does.
+        [SerializeField] private float slideDuration = 0.35f;
+        [SerializeField] private Color labelOutlineColor = new(0.23f, 0.05f, 0.03f, 1f);
+        [SerializeField, Range(0f, 1f)] private float labelOutlineWidth = 0.22f;
 
         // Story 7.4 lane A: scene-wired CharacterManager, replacing the GameManager hub-hop.
         [SerializeField] private CharacterManager characterManager;
@@ -42,6 +52,14 @@ namespace Board.UI
             customButton = GetComponent<CustomButton>();
             label = GetComponentInChildren<TMP_Text>(true);
             customButton.onButtonClicked += OnSkipButtonClicked;
+            rect = (RectTransform)transform;
+            shownY = rect.anchoredPosition.y;
+            // Cream letters need a dark rim to read on the red wood (a runtime material instance, never an asset).
+            if (label != null)
+            {
+                label.outlineColor = labelOutlineColor;
+                label.outlineWidth = labelOutlineWidth;
+            }
         }
 
         private void OnDestroy()
@@ -63,8 +81,23 @@ namespace Board.UI
             }
 
             shownState = state;
-            if (label != null) label.text = state.Mode == SkipButtonMode.SkipVote ? SkipVoteLabel : StopAwakeningLabel;
+            if (label != null) label.SetLoc(state.Mode == SkipButtonMode.SkipVote ? SkipVoteLabel : StopAwakeningLabel);
             customButton.SetInteractable(state.Interactable);
+            Slide(state.Interactable);
+        }
+
+        /// <summary>The plank is at rest (not sliding in or out): what a player or the autoplay can click.</summary>
+        public bool IsSettled => rect != null && !DOTween.IsTweening(this);
+
+        private void Slide(bool _shown)
+        {
+            if (rect == null) return;
+            float _targetY = _shown ? shownY : shownY - rect.rect.height - 24f;
+            // Own id: CustomButton's click punch tweens the same transform and must not be cut half-way.
+            DOTween.Kill(this);
+            rect.DOAnchorPosY(_targetY, slideDuration).SetEase(_shown ? Ease.OutBack : Ease.InQuad).SetId(this).SetLink(gameObject);
+            Diagnostics.Logs.GameLog.Info("ui", _shown ? "ui.skip.show" : "ui.skip.hide", "mode",
+                shownState.HasValue ? shownState.Value.Mode.ToString() : "none");
         }
 
         private SkipButtonState CurrentState()

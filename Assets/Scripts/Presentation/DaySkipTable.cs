@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using System.Collections.Generic;
 using Avatars;
@@ -24,7 +25,7 @@ namespace Presentation
     [DefaultExecutionOrder(320)] // after the seats and the camera, for the texts to face this frame's eye
     public class DaySkipTable : MonoBehaviour
     {
-        private const string HoverText = "Cliquer pour skip le vote";
+        private const string HoverText = "Cliquer pour skip le vote"; // loc
         private const int PhysicalLayer = 7; // 3DPhysical: the only layer the reticle and the cursor's raycaster see
         private const int Segments = 48;
 
@@ -154,7 +155,7 @@ namespace Presentation
             if (!_shown)
             {
                 _hovered = false;
-                SetRecapLabel(null);
+                SetRecapLabel(-1);
                 _hoverLabel.gameObject.SetActive(false);
                 return;
             }
@@ -266,25 +267,26 @@ namespace Presentation
             VoteState _vote = _dayVoting.DayVote();
             int _skips = _vote != null && _vote.votesForPlayer.TryGetValue(VoteState.SKIP_VOTE_ID, out List<ulong> _voters) ? _voters.Count : 0;
             Diagnostics.Logs.GameLog.Info("vote", "vote.skip.recap", "skips", _skips);
-            SetRecapLabel($"Skips : {_skips}");
+            SetRecapLabel(_skips);
         }
 
         private void OnRecapHidden()
         {
             _recapOver = true;
-            SetRecapLabel(null);
+            SetRecapLabel(-1);
         }
 
-        private void SetRecapLabel(string _content)
+        // _skips < 0 hides the label.
+        private void SetRecapLabel(int _skips)
         {
             if (_recapLabel == null)
             {
                 return;
             }
-            _recapLabel.gameObject.SetActive(_content != null);
-            if (_content != null)
+            _recapLabel.gameObject.SetActive(_skips >= 0);
+            if (_skips >= 0)
             {
-                _recapLabel.text = _content;
+                _recapLabel.SetLoc("Skips : {0}", _skips);
             }
         }
 
@@ -352,7 +354,7 @@ namespace Presentation
             // Apart from the table: they do not rise with it.
             _text = new GameObject("DaySkipTexts").transform;
             _hoverLabel = NewLabel("Hover");
-            _hoverLabel.text = HoverText;
+            _hoverLabel.SetLoc(HoverText);
             _recapLabel = NewLabel("Recap");
         }
 

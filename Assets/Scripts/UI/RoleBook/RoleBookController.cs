@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System;
@@ -98,7 +100,25 @@ namespace UI.RoleBook
         public event Action Opened;
         public event Action Closed;
 
-        private void OnEnable() => TryInitialize();
+        private void OnEnable()
+        {
+            Loc.LanguageChanged += OnLanguageChanged;
+            TryInitialize();
+        }
+
+        private void OnDisable() => Loc.LanguageChanged -= OnLanguageChanged;
+
+        // T36: the cover and the hint come from the UXML, the ribbons and the two pages are written again.
+        private void OnLanguageChanged()
+        {
+            if (!_initialized) return;
+            LocalizedUitk.Localize(_root);
+            BuildRibbons(_root.Q<VisualElement>("book-ribbons"));
+            if (_pages.Count == 0) return;
+            int page = Mathf.Clamp(_current, 0, _pages.Count - 1);
+            SetLeft(page);
+            SetRight(page);
+        }
 
         // UIDocument builds its tree in its own OnEnable (order not guaranteed): Start is the fallback.
         private void Start() => TryInitialize();
@@ -127,6 +147,8 @@ namespace UI.RoleBook
             _shadowLeft = _root.Q<VisualElement>("book-shadow-left");
 
             _cornerLeft.RegisterCallback<ClickEvent>(_ => TurnPage(-1));
+            _cornerLeft.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
+            _cornerRight.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             _cornerRight.RegisterCallback<ClickEvent>(_ => TurnPage(1));
             _root.Q<Button>("book-close").clicked += Close;
             // A click on the dark backdrop (not on the book) closes it.
@@ -134,6 +156,7 @@ namespace UI.RoleBook
 
             BuildPages();
             BuildRibbons(_root.Q<VisualElement>("book-ribbons"));
+            LocalizedUitk.Localize(_root); // the cover and the hint written in RoleBook.uxml
             _root.pickingMode = PickingMode.Ignore;
             _initialized = true;
         }
@@ -168,6 +191,7 @@ namespace UI.RoleBook
                 ribbon.AddToClassList(RibbonClass);
                 ribbon.style.unityBackgroundImageTintColor = Color.Lerp(RoleSheet.FactionColor(assets, faction), Color.black, 0.35f);
                 ribbon.RegisterCallback<ClickEvent>(_ => GoTo(first));
+                ribbon.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
 
                 if (data != null && data.icon != null)
                 {
@@ -177,7 +201,7 @@ namespace UI.RoleBook
                     icon.pickingMode = PickingMode.Ignore;
                     ribbon.Add(icon);
                 }
-                var label = new Label(data != null ? data.displayName : faction.ToString());
+                var label = new Label(data != null ? Loc.Tr(data.displayName) : faction.ToString());
                 label.AddToClassList(RibbonLabelClass);
                 label.pickingMode = PickingMode.Ignore;
                 ribbon.Add(label);

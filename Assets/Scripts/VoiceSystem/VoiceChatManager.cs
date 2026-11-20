@@ -62,6 +62,7 @@ namespace VoiceSystem
         private ushort _nextSequence;
 
         private readonly Dictionary<ulong, VoicePlayback> _playbacks = new();
+        private readonly Dictionary<ulong, VoiceLeveler> _levelers = new();
         private readonly Dictionary<ulong, ushort> _lastSequence = new();
 
         /// <summary>The local microphone is open and its voice is being sent.</summary>
@@ -121,6 +122,7 @@ namespace VoiceSystem
                 _playback?.Dispose(); // null = FMOD failed for that speaker
             }
             _playbacks.Clear();
+            _levelers.Clear();
             _lastSequence.Clear();
             _logLastListeners.Clear();
             _logDecodeCounts.Clear();
@@ -290,6 +292,8 @@ namespace VoiceSystem
             {
                 return;
             }
+            // Every microphone comes out at the same level, never clipped (playtest 2026-11-14: « hyper saturé »).
+            LevelerOf(_speaker).Process(_pcm.GetBuffer(), _decoded);
             bool _wasSpeaking = _playback.IsSpeaking;
             _playback.Push(_pcm.GetBuffer(), _decoded);
             if (!_wasSpeaking && _playback.IsSpeaking)
@@ -307,6 +311,16 @@ namespace VoiceSystem
                 _playbacks[_speaker] = _playback; // null stays cached: FMOD failed once, no retry every packet
             }
             return _playback;
+        }
+
+        private VoiceLeveler LevelerOf(ulong _speaker)
+        {
+            if (!_levelers.TryGetValue(_speaker, out VoiceLeveler _leveler))
+            {
+                _leveler = new VoiceLeveler(_codec.SampleRate);
+                _levelers[_speaker] = _leveler;
+            }
+            return _leveler;
         }
 
         private void ApplyVolume()
@@ -446,6 +460,29 @@ namespace VoiceSystem
             }
         }
 
+        // One line per thing said: how loud the voice arrived (already clipped by the speaker's PC?) and how much the
+        // leveler had to lower or raise it.
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogLevel(ulong _speaker)
+        {
+            if (!_levelers.TryGetValue(_speaker, out VoiceLeveler _leveler))
+            {
+                return;
+            }
+            VoiceLeveler.BurstStats _burst = _leveler.Burst;
+            if (_burst.Samples == 0)
+            {
+                return;
+            }
+            GameLog.Info("voice", "voice.level", "speaker", _speaker,
+                "seconds", Math.Round(_burst.Samples / (double)Math.Max(1, _codec.SampleRate), 2),
+                "peakDb", Db(_burst.Peak), "speechDb", Db(_burst.SpeechRms),
+                "clippedPct", Math.Round(100.0 * _burst.Clipped / _burst.Samples, 2),
+                "gainDb", Db(_burst.MeanGain));
+        }
+
+        private static double Db(double _linear) => _linear > 0 ? Math.Round(20.0 * Math.Log10(_linear), 1) : -120.0;
+
         private void TickPlaybacks()
         {
             foreach (VoicePlayback _playback in _playbacks.Values)
@@ -459,6 +496,11 @@ namespace VoiceSystem
                 if (_wasSpeaking && !_playback.IsSpeaking)
                 {
                     onSpeakingChanged?.Invoke(_playback.Seat, false);
+                    LogLevel(_playback.Seat);
+                    if (_levelers.TryGetValue(_playback.Seat, out VoiceLeveler _leveler))
+                    {
+                        _leveler.ResetBurst(); // also without the logs: the counters start again for each thing said
+                    }
                 }
                 if (_wasSpeaking || _playback.IsSpeaking)
                 {

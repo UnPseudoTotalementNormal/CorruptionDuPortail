@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Une infobulle sur les marques des cartes (T9, tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .ph-base { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  .ph-patch { position: absolute; background-size: 1600px 900px; background-image: url(img/nuit_net.jpg); }
+  .ph-el { position: absolute; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .6)); transition: transform .12s; }
+  .ph-el img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .ph-el.big { transform: scale(1.25); }
+  .ph-rim { position: absolute; box-shadow: 0 0 0 3px rgba(255, 214, 110, .95), 0 0 22px 8px rgba(242, 193, 78, .5); pointer-events: none; }
+  .ph-zone { position: absolute; }
+  .ph-tip { position: absolute; z-index: 10; width: 300px; padding: 14px 18px 16px; background: #e9d6ae url(../common/parchment.webp) center / cover; color: #2b1a0e; box-shadow: 0 6px 18px rgba(0, 0, 0, .7); pointer-events: none; display: none; }
+  .ph-tip h4 { margin: 0 0 6px; font: 26px "Fell", serif; text-align: center; }
+  .ph-tip p { margin: 0; font: 19px/1.3 "Fell", serif; }
+  .ph-tip .ph-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; }
+  .ph-tip .ph-row img, .ph-tip .ph-row i { flex: 0 0 34px; width: 34px; height: 34px; object-fit: contain; }
+  .ph-tip .ph-row b { font: 21px "Fell", serif; display: block; }
+  .ph-ptr { position: absolute; z-index: 11; width: 40px; pointer-events: none; display: none; }
+  .ph-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ph-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .ph-bar button.on { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Une infobulle sur les marques des cartes (tour 2)</h1>
+  <p><b>Déjà choisi au tour 1</b> (en cours de code) : planche « Fin de tour » qui disparaît hors de ton tour, ours de l'Orpheline, œil autocollant, téléphone du Messager sur la carte et sur son portrait, coche et croix, feuille et goutte, liseré doré de la Bénédiction, empreinte de patte pour « Moi », icônes de la roue, robot et lotus corrompu sur les compteurs. Carrés de Vision maudite et barre d'éveil gardés.</p>
+  <p><b>La question qui reste</b> (tes remarques sur V0 et B2) : une infobulle qui dit ce que veut dire chaque marque (carrés de Vision maudite, ours, liseré doré, balise, téléphone, feuille, icônes du bandeau). Faut-il survoler l'icône elle-même, ou la carte ?</p>
+  <p><b>Référence.</b> Slay the Spire : on survole l'icône d'intention ou de statut elle-même, une bulle par icône. Hearthstone : on survole la carte, une bulle liste tous ses effets (« Provocation », « Bouclier divin »…) à côté d'elle. Inscryption : survoler la carte montre ses sigils, et un sigil survolé seul montre le sien.</p>
+  <p><b>Aujourd'hui.</b> Les compteurs et les objets de pouvoir ont déjà leur infobulle de parchemin (tour « infobulles », A1 : fiche de parchemin, petit délai puis passage direct). Les marques des cartes n'en ont aucune.</p>
+  <p><b>La scène.</b> Même nuit qu'au tour 1. Tu es l'Orpheline et tu vois plusieurs marques : sur Simulated 2, le carré vert du Repenti et ton ours ; sur Simulated 6, le liseré doré de la Bénédiction ; sur Simulated 7, le téléphone du Messager ; sur Simulated 5, la balise du Technomancien.</p>
+  <p><b>Sans question.</b> Même parchemin et même délai que les autres infobulles. Les icônes du bandeau suivent le même choix que les cartes. Les textes sont une première proposition, à faire relire par Wouh.</p>
+  <p>Passe la souris sur les cartes et sur les icônes : la bulle réagit pour de vrai.</p>
+</header>
+
+<section>
+  <h2>Que faut-il survoler ?</h2>
+  <div class="variant" data-id="H1">
+    <div class="vhead"><span class="vid">H1</span><span class="vname">L'icône elle-même (par défaut)</span></div>
+    <p class="vdesc">Une bulle par marque, seulement quand la souris est sur l'icône (ou sur le liseré, ou sur la balise). Survoler le reste de la carte ne montre rien.</p>
+    <div class="screen"><div class="stage" data-mode="icon"></div></div>
+  </div>
+  <div class="variant" data-id="H2">
+    <div class="vhead"><span class="vid">H2</span><span class="vname">La carte entière</span></div>
+    <p class="vdesc">N'importe où sur la carte : une seule bulle à côté d'elle, qui liste toutes ses marques avec leur icône.</p>
+    <div class="screen"><div class="stage" data-mode="card"></div></div>
+  </div>
+  <div class="variant" data-id="H3">
+    <div class="vhead"><span class="vid">H3</span><span class="vname">Les deux</span></div>
+    <p class="vdesc">Survoler la carte agrandit un peu ses icônes ; survoler une icône ouvre sa bulle à elle.</p>
+    <div class="screen"><div class="stage" data-mode="both"></div></div>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque, sur les textes des bulles par exemple ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script>
+(() => {
+  const I = n => `img/icons/${n}.webp`;
+  // Cards of the night capture and the marks they carry (stage px). "icon" = hover zone of the mark itself.
+  const CARDS = [
+    { r: [651, 257, 792, 455], marks: [
+      { t: 'Vision maudite', d: 'Le Repenti a vu un élu.', icon: null, sq: '#5cb86a', z: [659, 401, 28, 28] },
+      { t: "Visite de l'Orpheline", d: 'Tu as rendu visite à ce joueur cette nuit.', icon: 'orpheline', z: [740, 390, 32, 32] } ] },
+    { r: [825, 213, 963, 455], marks: [
+      { t: 'Vision maudite', d: "Le Repenti a vu que ce joueur n'est pas un élu.", icon: null, sq: '#c0392b', z: [832, 397, 25, 30] } ] },
+    { r: [651, 535, 792, 731], marks: [
+      { t: 'Bénédiction', d: 'La Dryade a béni ce joueur.', icon: null, rim: true, z: [651, 535, 141, 196] } ] },
+    { r: [808, 535, 948, 731], marks: [
+      { t: 'Lié par l\'encre', d: 'Le Messager peut écrire à ce joueur cette nuit.', icon: 'messager', z: [858, 667, 40, 40] } ] },
+    { r: [1130, 257, 1263, 455], marks: [
+      { t: 'Balise', d: 'Le Technomancien a posé une balise sur ce joueur.', icon: null, z: [1258, 388, 32, 28] } ] },
+  ];
+  // Band portrait: the Orpheline's thumbnail carries the bear on the visited player's screen
+  const BAND = { r: [1088, 116, 1155, 184], marks: [{ t: "Visite de l'Orpheline", d: "L'Orpheline est venue te voir cette nuit.", icon: 'orpheline', z: [1126, 158, 28, 28] }] };
+
+  const PAW = '../curseur-patte/img/patte_idle.png';
+
+  function build(st) {
+    const mode = st.dataset.mode;
+    st.insertAdjacentHTML('beforeend', '<img class="ph-base" src="img/nuit.jpg" alt="">');
+    // tour 1 choices already applied: bear instead of the heart, gold rim, phone
+    const patch = (x, y, w, h) => st.insertAdjacentHTML('beforeend', `<div class="ph-patch" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;background-position:-${x}px -${y}px"></div>`);
+    patch(738, 388, 36, 36); patch(1296, 804, 100, 96); patch(1416, 103, 74, 74); patch(1422, 210, 60, 58);
+    st.insertAdjacentHTML('beforeend', `<div style="position:absolute;left:1145px;top:809px;width:250px;height:83px"><img src="img/planche.webp" style="width:100%;height:100%" alt=""><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:34px Fell,serif;color:#f6e7c6;text-shadow:0 2px 0 #3a0d08,0 0 6px #3a0d08">Fin de tour</span></div>`);
+    st.insertAdjacentHTML('beforeend', `<img src="${I('robot')}" style="position:absolute;left:1421px;top:108px;width:64px;height:64px" alt=""><img src="${I('corrompu')}" style="position:absolute;left:1424px;top:210px;width:56px;height:56px" alt="">`);
+    const els = [];
+    const place = (m) => {
+      if (m.icon) {
+        const [x, y, w, h] = m.z;
+        st.insertAdjacentHTML('beforeend', `<div class="ph-el" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><img src="${I(m.icon)}" alt=""></div>`);
+        m.el = st.lastElementChild; els.push(m.el);
+      }
+      if (m.rim) {
+        const [x, y, w, h] = m.z;
+        st.insertAdjacentHTML('beforeend', `<div class="ph-rim" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`);
+      }
+    };
+    CARDS.forEach(c => c.marks.forEach(place));
+    BAND.marks.forEach(place);
+    st.insertAdjacentHTML('beforeend', '<div class="ph-tip"></div>');
+    const tip = st.lastElementChild;
+    st.insertAdjacentHTML('beforeend', `<img class="ph-ptr" src="${PAW}" alt="">`);
+    const ptr = st.lastElementChild;
+    st.style.cursor = 'none';
+
+    const markRow = m => `<div class="ph-row">${m.icon ? `<img src="${I(m.icon)}" alt="">` : m.sq ? `<i style="background:${m.sq};width:26px;height:26px;flex-basis:26px;margin:4px"></i>` : m.rim ? '<i style="box-shadow:inset 0 0 0 3px #e2b04a;width:26px;height:34px;flex-basis:26px;margin:0 4px"></i>' : '<i style="background:radial-gradient(circle,#ff3b2e 0 35%,#5a0d08 36% 60%,transparent 62%)"></i>'}<div><b>${m.t}</b>${m.d}</div></div>`;
+    const showTip = (html, x, y) => { tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = Math.min(x, 1600 - 320) + 'px'; tip.style.top = Math.max(10, y) + 'px'; };
+    const inside = (p, [x, y, w, h], pad = 4) => p.x >= x - pad && p.x <= x + w + pad && p.y >= y - pad && p.y <= y + h + pad;
+    const inRect = (p, [x0, y0, x1, y1]) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
+    const rimHit = (p, m) => { const [x, y, w, h] = m.z; return inside(p, m.z, 6) && !inside(p, [x + 14, y + 14, w - 28, h - 28], 0); };
+
+    let lastKey = '';
+    function onMove(p) {
+      ptr.style.display = 'block'; ptr.style.left = (p.x - 4) + 'px'; ptr.style.top = (p.y - 6) + 'px'; // the paw's toe is the click point
+      els.forEach(e => e.classList.remove('big'));
+      let html = null, x = 0, y = 0;
+      const all = CARDS.concat([BAND]);
+      for (const c of all) {
+        const onCard = inRect(p, c.r);
+        const hitMark = c.marks.find(m => m.rim ? rimHit(p, m) : inside(p, m.z));
+        if ((mode === 'icon' || mode === 'both') && hitMark) {
+          html = `<h4>${hitMark.t}</h4><p>${hitMark.d}</p>`; x = hitMark.z[0] + hitMark.z[2] + 14; y = hitMark.z[1] - 20;
+        } else if (mode === 'card' && onCard) {
+          html = c.marks.map(markRow).join(''); x = c.r[2] + 12; y = c.r[1];
+        }
+        if (mode === 'both' && onCard) c.marks.forEach(m => m.el && m.el.classList.add('big'));
+        if (html) break;
+      }
+      const key = html || '';
+      if (!html) { tip.style.display = 'none'; lastKey = ''; return; }
+      if (key !== lastKey) showTip(html, x, y);
+      lastKey = key;
+    }
+    const toStage = e => { const r = st.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1600 / r.width, y: (e.clientY - r.top) * 900 / r.height }; };
+    st.addEventListener('pointermove', e => onMove(toStage(e)));
+    st.addEventListener('pointerleave', () => { tip.style.display = 'none'; ptr.style.display = 'none'; });
+    // a fixed pointer for captures: on the bear of Simulated 2
+    onMove({ x: 766, y: 418 });
+  }
+  document.querySelectorAll('.stage[data-mode]').forEach(build);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

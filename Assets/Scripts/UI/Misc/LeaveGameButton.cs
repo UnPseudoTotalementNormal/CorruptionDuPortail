@@ -28,10 +28,14 @@ namespace UI
             GetComponent<CustomButton>().onButtonClicked += OnLeavePressed;
         }
 
-        private void OnLeavePressed()
+        private void OnLeavePressed() => Leave("pause");
+
+        /// <summary>Leaves the game: the host ends it for everyone, a client goes back to the menu alone. Also the
+        /// end screen's « Quitter la partie » for the players who are not the host (T9 maquettes menus v1 C2).</summary>
+        public static void Leave(string _from)
         {
             NetworkManager _nm = NetworkManager.Singleton;
-            Diagnostics.Logs.GameLog.Info("net", "leave.pressed", "host", _nm != null && _nm.IsServer);
+            Diagnostics.Logs.GameLog.Info("net", "leave.pressed", "host", _nm != null && _nm.IsServer, "from", _from);
 
             // Host is the authority — the match cannot continue without it, so leaving ends it for everyone.
             // ShutOffGameRpc (SendTo.Everyone) shuts every peer down + deletes the cloud lobby on the host.

@@ -13,13 +13,15 @@ using UnityEngine.UI;
 
 namespace UI
 {
-    public class CustomButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+    public class CustomButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler,
+        CatPaw.ICursorHint
     {
         private Color baseColor;
         [SerializeField] private Color hoverColor = new Color(0.8f , 0.8f, 0.8f, 1);
         [SerializeField] private Color disabledColor = new Color(0.5f, 0.5f, 0.5f, 1);
 
-        [SerializeField] private Image panelImage;
+        // Any graphic: a panel image, or the label itself for a word-only button (pause menu, T9 maquettes menus v1 P3).
+        [SerializeField] private Graphic panelImage;
 
         [SerializeField] private EventReference clickSound;
         [SerializeField] private EventReference hoverSound;
@@ -52,6 +54,17 @@ namespace UI
             Interactable = _interactable;
             if (panelImage != null) panelImage.DOColor(RestColor, 0.2f).SetLink(gameObject);
         }
+
+        /// <summary>The colour the button rests at (a menu entry that stays lit while its page is open). The hover
+        /// colour still shows under the pointer.</summary>
+        public void SetRestColor(Color _color)
+        {
+            baseColor = _color;
+            if (panelImage != null) panelImage.DOColor(RestColor, 0.2f).SetLink(gameObject);
+        }
+
+        /// <summary>The cat paw: claws while it clicks, the cross while greyed out.</summary>
+        public CatPaw.CursorHint CursorHint => Interactable ? CatPaw.CursorHint.Clickable : CatPaw.CursorHint.Refused;
 
         private Color RestColor => Interactable ? baseColor : disabledColor;
 

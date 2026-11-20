@@ -240,6 +240,17 @@ namespace ChatSystem
             }
 
             bool _isSentinel = _fromServer && _chatMessage.senderClientId == SERVER_CLIENT_ID;
+            if (!_isSentinel)
+            {
+                // T36: only the server writes translation tokens; a player's text never carries their marks.
+                string _typed = _chatMessage.message.ToString();
+                string _clean = CorruptionDuPortail.Domain.Localization.Loc.StripMarks(_typed);
+                if (!ReferenceEquals(_typed, _clean))
+                {
+                    GameLog.Warn("chat", "chat.marks.stripped", "from", _chatMessage.senderClientId, "channel", _chatMessage.chatId);
+                    _chatMessage.message = new FixedString512Bytes(_clean);
+                }
+            }
             if (!_isSentinel && !_membership.IsMember(_chatMessage.chatId, _chatMessage.senderClientId))
             {
                 Debug.LogWarning($"[CHAT] {_chatMessage.senderClientId} is not a member of channel {_chatMessage.chatId}; message dropped.");

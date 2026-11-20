@@ -30,7 +30,7 @@ namespace Network
         /// Surfaced to the rejected client via <see cref="NetworkManager.DisconnectReason"/> so the join
         /// UI can explain the failure instead of showing a generic timeout.
         /// </summary>
-        public const string GameInProgressReason = "La partie a déjà commencé.";
+        public const string GameInProgressReason = "La partie a déjà commencé."; // loc
 
         /// <summary>
         /// Turns on NGO connection approval and installs the gate callback. Idempotent and null-safe.

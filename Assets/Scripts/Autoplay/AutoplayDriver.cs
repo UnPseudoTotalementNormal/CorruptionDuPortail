@@ -92,6 +92,8 @@ namespace Autoplay
         public float tourDwellSeconds;
         [Tooltip("Real-input tour (-autoplay-tour-tooltip-targets <name,name…>): hover these tooltip triggers (GameObject names) in order, the pointer going straight from one to the next, instead of the richest one. Empty = the richest.")]
         public string tourTooltipTargets;
+        [Tooltip("Real-input tour (-autoplay-tour-day <N>): the night tour waits for night N (T9: the card marks exist from the second night). 0 = the first night.")]
+        public int tourFromDay;
         [Tooltip("This peer starts in the middle of a phase (a rejoin): no state hash for that first phase, the host sampled it before the peer was back.")]
         public bool joinedMidPhase;
         [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]
@@ -1029,7 +1031,8 @@ namespace Autoplay
                 return;
             }
 
-            string _text = _message.message.ToString();
+            // T36: the server writes translation tokens; the journal keeps the French sentence (the analyzers read it).
+            string _text = CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_message.message.ToString());
             int _start = _text.IndexOf("[ap:", StringComparison.Ordinal);
             int _end = _start >= 0 ? _text.IndexOf(']', _start) : -1;
             string _token = _end > _start ? _text.Substring(_start + 1, _end - _start - 1) : "-";

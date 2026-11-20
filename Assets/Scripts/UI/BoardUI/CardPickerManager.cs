@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,6 +79,9 @@ namespace UI.BoardUI
 
         // Read-only view of the live picker for autoplay captures / diagnostics — no behaviour change.
         public bool IsPickerActive => isPickerActive;
+
+        /// <summary>Whether the open picker offers this card (the cat paw shows the cross on the others).</summary>
+        public bool IsCardPickable(Card _card) => isPickerActive && _card != null && cardClickHandlers.ContainsKey(_card);
         public bool IsRolePicker => isPickerActive && spawnedRoleCards.Count > 0;
         public IReadOnlyCollection<Card> PickableCards => cardClickHandlers.Keys;
         public IReadOnlyList<Card> LiftedCharacterCards => liftedCharacterCards;
@@ -473,9 +477,11 @@ namespace UI.BoardUI
             }
 
             if (instructionTitle)
-                instructionTitle.text = _type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle;
+                // T36: the titles (authored on the scene object) and the step descriptions (authored on each power) are
+                // French game texts.
+                instructionTitle.SetLoc(_type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle);
             if (instructionDescription && _description != null)
-                instructionDescription.text = _description;
+                instructionDescription.SetLoc(_description);
 
             instructionCanvasGroup.DOKill();
             instructionCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);

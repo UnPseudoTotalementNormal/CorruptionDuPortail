@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Diagnostics.Logs;
 using UnityEngine;
@@ -49,6 +50,8 @@ namespace Network.Services
         /// user-visible failures — had no way to reach the notification that
         /// <c>ClientDisconnectHandler.OnLobbyError</c> already renders. Their messages were logged and never shown.
         /// </summary>
+        // T36: an error text is the French source or a token (Loc.Token when it has arguments), never a translated
+        // sentence: whoever displays it translates it (Loc.ShowForeign), and the logs keep the French.
         public void ReportError(string _message)
         {
             if (string.IsNullOrEmpty(_message))
@@ -93,21 +96,21 @@ namespace Network.Services
             if (string.IsNullOrWhiteSpace(_settings.lobbyName))
             {
                 GameLog.Info("lobby", "lobby.create.refused", "reason", "empty name");
-                OnLobbyError?.Invoke("Le nom du lobby ne peut pas être vide");
+                OnLobbyError?.Invoke("Le nom du lobby ne peut pas être vide"); // loc
                 return null;
             }
 
             if (_settings.maxPlayers < 2 || _settings.maxPlayers > 20)
             {
                 GameLog.Info("lobby", "lobby.create.refused", "reason", "max players", "maxPlayers", _settings.maxPlayers);
-                OnLobbyError?.Invoke("Le nombre de joueurs doit être entre 2 et 20");
+                OnLobbyError?.Invoke("Le nombre de joueurs doit être entre 2 et 20"); // loc
                 return null;
             }
 
             if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length < 8)
             {
                 GameLog.Info("lobby", "lobby.create.refused", "reason", "password too short");
-                OnLobbyError?.Invoke("Le mot de passe doit contenir au moins 8 caractères");
+                OnLobbyError?.Invoke("Le mot de passe doit contenir au moins 8 caractères"); // loc
                 return null;
             }
 
@@ -115,7 +118,7 @@ namespace Network.Services
             if (!string.IsNullOrEmpty(_settings.password) && _settings.password.Length > MaxPasswordLength)
             {
                 GameLog.Info("lobby", "lobby.create.refused", "reason", "password too long");
-                OnLobbyError?.Invoke($"Le mot de passe doit contenir au plus {MaxPasswordLength} caractères");
+                OnLobbyError?.Invoke(Loc.Token("Le mot de passe doit contenir au plus {0} caractères", MaxPasswordLength));
                 return null;
             }
 
@@ -137,7 +140,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de création du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.create.failed", "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de créer le lobby: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de créer le lobby: {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -151,7 +154,7 @@ namespace Network.Services
             catch (LobbyBackendException e)
             {
                 GameLog.Warn("lobby", "lobby.query.failed", "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de récupérer les lobbies: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de récupérer les lobbies: {0}", Loc.QuietToken(e.Message)));
                 throw new Exception($"Échec de récupération des lobbies: {e.Message}");
             }
         }
@@ -161,7 +164,7 @@ namespace Network.Services
             if (string.IsNullOrWhiteSpace(_lobbyId))
             {
                 GameLog.Info("lobby", "lobby.join.refused", "reason", "empty id");
-                OnLobbyError?.Invoke("L'ID du lobby ne peut pas être vide");
+                OnLobbyError?.Invoke("L'ID du lobby ne peut pas être vide"); // loc
                 return null;
             }
 
@@ -179,7 +182,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de rejoindre le lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.join.failed", "lobby", _lobbyId, "reason", e.Message, "by", "id");
-                OnLobbyError?.Invoke($"Impossible de rejoindre le lobby: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre le lobby: {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -189,7 +192,7 @@ namespace Network.Services
             if (string.IsNullOrWhiteSpace(_lobbyCode))
             {
                 GameLog.Info("lobby", "lobby.join.refused", "reason", "empty code");
-                OnLobbyError?.Invoke("Le code du lobby ne peut pas être vide");
+                OnLobbyError?.Invoke("Le code du lobby ne peut pas être vide"); // loc
                 return null;
             }
 
@@ -207,7 +210,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de rejoindre le lobby par code: {e.Message}");
                 GameLog.Warn("lobby", "lobby.join.failed", "code", _lobbyCode, "reason", e.Message, "by", "code");
-                OnLobbyError?.Invoke($"Code invalide ou lobby introuvable: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Code invalide ou lobby introuvable: {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -223,7 +226,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de lecture du lobby {_lobbyId}: {e.Message}");
                 GameLog.Warn("lobby", "lobby.get.failed", "lobby", _lobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de rejoindre la partie: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre la partie: {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -257,7 +260,7 @@ namespace Network.Services
                 }
                 Debug.LogError($"Échec de quitter le lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.leave.failed", "lobby", _logLobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de quitter le lobby: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de quitter le lobby: {0}", Loc.QuietToken(e.Message)));
             }
         }
 
@@ -288,7 +291,7 @@ namespace Network.Services
                 }
                 Debug.LogError($"Échec de suppression du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.delete.failed", "lobby", _logLobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de supprimer le lobby: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de supprimer le lobby: {0}", Loc.QuietToken(e.Message)));
             }
         }
 
@@ -383,7 +386,7 @@ namespace Network.Services
                                 "sessionRunning", IsNetworkSessionRunning());
                             if (!IsNetworkSessionRunning())
                             {
-                                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
+                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue: {0}", Loc.QuietToken(e.Message)));
                             }
                             return;
                         }
@@ -459,7 +462,7 @@ namespace Network.Services
                             // ClientDisconnectHandler); the cloud lobby is only bookkeeping by then.
                             if (!IsNetworkSessionRunning())
                             {
-                                OnLobbyError?.Invoke($"Connexion au lobby perdue: {e.Message}");
+                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue: {0}", Loc.QuietToken(e.Message)));
                             }
                             return;
                         }
@@ -493,7 +496,7 @@ namespace Network.Services
         {
             if (currentLobby == null)
             {
-                OnLobbyError?.Invoke("Aucun lobby actif");
+                OnLobbyError?.Invoke("Aucun lobby actif"); // loc
                 return false;
             }
 
@@ -513,7 +516,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de verrouillage du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.lock.failed", "locked", isLocked, "reason", e.Message);
-                OnLobbyError?.Invoke($"Impossible de verrouiller le lobby: {e.Message}");
+                OnLobbyError?.Invoke(Loc.Token("Impossible de verrouiller le lobby: {0}", Loc.QuietToken(e.Message)));
                 return false;
             }
         }

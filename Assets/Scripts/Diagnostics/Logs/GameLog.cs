@@ -66,7 +66,9 @@ namespace Diagnostics.Logs
         public static void Guarded(Action _log)
         {
             if (Sink == null) return;
-            try { _log(); }
+            // T36: the arguments are computed in French ("Joueur ?", "(parti)", any Loc.Tr): a log reads the same on
+            // every machine, whatever language its player picked.
+            try { CorruptionDuPortail.Domain.Localization.Loc.InSource(_log); }
             catch (Exception) { /* logging never breaks the game */ }
         }
 
@@ -130,15 +132,29 @@ namespace Diagnostics.Logs
 
         /// <summary>Captured Unity log (runtime only): level, [TAG] as event name, text, stack.</summary>
         internal static void WriteUnityLog(char _level, string _tag, string _message, string _stack) =>
-            Push(_level, "unity", _tag, _message, null, _stack);
+            Push(_level, "unity", _tag, CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_message), null, _stack);
 
         private static void Write(char _level, string _category, string _event, string _message, object[] _keyValues)
         {
             if (Sink == null) return;
             string _params;
+            SourceTexts(_keyValues);
             try { _params = LogJson.Object(_keyValues); }
             catch (Exception) { _params = null; }
             Push(_level, _category, _event, _message, _params, null);
+        }
+
+        // T36: a text that travels as a translation token is written as its French sentence, never as the raw token.
+        private static void SourceTexts(object[] _keyValues)
+        {
+            if (_keyValues == null) return;
+            for (int _i = 0; _i < _keyValues.Length; _i++)
+            {
+                if (_keyValues[_i] is string _text)
+                {
+                    _keyValues[_i] = CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_text);
+                }
+            }
         }
 
         private static void Push(char _level, string _category, string _event, string _message, string _params, string _stack)

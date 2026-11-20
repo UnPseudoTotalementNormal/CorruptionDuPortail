@@ -66,8 +66,11 @@ namespace Autoplay
             float _yawClamp = GetField<float>(_camera, "_yawClamp");
             float _rest = _camera.RestPitch;
             float _up = -Mathf.Min(_camera.PitchClamp, 25f);
+            // Head half down: the floor ahead, where the vote candle stands by day (T23), above the day rows (T38).
+            // Fully down (60 degrees) looks past it, at the floor under the player's own chair.
+            float _down = _camera.PitchClamp * 0.5f;
             var _variants = new (string name, bool black, bool catLights)[] { ("room", false, true), ("black-nocatlights", true, false), ("black", true, true) };
-            var _looks = new (string name, float yaw, float pitch)[] { ("rest", 0f, _rest), ("left", -_yawClamp, _rest * 0.5f), ("right", _yawClamp, _rest * 0.5f), ("up", 0f, _up) };
+            var _looks = new (string name, float yaw, float pitch)[] { ("rest", 0f, _rest), ("left", -_yawClamp, _rest * 0.5f), ("right", _yawClamp, _rest * 0.5f), ("up", 0f, _up), ("down", 0f, _down) };
             foreach (var _variant in _variants)
             {
                 _surroundings.Enabled = _variant.black;

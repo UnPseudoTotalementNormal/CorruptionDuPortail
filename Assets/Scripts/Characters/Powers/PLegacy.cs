@@ -1,5 +1,6 @@
 using Diagnostics.Logs;
 using System.Linq;
+using CorruptionDuPortail.Domain.Localization;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
 using CorruptionDuPortail.Domain.Powers.State;
@@ -19,8 +20,10 @@ namespace Characters.Powers
         // trigger stays here (it observes an NGO NetworkVariable). Behaviour-identical to the old inline grant.
         private readonly LegacyDecision _decision = new();
 
+        // T36: read by the tooltip's {var:effectDescription}, so it comes out in the player's language.
         public string effectDescription =>
-            $"Si {roleForLegacy.ToString()} est enchainé, {ownerCharacter.role.roleName} hérite de \"{legacyPower.powerName}\".";
+            Loc.Tr("Si {0} est enchainé, {1} hérite de \"{2}\".", roleForLegacy.ToString(),
+                Loc.Tr(ownerCharacter.role.roleName.ToString()), Loc.Tr(legacyPower.powerName.ToString()));
 
         public override void OnGameStartedServer()
         {
@@ -58,7 +61,7 @@ namespace Characters.Powers
         
         private void Reset()
         {
-            powerName = "Héritage";
+            powerName = "Héritage"; // loc (editor default: the text then lives on the prefab)
             powerDescription = "{var:effectDescription}";
         }
     }

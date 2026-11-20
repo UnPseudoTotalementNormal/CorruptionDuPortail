@@ -29,6 +29,16 @@ import time
 import urllib.request
 import zipfile
 
+if os.name == "nt":
+    # The watcher runs under pythonw: every console child (git, rclone, robocopy, claude…) would otherwise open its
+    # own terminal window — about 30 per build. CREATE_NO_WINDOW on every child, whatever the call site.
+    class _NoWindowPopen(subprocess.Popen):
+        def __init__(self, *args, **kwargs):
+            kwargs["creationflags"] = kwargs.get("creationflags", 0) | 0x08000000
+            super().__init__(*args, **kwargs)
+
+    subprocess.Popen = _NoWindowPopen
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 MAIN_REPO = os.path.abspath(os.path.join(subprocess.run(
@@ -77,14 +87,29 @@ def git(*args, cwd=None, check=True):
 def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except ValueError:
+                pass
+        # Unreadable (truncated): fall back to the previous state rather than stop every build and announcement.
+        log(f"{STATE_FILE} unreadable, using {STATE_FILE}.bak")
+        with open(STATE_FILE + ".bak", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
 
 def save_state(state):
     os.makedirs(STATE_DIR, exist_ok=True)
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
+    # Write a temp file then swap it in: a full disk (2026-11-13) used to truncate the state to 0 bytes,
+    # and every watcher loop failed on it for two days. Keep the previous state as .bak.
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    if os.path.exists(STATE_FILE) and os.path.getsize(STATE_FILE) > 0:
+        shutil.copyfile(STATE_FILE, STATE_FILE + ".bak")
+    os.replace(tmp, STATE_FILE)
 
 
 def env_value(key):

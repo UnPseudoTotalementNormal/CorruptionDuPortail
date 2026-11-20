@@ -1,5 +1,5 @@
-// Mockup page plumbing: theme, screen scaling, ?only=<id> (one frame alone, for the captures), votes and
-// remarks kept in localStorage and sent to /retours. Load it LAST, after the variants are built.
+// Mockup page plumbing: theme, screen scaling, ?only=<id> (one frame alone, for the captures), sections that follow
+// the layout section, pinch and « En entier » on a phone, votes and remarks kept in localStorage and sent to /retours. Load it LAST, after the variants are built.
 // The feedback goes to the page's folder; a send serve.py did not take shows its text to paste in the session.
 // Everything stays inside this function: a page's own globals (fit, root...) are never replaced.
 // From the "maquettes" template of the skill marketplace.
@@ -9,11 +9,67 @@
   // the subject is the page's folder; data-subject only for a page outside one
   const subject = location.pathname.split("/").slice(-2, -1)[0] || document.body.dataset.subject || "divers";
 
+  const params = new URLSearchParams(location.search);
+  const only = params.get("only");
+  const key = "mock" + location.pathname;
+  const saved = only ? {} : JSON.parse(localStorage.getItem(key) || "{}");
+  const save = () => localStorage.setItem(key, JSON.stringify(saved));
+
+  // The section that decides the layout follows his vote.
+  // <section data-forme="P1 P2 P3"> : the layout section (the ids a frame can be drawn in; empty: all its variants).
+  // <section data-suit> : a section drawn in the chosen layout. Its frames are either drawn once per layout,
+  // <div class="phone" data-dans="P1 P2">, the others hidden, or redrawn by the page on "mockforme" (bubbles from the
+  // section, detail {forme, section}). Chosen = the last 👍 of the layout section, else its « (par défaut) », else the
+  // first; ?forme=P3 for a capture. A line above each following section says which, and shows another without voting.
+  const formeSec = document.querySelector("section[data-forme]");
+  const suits = formeSec ? [...document.querySelectorAll("section[data-suit]")] : [];
+  const formeIds = !formeSec ? [] : formeSec.dataset.forme.trim() ? formeSec.dataset.forme.trim().split(/\s+/)
+    : [...formeSec.querySelectorAll(".variant")].map(v => v.dataset.id);
+  const sectionName = sec => (sec.querySelector(":scope > h2") || {}).textContent || "";
+  function chosenForme() {
+    if (params.get("forme")) return params.get("forme");
+    const liked = formeIds.filter(id => (saved[id] || {}).vote === "like");
+    if (saved._forme && liked.includes(saved._forme)) return saved._forme;
+    if (liked.length) return liked[liked.length - 1];
+    const def = formeIds.find(id => {
+      const n = formeSec.querySelector('.variant[data-id="' + id + '"] .vname');
+      return n && n.textContent.includes("(par défaut)");
+    });
+    return def || formeIds[0];
+  }
+  function drawFormes() {
+    const chosen = chosenForme();
+    const looks = saved._look || {};
+    suits.forEach((sec, i) => {
+      const f = (!only && looks[i]) || chosen;
+      sec.querySelectorAll("[data-dans]").forEach(el => { el.hidden = !el.dataset.dans.split(/\s+/).includes(f); });
+      sec.dispatchEvent(new CustomEvent("mockforme", { bubbles: true, detail: { forme: f, section: sec } }));
+      if (only) return;
+      let line = sec.querySelector(":scope > .mock-suit");
+      if (!line) {
+        line = document.createElement("p");
+        line.className = "mock-suit";
+        const row = sec.querySelector(":scope > .row, :scope > .stack");
+        row ? row.before(line) : sec.appendChild(line);
+        line.addEventListener("click", e => {
+          const v = e.target.closest("[data-voir]");
+          if (!v) return;
+          saved._look = saved._look || {};
+          if (v.dataset.voir === chosenForme()) delete saved._look[i]; else saved._look[i] = v.dataset.voir;
+          save();
+          drawFormes();
+        });
+      }
+      line.innerHTML = (f === chosen ? "Dessinée dans " + f + ", ta disposition." : "Dessinée dans " + f + ", pour voir.") +
+        "<br>Voir dans" + formeIds.map(id => '<span data-voir="' + id + '"' + (id === f ? ' class="on"' : "") + ">" + id + "</span>").join("");
+    });
+  }
+  if (suits.length) drawFormes();
+
   // ?only=E1 : that variant's frame alone (.phone or .screen; a variant without a frame, whole)
-  const only = new URLSearchParams(location.search).get("only");
   if (only) {
     const variant = document.querySelector('.variant[data-id="' + only + '"]');
-    const frame = variant.querySelector(".phone, .screen") || variant;
+    const frame = variant.querySelector(".phone:not([hidden]), .screen:not([hidden])") || variant;
     [...document.body.children].forEach(c => { if (!["script", "svg"].includes(c.tagName.toLowerCase())) c.remove(); });
     // a phone keeps its size with a margin around it; a screen takes the whole window (capture at its ratio)
     document.body.style.cssText = frame.classList.contains("phone") ? "margin:0;padding:10px;display:inline-block" : "margin:0";
@@ -98,15 +154,63 @@
   function setTheme(t) {
     root.dataset.theme = t;
     localStorage.setItem("mock-theme", t);
-    document.querySelectorAll(".toggle button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+    document.querySelectorAll(".toggle button[data-t]").forEach(b => b.classList.toggle("on", b.dataset.t === t));
   }
-  document.querySelectorAll(".toggle button").forEach(b => b.onclick = () => setTheme(b.dataset.t));
+  document.querySelectorAll(".toggle button[data-t]").forEach(b => b.onclick = () => setTheme(b.dataset.t));
   setTheme(localStorage.getItem("mock-theme") || pageTheme);
 
   if (!only) {
-    const key = "mock" + location.pathname;
-    const saved = JSON.parse(localStorage.getItem(key) || "{}");
-    const save = () => localStorage.setItem(key, JSON.stringify(saved));
+    // Smaller frames on a phone. A page made for a phone cannot be pinched under 100 % by
+    // the browser itself: two fingers zoom the whole page here (0.35 to 1.5, kept for every page). And, under the title,
+    // « Taille réelle | En entier » (kept for every page): whole, each .phone is shrunk to fit in the screen with its
+    // variant's name above it. The PC keeps its own Ctrl + wheel. ?only= (captures) is never zoomed.
+    const zKey = "mock-zoom", tKey = "mock-taille";
+    let zoom = Math.max(0.35, Math.min(1.5, +(localStorage.getItem(zKey) || 1)));
+    const whole = () => localStorage.getItem(tKey) === "entier";
+    function fitPhones() {
+      document.querySelectorAll(".phone").forEach(ph => {
+        ph.style.zoom = "";
+        if (!whole() || ph.hidden) return;
+        ph.style.zoom = Math.min(1, (innerHeight - 120) / (ph.offsetHeight * zoom)).toFixed(3);
+      });
+    }
+    const applyZoom = () => { document.body.style.zoom = zoom === 1 ? "" : zoom; fitPhones(); };
+    if (document.querySelector(".phone")) {
+      const t = document.createElement("div");
+      t.className = "toggle mock-taille";
+      t.innerHTML = '<button data-z="reel">Taille réelle</button><button data-z="entier">En entier</button>';
+      const h1 = document.querySelector("header.page h1");
+      if (h1) h1.after(t);
+      const paintT = () => t.querySelectorAll("button").forEach(b => b.classList.toggle("on", (b.dataset.z === "entier") === whole()));
+      t.onclick = e => { const b = e.target.closest("button"); if (!b) return; localStorage.setItem(tKey, b.dataset.z); paintT(); fitPhones(); };
+      paintT();
+      addEventListener("resize", fitPhones);
+      addEventListener("mockforme", () => requestAnimationFrame(fitPhones));
+    }
+    applyZoom();
+    const pct = document.createElement("div");
+    pct.className = "mock-pct";
+    document.body.appendChild(pct);
+    let pctT = 0, pinch = null;
+    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    addEventListener("touchstart", e => { if (e.touches.length === 2) pinch = { d: dist(e.touches), k: zoom }; }, { passive: true });
+    addEventListener("touchmove", e => {
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      zoom = Math.max(0.35, Math.min(1.5, pinch.k * dist(e.touches) / pinch.d));
+      document.body.style.zoom = zoom;
+      pct.textContent = Math.round(zoom * 100) + " %";
+      pct.classList.add("on");
+      clearTimeout(pctT);
+      pctT = setTimeout(() => pct.classList.remove("on"), 900);
+    }, { passive: false });
+    addEventListener("touchend", e => {
+      if (!pinch || e.touches.length >= 2) return;
+      pinch = null;
+      localStorage.setItem(zKey, zoom);
+      applyZoom();
+    });
+
     document.querySelectorAll(".variant").forEach(v => {
       const id = v.dataset.id;
       const st = saved[id] || (saved[id] = { vote: "", note: "" });
@@ -116,8 +220,16 @@
       v.appendChild(box);
       const like = box.querySelector(".like"), nope = box.querySelector(".nope"), note = box.querySelector("textarea");
       const paint = () => { like.classList.toggle("on", st.vote === "like"); nope.classList.toggle("on", st.vote === "nope"); };
-      like.onclick = () => { st.vote = st.vote === "like" ? "" : "like"; paint(); save(); };
-      nope.onclick = () => { st.vote = st.vote === "nope" ? "" : "nope"; paint(); save(); };
+      // a vote in the layout section redraws the sections that follow it (the last 👍 wins, the « pour voir » forgotten)
+      const forme = () => {
+        if (!suits.length || !formeIds.includes(id) || v.closest("section") !== formeSec) return;
+        if (st.vote === "like") saved._forme = id;
+        delete saved._look;
+        save();
+        drawFormes();
+      };
+      like.onclick = () => { st.vote = st.vote === "like" ? "" : "like"; paint(); save(); forme(); };
+      nope.onclick = () => { st.vote = st.vote === "nope" ? "" : "nope"; paint(); save(); forme(); };
       note.value = st.note; note.oninput = () => { st.note = note.value; save(); };
       paint();
     });
@@ -151,8 +263,13 @@
       });
       if ((saved._global || "").trim()) lines.push("Général : " + saved._global.trim());
       if (!lines.length) { send.textContent = "Rien à envoyer pour l’instant"; setTimeout(() => send.textContent = label, 2000); return; }
+      // the layout the following sections were looked at in
+      if (suits.length) {
+        lines.push("Sections qui suivent la disposition, dessinées dans " + chosenForme());
+        Object.entries(saved._look || {}).forEach(([i, f]) => { if (suits[i]) lines.push("« " + sectionName(suits[i]).trim() + " » regardée dans " + f); });
+      }
       lines.unshift("Page : " + location.pathname);
-      if (document.querySelector(".toggle") && root.dataset.theme !== pageTheme) lines.push("Thème regardé : " + root.dataset.theme);
+      if (document.querySelector(".toggle button[data-t]") && root.dataset.theme !== pageTheme) lines.push("Thème regardé : " + root.dataset.theme);
       const text = lines.join("\n");
       let got = false;
       try { // only serve.py answers {"ok":true}: a page opened as a file, or by another server (static, dev server), keeps nothing

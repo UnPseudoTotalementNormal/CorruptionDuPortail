@@ -9,7 +9,7 @@ namespace CorruptionDuPortail.Domain
     public static class BuildVersionGate
     {
         /// <summary>Owner-approved wording (2026-10-04).</summary>
-        public const string MismatchReason = "Version différente de l'hôte, mets ton jeu à jour.";
+        public const string MismatchReason = "Version différente de l'hôte, mets ton jeu à jour."; // loc
 
         public enum Verdict
         {

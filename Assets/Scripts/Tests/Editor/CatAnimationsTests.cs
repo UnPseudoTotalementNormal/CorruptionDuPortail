@@ -155,6 +155,38 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void TheCatVoice_IsWired_ToItsFmodEvents()
+        {
+            // T3 item 4 (Wouh 2026-11-05: "des bruitages lorsqu'ils emote, des miaulements"): a voice per emote, picked
+            // on tools/maquettes/chats-sons (2026-11-18). No struggle voice: Poyo found it unbearable on repeat.
+            var voice = AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath).GetComponent<CatVoice>();
+            Assert.IsNotNull(voice, "Cat_Avatar has no CatVoice");
+            var so = new SerializedObject(voice);
+            Assert.IsNotNull(so.FindProperty("animator").objectReferenceValue, "CatVoice watches no Animator");
+            Assert.IsNull(so.FindProperty("struggle"), "the chained struggle must stay silent");
+            Assert.AreEqual(4f, so.FindProperty("cryEverySeconds").floatValue, 1e-4f, "R2: a sob about every 4 s");
+
+            string events = System.IO.Path.Combine(Application.dataPath, "../FMODProject/Corrupted/Metadata/Event");
+            foreach (var (field, path) in new[] { ("meow", "event:/Cats/Meow"), ("cry", "event:/Cats/Cry"), ("accuse", "event:/Cats/Accuse") })
+            {
+                SerializedProperty guid = so.FindProperty(field + ".Guid");
+                var bytes = new List<byte>();
+                foreach (string part in new[] { "Data1", "Data2", "Data3", "Data4" })
+                    bytes.AddRange(System.BitConverter.GetBytes(guid.FindPropertyRelative(part).intValue));
+                var id = new System.Guid(bytes.ToArray());
+                Assert.AreNotEqual(System.Guid.Empty, id, $"{field}: no event");
+                Assert.AreEqual(path, so.FindProperty(field + ".Path").stringValue, field);
+                Assert.IsTrue(System.IO.File.Exists(System.IO.Path.Combine(events, "{" + id + "}.xml")),
+                    $"{field}: {path} is not in the FMOD project");
+            }
+
+            // FMOD's settings list the banks the game loads (read as text: the tests do not reference FMODUnity).
+            string settings = System.IO.File.ReadAllText("Assets/Plugins/FMOD/Resources/FMODStudioSettings.asset");
+            StringAssert.IsMatch(@"\n  Banks:\r?\n(  - \w+\r?\n)*  - Cats\r?\n", settings,
+                "the Cats bank is not loaded by the game");
+        }
+
+        [Test]
         public void TheNewParameters_AreSynchronizedByTheNetworkAnimator()
         {
             GameObject cat = AssetDatabase.LoadAssetAtPath<GameObject>(CatPrefabPath);

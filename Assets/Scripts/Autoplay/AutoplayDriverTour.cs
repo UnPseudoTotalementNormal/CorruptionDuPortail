@@ -40,7 +40,8 @@ namespace Autoplay
 
             // Night, while none of this process's seats is awake (a fake-role layer on the host, a sleeping seat on a
             // client): free cursor, board view, no full-screen overlay (the recap's journal covers the HUD by design).
-            if (!tourDone && _state is AwakeningState && Time.time - stateEnterGameTime > options.thinkDelay && !AnyControlledAwake())
+            if (!tourDone && _state is AwakeningState && Time.time - stateEnterGameTime > options.thinkDelay && !AnyControlledAwake()
+                && (options.tourFromDay <= 0 || CompositionRoot.For(networkManager).GameManager is not { } _gm || _gm.currentDay >= options.tourFromDay))
             {
                 tourDone = true;
                 inputBusy = true;
@@ -180,8 +181,11 @@ namespace Autoplay
         {
             foreach (string _name in _names)
             {
+                // Several triggers share a name (every card is "Card(Clone)"): the richest one, as the default tour does.
                 HoverTooltipComponent _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
-                    .FirstOrDefault(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent);
+                    .Where(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent)
+                    .OrderByDescending(_t => (_t.Description ?? string.Empty).Length)
+                    .FirstOrDefault();
                 if (_trigger == null || TooltipManager.instance == null)
                 {
                     TourStep("tooltip", false, $"reason=no-trigger name={_name}");
@@ -230,7 +234,7 @@ namespace Autoplay
                     await TourSlider(_panel);
                 }
 
-                Transform _exit = _panel.transform.Find("ExitButton");
+                Transform _exit = FindInPause(_panel.transform, "ExitButton");
                 bool _closed = await ClickTarget(_exit ? _exit.gameObject : null, "pause-close", () => !_panel.isPanelOpen);
                 TourStep("pause-close", _closed);
 
@@ -362,7 +366,7 @@ namespace Autoplay
             {
                 int _active = _manager.activeChatId;
                 string[] _otherNames = _manager.discoveredChatIds.Where(_id => _id != _active)
-                    .Select(_id => _manager.GetChatWindow(_id)?.chatName.ToString()).Where(_n => !string.IsNullOrEmpty(_n)).ToArray();
+                    .Select(_id => CorruptionDuPortail.Domain.Localization.Loc.ResolveSource(_manager.GetChatWindow(_id)?.chatName.ToString())).Where(_n => !string.IsNullOrEmpty(_n)).ToArray();
                 CustomButton _tab = _chat.GetComponentsInChildren<CustomButton>()
                     .FirstOrDefault(_b => _b.GetComponentInChildren<TMP_Text>() is TMP_Text _label && _otherNames.Contains(_label.text));
                 if (_tab != null)
@@ -566,6 +570,16 @@ namespace Autoplay
             return true;
         }
 
+        // The pause menu's words sit in a list under the panel since T9 (maquettes menus v1 P3): look at every depth.
+        private static Transform FindInPause(Transform _panel, string _name)
+        {
+            foreach (Transform _t in _panel.GetComponentsInChildren<Transform>(true))
+            {
+                if (_t.name == _name) return _t;
+            }
+            return null;
+        }
+
         /// <summary>
         /// Real-input leave (lever quit-at with real input): pause button, then the pause menu's Leave button, as a
         /// player leaves. True once the client is disconnected; false = the caller shuts down directly.
@@ -583,7 +597,7 @@ namespace Autoplay
                     return false;
                 }
                 await UniTask.Delay(TimeSpan.FromSeconds(0.4f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
-                Transform _leave = _panel.transform.Find("LeaveGameButton");
+                Transform _leave = FindInPause(_panel.transform, "LeaveGameButton");
                 return await ClickTarget(_leave ? _leave.gameObject : null, "leave-button",
                     () => networkManager == null || !networkManager.IsConnectedClient);
             }

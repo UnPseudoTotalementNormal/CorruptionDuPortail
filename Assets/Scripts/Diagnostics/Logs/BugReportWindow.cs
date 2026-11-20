@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.Threading;
+using CorruptionDuPortail.Domain.Localization;
 using Cysharp.Threading.Tasks;
 using Avatars;
 using TMPro;
@@ -28,15 +29,16 @@ namespace Diagnostics.Logs
     internal sealed class BugReportWindow : MonoBehaviour
     {
         public const string AutoReportSwitch = "-playtest-bug-report-at";
-        private const string Title = "Qu'est-ce qui s'est passé ?";
-        private const string SendLabel = "Envoyer";
-        private const string CancelLabel = "Annuler";
-        private const string SentNote = "Envoyé, merci";
-        private const string NotSentNote = "Pas envoyé";
+        private const string Title = "Qu'est-ce qui s'est passé ?"; // loc
+        private const string SendLabel = "Envoyer"; // loc
+        private const string MenuLineLabel = "Signaler un bug"; // loc
+        private const string CancelLabel = "Annuler"; // loc
+        private const string SentNote = "Envoyé, merci"; // loc
+        private const string NotSentNote = "Pas envoyé"; // loc
         private const float SentNoteSeconds = 2f;
         private const float NotSentNoteSeconds = 3f;
         private const float SendNowSeconds = 8f;
-        private const string SendingNote = "Envoi…";
+        private const string SendingNote = "Envoi…"; // loc
         private static readonly Color PanelColor = new(0.043f, 0.043f, 0.043f, 0.96f);
         private static readonly Color ButtonColor = new(0.227f, 0.227f, 0.227f, 1f);
         private static readonly Color DimColor = new(0f, 0f, 0f, 0.28f);
@@ -51,6 +53,9 @@ namespace Diagnostics.Logs
         private Button _send;
         private Button _cancel;
         private TextMeshProUGUI _sendText;
+        private TextMeshProUGUI _titleText;
+        private TextMeshProUGUI _cancelText;
+        private readonly System.Collections.Generic.List<TMPro.TMP_Text> _menuLineLabels = new();
         private Texture2D _capture;
         private byte[] _jpg;
         private bool _busy;
@@ -69,6 +74,7 @@ namespace Diagnostics.Logs
             _window._runtime = _runtime;
             _window.Build();
             SceneManager.sceneLoaded += _window.OnSceneLoaded;
+            Loc.LanguageChanged += _window.OnLanguageChanged;
             int _at = Array.IndexOf(_args, AutoReportSwitch);
             if (_at >= 0 && _at + 1 < _args.Length && float.TryParse(_args[_at + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float _delay))
             {
@@ -79,7 +85,17 @@ namespace Diagnostics.Logs
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            Loc.LanguageChanged -= OnLanguageChanged;
             if (_capture != null) Destroy(_capture);
+        }
+
+        // The texts written once (the Send label and the note are rewritten as they change).
+        private void OnLanguageChanged()
+        {
+            if (_titleText != null) _titleText.text = Loc.Tr(Title);
+            if (_cancelText != null) _cancelText.text = Loc.Tr(CancelLabel);
+            _menuLineLabels.RemoveAll(_gone => _gone == null); // pause menus of unloaded scenes
+            foreach (TMPro.TMP_Text _label in _menuLineLabels) _label.text = Loc.Tr(MenuLineLabel);
         }
 
         private void Update()
@@ -101,7 +117,7 @@ namespace Diagnostics.Logs
             {
                 long _wait = _runtime.ReportWaitMs();
                 _send.interactable = _wait <= 0;
-                _sendText.text = _wait <= 0 ? SendLabel : $"{SendLabel} ({(_wait + 999) / 1000})";
+                _sendText.text = _wait <= 0 ? Loc.Tr(SendLabel) : Loc.Tr("Envoyer ({0})", (_wait + 999) / 1000);
             }
         }
 
@@ -220,7 +236,7 @@ namespace Diagnostics.Logs
             _busy = true;
             string _id = _runtime.QueueReport(_input.text, _jpg);
             Close(); // the player is back in the game at once; the note below never takes clicks
-            _noteText.text = SendingNote;
+            _noteText.text = Loc.Tr(SendingNote);
             _note.SetActive(true);
             bool _sent;
             try
@@ -231,7 +247,7 @@ namespace Diagnostics.Logs
             {
                 _sent = false;
             }
-            _noteText.text = _sent ? SentNote : NotSentNote;
+            _noteText.text = Loc.Tr(_sent ? SentNote : NotSentNote);
             try
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(_sent ? SentNoteSeconds : NotSentNoteSeconds), DelayType.Realtime,
@@ -253,7 +269,7 @@ namespace Diagnostics.Logs
             await UniTask.Delay(TimeSpan.FromSeconds(_delay), DelayType.Realtime, PlayerLoopTiming.Update, _ct);
             Open(null).Forget();
             await UniTask.WaitUntil(() => IsOpen, cancellationToken: _ct);
-            _input.text = "Signalement de test (autoplay) : élu, vote « perdu », ça marche";
+            _input.text = "Signalement de test (autoplay) : élu, vote « perdu », ça marche"; // loc-ok: the canned report of an autoplay run
             Submit().Forget();
         }
 
@@ -276,7 +292,8 @@ namespace Diagnostics.Logs
                 {
                     foreach (LeaveGameButton _leave in _rootObject.GetComponentsInChildren<LeaveGameButton>(true))
                     {
-                        if (_leave.transform.parent == null || _leave.transform.parent.name != "PausePanel") continue;
+                        PanelComponent _pause = _leave.GetComponentInParent<PanelComponent>(true);
+                        if (_pause == null || _pause.name != "PausePanel") continue;
                         AddMenuLine(_leave);
                     }
                 }
@@ -287,7 +304,8 @@ namespace Diagnostics.Logs
             }
         }
 
-        /// <summary>« Signaler un bug » under « Quitter la partie »: a copy of that button, without its leave behaviour.</summary>
+        /// <summary>« Signaler un bug » just before « Quitter la partie » in the pause menu's list of words (T9 maquettes
+        /// menus v1 P3): a copy of that button, without its leave behaviour.</summary>
         private void AddMenuLine(LeaveGameButton _leave)
         {
             Transform _panel = _leave.transform.parent;
@@ -299,15 +317,20 @@ namespace Diagnostics.Logs
             var _button = _line.GetComponent<CustomButton>();
             _button.onButtonClickedUnityEvent = new UnityEvent();
             _line.name = "ReportBugButton";
-            Text _label = _line.GetComponentInChildren<Text>(true);
-            if (_label != null) _label.text = "Signaler un bug";
-            var _source = (RectTransform)_leave.transform;
-            var _rect = (RectTransform)_line.transform;
+            TMPro.TMP_Text _label = _line.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (_label != null)
+            {
+                // This line follows the language itself (_menuLineLabels): the copied label's own pass would put the
+                // leave button's text back.
+                DestroyImmediate(_label.GetComponent<Localization.LocalizedLabel>());
+                _label.text = Loc.Tr(MenuLineLabel);
+                _menuLineLabels.Add(_label);
+            }
             _line.transform.SetParent(_panel, false);
-            _line.transform.SetSiblingIndex(_leave.transform.GetSiblingIndex() + 1);
-            _rect.anchoredPosition = _source.anchoredPosition - new Vector2(0f, _source.rect.height + 12f);
+            // The words are laid out by the list: « Signaler un bug » comes just before « Quitter la partie ».
+            _line.transform.SetSiblingIndex(_leave.transform.GetSiblingIndex());
             Destroy(_holder);
-            CanvasGroup _menu = _panel.GetComponent<CanvasGroup>();
+            CanvasGroup _menu = _leave.GetComponentInParent<PanelComponent>(true).GetComponent<CanvasGroup>();
             _button.onButtonClicked += () => Open(_menu).Forget();
         }
 
@@ -342,7 +365,7 @@ namespace Diagnostics.Logs
             _layout.childForceExpandHeight = false;
             _panel.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            NewText("Title", _panel.transform, Title, 32, Color.white, TextAlignmentOptions.Center);
+            _titleText = NewText("Title", _panel.transform, Loc.Tr(Title), 32, Color.white, TextAlignmentOptions.Center);
 
             GameObject _previewGo = NewUi("Capture", _panel.transform);
             _preview = _previewGo.AddComponent<RawImage>();
@@ -360,7 +383,7 @@ namespace Diagnostics.Logs
             _rowLayout.childControlHeight = true;
             _rowLayout.childForceExpandWidth = true;
             _row.AddComponent<LayoutElement>().preferredHeight = 46;
-            _cancel = NewButton(_row.transform, CancelLabel, out _);
+            _cancel = NewButton(_row.transform, CancelLabel, out _cancelText);
             _send = NewButton(_row.transform, SendLabel, out _sendText);
             _cancel.onClick.AddListener(Close);
             _send.onClick.AddListener(() => Submit().Forget());
@@ -370,7 +393,7 @@ namespace Diagnostics.Logs
             var _noteImage = _note.AddComponent<Image>();
             _noteImage.color = PanelColor;
             _noteImage.raycastTarget = false; // never in the way of the game
-            _noteText = NewText("Text", _note.transform, SentNote, 32, Color.white, TextAlignmentOptions.Center);
+            _noteText = NewText("Text", _note.transform, Loc.Tr(SentNote), 32, Color.white, TextAlignmentOptions.Center);
             Stretch(_noteText.gameObject);
 
             _root.SetActive(false);
@@ -440,7 +463,7 @@ namespace Diagnostics.Logs
             _image.color = ButtonColor;
             var _button = _go.AddComponent<Button>();
             _button.targetGraphic = _image;
-            _text = NewText("Label", _go.transform, _label, 24, Color.white, TextAlignmentOptions.Center);
+            _text = NewText("Label", _go.transform, Loc.Tr(_label), 24, Color.white, TextAlignmentOptions.Center);
             Stretch(_text.gameObject);
             return _button;
         }

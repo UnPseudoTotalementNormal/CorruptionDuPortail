@@ -188,6 +188,126 @@
    ],
    "changes": "cloth: cut 0.45-1.6 s, filtered, faded, loudness normalized",
    "added": "2026-11-02"
+  },
+  {
+   "source": "Freesound",
+   "id": 334434,
+   "title": "Cat single meow 2",
+   "author": "ebcrosby",
+   "author_url": "https://freesound.org/people/ebcrosby/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/ebcrosby/sounds/334434/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/meow.wav (event:/Cats/Meow)"
+   ],
+   "changes": "meow: cut 0.26-0.98 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 64015,
+   "title": "kitten20.wav",
+   "author": "Department64",
+   "author_url": "https://freesound.org/people/Department64/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Department64/sounds/64015/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_whimper.wav (event:/Cats/Cry)"
+   ],
+   "changes": "cry_whimper: cut 0.0-0.88 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 156643,
+   "title": "catmeow1",
+   "author": "Yoyodaman234",
+   "author_url": "https://freesound.org/people/Yoyodaman234/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Yoyodaman234/sounds/156643/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/cry_low.wav (event:/Cats/Cry)"
+   ],
+   "changes": "cry_low: cut 0.0-0.86 s, pitched -3 semitones, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 146963,
+   "title": "catHisses1.wav",
+   "author": "Zabuhailo",
+   "author_url": "https://freesound.org/people/Zabuhailo/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Zabuhailo/sounds/146963/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_hiss.wav (event:/Cats/Accuse)"
+   ],
+   "changes": "accuse_hiss: cut 0.25-1.3 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 350411,
+   "title": "Angry Cat Meow",
+   "author": "bevibeldesign",
+   "author_url": "https://freesound.org/people/bevibeldesign/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/bevibeldesign/sounds/350411/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-voices/accuse_angry.wav (event:/Cats/Accuse)"
+   ],
+   "changes": "accuse_angry: cut 0.15-1.3 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 436540,
+   "title": "Short Sharp Meow",
+   "author": "Mafon2",
+   "author_url": "https://freesound.org/people/Mafon2/",
+   "license": "CC0 1.0",
+   "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+   "url": "https://freesound.org/people/Mafon2/sounds/436540/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_sharp.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_sharp: cut 0.02-0.26 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 415209,
+   "title": "Cat, Screaming, A.wav",
+   "author": "InspectorJ",
+   "author_url": "https://freesound.org/people/InspectorJ/",
+   "license": "CC BY 4.0",
+   "license_url": "https://creativecommons.org/licenses/by/4.0/",
+   "url": "https://freesound.org/people/InspectorJ/sounds/415209/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_pain.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_pain: cut 0.35-0.95 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
+  },
+  {
+   "source": "Freesound",
+   "id": 368011,
+   "title": "Meow 8.wav",
+   "author": "TRNGLE",
+   "author_url": "https://freesound.org/people/TRNGLE/",
+   "license": "CC BY 3.0",
+   "license_url": "https://creativecommons.org/licenses/by/3.0/",
+   "url": "https://freesound.org/people/TRNGLE/sounds/368011/",
+   "used_in": [
+    "FMODProject/Corrupted/Assets/SoundMaker/cat-fall/fall_cry_growl.wav (event:/Interface/ChainSplat)"
+   ],
+   "changes": "fall_cry_growl: cut 0.12-0.55 s, filtered, faded, loudness normalized",
+   "added": "2026-11-18"
   }
  ]
 }

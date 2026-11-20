@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Des placeholders plus jolis (T9)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .ph-base { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  .ph-patch { position: absolute; background-size: 1600px 900px; }
+  .ph-el { position: absolute; }
+  .ph-el img, .ph-el svg { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .ph-shadow { filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .6)); }
+  .ph-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ph-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .ph-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .ph-legend { display: flex; gap: 20px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .ph-legend figure { margin: 0; text-align: center; color: var(--soft); font-size: 14px; }
+  .ph-legend img, .ph-legend svg { height: 60px; width: auto; display: block; margin: 0 auto 4px; }
+  /* end-of-turn button */
+  .ph-btn { position: absolute; cursor: pointer; transition: transform .08s, filter .15s, top .45s ease-in; user-select: none; }
+  .ph-btn img { width: 100%; height: 100%; display: block; }
+  .ph-btn span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+  .ph-btn.hover { filter: brightness(1.18); }
+  .ph-btn.down { transform: scale(.94); }
+  .ph-old { background: rgb(176, 64, 56); font: 30px/1.05 "Liberation Sans", Arial, sans-serif; color: #fff; }
+  .ph-old.hover { filter: none; background: rgb(199, 87, 77); }
+  .ph-old.off { background: rgba(128, 128, 128, .85); color: #ddd; cursor: default; }
+  .ph-cream span { font: 34px "Fell", serif; color: #f6e7c6; text-shadow: 0 2px 0 #3a0d08, 0 0 6px #3a0d08; }
+  .ph-burnt span { font: 36px "FellSC", serif; color: #2a0b05; text-shadow: 0 1px 0 rgba(255, 170, 120, .45); letter-spacing: 1px; }
+  .ph-dim { filter: brightness(.42) saturate(.35); cursor: default; }
+  .ph-dim span { opacity: .75; }
+  .ph-gone { top: 960px !important; }
+  /* verdict */
+  .ph-vig { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+  .ph-verdict { position: absolute; left: 710px; top: 360px; width: 180px; height: 180px; opacity: 0; transform: scale(.6); }
+  .ph-tag { position: absolute; padding: 4px 10px 6px; background: #c7a26a; color: #2b170b; font: 22px "Fell", serif; border: 2px solid #6d4a26; box-shadow: 0 2px 4px rgba(0, 0, 0, .6); transform: rotate(-4deg); }
+  .ph-tag::before { content: ""; position: absolute; left: 50%; top: -7px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #8d1e16; box-shadow: 0 1px 2px #000; } /* slop-ok: a round pin, not a pill */
+  .ph-glow { position: absolute; box-shadow: 0 0 0 3px rgba(242, 193, 78, .9), 0 0 26px 8px rgba(242, 193, 78, .55); pointer-events: none; }
+  .ph-ring { position: absolute; pointer-events: none; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Des placeholders plus jolis (T9)</h1>
+  <p><b>La demande.</b> Wouh, fil T9 : « Mettre des placeholders plus jolis ». Il a dessiné des icônes le 15/11 (Corrompu, lotus, chapeau, ours de l'Orpheline, téléphone du Messager, robot) et la planche du bouton « Fin de tour » le 17/11. Les pattes sont déjà en jeu (#213).</p>
+  <div class="ph-legend" id="ph-wouh"></div>
+  <p><b>Ce que j'ai trouvé dans le jeu.</b> Voici les visuels provisoires qu'on voit en partie. Ce sont des carrés de couleur, des images trouvées sur internet ou des dessins faits par le code : le bouton « Arrêter l'éveil » (un rectangle rouge), les carrés vert et rouge de la Vision maudite, le cœur fêlé de l'Orpheline et son œil, le rond flou de « soigné », la Bénédiction presque invisible, l'étiquette blanche « Moi », la coche et le sens interdit des verdicts, les losanges de la roue d'émotes, la barre bleue du temps d'éveil, le portrait rond du compteur du Robot. Le Messager n'a aucune marque.</p>
+  <p><b>Référence.</b> Hearthstone : le gros bouton « Fin du tour » en bois à droite du plateau, allumé quand on peut jouer, éteint pendant le tour adverse. Slay the Spire : « Fin du tour » en bas à droite, et des icônes d'intention à gros contour noir posées sur les ennemis, lisibles en 30 px. Inscryption : les marques sur les cartes sont dessinées comme la carte, jamais un carré de couleur.</p>
+  <p><b>La scène.</b> Nuit 2, 8 joueurs. Tu es l'Orpheline, éveillée : tu as rendu visite à Simulated 2. Le Repenti a vu que Simulated 2 est un élu et que le Mage n'en est pas un. Deux corrompus sur six, personne n'a touché au Robot.</p>
+  <p><b>Sans question.</b> Les dessins de Wouh sont détourés et restent remplaçables sans toucher au code. Là où il n'a rien dessiné, je propose des autocollants dans son style (trait noir, bord blanc). Chaque icône est la même sur la carte et sur le portrait du bandeau. La planche sert aussi à « Passer le vote ». Chaînes et balise restent en 3D, comme Wouh l'a dit. Tout texte passe par la traduction anglaise.</p>
+  <p><b>Pas dans ce tour</b> (prochaine page, une fois celle-ci votée) : les menus (pause, réglages, écran de fin, curseurs et barres de défilement), le contour jaune des portraits, les ✓ ✗ ★ du tableur et de la fiche de rôle, la bave à usage unique (shader), le modèle 3D de Luma (Alex).</p>
+  <p>Les boutons des écrans réagissent pour de vrai : survole-les, clique-les.</p>
+</header>
+
+<section>
+  <h2>1. Le bouton de fin de tour</h2>
+  <div class="ph-bar" data-bar="fin"><span>Moment :</span>
+    <button data-v="eveil" class="on">Éveillé</button><button data-v="dort">Endormi (pas ton tour)</button>
+  </div>
+  <div class="variant" data-id="F0">
+    <div class="vhead"><span class="vid">F0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Rectangle rouge « Arrêter l'éveil », gris quand ce n'est pas ton tour.</p>
+    <div class="screen"><div class="stage" data-r="fin" data-k="old"></div></div>
+  </div>
+  <div class="variant" data-id="F1">
+    <div class="vhead"><span class="vid">F1</span><span class="vname">Planche de Wouh, texte crème (par défaut)</span></div>
+    <p class="vdesc">La planche à la même place, « Fin de tour » écrit en crème comme les textes du parchemin. Survol : elle s'éclaire ; clic : elle s'enfonce.</p>
+    <div class="screen"><div class="stage" data-r="fin" data-k="cream"></div></div>
+  </div>
+  <div class="variant" data-id="F2">
+    <div class="vhead"><span class="vid">F2</span><span class="vname">Texte brûlé dans le bois</span></div>
+    <p class="vdesc">Même planche, lettres sombres comme gravées au fer dans le bois, en petites capitales.</p>
+    <div class="screen"><div class="stage" data-r="fin" data-k="burnt"></div></div>
+  </div>
+  <div class="variant" data-id="F3">
+    <div class="vhead"><span class="vid">F3</span><span class="vname">Plus grande, au milieu du bas</span></div>
+    <p class="vdesc">La planche centrée sous la table, plus large : on la trouve sans chercher. Les objets de pouvoir se décalent à gauche.</p>
+    <div class="screen"><div class="stage" data-r="fin" data-k="center"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>2. Quand ce n'est pas ton tour</h2>
+  <p>La planche choisie au-dessus, au moment « Endormi ».</p>
+  <div class="variant" data-id="D1">
+    <div class="vhead"><span class="vid">D1</span><span class="vname">Planche éteinte (par défaut)</span></div>
+    <p class="vdesc">Elle reste, assombrie et sans couleur, et ne réagit plus à la souris.</p>
+    <div class="screen"><div class="stage" data-r="dort" data-k="dim"></div></div>
+  </div>
+  <div class="variant" data-id="D2">
+    <div class="vhead"><span class="vid">D2</span><span class="vname">Planche qui disparaît</span></div>
+    <p class="vdesc">Elle glisse sous le bord de l'écran quand tu te rendors et remonte à ton réveil (clique l'écran pour revoir le mouvement).</p>
+    <div class="screen"><div class="stage" data-r="dort" data-k="gone"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>3. Vision maudite : élu ou pas</h2>
+  <div class="variant" data-id="V0">
+    <div class="vhead"><span class="vid">V0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un carré vert (élu) ou rouge (pas élu) dans le coin de la carte.</p>
+    <div class="screen"><div class="stage" data-r="vision" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Lotus et chapeau de Wouh, dans le coin (par défaut)</span></div>
+    <p class="vdesc">Le lotus vert pour un élu, le chapeau à l'œil rouge pour un non-élu, à la place des carrés.</p>
+    <div class="screen"><div class="stage" data-r="vision" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">En grand au milieu de la carte</span></div>
+    <p class="vdesc">Les mêmes icônes, grandes, posées sur le dos ou le portrait de la carte : on lit le verdict de loin.</p>
+    <div class="screen"><div class="stage" data-r="vision" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>4. Visite de l'Orpheline</h2>
+  <p>Sur la carte de celui qu'elle a visité (chez elle) et sur son portrait du bandeau (chez lui).</p>
+  <div class="variant" data-id="O0">
+    <div class="vhead"><span class="vid">O0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le cœur fêlé crème.</p>
+    <div class="screen"><div class="stage" data-r="orph" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="O1">
+    <div class="vhead"><span class="vid">O1</span><span class="vname">L'ours de Wouh (par défaut)</span></div>
+    <p class="vdesc">L'ours recousu à la place du cœur, même taille.</p>
+    <div class="screen"><div class="stage" data-r="orph" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="O2">
+    <div class="vhead"><span class="vid">O2</span><span class="vname">L'ours, plus gros</span></div>
+    <p class="vdesc">L'ours une fois et demie plus grand, toujours dans la carte : on voit les coutures.</p>
+    <div class="screen"><div class="stage" data-r="orph" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>5. L'œil de l'Orpheline (qui la cible)</h2>
+  <div class="variant" data-id="E0">
+    <div class="vhead"><span class="vid">E0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un œil crème dessiné au trait.</p>
+    <div class="screen"><div class="stage" data-r="oeil" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Œil autocollant (par défaut)</span></div>
+    <p class="vdesc">Un œil grand ouvert, iris rouge, dans le style de Wouh.</p>
+    <div class="screen"><div class="stage" data-r="oeil" data-k="1"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>6. Le téléphone du Messager</h2>
+  <p>Le Messager lie un joueur par l'encre (un salon privé entre eux). Aujourd'hui rien ne le montre sur la table.</p>
+  <div class="variant" data-id="M0">
+    <div class="vhead"><span class="vid">M0</span><span class="vname">Actuel : rien</span></div>
+    <p class="vdesc">Le lien ne se voit que dans le salon de la tablette.</p>
+    <div class="screen"><div class="stage" data-r="msg" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="M1">
+    <div class="vhead"><span class="vid">M1</span><span class="vname">Sur la carte du joueur lié (par défaut)</span></div>
+    <p class="vdesc">Chez le Messager, le téléphone de Wouh sur la carte de celui qu'il a lié, comme l'ours de l'Orpheline.</p>
+    <div class="screen"><div class="stage" data-r="msg" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="M2">
+    <div class="vhead"><span class="vid">M2</span><span class="vname">Aussi sur le portrait du Messager</span></div>
+    <p class="vdesc">En plus, chez le joueur lié, le téléphone sur le portrait du Messager dans le bandeau : il sait qui lui écrit.</p>
+    <div class="screen"><div class="stage" data-r="msg" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>7. Verdict d'un pouvoir (juste ou faux)</h2>
+  <div class="ph-bar" data-bar="verdict"><span>Verdict :</span>
+    <button data-v="ok" class="on">Juste</button><button data-v="ko">Faux</button><button data-v="replay">▶ Rejouer</button>
+  </div>
+  <div class="variant" data-id="K0">
+    <div class="vhead"><span class="vid">K0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Une coche verte ou un sens interdit dessinés par le code, avec un voile de couleur sur les bords.</p>
+    <div class="screen"><div class="stage" data-r="verdict" data-k="old"></div></div>
+  </div>
+  <div class="variant" data-id="K1">
+    <div class="vhead"><span class="vid">K1</span><span class="vname">Coche et croix autocollants (par défaut)</span></div>
+    <p class="vdesc">Une coche verte ou la croix rouge des pattes de Wouh, qui sautent puis s'effacent, même voile.</p>
+    <div class="screen"><div class="stage" data-r="verdict" data-k="stk"></div></div>
+  </div>
+  <div class="variant" data-id="K2">
+    <div class="vhead"><span class="vid">K2</span><span class="vname">Les pattes de Wouh</span></div>
+    <p class="vdesc">La patte qui tape (traits jaunes) quand c'est juste, la patte à la croix quand c'est faux : le même langage que le curseur.</p>
+    <div class="screen"><div class="stage" data-r="verdict" data-k="paw"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>8. Soigné (Soin Baveux, Dr Gloubi)</h2>
+  <div class="variant" data-id="S0">
+    <div class="vhead"><span class="vid">S0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un rond flou vert dans le coin de la carte.</p>
+    <div class="screen"><div class="stage" data-r="soin" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="S1">
+    <div class="vhead"><span class="vid">S1</span><span class="vname">Goutte de bave (par défaut)</span></div>
+    <p class="vdesc">Une goutte verte qui coule, comme le nom du pouvoir.</p>
+    <div class="screen"><div class="stage" data-r="soin" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="S2">
+    <div class="vhead"><span class="vid">S2</span><span class="vname">Feuille et goutte</span></div>
+    <p class="vdesc">Une feuille avec une goutte d'eau : le soin en général, réutilisable si un autre rôle soigne.</p>
+    <div class="screen"><div class="stage" data-r="soin" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>9. Bénédiction (Dryade)</h2>
+  <div class="variant" data-id="B0">
+    <div class="vhead"><span class="vid">B0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un voile vert presque transparent sur la carte : on ne le voit pas.</p>
+    <div class="screen"><div class="stage" data-r="bene" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="B1">
+    <div class="vhead"><span class="vid">B1</span><span class="vname">Auréole dorée (par défaut)</span></div>
+    <p class="vdesc">Une auréole autocollant en haut de la carte.</p>
+    <div class="screen"><div class="stage" data-r="bene" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="B2">
+    <div class="vhead"><span class="vid">B2</span><span class="vname">Lueur dorée autour de la carte</span></div>
+    <p class="vdesc">Pas d'icône : la carte bénie brille d'un liseré doré.</p>
+    <div class="screen"><div class="stage" data-r="bene" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>10. « Moi » sur ta carte</h2>
+  <div class="variant" data-id="U0">
+    <div class="vhead"><span class="vid">U0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Une étiquette blanche à moitié transparente, « Moi » en gris.</p>
+    <div class="screen"><div class="stage" data-r="moi" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="U1">
+    <div class="vhead"><span class="vid">U1</span><span class="vname">Étiquette de papier épinglée (par défaut)</span></div>
+    <p class="vdesc">Un bout de papier kraft punaisé au-dessus de ta carte, « Moi » à la plume.</p>
+    <div class="screen"><div class="stage" data-r="moi" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="U2">
+    <div class="vhead"><span class="vid">U2</span><span class="vname">Empreinte de patte</span></div>
+    <p class="vdesc">Ta patte au-dessus de ta carte, sans texte.</p>
+    <div class="screen"><div class="stage" data-r="moi" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>11. Roue d'émotes</h2>
+  <div class="variant" data-id="W0">
+    <div class="vhead"><span class="vid">W0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Un losange crème par émote, le nom autour.</p>
+    <div class="screen"><div class="stage" data-r="roue" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="W1">
+    <div class="vhead"><span class="vid">W1</span><span class="vname">Une icône par émote (par défaut)</span></div>
+    <p class="vdesc">Coucou : la patte de Wouh qui tape ; Pleurer : une larme ; Accuser : la patte griffes sorties ; Pose ardente : une flamme. Les noms restent.</p>
+    <div class="screen"><div class="stage" data-r="roue" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="W2">
+    <div class="vhead"><span class="vid">W2</span><span class="vname">Icônes seules</span></div>
+    <p class="vdesc">Les mêmes icônes, plus grandes, sans les noms autour de la roue ; le nom de l'émote survolée reste au centre.</p>
+    <div class="screen"><div class="stage" data-r="roue" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>12. Le temps d'éveil d'un rôle</h2>
+  <p>Sous le portrait du rôle éveillé dans le bandeau. Ici il se vide en 8 s pour voir le mouvement.</p>
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Une barre bleu nuit sous le portrait.</p>
+    <div class="screen"><div class="stage" data-r="temps" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">Barre de cire dorée (par défaut)</span></div>
+    <p class="vdesc">La même barre, couleur de flamme, avec un trait sombre autour.</p>
+    <div class="screen"><div class="stage" data-r="temps" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="T2">
+    <div class="vhead"><span class="vid">T2</span><span class="vname">Le cadre du portrait qui se vide</span></div>
+    <p class="vdesc">Pas de barre : un liseré doré fait le tour du portrait et se vide comme une horloge.</p>
+    <div class="screen"><div class="stage" data-r="temps" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>13. Les compteurs (Robot et corrompus)</h2>
+  <div class="variant" data-id="C0">
+    <div class="vhead"><span class="vid">C0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Le portrait du Robot dans un rond, l'œil rouge des corrompus.</p>
+    <div class="screen"><div class="stage" data-r="compteurs" data-k="0"></div></div>
+  </div>
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Robot et lotus corrompu de Wouh (par défaut)</span></div>
+    <p class="vdesc">Le Robot « Solitaire » de Wouh et son lotus « Corrompu », à la place des deux.</p>
+    <div class="screen"><div class="stage" data-r="compteurs" data-k="1"></div></div>
+  </div>
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Robot de Wouh, œil rouge gardé</span></div>
+    <p class="vdesc">Seul le Robot change ; l'œil rouge reste, c'est le même que le dos des cartes.</p>
+    <div class="screen"><div class="stage" data-r="compteurs" data-k="2"></div></div>
+  </div>
+</section>
+
+<section>
+  <textarea id="global" placeholder="Une remarque sur l'ensemble ?"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</section>
+
+<script src="img/svg/stickers.js"></script>
+<script>
+(() => {
+  const I = n => `img/icons/${n}.webp`;
+  const stk = (n) => cdpSticker(n, 200);
+
+  // Wouh's art, in the header
+  const leg = document.getElementById('ph-wouh');
+  [['corrompu', 'Corrompu'], ['lotus', 'lotus'], ['chapeau', 'chapeau'], ['orpheline', 'Orpheline'], ['robot', 'Solitaire (Robot)'], ['messager', 'Intendant (Messager)']]
+    .forEach(([f, t]) => leg.insertAdjacentHTML('beforeend', `<figure><img src="${I(f)}" alt="">${t}</figure>`));
+  leg.insertAdjacentHTML('beforeend', `<figure><img src="img/planche.webp" alt="" style="height:60px">Fin de tour</figure>`);
+
+  // -------- drawing helpers (stage px, 1600 x 900)
+  const add = (st, html) => { st.insertAdjacentHTML('beforeend', html); return st.lastElementChild; };
+  const base = (st, src) => add(st, `<img class="ph-base" src="${src}" alt="">`);
+  const patch = (st, x, y, w, h, src = 'img/nuit_net.jpg') =>
+    add(st, `<div class="ph-patch" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;background-image:url(${src});background-position:-${x}px -${y}px"></div>`);
+  const el = (st, inner, cx, cy, size, cls = 'ph-shadow') =>
+    add(st, `<div class="ph-el ${cls}" style="left:${cx - size / 2}px;top:${cy - size / 2}px;width:${size}px;height:${size}px">${inner}</div>`);
+  const img = (src) => `<img src="${src}" alt="">`;
+
+  // Card rectangles of the night capture (nuit.jpg)
+  const CARD = { p8048: [336, 257, 479, 455], s2: [651, 257, 792, 455], s6: [651, 535, 792, 731], s7: [808, 535, 948, 731] };
+  const corner = (c, dx = 36, dy = 48) => [c[2] - dx, c[3] - dy];
+
+  // -------- 1 / 2. End-of-turn button
+  const state = { fin: 'eveil', verdict: 'ok' };
+  const BTN_OLD = [1305, 813, 83, 87];
+  function drawButton(st, kind, sleeping) {
+    base(st, 'img/nuit.jpg');
+    patch(st, 1296, 804, 100, 96);
+    let b;
+    if (kind === 'old') {
+      b = add(st, `<div class="ph-btn ph-old ${sleeping ? 'off' : ''}" style="left:${BTN_OLD[0]}px;top:${BTN_OLD[1]}px;width:${BTN_OLD[2]}px;height:${BTN_OLD[3]}px"><span>Arrêter<br>l'éveil</span></div>`);
+    } else {
+      const center = kind === 'center';
+      const w = center ? 330 : 250, h = Math.round(w / 3);
+      const x = center ? 800 - w / 2 + 120 : 1395 - w, y = center ? 900 - h - 6 : 900 - h - 8;
+      const style = kind === 'burnt' ? 'ph-burnt' : 'ph-cream';
+      b = add(st, `<div class="ph-btn ${style}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><img src="img/planche.webp" alt=""><span style="font-size:${center ? 44 : 34}px">Fin de tour</span></div>`);
+      if (center) { // power objects shift left to make room
+        const objs = add(st, `<div class="ph-patch" style="left:600px;top:735px;width:310px;height:165px;background-image:url(img/nuit.jpg);background-position:-600px -735px;transform:translateX(-150px)"></div>`);
+        patch(st, 760, 735, 150, 165, 'img/nuit_net.jpg').style.zIndex = 0;
+        objs.style.zIndex = 1; b.style.zIndex = 2;
+      }
+      if (sleeping === 'dim') b.classList.add('ph-dim');
+      if (sleeping === 'gone') b.classList.add('ph-gone');
+    }
+    const live = () => !b.classList.contains('off') && !b.classList.contains('ph-dim') && !b.classList.contains('ph-gone');
+    b.addEventListener('pointerenter', () => live() && b.classList.add('hover'));
+    b.addEventListener('pointerleave', () => b.classList.remove('hover', 'down'));
+    b.addEventListener('pointerdown', () => live() && b.classList.add('down'));
+    b.addEventListener('pointerup', () => {
+      if (!live()) return;
+      b.classList.remove('down');
+      // a click ends the turn: the button goes to its sleeping look, then wakes up again
+      if (kind === 'old') b.classList.add('off'); else b.classList.add(st.dataset.r === 'dort' && st.dataset.k === 'gone' ? 'ph-gone' : 'ph-dim');
+      b.classList.remove('hover');
+      setTimeout(() => b.classList.remove('off', 'ph-dim', 'ph-gone'), 1800);
+    });
+    return b;
+  }
+
+  const R = {};
+  R.fin = (st, k) => { drawButton(st, k, state.fin === 'dort' ? 'dim' : false); };
+  R.dort = (st, k) => {
+    const b = drawButton(st, 'cream', false);
+    b.classList.add(k === 'dim' ? 'ph-dim' : 'ph-gone');
+  };
+
+  // -------- 3. Cursed vision
+  R.vision = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    if (k === '0') return;
+    patch(st, 654, 396, 38, 38); patch(st, 826, 391, 36, 40);
+    if (k === '1') {
+      el(st, img(I('lotus')), 673, 412, 46);
+      el(st, img(I('chapeau')), 846, 409, 46);
+    } else {
+      el(st, img(I('lotus')), 721, 352, 112);
+      el(st, img(I('chapeau')), 892, 320, 112);
+    }
+  };
+
+  // -------- 4. Orpheline visit (card + band portrait of the Orpheline seen by the visited player)
+  R.orph = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    if (k === '0') { el(st, img('img/coeur_actuel.webp'), 1140, 172, 24, ''); return; }
+    patch(st, 738, 388, 36, 36);
+    const s = k === '1' ? 32 : 48;
+    el(st, img(I('orpheline')), k === '1' ? 756 : 748, k === '1' ? 406 : 398, s);
+    el(st, img(I('orpheline')), 1140, 172, k === '1' ? 26 : 34);
+  };
+
+  // -------- 5. Orpheline's eye on whoever targets her
+  R.oeil = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    const [x, y] = corner(CARD.s7);
+    if (k === '0') el(st, img('img/oeil_actuel.webp'), x, y, 34, '');
+    else el(st, stk('ciblee'), x, y, 40);
+  };
+
+  // -------- 6. Messenger's phone
+  R.msg = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    if (k === '0') return;
+    const [x, y] = corner(CARD.s6);
+    el(st, img(I('messager')), x, y, 40);
+    if (k === '2') el(st, img(I('messager')), 494, 172, 28);
+  };
+
+  // -------- 7. Power verdict (animated)
+  const verdictStages = [];
+  R.verdict = (st, k) => {
+    verdictStages.push([st, k]);
+    paintVerdict(st, k);
+  };
+  function paintVerdict(st, k) {
+    st.innerHTML = '';
+    const ok = state.verdict === 'ok';
+    if (k === 'old') { base(st, ok ? 'img/nuit_ok.jpg' : 'img/nuit_ko.jpg'); return; }
+    base(st, 'img/nuit.jpg');
+    const vig = add(st, `<div class="ph-vig" style="box-shadow:inset 0 0 160px 40px ${ok ? 'rgba(60,170,60,.75)' : 'rgba(190,40,40,.75)'}"></div>`);
+    const inner = k === 'stk' ? stk(ok ? 'verdict_ok' : 'verdict_ko') : img(I(ok ? 'patte_clic' : 'patte_interdit'));
+    const v = add(st, `<div class="ph-verdict ph-shadow">${inner}</div>`);
+    // pop in 0.15 s, hold, fade from 0.8 s to 1.2 s: same timing as VerdictIconFeedback
+    v.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1.08)', offset: .12 }, { opacity: 1, transform: 'scale(1)', offset: .2 }, { opacity: 1, transform: 'scale(1)', offset: .66 }, { opacity: 0, transform: 'scale(1)' }], { duration: 1200, fill: 'forwards' });
+    vig.animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 0 }], { duration: 1200, fill: 'forwards' });
+  }
+
+  // -------- 8. Healed
+  R.soin = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    const x = CARD.p8048[2] - 20, y = CARD.p8048[1] + 18;
+    if (k === '0') add(st, `<div class="ph-el" style="left:${x - 17}px;top:${y - 17}px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#55c46a 0 45%,rgba(85,196,106,0) 72%)"></div>`); // slop-ok: the current blurred dot
+    else el(st, stk(k === '1' ? 'bave' : 'soigne'), x - 4, y + 4, 40);
+  };
+
+  // -------- 9. Blessing
+  R.bene = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    const c = CARD.s6;
+    if (k === '0') add(st, `<div class="ph-el" style="left:${c[0]}px;top:${c[1]}px;width:${c[2] - c[0]}px;height:${c[3] - c[1]}px;background:rgba(80,200,90,.06)"></div>`);
+    else if (k === '1') el(st, stk('benediction'), (c[0] + c[2]) / 2, c[1] + 4, 56);
+    else add(st, `<div class="ph-glow" style="left:${c[0]}px;top:${c[1]}px;width:${c[2] - c[0]}px;height:${c[3] - c[1]}px"></div>`);
+  };
+
+  // -------- 10. "Me" on your card
+  R.moi = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    const cx = (CARD.p8048[0] + CARD.p8048[2]) / 2, top = CARD.p8048[1];
+    if (k === '0') add(st, `<img class="ph-el" src="img/moi_actuel.webp" style="left:${cx - 26}px;top:${top - 69}px;width:52px;height:62px" alt="">`);
+    else if (k === '1') add(st, `<div class="ph-tag" style="left:${cx - 30}px;top:${top - 48}px">Moi</div>`);
+    else el(st, stk('moi'), cx, top - 30, 48);
+  };
+
+  // -------- 11. Emote wheel (capture 1280 x 720 scaled 1.25)
+  const SLOTS = [['coucou', 800, 256], ['flamme', 607, 448], ['pleurer', 994, 448], ['accuser', 800, 644]];
+  R.roue = (st, k) => {
+    if (k === '0') { base(st, 'img/roue.jpg'); return; }
+    base(st, 'img/roue_net.jpg');
+    const art = { coucou: img(I('patte_clic')), accuser: img(I('patte_griffes')), pleurer: stk('pleurer'), flamme: stk('flamme') };
+    SLOTS.forEach(([n, x, y]) => el(st, art[n], x, y, k === '1' ? 76 : 100));
+    if (k === '2') { // names around the wheel removed
+      [[800, 166, 200, 44], [430, 452, 160, 40], [1066, 452, 120, 40], [800, 741, 180, 40]].forEach(([x, y, w, h]) =>
+        add(st, `<div class="ph-patch" style="left:${x - w / 2}px;top:${y - h / 2}px;width:${w}px;height:${h}px;background:#000"></div>`));
+    }
+  };
+
+  // -------- 12. Awakening time (Vahal's portrait in the band, 835..896 x 116..184)
+  const timeStages = [];
+  R.temps = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    patch(st, 830, 183, 72, 10);
+    let fill;
+    if (k === '0') fill = add(st, `<div class="ph-el" style="left:835px;top:184px;width:61px;height:7px;background:#2b3f8f;transform-origin:left"></div>`);
+    else if (k === '1') fill = add(st, `<div class="ph-el" style="left:835px;top:185px;width:61px;height:6px;background:linear-gradient(#ffd27a,#e08a2a);outline:2px solid #2a1206;transform-origin:left"></div>`);
+    else fill = add(st, `<div class="ph-ring" style="left:832px;top:113px;width:67px;height:74px"></div>`);
+    timeStages.push([fill, k]);
+  };
+  const t0 = performance.now();
+  (function tick() {
+    const p = 1 - ((performance.now() - t0) % 8000) / 8000;
+    timeStages.forEach(([f, k]) => {
+      if (k === '2') {
+        const a = p * 360;
+        f.style.background = `conic-gradient(#f2c14e 0 ${a}deg, transparent ${a}deg)`;
+        f.style.webkitMask = f.style.mask = 'linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)';
+        f.style.padding = '3px';
+      } else f.style.transform = `scaleX(${p})`;
+    });
+    requestAnimationFrame(tick);
+  })();
+
+  // -------- 13. Counters
+  R.compteurs = (st, k) => {
+    base(st, 'img/nuit.jpg');
+    if (k === '0') return;
+    patch(st, 1416, 103, 74, 74);
+    el(st, img(I('robot')), 1453, 140, 64);
+    if (k === '1') { patch(st, 1422, 210, 60, 58); el(st, img(I('corrompu')), 1452, 238, 56); }
+  };
+
+  // -------- render all
+  function render() {
+    verdictStages.length = 0; timeStages.length = 0;
+    document.querySelectorAll('.stage[data-r]').forEach(st => { st.innerHTML = ''; R[st.dataset.r](st, st.dataset.k); });
+  }
+  document.querySelectorAll('.ph-bar').forEach(bar => bar.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const key = bar.dataset.bar;
+    if (b.dataset.v === 'replay') { verdictStages.forEach(([st, k]) => paintVerdict(st, k)); return; }
+    bar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    state[key] = b.dataset.v;
+    if (key === 'verdict') verdictStages.forEach(([st, k]) => paintVerdict(st, k));
+    else document.querySelectorAll('.stage[data-r="fin"]').forEach(st => { st.innerHTML = ''; R.fin(st, st.dataset.k); });
+  }));
+  // section 2: a replay of falling asleep then waking up
+  document.querySelectorAll('.stage[data-r="dort"]').forEach(st => st.addEventListener('click', () => {
+    const b = st.querySelector('.ph-btn'); const cls = st.dataset.k === 'dim' ? 'ph-dim' : 'ph-gone';
+    b.classList.remove(cls); setTimeout(() => b.classList.add(cls), 1200);
+  }));
+  render();
+  // verdicts replay on their own every 3 s so a capture or a glance catches them
+  setInterval(() => verdictStages.forEach(([st, k]) => paintVerdict(st, k)), 3000);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

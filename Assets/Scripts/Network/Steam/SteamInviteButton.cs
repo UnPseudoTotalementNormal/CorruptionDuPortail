@@ -1,6 +1,7 @@
 #region
 
 using Diagnostics.Logs;
+using CorruptionDuPortail.Domain.Localization;
 using Network.Services;
 using Steamworks;
 using TMPro;
@@ -18,9 +19,9 @@ namespace Network.Steam
     /// </summary>
     public static class SteamInviteButton
     {
-        public const string Label = "Inviter des amis";
+        public const string Label = "Inviter des amis"; // loc
         public const string OverlayDisabledMessage =
-            "L'overlay Steam est désactivé : invite tes amis depuis ta liste d'amis Steam.";
+            "L'overlay Steam est désactivé : invite tes amis depuis ta liste d'amis Steam."; // loc
         private const string TemplateName = "StartGame";
         private const float GapBelowCode = 8f;
 
@@ -62,10 +63,22 @@ namespace Network.Steam
             _invite.interactable = true;
             _copy.SetActive(true);
 
-            foreach (TMP_Text _text in _copy.GetComponentsInChildren<TMP_Text>(true))
+            // The label follows a language change (options of the pause menu) for as long as the button lives.
+            TMP_Text[] _texts = _copy.GetComponentsInChildren<TMP_Text>(true);
+            void ApplyLabel()
             {
-                _text.text = Label;
+                if (_copy == null)
+                {
+                    Loc.LanguageChanged -= ApplyLabel;
+                    return;
+                }
+                foreach (TMP_Text _text in _texts)
+                {
+                    _text.text = Loc.Tr(Label);
+                }
             }
+            ApplyLabel();
+            Loc.LanguageChanged += ApplyLabel;
 
             var _rect = (RectTransform)_copy.transform;
             _rect.anchorMin = codeLabel.anchorMin;

@@ -1,6 +1,6 @@
 ---
 project_name: 'Corruption Du Portail'
-last_updated: '2026-10-04'
+last_updated: '2026-11-16'
 maintenance: 'hand-maintained — add a rule only if breaking it compiles clean and fails silently; delete rules the code makes obvious'
 ---
 
@@ -159,6 +159,43 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
   compile the calls in. Code that needs the runtime (Firebase, file) stays inside `#if CDP_PLAYTEST_LOGS`; the facade's
   `[Conditional]` entry points strip the call sites elsewhere.
 - `GameManager.logGameId` is declared in every build (same NetworkVariable layout Editor ↔ playtest build).
+
+## Languages (T36: `Domain/Localization/Loc`, `Scripts/Localization`, table `Resources/Localization/texts.json`)
+
+French is the source: a text is written in French where it is used, and that French is the key of the English table.
+A text written the old way compiles, reads fine in French and stays French for an English player.
+
+- **Text shown on the machine that builds it**: `Loc.Tr("…")`, `Loc.Tr("… {0} …", arg)`, `Loc.Plural(n, "{0} joueur",
+  "{0} joueurs")`; into a label: `label.SetLoc("…", args)` (uGUI and UI Toolkit), which also rewrites it when the
+  player changes the language. One whole sentence = one source: never glue translated fragments (word order differs).
+- **Text the server sends** (chat line, channel name): `Loc.Token("… {0} …", pseudo, Loc.Token(roleName))`, never a
+  sentence: each client reads it in ITS language where it is displayed (`Loc.Resolve`; `ChatPanel` does). The host's
+  language is not the players'. A refused connection's reason is the exception: it travels as plain French (a player
+  on another build still reads it) and the client shows it with `Loc.ShowForeign`.
+- **Text authored in an asset** (role / power name and description, picker step, faction, preset, cosmetic, tooltip):
+  stays French in the asset, translated where it is displayed (`Loc.Tr(role.roleName.ToString())`, `SetLoc`). Never
+  translate where it is compared: `roleName` / `powerName` are identities (`IsTheSameRole`, autoplay scenarios).
+- **Label written in a prefab / scene**: needs a `LocalizedLabel` next to its text component (`Tools > Localization >
+  Add LocalizedLabel to translated labels` once its entry exists). **UXML text**: the screen calls
+  `LocalizedUitk.Localize(root)` after building and on `Loc.LanguageChanged`.
+- A French literal outside a `Loc.*(` / `SetLoc(` call on the same line (a `const`, a serialized default, the second
+  line of a call) takes a trailing `// loc` comment, or the scan does not see it.
+- A screen that writes its texts once and cannot use `SetLoc` re-runs its refresh on `Loc.LanguageChanged` (mirrored
+  unsubscribe): the language is changed live, in the main menu and the pause menu.
+- EditMode `LocalizationCoverageTests` (category `Localization`) fails on any French text without English, any
+  translated label without its component, any broken `{0}` / `{var:x}` / tag, any leftover entry. Run it after touching
+  a text; a sample text of a label that code replaces goes in `Scripts/Editor/LocalizationPlaceholders.json`.
+- Tests and autoplay run in French (`LocalizationTestSetup`, `-autoplay*` on the command line); `-lang en` forces a run.
+- **Logs never depend on the player's language.** The log sink writes a token as its French sentence, and
+  `GameLog.Guarded(() => …)` computes its arguments in French (`Loc.InSource`). Never pass a translated text to a
+  log (`Loc.Tr(…)`, a label's `.text`, a tooltip `Title`): pass the French source or the token. An error text that
+  is both shown and logged (`OnLobbyError`, `ReportError`, `DisplayError`) is a French source or a `Loc.Token`,
+  translated by its display (`Loc.ShowForeign`); a backend / SDK reason inside it is a `Loc.QuietToken`.
+  Autoplay journals record French the same way (`Loc.ResolveSource`).
+- Enforced by `.claude/tools/loc_guard.py` (hook: at each edit of a game `.cs`, and blocking at `git commit`): a French
+  literal, or a worded literal handed to `.text =` / `new Label(` / a chat or error message, on a line without `Loc.` /
+  `SetLoc`. Marks on the line: `// loc` (a game text translated where it is displayed), `// loc-ok` (no player reads it).
+  `python .claude/tools/loc_guard.py --scan` audits the tree, `--test` checks the guard.
 
 ## UI Toolkit gotchas
 

@@ -1,3 +1,4 @@
+using Localization;
 #region
 
 using System;
@@ -177,7 +178,7 @@ namespace Board.UI.CharacterBar
                     var _tmp = _groupObj.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                     if (_tmp != null)
                     {
-                        _tmp.text = _faction.ToString().ToUpper();
+                        _tmp.SetLoc(_faction.ToString().ToUpper());
 
                         // Tint the faction title per faction (e.g. green for chosen, orange
                         // for marginal). Falls back to the prefab's color when unmapped.

@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using System;
@@ -12,7 +13,7 @@ namespace Characters.WinningConditions
     [Serializable]
     public class WAnomalyCorruption : WinningCondition
     {
-        public override string Description => "Les Anomalies gagnent quand tous les joueurs sont corrompus.";
+        public override string Description => Loc.Tr("Les Anomalies gagnent quand tous les joueurs sont corrompus.");
 
         public override WinningTeam GetWinningTeam()
         {

@@ -1,3 +1,5 @@
+using Localization;
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using Avatars.Cosmetics;
 using CorruptionDuPortail.Domain;
@@ -41,7 +43,16 @@ namespace UI.CatCustomization
         public event Action Opened;
         public event Action Closed;
 
-        private void OnEnable() => TryInitialize();
+        private void OnEnable()
+        {
+            Loc.LanguageChanged += OnLanguageChanged;
+            TryInitialize();
+        }
+
+        private void OnDisable() => Loc.LanguageChanged -= OnLanguageChanged;
+
+        // T36: the labels written in CatCustomization.uxml (the panel's own follow by themselves).
+        private void OnLanguageChanged() => LocalizedUitk.Localize(_root);
 
         // UIDocument builds its tree in its own OnEnable (order not guaranteed): Start is the fallback.
         private void Start() => TryInitialize();
@@ -56,7 +67,9 @@ namespace UI.CatCustomization
             _panel = new CatCustomizationPanel(catalog, stage, _root.Q<VisualElement>("cat-view"),
                 _root.Q<VisualElement>("cat-tabs"), _root.Q<Label>("cat-current"), _root.Q<VisualElement>("cat-cells"));
             _root.Q<Label>("cat-back").RegisterCallback<ClickEvent>(_ => Close());
+            _root.Q<Label>("cat-back").AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
 
+            LocalizedUitk.Localize(_root);
             _root.pickingMode = PickingMode.Ignore;
             _initialized = true;
         }

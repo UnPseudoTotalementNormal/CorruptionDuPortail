@@ -49,6 +49,12 @@ namespace Board
 
         private void OnCardSpawned(Card _cardSpawned)
         {
+            // T9 (H2): every card gets the bubble listing its marks; it stays silent while there are none.
+            if (!_cardSpawned.TryGetComponent(out CardMarksTooltip _marksTooltip))
+            {
+                _cardSpawned.gameObject.AddComponent<CardMarksTooltip>().Initialize(_cardSpawned, this);
+            }
+
             Character _character = _cardSpawned.characterInfo;
 
             if (_character == null || !cardEffectsByCardId.TryGetValue(_character.ownerClientId.Value, out List<CardEffectID> _cardEffects))
@@ -96,6 +102,16 @@ namespace Board
             CreateCardEffect(_cardEffectID, _targetId);
         }
         
+        private static readonly List<CardEffectID> NoEffects = new();
+
+        /// <summary>The effects this peer shows on that player's card (read by the marks bubble, T9).</summary>
+        public IReadOnlyList<CardEffectID> GetCardEffects(ulong _targetId) =>
+            cardEffectsByCardId.TryGetValue(_targetId, out List<CardEffectID> _effects) ? _effects : NoEffects;
+
+        /// <summary>The data an effect was added with (CursedVision: true = not a Chosen), or null.</summary>
+        public object GetEffectData(CardEffectID _cardEffectID, ulong _targetId) =>
+            pendingEffectData.TryGetValue((_cardEffectID, _targetId), out object _data) ? _data : null;
+
         public bool HasCardEffect(CardEffectID _cardEffectID, ulong _targetId) =>
             cardEffectsByCardId.TryGetValue(_targetId, out List<CardEffectID> _effects) && _effects.Contains(_cardEffectID);
 

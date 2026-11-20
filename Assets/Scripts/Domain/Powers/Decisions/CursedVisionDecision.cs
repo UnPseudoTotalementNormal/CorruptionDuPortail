@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using Characters;
 
 namespace CorruptionDuPortail.Domain.Powers.Decisions
@@ -22,8 +23,8 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             bool targetIsChosen = ctx.Roster.FactionOf(ctx.TargetSlot) == FactionType.chosen;
             bool cardHidden = !targetIsChosen;
             string verdict = targetIsChosen
-                ? $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} est un élu."
-                : $"{ctx.Roster.PseudoOf(ctx.TargetSlot)} n'est pas un élu.";
+                ? Loc.Token("{0} est un élu.", ctx.Roster.PseudoOf(ctx.TargetSlot))
+                : Loc.Token("{0} n'est pas un élu.", ctx.Roster.PseudoOf(ctx.TargetSlot));
 
             return PowerOutcome.Accept(
                 new NewTargeting(ctx.OwnerSlot, ctx.TargetSlot),

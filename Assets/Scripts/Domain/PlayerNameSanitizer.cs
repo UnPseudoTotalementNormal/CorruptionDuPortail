@@ -16,7 +16,8 @@ namespace CorruptionDuPortail.Domain
 
         public static string Sanitize(string raw, bool stripUgsDiscriminator, string fallback)
         {
-            string _name = CollapseWhitespace(raw);
+            // T36: a pseudo is quoted inside translated sentences; it can never carry a translation token's marks.
+            string _name = CollapseWhitespace(Localization.Loc.StripMarks(raw));
             if (stripUgsDiscriminator)
             {
                 _name = StripUgsDiscriminator(_name);

@@ -2,6 +2,10 @@
  "why": "Loudness of the sounds already in the game, per category, measured on the built banks as the game mixes them (event + bus). New sounds are normalized to their category's target so nothing jumps out. max_m = loudest 400 ms in LUFS (one-shots), integrated = whole-file LUFS (music, loops). Categories: [name, regex on the event path], first match wins. exclude: Claude's synthesized T19 placeholders, at arbitrary levels, not a reference.",
  "categories": [
   [
+   "cat",
+   "^event:/Cats/"
+  ],
+  [
    "music",
    "Music|Project_38"
   ],
@@ -46,6 +50,9 @@
   },
   "music": {
    "max_m": -22.0
+  },
+  "cat": {
+   "max_m": -24.0
   }
  },
  "targets_why": {
@@ -54,7 +61,8 @@
   "announce": "median of the chaining announcement and the opening",
   "power": "median of the 23 role power sounds",
   "ambience": "median of the 3 ambiences (they range widely, -42 to -12: judge by ear)",
-  "music": "median of the 3 musics"
+  "music": "median of the 3 musics",
+  "cat": "the cats' voices on the emotes (meow, crying, accusing, struggling): no team sound yet; set at the table cues (-24), heard across the table but under the game moments (-19.5) and the voice chat"
  },
  "reference": {
   "music": {

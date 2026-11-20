@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using Avatars.Cosmetics;
 using CorruptionDuPortail.Domain;
@@ -60,10 +61,11 @@ namespace UI.CatCustomization
         {
             switch (slot)
             {
-                case CatSlot.Fur: return "Pelage";
-                case CatSlot.Outfit: return "Tenue";
-                case CatSlot.Eyes: return "Yeux";
-                case CatSlot.Mouth: return "Bouche";
+                // T36: French sources (autoplay finds the tabs by them); shown with SetLoc.
+                case CatSlot.Fur: return "Pelage"; // loc
+                case CatSlot.Outfit: return "Tenue"; // loc
+                case CatSlot.Eyes: return "Yeux"; // loc
+                case CatSlot.Mouth: return "Bouche"; // loc
                 default: return slot.ToString();
             }
         }
@@ -137,16 +139,17 @@ namespace UI.CatCustomization
             foreach (CatSlot slot in CatLook.Slots)
             {
                 if (_catalog.ItemsOf(slot).Count == 0) continue;
-                var tab = new Label(SlotLabel(slot));
+                var tab = new Label().SetLoc(SlotLabel(slot));
                 tab.AddToClassList("cat-custo__tab");
                 tab.EnableInClassList("cat-custo__tab--on", slot == _openSlot);
                 CatSlot captured = slot;
                 tab.RegisterCallback<ClickEvent>(_ => ShowSlot(captured));
+                tab.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
                 _tabs.Add(tab);
             }
 
             CatCosmeticItem chosen = _catalog.Find(_openSlot, _look.Get(_openSlot));
-            _current.text = chosen != null ? chosen.displayName : string.Empty;
+            _current.SetLoc(chosen != null ? chosen.displayName : string.Empty);
 
             _cells.Clear();
             int index = 0;
@@ -181,13 +184,14 @@ namespace UI.CatCustomization
             }
             cell.Add(box);
 
-            var name = new Label(item.displayName) { pickingMode = PickingMode.Ignore };
+            var name = new Label { pickingMode = PickingMode.Ignore }.SetLoc(item.displayName);
             name.AddToClassList("cat-custo__cell-name");
             cell.Add(name);
 
             CatSlot slot = item.slot;
             byte id = item.id;
             cell.RegisterCallback<ClickEvent>(_ => Choose(slot, id));
+            cell.AddToClassList(global::UI.CatPaw.CatPawCursor.ClickableClass);
             return cell;
         }
 

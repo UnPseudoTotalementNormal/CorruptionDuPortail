@@ -1,3 +1,4 @@
+using Localization;
 using System;
 using AYellowpaper.SerializedCollections;
 using Characters;
@@ -49,7 +50,7 @@ public class GameIntroductionUI : StateUI
     private void ShowRoleText()
     {
         var _localCharacter = CharacterQuery.GetLocalCharacter(false);
-        roleText.text = _localCharacter.role.roleName.ToString();
+        roleText.SetLoc(_localCharacter.role.roleName.ToString());
         roleText.color = factionColors[_localCharacter.role.factionType];
         roleText.alpha = 0;
         

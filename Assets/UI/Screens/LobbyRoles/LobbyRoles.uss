@@ -363,16 +363,16 @@
     border-color: var(--cdp-color-ink);
     border-radius: 3px;
 }
+/* A pen stroke (T9 maquettes menus v1 K2), overflowing the box like a hand tick. */
 .lobby-roles__start-tick {
     position: absolute;
-    left: 8px;
-    top: -5px;
-    width: 12px;
-    height: 24px;
-    border-right-width: 4px;
-    border-bottom-width: 4px;
-    border-color: rgb(138, 16, 16);
-    rotate: 40deg;
+    left: -2px;
+    top: -14px;
+    width: 40px;
+    height: 40px;
+    background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Coche.png");
+    -unity-background-scale-mode: scale-to-fit;
+    -unity-background-image-tint-color: rgb(138, 16, 16);
 }
 .lobby-roles__start Label {
     font-size: 32px;

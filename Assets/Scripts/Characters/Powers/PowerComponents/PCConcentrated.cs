@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System;
 using Characters.Powers.Interfaces;
 using UnityEngine;
@@ -7,9 +8,11 @@ namespace Characters.Powers.PowerComponents
     [Tooltip("Ends the turn (spends the precedent power); does the concentrated action if the precedent power wasn't used this turn")]
     public class PCConcentrated : PowerComponent
     {
-        public string concentratedEffectDescription => "Termine le tour ; si \"{var:precedentPowerName}\" n'est pas utilisé, " 
-                                                       + (power as IConcentratedPowerEffect)?.concentratedEffectDescription;
-        public string precedentPowerName => GetPrecedentPower() ? GetPrecedentPower().powerName.ToString() : "Power not found";
+        // T36: both are read by the tooltip's {var:…}, so they come out in the player's language. The second half is
+        // the power's own text, authored on its prefab (the sentence keeps this order in every language).
+        public string concentratedEffectDescription => Loc.Tr("Termine le tour ; si \"{var:precedentPowerName}\" n'est pas utilisé, ")
+                                                       + Loc.Tr((power as IConcentratedPowerEffect)?.concentratedEffectDescription);
+        public string precedentPowerName => GetPrecedentPower() ? Loc.Tr(GetPrecedentPower().powerName.ToString()) : "Power not found";
         
         protected override void Init()
         {
@@ -23,7 +26,7 @@ namespace Characters.Powers.PowerComponents
 
         private void Reset()
         {
-            componentName = "Concentration";
+            componentName = "Concentration"; // loc (editor default: the text then lives on the prefab)
             description = "{var:concentratedEffectDescription}";
         }
 

@@ -1,0 +1,29 @@
+{
+  "name": "marks-tooltip",
+  "goal": "T9 (maquettes placeholders v3, H2): on the second night, the pointer (real input) rests on a card that carries marks and on a role portrait: one parchment bubble lists every mark with its icon (here the Dryade's gold rim and the healed leaf on the Messager's card). Cards without marks open no bubble (a named trigger is only taken when it has content). Checked on the tour-tooltip captures and the ui.marks.hover GameLog lines.",
+  "mode": "build",
+  "seed": 5150,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-tour-day", "2",
+    "-autoplay-tour-tooltip-targets", "Card(Clone),CharacterBarObject(Clone)",
+    "-autoplay-tour-dwell", "1",
+    "-autoplay-force-roles", "Dryade,Messager",
+    "-autoplay-role-holder", "host,bot",
+    "-autoplay-target-focus", "Messager",
+    "-autoplay-target-focus-power", "diction",
+    "-autoplay-power-use-probability", "1",
+    "-autoplay-max-days", "2",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "power.verdict", "detail": "Bénédiction Correct", "min": 1},
+    {"type": "event", "kind": "tour.tooltip", "detail": "^ok", "min": 1},
+    {"type": "noErrors", "ignore": ["ClientLoadedSynchronization", "message header is corrupted"]}
+  ]
+}

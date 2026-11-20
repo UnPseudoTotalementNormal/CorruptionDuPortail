@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Text;
 using Characters.Powers;
 
@@ -6,7 +7,7 @@ namespace TooltipSystem
     /// <summary>
     /// The bubble text of a power, written in one place (it was copied in both power bars and the link parser): its
     /// description with its {var:…} values filled in, then one link per power component ("En chaîne", "Concentration"),
-    /// whose card the bubble opens beside it.
+    /// whose card the bubble opens beside it. In the player's language (T36).
     /// </summary>
     public static class PowerTooltipText
     {
@@ -32,7 +33,7 @@ namespace TooltipSystem
                 }
                 _text.Append("<link=powercomponent_").Append(_power.ownerClientId.Value).Append('_')
                     .Append(_power.NetworkObjectId).Append('_').Append(_index).Append('>')
-                    .Append(_components[_index].componentName.ToString()).Append("</link>");
+                    .Append(Loc.Tr(_components[_index].componentName.ToString())).Append("</link>");
             }
             return _text.ToString();
         }

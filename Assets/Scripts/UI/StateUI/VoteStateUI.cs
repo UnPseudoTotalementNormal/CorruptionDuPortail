@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 #region
 
 using GameLogic.GameStates;
@@ -21,7 +22,7 @@ namespace UI
             }
             
             UpdateTimerText(((VoteState)owningGameState).voteTimer);
-            skipVoteAmountText.text = "Skip";
+            skipVoteAmountText.text = Loc.Tr("Skip");
         }
         
         private void UpdateTimerText(float _timeLeft)

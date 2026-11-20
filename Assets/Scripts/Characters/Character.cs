@@ -292,10 +292,29 @@ namespace Characters
             EnsureRosterSubscription();
             if (lobbyPlayerInfoHolder == null)
             {
-                return CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel;
+                return CorruptionDuPortail.Domain.Localization.Loc.Tr(CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel);
             }
             bool _hasEntry = lobbyPlayerInfoHolder.TryGetPlayerInfo(ownerClientId.Value, out Network.Player.PlayerInfo _info);
             return CorruptionDuPortail.Domain.PseudoDisplay.Format(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
+        }
+
+        /// <summary>
+        /// T36: <see cref="GetOwnerPseudo"/> for a sentence the server sends (an argument of <c>Loc.Token</c>) or a label
+        /// written with <c>SetLoc</c>: "Joueur ?" and "(parti)" travel as tokens, each reader sees them in his language.
+        /// </summary>
+        public string GetOwnerPseudoToken()
+        {
+            if (isFake)
+            {
+                return string.Empty;
+            }
+            EnsureRosterSubscription();
+            if (lobbyPlayerInfoHolder == null)
+            {
+                return CorruptionDuPortail.Domain.Localization.Loc.Token(CorruptionDuPortail.Domain.PseudoDisplay.MissingLabel);
+            }
+            bool _hasEntry = lobbyPlayerInfoHolder.TryGetPlayerInfo(ownerClientId.Value, out Network.Player.PlayerInfo _info);
+            return CorruptionDuPortail.Domain.PseudoDisplay.FormatToken(_hasEntry, _info.playerName.ToString(), _info.hasLeft);
         }
 
         

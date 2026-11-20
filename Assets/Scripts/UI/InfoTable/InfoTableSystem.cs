@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using System.Collections.Generic;
 using System.Linq;
 using Characters;
@@ -82,7 +83,7 @@ namespace UI.InfoTable
 
             // Create individual Headers
             Header _playerRoleHeader = Instantiate(headerPrefab, _headersRow.transform);
-            _playerRoleHeader.headerText.SetText("Joueurs / Rôles");
+            _playerRoleHeader.headerText.SetText(Loc.Tr("Joueurs / Rôles"));
             
             // Create role headers
             foreach (Character _character in characterManager.GetCharacters(false))
@@ -106,7 +107,7 @@ namespace UI.InfoTable
             foreach (KeyValuePair<Role, int> _roleCount in roleCounts)
             {
                 Header _roleHeader = Instantiate(headerPrefab, _headersRow.transform);
-                _roleHeader.headerText.SetText($"{_roleCount.Key.roleName}{(_roleCount.Value > 1 ? $" *{_roleCount.Value}" : "")}");
+                _roleHeader.headerText.SetText($"{Loc.Tr(_roleCount.Key.roleName.ToString())}{(_roleCount.Value > 1 ? $" *{_roleCount.Value}" : "")}");
                 _roleHeader.gameObject.AddComponent<ChildHeader>().SetVerticalHeader(_playerRoleHeader);
                 _roleHeader.layoutElement.preferredWidth = 100;
             }

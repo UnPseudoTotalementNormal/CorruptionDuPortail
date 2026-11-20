@@ -1,3 +1,4 @@
+using CorruptionDuPortail.Domain.Localization;
 using CorruptionDuPortail.Domain;
 using CorruptionDuPortail.Domain.Powers;
 using CorruptionDuPortail.Domain.Powers.Decisions;
@@ -315,7 +316,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new AddToChain(1),
-                new ChatSendServer("Bob sera lié par les chaînes de la vérité.", -1),
+                new ChatSendServer(Loc.Token("{0} sera lié par les chaînes de la vérité.", "Bob"), -1),
             }, outcome.Effects);
         }
 
@@ -341,7 +342,7 @@ namespace Tests.Editor
                 new HealPlayer(1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
                 new SetBlessed(1),
-                new ChatBroadcast("Bob est maintenant béni.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("{0} est maintenant béni.", "Bob"), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -357,7 +358,7 @@ namespace Tests.Editor
                 new NewTargeting(0, 1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
                 new SetBlessed(1),
-                new ChatBroadcast("Bob est maintenant béni.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("{0} est maintenant béni.", "Bob"), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -372,7 +373,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 0),
                 new SetEliminated(1),
-                new ChatBroadcast("Bob était le robot et a été éliminé par Chasseur.", -1, PowerEffectAudience.All),
+                new ChatBroadcast(Loc.Token("{0} était le robot et a été éliminé par {1}.", "Bob", Loc.Token("Chasseur")), -1, PowerEffectAudience.All),
                 new RevealPublic(1, RevealField.RoleRevealed),
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
@@ -388,7 +389,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 0),
                 new AddToChain(0),
-                new ChatBroadcast("Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("Votre cible n'était pas le robot. Vous serez enchaîné à la fin de l'éveil."), -1, PowerEffectAudience.Specific(0)),
                 RequestCharacterRefresh.Instance,
             }, outcome.Effects);
         }
@@ -407,7 +408,7 @@ namespace Tests.Editor
                 new CorruptPlayer(1),
                 new RevealInfo(1, RevealField.CorruptRevealed, RevealVisibility.Personal, 0, false),
                 new AddCardEffect(2, 1, true),
-                new ChatLocal("Bob n'est pas un élu.", -1),
+                new ChatLocal(Loc.Token("{0} n'est pas un élu.", "Bob"), -1),
             }, outcome.Effects);
         }
 
@@ -419,7 +420,7 @@ namespace Tests.Editor
             var outcome = new CursedVisionDecision { CardEffectId = 2 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
 
             Assert.AreEqual(new AddCardEffect(2, 1, false), outcome.Effects[3]);
-            Assert.AreEqual(new ChatLocal("Alice est un élu.", -1), outcome.Effects[4]);
+            Assert.AreEqual(new ChatLocal(Loc.Token("{0} est un élu.", "Alice"), -1), outcome.Effects[4]);
         }
 
         [Test]
@@ -497,7 +498,7 @@ namespace Tests.Editor
             {
                 new RevealInfo(0, RevealField.RoleRevealed, RevealVisibility.Personal, 1, false),
                 new RevealInfo(0, RevealField.CorruptRevealed, RevealVisibility.Personal, 1, false),
-                new ChatLocal("Marginal est venu(e) vous voir...", -1),
+                new ChatLocal(Loc.Token("{0} est venu(e) vous voir...", Loc.Token("Marginal")), -1),
                 new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
                 new AddCardEffect(4, 1, false, 0),
             }, outcome.Effects);
@@ -598,12 +599,14 @@ namespace Tests.Editor
         public void BoundByInk_TargetsDiscoversRegisters()
         {
             var state = new FakeState().With<IInkChatState>(new FakeInk { ChatId = 515100 });
-            var outcome = new BoundByInkDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            var outcome = new BoundByInkDecision { IconId = 42, LinkCardEffectId = 5 }.Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
-                new DiscoverChat(515100, "Lié par l'encre", PowerEffectAudience.Specific(1)),
+                new DiscoverChat(515100, Loc.Token("Lié par l'encre"), PowerEffectAudience.Specific(1)),
                 new RegisterInkTarget(1),
+                new AddPlayerIcon(42, 0, 1, PlayerIconLifetime.ClearAtAwakeningStart),
+                new AddCardEffect(5, 1, false, 0),
             }, outcome.Effects);
         }
 
@@ -619,7 +622,7 @@ namespace Tests.Editor
 
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Parmi les joueurs observés, 2 sont des élus.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("Parmi les joueurs observés, {0} sont des élus.", 2), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -634,7 +637,7 @@ namespace Tests.Editor
 
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
-                new ChatBroadcast("Parmi les joueurs observés, 0 sont des élus.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("Parmi les joueurs observés, {0} sont des élus.", 0), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -647,7 +650,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new NewTargeting(0, 7),
-                new ChatBroadcast("Bob est l'un de ces personnages.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("{0} est l'un de ces personnages.", "Bob"), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -660,7 +663,7 @@ namespace Tests.Editor
             {
                 new NewTargeting(0, 1),
                 new NewTargeting(0, 7),
-                new ChatBroadcast("Aucun personnage n'a été trouvé.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("Aucun personnage n'a été trouvé."), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -674,7 +677,7 @@ namespace Tests.Editor
                 new NewTargeting(0, 1),
                 new DiscoveredAdd(1),
                 new RevealInfo(1, RevealField.RoleRevealed, RevealVisibility.Personal, 0, true),
-                new ChatBroadcast("Vous avez correctement deviné que Bob est Sorcier.", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(Loc.Token("Vous avez correctement deviné que {0} est {1}.", "Bob", Loc.Token("Sorcier")), -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -686,7 +689,11 @@ namespace Tests.Editor
             CollectionAssert.AreEqual(new EffectDescriptor[]
             {
                 new NewTargeting(0, 1),
-                new ChatBroadcast("Votre supposition était incorrecte, Bob n'est pas Sorcier.\nLe role Sorcier a ciblé ces rôles:\n- Robot\n- Élu", -1, PowerEffectAudience.Specific(0)),
+                new ChatBroadcast(
+                    Loc.Token("Votre supposition était incorrecte, {0} n'est pas {1}.", "Bob", Loc.Token("Sorcier")) +
+                    "\n" + Loc.Token("Le role {0} a ciblé ces rôles:", Loc.Token("Sorcier")) +
+                    "\n- " + Loc.Token("Robot") + "\n- " + Loc.Token("Élu"),
+                    -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
         }
 
@@ -701,6 +708,81 @@ namespace Tests.Editor
                 new RevealInfo(1, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
                 new RevealInfo(2, RevealField.ForceCorruptOnRoleRevealed, RevealVisibility.Personal, 0, true),
             }, outcome.Effects);
+        }
+
+        // ---- T36: what each player reads --------------------------------------------------
+        // A decision sends tokens (asserted above); these read them back with the game's real translation table. The
+        // French must stay, to the letter, the sentence the game wrote before it had a language system.
+
+        [Test]
+        public void ChatMessage_WithARoleName_IsReadInEachPlayersLanguage()
+        {
+            var roster = new FakeRoster { Slots = new[] { 0, 1 } };
+            roster.Robots.Add(1); roster.Pseudos[1] = "Bob"; roster.RoleNames[0] = "La Chasseuse de Prime";
+            var outcome = new HighPriorityBountyDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
+            string sent = ((ChatBroadcast)outcome.Effects[2]).Message;
+
+            Localization.LocalizationRuntime.LoadTables();
+            try
+            {
+                Assert.AreEqual("Bob était le robot et a été éliminé par La Chasseuse de Prime.", Loc.Resolve(sent));
+                Loc.SetLanguage(GameLanguage.English);
+                Assert.AreEqual("Bob was the robot and was eliminated by The Bounty Hunter.", Loc.Resolve(sent));
+                CollectionAssert.IsEmpty(Loc.MissingTexts);
+            }
+            finally
+            {
+                Loc.SetLanguage(GameLanguage.French);
+            }
+        }
+
+        [Test]
+        public void ChatMessage_OfSeveralLines_IsReadInEachPlayersLanguage()
+        {
+            var state = new FakeState().With<ICardsShufflingGuess>(new FakeCards
+            {
+                IsCorrect = false, ClickedPseudo = "Bob", GuessRoleName = "Le Gardien", TargetedRoleNames = new[] { "Le Robot", "L'Orpheline" },
+            });
+            var outcome = new CardsShufflingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            string sent = ((ChatBroadcast)outcome.Effects[1]).Message;
+
+            Localization.LocalizationRuntime.LoadTables();
+            try
+            {
+                Assert.AreEqual(
+                    "Votre supposition était incorrecte, Bob n'est pas Le Gardien.\nLe role Le Gardien a ciblé ces rôles:\n- Le Robot\n- L'Orpheline",
+                    Loc.Resolve(sent));
+                Loc.SetLanguage(GameLanguage.English);
+                Assert.AreEqual(
+                    "Your guess was wrong, Bob is not The Guardian.\nThe role The Guardian targeted these roles:\n- The Robot\n- The Orphan",
+                    Loc.Resolve(sent));
+                CollectionAssert.IsEmpty(Loc.MissingTexts);
+            }
+            finally
+            {
+                Loc.SetLanguage(GameLanguage.French);
+            }
+        }
+
+        [Test]
+        public void ChatMessage_FitsTheNetworkString_EvenWithTheLongestNames()
+        {
+            // The chat travels in a FixedString512Bytes: a token (French source + marks + arguments) must fit like the
+            // sentence did. Worst case: the longest role name guessed, and every chosen role targeted.
+            string longest = "Abyss, L'Extension du Néant";
+            var targeted = new[]
+            {
+                "Luma, la croupière", "Dr Gloubi", "La Dryade", "Le Gardien", "Geôlier", "L'Incomplet", "Le Messager",
+                "Nara, l'oracle brisée", "L'Orpheline", "Le Repenti", "Le Technomancien", "La Chasseuse de Prime",
+            };
+            var state = new FakeState().With<ICardsShufflingGuess>(new FakeCards
+            {
+                IsCorrect = false, ClickedPseudo = new string('W', 20), GuessRoleName = longest, TargetedRoleNames = targeted,
+            });
+            var outcome = new CardsShufflingDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, state: state));
+            string sent = ((ChatBroadcast)outcome.Effects[1]).Message;
+
+            Assert.LessOrEqual(System.Text.Encoding.UTF8.GetByteCount(sent), 509, "FixedString512Bytes holds 509 bytes of text");
         }
     }
 }

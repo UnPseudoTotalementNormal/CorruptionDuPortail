@@ -35,6 +35,14 @@ puts a ✅ on it once the report is handled, and `reports` shows `✅ handled`. 
 captures. Test switch for autoplay runs: `-playtest-bug-report-at <seconds>`. Function tests: `node firebase/functions/test.js`.
 Deploy everything: `cd firebase && firebase deploy --only firestore,storage,functions`. A non-interactive deploy (Claude) fails on « no value for DISCORD_REPORTS_CHANNEL_ID » until the gitignored `firebase/functions/.env` holds `DISCORD_REPORTS_CHANNEL_ID=1562180825305448578` (the channel id, not a secret).
 
+## Read quota
+
+Firestore's free tier is 50 000 document reads a day, and a query bills one read per document it returns (even a
+listing that selects only `seq`). `logs.py` keeps the chunks and each session's list of chunk seqs in the main
+checkout's `tools/logs/.cache/` (shared by every worktree) and asks only for the chunks written since: a `grep` over a
+playtest evening costs ~70 reads once cached, instead of ~5 700 every time (what blew the quota on 2026-11-20). A
+game's timeline goes through its sessions' chunks for the same reason. Do not add a query that lists every chunk again.
+
 ## Switch (instant, no rebuild)
 
 ```bash

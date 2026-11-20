@@ -2,8 +2,9 @@
 """Read the playtest logs (Firestore project corruption-du-portail) — the way Claude investigates a playtest bug.
 
 Stdlib only. Auth = `gcloud auth print-access-token` (the developer's own Google account, admin access), refreshed
-automatically when it expires. Chunks are immutable: they are cached in tools/logs/.cache/ (gitignored) and only the
-missing ones are downloaded.
+automatically when it expires. Chunks are immutable: they are cached in the main checkout's tools/logs/.cache/
+(gitignored, shared by every worktree), and each session's chunk list too, so a command only asks Firestore for the
+chunks written since (it bills one read per document returned, even a listing).
 
     python tools/logs/logs.py list   [--since 24h] [--player NAME] [--game ID] [--all]   sessions, newest first
     python tools/logs/logs.py games  [--since 7d]                                         games and who played them
@@ -50,7 +51,22 @@ from pathlib import Path
 PROJECT = "corruption-du-portail"
 BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(default)/documents"
 DB = f"projects/{PROJECT}/databases/(default)/documents"
-CACHE = Path(__file__).resolve().parent / ".cache"
+
+
+def _shared_cache():
+    """The main checkout's tools/logs/.cache, so every worktree session reuses the chunks already downloaded."""
+    here = Path(__file__).resolve().parent
+    try:
+        common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=here,
+                                capture_output=True, text=True, timeout=10).stdout.strip()
+        if common and Path(common).name == ".git":
+            return Path(common).parent / "tools" / "logs" / ".cache"
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return here / ".cache"
+
+
+CACHE = _shared_cache()
 LEVELS = "DIWE"
 LOBBY_LEAD_MS = 180_000
 SKEW_MIN_MS = 1500
@@ -209,21 +225,48 @@ def load_chunks(names):
     return out
 
 
+def _listed_path(sid):
+    return CACHE / sid / "listed.json"
+
+
+def listed_seqs(sid):
+    """Seqs of the session's chunks already seen online. A session writes its chunks in order and each one once, so
+    whatever is listed stays true: the next listing only asks for the seqs above."""
+    try:
+        return set(json.loads(_listed_path(sid).read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return set()
+
+
 def chunks_of_session(sid, after_seq=-1):
+    """Every chunk of the session after `after_seq`. Firestore bills one read per document a query returns, even with
+    only `seq` selected: listing all the chunks again at every command is what blew the daily free reads (2026-11-20,
+    ~46 000 reads for 8 grep/span). So only the chunks above the last listed one are asked for."""
+    known = listed_seqs(sid)
+    top = max(known, default=-1)
     q = {"from": [{"collectionId": "chunks"}],
          "orderBy": [{"field": {"fieldPath": "seq"}, "direction": "ASCENDING"}]}
-    if after_seq >= 0:
+    if top >= 0:
         q["where"] = {"fieldFilter": {"field": {"fieldPath": "seq"}, "op": "GREATER_THAN",
-                                      "value": {"integerValue": str(after_seq)}}}
-    return load_chunks(chunk_names(q, parent=f"{BASE}/sessions/{urllib.parse.quote(sid)}"))
+                                      "value": {"integerValue": str(top)}}}
+    new = {seq for _, seq in chunk_names(q, parent=f"{BASE}/sessions/{urllib.parse.quote(sid)}")}
+    if new - known:
+        known |= new
+        _listed_path(sid).parent.mkdir(parents=True, exist_ok=True)
+        _listed_path(sid).write_text(json.dumps(sorted(known)), encoding="utf-8")
+    return load_chunks([(sid, seq) for seq in sorted(known) if seq > after_seq])
 
 
 def chunks_of_game(game):
-    return load_chunks(chunk_names({
-        "from": [{"collectionId": "chunks", "allDescendants": True}],
+    """The game's chunks, through its sessions (the session index carries their game ids): the chunks already in the
+    cache cost nothing, where a query over every chunk of the game would bill them all again."""
+    sids = [d["name"].rsplit("/", 1)[1] for d in run_query({
+        "from": [{"collectionId": "sessions"}],
         "where": {"fieldFilter": {"field": {"fieldPath": "gameIds"}, "op": "ARRAY_CONTAINS",
                                   "value": {"stringValue": game}}},
-    }))
+        "select": {"fields": [{"fieldPath": "sid"}]},
+    })]
+    return [c for sid in sids for c in chunks_of_session(sid) if game in (c.get("gameIds") or [])]
 
 
 # ---------- local files (--local) ----------

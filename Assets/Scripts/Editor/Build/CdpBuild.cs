@@ -74,15 +74,24 @@ public static class CdpBuild
     /// online only with <c>-playtest-logs-upload</c>, always marked autoplay. Writes <c>build-result.json</c> next to
     /// the exe once done (the wrapper waits for it).
     /// </summary>
-    public static void BuildAutoplay()
+    public static void BuildAutoplay() => BuildAutoplay(false);
+
+    /// <summary>
+    /// Autoplay Steam build (<c>AUTOPLAY_STEAM=1 tools/autoplay/unityctl.sh build</c>): the same Development player with
+    /// CDP_STEAM, in <c>Builds/AutoplaySteam/</c>, for the Steam scenarios (lever <c>steam-list</c>: one Steam account
+    /// per process, e.g. a second Steam client in a Sandboxie box).
+    /// </summary>
+    public static void BuildAutoplaySteam() => BuildAutoplay(true);
+
+    private static void BuildAutoplay(bool steam)
     {
-        string _path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "Autoplay", PlayerSettings.productName + ".exe"));
+        string _path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", steam ? "AutoplaySteam" : "Autoplay", PlayerSettings.productName + ".exe"));
         string _resultPath = Path.Combine(Path.GetDirectoryName(_path), "build-result.json");
         var _result = new AutoplayBuildResult { result = "Exception" };
         try
         {
             if (File.Exists(_resultPath)) File.Delete(_resultPath);
-            BuildReport _report = Build(BuildTarget.StandaloneWindows64, _path, false, BuildOptions.Development, true);
+            BuildReport _report = Build(BuildTarget.StandaloneWindows64, _path, steam, BuildOptions.Development, true);
             _result.result = _report.summary.result.ToString();
             _result.errors = _report.summary.totalErrors;
         }

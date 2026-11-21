@@ -222,13 +222,11 @@ def _conf() -> dict:
 
 def _work(repo: pathlib.Path, noise: list[str]) -> list[str]:
     """Uncommitted changes of [repo], less the ones only a program makes (an editor rewriting its cache): a pattern of
-    [noise] matched against the path or the file name. Those are thrown away with the worktree."""
-    out = []
-    for line in git(repo, "--no-optional-locks", "status", "--porcelain").splitlines():  # a failure is not « clean »
-        path = line[3:].split(" -> ")[-1].strip('"')
-        if not any(fnmatch.fnmatch(path, p) or fnmatch.fnmatch(path.rsplit("/", 1)[-1], p) for p in noise):
-            out.append(path)
-    return out
+    [noise] matched against the path or the file name. Those are thrown away with the worktree. A file rewritten with
+    other line endings only (git status says M, its content is the same) is not a change either."""
+    paths = (git(repo, "--no-optional-locks", "-c", "core.safecrlf=false", "diff", "--name-only", "HEAD").splitlines()
+             + git(repo, "--no-optional-locks", "ls-files", "--others", "--exclude-standard").splitlines())  # a failure is not « clean »
+    return [p for p in paths if not any(fnmatch.fnmatch(p, n) or fnmatch.fnmatch(p.rsplit("/", 1)[-1], n) for n in noise)]
 
 
 def _repos(w: pathlib.Path) -> list[pathlib.Path]:
@@ -619,6 +617,9 @@ def _test() -> int:
         (root / "g.txt").write_text("g reworked\n")
         git(root, "commit", "-qam", "rework g")
         (h / "app" / "b.txt").write_text("rewritten by an editor\n")  # h: only noise left
+        (h / "app" / "new.txt").write_text("a new file is work\n")
+        assert _work(h / "app", ["b.txt"]) == ["new.txt"] and _work(h / "app", []) == ["b.txt", "new.txt"]
+        (h / "app" / "new.txt").unlink()
         (c / "app" / "x.txt").write_text("x\n")
         git(c / "app", "add", ".")
         git(c / "app", "commit", "-qm", "c")

@@ -224,9 +224,16 @@ namespace Autoplay
                 _via = _clicked ? "click" : "none";
                 if (!_clicked && _card && _picker.IsPickerActive && _picker.PickableCards.Contains(_card))
                 {
-                    var _pointer = new PointerEventData(EventSystem.current);
-                    _card.OnPointerClick(_pointer);
-                    _card.OnPointerExit(_pointer);
+                    if (_picker.IsRolePicker)
+                    {
+                        _picker.ChooseFanCard(_card); // the fan's cards ignore pointer events (eventail-roles v2, Z1)
+                    }
+                    else
+                    {
+                        var _pointer = new PointerEventData(EventSystem.current);
+                        _card.OnPointerClick(_pointer);
+                        _card.OnPointerExit(_pointer);
+                    }
                     _via = "direct";
                 }
             }

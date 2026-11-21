@@ -55,6 +55,9 @@ namespace Autoplay
         [Tooltip("Scenario lever picker-hover-tour: before its pick, a role picker's first, middle and last card are " +
                  "hovered in turn, each captured (the fan's hover layout: grown card, neighbours aside, all on screen).")]
         public bool pickerHoverTour;
+        [Tooltip("Scenario lever picker-hover-tour-dwell: with picker-hover-tour, every card is hovered left to right, " +
+                 "each this many game seconds (0.35 checks them all within the power's time, 0.9 at timescale 1 reads on a video). 0 = first, middle and last card, 0.7 s each.")]
+        public float pickerHoverTourDwell;
 
         [Tooltip("Scenario lever role-card-dwell: real seconds the lobby's role detail overlay stays open (lobby-ui).")]
         public float roleCardDwell = 0.5f;
@@ -897,16 +900,26 @@ namespace Autoplay
                 }
                 yield break;
             }
+            // The role fan's cards ignore pointer events (the picker drives them, maquettes eventail-roles v2 Z1).
+            bool _fanCard = _picker.IsRolePicker;
             var _pointer = new PointerEventData(EventSystem.current);
-            _card.OnPointerEnter(_pointer);
+            if (_fanCard) _picker.HoverFanCard(_card);
+            else _card.OnPointerEnter(_pointer);
             Journal.Record("picker.hover", $"#{_opening} {DescribeCard(_card)}");
             capture.Request($"picker{_opening:000}-hover-{DescribeCard(_card)}", options.pickerHoverDwell * 0.8f);
             yield return new WaitForSeconds(options.pickerHoverDwell);
 
             if (_card && _picker.IsPickerActive)
             {
-                _card.OnPointerClick(_pointer);
-                _card.OnPointerExit(_pointer);
+                if (_fanCard)
+                {
+                    _picker.ChooseFanCard(_card);
+                }
+                else
+                {
+                    _card.OnPointerClick(_pointer);
+                    _card.OnPointerExit(_pointer);
+                }
                 Journal.Record("picker.click", $"#{_opening} {DescribeCard(_card)}");
             }
 
@@ -914,28 +927,76 @@ namespace Autoplay
             pickerHandling = false;
         }
 
-        // picker-hover-tour: the fan's first, middle and last card hovered in turn (fan order = left to right), each
-        // captured once the fan has moved (its hover tween is 0.3 s), then unhovered.
+        // picker-hover-tour: the fan's cards hovered in turn, left to right (fan order). With real input the virtual mouse
+        // slides along the fan through each card's strip at rest: maquettes eventail-roles v2 (Z1) wants every card to
+        // come under the pointer in order, even under the risen card, else journal picker.hover.lost. Without, the
+        // picker is told which card is hovered. Each hovered card must be whole on screen (picker.hover.offscreen).
+        // Captures: the first, middle and last card.
         private IEnumerator HoverTourRolePicker(CardPickerManager _picker, int _opening)
         {
             List<Card> _fan = _picker.FanCards.Where(_c => _c).ToList();
-            int[] _indexes = { 0, _fan.Count / 2, _fan.Count - 1 };
-            foreach (int _i in _indexes.Distinct())
+            int[] _captured = { 0, _fan.Count / 2, _fan.Count - 1 };
+            bool _sweep = options.pickerHoverTourDwell > 0f;
+            IEnumerable<int> _indexes = _sweep ? Enumerable.Range(0, _fan.Count) : _captured.Distinct();
+            yield return new WaitForSeconds(_sweep ? options.pickerHoverTourDwell * 2f : 0.6f); // the fan at rest first
+
+            // Where each card shows at rest, measured on screen before anything rises: its centre. A card's strip runs
+            // from its left edge to its right neighbour's, aimed at mid-height.
+            List<Vector2?> _centres = _fan.Select(_c => _c && AutoplayUiLocator.TryScreenRect(_c.gameObject, out Rect _r)
+                ? _r.center : (Vector2?)null).ToList();
+            float _halfWidth = _fan.Count > 0 && AutoplayUiLocator.TryScreenRect(_fan[_fan.Count / 2].gameObject, out Rect _mid)
+                ? _mid.width / 2f : 0f;
+            foreach (int _c in _captured.Distinct().Append(Mathf.Max(0, _fan.Count - 2)))
+            {
+                if (_c < _fan.Count && _centres[_c] is Vector2 _rc)
+                {
+                    Journal.Record("picker.fan.calib", $"#{_opening} {_picker.DescribeFanCalibration(_fan[_c], _rc)}");
+                }
+            }
+
+            foreach (int _i in _indexes)
             {
                 if (!_picker.IsPickerActive || _i < 0 || _i >= _fan.Count || !_fan[_i])
                 {
                     yield break;
                 }
 
-                var _pointer = new PointerEventData(EventSystem.current);
-                _fan[_i].OnPointerEnter(_pointer);
-                Journal.Record("picker.hover.tour", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])}");
-                capture.Request($"picker{_opening:000}-tour{_i:00}-{DescribeCard(_fan[_i])}", 0.5f);
-                yield return new WaitForSeconds(0.7f);
-                if (_fan[_i])
+                if (options.realInput != null && _centres[_i] is Vector2 _centre)
                 {
-                    _fan[_i].OnPointerExit(_pointer);
+                    Vector2 _aim = _i + 1 < _fan.Count && _centres[_i + 1] is Vector2 _next
+                        ? (_centre + _next) / 2f - new Vector2(_halfWidth, 0f) : _centre;
+                    yield return options.realInput.MoveTo(_aim, _sweep ? options.pickerHoverTourDwell * 0.3f : 0.3f);
                 }
+                else
+                {
+                    _picker.HoverFanCard(_fan[_i]);
+                }
+                Journal.Record("picker.hover.tour", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])}");
+                if (_captured.Contains(_i))
+                {
+                    capture.Request($"picker{_opening:000}-tour{_i:00}-{DescribeCard(_fan[_i])}", 0.5f);
+                }
+                yield return new WaitForSeconds(_sweep ? options.pickerHoverTourDwell : 0.7f);
+                // The risen card must stay whole on screen (2026-11-21: the first card of the fan, hovered, came
+                // forward in perspective and lost its left edge). The power's time can close the picker.
+                if (!_picker.IsPickerActive)
+                {
+                    yield break;
+                }
+                if (_picker.HoveredFanCard != _fan[_i])
+                {
+                    Journal.Record("picker.hover.lost", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])} hovered={(_picker.HoveredFanCard ? DescribeCard(_picker.HoveredFanCard) : "none")} probe={_picker.LastFanProbe}");
+                }
+                else if (AutoplayUiLocator.TryScreenRect(_fan[_i].gameObject, out Rect _rect)
+                    && (_rect.xMin < -2f || _rect.yMin < -2f || _rect.xMax > Screen.width + 2f || _rect.yMax > Screen.height + 2f))
+                {
+                    Journal.Record("picker.hover.offscreen",
+                        $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])} rect={_rect.xMin:0},{_rect.yMin:0}..{_rect.xMax:0},{_rect.yMax:0} screen={Screen.width}x{Screen.height}");
+                }
+            }
+            if (options.realInput == null)
+            {
+                _picker.HoverFanCard(null);
             }
             yield return new WaitForSeconds(0.4f);
         }

@@ -1,1 +1,3 @@
-{"keep": ["tools/maquettes/*/retours.txt", "tools/maquettes/retours.log"]}
+{"keep": ["tools/maquettes/*/retours.txt", "tools/maquettes/retours.log"],
+ "noise": ["fmod_editor.log", "Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset", "Assets/Resources/DOTweenSettings.asset",
+           "Assets/AddressableAssetsData/link.xml", "Assets/AddressableAssetsData/link.xml.meta", "Assets/Settings/PC_RPAsset.asset"]}

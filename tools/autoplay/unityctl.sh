@@ -46,4 +46,20 @@ if [ "${1:-}" = "build" ]; then
   exit $?
 fi
 
+# A run plays the last build: a script changed since then would silently not be in it (2026-11-21, a new lever ignored
+# by a filmed run). Refuse, unless AUTOPLAY_STALE_OK=1 (a run meant to replay the old build).
+case "${1:-}" in play-build|play-net)
+  if [ "${AUTOPLAY_STEAM:-}" = 1 ]; then out=AutoplaySteam; else out=Autoplay; fi
+  stamp="$ROOT/Builds/$out/build-result.json"
+  if [ -f "$stamp" ] && [ "${AUTOPLAY_STALE_OK:-}" != 1 ]; then
+    newer=$(find "$ROOT/Assets" -name '*.cs' -newer "$stamp" -print 2>/dev/null | head -3)
+    if [ -n "$newer" ]; then
+      echo "stale build: scripts changed since Builds/$out was built — run 'tools/autoplay/unityctl.sh build' first" >&2
+      echo "(AUTOPLAY_STALE_OK=1 to play the old build anyway). Newer:" >&2
+      echo "$newer" >&2
+      exit 6
+    fi
+  fi
+;; esac
+
 exec bash "$ROOT/tools/autoplay/autoplay-tool.sh" unityctl.sh "$@"

@@ -401,7 +401,40 @@ namespace Board
 
         public void SetClickListenedQuery(Func<bool> _query) => clickListened = _query;
 
+        /// <summary>
+        /// Set on the role picker's fan cards (maquettes eventail-roles v2, Z1): the pointer events the EventSystem sends
+        /// them are ignored, because the card drawn under the pointer is not always the one hovered (a hovered card
+        /// rises over its neighbours). The picker decides from where the cards rest and calls <see cref="DriveHover"/>
+        /// and <see cref="DriveClick"/>.
+        /// </summary>
+        public bool pointerDrivenByPicker { get; set; }
+
         public void OnPointerClick(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveClick();
+            }
+        }
+
+        public void OnPointerEnter(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveHover(true);
+            }
+        }
+
+        public void OnPointerExit(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveHover(false);
+            }
+        }
+
+        /// <summary>A click on the card (pointer event, or the role picker that drives its fan).</summary>
+        public void DriveClick()
         {
             GameLog.Info("ui", "card.click", "seat", characterInfo != null ? (object)characterInfo.ownerClientId.Value : null);
             onCardClicked?.Invoke(this);
@@ -409,15 +442,18 @@ namespace Board
             soundHandler.PlayClickSound();
         }
 
-        public void OnPointerEnter(PointerEventData _eventData)
+        /// <summary>The pointer coming onto (<paramref name="_hovered"/>) or leaving the card (pointer event, or the role
+        /// picker that drives its fan).</summary>
+        public void DriveHover(bool _hovered)
         {
-            onCardHovered?.Invoke(this);
-            animationHandler.OnHover(cardCanvas, soundHandler.PlayHoverSound);
-            isPointerOver = true;
-        }
+            if (_hovered)
+            {
+                onCardHovered?.Invoke(this);
+                animationHandler.OnHover(cardCanvas, soundHandler.PlayHoverSound);
+                isPointerOver = true;
+                return;
+            }
 
-        public void OnPointerExit(PointerEventData _eventData)
-        {
             onCardUnhovered?.Invoke(this);
             
             if (CanUnZoomCard())

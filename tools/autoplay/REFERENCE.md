@@ -44,6 +44,8 @@ Python game tools use `tools/autoplay/autoplay_pkg.py`; a scenario's analyzer co
 | `play-net <clients> <seed>` | host + N real UDP clients (separate processes), bots fill to 8 |
 | `last-run` | summary of the newest run (outcome, trace, counters, deduplicated errors) |
 
+`play-build` / `play-net` refuse to start (exit 6) when a script under `Assets/` is newer than the last build (`Builds/Autoplay/build-result.json`): run `build` first. `AUTOPLAY_STALE_OK=1` plays the old build anyway.
+
 Environment: `AUTOPLAY_MAX_PARALLEL` (runs allowed at once, 1; give each lane its own port: `run_scenario.py --port`), `AUTOPLAY_ARGS` (every process), `AUTOPLAY_CLIENT_ARGS` (every client), `AUTOPLAY_CLIENT1_ARGS` (client 1
 only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_VISUAL_PICKER=1`, `AUTOPLAY_PROJECT`,
 `AUTOPLAY_GUARDED_FILES`.
@@ -88,7 +90,8 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
 | `quit-at <phase text>` | this process leaves when that phase starts (client 1 args) |
 | `visual-picker` | bots hover and click the real picker cards (captures every opening) |
-| `picker-hover-tour` | with `visual-picker`: before its pick, each role picker hovers its first, middle and last card in turn (fan order), capture `pickerNNN-tourII-role:<name>` each, journal `picker.hover.tour` (the fan's hover layout, maquettes eventail-roles) |
+| `picker-hover-tour` | with `visual-picker`: before its pick, each role picker hovers its first, middle and last card in turn (fan order), capture `pickerNNN-tourII-role:<name>` each, journal `picker.hover.tour`. With `real-input` the virtual mouse slides to each card's strip at rest (measured on screen before anything rises): the card under it must be that one (maquettes eventail-roles v2, Z1: the places at rest decide), else journal `picker.hover.lost` (index, card hovered instead); without, the picker is told (`CardPickerManager.HoverFanCard`). The risen card's images must stay whole on screen, else journal `picker.hover.offscreen` (index, screen rect) |
+| `picker-hover-tour-dwell <seconds>` | with `picker-hover-tour`: hover EVERY card left to right, each this many game seconds (0.25 checks them all within the 12 s of a power, 0.5 at timescale 1 reads on a video), after the fan rested twice as long; captures stay first / middle / last |
 | `fast-fakes` | fake roles go back to sleep after ~1 s |
 | `target-focus client\|host\|bot\|fake\|<role text>` | power targets: pick among the valid candidates matching it when any does |
 | `target-focus-power <power text>` | limit `target-focus` to picks made while that power is used |
@@ -225,7 +228,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
-| `role-fan-portal` | the role picker's fan: every role on screen at rest and hovered (first / middle / last, `picker-hover-tour`), real clicks reach the cards, the portal hides the roles already found, the target pinned |
+| `role-fan-portal` | the role picker's fan: every role on screen at rest; the virtual mouse sliding along the fan hovers each card in turn (`picker-hover-tour` + `-dwell 0.25`, no `picker.hover.lost`) and the risen card stays on screen (no `picker.hover.offscreen`); real clicks reach the cards, the portal hides the roles already found, the target pinned |
 | `turn-captures` | T21 night parchment on real clients: "Vous vous éveillez" when the seat wakes (then burnt), "Vous vous rendormez" when it falls asleep, nothing while another layer plays (`turn.capture … banner=`) |
 | `watchdog-stall` | breakage test: an idle vote over a 10 s budget gives slow → stall → `run.fail watchdog:` with a report, relayed to alerts.log |
 | `watchdog-died` | breakage test: a client dying outside `crash-at` is reported `DIED` and the run aborted within seconds |

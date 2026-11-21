@@ -92,6 +92,34 @@ namespace TooltipSystem
             return _shown != null && _shown.gameObject == _linkedGameObject;
         }
 
+        /// <summary>
+        /// A card picker's blur veil is up (or down). Under it, the board behind the veil keeps its pointer events: a
+        /// pointer crossing a blurred card opened its bubble over the role fan and its instruction (autoplay
+        /// role-fan-portal, 2026-11-21). While the veil is up only what is drawn above it (the picker's cards, the
+        /// lifted and pinned cards) and the screen-space interface show a bubble.
+        /// </summary>
+        public void SetPickerVeil(bool _on)
+        {
+            _veilLayer = _on ? LayerMask.NameToLayer(ABOVE_VEIL_LAYER) : -1;
+            if (_shown != null && IsBehindVeil(_shown))
+            {
+                Hide("veil");
+            }
+        }
+
+        private const string ABOVE_VEIL_LAYER = "AboveBlur";
+        private int _veilLayer = -1;
+
+        private bool IsBehindVeil(HoverTooltipComponent _trigger)
+        {
+            if (_veilLayer < 0 || _trigger == null || _trigger.gameObject.layer == _veilLayer)
+            {
+                return false;
+            }
+            Canvas _parentCanvas = _trigger.GetComponentInParent<Canvas>();
+            return _parentCanvas == null || _parentCanvas.renderMode == RenderMode.WorldSpace;
+        }
+
         private void Update()
         {
             if (!ReferenceEquals(_shown, null) && _shown == null)
@@ -109,7 +137,7 @@ namespace TooltipSystem
             }
 
             HoverTooltipComponent _candidate = _hovered != null && _hovered.isActiveAndEnabled && _hovered != _dismissed
-                                               && _hovered.HasContent ? _hovered : null;
+                                               && _hovered.HasContent && !IsBehindVeil(_hovered) ? _hovered : null;
             switch (_timeline.Tick(_candidate != null ? _candidate.GetHashCode() : 0, Time.unscaledTime))
             {
                 case TooltipAction.Show:

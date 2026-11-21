@@ -557,6 +557,14 @@
       "en": "{0} must take down the portal."
     },
     {
+      "fr": "Devinez le rôle d'{0}.",
+      "en": "Guess {0}'s role."
+    },
+    {
+      "fr": "Devinez le rôle de {0}.",
+      "en": "Guess {0}'s role."
+    },
+    {
       "fr": "Pouvoirs",
       "en": "Powers"
     },

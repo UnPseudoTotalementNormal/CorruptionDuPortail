@@ -1,0 +1,19 @@
+{
+  "name": "role-fan-portal",
+  "goal": "The role picker's fan (maquettes eventail-roles v1, A1 + C2): the host's Mage, chained at the first vote, takes down the portal at a 9-seat table; every offered role card is on screen (a real click reaches it, no input.miss off-screen) at rest and while its first, middle and last card are hovered (captures), the roles already found are not offered (GameLog portal.roles.hidden), and the targeted player's card is pinned on the right.",
+  "mode": "build",
+  "seed": 4310,
+  "seedRetries": 6,
+  "timescale": 2,
+  "timeout": 1500,
+  "visualPicker": true,
+  "args": ["-autoplay-players", "9", "-autoplay-force-roles", "Mage", "-autoplay-role-holder", "host",
+           "-autoplay-vote-focus", "Mage", "-autoplay-vote-probability", "1", "-autoplay-picker-hover-tour",
+           "-autoplay-real-input", "-autoplay-fast-fakes", "-autoplay-max-days", "2"],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "portal.click", "min": 1},
+    {"type": "event", "kind": "picker.hover.tour", "detail": "index=0/", "min": 1},
+    {"type": "event", "kind": "input.miss", "detail": "^picker .*reason=off-screen", "min": 0, "max": 0}
+  ]
+}

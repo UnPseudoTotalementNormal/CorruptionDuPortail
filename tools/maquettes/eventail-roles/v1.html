@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éventail des rôles, v1</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "Garamond"; src: url("../fonts/EBGaramond-Regular.ttf"); }
+  @font-face { font-family: "LibSans"; src: url("../fonts/LiberationSans.ttf"); }
+  :root { --slow: 1; }
+
+  .ev-bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .ev-bar div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ev-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .ev-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .ev-bar b { color: var(--soft); font-weight: 400; font-size: 13px; margin: 0 4px 0 10px; }
+  .ev-bar b:first-child { margin-left: 0; }
+
+  /* ---- the game screen ---- */
+  .ev-bg { position: absolute; inset: -24px; background: url(img/jeu_nuit.webp) center / cover; filter: blur(8px) brightness(.5); }
+  .ev-frost { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(20, 12, 8, .15), rgba(10, 6, 4, .55)); }
+  .ev-banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: rgba(28, 20, 15, .82);
+    color: #fff; font: 30px "LibSans", sans-serif; padding: 10px 18px; white-space: nowrap; z-index: 400; }
+  .ev-title, .ev-desc { position: absolute; left: 0; right: 0; text-align: center; font-family: "LibSans", sans-serif; z-index: 400;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .8); pointer-events: none; }
+  .ev-title { color: #e8c56a; font-size: 38px; }
+  .ev-desc { color: #f2ece4; font-size: 23px; }
+
+  .ev-card { position: absolute; left: 0; top: 0; border-radius: 8px; background: #120c08; border: 3px solid #2a1d13;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .6); overflow: hidden; transform-origin: 50% 50%; cursor: pointer; touch-action: none;
+    transition: transform calc(.34s * var(--slow)) cubic-bezier(.2, .8, .25, 1), opacity calc(.3s * var(--slow)),
+      box-shadow calc(.2s * var(--slow)); user-select: none; -webkit-user-select: none; }
+  .ev-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none;
+    transition: filter calc(.2s * var(--slow)); }
+  .ev-name { position: absolute; left: 0; right: 0; top: 0; padding: 5% 6% 12%; text-align: center; color: #e8c56a;
+    font-family: "LibSans", sans-serif; line-height: 1.04; background: linear-gradient(#0c0805 58%, rgba(12, 8, 5, 0)); pointer-events: none; }
+  .ev-card.small .ev-name { display: none; }
+  .ev-card.hover { box-shadow: 0 0 0 2px rgba(232, 197, 106, .75), 0 20px 44px rgba(0, 0, 0, .7); }
+  .ev-card.hover img { filter: brightness(1.12); }
+  .ev-card.sel { box-shadow: 0 0 0 3px #f0cf74, 0 0 38px 8px rgba(232, 163, 60, .7); }
+  .ev-card.found img { filter: brightness(.36) saturate(.2); }
+  .ev-tag { position: absolute; left: 7%; top: 27%; transform: rotate(-3deg); background: #d9c49b url(../common/parchment.webp) center / 220px;
+    color: #2e1d10; font-family: "Garamond", serif; padding: 1px 9px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0, 0, 0, .6); pointer-events: none; }
+  .ev-hold { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(rgba(240, 200, 110, .2), rgba(240, 190, 90, .55));
+    border-top: 3px solid #f3d27a; pointer-events: none; }
+  .ev-hold.off { border-top-width: 0; }
+  .ev-target { cursor: default; }
+  .ev-target .ev-name { color: #efe3d0; font-family: "LibSans", sans-serif; text-align: left; padding: 3% 7% 8%; }
+
+  .ev-btn { position: absolute; transform: translate(-50%, -50%); background: #d9c49b url(../common/parchment.webp) center / 300px;
+    color: #2e1d10; font: 30px "Fell", serif; padding: 8px 34px 10px; border: 2px solid #6b4a2b; border-radius: 3px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .6); cursor: pointer; z-index: 450; opacity: 0; pointer-events: none;
+    transition: opacity calc(.25s * var(--slow)), filter calc(.15s * var(--slow)); }
+  .ev-btn.on { opacity: 1; pointer-events: auto; }
+  .ev-btn.hot { filter: brightness(1.15); box-shadow: 0 0 0 2px #f0cf74, 0 8px 18px rgba(0, 0, 0, .6); }
+
+  .ev-flab { position: absolute; display: flex; align-items: center; gap: 8px; color: #e8c56a; font-family: "Fell", serif;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, .9); pointer-events: none; white-space: nowrap; }
+  .ev-flab img { height: 1.35em; }
+  .ev-band { position: absolute; background: #8a5a30 url(img/liege.webp) 0 0 / 345px; border-radius: 6px;
+    box-shadow: inset 0 0 22px rgba(0, 0, 0, .55), 0 10px 24px rgba(0, 0, 0, .55); }
+
+  .ev-instant .ev-card, .ev-instant .ev-card img, .ev-instant .ev-btn { transition: none !important; }
+
+  .ev-shots { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ev-shots figure { margin: 8px 0 0; flex: 1 1 300px; }
+  .ev-shots figcaption { color: var(--soft); font-size: 13px; }
+  .ev-shots img { width: 100%; border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Éventail des rôles, v1</h1>
+  <p><strong>Ce qui change :</strong> l'écran où l'on choisit un rôle (Abattre le portail, Mélange des cartes, Bénédiction,
+    Soin Baveux, Réincarnation, Vision de l'impossible…). Il doit montrer tous les rôles de la partie, lisibles et à
+    l'écran, qu'il y en ait 4 ou 18, et rendre une erreur de clic difficile.</p>
+  <p><strong>Référence :</strong>
+    <a href="https://www.pocketgrimoire.co.uk/en_GB/">Blood on the Clocktower</a> (grimoires en ligne
+    <a href="https://botc.party/">botc.party</a>, <a href="https://botc.vnamu.com/en/step2/slrzmj">Custom Clocktower</a>) :
+    les personnages sont rangés par équipe (Townsfolk, Outsiders, Minions, Demons), ceux déjà pris sont assombris.
+    <a href="https://github.com/vertopolkaLF/balatro-wide-hand-mod">Balatro</a> : la main en éventail se resserre quand elle
+    est pleine, la carte survolée monte et se redresse, passe devant ses voisines, et le mod Wide Hand écarte les voisines
+    pour qu'elle reste lisible. Slay the Spire : choisir une carte parmi beaucoup se fait sur une grille à plat, la carte
+    survolée grossit.</p>
+  <p><strong>Aujourd'hui :</strong> <code>CardPickerManager.ShowRolePicker</code> pose les cartes sur un arc à écart
+    fixe (5° et un rayon fixe, quel que soit le nombre de cartes). Sept cartes tiennent ; à neuf, Luma et Ugës sortent de
+    l'écran. C'est le rapport de Wouh du 20/11 à 23:48 (le jeu en ouvrait 9, <code>picker.open candidates=9</code>).
+    Le portail ne donne aucune consigne, donc la ligne sous le titre garde celle du pouvoir précédent
+    (« Choisissez un joueur à corrompre. »).</p>
+  <div class="ev-shots">
+    <figure><img src="img/rapport_wouh.jpg" alt=""><figcaption>Capture du rapport de Wouh : 7 cartes visibles sur 9.</figcaption></figure>
+  </div>
+  <p><strong>La scène :</strong> 20/11, 23:46. Wouh (Va'ahl) vient d'être enchaîné et abat le portail. Il a déjà trouvé
+    Nokta (Le Messager), Pley (L'Orpheline), Luni (Le Technomancien) et Flox (Le Robot). Il clique sur Isa1708 et doit
+    deviner son rôle parmi les 9 de la partie. Il hésite entre Ugës et Luma, puis choisit Ugës.</p>
+  <p><strong>Sans question :</strong> la carte du joueur visé reste à l'écran (à droite, ou au centre en A4) ; la
+    ligne sous le titre dit ce qu'on choisit (« Devinez le rôle d'Isa1708. ») au lieu de garder le texte d'un autre
+    pouvoir ; les rôles sont rangés par camp comme sur le liège (Élus, Anomalies, Marginaux) ; tout tient de 2 à 18 rôles
+    (essaie 13 et 18 avec la barre du haut) ; les nouvelles dispositions reprennent les cartes, polices et textes du jeu.</p>
+  <p>Le scénario de la scène tourne dans chaque image. Passe la souris (ou le doigt) sur une image pour choisir
+    toi-même.</p>
+</header>
+
+<div class="ev-bar"><div id="ev-bar">
+  <b>Rôles</b><button data-n="9" class="on">9 (partie de Wouh)</button><button data-n="13">13 (tous les rôles jouables)</button><button data-n="18">18 (avec ceux à venir)</button>
+  <b>Moments</b>
+</div></div>
+
+<section data-forme="A0 A1 A2 A3 A4">
+  <h2>Disposition des rôles</h2>
+  <p>Comment poser les rôles pour qu'ils tiennent tous et se lisent.</p>
+  <div class="stack">
+    <div class="variant" data-id="A0">
+      <div class="vhead"><span class="vid">A0</span><span class="vname">Actuel</span></div>
+      <p class="vdesc">L'arc d'aujourd'hui, à écart fixe : avec 9 rôles, Luma et Ugës sont hors de l'écran.</p>
+      <div class="screen"><div class="stage" data-forme="A0"></div></div>
+    </div>
+    <div class="variant" data-id="A1">
+      <div class="vhead"><span class="vid">A1</span><span class="vname">Éventail qui se resserre (par défaut)</span></div>
+      <p class="vdesc">Le même éventail, mais l'écart se calcule pour que tout tienne. La carte survolée monte, se redresse et
+        grandit, ses voisines s'écartent pour la laisser lisible.</p>
+      <div class="screen"><div class="stage" data-forme="A1"></div></div>
+    </div>
+    <div class="variant" data-id="A2">
+      <div class="vhead"><span class="vid">A2</span><span class="vname">Rangées par camp</span></div>
+      <p class="vdesc">Les rôles à plat, en rangées sous le logo de leur camp. Chaque nom se lit sans rien survoler ; les cartes
+        rapetissent un peu quand il y en a beaucoup.</p>
+      <div class="screen"><div class="stage" data-forme="A2"></div></div>
+    </div>
+    <div class="variant" data-id="A3">
+      <div class="vhead"><span class="vid">A3</span><span class="vname">Bande de liège et grande carte</span></div>
+      <p class="vdesc">Une bande de petits portraits sur le liège, par camp, comme en haut de la table. Le rôle survolé s'affiche
+        en grand au milieu.</p>
+      <div class="screen"><div class="stage" data-forme="A3"></div></div>
+    </div>
+    <div class="variant" data-id="A4">
+      <div class="vhead"><span class="vid">A4</span><span class="vname">Cercle autour du joueur</span></div>
+      <p class="vdesc">La carte d'Isa1708 au centre, les rôles en cercle autour : on choisit celui qui lui va, et la carte
+        choisie vient se poser sur la sienne.</p>
+      <div class="screen"><div class="stage" data-forme="A4"></div></div>
+    </div>
+  </div>
+</section>
+
+<section data-suit>
+  <h2>Rôles déjà trouvés</h2>
+  <p>Que faire des rôles déjà révélés (joueurs enchaînés, rôles déjà devinés au portail) ? Ici : Va'ahl, Le Messager,
+    L'Orpheline, Le Technomancien, Le Robot.</p>
+  <div class="stack">
+    <div class="variant" data-id="C0">
+      <div class="vhead"><span class="vid">C0</span><span class="vname">Comme aujourd'hui</span></div>
+      <p class="vdesc">Tous les rôles sont proposés pareil.</p>
+      <div class="screen"><div class="stage" data-c="C0"></div></div>
+    </div>
+    <div class="variant" data-id="C1">
+      <div class="vhead"><span class="vid">C1</span><span class="vname">Assombris, avec le pseudo (par défaut)</span></div>
+      <p class="vdesc">Un rôle trouvé est assombri et porte le pseudo de qui l'a. Il reste cliquable : un rôle peut être en
+        double.</p>
+      <div class="screen"><div class="stage" data-c="C1"></div></div>
+    </div>
+    <div class="variant" data-id="C2">
+      <div class="vhead"><span class="vid">C2</span><span class="vname">Retirés</span></div>
+      <p class="vdesc">Un rôle dont tous les exemplaires sont trouvés n'est plus proposé : il reste moins de cartes.</p>
+      <div class="screen"><div class="stage" data-c="C2"></div></div>
+    </div>
+  </div>
+</section>
+
+<section data-suit>
+  <h2>Valider son choix</h2>
+  <p>Au portail, un mauvais choix fait perdre la partie d'un coup. Vaut pour tous les pouvoirs qui font choisir un rôle.</p>
+  <div class="stack">
+    <div class="variant" data-id="D0">
+      <div class="vhead"><span class="vid">D0</span><span class="vname">Un clic, comme aujourd'hui</span></div>
+      <p class="vdesc">Le clic choisit tout de suite.</p>
+      <div class="screen"><div class="stage" data-d="D0"></div></div>
+    </div>
+    <div class="variant" data-id="D1">
+      <div class="vhead"><span class="vid">D1</span><span class="vname">Clic, puis Valider (par défaut)</span></div>
+      <p class="vdesc">Le clic met le rôle de côté (il brille), « Valider » sous la carte d'Isa1708 confirme. On peut changer
+        d'avis avant.</p>
+      <div class="screen"><div class="stage" data-d="D1"></div></div>
+    </div>
+    <div class="variant" data-id="D2">
+      <div class="vhead"><span class="vid">D2</span><span class="vname">Maintenir le clic</span></div>
+      <p class="vdesc">Garder le clic une demi-seconde : la carte se remplit d'or, relâcher avant annule.</p>
+      <div class="screen"><div class="stage" data-d="D2"></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+
+  // ---------------- data ----------------
+  const R = {
+    Technomancien: ["Le Technomancien", "e"], Croupiere: ["Luma, la croupière", "e"], Orpheline: ["L'Orpheline", "e"],
+    DrGloubi: ["Dr Gloubi", "e"], Dryade: ["La Dryade", "e"], Messager: ["Le Messager", "e"], Repenti: ["Le Repenti", "e"],
+    Traqueuse: ["La Chasseuse de Prime", "e"], Uges: ["Ugës, l'Imposteur", "e"], Incomplet: ["L'Incomplet", "e"],
+    Gardien: ["Le Gardien", "e"], Geolier: ["Le Geôlier", "e"], Omniscient: ["L'Omniscient", "e"], Oracle: ["L'Oracle", "e"],
+    MageOcculte: ["Va'ahl, Le Mage Occulte", "a"], Abyss: ["Abyss, L'Extension du Néant", "a"], Moork: ["Moork", "a"],
+    Robot: ["Le Robot", "m"],
+  };
+  const ORDER = Object.keys(R);
+  const FAC = { e: ["Élus", "img/LogoElu.webp"], a: ["Anomalies", "img/LogoAnomalie.webp"], m: ["Marginaux", "img/LogoMarginaux.webp"] };
+  const SETS = {
+    // 9 = Wouh's game (20/11 23:28), in the order the game laid them (by role id: Luma left of Va'ahl, Ugës last)
+    9: ["Croupiere", "MageOcculte", "Robot", "Messager", "Technomancien", "DrGloubi", "Orpheline", "Incomplet", "Uges"],
+    13: ["MageOcculte", "Abyss", "Technomancien", "Croupiere", "Orpheline", "DrGloubi", "Dryade", "Messager", "Repenti",
+      "Traqueuse", "Uges", "Incomplet", "Robot"],
+    18: ORDER.slice(),
+  };
+  const FOUND = { MageOcculte: "wouh_le_fantome", Messager: "Nokta", Orpheline: "Pley", Technomancien: "Luni", Robot: "Flox" };
+  let N = 9;
+
+  // ---------------- the scene over time ----------------
+  const LOOP = 7000;
+  const MOMENTS = [["Ouverture", 450], ["Rôles en place", 1200], ["Survol d'Ugës", 2000], ["Survol de Luma", 3000],
+    ["Clic sur Ugës", 4650], ["Choix fait", 6300]];
+  function stateAt(t, d) {
+    const S = { t, phase: t < 900 ? "enter" : "open", hover: null, sel: null, hold: 0, picked: null, btn: false };
+    if (t >= 1400 && t < 2600) S.hover = "Uges";
+    else if (t >= 2600 && t < 3600) S.hover = "Croupiere";
+    else if (t >= 3600 && t < 4300) S.hover = "Uges";
+    if (t >= 4300) {
+      if (d === "D1") {
+        S.sel = "Uges"; S.hover = t < 4900 ? "Uges" : null; S.btn = t >= 4900;
+        if (t >= 5500) S.picked = "Uges";
+      } else if (d === "D2") {
+        S.hover = "Uges"; S.hold = Math.min(1, (t - 4300) / 600);
+        if (t >= 4900) S.picked = "Uges";
+      } else S.picked = "Uges";
+    }
+    if (S.picked) { S.phase = "done"; S.hover = null; }
+    return S;
+  }
+
+  // ---------------- layouts (stage px, card centre) ----------------
+  const fanAt = (n, i, cx, step, rotStep, y0, drop) => {
+    const c = (n - 1) / 2, d = i - c;
+    return { x: cx + d * step, y: y0 + (c ? drop * d * d / (c * c) : 0), rot: d * rotStep, s: 1, z: i, o: 1 };
+  };
+  const TARGET_RIGHT = { x: 1462, y: 430, w: 168, h: 236, rot: 3 };
+
+  function rowsA2(ids) {
+    const groups = ["e", "a", "m"].map(fc => ({ fc, ids: ids.filter(id => R[id][1] === fc) })).filter(g => g.ids.length);
+    const W = 1200, gx = 14, gg = 46, labH = 42, rowGap = 14;
+    for (let w = 150; w >= 70; w -= 5) {
+      const h = Math.round(w * 1.4), per = Math.floor((W + gx) / (w + gx));
+      const rows = []; let row = null;
+      groups.forEach(g => {
+        const rest = g.ids.slice(); let first = true;
+        while (rest.length) {
+          const room = row ? Math.floor((W - row.width - gg + gx) / (w + gx)) : 0;
+          if (!(row && first && room >= rest.length)) { row = { segs: [], width: -gg }; rows.push(row); }
+          const avail = row.segs.length ? room : per;
+          const take = rest.splice(0, avail);
+          const segW = take.length * (w + gx) - gx;
+          row.segs.push({ fc: g.fc, ids: take, label: first, segW });
+          row.width += gg + segW;
+          first = false;
+        }
+      });
+      const total = rows.length * (h + labH) + (rows.length - 1) * rowGap;
+      if (total <= 690) return { w, h, rows, gx, gg, labH, rowGap, total };
+    }
+  }
+
+  function layout(F, S) {
+    const ids = F.ids, n = ids.length, f = F.forme;
+    // the hovered card is lifted; with nothing hovered, the role set aside (D1) stays lifted
+    const focus = S.hover || (S.picked ? null : S.sel), hi = focus ? ids.indexOf(focus) : -1;
+    const L = { cards: [], labels: [], band: null, big: null, target: null, deck: { x: 700, y: 1120 } };
+
+    if (f === "A0") {
+      L.w = 250; L.h = 360; L.deck = { x: 800, y: 1000 };
+      ids.forEach((id, i) => L.cards.push(fanAt(n, i, 800, 237, 3.5, 690, 70)));
+      if (hi >= 0) Object.assign(L.cards[hi], { y: L.cards[hi].y - 40, z: 100 });
+    }
+
+    if (f === "A1") {
+      L.w = n <= 9 ? 200 : n <= 13 ? 180 : 160; L.h = Math.round(L.w * 1.4);
+      const step = Math.min(L.w * 0.92, (1200 - L.w) / Math.max(1, n - 1)), rotStep = Math.min(4, 36 / Math.max(1, n - 1));
+      ids.forEach((id, i) => L.cards.push(fanAt(n, i, 690, step, rotStep, 718, 46)));
+      if (hi >= 0) {
+        const lift = 1.38, push = Math.max(0, L.w * (lift + 1) / 2 + 14 - step);
+        L.cards.forEach((c, i) => {
+          const d = i - hi;
+          if (d === 0) Object.assign(c, { y: c.y - 150, s: lift, rot: 0, z: 100 });
+          else c.x += Math.sign(d) * push * Math.max(0, 1 - (Math.abs(d) - 1) * 0.3);
+          c.x = Math.max(L.w / 2 + 14, Math.min(1335, c.x));
+        });
+      }
+      L.target = TARGET_RIGHT;
+    }
+
+    if (f === "A2") {
+      const G = rowsA2(ids);
+      L.w = G.w; L.h = G.h;
+      let y = 178 + (700 - G.total) / 2;
+      const pos = {};
+      G.rows.forEach(row => {
+        let x = 710 - row.width / 2;
+        row.segs.forEach(seg => {
+          if (seg.label) L.labels.push({ fc: seg.fc, x, y: y + 4, size: G.w >= 120 ? 24 : 20 });
+          seg.ids.forEach((id, k) => { pos[id] = { x: x + k * (G.w + G.gx) + G.w / 2, y: y + G.labH + G.h / 2 }; });
+          x += seg.segW + G.gg;
+        });
+        y += G.h + G.labH + G.rowGap;
+      });
+      ids.forEach((id, i) => L.cards.push({ x: pos[id].x, y: pos[id].y, rot: 0, s: 1, z: i, o: 1 }));
+      if (hi >= 0) Object.assign(L.cards[hi], { s: 1.2, y: L.cards[hi].y - 6, z: 100 });
+      L.target = TARGET_RIGHT;
+    }
+
+    if (f === "A3") {
+      const groups = ["e", "a", "m"].map(fc => ids.filter(id => R[id][1] === fc)).filter(g => g.length);
+      const gx = 8, gg = 34, Gn = groups.length;
+      L.w = Math.min(100, Math.floor((1200 - gg * (Gn - 1) - gx * (n - Gn)) / n)); L.h = Math.round(L.w * 1.4);
+      const width = n * L.w + (n - Gn) * gx + (Gn - 1) * gg, cy = 805;
+      let x = 710 - width / 2;
+      const pos = {};
+      groups.forEach(g => {
+        L.labels.push({ fc: R[g[0]][1], x, y: cy - L.h / 2 - 50, size: 20 });
+        g.forEach(id => { pos[id] = { x: x + L.w / 2, y: cy }; x += L.w + gx; });
+        x += gg - gx;
+      });
+      L.band = { x: 710 - width / 2 - 16, y: cy - L.h / 2 - 14, w: width + 32, h: L.h + 28 };
+      ids.forEach((id, i) => L.cards.push({ x: pos[id].x, y: pos[id].y, rot: 0, s: 1, z: i, o: 1 }));
+      if (hi >= 0) Object.assign(L.cards[hi], { y: cy - 10, s: 1.08, z: 100 });
+      const show = S.hover || S.sel;
+      L.big = { id: show, x: 710, y: 432, w: 240, h: 336, o: show ? 1 : 0, s: show ? 1 : 0.94, rot: 0 };
+      L.target = TARGET_RIGHT;
+      L.deck = { x: 710, y: 1000 };
+    }
+
+    if (f === "A4") {
+      L.w = n <= 9 ? 124 : n <= 13 ? 112 : 100; L.h = Math.round(L.w * 1.38);
+      const cx = 800, cy = 540, rx = 612, ry = 262;
+      // equal distance along the ellipse (equal angles would crowd its flat sides)
+      const pts = [], K = 720;
+      for (let k = 0; k <= K; k++) { const a = -Math.PI / 2 + k / K * 2 * Math.PI; pts.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]); }
+      const cum = [0];
+      for (let k = 1; k <= K; k++) cum.push(cum[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
+      ids.forEach((id, i) => {
+        const goal = cum[K] * i / n; let k = 0;
+        while (cum[k] < goal) k++;
+        L.cards.push({ x: pts[k][0], y: pts[k][1], rot: 0, s: 1, z: i, o: 1 });
+      });
+      if (hi >= 0) { const c = L.cards[hi]; Object.assign(c, { x: c.x + (cx - c.x) * 0.2, y: c.y + (cy - c.y) * 0.2, s: 1.5, z: 100 }); }
+      L.target = { x: cx, y: cy, w: 150, h: 210, rot: 0 };
+      L.deck = { x: cx, y: cy };
+    }
+
+    // the choice made: the card goes onto the targeted player's card, the others leave
+    if (S.picked) {
+      const pi = ids.indexOf(S.picked), T = L.target;
+      L.cards.forEach((c, i) => {
+        if (f === "A0") { Object.assign(c, { x: L.deck.x, y: L.deck.y, rot: 0, o: 0 }); return; }
+        if (i === pi && f !== "A3") Object.assign(c, { x: T.x, y: T.y, rot: T.rot, s: T.w / L.w, z: 300, o: 1 });
+        else Object.assign(c, { o: 0, s: c.s * 0.9 });
+      });
+      if (L.big) Object.assign(L.big, { id: S.picked, x: T.x, y: T.y, s: T.w / L.big.w, rot: T.rot, o: 1 });
+    }
+    return L;
+  }
+
+  // ---------------- building a frame ----------------
+  const frames = [];
+  const el = (cls, parent, html) => { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html; parent.appendChild(e); return e; };
+  const tf = (x, y, w, h, rot, s) => `translate(${x - w / 2}px, ${y - h / 2}px) rotate(${rot}deg) scale(${s})`;
+
+  function makeCard(parent, id, w, h, F) {
+    const c = el("ev-card" + (w < 90 ? " small" : ""), parent);
+    c.style.width = w + "px"; c.style.height = h + "px";
+    c.innerHTML = `<img src="img/${id}.webp" alt=""><div class="ev-name" style="font-size:${Math.max(10, Math.round(w * 0.088))}px">${R[id][0]}</div>`;
+    if (F.c === "C1" && FOUND[id]) {
+      c.classList.add("found");
+      el("ev-tag", c, FOUND[id]).style.fontSize = Math.max(11, Math.round(w * 0.1)) + "px";
+    }
+    c.hold = el("ev-hold off", c);
+    return c;
+  }
+
+  function build(F) {
+    const st = F.stage;
+    st.innerHTML = "";
+    st.style.setProperty("--x", 0);
+    let ids = F.forme === "A0" ? SETS[N].slice() : SETS[N].slice().sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+    if (F.c === "C2") ids = ids.filter(id => !FOUND[id]);
+    F.ids = ids;
+    el("ev-bg", st); el("ev-frost", st);
+    const A0 = F.forme === "A0";
+    el("ev-banner", st, "wouh_le_fantome doit abattre le portail.");
+    const title = el("ev-title", st, "Choisissez un rôle !");
+    F.desc = el("ev-desc", st);
+    title.style.top = (A0 ? 168 : 82) + "px";
+    F.desc.style.top = (A0 ? 216 : 132) + "px";
+    F.desc.textContent = A0 ? "Choisissez un joueur à corrompre." :
+      F.d === "D2" ? "Maintenez le clic sur le rôle d'Isa1708." : "Devinez le rôle d'Isa1708.";
+
+    const L = layout(F, { phase: "open" });
+    if (L.band) { const b = el("ev-band", st); Object.assign(b.style, { left: L.band.x + "px", top: L.band.y + "px", width: L.band.w + "px", height: L.band.h + "px" }); }
+    L.labels.forEach(lb => {
+      const e = el("ev-flab", st, `<img src="${FAC[lb.fc][1]}" alt="">${FAC[lb.fc][0]}`);
+      Object.assign(e.style, { left: lb.x + "px", top: lb.y + "px", fontSize: lb.size + "px" });
+    });
+    F.target = null;
+    if (L.target) {
+      const T = L.target, t = el("ev-card ev-target", st, `<img src="img/card_back.webp" alt=""><div class="ev-name" style="font-size:20px">Isa1708</div>`);
+      Object.assign(t.style, { width: T.w + "px", height: T.h + "px", transform: tf(T.x, T.y, T.w, T.h, T.rot, 1), zIndex: 50 });
+      F.target = t;
+      F.btn = el("ev-btn", st, "Valider");
+      Object.assign(F.btn.style, { left: T.x + "px", top: (T.y + T.h / 2 + (F.forme === "A4" ? 40 : 52)) + "px" });
+      F.btn.addEventListener("pointerup", e => { e.stopPropagation(); if (F.manual && F.M.sel && !F.M.picked) pick(F, F.M.sel); });
+      F.btn.addEventListener("pointerenter", () => { if (F.manual) { F.M.btn = true; draw(F); } });
+      F.btn.addEventListener("pointerleave", () => { if (F.manual) { F.M.btn = false; draw(F); } });
+    } else F.btn = null;
+    F.cards = ids.map(id => {
+      const c = makeCard(st, id, L.w, L.h, F);
+      c.dataset.id = id;
+      wireCard(F, c, () => id);
+      return c;
+    });
+    F.big = null;
+    F.bigId = null;
+    F.L0 = L;
+    F.key = null;
+    if (F.manual) draw(F);
+  }
+
+  function bigCard(F, id) {
+    if (F.bigId === id && F.big) return F.big;
+    if (F.big) F.big.remove();
+    F.bigId = id;
+    if (!id) { F.big = null; return null; }
+    const L = F.L0, w = 240, h = 336;
+    F.big = makeCard(F.stage, id, w, h, F);
+    F.big.classList.add("ev-bigc");
+    F.big.style.transition = "none";
+    F.big.style.zIndex = 200;
+    wireCard(F, F.big, () => F.bigId);
+    return F.big;
+  }
+
+  // ---------------- drawing a state ----------------
+  const ease = p => 1 - Math.pow(1 - p, 3);
+  function draw(F) {
+    const S = F.manual ? F.M : F.S;
+    if (!S) return;
+    const L = layout(F, S);
+    const entering = S.phase === "enter";
+    F.cards.forEach((c, i) => {
+      const p = L.cards[i];
+      let x = p.x, y = p.y, rot = p.rot, s = p.s, o = p.o;
+      if (entering) {
+        const k = ease(Math.max(0, Math.min(1, (S.t - i * 45) / 600)));
+        x = L.deck.x + (p.x - L.deck.x) * k; y = L.deck.y + (p.y - L.deck.y) * k; rot = p.rot * k; s = 0.6 + 0.4 * k;
+        o = Math.min(1, k * 3);
+        c.style.transition = "none";
+      } else c.style.transition = "";
+      c.style.transform = tf(x, y, L.w, L.h, rot, s);
+      c.style.opacity = o;
+      c.style.zIndex = p.z + 60;
+      const id = F.ids[i];
+      c.classList.toggle("hover", id === S.hover);
+      c.classList.toggle("sel", id === S.sel && !S.picked);
+      const holding = id === S.hover && S.hold > 0 && !S.picked;
+      c.hold.style.height = (holding ? S.hold * 100 : 0) + "%";
+      c.hold.classList.toggle("off", !holding);
+      c.style.pointerEvents = S.picked ? "none" : "";
+    });
+    if (L.big) {
+      const b = bigCard(F, L.big.id);
+      if (b) {
+        if (!b.placed) { b.style.transform = tf(L.big.x, L.big.y, 240, 336, 0, 0.94); b.style.opacity = 0; b.offsetWidth; b.placed = true; }
+        b.style.transition = entering ? "none" : "";
+        b.style.transform = tf(L.big.x, L.big.y, 240, 336, L.big.rot, L.big.s);
+        b.style.opacity = L.big.o;
+        b.classList.toggle("sel", L.big.id === S.sel && !S.picked);
+        b.style.pointerEvents = S.picked ? "none" : "";
+      }
+    }
+    if (F.btn) {
+      F.btn.classList.toggle("on", F.d === "D1" && !!S.sel && !S.picked);
+      F.btn.classList.toggle("hot", !!S.btn);
+    }
+  }
+
+  // ---------------- playing it yourself ----------------
+  const fresh = () => ({ t: 1000, phase: "open", hover: null, sel: null, hold: 0, picked: null, btn: false });
+  function pick(F, id) {
+    F.M.picked = id; F.M.phase = "done"; F.M.hover = null; F.M.hold = 0;
+    draw(F);
+    clearTimeout(F.resetT);
+    F.resetT = setTimeout(() => { F.M = fresh(); draw(F); }, 1900 * slow());
+  }
+  function wireCard(F, c, idOf) {
+    c.addEventListener("pointerenter", () => { if (!F.manual || F.M.picked) return; F.M.hover = idOf(); draw(F); });
+    c.addEventListener("pointerleave", () => {
+      if (!F.manual) return;
+      // A3: the big card stays on the last role hovered, so the pointer can go from the portrait to it
+      if (F.M.hover === idOf() && F.forme !== "A3") F.M.hover = null;
+      stopHold(F); draw(F);
+    });
+    c.addEventListener("pointerdown", e => {
+      if (!F.manual || F.M.picked) return;
+      e.preventDefault();
+      F.M.hover = idOf();
+      if (F.d === "D2") {
+        const t0 = performance.now(), id = idOf();
+        stopHold(F);
+        const step = () => {
+          F.M.hold = Math.min(1, (performance.now() - t0) / (600 * slow()));
+          draw(F);
+          if (F.M.hold >= 1) { F.holdRaf = null; pick(F, id); return; }
+          F.holdRaf = requestAnimationFrame(step);
+        };
+        F.holdRaf = requestAnimationFrame(step);
+      }
+      draw(F);
+    });
+    c.addEventListener("pointerup", () => {
+      if (!F.manual || F.M.picked) return;
+      const id = idOf();
+      if (F.d === "D2") { stopHold(F); draw(F); return; }
+      if (F.d === "D1") { F.M.sel = F.M.sel === id ? null : id; draw(F); return; }
+      pick(F, id);
+    });
+  }
+  function stopHold(F) { if (F.holdRaf) cancelAnimationFrame(F.holdRaf); F.holdRaf = null; if (F.M) F.M.hold = 0; }
+
+  document.querySelectorAll(".stage").forEach(stage => {
+    const sec = stage.closest("section");
+    const F = { stage, sec, forme: stage.dataset.forme || "A1", c: stage.dataset.c || (stage.dataset.forme ? "C0" : "C1"),
+      d: stage.dataset.d || (stage.dataset.forme || stage.dataset.c ? "D0" : "D0"), manual: false, M: fresh() };
+    if (stage.dataset.c) F.d = "D0";
+    if (stage.dataset.d) F.c = "C0";
+    frames.push(F);
+    build(F);
+    stage.addEventListener("pointerenter", () => { F.manual = true; F.M = fresh(); draw(F); });
+    stage.addEventListener("pointerleave", () => { F.manual = false; stopHold(F); clearTimeout(F.resetT); F.key = null; });
+  });
+  // the sections that follow the layout: redrawn in the layout he picked (mock.js fires it at load and on each vote)
+  document.addEventListener("mockforme", e => {
+    frames.filter(F => F.sec === e.detail.section).forEach(F => { F.forme = e.detail.forme; build(F); });
+  });
+
+  // ---------------- the clock ----------------
+  let playing = true, speed = 1, t0 = performance.now(), tFrozen = 0;
+  const slow = () => 1 / speed;
+  if (params.get("at")) { playing = false; tFrozen = +params.get("at"); document.body.classList.add("ev-instant"); }
+  const now = () => playing ? ((performance.now() - t0) * speed) % LOOP : tFrozen;
+  function tick() {
+    const t = now();
+    frames.forEach(F => {
+      if (F.manual) return;
+      const S = stateAt(t, F.d);
+      const key = S.phase === "enter" ? "e" + Math.round(t) : [S.phase, S.hover, S.sel, Math.round(S.hold * 30), S.picked, S.btn].join("|");
+      if (key === F.key) return;
+      F.key = key; F.S = S;
+      draw(F);
+    });
+    requestAnimationFrame(tick);
+  }
+
+  // ---------------- the bar ----------------
+  const bar = document.getElementById("ev-bar");
+  const momentBtns = MOMENTS.map(([label, ms]) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.onclick = () => { playing = false; tFrozen = ms; paintBar(); };
+    bar.appendChild(b);
+    return [b, ms];
+  });
+  const loopBtn = document.createElement("button"); loopBtn.textContent = "▶ En boucle"; bar.appendChild(loopBtn);
+  const slowBtn = document.createElement("button"); slowBtn.textContent = "Ralenti"; bar.appendChild(slowBtn);
+  loopBtn.onclick = () => { if (!playing) { playing = true; t0 = performance.now() - tFrozen / speed; document.body.classList.remove("ev-instant"); } paintBar(); };
+  slowBtn.onclick = () => {
+    const t = now();
+    speed = speed === 1 ? 1 / 3 : 1;
+    document.documentElement.style.setProperty("--slow", 1 / speed);
+    t0 = performance.now() - t / speed;
+    paintBar();
+  };
+  function paintBar() {
+    momentBtns.forEach(([b, ms]) => b.classList.toggle("on", !playing && tFrozen === ms));
+    loopBtn.classList.toggle("on", playing);
+    slowBtn.classList.toggle("on", speed !== 1);
+  }
+  bar.querySelectorAll("[data-n]").forEach(b => b.onclick = () => {
+    N = +b.dataset.n;
+    bar.querySelectorAll("[data-n]").forEach(x => x.classList.toggle("on", x === b));
+    frames.forEach(build);
+  });
+  if (params.get("n")) { N = +params.get("n"); frames.forEach(build); bar.querySelectorAll("[data-n]").forEach(x => x.classList.toggle("on", +x.dataset.n === N)); }
+  paintBar();
+  tick();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

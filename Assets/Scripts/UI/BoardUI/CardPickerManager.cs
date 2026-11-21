@@ -10,6 +10,7 @@ using Extensions;
 using FocusSystem;
 using GameLogic.Validation;
 using TMPro;
+using TooltipSystem;
 using TransformComposition;
 using UI.BoardUI.Selection;
 using UnityEngine;
@@ -38,6 +39,27 @@ namespace UI.BoardUI
         [SerializeField] private float rolePickerCardHeightOffset = -0.1f;
         [SerializeField] private Vector3 rolePickerSpawnOffset;
         [SerializeField] private Transform rolePickerCenter;
+        // Fan that fits every role on screen and makes the hovered one readable (maquettes eventail-roles v1, A1).
+        [Tooltip("Largeur max de l'éventail, du centre de la première carte au centre de la dernière : au-delà, les cartes se resserrent.")]
+        [SerializeField] private float rolePickerMaxSpan = 24f;
+        [Tooltip("Largeur max de l'éventail quand une carte est épinglée à droite (le joueur visé) : il reste à sa gauche.")]
+        [SerializeField] private float rolePickerPinnedMaxSpan = 19f;
+        [Tooltip("Rotation max entre la première et la dernière carte (degrés).")]
+        [SerializeField] private float rolePickerMaxTotalAngle = 36f;
+        [Tooltip("De combien les cartes du bord descendent à l'écran.")]
+        [SerializeField] private float rolePickerEdgeDrop = 2f;
+        [Tooltip("Largeur d'une carte de rôle dans l'éventail.")]
+        [SerializeField] private float rolePickerCardWidth = 6.3f;
+        [Tooltip("Échelle donnée par l'éventail à la carte survolée (s'ajoute au grossissement de son propre survol).")]
+        [SerializeField] private float rolePickerHoverScale = 0.95f;
+        [Tooltip("Grossissement à l'écran que le survol de la carte donne déjà (zoom et avancée vers la caméra), mesuré en jeu.")]
+        [SerializeField] private float rolePickerCardHoverGrowth = 1.45f;
+        [Tooltip("De combien la carte survolée passe au-dessus de la plus haute des autres, vers la caméra.")]
+        [SerializeField] private float rolePickerHoverRaise = 0.3f;
+        [Tooltip("Marge entre la carte survolée et ses voisines écartées.")]
+        [SerializeField] private float rolePickerHoverGap = 0.3f;
+        [Tooltip("Décalage de l'éventail quand une carte est épinglée à droite (joueur visé).")]
+        [SerializeField] private float rolePickerPinnedOffsetX = -3f;
 
         [Header("Instruction UI")]
         [SerializeField] private CanvasGroup instructionCanvasGroup;
@@ -67,6 +89,7 @@ namespace UI.BoardUI
         private const string ABOVE_BLUR_LAYER = "AboveBlur";
         private const float TWEEN_DURATION = 0.5f;
         private const float INSTRUCTION_FADE_DURATION = 0.25f;
+        private const float FAN_HOVER_TWEEN_DURATION = 0.3f;
 
         private readonly List<Card> spawnedRoleCards = new();
         private readonly Dictionary<Card, Action<Card>> cardClickHandlers = new();
@@ -76,6 +99,8 @@ namespace UI.BoardUI
         private readonly List<Action<Character>> subscribedCharacterCallbacks = new();
         private bool isPickerActive;
         private Card currentPinnedCardInstance;
+        private Card hoveredRoleCard;
+        private Vector3 rolePickerFanCenter;
 
         // Read-only view of the live picker for autoplay captures / diagnostics — no behaviour change.
         public bool IsPickerActive => isPickerActive;
@@ -84,6 +109,8 @@ namespace UI.BoardUI
         public bool IsCardPickable(Card _card) => isPickerActive && _card != null && cardClickHandlers.ContainsKey(_card);
         public bool IsRolePicker => isPickerActive && spawnedRoleCards.Count > 0;
         public IReadOnlyCollection<Card> PickableCards => cardClickHandlers.Keys;
+        /// <summary>The role picker's cards, left to right in the fan (autoplay's hover tour).</summary>
+        public IReadOnlyList<Card> FanCards => spawnedRoleCards;
         public IReadOnlyList<Card> LiftedCharacterCards => liftedCharacterCards;
         public float FrostAlpha => frostCanvasGroup ? frostCanvasGroup.alpha : -1f;
 
@@ -141,7 +168,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
-            ShowInstructionPanel(PickerType.Role, _description);
+            ShowInstructionPanel(PickerType.Role, _description, _options?.stepDescriptionArgs);
             SetupPinnedCard(_options);
 
             if (_callback != null)
@@ -150,12 +177,10 @@ namespace UI.BoardUI
                 subscribedRoleCallbacks.Add(_callback);
             }
 
-            float _totalAngle = (_validRoles.Count - 1) * rolePickerCardSpacingAngle;
-            float _startAngle = -_totalAngle / 2f;
-            float _radius = _validRoles.Count > 1
-                ? rolePickerCardSpacing / (2f * Mathf.Sin(rolePickerCardSpacingAngle * Mathf.Deg2Rad / 2f))
-                : rolePickerCardSpacing;
             Vector3 _centerLocal = rolePickerCenter ? rolePickerCenter.localPosition : Vector3.zero;
+            // A card pinned on the right (the targeted player) pushes the fan to the left so they do not overlap.
+            rolePickerFanCenter = _centerLocal + (currentPinnedCardInstance ? new Vector3(rolePickerPinnedOffsetX, 0f, 0f) : Vector3.zero);
+            hoveredRoleCard = null;
 
             for (int _i = 0; _i < _validRoles.Count; _i++)
             {
@@ -180,23 +205,17 @@ namespace UI.BoardUI
 
                 TransformLayer _layer = _compositor.GetLayer(ROLE_PICKER_LAYER);
                 _layer.DOKill();
-
-                float _angle = _startAngle + (_i * rolePickerCardSpacingAngle);
-                float _angleRad = _angle * Mathf.Deg2Rad;
-                float _xPos = Mathf.Sin(_angleRad) * _radius;
-                float _zPos = (Mathf.Cos(_angleRad) * _radius) - _radius;
-
-                Vector3 _targetPosition = _centerLocal + new Vector3(_xPos, rolePickerCardHeightOffset * _i, _zPos);
-
                 _layer.localPosition = _centerLocal + rolePickerSpawnOffset;
-                _layer.DOLocalRotate(new Vector3(0, _angle, 0), TWEEN_DURATION).SetEase(Ease.OutQuint);
-                _layer.DOLocalMove(_targetPosition, TWEEN_DURATION).SetEase(Ease.OutQuint);
 
                 Role _capturedRole = _card.roleInfo;
                 Action<Card> _clickHandler = _ => OnRoleSelectedInternal(_capturedRole);
                 _card.onCardClicked += _clickHandler;
+                _card.onCardHovered += OnRoleCardHovered;
+                _card.onCardUnhovered += OnRoleCardUnhovered;
                 cardClickHandlers[_card] = _clickHandler;
             }
+
+            LayoutRoleFan(TWEEN_DURATION);
 
             if (cardClickHandlers.Count == 0)
             {
@@ -205,7 +224,68 @@ namespace UI.BoardUI
                 onPickerCanceled?.Invoke();
                 return;
             }
-            Diagnostics.Logs.GameLog.Info("picker", "picker.open", "type", "role", "candidates", cardClickHandlers.Count);
+            Diagnostics.Logs.GameLog.Info("picker", "picker.open", "type", "role", "candidates", cardClickHandlers.Count,
+                "step", RoleFanLayout.Step(spawnedRoleCards.Count, FanSettings()), "pinned", currentPinnedCardInstance != null);
+        }
+
+        private RoleFanLayout.Settings FanSettings() => new()
+        {
+            spacing = rolePickerCardSpacing,
+            spacingAngle = rolePickerCardSpacingAngle,
+            maxSpan = currentPinnedCardInstance ? rolePickerPinnedMaxSpan : rolePickerMaxSpan,
+            maxTotalAngle = rolePickerMaxTotalAngle,
+            edgeDrop = rolePickerEdgeDrop,
+            heightStep = rolePickerCardHeightOffset,
+            cardWidth = rolePickerCardWidth,
+            hoverScale = rolePickerHoverScale,
+            cardHoverScale = rolePickerCardHoverGrowth,
+            hoverRaise = rolePickerHoverRaise,
+            hoverGap = rolePickerHoverGap,
+        };
+
+        /// <summary>Tweens every role card to its place in the fan, the hovered one lifted and its neighbours aside.</summary>
+        private void LayoutRoleFan(float _duration)
+        {
+            int _hovered = hoveredRoleCard ? spawnedRoleCards.IndexOf(hoveredRoleCard) : -1;
+            RoleFanLayout.Slot[] _slots = RoleFanLayout.Compute(spawnedRoleCards.Count, _hovered, rolePickerFanCenter, FanSettings());
+            for (int _i = 0; _i < spawnedRoleCards.Count; _i++)
+            {
+                Card _card = spawnedRoleCards[_i];
+                TransformCompositorComponent _compositor = _card ? _card.GetTransformCompositor() : null;
+                if (_compositor == null)
+                {
+                    continue;
+                }
+
+                TransformLayer _layer = _compositor.GetLayer(ROLE_PICKER_LAYER);
+                _layer.DOKill();
+                _layer.DOLocalMove(_slots[_i].position, _duration).SetEase(Ease.OutQuint);
+                _layer.DOLocalRotate(new Vector3(0f, _slots[_i].yaw, 0f), _duration).SetEase(Ease.OutQuint);
+                _layer.DOScale(_slots[_i].scale, _duration).SetEase(Ease.OutQuint);
+            }
+        }
+
+        private void OnRoleCardHovered(Card _card)
+        {
+            if (!isPickerActive || !spawnedRoleCards.Contains(_card) || hoveredRoleCard == _card)
+            {
+                return;
+            }
+            hoveredRoleCard = _card;
+            LayoutRoleFan(FAN_HOVER_TWEEN_DURATION);
+        }
+
+        private void OnRoleCardUnhovered(Card _card)
+        {
+            if (hoveredRoleCard != _card)
+            {
+                return;
+            }
+            hoveredRoleCard = null;
+            if (isPickerActive)
+            {
+                LayoutRoleFan(FAN_HOVER_TWEEN_DURATION);
+            }
         }
 
         public void ShowCharacterPicker(Validator<(ulong targetId, TargetType targetType)> _validator,
@@ -225,7 +305,7 @@ namespace UI.BoardUI
             }
 
             isPickerActive = true;
-            ShowInstructionPanel(PickerType.Character, _description);
+            ShowInstructionPanel(PickerType.Character, _description, _options?.stepDescriptionArgs);
             SetupPinnedCard(_options);
 
             if (_callback != null)
@@ -387,9 +467,12 @@ namespace UI.BoardUI
             }
 
             Vector3 _roleCenterLocal = rolePickerCenter ? rolePickerCenter.localPosition : Vector3.zero;
+            hoveredRoleCard = null;
             foreach (Card _card in spawnedRoleCards)
             {
                 if (!_card) continue;
+                _card.onCardHovered -= OnRoleCardHovered;
+                _card.onCardUnhovered -= OnRoleCardUnhovered;
 
                 if (_instantCharacterReset)
                 {
@@ -408,6 +491,7 @@ namespace UI.BoardUI
                 TransformLayer _layer = _compositor.GetLayer(ROLE_PICKER_LAYER);
                 _layer.DOKill();
                 _layer.DOLocalRotate(Vector3.zero, TWEEN_DURATION).SetEase(Ease.OutQuint);
+                _layer.DOScale(1f, TWEEN_DURATION).SetEase(Ease.OutQuint);
                 _layer.DOLocalMove(_roleCenterLocal + rolePickerSpawnOffset, TWEEN_DURATION).SetEase(Ease.OutQuint)
                     .OnComplete(() => { if (_captured) Destroy(_captured.gameObject); });
             }
@@ -463,7 +547,7 @@ namespace UI.BoardUI
 
         private enum PickerType { Role, Character }
 
-        private void ShowInstructionPanel(PickerType _type, string _description)
+        private void ShowInstructionPanel(PickerType _type, string _description, object[] _descriptionArgs)
         {
             if (!instructionCanvasGroup) return;
 
@@ -480,8 +564,15 @@ namespace UI.BoardUI
                 // T36: the titles (authored on the scene object) and the step descriptions (authored on each power) are
                 // French game texts.
                 instructionTitle.SetLoc(_type == PickerType.Role ? instructionRoleTitle : instructionPlayerTitle);
-            if (instructionDescription && _description != null)
-                instructionDescription.SetLoc(_description);
+            // No description = an empty line, never the one a previous picker left (the portal showed « Choisissez
+            // un joueur à corrompre. », 2026-11-20).
+            if (instructionDescription)
+            {
+                if (_description != null)
+                    instructionDescription.SetLoc(_description, _descriptionArgs ?? Array.Empty<object>());
+                else
+                    instructionDescription.text = string.Empty; // loc-ok: clears the line
+            }
 
             instructionCanvasGroup.DOKill();
             instructionCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);
@@ -491,10 +582,13 @@ namespace UI.BoardUI
                 frostCanvasGroup.DOKill();
                 frostCanvasGroup.DoShowGroup(INSTRUCTION_FADE_DURATION, false, false);
             }
+            // The board behind the veil keeps no bubble (one covered the role fan's instruction).
+            if (TooltipManager.instance) TooltipManager.instance.SetPickerVeil(true);
         }
 
         private void HideInstructionPanel(bool _instant)
         {
+            if (TooltipManager.instance) TooltipManager.instance.SetPickerVeil(false);
             if (frostCanvasGroup)
             {
                 frostCanvasGroup.DOKill();

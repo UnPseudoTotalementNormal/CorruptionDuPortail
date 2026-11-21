@@ -130,6 +130,7 @@ namespace UI.BoardUI.Selection
                 { 
                     focusType = _resolvedOptions.focusType,
                     stepDescriptions = _resolvedOptions.stepDescriptions,
+                    stepDescriptionArgs = _resolvedOptions.stepDescriptionArgs,
                     pinnedCharacter = _character
                 };
                 Diagnostics.Logs.GameLog.Info("picker", "picker.step", "step", 2, "of", 2);
@@ -138,7 +139,7 @@ namespace UI.BoardUI.Selection
                 {
                     CompleteFlow();
                     _onComplete?.Invoke(_character, _role);
-                }, _step2Options.GetStepDescription(1), _step2Options);
+                }, _step2Options.GetStepDescription(1) ?? _step2Options.GetStepDescription(0), _step2Options);
             }, _resolvedOptions.GetStepDescription(0), _resolvedOptions);
         }
 

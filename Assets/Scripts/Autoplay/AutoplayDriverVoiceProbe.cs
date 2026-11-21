@@ -41,11 +41,17 @@ namespace Autoplay
                 {
                     return;
                 }
-                voiceProbeManager.UseCodec(new SyntheticVoiceCodec(), VoicePlayback.Create);
-                Journal.Record("voice.probe.codec", $"side={options.voiceProbe} server={networkManager.IsServer}");
+                // "<side>-steam": the real Steam Voice and microphone (a two-account Steam run with a voice played into
+                // the speaker's microphone), only push to talk is forced.
+                bool _steam = options.voiceProbe.EndsWith("-steam", StringComparison.OrdinalIgnoreCase);
+                if (!_steam)
+                {
+                    voiceProbeManager.UseCodec(new SyntheticVoiceCodec(), VoicePlayback.Create);
+                }
+                Journal.Record("voice.probe.codec", $"side={options.voiceProbe} server={networkManager.IsServer} codec={(_steam ? "steam" : "synthetic")}");
             }
 
-            bool _talker = string.Equals(options.voiceProbe, networkManager.IsServer ? "host" : "client",
+            bool _talker = options.voiceProbe.StartsWith(networkManager.IsServer ? "host" : "client",
                 StringComparison.OrdinalIgnoreCase);
             bool _day = _state != null && _state is not AwakeningState;
             voiceProbeManager.ForceTalk = _talker && _day && Mathf.Repeat(Time.unscaledTime, 3f) < 2f;

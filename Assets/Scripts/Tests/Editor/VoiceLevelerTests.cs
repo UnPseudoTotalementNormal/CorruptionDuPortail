@@ -172,19 +172,84 @@ namespace Tests.Editor
             Assert.AreEqual(0, _leveler.Burst.Clipped);
         }
 
-        [Test]
-        public void Limit_IsLinearUnderTheKnee_ThenBendsUnderTheCeiling()
+        // A voiced vowel the way a voice makes it: a glottal pulse 120 times a second, each ringing a 700 Hz formant that
+        // dies in ~0.4 ms. Peaky like real speech (crest factor ~15 dB), scaled to the given RMS.
+        private static byte[] Vowel(double seconds, double rms)
         {
-            Assert.AreEqual(0.2, VoiceLeveler.Limit(0.2), 1e-9);
-            Assert.AreEqual(-0.2, VoiceLeveler.Limit(-0.2), 1e-9);
-            double _previous = 0;
-            for (double x = 0; x <= 10; x += 0.01)
+            int _n = (int)(seconds * Rate);
+            var _wave = new double[_n];
+            double _sum = 0;
+            for (int i = 0; i < _n; i++)
             {
-                double _y = VoiceLeveler.Limit(x);
-                Assert.GreaterOrEqual(_y, _previous);
-                Assert.LessOrEqual(_y, VoiceLeveler.Ceiling);
-                _previous = _y;
+                double _t = (i % (Rate / 120)) / (double)Rate; // time since the last pulse
+                _wave[i] = Math.Exp(-_t / 0.0004) * Math.Sin(2 * Math.PI * 700 * _t);
+                _sum += _wave[i] * _wave[i];
             }
+            double _scale = rms / Math.Sqrt(_sum / _n);
+            var _pcm = new byte[_n * 2];
+            for (int i = 0; i < _n; i++)
+            {
+                int _s = (int)Math.Round(Math.Max(-1, Math.Min(1, _wave[i] * _scale)) * 32767);
+                _pcm[2 * i] = (byte)(_s & 0xFF);
+                _pcm[2 * i + 1] = (byte)((_s >> 8) & 0xFF);
+            }
+            return _pcm;
+        }
+
+        // How much of the output is not a scaled copy of the input (0 = same wave shape, only louder or quieter).
+        private static double Distortion(byte[] input, byte[] output, double fromSeconds, double toSeconds)
+        {
+            // One scale per pitch period (1/120 s): a gain that moves (the level follower, the limiter) is not a
+            // distortion, a wave whose shape changed within a period is.
+            int _period = Rate / 120;
+            double _residual = 0, _energy = 0;
+            for (int _from = (int)(fromSeconds * Rate); _from + _period <= (int)(toSeconds * Rate); _from += _period)
+            {
+                double _io = 0, _ii = 0;
+                for (int i = _from; i < _from + _period; i++)
+                {
+                    _io += Sample(input, i) * Sample(output, i);
+                    _ii += Sample(input, i) * Sample(input, i);
+                }
+                double _k = _ii > 0 ? _io / _ii : 0;
+                for (int i = _from; i < _from + _period; i++)
+                {
+                    double _r = Sample(output, i) - _k * Sample(input, i);
+                    _residual += _r * _r;
+                    _energy += Sample(output, i) * Sample(output, i);
+                }
+            }
+            return Math.Sqrt(_residual / _energy);
+        }
+
+        // Playtest 2026-11-20 (« toujours saturé »): the old soft limiter bent every sample over -9 dBFS, so the peaks of
+        // a voice already at dialogue level were reshaped (a saturation of its own). A voice must come out with the
+        // same wave shape, only its level changed.
+        [Test]
+        public void AVoiceAtDialogueLevel_KeepsItsWaveShape()
+        {
+            byte[] _input = Vowel(1.5, VoiceLeveler.TargetRms);
+            var _output = (byte[])_input.Clone();
+            Feed(new VoiceLeveler(Rate), _output);
+
+            Assert.Greater(Peak(_input), 0.35, "The test vowel must have speech-like peaks (over -9 dBFS).");
+            Assert.Less(Distortion(_input, _output, 0.8, 1.4), 0.01, "The leveled voice must not be reshaped.");
+        }
+
+        // A shout far over the ceiling is turned down by the limiter's gain, not clipped: same wave, never past -3 dBFS.
+        [Test]
+        public void AShout_IsTurnedDownUnderTheCeiling_NotReshaped()
+        {
+            var _leveler = new VoiceLeveler(Rate);
+            byte[] _calm = Vowel(1.0, VoiceLeveler.TargetRms);
+            Feed(_leveler, _calm);
+            byte[] _input = Vowel(0.3, 0.35); // +14 dB at once: the level follower needs a few blocks
+            var _output = (byte[])_input.Clone();
+            Feed(_leveler, _output);
+
+            Assert.LessOrEqual(Peak(_output), VoiceLeveler.Ceiling + 0.001);
+            Assert.Less(Distortion(_input, _output, 0.0, 0.1), 0.05, "The start of the shout, before the level follower caught up, keeps its shape.");
+            Assert.Less(Distortion(_input, _output, 0.15, 0.29), 0.03, "Once the gain settled, the shout keeps its shape.");
         }
     }
 }

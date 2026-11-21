@@ -491,7 +491,9 @@ namespace VoiceSystem
                 "seconds", Math.Round(_burst.Samples / (double)Math.Max(1, _codec.SampleRate), 2),
                 "peakDb", Db(_burst.Peak), "speechDb", Db(_burst.SpeechRms),
                 "clippedPct", Math.Round(100.0 * _burst.Clipped / _burst.Samples, 2),
-                "gainDb", Db(_burst.MeanGain));
+                "gainDb", Db(_burst.MeanGain),
+                "outPeakDb", Db(_burst.OutPeak),
+                "limitedPct", Math.Round(100.0 * _burst.Limited / _burst.Samples, 2));
         }
 
         private static double Db(double _linear) => _linear > 0 ? Math.Round(20.0 * Math.Log10(_linear), 1) : -120.0;

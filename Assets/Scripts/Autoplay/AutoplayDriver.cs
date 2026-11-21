@@ -144,6 +144,10 @@ namespace Autoplay
         [Tooltip("Turn captures (-autoplay-turn-captures), board task T21: clean captures at night when this process's seat " +
                  "wakes (turn-mine-*) and while it sleeps through another layer (turn-other-*).")]
         public bool turnCaptures;
+        [Tooltip("Voice probe (-autoplay-voice-probe host|client), board task T22: every process swaps Steam Voice for a " +
+                 "synthetic voice sent through the real voice path; the named side talks in the day, every listener " +
+                 "journals the speaker's mouth (voice.probe) and captures his cat.")]
+        public string voiceProbe;
     }
 
     /// <summary>
@@ -343,6 +347,7 @@ namespace Autoplay
             UpdateCardVisibility(_state);
             UpdateSurroundings(_state);
             UpdateTurnCaptures(_state);
+            UpdateVoiceProbe(_state);
 
             switch (_state)
             {

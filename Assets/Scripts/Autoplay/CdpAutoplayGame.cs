@@ -511,6 +511,7 @@ namespace Autoplay
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
                 turnCaptures = _context.Config.Flag("turn-captures"),
+                voiceProbe = _context.Config.Option("voice-probe"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
@@ -654,6 +655,15 @@ namespace Autoplay
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),
                     240f, "the host never started the game");
                 yield break;
+            }
+
+            // Scenario lever "lobby-hold S" (host): the table stays in the lobby S real seconds before the start, every
+            // player seated (the voice probe talks there: the playtest of 2026-11-20 only spoke in the lobby).
+            float _lobbyHold = ParseSeconds(_context.Config.Option("lobby-hold"));
+            if (_lobbyHold > 0f)
+            {
+                _context.Journal.Record("lobby.hold", _lobbyHold.ToString("0.#", CultureInfo.InvariantCulture));
+                yield return new WaitForSecondsRealtime(_lobbyHold);
             }
 
             // Role distribution draws from UnityEngine.Random: seed it so a scenario seed reproduces the same seats.
@@ -1783,6 +1793,7 @@ namespace Autoplay
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
                 turnCaptures = _context.Config.Flag("turn-captures"),
+                voiceProbe = _context.Config.Option("voice-probe"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),

@@ -164,17 +164,43 @@ namespace GameLogic.GameStates
 
         private void SubscribeToCharacterClick() => boardManager.onCardClicked += OnCharacterClickClient;
         
-        private void SubscribeToRoleClick()
+        private void SubscribeToRoleClick(ulong _targetOwnerId)
         {
             if (!CardPickerManager.instance)
             {
                 return;
             }
-            
+
+            // A role whose every holder is already found (the Mage himself, a chained player, a role already guessed)
+            // cannot be the target's: it is not offered (maquettes eventail-roles v1, C2: this power only). A role
+            // also held by someone not found yet stays, a fake character's included (never revealed, so its role
+            // stays offered and nothing tells it apart).
             Validator<(ulong targetId, TargetType targetType)> _validator = new();
             _validator.AddRule(_ctx => _ctx.targetType == TargetType.Role);
-            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient);
+            _validator.AddRule(_ctx => !IsRoleFound(_ctx.targetId));
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("portal", "portal.roles.hidden",
+                "target", _targetOwnerId, "mage", mageCharacterOwnerId,
+                "found", CharacterQuery.GetCharacters().Where(_c => IsRoleFound(_c.ownerClientId.Value))
+                    .Select(_c => _c.ownerClientId.Value).ToList()));
+
+            Character _target = CharacterQuery.GetCharacter(_targetOwnerId);
+            string _pseudo = _target != null ? _target.GetOwnerPseudo() : string.Empty;
+            SelectionFlowOptions _options = new()
+            {
+                pinnedCharacter = _target,
+                // French elision: « d'Isa1708 », « de Wouh ».
+                stepDescriptions = new[] { StartsWithVowel(_pseudo) ? "Devinez le rôle d'{0}." : "Devinez le rôle de {0}." }, // loc
+                stepDescriptionArgs = new object[] { _pseudo },
+            };
+            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient, _options);
         }
+
+        private bool IsRoleFound(ulong _ownerId) =>
+            _ownerId == mageCharacterOwnerId
+            || gameInfoRevealer.GetCharacterInfo(_ownerId).isRoleRevealed >= RevealLevel.Public;
+
+        private static bool StartsWithVowel(string _text) =>
+            !string.IsNullOrEmpty(_text) && "aeiouyhàâäéèêëîïôöùûüAEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜ".IndexOf(_text[0]) >= 0; // loc-ok: letters tested, never shown
         
         private void UnsubscribeToCharacterClick() => boardManager.onCardClicked -= OnCharacterClickClient;
         
@@ -237,8 +263,9 @@ namespace GameLogic.GameStates
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
                 new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId.Value)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
-            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick), new CustomRpcParams(CustomRpcParams.RpcTargetType.single, 
-                new []{mageCharacterOwnerId}));
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick),
+                new NetworkSerializableObject[] { new(clickedCharacter.ownerClientId.Value) },
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
         }
         
         private void HighlightRolesRpc(ulong _clickedCharacterOwnerId)

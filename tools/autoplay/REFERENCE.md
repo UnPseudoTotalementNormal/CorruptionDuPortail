@@ -88,6 +88,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
 | `quit-at <phase text>` | this process leaves when that phase starts (client 1 args) |
 | `visual-picker` | bots hover and click the real picker cards (captures every opening) |
+| `picker-hover-tour` | with `visual-picker`: before its pick, each role picker hovers its first, middle and last card in turn (fan order), capture `pickerNNN-tourII-role:<name>` each, journal `picker.hover.tour` (the fan's hover layout, maquettes eventail-roles) |
 | `fast-fakes` | fake roles go back to sleep after ~1 s |
 | `target-focus client\|host\|bot\|fake\|<role text>` | power targets: pick among the valid candidates matching it when any does |
 | `target-focus-power <power text>` | limit `target-focus` to picks made while that power is used |
@@ -224,6 +225,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `mage-portal-client` | a Mage on a real client takes down the portal |
 | `picker-visual` | every picker opening: blur veil + lifted valid cards (analyzer) |
 | `picker-animation` | picker opening animation, frame by frame |
+| `role-fan-portal` | the role picker's fan: every role on screen at rest and hovered (first / middle / last, `picker-hover-tour`), real clicks reach the cards, the portal hides the roles already found, the target pinned |
 | `turn-captures` | T21 night parchment on real clients: "Vous vous éveillez" when the seat wakes (then burnt), "Vous vous rendormez" when it falls asleep, nothing while another layer plays (`turn.capture … banner=`) |
 | `watchdog-stall` | breakage test: an idle vote over a 10 s budget gives slow → stall → `run.fail watchdog:` with a report, relayed to alerts.log |
 | `watchdog-died` | breakage test: a client dying outside `crash-at` is reported `DIED` and the run aborted within seconds |

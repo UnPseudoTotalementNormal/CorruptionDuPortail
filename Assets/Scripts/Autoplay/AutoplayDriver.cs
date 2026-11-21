@@ -52,6 +52,9 @@ namespace Autoplay
         public float[] pickerCaptureDelays = { 0f, 0.1f, 0.25f, 0.5f, 1f };
         [Tooltip("Game seconds the chosen card stays hovered (captured) before the click.")]
         public float pickerHoverDwell = 0.6f;
+        [Tooltip("Scenario lever picker-hover-tour: before its pick, a role picker's first, middle and last card are " +
+                 "hovered in turn, each captured (the fan's hover layout: grown card, neighbours aside, all on screen).")]
+        public bool pickerHoverTour;
 
         [Tooltip("Scenario lever role-card-dwell: real seconds the lobby's role detail overlay stays open (lobby-ui).")]
         public float roleCardDwell = 0.5f;
@@ -871,6 +874,11 @@ namespace Autoplay
                 yield break;
             }
 
+            if (options.pickerHoverTour && _picker.IsRolePicker)
+            {
+                yield return HoverTourRolePicker(_picker, _opening);
+            }
+
             Card _card = policy.Choose(autopilot.Focus(_cards, _c => _c.characterInfo), "picker.card");
             if (options.realInput != null)
             {
@@ -899,6 +907,32 @@ namespace Autoplay
 
             yield return null;
             pickerHandling = false;
+        }
+
+        // picker-hover-tour: the fan's first, middle and last card hovered in turn (fan order = left to right), each
+        // captured once the fan has moved (its hover tween is 0.3 s), then unhovered.
+        private IEnumerator HoverTourRolePicker(CardPickerManager _picker, int _opening)
+        {
+            List<Card> _fan = _picker.FanCards.Where(_c => _c).ToList();
+            int[] _indexes = { 0, _fan.Count / 2, _fan.Count - 1 };
+            foreach (int _i in _indexes.Distinct())
+            {
+                if (!_picker.IsPickerActive || _i < 0 || _i >= _fan.Count || !_fan[_i])
+                {
+                    yield break;
+                }
+
+                var _pointer = new PointerEventData(EventSystem.current);
+                _fan[_i].OnPointerEnter(_pointer);
+                Journal.Record("picker.hover.tour", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])}");
+                capture.Request($"picker{_opening:000}-tour{_i:00}-{DescribeCard(_fan[_i])}", 0.5f);
+                yield return new WaitForSeconds(0.7f);
+                if (_fan[_i])
+                {
+                    _fan[_i].OnPointerExit(_pointer);
+                }
+            }
+            yield return new WaitForSeconds(0.4f);
         }
 
         private static string DescribePicker(CardPickerManager _picker)

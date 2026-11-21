@@ -486,6 +486,7 @@ namespace Autoplay
             {
                 roleCardDwell = ParseSeconds(_context.Config.Option("role-card-dwell")) is float _dwell && _dwell > 0f ? _dwell : 0.5f,
                 visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
+                pickerHoverTour = _context.Config.Flag("picker-hover-tour"),
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 fastFakes = _context.Config.Flag("fast-fakes"),
                 targetFocus = _context.Config.Option("target-focus"),
@@ -1758,6 +1759,7 @@ namespace Autoplay
             var _clientOptions = new AutoplayOptions
             {
                 visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
+                pickerHoverTour = _context.Config.Flag("picker-hover-tour"),
                 possessActor = false,
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 targetFocus = _context.Config.Option("target-focus"),

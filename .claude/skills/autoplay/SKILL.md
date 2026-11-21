@@ -136,6 +136,7 @@ scénario ajoute la sienne. Ce qui est vérifié en détail : `tools/autoplay/RE
 | `mage-portal-client` | un Mage tenu par un vrai client abat le portail | réseau, 7 clients | PASS 2026-10-04 |
 | `picker-visual` | chaque ouverture du sélecteur : voile flou + cartes valides levées | build | PASS 2026-10-04 |
 | `picker-animation` | flou 0→1 en ~0,3 s, cartes +2 en y stabilisées à ~0,45 s | build (enregistrement) | PASS 2026-10-04 |
+| `role-fan-portal` | éventail des rôles (maquettes eventail-roles v1, A1 + C2) : le Mage de l'hôte abat le portail à 9 places ; 8 à 11 rôles tiennent à l'écran au repos et au survol de la 1re, du milieu et de la dernière carte (`picker-hover-tour`), vrais clics sur les cartes (aucun `off-screen`), rôles trouvés retirés au portail (`portal.roles.hidden`), joueur visé épinglé | build, vrais clics | PASS 2026-11-21 (graine 4310 ; avant : Luma et Ugës hors écran à 9 rôles, rapport de Wouh du 20/11) |
 | `client-leaves-at-vote` | un client qui part au vote est enchaîné, la partie continue | réseau, 3 clients | PASS 2026-10-04 |
 | `lag-150ms` | partie complète sous 150 ms de latence | réseau, 3 clients | PASS 2026-10-04 |
 | `net-sync-3clients` | zéro désync sur chaque composant de l'état public | réseau, 3 clients | PASS 2026-10-05 |

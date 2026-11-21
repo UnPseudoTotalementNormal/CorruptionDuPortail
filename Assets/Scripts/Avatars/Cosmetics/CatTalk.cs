@@ -42,6 +42,16 @@ namespace Avatars.Cosmetics
         private Vector3 _openScale;
         private float _open;
         private float _lastVoice = float.NegativeInfinity;
+        private bool _talking;
+
+        /// <summary>The black talking mouth is on screen right now (autoplay voice probe).</summary>
+        public bool MouthShown => mouth != null && mouth.gameObject.activeSelf;
+
+        /// <summary>The talking mouth itself (autoplay close-ups).</summary>
+        public Transform Mouth => mouth;
+
+        /// <summary>How open the talking mouth is, 0..1.</summary>
+        public float Openness => _open;
 
         private void Awake()
         {
@@ -78,7 +88,14 @@ namespace Avatars.Cosmetics
             bool shown = scale > ShutBelow;
             if (mouth.gameObject.activeSelf != shown) mouth.gameObject.SetActive(shown);
             if (shown) mouth.localScale = _openScale * scale;
-            _appearance.SetMouthHidden(shown || Time.time - _lastVoice < holdSeconds);
+            bool _talkingNow = shown || Time.time - _lastVoice < holdSeconds;
+            if (_talkingNow != _talking)
+            {
+                _talking = _talkingNow;
+                Diagnostics.Logs.GameLog.Info("avatar", _talking ? "avatar.talk.open" : "avatar.talk.shut",
+                    "seat", _avatar.ownerClientId.Value);
+            }
+            _appearance.SetMouthHidden(_talkingNow);
 
             if (headBone != null && _open > 0f)
             {

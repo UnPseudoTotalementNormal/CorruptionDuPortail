@@ -167,7 +167,7 @@ namespace TooltipSystem
             _anchorRects = _trigger.TooltipBoundsOverride == null && _trigger.GetComponent<RectTransform>() != null
                 ? _trigger.GetComponentsInChildren<RectTransform>() : null;
             _anchorRenderers = _trigger.TooltipBoundsOverride == null && _anchorRects == null
-                ? _trigger.GetComponentsInChildren<Renderer>() : null;
+                ? ModelRenderers(_trigger) : null;
             _keptOnScreenLogged = false;
 
             Fill(_trigger);
@@ -333,6 +333,22 @@ namespace TooltipSystem
                 _top -= _size.y + _gap;
             }
             return _centres;
+        }
+
+        /// <summary>
+        /// The renderers the bubble sits beside: the object's model only. A particle or trail renderer's bounds follow
+        /// its particles: the slime drips of a copied power (Ugës's copies, bottom row) grew the box every frame and the
+        /// bubble crept up by itself (Liste en vrac n°7).
+        /// </summary>
+        private static Renderer[] ModelRenderers(HoverTooltipComponent _trigger)
+        {
+            Renderer[] _all = _trigger.GetComponentsInChildren<Renderer>();
+            Renderer[] _model = System.Array.FindAll(_all, _r => _r is not ParticleSystemRenderer && _r is not TrailRenderer);
+            if (_model.Length != _all.Length)
+            {
+                GameLog.Info("ui", "ui.tooltip.anchor.model.only", "target", _trigger.name, "skipped", _all.Length - _model.Length);
+            }
+            return _model.Length > 0 ? _model : _all;
         }
 
         private (Vector2 size, Vector2 centre) TriggerScreenBox()

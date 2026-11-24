@@ -57,7 +57,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_guard.ps1\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/log_guard.py\"",
+            "timeout": 20
           },
           {
             "type": "command",
@@ -91,6 +92,11 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/loc_guard.py\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/log_guard.py\"",
             "timeout": 20
           }
         ]

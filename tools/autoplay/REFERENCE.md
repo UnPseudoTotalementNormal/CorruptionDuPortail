@@ -85,7 +85,7 @@ only), `AUTOPLAY_TIMESCALE`, `AUTOPLAY_TIMEOUT`, `AUTOPLAY_SCENARIO`, `AUTOPLAY_
 | `players N` · `bots N` · `clients N` | seats; the host waits for N clients, then fills with bots |
 | `force-roles A,B` | role-name fragments guaranteed in the composition |
 | `role-holder host\|client\|bot` | who holds the forced roles (a comma list gives one holder per forced role, in order, e.g. `force-roles Dryade,Messager` + `role-holder host,bot`; `seat:<id>` = that exact seat, e.g. `seat:1` with client1 connecting first through `connect-delay` on the others): they are SEATED there (dev seam `RoleAttributionState.DevSeatOrder` reorders who receives the drawn roles, the draw is untouched; journal `composition.seat`), then checked; a mismatch (role not drawn) fails fast and `run_scenario` retries the next seed |
-| `vote-focus <role text>` | every bot votes the holder of that role |
+| `vote-focus <role text>[,<role text>…]` | every bot votes the holder of that role; a comma list is a priority order (first listed role whose holder is still free: `Mage,Abyss` = the Mage, then Abyss) |
 | `max-days N` | stop after day N (fact `stopped-after-day`) |
 | `netsim delay,jitter,loss` | Multiplayer Tools Network Simulator on that process (put it in client args) |
 | `quit-at <phase text>` | this process leaves when that phase starts (client 1 args) |
@@ -253,6 +253,7 @@ relaunches client1 once if its game crashes or dies first), `video` (`true` / `"
 | `net-sync-3clients` | zero desync on every public-state component |
 | `full-game-victory` | a whole net game to its victory (no day limit), 3 chatting clients: every process reaches `GameEndingState`, no desync, no error |
 | `full-game-ending` | the same, then 10 s on the ending screen: same winners on every process, board = the winners' cards, winners match their faction (`analyze_ending.py`) |
+| `mage-first-portal-waits` | Mage (real client) chained first while Abyss (bot) is free: the portal step is skipped (`portal.decision reason=anomalies-free`), then plays exactly once when Abyss is chained (`vote-focus Mage,Abyss`) |
 | `last-anomaly-leaves` | the other anomaly chained at the first vote, then the real client holding the last anomaly leaves and never comes back: grace expiry chains it, the leave victory re-check ends the game (chosen win) and the game STAYS on its ending screen (it wrapped back to the lobby before the 2026-10-06 fix) |
 | `rejoin-while-chained` | a player chained on day 1 drops and rejoins through the menu: seat reserved like anyone's, taken back still chained, counted again at the table (decision 2026-10-07, D1) |
 | `rejoin-at-chaining` | a client drops as the first chaining starts and rejoins 3 s later through the menu: seat intact, no error, no desync |

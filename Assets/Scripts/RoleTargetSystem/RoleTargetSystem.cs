@@ -51,12 +51,53 @@ namespace RoleTarget
             base.OnNetworkDespawn();
         }
 
+        // Bound once the GameManager cloned its states, never from Start: Start could run before the clones exist
+        // and hook the uncloned asset, whose night start never fires (the targets of every night then piled up).
+        private GameManager boundGameManager;
+        private GameState[] boundAwakeningStates = Array.Empty<GameState>();
+
         private void Start()
         {
-            foreach (var _awakeningState in GameManager.For(NetworkManager).GetGameStates(typeof(AwakeningState)))
+            boundGameManager = GameManager.For(NetworkManager);
+            if (boundGameManager == null)
+            {
+                Diagnostics.Logs.GameLog.Warn("power", "targeting.bind.refused", "reason", "no-game-manager");
+                return;
+            }
+            boundGameManager.WhenGameStatesCreated(BindAwakeningStates);
+        }
+
+        private void BindAwakeningStates()
+        {
+            UnbindAwakeningStates();
+            boundAwakeningStates = boundGameManager.GetGameStates(typeof(AwakeningState));
+            foreach (GameState _awakeningState in boundAwakeningStates)
             {
                 _awakeningState.onStateStartClient += ResetTargetingData;
             }
+            Diagnostics.Logs.GameLog.Info("power", "targeting.bound", "states", boundAwakeningStates.Length);
+        }
+
+        private void UnbindAwakeningStates()
+        {
+            foreach (GameState _awakeningState in boundAwakeningStates)
+            {
+                if (_awakeningState != null)
+                {
+                    _awakeningState.onStateStartClient -= ResetTargetingData;
+                }
+            }
+            boundAwakeningStates = Array.Empty<GameState>();
+        }
+
+        public override void OnDestroy()
+        {
+            UnbindAwakeningStates();
+            if (boundGameManager != null)
+            {
+                boundGameManager.onGameStatesCreated -= BindAwakeningStates;
+            }
+            base.OnDestroy();
         }
 
         private void ResetTargetingData()

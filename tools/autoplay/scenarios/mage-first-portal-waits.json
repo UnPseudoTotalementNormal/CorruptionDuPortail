@@ -1,0 +1,58 @@
+{
+ "name": "mage-first-portal-waits",
+ "goal": "Liste en vrac n°3: a real client holds the Mage Occulte, a bot holds Abyss; the bots chain the Mage first, then Abyss. The portal must NOT be taken down when the Mage alone is chained (host GameLog portal.decision activate=False reason=anomalies-free), then exactly once when Abyss is chained too (portal.decision activate=True, portal.click by the client), never a second time.",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "seedRetries": 6,
+ "timescale": 3,
+ "timeout": 1500,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-fast-fakes",
+  "-autoplay-fast-phases",
+  "Intro|Chaining",
+  "-autoplay-force-roles",
+  "Mage,Abyss",
+  "-autoplay-role-holder",
+  "client,bot",
+  "-autoplay-vote-probability",
+  "1",
+  "-autoplay-vote-focus",
+  "Mage,Abyss",
+  "-autoplay-max-days",
+  "4"
+ ],
+ "expect": [
+  {
+   "type": "outcome",
+   "value": "Completed",
+   "process": "all"
+  },
+  {
+   "type": "event",
+   "kind": "roles.assigned",
+   "detail": ":client:Va'ahl",
+   "process": "host",
+   "min": 1
+  },
+  {
+   "type": "event",
+   "kind": "portal.click",
+   "process": "clients",
+   "min": 1
+  },
+  {
+   "type": "desync",
+   "max": 0
+  },
+  {
+   "type": "noErrors",
+   "process": "all",
+   "ignore": [
+    "CardEffect(TechnoBeacon|BoolEnabler): effectData",
+    "ClientLoadedSynchronization"
+   ]
+  }
+ ]
+}

@@ -350,7 +350,7 @@ namespace Autoplay
             else
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(0.6f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
-                await TourChat(_chat);
+                await TourChat(_chat, _tablet);
             }
 
             await TourDwell();
@@ -359,7 +359,7 @@ namespace Autoplay
             await TourDwell();
         }
 
-        private async UniTask TourChat(ChatPanel _chat)
+        private async UniTask TourChat(ChatPanel _chat, SmartphoneController _tablet)
         {
             ChatManager _manager = ChatManager.instance;
             if (_manager != null)
@@ -388,6 +388,14 @@ namespace Autoplay
                 if (_focused)
                 {
                     capture.Request("tour-chat", 0f);
+
+                    // The arrows belong to the text while typing (Liste en vrac n°10): they must not slide the tablet.
+                    SmartphoneApp _chatApp = _tablet.currentApp;
+                    await VirtualInput.PressKey(Key.LeftArrow).WithCancellation(Cancel);
+                    await VirtualInput.PressKey(Key.RightArrow).WithCancellation(Cancel);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.8f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    bool _stayed = _tablet.currentApp == _chatApp;
+                    TourStep("chat-arrows", _stayed, $"{_chatApp?.name} -> {_tablet.currentApp?.name} focused={_field.isFocused}");
                 }
             }
             finally

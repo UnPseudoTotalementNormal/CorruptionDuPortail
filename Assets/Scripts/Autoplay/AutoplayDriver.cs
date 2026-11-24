@@ -757,8 +757,19 @@ namespace Autoplay
                     continue;
                 }
 
-                Character _focus = string.IsNullOrEmpty(options.voteFocusRole) ? null : _targets.FirstOrDefault(_t =>
-                    _t.role != null && _t.role.roleName.ToString().IndexOf(options.voteFocusRole, StringComparison.OrdinalIgnoreCase) >= 0);
+                // A comma list is a priority order: the first listed role whose holder is still free ("Mage,Abyss":
+                // the Mage first, then Abyss once the Mage is chained).
+                Character _focus = null;
+                if (!string.IsNullOrEmpty(options.voteFocusRole))
+                {
+                    foreach (string _wanted in options.voteFocusRole.Split(','))
+                    {
+                        string _text = _wanted.Trim();
+                        _focus = _text.Length == 0 ? null : _targets.FirstOrDefault(_t =>
+                            _t.role != null && _t.role.roleName.ToString().IndexOf(_text, StringComparison.OrdinalIgnoreCase) >= 0);
+                        if (_focus != null) break;
+                    }
+                }
                 ulong _targetId = (_focus != null ? _focus : policy.Choose(_targets, "vote")).ownerClientId.Value;
                 if (options.realInput != null)
                 {
@@ -793,8 +804,10 @@ namespace Autoplay
         private void UpdatePortal(GameManager _gameManager, TakeDownThePortalState _portal)
         {
             ulong _mageId = _portal.mageCharacterOwnerId;
-            // shouldActivate is only set on the SERVER's state instance (ChainingManager); a client only receives the
-            // Mage id (SetMageCharacterRpc to all). A client Mage therefore acts on the id and lets the server decide.
+            // shouldActivate is only set on the SERVER's state instance (decided at the step's start: Mage AND every
+            // anomaly chained); a client only receives the Mage id (SetMageCharacterRpc to all, as soon as the Mage is
+            // chained). A client Mage therefore acts on the id and lets the server decide: a step the server skips is
+            // left within a frame, long before the 5 s gate below lets the client click.
             // The Mage's seat, not this peer's connection id (they differ after a rejoin).
             bool _activated = networkManager.IsServer ? _portal.shouldActivate : _mageId == LocalSeat;
             if (!_activated || !controlledIds.Contains(_mageId))

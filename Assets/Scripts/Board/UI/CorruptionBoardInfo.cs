@@ -1,7 +1,8 @@
-using System.Linq;
+using System.Collections.Generic;
 using Characters;
 using GameLogic;
 using GameLogic.GameStates;
+using MessageSystem;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
@@ -39,42 +40,73 @@ namespace Board.UI
                 return;
             }
             
-            GameState[] _awakeningStates = Query.GetGameStates(typeof(AwakeningState));
-            foreach (var _awakeningState in _awakeningStates)
+            Loop.onGameStarted += OnGameStarted;
+        }
+
+        // Bound at game start, never at spawn: GameManager clones its state assets in its own OnNetworkSpawn, and
+        // in-scene objects spawn in no guaranteed order. Subscribing at spawn could land on the uncloned asset,
+        // whose end never fires: the counter then stayed at its game-start "0/N" all game, while the bag (journal)
+        // and the morning messages, recorded from the recap, were right (playtest 2026-11-21/22).
+        private GameState[] boundAwakeningStates = System.Array.Empty<GameState>();
+
+        private void BindAwakeningStates()
+        {
+            UnbindAwakeningStates();
+            boundAwakeningStates = Query.GetGameStates(typeof(AwakeningState));
+            foreach (GameState _awakeningState in boundAwakeningStates)
             {
                 _awakeningState.onStateEndServer += OnAwakeningStateEnd;
             }
-            Loop.onGameStarted += OnGameStarted;
+            Diagnostics.Logs.GameLog.Info("board", "board.counter.bound", "kind", "corruption", "states", boundAwakeningStates.Length);
+        }
+
+        private void UnbindAwakeningStates()
+        {
+            foreach (GameState _awakeningState in boundAwakeningStates)
+            {
+                if (_awakeningState != null)
+                {
+                    _awakeningState.onStateEndServer -= OnAwakeningStateEnd;
+                }
+            }
+            boundAwakeningStates = System.Array.Empty<GameState>();
         }
 
         private void OnGameStarted()
         {
-            SetShownText(
-                $"0/{CharacterQuery.GetCharacters().Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake)}");
+            BindAwakeningStates();
+            RefreshCounter("game-start");
         }
 
         private void OnAwakeningStateEnd()
         {
-            AskForNewTextRpc();
+            RefreshCounter("awakening-end");
         }
 
-        [Rpc(SendTo.Server)]
-        private void AskForNewTextRpc()
+        // Same truth as the bag journal (MessageManager.RecordCurrentTurnStat): corrupted non-anomaly real seats.
+        private void RefreshCounter(string _reason)
         {
-            int _chosenCount = CharacterQuery.GetCharacters()
-                .Count(_c => _c.role.factionType != FactionType.anomaly && !_c.isFake);
-            int _corruptedChosenCount = CharacterQuery.GetCharacters()
-                .Count(_c => _c.role.factionType != FactionType.anomaly && _c.isCorrupted.Value && !_c.isFake);
-            SetShownText($"{_corruptedChosenCount}/{_chosenCount}");
+            List<CharacterFactionState> _states = new();
+            foreach (Character _character in CharacterQuery.GetCharacters())
+            {
+                // A seat without an attributed role (torn-down leaver) is not a participant to count.
+                if (_character.role == null)
+                {
+                    continue;
+                }
+                _states.Add(new CharacterFactionState(_character.role.factionType, _character.isFake, _character.isCorrupted.Value));
+            }
+            TurnStat _stat = TurnStatCalculator.Compute(Loop.currentDay, _states, false, 0);
+            SetShownText($"{_stat.corruptedCount}/{_stat.nonAnomalyTotal}", _reason);
         }
 
         // Replicated, not pushed by RPC: a peer that (re)joins mid-game reads the current count on spawn.
         private readonly NetworkVariable<FixedString32Bytes> shownText = new();
 
-        private void SetShownText(FixedString32Bytes _newText)
+        private void SetShownText(FixedString32Bytes _newText, string _reason)
         {
             shownText.Value = _newText;
-            Diagnostics.Logs.GameLog.Info("board", "board.counter", "kind", "corruption", "text", _newText.ToString());
+            Diagnostics.Logs.GameLog.Info("board", "board.counter", "kind", "corruption", "text", _newText.ToString(), "reason", _reason);
         }
 
         private void ShowText(FixedString32Bytes _previous, FixedString32Bytes _current)
@@ -88,6 +120,14 @@ namespace Board.UI
         public override void OnNetworkDespawn()
         {
             shownText.OnValueChanged -= ShowText;
+            if (IsServer)
+            {
+                UnbindAwakeningStates();
+                if (gameManager != null)
+                {
+                    Loop.onGameStarted -= OnGameStarted;
+                }
+            }
             base.OnNetworkDespawn();
         }
     }

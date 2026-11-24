@@ -288,6 +288,27 @@ namespace GameLogic
 
         #region GameState Methods
 
+        /// <summary>True once this peer cloned its state assets (OnNetworkSpawn): only the clones ever run.</summary>
+        public bool GameStatesCreated { get; private set; }
+
+        /// <summary>
+        /// Raised on every peer right after the state clones exist. Subscribe to a state's events from here (or
+        /// directly when <see cref="GameStatesCreated"/>), never from an Awake/Start/OnNetworkSpawn of your own:
+        /// in-scene objects start and spawn in no fixed order and could hook the uncloned asset, whose events
+        /// never fire (corruption counter frozen at 0/N, playtest 2026-11-21).
+        /// </summary>
+        public event Action onGameStatesCreated;
+
+        /// <summary>Runs <paramref name="_bind"/> now if the state clones exist, and again each time they are created.</summary>
+        public void WhenGameStatesCreated(Action _bind)
+        {
+            onGameStatesCreated += _bind;
+            if (GameStatesCreated)
+            {
+                _bind();
+            }
+        }
+
         private void SetupGameStates()
         {
             var oldGameStates = gameStates.ToDictionary(key => key.Key, value => value.Value);
@@ -318,6 +339,8 @@ namespace GameLogic
                 clonedGameState.focusManager = CompositionRoot.For(NetworkManager).FocusManager;
                 clonedGameState.OnStateCreated();
             }
+            GameStatesCreated = true;
+            onGameStatesCreated?.Invoke();
         }
         
         public void SetGameState(GameState _gameState)

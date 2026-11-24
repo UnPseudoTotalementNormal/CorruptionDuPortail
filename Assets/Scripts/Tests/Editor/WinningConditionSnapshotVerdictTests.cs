@@ -180,5 +180,76 @@ namespace Tests.Editor
                     $"An UNCHAINED owner must not win (faction {faction}, corrupted {corrupted}).");
             }
         }
+
+        // ───────────────────────────── PortalTakedownRule (Mage Occulte) ─────────────────────────────
+        // GD bug 2026-11-24: chaining the Mage first took the portal down at once, then again when Abyss got chained.
+        // The portal comes down once, when EVERY anomaly is chained, whatever the chaining order.
+
+        [Test]
+        public void Portal_DoesNotPlay_WhenTheMageIsChainedFirst_AndAbyssIsStillFree()
+        {
+            var snapshot = Snapshot(
+                Char(1, isChained: true, factionType: FactionType.anomaly),   // Mage Occulte, chained first
+                Char(2, isChained: false, factionType: FactionType.anomaly),  // Abyss, still free
+                Char(3, factionType: FactionType.chosen));
+
+            PortalTakedownRule.Decision decision = PortalTakedownRule.Decide(snapshot, carrierChained: true, alreadyPlayed: false);
+
+            Assert.IsFalse(decision.Activate, "The Mage alone chained must not take the portal down.");
+            Assert.AreEqual("anomalies-free", decision.Reason);
+            CollectionAssert.AreEqual(new ulong[] { 2 }, decision.FreeAnomalies);
+        }
+
+        [Test]
+        public void Portal_Plays_OnceEveryAnomalyIsChained_WhateverTheOrder()
+        {
+            var snapshot = Snapshot(
+                Char(1, isChained: true, factionType: FactionType.anomaly),
+                Char(2, isChained: true, factionType: FactionType.anomaly),
+                Char(3, factionType: FactionType.chosen));
+
+            PortalTakedownRule.Decision decision = PortalTakedownRule.Decide(snapshot, carrierChained: true, alreadyPlayed: false);
+
+            Assert.IsTrue(decision.Activate);
+            Assert.AreEqual("all-anomalies-chained", decision.Reason);
+            CollectionAssert.IsEmpty(decision.FreeAnomalies);
+        }
+
+        [Test]
+        public void Portal_DoesNotPlayTwice()
+        {
+            var snapshot = Snapshot(
+                Char(1, isChained: true, factionType: FactionType.anomaly),
+                Char(2, isChained: true, factionType: FactionType.anomaly));
+
+            PortalTakedownRule.Decision decision = PortalTakedownRule.Decide(snapshot, carrierChained: true, alreadyPlayed: true);
+
+            Assert.IsFalse(decision.Activate, "The portal is taken down once per game.");
+            Assert.AreEqual("already-played", decision.Reason);
+        }
+
+        [Test]
+        public void Portal_DoesNotPlay_WithoutAChainedCarrier()
+        {
+            // Every anomaly chained but no portal carrier (no Mage in the game): nothing to take down.
+            var snapshot = Snapshot(Char(2, isChained: true, factionType: FactionType.anomaly));
+
+            Assert.IsFalse(PortalTakedownRule.Decide(snapshot, carrierChained: false, alreadyPlayed: false).Activate);
+        }
+
+        [Test]
+        public void Portal_IgnoresFakeAnomalies_AndNonAnomalies()
+        {
+            // Same filter as WChosenChainedAllAnomaly: a free fake anomaly or a free chosen does not hold the portal back.
+            var snapshot = Snapshot(
+                Char(1, isChained: true, factionType: FactionType.anomaly),
+                Char(2, isChained: false, factionType: FactionType.anomaly, isFake: true),
+                Char(3, isChained: false, factionType: FactionType.chosen),
+                Char(4, isChained: false, factionType: FactionType.marginal));
+
+            Assert.IsTrue(PortalTakedownRule.Decide(snapshot, carrierChained: true, alreadyPlayed: false).Activate);
+            Assert.IsTrue(new WChosenChainedAllAnomaly().CheckCondition(snapshot),
+                "The portal opens exactly when the chosen win it precedes would.");
+        }
     }
 }

@@ -109,8 +109,9 @@ namespace GameLogic
             
             if (_character.role.powers.Any(_p => _p.IsTheSamePower(takeDownThePortalPowerDataObject)))
             {
+                // Records the carrier only: the step plays once every anomaly is chained (TakeDownThePortalState decides).
                 var _portalState = (TakeDownThePortalState)_gameManager.GetGameStates(typeof(TakeDownThePortalState)).First();
-                _portalState.shouldActivate = true;
+                _portalState.OnCarrierChainedServer(_character.ownerClientId.Value);
                 Diagnostics.Logs.GameLog.Info("portal", "portal.carrier", "mage", _character.ownerClientId.Value, "leave", _showCardReveal);
                     
                 _gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(TakeDownThePortalState.SetMageCharacterRpc),

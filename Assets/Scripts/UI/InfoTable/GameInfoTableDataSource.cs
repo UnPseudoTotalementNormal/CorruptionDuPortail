@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Characters;
 using GameLogic;
+using GameLogic.GameStates;
+using Diagnostics.Logs;
 using UnityEngine;
 
 namespace UI.InfoTable
@@ -66,7 +68,29 @@ namespace UI.InfoTable
                 if (idx >= 0) caps[idx] = new KeyValuePair<Role, int>(caps[idx].Key, caps[idx].Value + 1);
                 else caps.Add(new KeyValuePair<Role, int>(c.role, 1));
             }
-            return caps.Select(rc => new InfoTableRole(rc.Key.roleName.ToString(), rc.Value, rc.Key.factionType)).ToList();
+            // Columns in a fixed order (night call order, then role id), never in the characters' order: rows follow
+            // the arrival order and the characters list is that same order, so deriving the columns from it put every
+            // player's own role on the diagonal and gave every role away (task « Randomiser le tableau »).
+            AwakeningState state = GetAwakeningState();
+            List<InfoTableRole> ordered = caps
+                .OrderBy(rc => state != null ? state.GetAwakeningLayerIndex(rc.Key) : int.MaxValue)
+                .ThenBy(rc => (int)rc.Key.roleID)
+                .Select(rc => new InfoTableRole(rc.Key.roleName.ToString(), rc.Value, rc.Key.factionType))
+                .ToList();
+            GameLog.Guarded(() => GameLog.Info("infotable", "infotable.columns",
+                "order", string.Join(",", ordered.Select(r => r.RoleName)), "awakening", state != null));
+            return ordered;
+        }
+
+        private AwakeningState _awakeningState;
+
+        private AwakeningState GetAwakeningState()
+        {
+            if (_awakeningState == null && gameManager != null)
+            {
+                _awakeningState = (AwakeningState)((IGameStateQuery)gameManager).GetGameStates(typeof(AwakeningState)).FirstOrDefault();
+            }
+            return _awakeningState;
         }
 
         public string GetRevealedRoleName(ulong clientId)

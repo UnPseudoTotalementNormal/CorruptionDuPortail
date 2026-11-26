@@ -699,10 +699,19 @@ namespace Autoplay
             {
                 return false;
             }
-            if (!AutoplayUiLocator.TryLocateUitkElement(_find(), _raw, out Vector2 _screen, out string _detail))
+            // The panel may rebuild during the glide (the lobby tablet while the other players join): the new element
+            // has no position for a few frames. Wait for it like a player (bounded), not a miss at once (2026-11-26).
+            Vector2 _screen;
+            string _detail;
+            float _layoutDeadline = Time.realtimeSinceStartup + 5f;
+            while (!AutoplayUiLocator.TryLocateUitkElement(_find(), _raw, out _screen, out _detail))
             {
-                Journal.Record("input.miss", $"{_action} target={AutoplayUiLocator.DescribeElement(_find())} {_detail} mode=pointer");
-                return false;
+                if (_detail != "reason=not-laid-out" || Time.realtimeSinceStartup >= _layoutDeadline)
+                {
+                    Journal.Record("input.miss", $"{_action} target={AutoplayUiLocator.DescribeElement(_find())} {_detail} mode=pointer");
+                    return false;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, Cancel);
             }
             await VirtualInput.MoveTo(_screen, 0f).WithCancellation(Cancel);
             await VirtualInput.Click().WithCancellation(Cancel);

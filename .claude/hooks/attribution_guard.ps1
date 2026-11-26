@@ -44,7 +44,7 @@ try {
         # (blocked a clean commit on 2026-11-26, PR #230). Its new text is in the command, already checked above.
         # Only an overwrite: an append (`>>`, `tee -a`, Add-Content) keeps the old text, which is still read.
         $writes = '(?:(?<!>)>(?!>)|\btee(?!\s+-a)|\b(?:Out-File|Set-Content)(?:\s+-(?:FilePath|LiteralPath|Path))?)\s*["'']?'
-        if ($cmd -match ($writes + [regex]::Escape($msgFile) + '(?:["'']|\s|$)')) { continue }
+        if ($cmd -match ($writes + [regex]::Escape($msgFile) + '(?:["'';&|)]|\s|$)')) { continue }
         if ($msgFile -match '^/tmp/(.*)$') { $msgFile = Join-Path $env:TEMP $Matches[1] }
         elseif ($msgFile -match '^/([a-zA-Z])/(.*)$') { $msgFile = "$($Matches[1]):/$($Matches[2])" }
         if ($repo -and -not [IO.Path]::IsPathRooted($msgFile)) { $msgFile = Join-Path $repo $msgFile }

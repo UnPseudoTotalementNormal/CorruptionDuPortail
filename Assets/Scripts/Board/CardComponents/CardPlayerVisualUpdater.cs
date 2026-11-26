@@ -87,6 +87,22 @@ namespace Board.CardComponents
             SetFaction(FactionType.unknown);
         }
 
+        public void SetKnownFaction(FactionType _factionType)
+        {
+            // The hidden card keeps its fog and its unknown portrait: only the faction corner changes (the logo a
+            // revealed card shows there), so nothing about the role leaks.
+            bool _show = _factionType != FactionType.unknown && _visualComponents.factionLogo.ContainsKey(_factionType);
+            Sprite _logo = _show ? _visualComponents.factionLogo[_factionType] : null;
+            _visualComponents.factionLogoImage.sprite = _logo;
+            _visualComponents.bsFactionLogoImage.sprite = _logo;
+            _visualComponents.factionLogoBackgroundImage.sprite =
+                _show && _visualComponents.factionLogoBackground.ContainsKey(_factionType) ? _visualComponents.factionLogoBackground[_factionType] : null;
+            _visualComponents.factionLogoImage.gameObject.SetActive(_show);
+            _visualComponents.bsFactionLogoImage.gameObject.SetActive(_show);
+            // The background image is the logo's parent (CardClassHolder): same switch as SetFaction.
+            _visualComponents.factionLogoBackgroundImage.gameObject.SetActive(_show);
+        }
+
         public void SetChainedOverlay(bool _isChained, bool _instant = false)
         {
             if (lastIsChainedStatus == _isChained)

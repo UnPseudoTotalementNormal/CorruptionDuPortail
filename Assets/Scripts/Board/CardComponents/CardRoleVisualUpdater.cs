@@ -56,6 +56,11 @@ namespace Board.CardComponents
             visualComponents.cardRoleText.SetLoc(_roleText);
         }
         
+        public void SetKnownFaction(FactionType _factionType)
+        {
+            // A role card always shows its own faction.
+        }
+
         public void SetUnknownWithPseudo(string _pseudo)
         {
             Debug.LogWarning("SetUnknownWithPseudo should not be called as this is a role card");

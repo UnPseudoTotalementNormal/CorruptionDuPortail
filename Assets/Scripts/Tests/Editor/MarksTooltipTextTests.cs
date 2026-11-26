@@ -49,6 +49,15 @@ namespace Tests.Editor
         }
 
         [Test]
+        public void StateMarks_PublicElu_Chained_Hacked_HaveTheirOwnIcons()
+        {
+            // Fil « Joueur perdu »: marks read from the player's state, not from a card effect.
+            Assert.AreEqual(MarksTooltipText.MarkIcon.logo_elu, MarksTooltipText.KnownChosen().Icon);
+            Assert.AreEqual(MarksTooltipText.MarkIcon.chaine, MarksTooltipText.Chained().Icon);
+            Assert.AreEqual(MarksTooltipText.MarkIcon.robot, MarksTooltipText.Hacked().Icon);
+        }
+
+        [Test]
         public void SpriteAsset_HasEveryIcon()
         {
             var _asset = Resources.Load<TMPro.TMP_SpriteAsset>("Sprite Assets/Marques");

@@ -169,7 +169,7 @@
       "en": "The selected role is not in play, but it has no active power to copy."
     },
     {
-      "fr": "{0} à été soigné(e) pendant la nuit avec {1}",
+      "fr": "{0} a été soigné(e) pendant la nuit avec {1}",
       "en": "{0} was healed during the night with {1}"
     },
     {
@@ -1585,12 +1585,12 @@
       "en": "Healed"
     },
     {
-      "fr": "Ce joueur a été soigné.",
-      "en": "This player has been healed."
+      "fr": "Déjà soigné : il ne peut plus être soigné, mais peut encore être corrompu.",
+      "en": "Already healed: they can no longer be healed, but can still be corrupted."
     },
     {
-      "fr": "La Dryade a béni ce joueur.",
-      "en": "The Dryad blessed this player."
+      "fr": "La Dryade protège ce joueur : il est immunisé à la Corruption Ciblée et à la Marque corruptrice.",
+      "en": "The Dryad protects this player: they are immune to Targeted Corruption and the Corrupting Mark."
     },
     {
       "fr": "Balise",
@@ -1675,6 +1675,18 @@
     {
       "fr": "Effets",
       "en": "Effects"
+    },
+    {
+      "fr": "Dr Gloubi l'a soigné : c'est un élu.",
+      "en": "Dr Gloubi healed them: they are a Chosen."
+    },
+    {
+      "fr": "Ce joueur a été enchaîné.",
+      "en": "This player has been chained."
+    },
+    {
+      "fr": "Tu as piraté ce joueur : s'il se fait enchaîner aujourd'hui, tu gagnes.",
+      "en": "You hacked this player: if they get chained today, you win."
     }
   ]
 }

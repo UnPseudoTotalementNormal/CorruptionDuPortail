@@ -505,6 +505,7 @@ namespace Autoplay
                 tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourTooltipTargets = _context.Config.Option("tour-tooltip-targets"),
                 tourFromDay = int.TryParse(_context.Config.Option("tour-day"), out int _tourDay) ? _tourDay : 0,
+                tourAfterTurn = _context.Config.Flag("tour-after-turn"),
                 tourAudioSlider = true,
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
@@ -1789,6 +1790,7 @@ namespace Autoplay
                 tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourTooltipTargets = _context.Config.Option("tour-tooltip-targets"),
                 tourFromDay = int.TryParse(_context.Config.Option("tour-day"), out int _tourDay) ? _tourDay : 0,
+                tourAfterTurn = _context.Config.Flag("tour-after-turn"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),

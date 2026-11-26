@@ -100,6 +100,8 @@ namespace Autoplay
         public string tourTooltipTargets;
         [Tooltip("Real-input tour (-autoplay-tour-day <N>): the night tour waits for night N (T9: the card marks exist from the second night). 0 = the first night.")]
         public int tourFromDay;
+        [Tooltip("Real-input tour (-autoplay-tour-after-turn): the night tour waits until this process's own seat has had its turn that night (then for a moment where no seat it plays is awake: a fake-role layer) (what its power did is then on the board, e.g. the Robot's hack).")]
+        public bool tourAfterTurn;
         [Tooltip("This peer starts in the middle of a phase (a rejoin): no state hash for that first phase, the host sampled it before the peer was back.")]
         public bool joinedMidPhase;
         [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]
@@ -490,6 +492,7 @@ namespace Autoplay
             CurrentState = _state;
             CurrentStateRealSince = Time.realtimeSinceStartup;
             stateEnterGameTime = Time.time;
+            controlledWokeThisState = false;
             turns.Clear();
             votedThisState.Clear();
             chatSentThisState.Clear();

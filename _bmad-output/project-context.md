@@ -197,6 +197,11 @@ A text written the old way compiles, reads fine in French and stays French for a
   literal, or a worded literal handed to `.text =` / `new Label(` / a chat or error message, on a line without `Loc.` /
   `SetLoc`. Marks on the line: `// loc` (a game text translated where it is displayed), `// loc-ok` (no player reads it).
   `python .claude/tools/loc_guard.py --scan` audits the tree, `--test` checks the guard.
+- **Spelling** (French and English): `.claude/tools/spell_guard.py` (hook, blocking at `git commit`) has Claude proofread
+  every `texts.json` value the commit adds or changes (spelling, agreement, conjugation, accents, space before
+  `: ; ! ?`). A fix changes the French key: change it where it is written (.cs, prefab FixedString, asset, scene) and
+  in the table together. False positive: the exact text in `.claude/tools/spell_guard_ok.txt`. `--scan` audits the
+  whole table (2026-11-26: 37 mistakes, e.g. "X à été soigné(e)", "Choissisez", "tout les").
 
 ## UI Toolkit gotchas
 

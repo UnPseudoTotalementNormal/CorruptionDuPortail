@@ -72,35 +72,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   powerName:
-    utf8LengthInBytes: 22
+    utf8LengthInBytes: 23
     bytes:
       offset0000:
         byte0000: 67
         byte0001: 104
         byte0002: 97
-        byte0003: 105
-        byte0004: 110
-        byte0005: 101
-        byte0006: 115
-        byte0007: 32
-        byte0008: 100
-        byte0009: 101
-        byte0010: 32
-        byte0011: 108
-        byte0012: 97
-        byte0013: 32
-        byte0014: 118
-        byte0015: 195
+        byte0003: 195
+        byte0004: 174
+        byte0005: 110
+        byte0006: 101
+        byte0007: 115
+        byte0008: 32
+        byte0009: 100
+        byte0010: 101
+        byte0011: 32
+        byte0012: 108
+        byte0013: 97
+        byte0014: 32
+        byte0015: 118
       offset0016:
-        byte0000: 169
-        byte0001: 114
-        byte0002: 105
-        byte0003: 116
-        byte0004: 195
-        byte0005: 169
-        byte0006: 0
+        byte0000: 195
+        byte0001: 169
+        byte0002: 114
+        byte0003: 105
+        byte0004: 116
+        byte0005: 195
+        byte0006: 169
         byte0007: 0
         byte0008: 0
         byte0009: 0
@@ -142,7 +145,7 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 90
+    utf8LengthInBytes: 91
     bytes:
       offset0000:
         byte0000: 85
@@ -236,11 +239,11 @@ MonoBehaviour:
         byte0003: 99
         byte0004: 104
         byte0005: 97
-        byte0006: 105
-        byte0007: 110
-        byte0008: 101
-        byte0009: 46
-        byte0010: 0
+        byte0006: 195
+        byte0007: 174
+        byte0008: 110
+        byte0009: 101
+        byte0010: 46
         byte0011: 0
         byte0012: 0
         byte0013: 0
@@ -688,9 +691,13 @@ MonoBehaviour:
   power3DObjectPrefab: {fileID: 3245880280135125293, guid: 3067e730f4cd3cb459795ca12db5c28a, type: 3}
   maxWaitTime: 0
   isPassive: 0
+  hideFromRoleCard: 0
   hasToBeAwakened: 1
   targetIncludeFlags: 146
   powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   maxPowerUse: 1
   powerUseRegenPerAwakening: 0
@@ -708,6 +715,37 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 0}
+  grantOrder:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  passiveOverride:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  marqueSourceId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   powerComponents: []
   idHolderServer: 0
   pickerDescription: "Choisissez un joueur \xE0 lier par les cha\xEEnes de la v\xE9rit\xE9."

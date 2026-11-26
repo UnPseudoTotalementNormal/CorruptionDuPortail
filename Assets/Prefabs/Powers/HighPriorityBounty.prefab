@@ -72,6 +72,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 17
@@ -142,7 +145,7 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 136
+    utf8LengthInBytes: 137
     bytes:
       offset0000:
         byte0000: 195
@@ -283,13 +286,13 @@ MonoBehaviour:
       offset0128:
         byte0000: 104
         byte0001: 97
-        byte0002: 105
-        byte0003: 110
-        byte0004: 195
-        byte0005: 169
-        byte0006: 101
-        byte0007: 46
-        byte0008: 0
+        byte0002: 195
+        byte0003: 174
+        byte0004: 110
+        byte0005: 195
+        byte0006: 169
+        byte0007: 101
+        byte0008: 46
         byte0009: 0
         byte0010: 0
         byte0011: 0
@@ -688,9 +691,13 @@ MonoBehaviour:
   power3DObjectPrefab: {fileID: 7591557866817641269, guid: 32a33f5f250fc7147b4fc5910c7b3777, type: 3}
   maxWaitTime: 60
   isPassive: 0
+  hideFromRoleCard: 0
   hasToBeAwakened: 1
   targetIncludeFlags: 148
   powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
     m_InternalValue: 0
   maxPowerUse: 1
   powerUseRegenPerAwakening: -1
@@ -708,6 +715,37 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 0}
+  grantOrder:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  passiveOverride:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  marqueSourceId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   powerComponents: []
   idHolderServer: 0
   targetRoleID: 3917

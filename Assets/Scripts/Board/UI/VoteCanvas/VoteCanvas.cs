@@ -107,7 +107,7 @@ namespace Board.UI.VoteCanvas
             }
             else
             {
-                votesText.SetLoc("Votes: {0}", voteCount);
+                votesText.SetLoc("Votes : {0}", voteCount);
             }
         }
         

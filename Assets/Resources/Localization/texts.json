@@ -78,7 +78,7 @@
     },
     {
       "fr": "Joueur ?",
-      "en": "Player ?"
+      "en": "Player?"
     },
     {
       "fr": "{0} (parti)",
@@ -173,15 +173,15 @@
       "en": "{0} was healed during the night with {1}"
     },
     {
-      "fr": "Si {0} est enchainé, {1} hérite de \"{2}\".",
+      "fr": "Si {0} est enchaîné, {1} hérite de \"{2}\".",
       "en": "If {0} is chained, {1} inherits \"{2}\"."
     },
     {
-      "fr": "Le robot a un nouvel état de corruption: {0}",
+      "fr": "Le robot a un nouvel état de corruption : {0}",
       "en": "The robot has a new corruption state: {0}"
     },
     {
-      "fr": "{0} a un nouvel état de corruption: {1}",
+      "fr": "{0} a un nouvel état de corruption : {1}",
       "en": "{0} has a new corruption state: {1}"
     },
     {
@@ -249,11 +249,11 @@
       "en": "The password must be at most {0} characters long"
     },
     {
-      "fr": "Impossible de créer le lobby: {0}",
+      "fr": "Impossible de créer le lobby : {0}",
       "en": "Could not create the lobby: {0}"
     },
     {
-      "fr": "Impossible de récupérer les lobbies: {0}",
+      "fr": "Impossible de récupérer les lobbies : {0}",
       "en": "Could not fetch the lobbies: {0}"
     },
     {
@@ -261,7 +261,7 @@
       "en": "The lobby ID cannot be empty"
     },
     {
-      "fr": "Impossible de rejoindre le lobby: {0}",
+      "fr": "Impossible de rejoindre le lobby : {0}",
       "en": "Could not join the lobby: {0}"
     },
     {
@@ -269,23 +269,23 @@
       "en": "The lobby code cannot be empty"
     },
     {
-      "fr": "Code invalide ou lobby introuvable: {0}",
+      "fr": "Code invalide ou lobby introuvable : {0}",
       "en": "Invalid code or lobby not found: {0}"
     },
     {
-      "fr": "Impossible de rejoindre la partie: {0}",
+      "fr": "Impossible de rejoindre la partie : {0}",
       "en": "Could not join the game: {0}"
     },
     {
-      "fr": "Impossible de quitter le lobby: {0}",
+      "fr": "Impossible de quitter le lobby : {0}",
       "en": "Could not leave the lobby: {0}"
     },
     {
-      "fr": "Impossible de supprimer le lobby: {0}",
+      "fr": "Impossible de supprimer le lobby : {0}",
       "en": "Could not delete the lobby: {0}"
     },
     {
-      "fr": "Connexion au lobby perdue: {0}",
+      "fr": "Connexion au lobby perdue : {0}",
       "en": "Connection to the lobby lost: {0}"
     },
     {
@@ -293,7 +293,7 @@
       "en": "No active lobby"
     },
     {
-      "fr": "Impossible de verrouiller le lobby: {0}",
+      "fr": "Impossible de verrouiller le lobby : {0}",
       "en": "Could not lock the lobby: {0}"
     },
     {
@@ -545,11 +545,11 @@
       "en": "<color={1}>{0}</color> players targeted the <color={2}>Robot</color>"
     },
     {
-      "fr": "restant: ∞",
+      "fr": "restant : ∞",
       "en": "left: ∞"
     },
     {
-      "fr": "restant: {0}",
+      "fr": "restant : {0}",
       "en": "left: {0}"
     },
     {
@@ -613,7 +613,7 @@
       "en": "Has not voted"
     },
     {
-      "fr": "Votes: {0}",
+      "fr": "Votes : {0}",
       "en": "Votes: {0}"
     },
     {
@@ -649,11 +649,11 @@
       "en": "Your guess was wrong, {0} is not {1}."
     },
     {
-      "fr": "Le role {0} n'a ciblé aucun rôle.",
+      "fr": "Le rôle {0} n'a ciblé aucun rôle.",
       "en": "The role {0} targeted no role."
     },
     {
-      "fr": "Le role {0} a ciblé ces rôles:",
+      "fr": "Le rôle {0} a ciblé ces rôles :",
       "en": "The role {0} targeted these roles:"
     },
     {
@@ -793,7 +793,7 @@
       "en": "The Technomancer"
     },
     {
-      "fr": "La Chasseuse de Prime",
+      "fr": "La Chasseuse de Primes",
       "en": "The Bounty Hunter"
     },
     {
@@ -1013,7 +1013,7 @@
       "en": "Blessing"
     },
     {
-      "fr": "Elle peut tenter de deviner le rôle d'un autre élu pour le soigner de la corruption et qu'il soit immunisé au pouvoir \"Corruption Ciblée\" du Mage Occulte pour la partie.\n\nAttention : elle ne peut pas cibler des élus ayant déjà été soignés cette partie ou qui ont été enchaînés.",
+      "fr": "Elle peut tenter de deviner le rôle d'un autre élu pour le soigner de la corruption et qu'il soit immunisé contre le pouvoir \"Corruption Ciblée\" du Mage Occulte pour la partie.\n\nAttention : elle ne peut pas cibler des élus ayant déjà été soignés cette partie ou qui ont été enchaînés.",
       "en": "She can try to guess another Chosen's role to heal them of corruption and make them immune to the Occult Mage's \"Targeted Corruption\" power for the rest of the game.\n\nWarning: she cannot target Chosen who have already been healed this game or who have been chained."
     },
     {
@@ -1085,7 +1085,7 @@
       "en": "Corruption Insight"
     },
     {
-      "fr": "Permet de connaitre l'état de corruption des joueurs.",
+      "fr": "Permet de connaître l'état de corruption des joueurs.",
       "en": "Reveals the corruption state of the players."
     },
     {
@@ -1141,11 +1141,11 @@
       "en": "Chaining"
     },
     {
-      "fr": "Lorsque ce pouvoir réussi, il peut être réutilisé, jusqu'à {var:maxChain} fois.",
+      "fr": "Lorsque ce pouvoir réussit, il peut être réutilisé, jusqu'à {var:maxChain} fois.",
       "en": "When this power succeeds, it can be used again, up to {var:maxChain} times."
     },
     {
-      "fr": "Oeil du néant",
+      "fr": "Œil du néant",
       "en": "Eye of the Void"
     },
     {
@@ -1153,7 +1153,7 @@
       "en": "High-Priority Bounty"
     },
     {
-      "fr": "À son éveil, elle peut désamorcer un joueur. Si c'est le Robot, il est publiquement éliminé au réveil. Sinon, elle est enchainée.",
+      "fr": "À son éveil, elle peut désamorcer un joueur. Si c'est le Robot, il est publiquement éliminé au réveil. Sinon, elle est enchaînée.",
       "en": "On her awakening, she can defuse a player. If it is the Robot, it is publicly eliminated at wake-up. Otherwise, she gets chained."
     },
     {
@@ -1161,7 +1161,7 @@
       "en": "Choose a player to eliminate."
     },
     {
-      "fr": "Messages infini",
+      "fr": "Messages infinis",
       "en": "Infinite Messages"
     },
     {
@@ -1217,8 +1217,8 @@
       "en": "Reincarnation"
     },
     {
-      "fr": "Il peut copier tout les pouvoirs d’un autre élu disponible pour le reste de la partie\n\nIl continuera la partie sous l’identité de l’incomplet.",
-      "en": "He can copy all the powers of another available Chosen for the rest of the game\n\nHe carries on the game under the identity of the Incomplete."
+      "fr": "Il peut copier tous les pouvoirs d’un autre élu disponible pour le reste de la partie.\n\nIl continuera la partie sous l’identité de l’Incomplet.",
+      "en": "He can copy all the powers of another available Chosen for the rest of the game.\n\nHe carries on the game under the identity of the Incomplete."
     },
     {
       "fr": "Choisissez le rôle dans lequel vous réincarner.",
@@ -1257,11 +1257,11 @@
       "en": "Concentration"
     },
     {
-      "fr": "Chaines de la vérité",
+      "fr": "Chaînes de la vérité",
       "en": "Chains of Truth"
     },
     {
-      "fr": "Une fois par partie, il peut cibler un joueur et si c’est une anomalie, il l’enchaine.",
+      "fr": "Une fois par partie, il peut cibler un joueur et si c’est une anomalie, il l’enchaîne.",
       "en": "Once per game, he can target a player; if it is an Anomaly, he chains them."
     },
     {
@@ -1273,7 +1273,7 @@
       "en": "Vision of the Impossible"
     },
     {
-      "fr": "A son éveil, elle choisit deux joueurs et propose deux rôles Élus qu'ils pourraient potentiellement avoir.\n\nElle obtient, sans précision, une confirmation sur la véracité de ses prédictions.",
+      "fr": "À son éveil, elle choisit deux joueurs et propose deux rôles Élus qu'ils pourraient potentiellement avoir.\n\nElle obtient, sans précision, une confirmation sur la véracité de ses prédictions.",
       "en": "On her awakening, she picks two players and proposes two Chosen roles they might have.\n\nShe gets a confirmation, without details, of whether her predictions are true."
     },
     {
@@ -1317,7 +1317,7 @@
       "en": "Corruption"
     },
     {
-      "fr": "Chaque joueur peut être corrompu, lorsque tout les joueurs non-anomalie sont corrompu, les anomalies gagnent",
+      "fr": "Chaque joueur peut être corrompu, lorsque tous les joueurs non-anomalie sont corrompus, les anomalies gagnent",
       "en": "Each player can be corrupted; when all non-anomaly players are corrupted, the Anomalies win"
     },
     {
@@ -1329,11 +1329,11 @@
       "en": "Number of people who interacted with the robot this night"
     },
     {
-      "fr": "Choissisez un rôle !",
+      "fr": "Choisissez un rôle !",
       "en": "Choose a role!"
     },
     {
-      "fr": "Choissisez un joueur !",
+      "fr": "Choisissez un joueur !",
       "en": "Choose a player!"
     },
     {
@@ -1441,7 +1441,7 @@
       "en": "Quit"
     },
     {
-      "fr": "Menu d'hebergement",
+      "fr": "Menu d'hébergement",
       "en": "Host menu"
     },
     {
@@ -1457,11 +1457,11 @@
       "en": "Password... (or none)"
     },
     {
-      "fr": "Heberger",
+      "fr": "Héberger",
       "en": "Host"
     },
     {
-      "fr": "Menu de connection",
+      "fr": "Menu de connexion",
       "en": "Join menu"
     },
     {
@@ -1549,7 +1549,7 @@
       "en": "OK"
     },
     {
-      "fr": "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel: {var:legacyStatus}.",
+      "fr": "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel : {var:legacyStatus}.",
       "en": "If a {var:legacyRoleName} is chained, the power becomes usable.\nCurrent state: {var:legacyStatus}."
     },
     {

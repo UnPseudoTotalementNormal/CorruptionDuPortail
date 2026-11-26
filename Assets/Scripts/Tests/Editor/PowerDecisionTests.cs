@@ -691,7 +691,7 @@ namespace Tests.Editor
                 new NewTargeting(0, 1),
                 new ChatBroadcast(
                     Loc.Token("Votre supposition était incorrecte, {0} n'est pas {1}.", "Bob", Loc.Token("Sorcier")) +
-                    "\n" + Loc.Token("Le role {0} a ciblé ces rôles:", Loc.Token("Sorcier")) +
+                    "\n" + Loc.Token("Le rôle {0} a ciblé ces rôles :", Loc.Token("Sorcier")) +
                     "\n- " + Loc.Token("Robot") + "\n- " + Loc.Token("Élu"),
                     -1, PowerEffectAudience.Specific(0)),
             }, outcome.Effects);
@@ -718,14 +718,14 @@ namespace Tests.Editor
         public void ChatMessage_WithARoleName_IsReadInEachPlayersLanguage()
         {
             var roster = new FakeRoster { Slots = new[] { 0, 1 } };
-            roster.Robots.Add(1); roster.Pseudos[1] = "Bob"; roster.RoleNames[0] = "La Chasseuse de Prime";
+            roster.Robots.Add(1); roster.Pseudos[1] = "Bob"; roster.RoleNames[0] = "La Chasseuse de Primes";
             var outcome = new HighPriorityBountyDecision().Decide(new PowerContext(ownerSlot: 0, targetSlot: 1, roster: roster));
             string sent = ((ChatBroadcast)outcome.Effects[2]).Message;
 
             Localization.LocalizationRuntime.LoadTables();
             try
             {
-                Assert.AreEqual("Bob était le robot et a été éliminé par La Chasseuse de Prime.", Loc.Resolve(sent));
+                Assert.AreEqual("Bob était le robot et a été éliminé par La Chasseuse de Primes.", Loc.Resolve(sent));
                 Loc.SetLanguage(GameLanguage.English);
                 Assert.AreEqual("Bob was the robot and was eliminated by The Bounty Hunter.", Loc.Resolve(sent));
                 CollectionAssert.IsEmpty(Loc.MissingTexts);
@@ -750,7 +750,7 @@ namespace Tests.Editor
             try
             {
                 Assert.AreEqual(
-                    "Votre supposition était incorrecte, Bob n'est pas Le Gardien.\nLe role Le Gardien a ciblé ces rôles:\n- Le Robot\n- L'Orpheline",
+                    "Votre supposition était incorrecte, Bob n'est pas Le Gardien.\nLe rôle Le Gardien a ciblé ces rôles :\n- Le Robot\n- L'Orpheline",
                     Loc.Resolve(sent));
                 Loc.SetLanguage(GameLanguage.English);
                 Assert.AreEqual(
@@ -773,7 +773,7 @@ namespace Tests.Editor
             var targeted = new[]
             {
                 "Luma, la croupière", "Dr Gloubi", "La Dryade", "Le Gardien", "Geôlier", "L'Incomplet", "Le Messager",
-                "Nara, l'oracle brisée", "L'Orpheline", "Le Repenti", "Le Technomancien", "La Chasseuse de Prime",
+                "Nara, l'oracle brisée", "L'Orpheline", "Le Repenti", "Le Technomancien", "La Chasseuse de Primes",
             };
             var state = new FakeState().With<ICardsShufflingGuess>(new FakeCards
             {

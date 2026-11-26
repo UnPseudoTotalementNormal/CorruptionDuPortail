@@ -85,6 +85,8 @@ namespace Autoplay
         }
 
         private bool seatedViewApplied;
+        // seated-view botseats=1: the host draws a still stand-in cat (and its light) on every simulated player's seat.
+        private bool standInCats;
 
         // Lever -autoplay-seated-view "h=…,pitch=…,r=…,scale=…,round=0|1,stand=0|1" (T16 view comparisons): applied
         // once the seated rig exists, never saved (PlayerPrefs are shared by every process). Journal seated.view.
@@ -120,14 +122,21 @@ namespace Autoplay
                     case "scale": _avatars.SeatedAvatarScale = _value; break;
                     case "round": _viewOptions?.SetRoundTable(_value > 0.5f, false); break;
                     case "stand": _viewOptions?.SetCardsStand(_value > 0.5f, false); break;
+                    case "dayscale": _avatars.DaySeatedAvatarScale = _value; break;
+                    case "botseats": _avatars.SeatSimulatedPlayers = _value > 0.5f; standInCats = _value > 0.5f; break;
+                    case "vis": _avatars.DayMinVisibleShare = _value; break;
+                    case "ringr": _avatars.DayRingRadius = _value; break;
+                    case "ringstep": _avatars.DayRingPerSeat = _value; break;
+                    case "fov": _camera.FieldOfView = _value; break;
+                    case "chainshrink": _avatars.DayChainShrinks = _value > 0.5f; break;
                     case "standamt": if (_viewOptions != null) { _viewOptions.StandAmount = _value; } break;
                     default: Journal.Record("vis.error", $"seated-view: unknown key '{_kv[0]}'"); break;
                 }
             }
             Journal.Record("seated.view", string.Format(CultureInfo.InvariantCulture,
-                "h={0} pitch={1} clamp={6} r={2} scale={3} round={4} stand={5} standamt={7}", _camera.HeightOffset, _camera.RestPitch,
+                "h={0} pitch={1} clamp={6} r={2} scale={3} round={4} stand={5} standamt={7} ringr={8} ringstep={9} chainshrink={10} fov={11}", _camera.HeightOffset, _camera.RestPitch,
                 _avatars.RemoteRingRadius, _avatars.SeatedAvatarScale, _viewOptions != null && _viewOptions.RoundTable,
-                _viewOptions != null && _viewOptions.CardsStand, _camera.PitchClamp, _viewOptions != null ? _viewOptions.StandAmount : 0f));
+                _viewOptions != null && _viewOptions.CardsStand, _camera.PitchClamp, _viewOptions != null ? _viewOptions.StandAmount : 0f, _avatars.DayRingRadius, _avatars.DayRingPerSeat, _avatars.DayChainShrinks, _camera.FieldOfView));
         }
 
         private void UpdateCardVisibility(GameState _state)

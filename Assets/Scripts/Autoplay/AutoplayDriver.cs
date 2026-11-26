@@ -144,6 +144,12 @@ namespace Autoplay
         [Tooltip("POV tour (-autoplay-pov-tour): the first vote's seated view head at rest / left / right / up, room shown, " +
                  "pitch black without then with the light per cat, each followed by a head sweep (record it with -autoplay-record \"pov\\.sweep:10\").")]
         public bool povTour;
+        [Tooltip("POV tour (-autoplay-pov-gaze-host): every client holds its head turned toward the host's cat instead of touring, " +
+                 "so the host's captures show who looks at it (Wouh 2026-11-15: a cat looking at us seemed to look beside us).")]
+        public bool povGazeHost;
+        [Tooltip("POV tour (-autoplay-pov-fovs 54.5,80,85): after the tour, the rest / left / right looks (black) again at each " +
+                 "of these vertical fields, captures pov-fov<value>-<look> (Poyo 2026-11-26: « augmenter le fov en pov »).")]
+        public string povFovs;
         [Tooltip("POV tour: game seconds of the head sweep left to right (then half of it up).")]
         public float povSweepSeconds = 6f;
         [Tooltip("Turn captures (-autoplay-turn-captures), board task T21: clean captures at night when this process's seat " +

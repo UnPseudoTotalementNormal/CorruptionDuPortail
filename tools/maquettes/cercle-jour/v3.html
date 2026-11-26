@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cercle du jour : champ de vision et grandes tables</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cj-shot { position: absolute; inset: 0; width: 1600px; height: 900px; display: block; object-fit: cover; }
+  .cj-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 14px 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .cj-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cj-group span { color: var(--soft); }
+  .cj-group button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .cj-group button.on { border-color: var(--accent); color: var(--accent); }
+  .cj-dist { color: var(--fg); margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Cercle du jour : champ de vision et grandes tables</h1>
+  <p><b>Choisi en v2.</b> Tout le monde sur un seul cercle, les autres chats à ta taille (T1), cercle de 24 m à 4 joueurs (R3), le chat enchaîné à sa vraie taille au milieu (E2).</p>
+  <p><b>Référence.</b> Dans la plupart des jeux à la première personne, le « FOV » se compte en largeur : 103 par défaut dans Overwatch et Valorant, 90 dans Counter-Strike. Unity, lui, le compte en hauteur : aujourd'hui 40 en hauteur, soit 66 en largeur sur un écran 16:9. « 85 » donne donc deux vues très différentes selon le sens. Lu sur des fiches, pas mesuré en jeu.</p>
+  <p><b>Aujourd'hui.</b> Le jeu est à 40 en hauteur. Sur un seul cercle, plus il y a de joueurs, plus tes voisins cachent les suivants : la règle actuelle (la moitié de chaque chat visible depuis tes yeux) fait grandir le cercle à 43 m à 12 joueurs et 58 m à 14. C'est ça qui le rendrait immense, pas le « deux fois plus grand » de R3.</p>
+  <p><b>La scène.</b> Premier vote : les trois autres vrais joueurs tournent la tête vers toi. Captures du vrai jeu. À 8 et 12 joueurs, les places des bots ont un chat immobile copié de celui d'un joueur, éclairé comme les autres : en partie de test, un bot n'a pas de chat.</p>
+  <p><b>Sans question.</b> Le champ de vision change aussi la nuit, autour de la table : c'est la même caméra. À 4, 6 et 8 joueurs, le cercle reste à 24 m dans toutes les règles ci-dessous. La vue au repos se cale sur le visage d'en face pour chaque champ de vision.</p>
+
+  <div class="cj-bar">
+    <div class="cj-group" id="cj-moment"><span>Moment</span>
+      <button data-m="rest">Vote</button><button data-m="left">Tête à gauche</button><button data-m="right">Tête à droite</button>
+    </div>
+    <div class="cj-group" id="cj-fov"><span>Champ de vision des cercles à 12</span>
+      <button data-f="40">F0</button><button data-f="54.5">F1</button><button data-f="80">F2</button><button data-f="85">F3</button>
+    </div>
+  </div>
+
+  <section data-forme="F0 F1 F2 F3">
+  <h2>Le champ de vision</h2>
+  <p>À 4 joueurs, cercle de 24 m.</p>
+
+  <div class="variant" data-id="F0">
+    <div class="vhead"><span class="vid">F0</span><span class="vname">Actuel : 40 en hauteur (66 en largeur)</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-fov="40" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="F1">
+    <div class="vhead"><span class="vid">F1</span><span class="vname">85 en largeur (54,5 en hauteur)</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-fov="54.5" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="F2">
+    <div class="vhead"><span class="vid">F2</span><span class="vname">80 en hauteur (112 en largeur)</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-fov="80" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="F3">
+    <div class="vhead"><span class="vid">F3</span><span class="vname">85 en hauteur (117 en largeur)</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-fov="85" alt=""></div></div>
+  </div>
+  </section>
+
+  <section>
+  <h2>À 12 joueurs, le cercle</h2>
+  <p>Le champ de vision se choisit dans la barre du haut.</p>
+
+  <div class="variant" data-id="C1">
+    <div class="vhead"><span class="vid">C1</span><span class="vname">Chaque chat visible à moitié</span></div>
+    <p class="cj-dist" data-run="c1"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-run="c1" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="C2">
+    <div class="vhead"><span class="vid">C2</span><span class="vname">Visible au quart</span></div>
+    <p class="cj-dist" data-run="c2"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-run="c2" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="C3">
+    <div class="vhead"><span class="vid">C3</span><span class="vname">24 m, agrandi seulement si des chats se touchent</span></div>
+    <p class="cj-dist" data-run="c3"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-run="c3" alt=""></div></div>
+  </div>
+  </section>
+
+  <h2>Pour comparer, sans vote</h2>
+  <div class="variant" data-id="H8">
+    <div class="vhead"><span class="vid">H8</span><span class="vname">8 joueurs, 24 m</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-run="8" alt=""></div></div>
+  </div>
+  <div class="variant" data-id="H4">
+    <div class="vhead"><span class="vid">H4</span><span class="vname">Le chat enchaîné (E2), 4 joueurs, F1</span></div>
+    <div class="screen"><div class="stage"><img class="cj-shot" src="img/v3/4_chain.jpg" alt=""></div></div>
+  </div>
+
+  <h2>Une remarque ?</h2>
+  <textarea id="global" rows="3" placeholder="Remarque libre"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</div>
+<script>
+(() => {
+  const query = new URLSearchParams(location.search);
+  const state = { m: query.get("m") || "rest", f: query.get("f") || "54.5" };
+  // Radius (metres) at 12 players as played (avatar.dayring.size).
+  const radius = { c1: 43, c2: 32.3, c3: 26.8 };
+  function distances(run) {
+    const r = radius[run];
+    if (!r) return "";
+    const n = 12, fr = x => String(Math.round(x));
+    return `${String(r).replace(".", ",")} m du milieu. Voisins à ${fr(2 * r * Math.sin(Math.PI / n))} m, en face à ${fr(2 * r)} m.`;
+  }
+  function render() {
+    document.querySelectorAll("img.cj-shot[data-fov]").forEach(i => { i.src = `img/v3/4_f${i.dataset.fov}_${state.m}.jpg`; });
+    document.querySelectorAll("img.cj-shot[data-run]").forEach(i => { i.src = `img/v3/${i.dataset.run}_f${state.f}_${state.m}.jpg`; });
+    document.querySelectorAll("p.cj-dist").forEach(p => { p.textContent = distances(p.dataset.run); });
+    document.querySelectorAll("#cj-moment button").forEach(b => b.classList.toggle("on", b.dataset.m === state.m));
+    document.querySelectorAll("#cj-fov button").forEach(b => b.classList.toggle("on", b.dataset.f === state.f));
+  }
+  document.querySelector("#cj-moment").addEventListener("click", e => { if (e.target.dataset.m) { state.m = e.target.dataset.m; render(); } });
+  document.querySelector("#cj-fov").addEventListener("click", e => { if (e.target.dataset.f) { state.f = e.target.dataset.f; render(); } });
+  addEventListener("mockforme", e => { const f = { F0: "40", F1: "54.5", F2: "80", F3: "85" }[e.detail && e.detail.forme]; if (f) { state.f = f; render(); } });
+  render();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

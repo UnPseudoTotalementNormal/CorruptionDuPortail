@@ -1,0 +1,48 @@
+{
+ "name": "day-ring-one-4",
+ "goal": "One day circle for everyone (Wouh 2026-11-15, maquettes cercle-jour v2 T1 R3 E2 + v3 F1 C2) at 4 seats, the scene's values: the player sits ON the circle (avatar.dayring.size), the others at its size by day, the view 54.5 high (85 wide); every real client turns its head toward the host's cat (pov.gaze-host) so the host's pov-black captures show cats looking at it; a real client holds Abyss and every bot votes it: its chained cat floats at the middle at its own size (chain.reveal.start). The circle is 24 m.",
+ "mode": "net",
+ "clients": 3,
+ "seed": 777,
+ "timescale": 1,
+ "timeout": 1200,
+ "video": true,
+ "args": [
+  "-autoplay-relay",
+  "-autoplay-pov-tour",
+  "-autoplay-cat-look",
+  "varied",
+  "-autoplay-max-days",
+  "2",
+  "-autoplay-fast-fakes",
+  "-autoplay-force-roles",
+  "Abyss",
+  "-autoplay-role-holder",
+  "client",
+  "-autoplay-vote-focus",
+  "Abyss",
+  "-autoplay-pov-gaze-host"
+ ],
+ "expect": [
+  {
+   "type": "outcome",
+   "value": "Completed",
+   "process": "all"
+  },
+  {
+   "type": "event",
+   "kind": "pov.tour",
+   "detail": "avatars=4",
+   "process": "host",
+   "min": 1,
+   "max": 1
+  },
+  {
+   "type": "noErrors",
+   "process": "all",
+   "ignore": [
+    "ClientLoadedSynchronization"
+   ]
+  }
+ ]
+}

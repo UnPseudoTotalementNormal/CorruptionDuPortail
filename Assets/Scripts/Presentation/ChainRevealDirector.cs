@@ -137,10 +137,11 @@ namespace Presentation
             float _ringDistance = _toCentre.magnitude;
             Vector3 _ahead = _ringDistance > 1e-3f ? _toCentre / _ringDistance : Vector3.forward;
             // The player's own cat is drawn bigger than the others (its seat is nearer the middle): it flies at their size.
-            float _scale = _self ? _manager.SeatedAvatarScale : 1f;
+            // By day it floats at the middle of the one circle, shrunk there if the circle is too small for its 60 %.
+            float _scale = (_self ? _manager.SeatedAvatarScale : 1f) * (_manager.DayRingActive ? _manager.DayChainScale : 1f);
             float _catHeight = _avatar != null ? _catHeightAtScale1 * _avatar.transform.lossyScale.y * _scale : _fallbackCatHeight;
             float _distance = _manager.DayRingActive
-                ? _manager.DayChainDistance
+                ? _manager.DayChainHoverDistance
                 : ChainRevealTimeline.HoverDistance(_ringDistance, _catHeight, _camera.fieldOfView, _manager.DayScreenShare);
             float _floor = _avatar != null ? _avatar.transform.position.y : _centre.y;
             Vector3 _hover = new Vector3(_eye.x, _floor, _eye.z) + _ahead * _distance;
@@ -148,6 +149,15 @@ namespace Presentation
             Vector3 _seatPosition = _avatar != null ? _avatar.transform.position : _hover;
             Quaternion _seatRotation = _avatar != null ? _avatar.transform.rotation : _facing;
             float _lift = _liftShare * _catHeight;
+            if (_manager.DayRingActive)
+            {
+                // At the middle of the one circle the view looks down at the far cat: lift it until its middle sits a
+                // quarter of the screen above the centre of the rest view, clear of the rows of cards.
+                float _down = _manager.DayRestPitch * Mathf.Deg2Rad;
+                float _halfScreen = Mathf.Tan(_camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * _distance;
+                float _middle = _eye.y - Mathf.Tan(_down) * _distance + 0.25f * _halfScreen;
+                _lift = Mathf.Max(_lift, _middle - _floor - 0.5f * _catHeight);
+            }
 
             // ---- its card, out of its row (the roles' row goes down first: its slot is where the cards' row is going)
             _dayRows.SetRolesAway(true);
@@ -160,7 +170,8 @@ namespace Presentation
 
             float _end = _avatar != null ? ChainRevealTimeline.BlackOut : ChainRevealTimeline.CardBack;
             Debug.Log($"[CHAINREVEAL] seat {_seat}: {(_avatar != null ? "cat" : "card only")}{(_self ? " (mine)" : "")}, {_distance:F1} m away");
-            Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.start", "seat", _seat, "cat", _avatar != null, "mine", _self, "card", _hasCard);
+            Diagnostics.Logs.GameLog.Info("chain", "chain.reveal.start", "seat", _seat, "cat", _avatar != null, "mine", _self, "card", _hasCard,
+                "distance", _distance, "scale", _scale);
             GameAudioManager _audio = GameAudioManager.instance;
             bool _completed = false;
             try

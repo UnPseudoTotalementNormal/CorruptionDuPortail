@@ -7,7 +7,8 @@ namespace Board
 {
     /// <summary>
     /// T9 (maquettes placeholders v3, H2): hovering a card anywhere opens one bubble listing every private mark this
-    /// peer sees on it (Vision maudite, the Orpheline's bear, the Messager's phone, healed, blessed, beacon). No mark,
+    /// peer sees on it (Vision maudite, the Orpheline's bear, the Messager's phone, healed, blessed, beacon, the public
+    /// Élu logo, chained, hacked). No mark,
     /// no bubble. Added to every card by <see cref="CardEffectManager"/> when the card spawns.
     /// </summary>
     public class CardMarksTooltip : MonoBehaviour, IPointerEnterHandler
@@ -37,6 +38,13 @@ namespace Board
                 MarksTooltipText.Mark? _mark = MarksTooltipText.ForCardEffect(_id, effects.GetEffectData(_id, _owner));
                 if (_mark.HasValue) marks.Add(_mark.Value);
             }
+            // Marks read from the player's state rather than from a card effect (fil « Joueur perdu »).
+            Characters.Character _character = card.characterInfo;
+            if (_character.isKnownChosen.Value) marks.Add(MarksTooltipText.KnownChosen());
+            if (_character.isChained.Value) marks.Add(MarksTooltipText.Chained());
+            GameLogic.GameInfoRevealer _revealer = card.GameInfoRevealer;
+            if (_revealer != null && _revealer.GetCharacterInfo(_owner).isHacked > GameLogic.RevealLevel.False)
+                marks.Add(MarksTooltipText.Hacked());
             return marks;
         }
 

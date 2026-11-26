@@ -117,9 +117,11 @@ not a game bug — check before concluding.
 Measured costs: ~45-60 s of start-up per run (player boot + GameScene + clients joining), so prefer fewer, richer runs.
 Levers that keep the test's value: `role-holder` SEATS the forced role (no re-roll of whole games); clients capped at
 30 fps (`-ClientFps`); `-autoplay-fast-phases "Intro|Chaining"` on network / desync runs (nobody acts there; keep recaps
-at normal speed when the goal samples them); 2 days for a power / role sweep; 2 lanes in parallel
-(`AUTOPLAY_MAX_PARALLEL=2`, `run_scenario.py --port 7870` / `--port 7880`) once the machine is known to cope (watch for
-`DIED`). Do not raise the global time scale for desync hunts (latency weighs more than in a real game) and never run
+at normal speed when the goal samples them); 2 days for a power / role sweep. **One game at a time on the whole PC**:
+several sessions share it (2026-11-26, two sessions with two games each and two editors: CPU 83-100 %, memory 96 %).
+Before launching, look for games or headless editors of other sessions (`Get-CimInstance Win32_Process` for
+`Unity.exe` / `CorruptionDuPortail.exe`, command line with `-batchmode` or `-autoplay`) and wait for them; no parallel
+lanes. Stop your headless editor as soon as you no longer compile or build (relaunch costs ~1 min). Do not raise the global time scale for desync hunts (latency weighs more than in a real game) and never run
 clients in batchmode (end of frame never comes).
 
 `-autoplay-fast-fakes` (fake roles sleep after ~1 s: night time 77 s → 12 s on 3 days, seed 777) and

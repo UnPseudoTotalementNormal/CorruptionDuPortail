@@ -105,7 +105,20 @@ namespace Avatars
         }
 
         /// <summary>The seated view's vertical field (degrees).</summary>
-        public float FieldOfView => _camera != null ? _camera.Lens.FieldOfView : 60f;
+        public float FieldOfView
+        {
+            get => _camera != null ? _camera.Lens.FieldOfView : 60f;
+            set
+            {
+                if (_camera == null)
+                {
+                    return;
+                }
+                LensSettings _lens = _camera.Lens;
+                _lens.FieldOfView = value;
+                _camera.Lens = _lens;
+            }
+        }
 
         /// <summary>The eye's height above the player's seat (metres), or null before the player's cat is bound.</summary>
         public float? EyeHeightAboveSeat => _boundAvatar != null && _boundAvatar.EyePivot != null && _manager != null

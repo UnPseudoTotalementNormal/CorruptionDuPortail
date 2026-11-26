@@ -81,31 +81,41 @@ namespace Avatars
                  "presenter; restored when the players stand up (T16: the cats looked too big around the table). The " +
                  "local avatar keeps its size (its eye anchors the first-person camera). 1 = the prefab's size.")]
         [SerializeField] private float _seatedAvatarScale = 1f;
+        [Tooltip("The same, by day on the one circle (maquettes cercle-jour v2, T1: at the player's size, the far faces " +
+                 "above the skip table and the cards).")]
+        [SerializeField] private float _daySeatedAvatarScale = 1f;
 
         [Header("Day ring (T19 + T23: once the table is gone)")]
-        [Tooltip("Share of the screen's height the chained cat takes (Poyo 2026-10-21: 60 %). It floats as far ahead of " +
-                 "the player as that needs: the middle of the circle from Day Full Players on, past it below.")]
+        [Tooltip("Share of the screen's height the chained cat takes (Poyo 2026-10-21: 60 %) when Day Chain Shrinks is on.")]
         [SerializeField] private float _dayScreenShare = 0.6f;
         [Tooltip("The chained cat's height on screen while it floats (metres: its pose, legs hanging, ears up; measured).")]
         [SerializeField] private float _dayCatHeight = 16.2f;
-        [Tooltip("Up to this many players, the circle is the closest one (mockups cercle-jour v1: B, loosened at 4 and 6).")]
+        [Tooltip("Up to this many players, the circle keeps Day Ring Radius; it grows by Day Ring Per Seat above.")]
         [SerializeField] private int _dayFewPlayers = 4;
-        [SerializeField] private float _dayFewPlayerDistance = 32f;
-        [SerializeField] private float _dayFewOthersRadius = 12f;
-        [Tooltip("From this many players, everyone sits as far as the chained cat floats. In proportion in between.")]
-        [SerializeField] private int _dayFullPlayers = 10;
         [Tooltip("A seated cat's click shape (its PointerTarget capsule, seated scale): radius and height in metres.")]
         [SerializeField] private float _dayCatRadius = 4.4f;
         [SerializeField] private float _dayClickHeight = 17.6f;
         [Tooltip("Room left between two neighbours (metres).")]
         [SerializeField] private float _dayGap = 2f;
-        [Tooltip("Share of every cat's click shape that stays in sight from the player's eye: the others' circle grows " +
-                 "with the number of players until it does.")]
+        [Tooltip("Share of every cat's click shape that stays in sight from the player's eye: the circle grows with the " +
+                 "number of players until it does. On one circle the nearest neighbours hide the next ones (maquettes " +
+                 "cercle-jour v3, C2: a quarter, 24 m up to 10 players, 32 m at 12).")]
         [SerializeField] private float _dayMinVisibleShare = 0.5f;
-        [Tooltip("The view's rest pitch by day aims at the middle of the circle this high (share of the chained cat's height): " +
-                 "a little under the floating chained cat's middle, so it shows high above the floor and the far cats' feet " +
-                 "stay clear of the rows of cards.")]
-        [SerializeField] private float _dayAimShare = 0.8f;
+        [Tooltip("Wouh 2026-11-15 + Poyo 2026-11-26 (piste B, maquettes cercle-jour v2: R3): the player sits ON the others' " +
+                 "circle, not behind it (sitting back, a cat looking at him seemed to look beside him). The circle's radius " +
+                 "up to Day Few Players (metres).")]
+        [SerializeField] private float _dayRingRadius = 24f;
+        [Tooltip("Metres the circle's radius grows by per player above Day Few Players (0 = the same circle, grown only " +
+                 "when the cats would touch or hide each other).")]
+        [SerializeField] private float _dayRingPerSeat = 0f;
+        [Tooltip("On the single circle the chained cat floats at the middle. On: shrunk there to keep Day Screen Share of " +
+                 "the screen. Off: its own size (bigger on screen).")]
+        [SerializeField] private bool _dayChainShrinks = false;
+        [Tooltip("The view's rest pitch by day puts the far cat's face this far above the screen's centre (share of the " +
+                 "half screen): clear of the rows of cards and the skip table.")]
+        [SerializeField] private float _dayFaceAboveCentre = 0.25f;
+        [Tooltip("The seated scale the click shape (Day Cat Radius, Day Click Height) was measured at.")]
+        [SerializeField] private float _dayMeasuredScale = 0.75f;
 
         [Tooltip("The local player's tablet: while it is open, their cat takes it out and looks at it (every peer " +
                  "sees it). Wire the GameScene SmartphoneController. Null = no tablet animation.")]
@@ -121,15 +131,76 @@ namespace Avatars
         /// <summary>Seated avatar scale factor (see the field's tooltip). Settable for autoplay view comparisons.</summary>
         public float SeatedAvatarScale
         {
-            get => _seatedAvatarScale;
+            get => _dayRing ? _daySeatedAvatarScale : _seatedAvatarScale;
             set => _seatedAvatarScale = value;
+        }
+
+        /// <summary>The others' seated scale by day (see the field's tooltip). Settable for autoplay.</summary>
+        public float DaySeatedAvatarScale
+        {
+            get => _daySeatedAvatarScale;
+            set { _daySeatedAvatarScale = value; _dayRingCount = -1; }
         }
 
         /// <summary>Share of the screen's height the chained cat takes.</summary>
         public float DayScreenShare => _dayScreenShare;
 
-        /// <summary>How far ahead of the eye the chained cat floats by day (metres), whatever the circle's size.</summary>
+        /// <summary>How far ahead of the eye a cat of its own size takes <see cref="DayScreenShare"/> of the screen (metres).</summary>
         public float DayChainDistance { get; private set; }
+
+        /// <summary>Day circle radius up to Day Few Players (metres). Settable for autoplay view comparisons.</summary>
+        public float DayRingRadius
+        {
+            get => _dayRingRadius;
+            set { _dayRingRadius = value; _dayRingCount = -1; }
+        }
+
+        /// <summary>
+        /// Autoplay view comparisons only (lever seated-view botseats=1): the simulated players (id &gt;= 100, no body)
+        /// take a seat too, so a big table's layout can be seen with stand-in cats. Off in a real game.
+        /// </summary>
+        public bool SeatSimulatedPlayers { get; set; }
+
+        /// <summary>Share of every cat kept in sight from the eye by day (see the field's tooltip). Settable for autoplay.</summary>
+        public float DayMinVisibleShare
+        {
+            get => _dayMinVisibleShare;
+            set { _dayMinVisibleShare = value; _dayRingCount = -1; }
+        }
+
+        /// <summary>Metres the day circle grows by per player above Day Few Players. Settable for autoplay.</summary>
+        public float DayRingPerSeat
+        {
+            get => _dayRingPerSeat;
+            set { _dayRingPerSeat = value; _dayRingCount = -1; }
+        }
+
+        /// <summary>Whether the chained cat shrinks at the middle (see the field's tooltip). Settable for autoplay.</summary>
+        public bool DayChainShrinks
+        {
+            get => _dayChainShrinks;
+            set { _dayChainShrinks = value; _dayRingCount = -1; }
+        }
+
+        /// <summary>By day, how far ahead of the eye the chained cat floats (metres): the middle of the circle.</summary>
+        public float DayChainHoverDistance
+        {
+            get
+            {
+                RefreshDayRing(SeatOrder().Count);
+                return _dayPlayerDistance;
+            }
+        }
+
+        /// <summary>By day, the chained cat's size while it floats (1 = its own).</summary>
+        public float DayChainScale
+        {
+            get
+            {
+                RefreshDayRing(SeatOrder().Count);
+                return _dayChainShrinks && DayChainDistance > 1e-3f ? Mathf.Min(1f, _dayPlayerDistance / DayChainDistance) : 1f;
+            }
+        }
 
         /// <summary>Whether the players sit in the day's circle (the table gone), see <see cref="SetDayRing"/>.</summary>
         public bool DayRingActive => _dayRing;
@@ -140,6 +211,7 @@ namespace Avatars
         private bool _dayRing;
         private float _dayPlayerDistance;
         private float _dayEyeHeight;
+        private float _dayFov = 40f;
         private int _dayRingCount = -1;
         private float _dayOthersRadius;
 
@@ -442,7 +514,7 @@ namespace Avatars
             {
                 foreach (Character _character in _characterQuery.GetCharacters(false))
                 {
-                    if (_character != null && !_character.isFake && _character.ownerClientId.Value < 100)
+                    if (_character != null && !_character.isFake && (_character.ownerClientId.Value < 100 || SeatSimulatedPlayers))
                     {
                         _seats.Add(_character.ownerClientId.Value);
                     }
@@ -479,8 +551,8 @@ namespace Avatars
                 return;
             }
             _dayEyeHeight = _eyeHeight;
+            _dayFov = _fovDegrees;
             DayChainDistance = DayRingLayout.PlayerDistance(_dayCatHeight, _fovDegrees, _dayScreenShare);
-            DayRestPitch = DayRingLayout.RestPitch(_eyeHeight, _dayAimShare * _dayCatHeight, DayChainDistance);
             RefreshDayRing(SeatOrder().Count);
         }
 
@@ -492,14 +564,32 @@ namespace Avatars
                 return;
             }
             _dayRingCount = _count;
-            DayRingLayout.Seats(_count, _dayFewPlayers, _dayFullPlayers, _dayFewPlayerDistance, _dayFewOthersRadius, DayChainDistance,
-                out _dayPlayerDistance, out float _startRadius);
-            _dayOthersRadius = DayRingLayout.OthersRadius(_count, _dayPlayerDistance, _startRadius, _dayCatRadius, _dayClickHeight,
-                _dayEyeHeight, _dayGap, _dayMinVisibleShare);
-            Diagnostics.Logs.GameLog.Info("avatar", "avatar.dayring.size", "seats", _count, "player", _dayPlayerDistance,
-                "others", _dayOthersRadius, "chain", DayChainDistance);
-            Debug.Log($"[DAYRING] {_count} seats: player {_dayPlayerDistance:F1} m from the middle, others {_dayOthersRadius:F1} m, " +
-                      $"chained cat {DayChainDistance:F1} m away, eye {_dayEyeHeight:F1} m, rest pitch {DayRestPitch:F1}°");
+            // One circle for everyone, the player on it (piste B): Day Ring Radius, plus Day Ring Per Seat per extra player,
+            // grown further only if the cats would touch or hide each other. The click shape grows with the others' seated
+            // scale (measured at Day Measured Scale).
+            float _sizeFactor = _dayMeasuredScale > 1e-3f ? _daySeatedAvatarScale / _dayMeasuredScale : 1f;
+            float _start = DayRingLayout.SingleStartRadius(_count, _dayFewPlayers, _dayRingRadius, _dayRingPerSeat);
+            _dayOthersRadius = DayRingLayout.SingleRadius(_count, _start, _dayCatRadius * _sizeFactor, _dayClickHeight * _sizeFactor,
+                _dayEyeHeight, _dayGap, _dayMinVisibleShare, 4f * _start);
+            _dayPlayerDistance = _dayOthersRadius;
+            float _chainScale = _dayChainShrinks && DayChainDistance > 1e-3f ? Mathf.Min(1f, _dayPlayerDistance / DayChainDistance) : 1f;
+            DayRestPitch = DayRestPitchFor(_dayFov);
+            Diagnostics.Logs.GameLog.Info("avatar", "avatar.dayring.size", "seats", _count, "radius", _dayOthersRadius,
+                "start", _start, "perSeat", _dayRingPerSeat, "fov", _dayFov, "chainScale", _chainScale, "pitch", DayRestPitch);
+            Debug.Log($"[DAYRING] {_count} seats: one circle of {_dayOthersRadius:F1} m (asked {_start:F1}), chained cat at the " +
+                      $"middle x{_chainScale:F2}, eye {_dayEyeHeight:F1} m, fov {_dayFov:F1}°, rest pitch {DayRestPitch:F1}°");
+        }
+
+        /// <summary>
+        /// By day, the rest pitch for a view of vertical field <paramref name="_fovDegrees"/>: the far cat's face (at its
+        /// seated scale) Day Face Above Centre of the half screen above the centre, clear of the rows of cards and the skip
+        /// table in the middle.
+        /// </summary>
+        public float DayRestPitchFor(float _fovDegrees)
+        {
+            float _faceBelow = DayRingLayout.RestPitch(_dayEyeHeight, _dayEyeHeight * _daySeatedAvatarScale, 2f * _dayPlayerDistance);
+            float _lift = Mathf.Atan(_dayFaceAboveCentre * Mathf.Tan(_fovDegrees * 0.5f * Mathf.Deg2Rad)) * Mathf.Rad2Deg;
+            return _faceBelow + _lift;
         }
 
         /// <summary>By day, how far from the middle the outermost cat reaches (metres); 0 around the table.</summary>

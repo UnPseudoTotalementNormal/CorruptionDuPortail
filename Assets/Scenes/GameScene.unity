@@ -13600,17 +13600,19 @@ MonoBehaviour:
   - {fileID: 1455679068}
   - {fileID: 259767583}
   _seatedAvatarScale: 0.75
+  _daySeatedAvatarScale: 1
   _dayScreenShare: 0.6
   _dayCatHeight: 16.2
   _dayFewPlayers: 4
-  _dayFewPlayerDistance: 32
-  _dayFewOthersRadius: 12
-  _dayFullPlayers: 10
   _dayCatRadius: 4.4
   _dayClickHeight: 17.6
   _dayGap: 2
-  _dayMinVisibleShare: 0.5
-  _dayAimShare: 0.8
+  _dayMinVisibleShare: 0.25
+  _dayRingRadius: 24
+  _dayRingPerSeat: 0
+  _dayChainShrinks: 0
+  _dayFaceAboveCentre: 0.25
+  _dayMeasuredScale: 0.75
   _smartphone: {fileID: 724818885}
 --- !u!1 &875423821
 GameObject:
@@ -24703,7 +24705,7 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 40
+    FieldOfView: 54.5
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000

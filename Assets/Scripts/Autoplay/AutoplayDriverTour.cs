@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Avatars;
 using ChatSystem;
@@ -29,6 +30,8 @@ namespace Autoplay
     public sealed partial class AutoplayDriver
     {
         private bool tourDone;
+        // -autoplay-tour-after-turn: this process's own seat was awake during the current phase.
+        private bool controlledWokeThisState;
         private bool emoteTourDone;
 
         private void UpdateTour(GameState _state)
@@ -40,7 +43,14 @@ namespace Autoplay
 
             // Night, while none of this process's seats is awake (a fake-role layer on the host, a sleeping seat on a
             // client): free cursor, board view, no full-screen overlay (the recap's journal covers the HUD by design).
+            // The process's own seat (the host's 0, not a possessed bot): its power is what the tour must see on the board.
+            if (options.tourAfterTurn && _state is AwakeningState && characterManager.GetCharacters(false)
+                    .Any(_c => _c && _c.ownerClientId.Value == networkManager.LocalClientId && _c.isAwakened.Value))
+            {
+                controlledWokeThisState = true;
+            }
             if (!tourDone && _state is AwakeningState && Time.time - stateEnterGameTime > options.thinkDelay && !AnyControlledAwake()
+                && (!options.tourAfterTurn || controlledWokeThisState)
                 && (options.tourFromDay <= 0 || CompositionRoot.For(networkManager).GameManager is not { } _gm || _gm.currentDay >= options.tourFromDay))
             {
                 tourDone = true;
@@ -179,13 +189,23 @@ namespace Autoplay
         // (no stop in a corner: neighbouring triggers must hand the bubble over without covering each other).
         private async UniTask TourNamedTooltips(string[] _names)
         {
-            foreach (string _name in _names)
+            // "Name*" = every trigger of that name that has something to say (every marked card), richest first.
+            var _queue = new List<(string name, HoverTooltipComponent trigger)>();
+            foreach (string _entry in _names)
             {
+                bool _all = _entry.EndsWith("*");
+                string _name = _all ? _entry.Substring(0, _entry.Length - 1) : _entry;
                 // Several triggers share a name (every card is "Card(Clone)"): the richest one, as the default tour does.
-                HoverTooltipComponent _trigger = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
+                var _matches = FindObjectsByType<HoverTooltipComponent>(FindObjectsSortMode.None)
                     .Where(_t => _t.name == _name && _t.isActiveAndEnabled && _t.HasContent)
                     .OrderByDescending(_t => (_t.Description ?? string.Empty).Length)
-                    .FirstOrDefault();
+                    .ToList();
+                if (_matches.Count == 0) _queue.Add((_name, null));
+                else if (_all) _queue.AddRange(_matches.Select(_t => (_name, _t)));
+                else _queue.Add((_name, _matches[0]));
+            }
+            foreach (var (_name, _trigger) in _queue)
+            {
                 if (_trigger == null || TooltipManager.instance == null)
                 {
                     TourStep("tooltip", false, $"reason=no-trigger name={_name}");

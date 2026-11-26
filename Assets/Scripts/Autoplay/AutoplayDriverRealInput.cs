@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Board;
@@ -210,6 +211,15 @@ namespace Autoplay
                 if (!_picker.IsPickerActive || !_card)
                 {
                     Journal.Record("picker.click", $"#{_opening} {_described} via=none reason=picker-closed");
+                    return;
+                }
+                // The role fan lifts the card whose place AT REST is under the pointer (maquettes eventail-roles v2, Z1),
+                // so a player clicks a card through its strip at rest, not through any part of it that shows: aim there
+                // (2026-11-26: a click on the visible edge of the Messager, inside the Technomancien's strip, picked the
+                // Technomancien). Else the generic hover / click below.
+                if (_picker.IsRolePicker && !CursorLocked && await PickFanCardAtRest(_picker, _card, _opening, _described))
+                {
+                    _via = "click";
                     return;
                 }
                 bool _hovered = await HoverTarget(_card.gameObject, $"picker #{_opening}", options.pickerHoverDwell);
@@ -456,6 +466,40 @@ namespace Autoplay
 
         /// <summary>Brings the pointer (free cursor) or the reticle (locked cursor) onto the target and keeps it there
         /// <paramref name="_dwell"/> real seconds. False (journaled input.miss) when the target cannot be reached.</summary>
+        // Role fan: point at the card's strip at rest (its left edge to its right neighbour's, as picker-hover-tour does),
+        // check the fan lifted that very card, then click there. False = not lifted (journal picker.hover.lost).
+        private async UniTask<bool> PickFanCardAtRest(CardPickerManager _picker, Card _card, int _opening, string _described)
+        {
+            List<Card> _fan = _picker.FanCards.Where(_c => _c).ToList();
+            int _i = _fan.IndexOf(_card);
+            if (_i < 0 || !AutoplayUiLocator.TryScreenRect(_card.gameObject, out Rect _rect))
+            {
+                return false;
+            }
+            Vector2 _aim = _rect.center;
+            if (_i + 1 < _fan.Count && AutoplayUiLocator.TryScreenRect(_fan[_i + 1].gameObject, out Rect _next))
+            {
+                _aim = new Vector2((_rect.center.x + _next.center.x) / 2f - _rect.width / 2f, _rect.center.y);
+            }
+            await VirtualInput.MoveTo(_aim, options.pointerMoveSeconds).WithCancellation(Cancel);
+            await UniTask.Delay(TimeSpan.FromSeconds(Mathf.Max(0.3f, options.pickerHoverDwell)), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+            if (_picker.HoveredFanCard != _card)
+            {
+                Journal.Record("picker.hover.lost", $"#{_opening} index={_i}/{_fan.Count} {_described} hovered={(_picker.HoveredFanCard ? DescribeCard(_picker.HoveredFanCard) : "none")} at=rest-strip");
+                return false;
+            }
+            Journal.Record("picker.hover", $"#{_opening} {_described} at=rest-strip");
+            capture.Request($"picker{_opening:000}-hover-{_described}", 0f);
+            Vector2 _at = VirtualInput.Position;
+            await VirtualInput.Click().WithCancellation(Cancel);
+            string _where = string.Format(System.Globalization.CultureInfo.InvariantCulture, "target={0} pos={1:0},{2:0} mode=pointer at=rest-strip",
+                AutoplayUiLocator.PathOf(_card.gameObject), _at.x, _at.y);
+            Journal.Record("input.click", $"picker #{_opening} {_described} {_where}");
+            bool _ok = await WaitForEffect($"picker #{_opening} {_described}", _where, () => !_picker.IsPickerActive || !_picker.PickableCards.Contains(_card));
+            if (_ok) Journal.Record("picker.click", $"#{_opening} {_described} via=click");
+            return _ok;
+        }
+
         private async UniTask<bool> HoverTarget(GameObject _target, string _action, float _dwell)
         {
             if (!CursorLocked)

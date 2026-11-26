@@ -104,7 +104,7 @@ namespace ChatSystem
         }
 
         // One tab per channel: a channel can be granted more than once (e.g. the anomaly chat, opened by both the
-        // Mage's and Abyss's Oeil du néant), and DiscoverChat raises the event every time.
+        // Mage's and Abyss's Œil du néant), and DiscoverChat raises the event every time.
         private readonly Dictionary<int, CustomButton> chatButtons = new();
 
         private void OnChatDiscovered(int _chatId)

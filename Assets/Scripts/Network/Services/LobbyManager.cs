@@ -140,7 +140,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de création du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.create.failed", "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de créer le lobby: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de créer le lobby : {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -154,7 +154,7 @@ namespace Network.Services
             catch (LobbyBackendException e)
             {
                 GameLog.Warn("lobby", "lobby.query.failed", "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de récupérer les lobbies: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de récupérer les lobbies : {0}", Loc.QuietToken(e.Message)));
                 throw new Exception($"Échec de récupération des lobbies: {e.Message}");
             }
         }
@@ -182,7 +182,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de rejoindre le lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.join.failed", "lobby", _lobbyId, "reason", e.Message, "by", "id");
-                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre le lobby: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre le lobby : {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -210,7 +210,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de rejoindre le lobby par code: {e.Message}");
                 GameLog.Warn("lobby", "lobby.join.failed", "code", _lobbyCode, "reason", e.Message, "by", "code");
-                OnLobbyError?.Invoke(Loc.Token("Code invalide ou lobby introuvable: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Code invalide ou lobby introuvable : {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -226,7 +226,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de lecture du lobby {_lobbyId}: {e.Message}");
                 GameLog.Warn("lobby", "lobby.get.failed", "lobby", _lobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre la partie: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de rejoindre la partie : {0}", Loc.QuietToken(e.Message)));
                 return null;
             }
         }
@@ -260,7 +260,7 @@ namespace Network.Services
                 }
                 Debug.LogError($"Échec de quitter le lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.leave.failed", "lobby", _logLobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de quitter le lobby: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de quitter le lobby : {0}", Loc.QuietToken(e.Message)));
             }
         }
 
@@ -291,7 +291,7 @@ namespace Network.Services
                 }
                 Debug.LogError($"Échec de suppression du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.delete.failed", "lobby", _logLobbyId, "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de supprimer le lobby: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de supprimer le lobby : {0}", Loc.QuietToken(e.Message)));
             }
         }
 
@@ -386,7 +386,7 @@ namespace Network.Services
                                 "sessionRunning", IsNetworkSessionRunning());
                             if (!IsNetworkSessionRunning())
                             {
-                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue: {0}", Loc.QuietToken(e.Message)));
+                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue : {0}", Loc.QuietToken(e.Message)));
                             }
                             return;
                         }
@@ -462,7 +462,7 @@ namespace Network.Services
                             // ClientDisconnectHandler); the cloud lobby is only bookkeeping by then.
                             if (!IsNetworkSessionRunning())
                             {
-                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue: {0}", Loc.QuietToken(e.Message)));
+                                OnLobbyError?.Invoke(Loc.Token("Connexion au lobby perdue : {0}", Loc.QuietToken(e.Message)));
                             }
                             return;
                         }
@@ -516,7 +516,7 @@ namespace Network.Services
             {
                 Debug.LogError($"Échec de verrouillage du lobby: {e.Message}");
                 GameLog.Warn("lobby", "lobby.lock.failed", "locked", isLocked, "reason", e.Message);
-                OnLobbyError?.Invoke(Loc.Token("Impossible de verrouiller le lobby: {0}", Loc.QuietToken(e.Message)));
+                OnLobbyError?.Invoke(Loc.Token("Impossible de verrouiller le lobby : {0}", Loc.QuietToken(e.Message)));
                 return false;
             }
         }

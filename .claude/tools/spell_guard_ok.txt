@@ -1,0 +1,1 @@
+# Spell guard: texts proofread as wrong that are right (one exact text per line). See spell_guard.py.

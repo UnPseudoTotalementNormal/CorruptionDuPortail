@@ -15,7 +15,7 @@ namespace Characters.Powers.PowerComponents
         private void Reset()
         {
             componentName = "Héritage"; // loc (editor default: the text then lives on the prefab)
-            description = "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel: {var:legacyStatus}."; // loc (editor default: the text then lives on the prefab)
+            description = "Si un {var:legacyRoleName} est enchaîné, le pouvoir deviendra utilisable.\nÉtat actuel : {var:legacyStatus}."; // loc (editor default: the text then lives on the prefab)
         }
         
         protected override void Awake()

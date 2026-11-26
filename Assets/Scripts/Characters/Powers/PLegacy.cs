@@ -22,7 +22,7 @@ namespace Characters.Powers
 
         // T36: read by the tooltip's {var:effectDescription}, so it comes out in the player's language.
         public string effectDescription =>
-            Loc.Tr("Si {0} est enchainé, {1} hérite de \"{2}\".", roleForLegacy.ToString(),
+            Loc.Tr("Si {0} est enchaîné, {1} hérite de \"{2}\".", roleForLegacy.ToString(),
                 Loc.Tr(ownerCharacter.role.roleName.ToString()), Loc.Tr(legacyPower.powerName.ToString()));
 
         public override void OnGameStartedServer()

@@ -51,10 +51,13 @@ public static class CdpBuild
                 : PlayerSettings.productName;
             _path = Path.Combine(_path, _name + ".exe");
         }
-        BuildTarget _target = _args.TryGetValue("buildTarget", out string _rawTarget)
-            && Enum.TryParse(_rawTarget, out BuildTarget _parsed)
-            ? _parsed
-            : BuildTarget.StandaloneWindows64;
+        _args.TryGetValue("buildTarget", out string _rawTarget);
+        if (!TryParseTarget(_rawTarget, out BuildTarget _target))
+        {
+            Debug.LogError($"[BUILD] Unknown -buildTarget '{_rawTarget}'.");
+            EditorApplication.Exit(1);
+            return;
+        }
         // game-ci computes the version from git (semantic versioning); the join gate compares it between players.
         if (_args.TryGetValue("buildVersion", out string _version) && !string.IsNullOrEmpty(_version) && _version != "none")
         {
@@ -143,6 +146,25 @@ public static class CdpBuild
             File.WriteAllText(Path.Combine(_folder, "steam_appid.txt"), GameValues.STEAM_APP_ID.ToString());
         }
         return _report;
+    }
+
+    // Unity's command line names its targets "Win64" / "OSXUniversal", which are not BuildTarget names: a Mac build
+    // used to fall back to Windows silently. Nothing given = Windows 64, an unknown name fails the build.
+    private static bool TryParseTarget(string raw, out BuildTarget target)
+    {
+        switch ((raw ?? string.Empty).ToLowerInvariant())
+        {
+            case "":
+            case "win64":
+                target = BuildTarget.StandaloneWindows64;
+                return true;
+            case "osxuniversal":
+            case "osx":
+            case "mac":
+                target = BuildTarget.StandaloneOSX;
+                return true;
+        }
+        return Enum.TryParse(raw, true, out target);
     }
 
     // "-key value" pairs; a key without value maps to "".

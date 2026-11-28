@@ -58,6 +58,8 @@ CHANGELOG_ASK = ("Lis changelog_prompt.md : ce sont tes consignes de rédaction.
 
 MAC_NOTE = ("Connexion par Steam (Steam doit être lancé). Appli non signée : au premier lancement, ouvrir le Terminal, "
             "taper `xattr -cr ` (avec l'espace), glisser l'appli dans la fenêtre, Entrée.")
+# PlayerSettings.productName: the Mac executable inside <name>.app/Contents/MacOS.
+PRODUCT_NAME = "CorruptionDuPortail"
 # Folder Unity's build lands in, per target (the zip keeps it as its top folder, like the workflow's artifact).
 TARGET_DIR = {"Win64": "StandaloneWindows64", "OSXUniversal": "StandaloneOSX"}
 # The workflow's two Windows flavors, plus Steam on Mac (asked 2026-11-28; built from Windows with Mono, unsigned).
@@ -190,10 +192,23 @@ def build_flavor(sha, number, flavor, out_root, version):
         folder = os.path.dirname(exe_path)
         if not os.path.exists(os.path.join(folder, "steam_appid.txt")):
             raise RuntimeError("steam_appid.txt manquant")
-        # Mac: the bundle lands in <app>/Contents/PlugIns as a folder, so look at folder names too.
-        api = "libsteam_api.bundle" if mac else "steam_api64.dll"
-        if not any(api in (n.lower() for n in ds + fs) for _, ds, fs in os.walk(folder)):
+        if mac:
+            # Right in Contents/PlugIns, where the player looks (a CPU-specific import setting moved it to x86_64/).
+            found = os.path.exists(os.path.join(exe_path, "Contents", "PlugIns", "libsteam_api.bundle"))
+            api = "Contents/PlugIns/libsteam_api.bundle"
+        else:
+            api = "steam_api64.dll"
+            found = any(f.lower() == api for _, _, fs in os.walk(folder) for f in fs)
+        if not found:
             raise RuntimeError(f"{api} manquant : la build Steam ne pourra pas démarrer Steam")
+    if mac:
+        # Our osx libsteam_api has no arm64 slice: the player must be Intel only (CdpBuild.SetMacIntelOnly), else on
+        # Apple Silicon it runs natively and cannot load Steam. Thin x86_64 Mach-O = magic feedfacf, cputype 0x01000007.
+        binary = os.path.join(exe_path, "Contents", "MacOS", PRODUCT_NAME)
+        with open(binary, "rb") as f:
+            head = f.read(8)
+        if head != bytes.fromhex("cffaedfe07000001"):
+            raise RuntimeError(f"appli Mac pas en Intel seul ({head.hex()}) : Steam ne démarrerait pas sur puce Apple")
     # Same layout as the workflow's artifact (the `build` folder): StandaloneWindows64/<files>.
     zip_path = os.path.join(out_root, name + ".zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:

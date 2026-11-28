@@ -134,6 +134,11 @@ public static class CdpBuild
             extraScriptingDefines = _defines.ToArray(),
         };
 
+        if (target == BuildTarget.StandaloneOSX)
+        {
+            SetMacIntelOnly();
+        }
+
         Debug.Log($"[BUILD] {(steam ? "Steam" : "Relay")} build{(playtestLogs ? " + playtest logs" : "")}, {target}, version {PlayerSettings.bundleVersion} -> {locationPath}");
         BuildReport _report = BuildPipeline.BuildPlayer(_options);
         Debug.Log($"[BUILD] {_report.summary.result}: {_report.summary.totalErrors} error(s), {_report.summary.totalSize / (1024 * 1024)} MB.");
@@ -146,6 +151,22 @@ public static class CdpBuild
             File.WriteAllText(Path.Combine(_folder, "steam_appid.txt"), GameValues.STEAM_APP_ID.ToString());
         }
         return _report;
+    }
+
+    // Mac player = Intel (x64) only, run by Rosetta on Apple Silicon. Our Facepunch.Steamworks is older than Steam's
+    // arm64 libsteam_api: the only libsteam_api it can call (redistributable_bin/osx) has no arm64 slice, so a native
+    // Apple Silicon player could never start Steam. Drop this once Facepunch.Steamworks and its osx lib are updated.
+    // UserBuildSettings lives in the Mac Build Support module: reached by reflection so a PC without it still compiles.
+    private static void SetMacIntelOnly()
+    {
+        Type _settings = Type.GetType("UnityEditor.OSXStandalone.UserBuildSettings, UnityEditor.OSXStandalone.Extensions");
+        System.Reflection.PropertyInfo _arch = _settings?.GetProperty("architecture");
+        if (_arch == null)
+        {
+            throw new InvalidOperationException("[BUILD] Mac Build Support module missing: UserBuildSettings.architecture not found.");
+        }
+        _arch.SetValue(null, Enum.Parse(_arch.PropertyType, "x64"));
+        Debug.Log($"[BUILD] Mac architecture: {_arch.GetValue(null)}.");
     }
 
     // Unity's command line names its targets "Win64" / "OSXUniversal", which are not BuildTarget names: a Mac build

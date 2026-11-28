@@ -244,8 +244,19 @@
 }
 
 /* T9 maquettes menus v1 K2: each state is a pen stroke, tinted like the glyph it replaces (ghost, then near-black
-   on its filled tile once selected). */
+   on its filled tile once selected). The stroke sits on a child capped at --cdp-info-mark-max: drawn on the tile
+   itself it followed the row height and grew huge in a small game (rows stretch to fill the tablet). */
 .info-table__seg {
+    padding: 0;                       /* a Label's default padding would shrink the stroke (legend tiles) */
+    justify-content: center;
+    align-items: center;
+}
+
+.info-table__seg-mark {
+    width: 100%;
+    height: 100%;
+    max-width: var(--cdp-info-mark-max);
+    max-height: var(--cdp-info-mark-max);
     background-repeat: no-repeat no-repeat;
     background-position-x: center;
     background-position-y: center;
@@ -253,11 +264,11 @@
     -unity-background-image-tint-color: var(--cdp-color-info-ghost-glyph);
 }
 
-.info-table__seg--sure { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Coche.png"); }
-.info-table__seg--maybe { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Point.png"); }
-.info-table__seg--not { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Croix.png"); }
+.info-table__seg--sure .info-table__seg-mark { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Coche.png"); }
+.info-table__seg--maybe .info-table__seg-mark { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Point.png"); }
+.info-table__seg--not .info-table__seg-mark { background-image: url("project://database/Assets/Art/Sprites/T9/Plume_Croix.png"); }
 
-.info-table__seg--selected {
+.info-table__seg--selected .info-table__seg-mark {
     -unity-background-image-tint-color: var(--cdp-color-info-glyph-on);
 }
 .info-table__seg:hover {

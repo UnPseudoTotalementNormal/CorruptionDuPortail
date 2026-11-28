@@ -144,6 +144,7 @@
     --cdp-info-glyph-comfort: 30px;    /* segment glyph size per tier */
     --cdp-info-glyph-compact: 26px;
     --cdp-info-glyph-dense: 22px;      /* also used by the scroll tier */
+    --cdp-info-mark-max: 44px;         /* largest pen stroke in a cell (its size in a 10-player game) */
     --cdp-info-namecol-wide: 26%;      /* player-name column width per role tier */
     --cdp-info-namecol-compact: 22%;
     --cdp-info-namecol-icon: 20%;

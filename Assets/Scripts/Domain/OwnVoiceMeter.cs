@@ -23,6 +23,18 @@ namespace CorruptionDuPortail.Domain
             _levels = new VoiceLevelTrack(_bytesPerSecond / 50); // 20 ms blocks, like the playback
         }
 
+        /// <summary>
+        /// What Steam encoded from this player's own microphone since the last <see cref="ResetBurst"/>, before any
+        /// processing: the same stats a listener logs, so a voice that arrives distorted can be traced to the
+        /// speaker's side (it was already so here) or to the way between.
+        /// </summary>
+        public VoiceLeveler.BurstStats Burst => _leveler.Burst;
+
+        /// <summary>Everything measured was read back: the player stopped talking.</summary>
+        public bool Idle => (long)_played >= _written;
+
+        public void ResetBurst() => _leveler.ResetBurst();
+
         /// <summary>Measures one decoded packet (PCM16 mono, levelled in place).</summary>
         public void Add(byte[] pcm, int count)
         {

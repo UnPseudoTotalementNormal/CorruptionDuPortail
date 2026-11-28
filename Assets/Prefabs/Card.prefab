@@ -512,6 +512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cardCanvas: {fileID: 422508917166547416}
+  faceRect: {fileID: 5916999231339126252}
   <voteCanvas>k__BackingField: {fileID: 6534977542599041295}
   <visualComponents>k__BackingField: {fileID: 1785735415685486711}
   visualUpdater:

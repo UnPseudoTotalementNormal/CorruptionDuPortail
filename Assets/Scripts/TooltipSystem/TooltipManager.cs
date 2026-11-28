@@ -42,6 +42,7 @@ namespace TooltipSystem
         private HoverTooltipComponent _hovered;
         private HoverTooltipComponent _shown;
         private HoverTooltipComponent _dismissed;
+        private RectTransform _anchorOverride;
         private RectTransform[] _anchorRects;
         private Renderer[] _anchorRenderers;
         private bool _keptOnScreenLogged;
@@ -164,9 +165,10 @@ namespace TooltipSystem
                 GameLog.Info("ui", "ui.tooltip.close", "target", _shown.name, "reason", "switch");
             }
             _shown = _trigger;
-            _anchorRects = _trigger.TooltipBoundsOverride == null && _trigger.GetComponent<RectTransform>() != null
+            _anchorOverride = UsableOverride(_trigger);
+            _anchorRects = _anchorOverride == null && _trigger.GetComponent<RectTransform>() != null
                 ? _trigger.GetComponentsInChildren<RectTransform>() : null;
-            _anchorRenderers = _trigger.TooltipBoundsOverride == null && _anchorRects == null
+            _anchorRenderers = _anchorOverride == null && _anchorRects == null
                 ? ModelRenderers(_trigger) : null;
             _keptOnScreenLogged = false;
 
@@ -217,6 +219,7 @@ namespace TooltipSystem
                 GameLog.Info("ui", "ui.tooltip.close", "target", _shown != null ? _shown.name : "destroyed", "reason", _reason);
             }
             _shown = null;
+            _anchorOverride = null;
             _anchorRects = null;
             _anchorRenderers = null;
             if (_bubble != null) _bubble.FadeOut(FADE_OUT);
@@ -336,6 +339,25 @@ namespace TooltipSystem
         }
 
         /// <summary>
+        /// The rect a trigger asks its bubble to sit beside, unless it is empty: a 0x0 rect (the card root, fil « bulle
+        /// des cartes », 2026-11-28) put the bubble on the middle of the card instead of above it. An empty one is
+        /// dropped for the trigger's own bounds, with a warning so the wrong wiring shows in the logs.
+        /// </summary>
+        private static RectTransform UsableOverride(HoverTooltipComponent _trigger)
+        {
+            RectTransform _override = _trigger.TooltipBoundsOverride;
+            if (_override == null || !IsEmptyAnchor(_override.rect.size))
+            {
+                return _override;
+            }
+            GameLog.Warn("ui", "ui.tooltip.anchor.empty", "target", _trigger.name, "rect", _override.name);
+            return null;
+        }
+
+        /// <summary>A rect too small to sit a bubble beside (its centre would be the only anchor).</summary>
+        public static bool IsEmptyAnchor(Vector2 _rectSize) => _rectSize.x < 1f || _rectSize.y < 1f;
+
+        /// <summary>
         /// The renderers the bubble sits beside: the object's model only. A particle or trail renderer's bounds follow
         /// its particles: the slime drips of a copied power (Ugës's copies, bottom row) grew the box every frame and the
         /// bubble crept up by itself (Liste en vrac n°7).
@@ -354,10 +376,10 @@ namespace TooltipSystem
         private (Vector2 size, Vector2 centre) TriggerScreenBox()
         {
             Camera _camera = Camera.main;
-            if (_shown.TooltipBoundsOverride != null)
+            if (_anchorOverride != null)
             {
                 // Anchor to a fixed rect (e.g. a resting slot) so animated visuals don't drag the tooltip.
-                return RectsScreenBox(_shown.TooltipBoundsOverride, null, _camera);
+                return RectsScreenBox(_anchorOverride, null, _camera);
             }
             if (_anchorRects != null)
             {

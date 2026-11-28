@@ -26,8 +26,11 @@ namespace Board
     {
         [Header("Core References")]
         [SerializeField] private Canvas cardCanvas;
+        [Tooltip("The card face (FrontCanvas, 630x880): what a bubble about this card sits beside. Not cardCanvas: the "
+                 + "card root's rect is 0x0, a bubble anchored on it sat on the middle of the card.")]
+        [SerializeField] private RectTransform faceRect;
         /// <summary>The card face's rect: what a bubble about this card sits beside (T9 marks bubble).</summary>
-        public RectTransform FaceRect => cardCanvas != null ? (RectTransform)cardCanvas.transform : null;
+        public RectTransform FaceRect => faceRect;
         [field:SerializeField] public VoteCanvas voteCanvas { get; private set; }
 
         

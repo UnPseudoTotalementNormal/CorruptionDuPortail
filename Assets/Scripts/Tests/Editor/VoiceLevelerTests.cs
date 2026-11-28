@@ -251,5 +251,19 @@ namespace Tests.Editor
             Assert.Less(Distortion(_input, _output, 0.0, 0.1), 0.05, "The start of the shout, before the level follower caught up, keeps its shape.");
             Assert.Less(Distortion(_input, _output, 0.15, 0.29), 0.03, "Once the gain settled, the shout keeps its shape.");
         }
+
+        // Playtest 2026-11-28: Wouh's voice arrived as hiss-like distortion at a sane level, nothing clipped, and the
+        // level stats said all was well. The roughness tells a voice (energy in the lows) from noise (spread to the top).
+        [Test]
+        public void Roughness_TellsAVoiceFromNoise()
+        {
+            var _voice = new VoiceLeveler(Rate);
+            Feed(_voice, Vowel(1.0, VoiceLeveler.TargetRms));
+            var _noise = new VoiceLeveler(Rate);
+            Feed(_noise, Noise(1.0, VoiceLeveler.TargetRms));
+
+            Assert.Less(_voice.Burst.Roughness, 0.2, "A clean voice keeps its energy in the lows.");
+            Assert.Greater(_noise.Burst.Roughness, 1.5, "White noise spreads it to the top (2 in theory).");
+        }
     }
 }

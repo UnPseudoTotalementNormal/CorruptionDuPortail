@@ -493,7 +493,26 @@ namespace VoiceSystem
                 "clippedPct", Math.Round(100.0 * _burst.Clipped / _burst.Samples, 2),
                 "gainDb", Db(_burst.MeanGain),
                 "outPeakDb", Db(_burst.OutPeak),
-                "limitedPct", Math.Round(100.0 * _burst.Limited / _burst.Samples, 2));
+                "limitedPct", Math.Round(100.0 * _burst.Limited / _burst.Samples, 2),
+                "roughness", Math.Round(_burst.Roughness, 2));
+        }
+
+        // The speaker's side of voice.level, once per thing said: what Steam encoded from his own microphone. Clean
+        // here but rough at a listener = damaged on the way; already rough here = his microphone, Windows or Steam's
+        // voice settings (playtest 2026-11-28: Wouh's voice arrived as hiss-like distortion, nothing clipped).
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogOwnLevel()
+        {
+            VoiceLeveler.BurstStats _burst = _ownMeter.Burst;
+            if (_burst.Samples == 0)
+            {
+                return;
+            }
+            GameLog.Info("voice", "voice.own.level",
+                "seconds", Math.Round(_burst.Samples / (double)Math.Max(1, _codec.SampleRate), 2),
+                "peakDb", Db(_burst.Peak), "speechDb", Db(_burst.SpeechRms),
+                "clippedPct", Math.Round(100.0 * _burst.Clipped / _burst.Samples, 2),
+                "roughness", Math.Round(_burst.Roughness, 2));
         }
 
         private static double Db(double _linear) => _linear > 0 ? Math.Round(20.0 * Math.Log10(_linear), 1) : -120.0;
@@ -542,6 +561,11 @@ namespace VoiceSystem
                 return;
             }
             float _level = _ownMeter.Advance(Time.unscaledDeltaTime);
+            if (!IsTransmitting && _ownMeter.Idle && _ownMeter.Burst.Samples > 0)
+            {
+                LogOwnLevel();
+                _ownMeter.ResetBurst(); // also without the logs: the counters start again for each thing said
+            }
             if (_level == 0f && _ownLevel == 0f)
             {
                 return;

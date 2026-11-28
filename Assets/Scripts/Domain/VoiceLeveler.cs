@@ -63,6 +63,8 @@ namespace CorruptionDuPortail.Domain
         private double _speechLevel;
         private double _gain = 1.0;
         private double _gate = 1.0;
+        // The last input sample of the previous block (packets follow each other: the step spans them).
+        private double _previousInput;
 
         /// <summary>What came in since the last <see cref="ResetBurst"/>, before any processing.</summary>
         public BurstStats Burst;
@@ -78,6 +80,8 @@ namespace CorruptionDuPortail.Domain
             /// <summary>Sum of squares of the speech blocks (for their RMS).</summary>
             public double SpeechSquares;
             public int SpeechSamples;
+            /// <summary>Sum of squares of the sample-to-sample steps of the speech blocks (for <see cref="Roughness"/>).</summary>
+            public double SpeechStepSquares;
             /// <summary>Sum of the gain applied to each speech block, and their count.</summary>
             public double GainSum;
             public int GainBlocks;
@@ -88,6 +92,14 @@ namespace CorruptionDuPortail.Domain
             public int Limited;
 
             public double SpeechRms => SpeechSamples > 0 ? Math.Sqrt(SpeechSquares / SpeechSamples) : 0;
+
+            /// <summary>
+            /// How much of the speech's energy sits in the high frequencies: step energy over signal energy (0 = only
+            /// lows, 2 = white noise). A clean voice at 48 kHz stays around 0.1-0.2; playtest 2026-11-28, Wouh's voice
+            /// came out as hiss-like distortion (≈ 0.6) at a sane level, with nothing clipped: the level stats could
+            /// not see it. Measured as it arrives, before any processing.
+            /// </summary>
+            public double Roughness => SpeechSquares > 0 ? SpeechStepSquares / SpeechSquares : 0;
             public double MeanGain => GainBlocks > 0 ? GainSum / GainBlocks : 1;
         }
 
@@ -186,11 +198,15 @@ namespace CorruptionDuPortail.Domain
         private void ProcessBlock(byte[] pcm, int from, int to)
         {
             double _sum = 0;
+            double _steps = 0;
             for (int i = from; i < to; i++)
             {
                 double _s = Read(pcm, i);
                 double _abs = Math.Abs(_s);
                 _sum += _s * _s;
+                double _step = _s - _previousInput;
+                _steps += _step * _step;
+                _previousInput = _s;
                 if (_abs > Burst.Peak)
                 {
                     Burst.Peak = _abs;
@@ -212,6 +228,7 @@ namespace CorruptionDuPortail.Domain
                     : _speechLevel + (_rms - _speechLevel) * (_rms > _speechLevel ? LevelAttack : LevelRelease);
                 Burst.SpeechSquares += _sum;
                 Burst.SpeechSamples += _n;
+                Burst.SpeechStepSquares += _steps;
             }
             double _targetGain = _speechLevel > 0 ? Clamp(TargetRms / _speechLevel, MinGain, MaxGain) : 1.0;
             double _targetGate = _speech ? 1.0 : Math.Max(GateFloor, _gate + (GateFloor - _gate) * GateClose);

@@ -55,6 +55,7 @@ namespace UI.InfoTable
         private const string SegMaybeClass = "info-table__seg--maybe";
         private const string SegNotClass = "info-table__seg--not";
         private const string SegSelectedClass = "info-table__seg--selected";
+        private const string SegMarkClass = "info-table__seg-mark";
         private const string FooterClass = "info-table__footer";
         private const string BannerClass = "info-table__banner";
         private const string CapacityRowClass = "info-table__capacity-row";
@@ -372,6 +373,7 @@ namespace UI.InfoTable
             var seg = new Label(glyph);
             seg.AddToClassList(SegmentClass);
             seg.AddToClassList(colorClass);
+            seg.Add(NewSegmentMark());
 
             int pi = playerIndex;
             int ri = roleIndex;
@@ -384,6 +386,15 @@ namespace UI.InfoTable
             });
 
             cell.Add(seg);
+        }
+
+        // The pen stroke of a segment, on its own element so the USS can cap its size: drawn on the tile itself
+        // (background-size: contain) it grew with the rows and turned huge in a small game.
+        private static VisualElement NewSegmentMark()
+        {
+            var mark = new VisualElement { pickingMode = PickingMode.Ignore };
+            mark.AddToClassList(SegMarkClass);
+            return mark;
         }
 
         // Footer "context bar": conflict banner + per-role capacity counters + a states legend.
@@ -442,6 +453,7 @@ namespace UI.InfoTable
             mark.AddToClassList(colorClass);
             mark.AddToClassList(SegSelectedClass);   // legend marks always read as "on"
             mark.pickingMode = PickingMode.Ignore;
+            mark.Add(NewSegmentMark());
 
             var text = new Label().SetLoc(label);
 

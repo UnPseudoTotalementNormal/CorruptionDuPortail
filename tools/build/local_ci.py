@@ -56,12 +56,24 @@ TITLE_SUFFIX = " — Corruption du Portail"
 CHANGELOG_ASK = ("Lis changelog_prompt.md : ce sont tes consignes de rédaction. Les commits sont dans commits.txt. "
                  "Rédige le changelog en suivant ces consignes et écris-le, et rien d'autre, dans le fichier changelog.txt.")
 
-# Same two flavors as the workflow's matrix.
+MAC_NOTE = ("Connexion par Steam (Steam doit être lancé). Appli non signée : au premier lancement, ouvrir le Terminal, "
+            "taper `xattr -cr ` (avec l'espace), glisser l'appli dans la fenêtre, Entrée.")
+# PlayerSettings.productName: the Mac executable inside <name>.app/Contents/MacOS.
+PRODUCT_NAME = "CorruptionDuPortail"
+# Folder Unity's build lands in, per target (the zip keeps it as its top folder, like the workflow's artifact).
+TARGET_DIR = {"Win64": "StandaloneWindows64", "OSXUniversal": "StandaloneOSX"}
+# The workflow's two Windows flavors, plus Steam on Mac (asked 2026-11-28; built from Windows with Mono, unsigned).
+# "cdp" is CdpBuild's -cdpFlavor, "target" Unity's -buildTarget.
 FLAVORS = [
-    {"flavor": "relay", "name": "CorruptionDuPortail_b{n}", "field": "🖥️ Build Relay (tests)",
+    {"flavor": "relay", "cdp": "relay", "target": "Win64", "name": "CorruptionDuPortail_b{n}",
+     "field": "🖥️ Build Relay (tests)",
      "note": "Connexion Unity Relay. Plusieurs copies sur le même PC pour tester."},
-    {"flavor": "steam", "name": "CorruptionDuPortail_Steam_b{n}", "field": "🎮 Build Steam",
+    {"flavor": "steam", "cdp": "steam", "target": "Win64", "name": "CorruptionDuPortail_Steam_b{n}",
+     "field": "🎮 Build Steam",
      "note": "Connexion par Steam (Steam doit être lancé). Une copie par compte Steam."},
+    {"flavor": "steam-mac", "cdp": "steam", "target": "OSXUniversal", "name": "CorruptionDuPortail_Steam_Mac_b{n}",
+     "field": "🍎 Build Steam Mac",
+     "note": MAC_NOTE},
 ]
 
 
@@ -163,32 +175,60 @@ def build_flavor(sha, number, flavor, out_root, version):
     name = flavor["name"].format(n=number)
     out = os.path.join(out_root, flavor["flavor"])
     shutil.rmtree(out, ignore_errors=True)
-    exe_path = os.path.join(out, "StandaloneWindows64", name + ".exe")
+    mac = flavor["target"] == "OSXUniversal"
+    top = TARGET_DIR[flavor["target"]]
+    exe_path = os.path.join(out, top, name + (".app" if mac else ".exe"))
     unity_log = os.path.join(STATE_DIR, "logs", f"b{number}-{flavor['flavor']}.log")
     os.makedirs(os.path.dirname(unity_log), exist_ok=True)
-    cmd = [unity_exe(), "-batchmode", "-quit", "-projectPath", CHECKOUT, "-buildTarget", "Win64",
+    cmd = [unity_exe(), "-batchmode", "-quit", "-projectPath", CHECKOUT, "-buildTarget", flavor["target"],
            "-executeMethod", "CdpBuild.BuildFromCommandLine", "-customBuildPath", exe_path, "-customBuildName", name,
-           "-cdpFlavor", flavor["flavor"], "-cdpLogs", "on", "-buildVersion", version, "-logFile", unity_log]
+           "-cdpFlavor", flavor["cdp"], "-cdpLogs", "on", "-buildVersion", version, "-logFile", unity_log]
     log(f"b{number} {flavor['flavor']}: building {sha[:8]} v{version}")
     # Below normal priority: the PC stays usable while it builds.
     done = subprocess.run(cmd, creationflags=0x00004000 if os.name == "nt" else 0)
     if done.returncode != 0 or not os.path.exists(exe_path):
         raise RuntimeError(f"Unity exit {done.returncode}, log {unity_log}")
-    if flavor["flavor"] == "steam":
+    if flavor["cdp"] == "steam":
         folder = os.path.dirname(exe_path)
         if not os.path.exists(os.path.join(folder, "steam_appid.txt")):
             raise RuntimeError("steam_appid.txt manquant")
-        if not any(f.lower() == "steam_api64.dll" for _, _, fs in os.walk(folder) for f in fs):
-            raise RuntimeError("steam_api64.dll manquant : la build Steam ne pourra pas démarrer Steam")
+        if mac:
+            # Right in Contents/PlugIns, where the player looks (a CPU-specific import setting moved it to x86_64/).
+            found = os.path.exists(os.path.join(exe_path, "Contents", "PlugIns", "libsteam_api.bundle"))
+            api = "Contents/PlugIns/libsteam_api.bundle"
+        else:
+            api = "steam_api64.dll"
+            found = any(f.lower() == api for _, _, fs in os.walk(folder) for f in fs)
+        if not found:
+            raise RuntimeError(f"{api} manquant : la build Steam ne pourra pas démarrer Steam")
+    if mac:
+        # Our osx libsteam_api has no arm64 slice: the player must be Intel only (CdpBuild.SetMacIntelOnly), else on
+        # Apple Silicon it runs natively and cannot load Steam. Thin x86_64 Mach-O = magic feedfacf, cputype 0x01000007.
+        binary = os.path.join(exe_path, "Contents", "MacOS", PRODUCT_NAME)
+        with open(binary, "rb") as f:
+            head = f.read(8)
+        if head != bytes.fromhex("cffaedfe07000001"):
+            raise RuntimeError(f"appli Mac pas en Intel seul ({head.hex()}) : Steam ne démarrerait pas sur puce Apple")
     # Same layout as the workflow's artifact (the `build` folder): StandaloneWindows64/<files>.
     zip_path = os.path.join(out_root, name + ".zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, _, files in os.walk(os.path.join(out, "StandaloneWindows64")):
+        for root, _, files in os.walk(os.path.join(out, top)):
             for f in files:
                 full = os.path.join(root, f)
                 if "_BurstDebugInformation_DoNotShip" in full or "_BackUpThisFolder_ButDontShipItWithYourGame" in full:
                     continue
-                z.write(full, os.path.relpath(full, out))
+                if not mac:
+                    z.write(full, os.path.relpath(full, out))
+                    continue
+                # Windows has no exec bit: written as is, the Mac binaries unzip as 644 and the app never starts.
+                # Unix entries: 755 under Contents/MacOS and inside .bundle plugins, 644 otherwise.
+                info = zipfile.ZipInfo.from_file(full, os.path.relpath(full, out))
+                info.create_system = 3
+                exe = "/Contents/MacOS/" in info.filename or ".bundle/" in info.filename
+                info.external_attr = (0o100755 if exe else 0o100644) << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                with open(full, "rb") as src:
+                    z.writestr(info, src.read())
     remote = f"{DRIVE_ROOT}/b{number}/{name}.zip"
     log(f"b{number} {flavor['flavor']}: uploading {os.path.getsize(zip_path) // (1 << 20)} MB")
     run(["rclone", "copyto", zip_path, remote])
@@ -266,7 +306,7 @@ def build(sha=None):
             folder_url = drive_link(f"{DRIVE_ROOT}/b{number}")
         except Exception as e:
             log(f"folder link failed: {e}")
-        started = {"title": "🔨 Builds démarrées (Relay + Steam)" + TITLE_SUFFIX, "color": 15105570,
+        started = {"title": "🔨 Builds démarrées (Relay, Steam, Steam Mac)" + TITLE_SUFFIX, "color": 15105570,
                    "fields": [{"name": "Auteur", "value": actor, "inline": True},
                               {"name": "Commit", "value": subject[:1024], "inline": False}]}
         if folder_url:
@@ -303,7 +343,8 @@ def build(sha=None):
                 url = links.get(flavor["flavor"])
                 value = f"[Télécharger]({url})\n{flavor['note']}" if url else f"❌ Build échouée, [voir les logs]({folder_url})"
                 fields.append({"name": flavor["field"], "value": value, "inline": False})
-            embed = {"title": ("✅ Builds réussies" if both else "⚠️ Une build sur deux réussie") + TITLE_SUFFIX,
+            partial = f"⚠️ {len(links)} builds sur {len(FLAVORS)} réussies"
+            embed = {"title": ("✅ Builds réussies" if both else partial) + TITLE_SUFFIX,
                      "color": 5763719 if both else 16776960,
                      "description": text if len(text) <= 4000 else text[:3990] + "\n…", "fields": fields}
             if folder_url:

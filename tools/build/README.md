@@ -5,7 +5,7 @@
 
 | Workflow (now `workflow_dispatch` only) | Local job |
 |---|---|
-| `Build.yml` | each new `origin/Main` head: Relay + Steam builds, below |
+| `Build.yml` | each new `origin/Main` head: Relay + Steam Windows builds and a Steam Mac build, below |
 | `DevPush.yml` | each new `origin/Dev` head: « ⚠️ Push direct sur Dev » (webhook Dev), the pushed commits, compare link |
 | `DevPROpened.yml` | each new PR into Dev (GitHub API through `gh`): « 📥 Nouvelle PR », its commits |
 | `DevMergeNotif.yml` | each PR into Dev merged: « ✅ PR mergée », author and merger |
@@ -21,9 +21,9 @@ The build runs in its own process, so notifications keep flowing during a build.
 | Trigger | `watch` polls `origin/Main` every 2 min (started at logon by `CdP Local CI.cmd` in the Startup folder) |
 | « 🔨 Builds démarrées » | webhook **Dev** (#dev), author = commit author, full commit message |
 | Builds | Unity in batchmode, `CdpBuild.BuildFromCommandLine -cdpFlavor relay\|steam -cdpLogs on -buildVersion 0.0.<commits>` (the version game-ci used), in its own checkout `<repo>-ci` (detached worktree, its Library kept between builds), below normal priority |
-| Files | zips `CorruptionDuPortail_b<n>.zip` / `CorruptionDuPortail_Steam_b<n>.zip` (inside: `StandaloneWindows64/`, like the old artifact) on Google Drive, `Corruption du Portail - Builds/b<n>/`, shared by link; Unity logs in `b<n>/logs/` |
+| Files | zips `CorruptionDuPortail_b<n>.zip` / `CorruptionDuPortail_Steam_b<n>.zip` (inside: `StandaloneWindows64/`, like the old artifact) / `CorruptionDuPortail_Steam_Mac_b<n>.zip` (inside: `StandaloneOSX/<name>.app`, Unix exec bits set by the zip writer, unsigned: testers run `xattr -cr` once; needs Unity's Mac Build Support (Mono) module) on Google Drive, `Corruption du Portail - Builds/b<n>/`, shared by link; Unity logs in `b<n>/logs/` |
 | Changelog | `claude -p` (Opus), then `codex exec`, then `gemini -p`, with `.github/changelog-prompt.md`, commits since the last successful build |
-| « ✅ Builds réussies » / « ⚠️ Une build sur deux » | webhook **Builder** (#builds), download links = Drive |
+| « ✅ Builds réussies » / « ⚠️ n builds sur 3 » | webhook **Builder** (#builds), download links = Drive |
 | « ❌ Builds échouées » | webhook **Dev**, link = the build's Drive folder (logs) |
 | Cleanup | the 3 newest builds stay on Drive, older ones deleted (not trashed) |
 

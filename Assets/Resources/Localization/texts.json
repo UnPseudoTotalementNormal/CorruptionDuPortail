@@ -1397,10 +1397,6 @@
       "en": "Music"
     },
     {
-      "fr": "Voix",
-      "en": "Voice"
-    },
-    {
       "fr": "Micro",
       "en": "Mic"
     },
@@ -1507,10 +1503,6 @@
     {
       "fr": "Tableau des interactions",
       "en": "Interaction table"
-    },
-    {
-      "fr": "Essais (vue du jour)",
-      "en": "Trials (day view)"
     },
     {
       "fr": "Cartes levées en vue première personne",
@@ -1687,6 +1679,54 @@
     {
       "fr": "Tu as piraté ce joueur : s'il se fait enchaîner aujourd'hui, tu gagnes.",
       "en": "You hacked this player: if they get chained today, you win."
+    },
+    {
+      "fr": "Audio",
+      "en": "Audio"
+    },
+    {
+      "fr": "Vocal",
+      "en": "Voice"
+    },
+    {
+      "fr": "Affichage",
+      "en": "Display"
+    },
+    {
+      "fr": "Essais",
+      "en": "Trials"
+    },
+    {
+      "fr": "Voix des autres",
+      "en": "Others' voices"
+    },
+    {
+      "fr": "Ma voix",
+      "en": "My voice"
+    },
+    {
+      "fr": "Test",
+      "en": "Test"
+    },
+    {
+      "fr": "‹ Celle de Steam ›",
+      "en": "‹ Steam's ›"
+    },
+    {
+      "fr": "Tester le micro",
+      "en": "Test the mic"
+    },
+    {
+      "fr": "Arrêter le test",
+      "en": "Stop the test"
+    },
+    {
+      "fr": "Aucun son de ce micro",
+      "en": "No sound from this mic"
+    },
+    {
+      "fr": "Vue du jour",
+      "en": "Day view"
     }
   ]
 }

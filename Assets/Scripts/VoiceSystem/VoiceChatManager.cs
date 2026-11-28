@@ -54,7 +54,12 @@ namespace VoiceSystem
 
         private IGameStateQuery Query => _gameManager;
 
+        // Steam Voice: the default microphone (Steam's own) and the gate of the whole voice (Steam build only).
         private IVoiceCodec _codec;
+        // A microphone of this PC picked in the options (mockups micro v1 C4), and the decoder of the others' ones.
+        private IVoiceCodec _opus;
+        // The codec whose microphone is open now (or still handing out its tail).
+        private IVoiceCodec _capture;
         private Func<ulong, int, VoicePlayback> _createPlayback = VoicePlayback.Create;
         private readonly MemoryStream _captured = new();
         private readonly MemoryStream _pcm = new();
@@ -99,24 +104,35 @@ namespace VoiceSystem
             Assert.IsNotNull(_options, "VoiceChatManager._options is not wired — wire it in GameScene (the composition root).");
             Assert.IsNotNull(_avatarManager, "VoiceChatManager._avatarManager is not wired — wire it in GameScene (the composition root).");
             _codec ??= new SteamVoiceCodec();
-            _options.OnChanged += ApplyVolume;
+            _opus ??= new OpusMicCodec(() => _options.InputDevice);
+            _options.OnChanged += OnOptionsChanged;
         }
 
         public override void OnDestroy()
         {
             if (_options != null)
             {
-                _options.OnChanged -= ApplyVolume;
+                _options.OnChanged -= OnOptionsChanged;
             }
+            (_opus as IDisposable)?.Dispose();
             base.OnDestroy();
         }
 
-        /// <summary>Tests: replaces Steam Voice and the FMOD output.</summary>
-        internal void UseCodec(IVoiceCodec _testCodec, Func<ulong, int, VoicePlayback> _testPlayback)
+        /// <summary>Tests: replaces Steam Voice, the PC microphone codec (null = none) and the FMOD output.</summary>
+        internal void UseCodec(IVoiceCodec _testCodec, Func<ulong, int, VoicePlayback> _testPlayback, IVoiceCodec _testPcCodec = null)
         {
             _codec = _testCodec;
+            _opus = _testPcCodec;
             _createPlayback = _testPlayback;
         }
+
+        // Steam's microphone unless a microphone of this PC is picked in the options.
+        private IVoiceCodec WantedCapture =>
+            _opus != null && !string.IsNullOrEmpty(_options.InputDevice) ? _opus : _codec;
+
+        private VoiceCodecId IdOf(IVoiceCodec _c) => _c != null && _c == _opus ? VoiceCodecId.Opus : VoiceCodecId.Steam;
+
+        private IVoiceCodec CodecOf(VoiceCodecId _id) => _id == VoiceCodecId.Opus ? _opus : _codec;
 
         public override void OnNetworkDespawn()
         {
@@ -158,6 +174,10 @@ namespace VoiceSystem
 
         private bool WantsToTransmit()
         {
+            if (_options.TestRunning)
+            {
+                return false; // the options' microphone test holds the microphone
+            }
             if (!_options.OpenMic && !ForceTalk)
             {
                 Keyboard _keyboard = Keyboard.current;
@@ -200,7 +220,16 @@ namespace VoiceSystem
             LogMic(_transmitting);
             if (_codec != null && _codec.IsAvailable)
             {
-                _codec.Recording = _transmitting;
+                if (_transmitting)
+                {
+                    _capture = WantedCapture;
+                    _capture.Recording = true;
+                    LogCapture();
+                }
+                else if (_capture != null)
+                {
+                    _capture.Recording = false;
+                }
             }
             if (IsSpawned)
             {
@@ -221,8 +250,9 @@ namespace VoiceSystem
             }
             _lastReadAt = Time.unscaledTime;
 
+            IVoiceCodec _source = _capture ?? _codec; // Steam's until a microphone was opened
             _captured.SetLength(0);
-            int _read = _codec.ReadCaptured(_captured);
+            int _read = _source.ReadCaptured(_captured);
             if (_read <= 0)
             {
                 return;
@@ -236,17 +266,20 @@ namespace VoiceSystem
             }
             LogSent(_read);
             byte[] _packet = _captured.ToArray();
-            SendVoice(_packet);
-            MeasureOwnVoice(_packet);
+            VoiceCodecId _id = IdOf(_source);
+            SendVoice(_packet, _id);
+            MeasureOwnVoice(_packet, _id);
         }
 
-        /// <summary>Sends one packet of compressed voice to the server, which forwards it to the listeners.</summary>
-        internal void SendVoice(byte[] _packet) => SendVoiceServerRpc(_packet, _nextSequence++);
+        /// <summary>Sends one packet of compressed voice to the server, which forwards it to the listeners, with the
+        /// codec that made it and « Ma voix » (the listeners apply it after their leveler).</summary>
+        internal void SendVoice(byte[] _packet, VoiceCodecId _id = VoiceCodecId.Steam) =>
+            SendVoiceServerRpc(_packet, _nextSequence++, (byte)_id, VoiceGain.ToByte(_options.OwnGain));
 
         // ---- Server routing ----
 
         [Rpc(SendTo.Server, Delivery = RpcDelivery.Unreliable)]
-        private void SendVoiceServerRpc(byte[] _voice, ushort _sequence, RpcParams _params = default)
+        private void SendVoiceServerRpc(byte[] _voice, ushort _sequence, byte _codecId, byte _gain, RpcParams _params = default)
         {
             if (_voice == null || _voice.Length == 0 || _voice.Length > MaxPacketBytes)
             {
@@ -263,7 +296,7 @@ namespace VoiceSystem
             LogChannelIfChanged(_speaker, _listeners);
             foreach (ulong _listener in _listeners)
             {
-                ReceiveVoiceRpc(_speaker, _sequence, _voice, _characterManager.GetSafeRpcTarget(_listener));
+                ReceiveVoiceRpc(_speaker, _sequence, _codecId, _gain, _voice, _characterManager.GetSafeRpcTarget(_listener));
             }
         }
 
@@ -283,9 +316,14 @@ namespace VoiceSystem
 
         // The server never sends a voice back to its speaker.
         [Rpc(SendTo.SpecifiedInParams, Delivery = RpcDelivery.Unreliable)]
-        private void ReceiveVoiceRpc(ulong _speaker, ushort _sequence, byte[] _voice, RpcParams _params = default)
+        private void ReceiveVoiceRpc(ulong _speaker, ushort _sequence, byte _codecId, byte _gain, byte[] _voice, RpcParams _params = default)
         {
             if (_codec == null || !_codec.IsAvailable || _voice == null)
+            {
+                return;
+            }
+            IVoiceCodec _decoder = DecoderFor((VoiceCodecId)_codecId);
+            if (_decoder == null)
             {
                 return;
             }
@@ -299,7 +337,7 @@ namespace VoiceSystem
             }
             _lastSequence[_speaker] = _sequence;
 
-            int _decoded = _codec.Decode(_voice, _voice.Length, _pcm);
+            int _decoded = _decoder.Decode(_voice, _voice.Length, _pcm);
             LogReceiveEdge(_speaker, _voice.Length, _decoded, _playback != null);
             if (_decoded <= 0 || _playback == null)
             {
@@ -307,6 +345,7 @@ namespace VoiceSystem
             }
             // Every microphone comes out at the same level, never clipped (playtest 2026-11-14: « hyper saturé »).
             LevelerOf(_speaker).Process(_pcm.GetBuffer(), _decoded);
+            VoiceGain.Apply(_pcm.GetBuffer(), _decoded, VoiceGain.FromByte(_gain)); // the speaker's « Ma voix »
             bool _wasSpeaking = _playback.IsSpeaking;
             _playback.Push(_pcm.GetBuffer(), _decoded);
             if (!_wasSpeaking && _playback.IsSpeaking)
@@ -334,6 +373,30 @@ namespace VoiceSystem
                 _levelers[_speaker] = _leveler;
             }
             return _leveler;
+        }
+
+        // One playback per speaker, at Steam's rate whatever the codec of the packet.
+        private IVoiceCodec DecoderFor(VoiceCodecId _id)
+        {
+            IVoiceCodec _decoder = CodecOf(_id);
+            if (_decoder is OpusMicCodec _pc)
+            {
+                _pc.SampleRate = _codec.SampleRate;
+            }
+            return _decoder;
+        }
+
+        // A voice option changed: the others' volume, or the microphone picked while it is open (swapped at once).
+        private void OnOptionsChanged()
+        {
+            if (IsTransmitting && _capture != null && _capture != WantedCapture && _codec != null && _codec.IsAvailable)
+            {
+                _capture.Recording = false;
+                _capture = WantedCapture;
+                _capture.Recording = true;
+                LogCapture();
+            }
+            ApplyVolume();
         }
 
         private void ApplyVolume()
@@ -433,6 +496,13 @@ namespace VoiceSystem
                 "packets", _logSentPackets, "maxBytes", _logSentMaxBytes);
             _logSentPackets = 0;
             _logSentMaxBytes = 0;
+        }
+
+        [System.Diagnostics.Conditional(GameLog.Define)]
+        private void LogCapture()
+        {
+            GameLog.Info("voice", "voice.capture", "codec", IdOf(_capture).ToString(),
+                "device", _capture is OpusMicCodec _pc ? _pc.OpenedDevice : "steam", "gain", Math.Round(_options.OwnGain, 2));
         }
 
         [System.Diagnostics.Conditional(GameLog.Define)]
@@ -543,9 +613,14 @@ namespace VoiceSystem
             }
         }
 
-        private void MeasureOwnVoice(byte[] _packet)
+        private void MeasureOwnVoice(byte[] _packet, VoiceCodecId _id)
         {
-            int _decoded = _codec.Decode(_packet, _packet.Length, _ownPcm);
+            IVoiceCodec _decoder = DecoderFor(_id);
+            if (_decoder == null)
+            {
+                return;
+            }
+            int _decoded = _decoder.Decode(_packet, _packet.Length, _ownPcm);
             if (_decoded <= 0)
             {
                 return;

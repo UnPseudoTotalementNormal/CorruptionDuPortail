@@ -254,6 +254,23 @@ namespace Autoplay
                     await TourSlider(_panel);
                 }
 
+                // The options' menus (mockups micro v2 O1): Essais shows the trial page under the words, then Audio again.
+                Transform _essais = FindInPause(_panel.transform, "TabEssais");
+                GameObject _trial = FindInPause(_panel.transform, "TrialPanel")?.gameObject;
+                bool _trials = await ClickTarget(_essais ? _essais.gameObject : null, "pause-options-trials",
+                    () => _trial != null && _trial.activeInHierarchy);
+                TourStep("pause-options-trials", _trials);
+                if (_trials)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.4f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    capture.Request("tour-pause-trials", 0f);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.3f), DelayType.Realtime, PlayerLoopTiming.Update, Cancel);
+                    Transform _audioTab = FindInPause(_panel.transform, "TabAudio");
+                    bool _back = await ClickTarget(_audioTab ? _audioTab.gameObject : null, "pause-options-audio",
+                        () => !_trial.activeInHierarchy);
+                    TourStep("pause-options-audio", _back);
+                }
+
                 Transform _exit = FindInPause(_panel.transform, "ExitButton");
                 bool _closed = await ClickTarget(_exit ? _exit.gameObject : null, "pause-close", () => !_panel.isPanelOpen);
                 TourStep("pause-close", _closed);

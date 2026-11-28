@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les Options en plusieurs menus (tour 2)</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .mo-bg { position: absolute; inset: -20px; background: url(../menus/img/table_nuit.jpg) center / 1640px 940px; filter: blur(6px) brightness(.22); }
+  .mo-list { position: absolute; left: 150px; top: 250px; }
+  .mo-w { font: 58px "Fell", serif; color: #f1e2c4; padding: 10px 0; text-shadow: 0 2px 10px #000; cursor: pointer; user-select: none; }
+  .mo-w:hover { color: #f0b85a; }
+  .mo-w.on { color: #f0b85a; }
+  .mo-sub { font: 42px "Fell", serif; color: #f1e2c4; padding: 6px 0 6px 44px; text-shadow: 0 2px 10px #000; cursor: pointer; user-select: none; opacity: .8; }
+  .mo-sub:hover { color: #f0b85a; opacity: 1; }
+  .mo-sub.on { color: #f0b85a; opacity: 1; }
+  .mo-gap { height: 40px; }
+  .mo-o { position: absolute; left: 700px; top: 120px; width: 760px; --ink: #f1e2c4; }
+  .mo-o h3 { margin: 0 0 14px; font: 44px "FellSC", serif; color: #f0b85a; }
+  .mo-tabs { display: flex; gap: 46px; margin: 0 0 22px; }
+  .mo-tab { font: 40px "FellSC", serif; color: var(--ink); opacity: .7; cursor: pointer; user-select: none; }
+  .mo-tab:hover { color: #f0b85a; opacity: 1; }
+  .mo-tab.on { color: #f0b85a; opacity: 1; }
+  .mo-row { display: flex; align-items: center; justify-content: space-between; height: 62px; position: relative; }
+  .mo-lab { font: 34px "Fell", serif; color: var(--ink); flex: none; }
+  .mo-val { width: 440px; text-align: center; font: 30px "Fell", serif; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mo-nm { display: inline-block; max-width: 380px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  .mo-pick { cursor: pointer; user-select: none; }
+  .mo-pick:hover, .mo-word:hover { color: #f0b85a; }
+  .mo-sl { position: relative; width: 300px; height: 44px; margin-right: 70px; flex: none; }
+  .mo-sl b { position: absolute; display: block; }
+  .mo-tr { left: 0; right: 0; top: 21px; height: 2px; background: var(--ink); opacity: .35; }
+  .mo-fi { left: 0; top: 19px; height: 5px; background: var(--ink); }
+  .mo-kn { top: -6px; width: 50px; height: 52px; margin-left: -25px; background: url(../placeholders/img/icons/patte_repos.webp) center / contain no-repeat; transform: rotate(-10deg); filter: drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
+  .mo-word { font: 30px "Fell", serif; color: var(--ink); cursor: pointer; user-select: none; }
+  .mo-word.on { color: #f0b85a; }
+  .mo-meter { position: relative; width: 240px; height: 30px; flex: none; }
+  .mo-meter b { position: absolute; display: block; left: 0; top: 13px; height: 5px; background: var(--ink); }
+  .mo-meter i { position: absolute; display: block; left: 0; right: 0; top: 15px; height: 2px; background: var(--ink); opacity: .3; }
+  .mo-dead { position: absolute; right: 0; width: 440px; text-align: center; font: italic 28px "Fell", serif; color: #e0604f; display: none; }
+  .mo-row.dead .mo-dead { display: block; }
+  .mo-row.dead .mo-right { visibility: hidden; }
+  .mo-right { display: flex; align-items: center; gap: 18px; }
+  .mo-tg { display: flex; align-items: center; gap: 16px; font: 30px "Fell", serif; color: var(--ink); height: 62px; }
+  .mo-ck { width: 32px; height: 32px; border: 3px solid var(--ink); flex: none; }
+  .mo-trt { font: 30px "FellSC", serif; color: var(--ink); opacity: .8; margin: 4px 0; }
+  /* not the game: what the player hears, written on the mockup */
+  .mo-ear { position: absolute; left: 40px; bottom: 30px; font: 600 22px system-ui, sans-serif; color: #fff; background: rgba(40,90,140,.85); padding: 10px 16px; border: 2px dashed #9cc8ff; opacity: 0; transition: opacity .15s; }
+
+  .mo-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .mo-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .mo-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .mo-bar .mo-real { color: var(--soft); font-size: 13px; }
+  .mo-words { font-size: 16px; line-height: 1.5; }
+</style>
+</head>
+<body data-subject="micro">
+
+<header class="page">
+  <h1>Les Options en plusieurs menus (tour 2)</h1>
+  <p><b>Ton retour du tour 1.</b> « Plusieurs menus options : audio, vocal, affichage (avec la langue), test ». Tu n'avais
+     pas voté : le choix du micro et le test prennent les variantes « (par défaut) », <b>C4</b> (« Celle de Steam » d'abord,
+     puis les micros du PC, un clic passe au suivant) et <b>T2</b> (« Tester le micro », tu t'entends en direct). Ils sont
+     dessinés ici, dans le menu Vocal. Si tu en voulais d'autres, dis-le en bas.</p>
+  <p><b>Aujourd'hui.</b> Une seule page Options : Principal, Musique, Effets, Voix, Micro ‹ Maintenir V ›, Langue, puis les
+     Essais (vue du jour). Avec l'entrée et le test du micro, elle ne tiendrait plus à l'écran.</p>
+  <p><b>Référence.</b> <a href="https://phasmophobia.fandom.com/wiki/Options">Phasmophobia</a> : les options en menus
+     (Audio, Graphismes, Commandes…), le micro, sa liste et son test dans son propre menu. Among Us : des onglets en haut de
+     la fenêtre de réglages. Lethal Company : une seule page, la liste des micros à côté de « appuyer pour parler ».</p>
+  <p><b>La scène.</b> Hat Kid, avant la partie du 28/11, ouvre Échap › Options pour régler son micro, puis passe sa langue en
+     anglais pour Wouh.</p>
+  <p><b>Sans question.</b> Quatre menus : <b>Audio</b> (Principal, Musique, Effets), <b>Vocal</b> (Micro ‹ Maintenir V ›,
+     Entrée, Test, et la Voix des autres, section 2), <b>Affichage</b> (Langue), <b>Essais</b> (les deux essais de la vue du jour ; le mot « Essais » est déjà
+     celui du jeu). Les mêmes au menu principal. Les Options s'ouvrent sur le dernier menu regardé, sinon Audio. Quitter le
+     menu Vocal arrête le test.</p>
+</header>
+
+<section id="s-forme" data-forme="X0 O1 O2 O3">
+  <h2>1. Où sont les menus</h2>
+  <p>Clique sur les menus. Dans Vocal, « Tester le micro » démarre le test et l'entrée passe au micro suivant ; le micro du
+     portable, capot fermé, ne rend rien. Le cadre bleu en pointillés n'est pas dans le jeu : il dit ce que tu entends.</p>
+  <nav class="mo-bar">
+    <button data-real>Avec ton vrai micro</button>
+    <span class="mo-real"></span>
+  </nav>
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Une seule page, sans le micro.</p>
+    <div class="screen"><div class="stage" data-forme="X0"></div></div>
+  </div>
+  <div class="variant" data-id="O1">
+    <div class="vhead"><span class="vid">O1</span><span class="vname">Les menus en haut des Options (par défaut)</span></div>
+    <p class="vdesc">Les quatre mots à la place du titre « Options », celui ouvert en doré. Le menu de pause ne bouge pas.</p>
+    <div class="screen"><div class="stage" data-forme="O1"></div></div>
+  </div>
+  <div class="variant" data-id="O2">
+    <div class="vhead"><span class="vid">O2</span><span class="vname">Sous « Options », dans la liste de gauche</span></div>
+    <p class="vdesc">La liste de pause s'ouvre : les quatre menus en retrait sous Options, le menu ouvert porte son nom en titre
+       à droite.</p>
+    <div class="screen"><div class="stage" data-forme="O2"></div></div>
+  </div>
+  <div class="variant" data-id="O3">
+    <div class="vhead"><span class="vid">O3</span><span class="vname">Un pas de plus : les menus remplacent la liste</span></div>
+    <p class="vdesc">Options remplace la liste de pause par Audio, Vocal, Affichage, Essais et Retour ; Retour ramène la
+       liste de pause. Comme sur console.</p>
+    <div class="screen"><div class="stage" data-forme="O3"></div></div>
+  </div>
+</section>
+
+<section id="s-voix">
+  <h2>2. Le volume « Voix » (celui des autres joueurs)</h2>
+  <div class="variant" data-id="V1">
+    <div class="vhead"><span class="vid">V1</span><span class="vname">Dans Vocal, en tête (par défaut)</span></div>
+    <p class="vdesc mo-words">Vocal : Voix, Micro, Entrée, Test. Tout ce qui touche au vocal au même endroit, comme Discord. C'est ce que montrent les cadres de la section 1.</p>
+  </div>
+  <div class="variant" data-id="V2">
+    <div class="vhead"><span class="vid">V2</span><span class="vname">Dans Audio, avec les autres volumes</span></div>
+    <p class="vdesc mo-words">Audio : Principal, Musique, Effets, Voix. Tous les volumes au même endroit ; Vocal ne garde que
+       ton micro.</p>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Autre chose (un autre nom qu'« Essais » ou « Vocal », un autre choix que C4 ou T2) ?</label>
+  <textarea id="global" placeholder="Ta réponse"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const params = new URLSearchParams(location.search);
+  const STEAM = 'Celle de Steam';
+  let PC = ['Plantronics Blackwire 3220 Series', 'Réseau de microphones (Realtek(R) Audio)', 'Virtual Mic for AudioRelay', 'Steam Streaming Microphone']; // slop-ok: real device names
+  const DEAD = 'Réseau de microphones (Realtek(R) Audio)';
+  const MENUS = ['Audio', 'Vocal', 'Affichage', 'Essais'];
+
+  function slider(v) {
+    const s = h('div', 'mo-sl', '<b class="mo-tr"></b><b class="mo-fi"></b><b class="mo-kn"></b>');
+    s.querySelector('.mo-fi').style.width = (v * 100) + '%'; s.querySelector('.mo-kn').style.left = (v * 100) + '%';
+    return s;
+  }
+  function row(label, right) { const r = h('div', 'mo-row'); r.appendChild(h('span', 'mo-lab', label)); if (right) r.appendChild(right); return r; }
+  function toggles(parent, title) {
+    parent.appendChild(h('div', 'mo-trt', title || 'Vue du jour'));
+    ['Cartes levées en vue première personne', 'Table ronde'].forEach(n => { const g = h('div', 'mo-tg'); g.appendChild(h('span', 'mo-ck')); g.appendChild(h('span', '', n)); parent.appendChild(g); });
+  }
+
+  // one pause menu with Options open, in layout f (X0 | O1 | O2 | O3)
+  const screens = [];
+  function screen(st, f) {
+    const S = { f, menu: params.get('tab') || 'Vocal', inOptions: true, idx: 0, testing: params.has('test'), changedAt: 0, st };
+    S.mic = () => [STEAM, ...PC][S.idx];
+    st.innerHTML = '';
+    st.appendChild(h('div', 'mo-bg'));
+    const list = h('div', 'mo-list'); st.appendChild(list);
+    const o = h('div', 'mo-o'); st.appendChild(o);
+    S.ear = h('div', 'mo-ear'); st.appendChild(S.ear);
+
+    function drawList() {
+      list.innerHTML = '';
+      list.style.top = f === 'O2' ? '150px' : '250px';
+      if (f === 'O3' && S.inOptions) {
+        MENUS.forEach(m => { const w = h('div', 'mo-w' + (m === S.menu ? ' on' : ''), m); w.onclick = () => go(m); list.appendChild(w); });
+        list.appendChild(h('div', 'mo-gap'));
+        const back = h('div', 'mo-w', 'Retour'); back.onclick = () => { S.inOptions = false; S.testing = false; draw(); }; list.appendChild(back);
+        return;
+      }
+      ['Reprendre', 'Options', 'Signaler un bug', 'Quitter la partie'].forEach(t => {
+        const w = h('div', 'mo-w' + (t === 'Options' && S.inOptions ? ' on' : ''), t);
+        if (t === 'Options') w.onclick = () => { S.inOptions = true; draw(); };
+        list.appendChild(w);
+        if (t === 'Options' && f === 'O2') MENUS.forEach(m => { const s = h('div', 'mo-sub' + (m === S.menu ? ' on' : ''), m); s.onclick = () => go(m); list.appendChild(s); });
+      });
+    }
+    function go(m) { if (m !== 'Vocal') S.testing = false; S.menu = m; draw(); }
+
+    function drawOptions() {
+      o.innerHTML = ''; S.meter = null; S.testRow = null; S.word = null;
+      if (!S.inOptions) return;
+      if (f === 'X0') {
+        o.appendChild(h('h3', '', 'Options'));
+        [['Principal', .55], ['Musique', .1], ['Effets', .5], ['Voix', 1]].forEach(([n, v]) => o.appendChild(row(n, slider(v))));
+        o.appendChild(row('Micro', h('span', 'mo-val mo-pick', '‹ Maintenir V ›')));
+        o.appendChild(row('Langue', h('span', 'mo-val mo-pick', '‹ Français ›')));
+        const tr = h('div', ''); tr.style.marginTop = '16px'; o.appendChild(tr); toggles(tr, 'Essais (vue du jour)');
+        return;
+      }
+      if (f === 'O1') {
+        const tabs = h('div', 'mo-tabs'); o.appendChild(tabs);
+        MENUS.forEach(m => { const t = h('span', 'mo-tab' + (m === S.menu ? ' on' : ''), m); t.onclick = () => go(m); tabs.appendChild(t); });
+      } else o.appendChild(h('h3', '', S.menu));
+      if (S.menu === 'Audio') [['Principal', .55], ['Musique', .1], ['Effets', .5]].forEach(([n, v]) => o.appendChild(row(n, slider(v))));
+      if (S.menu === 'Affichage') o.appendChild(row('Langue', h('span', 'mo-val mo-pick', '‹ Français ›')));
+      if (S.menu === 'Essais') toggles(o);
+      if (S.menu === 'Vocal') {
+        o.appendChild(row('Voix', slider(1))); // slop-ok
+        o.appendChild(row('Micro', h('span', 'mo-val mo-pick', '‹ Maintenir V ›')));
+        const val = h('span', 'mo-val mo-pick', '‹ <span class="mo-nm">' + S.mic() + '</span> ›');
+        val.onclick = () => { S.idx = (S.idx + 1) % (PC.length + 1); S.changedAt = performance.now(); if (real) real.use(S.mic()); draw(); };
+        o.appendChild(row('Entrée', val));
+        const right = h('span', 'mo-right');
+        const w = h('span', 'mo-word' + (S.testing ? ' on' : ''), S.testing ? 'Arrêter le test' : 'Tester le micro');
+        w.onclick = () => { S.testing = !S.testing; S.changedAt = performance.now(); draw(); };
+        const meter = h('span', 'mo-meter', '<i></i><b></b>');
+        right.appendChild(w); right.appendChild(meter);
+        const r = row('Test', right); r.appendChild(h('span', 'mo-dead', 'Aucun son de ce micro')); o.appendChild(r);
+        S.meter = meter.querySelector('b'); S.testRow = r; S.word = w;
+      }
+    }
+    function draw() { drawList(); drawOptions(); }
+    S.draw = draw;
+    if (params.get('mic')) S.idx = +params.get('mic');
+    draw();
+    screens.push(S);
+  }
+
+  // a voice level, deterministic for ?at= captures: he speaks 3.5 s out of 6
+  function voice(t) { const w = 0.5 + 0.5 * Math.abs(Math.sin(t / 95) * Math.sin(t / 233 + 1)); return w * (Math.sin(t / 700) > -0.7 ? 1 : 0.15); }
+  const speaking = t => (t % 6000) > 800 && (t % 6000) < 4300;
+  function signal(t, mic) {
+    if (mic === DEAD) return 0;
+    const hiss = 0.025 + 0.012 * Math.abs(Math.sin(t / 37));
+    return speaking(t) ? Math.max(hiss, voice(t)) : hiss;
+  }
+
+  let real = null;
+  async function startReal() {
+    const ctx = new AudioContext();
+    const an = ctx.createAnalyser(); an.fftSize = 1024;
+    const buf = new Float32Array(an.fftSize);
+    const out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
+    let src = null, stream = null, devices = [];
+    const R = {
+      level: 0, quietSince: performance.now(),
+      async use(label) {
+        if (stream) stream.getTracks().forEach(x => x.stop());
+        const d = devices.find(x => x.label === label);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: d ? { deviceId: { exact: d.deviceId } } : true });
+        if (src) src.disconnect();
+        src = ctx.createMediaStreamSource(stream); src.connect(an); src.connect(out);
+        R.quietSince = performance.now();
+      },
+      hear(on) { out.gain.value = on ? 1 : 0; },
+    };
+    await R.use(null);
+    devices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+    PC = devices.map(d => d.label || 'Micro');
+    (function tick() {
+      an.getFloatTimeDomainData(buf);
+      let s = 0; for (const x of buf) s += x * x;
+      const rms = Math.sqrt(s / buf.length);
+      R.level = Math.min(1, rms * 9);
+      if (rms > 0.0004) R.quietSince = performance.now();
+      requestAnimationFrame(tick);
+    })();
+    return R;
+  }
+
+  const frozen = params.has('at') ? +params.get('at') : null;
+  const t0 = performance.now();
+  function frame(now) {
+    const t = frozen != null ? frozen : now - t0;
+    let anyTesting = false;
+    for (const S of screens) {
+      if (!S.meter) { S.ear.style.opacity = 0; continue; }
+      const mic = S.mic();
+      let v = 0, dead = false, ear = '';
+      if (real) {
+        v = S.testing ? real.level : 0;
+        dead = mic !== STEAM && now - real.quietSince > 2000;
+      } else {
+        const sig = signal(t, mic === STEAM ? PC[0] : mic);
+        v = S.testing ? sig : 0;
+        // a mic the game opens itself is heard at once: dead 2 s after picking it, test or not
+        dead = mic === DEAD && (frozen != null || now - S.changedAt > 2000);
+        if (S.testing && sig > 0.1) ear = 'Dans ton casque : ta voix, comme les autres l\'entendront';
+      }
+      if (S.testing) anyTesting = true;
+      S.meter.style.width = Math.min(100, v * 100) + '%';
+      S.testRow.classList.toggle('dead', dead);
+      S.ear.textContent = ear; S.ear.style.opacity = ear ? 1 : 0;
+    }
+    if (real) real.hear(anyTesting);
+    requestAnimationFrame(frame);
+  }
+
+  document.querySelectorAll('.stage[data-forme]').forEach(st => screen(st, st.dataset.forme));
+
+  const bar = document.querySelector('.mo-bar');
+  bar.querySelector('[data-real]').onclick = e => {
+    if (real) return;
+    startReal().then(R => {
+      real = R; e.target.classList.add('on');
+      bar.querySelector('.mo-real').textContent = 'La page t\'écoute : ouvre Vocal, « Tester le micro », change d\'entrée.';
+      screens.forEach(S => S.draw());
+    }).catch(err => { bar.querySelector('.mo-real').textContent = 'Micro refusé ou absent (' + err.name + ').'; });
+  };
+  requestAnimationFrame(frame);
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

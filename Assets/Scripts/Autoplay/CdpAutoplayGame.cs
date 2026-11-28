@@ -283,6 +283,8 @@ namespace Autoplay
             }
             if (realInput != null && _context.Config.Flag("menu-ui"))
             {
+                LiftLoginScreen(_context); // it covers the whole menu: every click of the tour missed under it
+                yield return new WaitForSecondsRealtime(0.6f); // the login screen fades
                 yield return AutoplayMenuTour.Run(realInput, _context.Journal, _context.Capture);
             }
             if (realInput != null && _context.Config.Flag("role-book"))

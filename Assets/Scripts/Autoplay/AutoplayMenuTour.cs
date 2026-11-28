@@ -26,6 +26,7 @@ namespace Autoplay
             yield return Panel(_input, _journal, "host", "MenuCanvas/HostButton", "HostPanel", "HostPanel/Panel/Close");
             yield return Panel(_input, _journal, "join", "MenuCanvas/JoinButton", "JoinPanel", "JoinPanel/Panel/Close");
             yield return Slider(_input, _journal);
+            yield return OptionsMenus(_input, _journal, _capture);
             _capture.Request("menu-after-tour", 0.2f);
             yield return new WaitForSecondsRealtime(0.4f);
         }
@@ -54,6 +55,96 @@ namespace Autoplay
             yield return Click(_input, _journal, $"menu-{_name}-close", GameObject.Find(_closePath), () => !_group.blocksRaycasts, _ok => _closed = _ok);
             _journal.Record($"menu.{_name}-close", _closed ? "ok" : "miss");
             yield return new WaitForSecondsRealtime(0.4f);
+        }
+
+        // The options in menus (mockups micro v2 O1): Vocal by its word, its microphone test started then stopped by real
+        // clicks (captures menu-options-vocal / -test), Affichage, then back to Audio (the menu reopens on the last one).
+        private static IEnumerator OptionsMenus(AutoplayVirtualInput _input, AutoplayJournal _journal, AutoplayCapture _capture)
+        {
+            const string Root = "MenuCanvas/AudioPanel/";
+            GameObject _test = GameObject.Find(Root + "Layout/Test");
+            GameObject _language = GameObject.Find(Root + "Layout/Language");
+            bool _ok = false;
+            yield return Click(_input, _journal, "menu-options-vocal", GameObject.Find(Root + "Tabs/TabVocal"),
+                () => GameObject.Find(Root + "Layout/Test") != null && !_language.activeInHierarchy, _r => _ok = _r);
+            _test = GameObject.Find(Root + "Layout/Test");
+            _journal.Record("menu.options-vocal", (_ok ? "ok" : "miss") + " devices=" + VoiceSystem.OpusMicCodec.DeviceNames().Count);
+            if (!_ok)
+            {
+                yield break;
+            }
+            _capture.Request("menu-options-vocal", 0.3f);
+            yield return new WaitForSecondsRealtime(0.8f);
+
+            TMPro.TMP_Text _word = _test.transform.Find("Right/TestGroup/Word").GetComponent<TMPro.TMP_Text>();
+            string _before = _word.text;
+            yield return Click(_input, _journal, "menu-options-test", _word.gameObject, () => _word.text != _before, _r => _ok = _r);
+            _journal.Record("menu.options-test", _ok ? "ok" : "miss");
+            _capture.Request("menu-options-test", 1.5f);
+            yield return new WaitForSecondsRealtime(2.5f);
+            if (_ok && _word.gameObject.activeInHierarchy)
+            {
+                string _running = _word.text;
+                yield return Click(_input, _journal, "menu-options-test-stop", _word.gameObject, () => _word.text != _running, _r => _ok = _r);
+                _journal.Record("menu.options-test-stop", _ok ? "ok" : "miss");
+            }
+
+            yield return NextInputAndTest(_input, _journal, _capture, _test);
+
+            yield return Click(_input, _journal, "menu-options-display", GameObject.Find(Root + "Tabs/TabAffichage"),
+                () => _language.activeInHierarchy, _r => _ok = _r);
+            _journal.Record("menu.options-display", _ok ? "ok" : "miss");
+            _capture.Request("menu-options-display", 0.3f);
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Click(_input, _journal, "menu-options-audio", GameObject.Find(Root + "Tabs/TabAudio"),
+                () => !_language.activeInHierarchy, _r => _ok = _r);
+            _journal.Record("menu.options-audio", _ok ? "ok" : "miss");
+        }
+
+        // « Entrée » by a real click (the next microphone of the PC), then the test again on it. The player's own choice
+        // (PlayerPrefs, shared by every process of the PC) is put back at the end.
+        private static IEnumerator NextInputAndTest(AutoplayVirtualInput _input, AutoplayJournal _journal, AutoplayCapture _capture,
+            GameObject _test)
+        {
+            var _panel = _test.GetComponent<global::UI.Settings.VoicePanelSettings>();
+            var _options = (VoiceSystem.VoiceOptions)typeof(global::UI.Settings.VoicePanelSettings)
+                .GetField("_options", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(_panel);
+            if (_options == null)
+            {
+                _journal.Record("menu.options-input", "miss reason=no-options");
+                yield break;
+            }
+            string _saved = _options.InputDevice;
+            try
+            {
+                GameObject _value = GameObject.Find("MenuCanvas/AudioPanel/Layout/Input/Value");
+                bool _ok = false;
+                yield return Click(_input, _journal, "menu-options-input", _value, () => _options.InputDevice != _saved, _r => _ok = _r);
+                _journal.Record("menu.options-input", (_ok ? "ok" : "miss") + " input='" + _options.InputDevice + "'");
+                yield return new WaitForSecondsRealtime(2.5f);
+                _capture.Request("menu-options-input", 0.1f);
+                yield return new WaitForSecondsRealtime(0.4f);
+                TMPro.TMP_Text _word = _test.transform.Find("Right/TestGroup/Word").GetComponent<TMPro.TMP_Text>();
+                if (!_word.gameObject.activeInHierarchy)
+                {
+                    _journal.Record("menu.options-test2", "miss reason=silent-input");
+                    yield break;
+                }
+                string _before = _word.text;
+                yield return Click(_input, _journal, "menu-options-test2", _word.gameObject, () => _word.text != _before, _r => _ok = _r);
+                _journal.Record("menu.options-test2", _ok ? "ok" : "miss");
+                _capture.Request("menu-options-test2", 1.5f);
+                yield return new WaitForSecondsRealtime(2.5f);
+                if (_ok && _word.gameObject.activeInHierarchy)
+                {
+                    string _running = _word.text;
+                    yield return Click(_input, _journal, "menu-options-test2-stop", _word.gameObject, () => _word.text != _running, _r => _ok = _r);
+                }
+            }
+            finally
+            {
+                _options.SetInputDevice(_saved);
+            }
         }
 
         private static IEnumerator Slider(AutoplayVirtualInput _input, AutoplayJournal _journal)

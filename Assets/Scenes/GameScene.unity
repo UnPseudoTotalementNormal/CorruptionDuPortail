@@ -685,7 +685,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Essais (vue du jour)
+  m_text: Vue du jour
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fef2948399c2e66408d4c72f40672c35, type: 2}
   m_sharedMaterial: {fileID: 8926710239446074940, guid: fef2948399c2e66408d4c72f40672c35, type: 2}
@@ -5495,7 +5495,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &597783920
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5516,7 +5516,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 348, y: -334}
+  m_AnchoredPosition: {x: 348, y: 164.5}
   m_SizeDelta: {x: 744, y: 170}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &597783921
@@ -17346,6 +17346,19 @@ MonoBehaviour:
   rolePickerCardHeightOffset: 0.15
   rolePickerSpawnOffset: {x: 0, y: 0, z: -10}
   rolePickerCenter: {fileID: 1006790937}
+  rolePickerMaxSpan: 24
+  rolePickerPinnedMaxSpan: 19
+  rolePickerMaxTotalAngle: 36
+  rolePickerEdgeDrop: 2
+  rolePickerCardWidth: 6.3
+  rolePickerCardHeight: 8.8
+  rolePickerHoverScale: 0.84
+  rolePickerHoverLift: 2.6
+  rolePickerHoverForwardRise: 2.9
+  rolePickerCardHoverGrowth: 1.45
+  rolePickerHoverRaise: 0.3
+  rolePickerHoverPerspective: 1.32
+  rolePickerPinnedOffsetX: -3
   instructionCanvasGroup: {fileID: 36138300}
   instructionParent: {fileID: 962588891}
   instructionTitle: {fileID: 1149569087}
@@ -21702,7 +21715,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::UI.Settings.PauseOptionsEntry
   _pages:
   - {fileID: 2123973327}
-  - {fileID: 597783919}
   _openColor: {r: 0.941, g: 0.722, b: 0.353, a: 1}
   _closedColor: {r: 0.945, g: 0.886, b: 0.769, a: 1}
 --- !u!114 &1632440929
@@ -27790,6 +27802,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7958184231823651943, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
+      propertyPath: _tabs.Array.data[3].page
+      value: 
+      objectReference: {fileID: 597783919}
     - target: {fileID: 8466343385794645692, guid: 854d4d8a23891f1c6a87a0a8766e49eb, type: 3}
       propertyPath: m_Name
       value: AudioPanel

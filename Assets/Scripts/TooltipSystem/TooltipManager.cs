@@ -92,6 +92,34 @@ namespace TooltipSystem
             return _shown != null && _shown.gameObject == _linkedGameObject;
         }
 
+        /// <summary>
+        /// A card picker's blur veil is up (or down). Under it, the board behind the veil keeps its pointer events: a
+        /// pointer crossing a blurred card opened its bubble over the role fan and its instruction (autoplay
+        /// role-fan-portal, 2026-11-21). While the veil is up only what is drawn above it (the picker's cards, the
+        /// lifted and pinned cards) and the screen-space interface show a bubble.
+        /// </summary>
+        public void SetPickerVeil(bool _on)
+        {
+            _veilLayer = _on ? LayerMask.NameToLayer(ABOVE_VEIL_LAYER) : -1;
+            if (_shown != null && IsBehindVeil(_shown))
+            {
+                Hide("veil");
+            }
+        }
+
+        private const string ABOVE_VEIL_LAYER = "AboveBlur";
+        private int _veilLayer = -1;
+
+        private bool IsBehindVeil(HoverTooltipComponent _trigger)
+        {
+            if (_veilLayer < 0 || _trigger == null || _trigger.gameObject.layer == _veilLayer)
+            {
+                return false;
+            }
+            Canvas _parentCanvas = _trigger.GetComponentInParent<Canvas>();
+            return _parentCanvas == null || _parentCanvas.renderMode == RenderMode.WorldSpace;
+        }
+
         private void Update()
         {
             if (!ReferenceEquals(_shown, null) && _shown == null)
@@ -109,7 +137,7 @@ namespace TooltipSystem
             }
 
             HoverTooltipComponent _candidate = _hovered != null && _hovered.isActiveAndEnabled && _hovered != _dismissed
-                                               && _hovered.HasContent ? _hovered : null;
+                                               && _hovered.HasContent && !IsBehindVeil(_hovered) ? _hovered : null;
             switch (_timeline.Tick(_candidate != null ? _candidate.GetHashCode() : 0, Time.unscaledTime))
             {
                 case TooltipAction.Show:
@@ -139,7 +167,7 @@ namespace TooltipSystem
             _anchorRects = _trigger.TooltipBoundsOverride == null && _trigger.GetComponent<RectTransform>() != null
                 ? _trigger.GetComponentsInChildren<RectTransform>() : null;
             _anchorRenderers = _trigger.TooltipBoundsOverride == null && _anchorRects == null
-                ? _trigger.GetComponentsInChildren<Renderer>() : null;
+                ? ModelRenderers(_trigger) : null;
             _keptOnScreenLogged = false;
 
             Fill(_trigger);
@@ -305,6 +333,22 @@ namespace TooltipSystem
                 _top -= _size.y + _gap;
             }
             return _centres;
+        }
+
+        /// <summary>
+        /// The renderers the bubble sits beside: the object's model only. A particle or trail renderer's bounds follow
+        /// its particles: the slime drips of a copied power (Ugës's copies, bottom row) grew the box every frame and the
+        /// bubble crept up by itself (Liste en vrac n°7).
+        /// </summary>
+        private static Renderer[] ModelRenderers(HoverTooltipComponent _trigger)
+        {
+            Renderer[] _all = _trigger.GetComponentsInChildren<Renderer>();
+            Renderer[] _model = System.Array.FindAll(_all, _r => _r is not ParticleSystemRenderer && _r is not TrailRenderer);
+            if (_model.Length != _all.Length)
+            {
+                GameLog.Info("ui", "ui.tooltip.anchor.model.only", "target", _trigger.name, "skipped", _all.Length - _model.Length);
+            }
+            return _model.Length > 0 ? _model : _all;
         }
 
         private (Vector2 size, Vector2 centre) TriggerScreenBox()

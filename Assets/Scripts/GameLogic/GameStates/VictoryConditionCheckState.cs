@@ -23,6 +23,14 @@ namespace GameLogic.GameStates
         {
             base.OnStartStateServer();
 
+            // The last anomaly chained at night (the check before the vote): the Mage Occulte takes the portal down
+            // first, as he would after a vote chain. The check after the portal step then decides the winners
+            // (the step marks itself played, so this never loops).
+            if (TryRedirectToPortal())
+            {
+                return;
+            }
+
             // Preserve the exact original flow: resolve victory now; if there is no winner, advance the loop.
             if (TryResolveVictoryNow())
             {
@@ -30,6 +38,20 @@ namespace GameLogic.GameStates
             }
 
             Loop.NextGameState();
+        }
+
+        private bool TryRedirectToPortal()
+        {
+            var _portal = gameManager.GetGameStates(typeof(TakeDownThePortalState)).OfType<TakeDownThePortalState>().FirstOrDefault();
+            if (_portal == null || !_portal.DecideServer().Activate)
+            {
+                return false;
+            }
+
+            Diagnostics.Logs.GameLog.Info("portal", "portal.redirect", "from", name, "mage", _portal.mageCharacterOwnerId,
+                "reason", "all-anomalies-chained");
+            Loop.SetGameState(_portal);
+            return true;
         }
 
         /// <summary>

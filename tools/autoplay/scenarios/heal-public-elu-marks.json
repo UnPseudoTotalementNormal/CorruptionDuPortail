@@ -1,0 +1,31 @@
+{
+  "name": "heal-public-elu-marks",
+  "goal": "Fil « Joueur perdu » (PR #227): Dr Gloubi (bot) guesses the Messager's role on night 1 (Soin Baveux Correct) -> at the end of the night the server announces the heal and sets isKnownChosen (GameLog power.heal.public eluLogo=True), every board shows the Élu logo in the faction corner of the Messager's hidden card (card.elu_logo). Day 1 chains the Repenti. On night 2, after the host's own turn (the host is the Robot and hacks Dr Gloubi, so the Messager's card stays hidden on the host), Luma is forced fake so a fake-role layer follows the Robot (the tour needs a moment where no played seat is awake), the real-input tour hovers every marked card: the bubbles list Élu, Piratage (on Gloubi) and Enchaîné (on the Repenti), checked on ui.marks.hover and the tour-tooltip captures.",
+  "mode": "build",
+  "seed": 6200,
+  "seedRetries": 10,
+  "timescale": 3,
+  "timeout": 900,
+  "args": [
+    "-autoplay-real-input",
+    "-autoplay-real-input-tour",
+    "-autoplay-tour-day", "2",
+    "-autoplay-tour-after-turn",
+    "-autoplay-tour-tooltip-targets", "Card(Clone)*",
+    "-autoplay-tour-dwell", "0",
+    "-autoplay-force-roles", "Gloubi,Messager,Robot,Repenti",
+    "-autoplay-role-holder", "bot,bot,host,bot",
+    "-autoplay-target-map", "Soin=Messager;Piratage=Gloubi",
+    "-autoplay-power-use-probability", "1",
+    "-autoplay-vote-probability", "1",
+    "-autoplay-vote-focus", "Repenti",
+    "-autoplay-force-fakes", "Luma",
+    "-autoplay-max-days", "2"
+  ],
+  "expect": [
+    {"type": "outcome", "value": "Completed"},
+    {"type": "event", "kind": "power.verdict", "detail": "Soin Baveux Correct", "min": 1},
+    {"type": "event", "kind": "tour.tooltip", "detail": "^ok", "min": 2},
+    {"type": "noErrors", "ignore": ["ClientLoadedSynchronization", "message header is corrupted"]}
+  ]
+}

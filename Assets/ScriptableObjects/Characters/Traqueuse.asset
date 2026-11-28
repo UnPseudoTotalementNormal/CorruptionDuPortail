@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   role:
     roleName:
-      utf8LengthInBytes: 21
+      utf8LengthInBytes: 22
       bytes:
         offset0000:
           byte0000: 76
@@ -39,7 +39,7 @@ MonoBehaviour:
           byte0002: 105
           byte0003: 109
           byte0004: 101
-          byte0005: 0
+          byte0005: 115
           byte0006: 0
           byte0007: 0
           byte0008: 0

@@ -50,10 +50,10 @@ namespace UI
         {
             if (_current > INFINITE_MESSAGE_THRESHOLD)
             {
-                messageLeftText.SetLoc("restant: ∞");
+                messageLeftText.SetLoc("restant : ∞");
                 return;
             }
-            messageLeftText.SetLoc("restant: {0}", _current);
+            messageLeftText.SetLoc("restant : {0}", _current);
         }
     }
 }

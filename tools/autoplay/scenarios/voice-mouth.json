@@ -1,0 +1,54 @@
+{
+  "name": "voice-mouth",
+  "goal": "T22 in-game voice and the talking cat (CatTalk): a real client talks through the real voice path (push to talk forced, server routing, unreliable RPC, decoding, levelling, FMOD playback) with a synthetic voice instead of Steam's microphone (-autoplay-voice-probe client). On the host, the client's cat must open its black mouth while the voice plays: voice.probe events with shown=True and open > 0 for the client's seat, GameLog avatar.talk.open. Checked in the lobby too (-autoplay-lobby-hold 25: the playtest of 2026-11-20 only spoke there): voice-close-* close-ups render the speaker's face while the mouth is open. The speaker's OWN cat opens its mouth on his own screen too (voice.probe shown=True on the client: playtest 2026-11-20, Flox talked during an emote and saw his cat's mouth shut).",
+  "mode": "net",
+  "clients": 1,
+  "seed": 777,
+  "timescale": 1,
+  "timeout": 900,
+  "video": true,
+  "args": [
+    "-autoplay-relay",
+    "-autoplay-voice-probe",
+    "client",
+    "-autoplay-lobby-hold",
+    "25",
+    "-autoplay-max-days",
+    "1",
+    "-autoplay-fast-fakes"
+  ],
+  "expect": [
+    {
+      "type": "outcome",
+      "value": "Completed",
+      "process": "all"
+    },
+    {
+      "type": "event",
+      "kind": "voice.probe",
+      "detail": "shown=True",
+      "process": "host",
+      "min": 4
+    },
+    {
+      "type": "event",
+      "kind": "voice.probe",
+      "detail": "shown=True",
+      "process": "clients",
+      "min": 4
+    },
+    {
+      "type": "event",
+      "kind": "voice.capture",
+      "process": "host",
+      "min": 1
+    },
+    {
+      "type": "noErrors",
+      "process": "all",
+      "ignore": [
+        "ClientLoadedSynchronization"
+      ]
+    }
+  ]
+}

@@ -253,6 +253,9 @@ namespace Board
 
         // A card being rebuilt (chaining, a rejoin's table rebuild) can lose its visuals while a reveal is requested
         // (onLocalIdentityChanged fires at the rejoin) or awaited: every visual step checks they still exist.
+        // True while the card shows a hidden role (pseudo only): the only state where a publicly known faction is drawn.
+        private bool _showsHiddenRole;
+
         private bool VisualsAlive => this != null && visualComponents != null
                                      && visualComponents.cardImage != null && visualComponents.factionLogoImage != null;
 
@@ -324,6 +327,8 @@ namespace Board
         {
             visualUpdater.SetUnknownWithPseudo(characterInfo.GetOwnerPseudo());
             _pseudoVisible = true;
+            _showsHiddenRole = true;
+            ApplyKnownFaction();
         }
 
         public void SetUnknownCard()
@@ -401,7 +406,40 @@ namespace Board
 
         public void SetClickListenedQuery(Func<bool> _query) => clickListened = _query;
 
+        /// <summary>
+        /// Set on the role picker's fan cards (maquettes eventail-roles v2, Z1): the pointer events the EventSystem sends
+        /// them are ignored, because the card drawn under the pointer is not always the one hovered (a hovered card
+        /// rises over its neighbours). The picker decides from where the cards rest and calls <see cref="DriveHover"/>
+        /// and <see cref="DriveClick"/>.
+        /// </summary>
+        public bool pointerDrivenByPicker { get; set; }
+
         public void OnPointerClick(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveClick();
+            }
+        }
+
+        public void OnPointerEnter(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveHover(true);
+            }
+        }
+
+        public void OnPointerExit(PointerEventData _eventData)
+        {
+            if (!pointerDrivenByPicker)
+            {
+                DriveHover(false);
+            }
+        }
+
+        /// <summary>A click on the card (pointer event, or the role picker that drives its fan).</summary>
+        public void DriveClick()
         {
             GameLog.Info("ui", "card.click", "seat", characterInfo != null ? (object)characterInfo.ownerClientId.Value : null);
             onCardClicked?.Invoke(this);
@@ -409,15 +447,18 @@ namespace Board
             soundHandler.PlayClickSound();
         }
 
-        public void OnPointerEnter(PointerEventData _eventData)
+        /// <summary>The pointer coming onto (<paramref name="_hovered"/>) or leaving the card (pointer event, or the role
+        /// picker that drives its fan).</summary>
+        public void DriveHover(bool _hovered)
         {
-            onCardHovered?.Invoke(this);
-            animationHandler.OnHover(cardCanvas, soundHandler.PlayHoverSound);
-            isPointerOver = true;
-        }
+            if (_hovered)
+            {
+                onCardHovered?.Invoke(this);
+                animationHandler.OnHover(cardCanvas, soundHandler.PlayHoverSound);
+                isPointerOver = true;
+                return;
+            }
 
-        public void OnPointerExit(PointerEventData _eventData)
-        {
             onCardUnhovered?.Invoke(this);
             
             if (CanUnZoomCard())
@@ -438,6 +479,7 @@ namespace Board
             
             characterInfo.onRoleUpdated += OnRoleUpdated;
             characterInfo.isChained.OnValueChanged += OnChainedChanged;
+            characterInfo.isKnownChosen.OnValueChanged += OnKnownChosenChanged;
             characterInfo.onOwnerPseudoChanged += OnOwnerPseudoChanged;
             isSubscribedToCharacter = true;
         }
@@ -448,6 +490,7 @@ namespace Board
             
             characterInfo.onRoleUpdated -= OnRoleUpdated;
             characterInfo.isChained.OnValueChanged -= OnChainedChanged;
+            characterInfo.isKnownChosen.OnValueChanged -= OnKnownChosenChanged;
             characterInfo.onOwnerPseudoChanged -= OnOwnerPseudoChanged;
             isSubscribedToCharacter = false;
         }
@@ -460,6 +503,20 @@ namespace Board
         private void OnChainedChanged(bool _previous, bool _current)
         {
             visualUpdater.SetChainedOverlay(_current, false);
+        }
+
+        private void OnKnownChosenChanged(bool _previous, bool _current)
+        {
+            Diagnostics.Logs.GameLog.Info("board", "card.elu_logo", "player", characterInfo.ownerClientId.Value,
+                "known", _current, "roleHidden", _showsHiddenRole);
+            if (_showsHiddenRole && VisualsAlive) ApplyKnownFaction();
+        }
+
+        // A hidden card whose faction everyone learnt (Dr Gloubi's public heal) shows the Élu logo in its faction corner.
+        private void ApplyKnownFaction()
+        {
+            if (characterInfo == null || !VisualsAlive) return;
+            visualUpdater.SetKnownFaction(characterInfo.isKnownChosen.Value ? FactionType.chosen : FactionType.unknown);
         }
 
         #endregion
@@ -497,6 +554,7 @@ namespace Board
 
             visualUpdater.SetPseudo(characterInfo.GetOwnerPseudo());
             _pseudoVisible = true;
+            _showsHiddenRole = false;
             visualUpdater.SetRoleText(roleInfo.roleName.ToString());
             visualUpdater.SetFaction(roleInfo.factionType);
             await visualUpdater.SetRolePortrait(roleInfo).AttachExternalCancellation(_cancellationToken);
@@ -516,6 +574,8 @@ namespace Board
             
             visualUpdater.SetUnknownWithPseudo(characterInfo.GetOwnerPseudo());
             _pseudoVisible = true;
+            _showsHiddenRole = true;
+            ApplyKnownFaction();
             visualUpdater.SetRoleText("");
             
             if (_turnCard)

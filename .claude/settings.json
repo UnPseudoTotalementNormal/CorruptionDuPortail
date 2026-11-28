@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -43,11 +47,22 @@
         ]
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/new_cs_guard.py\"",
+            "timeout": 20
+          }
+        ]
+      },
+      {
         "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_guard.ps1\""
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/log_guard.py\"",
+            "timeout": 20
           },
           {
             "type": "command",
@@ -61,6 +76,11 @@
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/loc_guard.py\"",
             "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/spell_guard.py\"",
+            "timeout": 400
           }
         ]
       }
@@ -81,6 +101,11 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/loc_guard.py\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/tools/log_guard.py\"",
             "timeout": 20
           }
         ]

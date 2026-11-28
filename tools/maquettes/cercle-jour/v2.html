@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cercle du jour : tout le monde sur le même cercle</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  .cj-shot { position: absolute; inset: 0; width: 1600px; height: 900px; display: block; object-fit: cover; }
+  .cj-bar { position: sticky; top: 0; z-index: 20; background: var(--card); border: 1px solid var(--line); padding: 8px 12px; margin: 14px 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .cj-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .cj-group span { color: var(--soft); }
+  .cj-group button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 7px 11px; font-size: 15px; cursor: pointer; }
+  .cj-group button.on { border-color: var(--accent); color: var(--accent); }
+  .cj-dist { color: var(--fg); margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Cercle du jour : tout le monde sur le même cercle</h1>
+  <p><b>Référence.</b> <a href="https://store.steampowered.com/app/3097560/Liars_Bar/">Liar's Bar</a> : quatre joueurs à la première personne, chacun assis à sa vraie place autour de la table ; les voisins se voient en tournant la tête. Lu sur des fiches, pas vu en jeu.</p>
+  <p><b>Aujourd'hui.</b> Tu es assis en retrait du cercle des autres (32 m du milieu, eux à 12 m, à 4 joueurs) pour voir tout le monde d'un coup. Mais un chat qui te regarde vise la place où tu serais sur le cercle : il a l'air de regarder à côté (Wouh, salon #bug, 15/11 ; capture ci-dessous en X0). Piste B choisie : tu t'assois sur le cercle, et il s'élargit un peu.</p>
+  <p><b>La scène.</b> Premier vote à 4 joueurs : les trois autres vrais joueurs tournent la tête vers toi. Puis Abyss est enchaîné et flotte au milieu.</p>
+  <p><b>Sans question.</b> Assis sur le même cercle, un regard vers toi arrive sur toi chez tout le monde, sans autre calcul. La vue au repos vise les visages d'en face, posée une fois sous le noir du début du jour, puis plus jamais touchée. Les voisins ne sont plus dans le cadre au repos : on tourne la tête pour les voir. Captures du vrai jeu (parties de bots, à 4 joueurs seulement : le PC était trop chargé pour des parties à 6). Le texte « Cliquer pour skip le vote » vient du curseur au centre, posé sur le guéridon : c'est déjà le cas aujourd'hui (voir X0). Avec les chats à 75 %, en R2, le cadre rouge en bas à gauche du moment « Chat enchaîné » est un message de l'outil de test, pas du jeu.</p>
+
+  <div class="cj-bar">
+    <div class="cj-group" id="cj-moment"><span>Moment</span>
+      <button data-m="rest">Vote</button><button data-m="left">Tête à gauche</button><button data-m="right">Tête à droite</button><button data-m="chain">Chat enchaîné</button>
+    </div>
+  </div>
+
+  <section data-forme="T0 T1">
+  <h2>La taille des autres chats</h2>
+  <p>Aujourd'hui les autres chats sont réduits à 75 % (fait pour la vue en retrait). Assis à côté d'eux, leurs visages tombent sous ton regard, à la hauteur du guéridon et des cartes. Montré sur le cercle R1.</p>
+
+  <div class="variant" data-id="T0">
+    <div class="vhead"><span class="vid">T0</span><span class="vname">Actuel : réduits à 75 %</span></div>
+    <p class="vdesc">Le guéridon du skip, au milieu, passe devant le visage du chat d'en face.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-size="T0" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="T1">
+    <div class="vhead"><span class="vid">T1</span><span class="vname">À ta taille (par défaut)</span></div>
+    <p class="vdesc">Tout le monde a la même taille : les visages d'en face arrivent à hauteur des yeux, au-dessus du guéridon.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-size="T1" alt=""></div></div>
+  </div>
+  </section>
+
+  <section data-suit>
+  <h2>Quelle taille pour le cercle ?</h2>
+
+  <div class="variant" data-id="X0">
+    <div class="vhead"><span class="vid">X0</span><span class="vname">Actuel</span></div>
+    <p class="vdesc">Capture de Wouh à 4 joueurs : toi en retrait, les autres sur un cercle plus petit. Une seule image, quel que soit le moment choisi.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" src="img/v2/X0.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R1">
+    <div class="vhead"><span class="vid">R1</span><span class="vname">Un poil plus grand (par défaut)</span></div>
+    <p class="vdesc">Le cercle des autres d'aujourd'hui, 15 % plus grand, et toi dessus.</p>
+    <p class="cj-dist" data-ring="R1"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-ring="R1" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R2">
+    <div class="vhead"><span class="vid">R2</span><span class="vname">Moitié plus grand</span></div>
+    <p class="vdesc">Une fois et demie le cercle des autres d'aujourd'hui.</p>
+    <p class="cj-dist" data-ring="R2"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-ring="R2" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="R3">
+    <div class="vhead"><span class="vid">R3</span><span class="vname">Deux fois plus grand</span></div>
+    <p class="vdesc">Le double : les voisins plus loin, celui d'en face plus petit.</p>
+    <p class="cj-dist" data-ring="R3"></p>
+    <div class="screen"><div class="stage"><img class="cj-shot" data-ring="R3" alt=""></div></div>
+  </div>
+  </section>
+
+  <h2>Le chat enchaîné, au milieu du cercle</h2>
+  <p>Il ne peut plus flotter à 37 m devant toi : ce serait derrière le chat d'en face. Il vient au milieu. Montré à 4 joueurs, cercle R1, chats à 75 %.</p>
+
+  <div class="variant" data-id="E1">
+    <div class="vhead"><span class="vid">E1</span><span class="vname">Réduit, toujours 60 % de l'écran (par défaut)</span></div>
+    <p class="vdesc">Plus petit que les autres chats pendant qu'il flotte, pour garder la même place à l'écran qu'aujourd'hui. Il monte au-dessus des cartes.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" src="img/v2/E1.jpg" alt=""></div></div>
+  </div>
+
+  <div class="variant" data-id="E2">
+    <div class="vhead"><span class="vid">E2</span><span class="vname">Sa vraie taille</span></div>
+    <p class="vdesc">Il garde sa taille : vu de près, il dépasse l'écran, sa carte aussi.</p>
+    <div class="screen"><div class="stage"><img class="cj-shot" src="img/v2/E2.jpg" alt=""></div></div>
+  </div>
+
+  <h2>Une remarque ?</h2>
+  <textarea id="global" rows="3" placeholder="Remarque libre"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</div>
+<script>
+(() => {
+  const query = new URLSearchParams(location.search);
+  const state = { m: query.get("m") || "rest", t: "T1" };
+  // Circle radius (metres) at 4 players as played in the captures (avatar.dayring.size), per cat size.
+  const radius = { T0: { R1: 13.8, R2: 18, R3: 24 }, T1: { R1: 13.8, R2: 18, R3: 24 } };
+  const file = { T0: "", T1: "s" };
+  function distances(id) {
+    const r = radius[state.t][id];
+    if (!r) return "";
+    return `${String(r).replace(".", ",")} m du milieu. Voisins à ${Math.round(2 * r * Math.sin(Math.PI / 4))} m, en face à ${Math.round(2 * r)} m (aujourd'hui : voisins à 34 m, en face à 44 m).`;
+  }
+  function render() {
+    document.querySelectorAll("img.cj-shot[data-size]").forEach(i => { i.src = `img/v2/R1${file[i.dataset.size]}_4_${state.m}.jpg`; });
+    document.querySelectorAll("img.cj-shot[data-ring]").forEach(i => { i.src = `img/v2/${i.dataset.ring}${file[state.t]}_4_${state.m}.jpg`; });
+    document.querySelectorAll("p.cj-dist").forEach(p => { p.textContent = distances(p.dataset.ring); });
+    document.querySelectorAll("#cj-moment button").forEach(b => b.classList.toggle("on", b.dataset.m === state.m));
+  }
+  document.querySelector("#cj-moment").addEventListener("click", e => { if (e.target.dataset.m) { state.m = e.target.dataset.m; render(); } });
+  addEventListener("mockforme", e => { if (e.detail && file[e.detail.forme] !== undefined) { state.t = e.detail.forme; render(); } });
+  render();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

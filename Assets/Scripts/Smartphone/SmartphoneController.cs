@@ -124,6 +124,14 @@ namespace Smartphone
                 return;
             }
 
+            // The arrows move the caret while the player types (the « Général » chat): they must not slide the tablet.
+            if (Presentation.DayScreenRows.IsTyping())
+            {
+                Diagnostics.Logs.GameLog.Info("ui", "ui.tablet.swipe.refused", "dir", swipeDirection, "reason", "typing",
+                    "app", currentApp ? currentApp.name : null);
+                return;
+            }
+
             SmartphoneApp nextApp = FindNeighborApp(swipeDirection);
             if (nextApp != null)
             {

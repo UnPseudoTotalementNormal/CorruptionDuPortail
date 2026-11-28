@@ -295,6 +295,7 @@ namespace Presentation
         private void OnButtonEntered()
         {
             _hovered = true;
+            Diagnostics.Logs.GameLog.Info("ui", "day.skiptable.pointed", "reachable", _dayVoting.SkipReachable);
         }
 
         private void OnButtonExited()
@@ -328,14 +329,15 @@ namespace Presentation
             _button = new GameObject("Button");
             _button.layer = PhysicalLayer;
             _button.transform.SetParent(_root, false);
-            _button.AddComponent<MeshFilter>().sharedMesh = ButtonMesh();
+            Mesh _buttonMesh = ButtonMesh();
+            _button.AddComponent<MeshFilter>().sharedMesh = _buttonMesh;
             _button.AddComponent<MeshRenderer>().sharedMaterials = new[] { _darkMaterial, _buttonMaterial, _carvingMaterial };
-            var _collider = _button.AddComponent<CapsuleCollider>();
+            // The button's own shape: the old 4.6 m-tall capsule reached 2.7 m above the puck, so the reticle at rest
+            // (aimed at the face across the circle) pointed the skip without the player looking down (Poyo, 2026-11-26).
+            var _collider = _button.AddComponent<MeshCollider>();
+            _collider.sharedMesh = _buttonMesh;
+            _collider.convex = true;
             _collider.isTrigger = true;
-            _collider.direction = 1;
-            _collider.radius = 2.2f;
-            _collider.height = 4.6f;
-            _collider.center = Vector3.up * 0.4f;
             _collider.enabled = false;
             _buttonCollider = _collider;
             var _pointer = _button.AddComponent<DaySkipButtonTarget>();

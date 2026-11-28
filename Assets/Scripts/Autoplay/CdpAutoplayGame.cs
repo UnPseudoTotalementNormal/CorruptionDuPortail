@@ -486,6 +486,8 @@ namespace Autoplay
             {
                 roleCardDwell = ParseSeconds(_context.Config.Option("role-card-dwell")) is float _dwell && _dwell > 0f ? _dwell : 0.5f,
                 visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
+                pickerHoverTour = _context.Config.Flag("picker-hover-tour"),
+                pickerHoverTourDwell = ParseSeconds(_context.Config.Option("picker-hover-tour-dwell")),
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 fastFakes = _context.Config.Flag("fast-fakes"),
                 targetFocus = _context.Config.Option("target-focus"),
@@ -503,13 +505,17 @@ namespace Autoplay
                 tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourTooltipTargets = _context.Config.Option("tour-tooltip-targets"),
                 tourFromDay = int.TryParse(_context.Config.Option("tour-day"), out int _tourDay) ? _tourDay : 0,
+                tourAfterTurn = _context.Config.Flag("tour-after-turn"),
                 tourAudioSlider = true,
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
+                povGazeHost = _context.Config.Flag("pov-gaze-host"),
+                povFovs = _context.Config.Option("pov-fovs"),
                 turnCaptures = _context.Config.Flag("turn-captures"),
+                voiceProbe = _context.Config.Option("voice-probe"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),
             };
@@ -653,6 +659,15 @@ namespace Autoplay
                 yield return _context.WaitFor(() => !(gameManager.GetGameState(gameManager.currentGameStateIndex.Value) is LobbyState),
                     240f, "the host never started the game");
                 yield break;
+            }
+
+            // Scenario lever "lobby-hold S" (host): the table stays in the lobby S real seconds before the start, every
+            // player seated (the voice probe talks there: the playtest of 2026-11-20 only spoke in the lobby).
+            float _lobbyHold = ParseSeconds(_context.Config.Option("lobby-hold"));
+            if (_lobbyHold > 0f)
+            {
+                _context.Journal.Record("lobby.hold", _lobbyHold.ToString("0.#", CultureInfo.InvariantCulture));
+                yield return new WaitForSecondsRealtime(_lobbyHold);
             }
 
             // Role distribution draws from UnityEngine.Random: seed it so a scenario seed reproduces the same seats.
@@ -1758,6 +1773,8 @@ namespace Autoplay
             var _clientOptions = new AutoplayOptions
             {
                 visualPicker = _context.Config.Flag("visual-picker") || _context.Config.Flag("real-input"),
+                pickerHoverTour = _context.Config.Flag("picker-hover-tour"),
+                pickerHoverTourDwell = ParseSeconds(_context.Config.Option("picker-hover-tour-dwell")),
                 possessActor = false,
                 voteFocusRole = _context.Config.Option("vote-focus"),
                 targetFocus = _context.Config.Option("target-focus"),
@@ -1775,12 +1792,16 @@ namespace Autoplay
                 tourDwellSeconds = Mathf.Max(0f, ParseSeconds(_context.Config.Option("tour-dwell"))),
                 tourTooltipTargets = _context.Config.Option("tour-tooltip-targets"),
                 tourFromDay = int.TryParse(_context.Config.Option("tour-day"), out int _tourDay) ? _tourDay : 0,
+                tourAfterTurn = _context.Config.Flag("tour-after-turn"),
                 tourAudioSlider = false, // PlayerPrefs are shared by every process: only the host moves a slider
                 cardLayout = _context.Config.Option("card-layout"),
                 seatedView = _context.Config.Option("seated-view"),
                 seatedBlack = _context.Config.Option("seated-black"),
                 povTour = _context.Config.Flag("pov-tour"),
+                povGazeHost = _context.Config.Flag("pov-gaze-host"),
+                povFovs = _context.Config.Option("pov-fovs"),
                 turnCaptures = _context.Config.Flag("turn-captures"),
+                voiceProbe = _context.Config.Option("voice-probe"),
                 povSweepSeconds = ParseSweepSeconds(_context.Config.Option("pov-sweep-seconds")),
                 cardVisibility = _context.Config.Option("card-visibility"),
                 cardVisibilityViews = _context.Config.Option("card-visibility-views", "top,top-hover,fps,fps-hover"),

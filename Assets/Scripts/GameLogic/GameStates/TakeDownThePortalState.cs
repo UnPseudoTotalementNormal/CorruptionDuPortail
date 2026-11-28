@@ -6,10 +6,12 @@ using AudioSystem;
 using Board;
 using Characters;
 using Characters.WinningConditions;
+using CorruptionDuPortail.Domain;
 using Cysharp.Threading.Tasks;
 using Extensions;
 using FMODUnity;
 using FocusSystem;
+using GameLogic.Snapshot;
 using GameLogic.Validation;
 using Network;
 using UI.BoardUI;
@@ -27,8 +29,17 @@ namespace GameLogic.GameStates
     [CreateAssetMenu(fileName = "TakeDownThePortalState", menuName = "GameStates/TakeDownThePortalState")]
     public class TakeDownThePortalState : GameState
     {
-        public bool shouldActivate; //TODO : Temporary
+        // Server: true only while the step plays this loop (decided at its start by PortalTakedownRule, cleared at
+        // its end). Read by the rejoin catch-up, the host's title and the autoplay driver.
+        public bool shouldActivate;
         public ulong mageCharacterOwnerId;
+
+        // Server: a portal carrier (the Mage Occulte) has been chained. On its own it no longer opens the step: every
+        // anomaly must be chained too (GD, playtest 2026-11-20: the Mage chained first took the portal down at once,
+        // then again each loop, e.g. when Abyss got chained).
+        [System.NonSerialized] private bool carrierChained;
+        // Server: the step already played this game: once per game.
+        [System.NonSerialized] private bool portalPlayed;
         
         private List<ulong> ignoreCharacters;
         private Character clickedCharacter;
@@ -40,6 +51,20 @@ namespace GameLogic.GameStates
             mageCharacterOwnerId = _mageCharacterOwnerId;
         }
 
+        /// <summary>Server: ChainingManager chained a character carrying the take-down-the-portal power. Records the
+        /// carrier only; whether the step plays is decided when it starts (<see cref="DecideServer"/>).</summary>
+        public void OnCarrierChainedServer(ulong _mageOwnerId)
+        {
+            carrierChained = true;
+            mageCharacterOwnerId = _mageOwnerId;
+        }
+
+        /// <summary>Server: should the portal step play now (carrier chained, every anomaly chained, not played yet)?
+        /// Also asked by the pre-vote victory check, so a last anomaly chained at night does not end the game before
+        /// the Mage had his chance.</summary>
+        public PortalTakedownRule.Decision DecideServer() =>
+            PortalTakedownRule.Decide(GameSnapshotBuilder.FromLiveState(gameManager), carrierChained, portalPlayed);
+
         /// <summary>
         /// [LEAVE] Phase 2 (epic-player-leave-stability) — server hook the leave pipeline calls after a mid-game
         /// leaver is chained. This is a single-target flow: only the Mage (<see cref="mageCharacterOwnerId"/>) is
@@ -49,7 +74,7 @@ namespace GameLogic.GameStates
         /// (GameManager.UnblockCurrentStateAfterLeave).
         ///
         /// Double-fire note: the instant chain that precedes this call runs ChainingManager.ChainCharacterRpc,
-        /// which — because the Mage carries the take-down-the-portal power — already re-set shouldActivate and
+        /// which — because the Mage carries the take-down-the-portal power — already re-recorded the carrier and
         /// re-pointed SetMageCharacterRpc to this same (now-chained) Mage. We deliberately do NOT touch
         /// shouldActivate or the mage id again here; we only advance. OnEndStateClient (fired by the transition)
         /// unsubscribes the client click handlers.
@@ -164,17 +189,43 @@ namespace GameLogic.GameStates
 
         private void SubscribeToCharacterClick() => boardManager.onCardClicked += OnCharacterClickClient;
         
-        private void SubscribeToRoleClick()
+        private void SubscribeToRoleClick(ulong _targetOwnerId)
         {
             if (!CardPickerManager.instance)
             {
                 return;
             }
-            
+
+            // A role whose every holder is already found (the Mage himself, a chained player, a role already guessed)
+            // cannot be the target's: it is not offered (maquettes eventail-roles v1, C2: this power only). A role
+            // also held by someone not found yet stays, a fake character's included (never revealed, so its role
+            // stays offered and nothing tells it apart).
             Validator<(ulong targetId, TargetType targetType)> _validator = new();
             _validator.AddRule(_ctx => _ctx.targetType == TargetType.Role);
-            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient);
+            _validator.AddRule(_ctx => !IsRoleFound(_ctx.targetId));
+            Diagnostics.Logs.GameLog.Guarded(() => Diagnostics.Logs.GameLog.Info("portal", "portal.roles.hidden",
+                "target", _targetOwnerId, "mage", mageCharacterOwnerId,
+                "found", CharacterQuery.GetCharacters().Where(_c => IsRoleFound(_c.ownerClientId.Value))
+                    .Select(_c => _c.ownerClientId.Value).ToList()));
+
+            Character _target = CharacterQuery.GetCharacter(_targetOwnerId);
+            string _pseudo = _target != null ? _target.GetOwnerPseudo() : string.Empty;
+            SelectionFlowOptions _options = new()
+            {
+                pinnedCharacter = _target,
+                // French elision: « d'Isa1708 », « de Wouh ».
+                stepDescriptions = new[] { StartsWithVowel(_pseudo) ? "Devinez le rôle d'{0}." : "Devinez le rôle de {0}." }, // loc
+                stepDescriptionArgs = new object[] { _pseudo },
+            };
+            selectionFlowService.StartRoleSelection(_validator, OnRoleClickClient, _options);
         }
+
+        private bool IsRoleFound(ulong _ownerId) =>
+            _ownerId == mageCharacterOwnerId
+            || gameInfoRevealer.GetCharacterInfo(_ownerId).isRoleRevealed >= RevealLevel.Public;
+
+        private static bool StartsWithVowel(string _text) =>
+            !string.IsNullOrEmpty(_text) && "aeiouyhàâäéèêëîïôöùûüAEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜ".IndexOf(_text[0]) >= 0; // loc-ok: letters tested, never shown
         
         private void UnsubscribeToCharacterClick() => boardManager.onCardClicked -= OnCharacterClickClient;
         
@@ -237,8 +288,9 @@ namespace GameLogic.GameStates
             
             gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(HighlightRolesRpc), 
                 new NetworkSerializableObject[] {new(clickedCharacter.ownerClientId.Value)} ,new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
-            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick), new CustomRpcParams(CustomRpcParams.RpcTargetType.single, 
-                new []{mageCharacterOwnerId}));
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SubscribeToRoleClick),
+                new NetworkSerializableObject[] { new(clickedCharacter.ownerClientId.Value) },
+                new CustomRpcParams(CustomRpcParams.RpcTargetType.single, new []{mageCharacterOwnerId}));
         }
         
         private void HighlightRolesRpc(ulong _clickedCharacterOwnerId)
@@ -295,18 +347,32 @@ namespace GameLogic.GameStates
         { 
             base.OnStateCreated();
             shouldActivate = false;
+            carrierChained = false;
+            portalPlayed = false;
         }
 
         public override void OnStartStateServer()
         {
             base.OnStartStateServer();
+            // The step plays once, when EVERY anomaly is chained, not as soon as the Mage is (that latched the step on
+            // for every later loop: the portal came down when the Mage got chained, then again when Abyss did).
+            PortalTakedownRule.Decision _decision = DecideServer();
+            shouldActivate = _decision.Activate;
+            Diagnostics.Logs.GameLog.Info("portal", "portal.decision", "activate", _decision.Activate, "reason", _decision.Reason,
+                "mage", mageCharacterOwnerId, "carrierChained", carrierChained, "played", portalPlayed,
+                "freeAnomalies", _decision.FreeAnomalies);
             if (!shouldActivate)
             {
-                Debug.Log("TakeDownThePortalState is not activated");
-                Diagnostics.Logs.GameLog.Info("portal", "portal.skipped", "reason", "not-activated");
+                Debug.Log($"TakeDownThePortalState is not activated ({_decision.Reason})");
+                Diagnostics.Logs.GameLog.Info("portal", "portal.skipped", "reason", _decision.Reason, "mage", mageCharacterOwnerId,
+                    "freeAnomalies", _decision.FreeAnomalies);
                 _ = Loop.WaitAFrameAndNextGameState();
                 return;
             }
+            portalPlayed = true;
+            // Re-sent now: a peer that joined back since the Mage got chained missed the first broadcast.
+            gameManager.DoStateMethodRpc(typeof(TakeDownThePortalState).FullName, nameof(SetMageCharacterRpc),
+                new NetworkSerializableObject[] { new(mageCharacterOwnerId) }, new CustomRpcParams(CustomRpcParams.RpcTargetType.all));
 
             // Rejoin step 1: a Mage chained while away (seat reserved, or chained when his grace expired) cannot
             // click: skip the step instead of waiting forever on him.
@@ -345,6 +411,7 @@ namespace GameLogic.GameStates
         public override void OnEndStateServer()
         {
             base.OnEndStateServer();
+            shouldActivate = false;
             
             GameAudioManager.instance.StopMusicRpc(takeDownThePortalMusic.GetPath(), 
                 gameManager.NetworkManager.RpcTarget.ClientsAndHost);

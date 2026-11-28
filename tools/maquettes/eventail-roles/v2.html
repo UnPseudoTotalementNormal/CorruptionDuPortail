@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éventail des rôles, v2 : le survol</title>
+<link rel="stylesheet" href="../common/mock.css">
+<style>
+  @font-face { font-family: "LibSans"; src: url("../fonts/LiberationSans.ttf"); }
+
+  .ev-bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .ev-bar div { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ev-bar button { background: #2c221b; color: var(--fg); border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .ev-bar button.on { border-color: var(--accent); color: var(--accent); }
+  .ev-bar b { color: var(--soft); font-weight: 400; font-size: 13px; margin: 0 4px 0 10px; }
+  .ev-bar b:first-child { margin-left: 0; }
+
+  .ev-bg { position: absolute; inset: -24px; background: url(img/jeu_nuit.webp) center / cover; filter: blur(8px) brightness(.5); }
+  .ev-frost { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, rgba(20, 12, 8, .15), rgba(10, 6, 4, .55)); }
+  .ev-banner { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: rgba(28, 20, 15, .82);
+    color: #fff; font: 30px "LibSans", sans-serif; padding: 10px 18px; white-space: nowrap; z-index: 400; pointer-events: none; }
+  .ev-title, .ev-desc { position: absolute; left: 0; right: 0; text-align: center; font-family: "LibSans", sans-serif; z-index: 400;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .8); pointer-events: none; }
+  .ev-title { top: 182px; color: #e8c56a; font-size: 38px; }
+  .ev-desc { top: 228px; color: #f2ece4; font-size: 23px; }
+
+  .ev-card { position: absolute; left: 0; top: 0; border-radius: 8px; background: #120c08; border: 3px solid #2a1d13;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .6); overflow: hidden; transform-origin: 50% 50%; user-select: none;
+    -webkit-user-select: none; pointer-events: none; }
+  .ev-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ev-name { position: absolute; left: 0; right: 0; top: 0; padding: 5% 6% 12%; text-align: center; color: #e8c56a;
+    font: 21px/1.04 "LibSans", sans-serif; background: linear-gradient(#0c0805 58%, rgba(12, 8, 5, 0)); }
+  .ev-card.hover { box-shadow: 0 0 0 2px rgba(232, 197, 106, .75), 0 20px 44px rgba(0, 0, 0, .7); }
+  .ev-card.hover img { filter: brightness(1.12); }
+  .ev-target .ev-name { color: #efe3d0; text-align: left; padding: 3% 7% 8%; }
+
+  .ev-hit { position: absolute; inset: 0; z-index: 600; cursor: pointer; touch-action: none; }
+  .ev-cursor { position: absolute; left: 0; top: 0; width: 30px; z-index: 700; pointer-events: none;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .8)); }
+  .ev-strip { position: absolute; left: 0; top: 0; border: 2px dashed rgba(240, 207, 116, .8); border-radius: 6px; z-index: 650;
+    pointer-events: none; transform-origin: 50% 50%; opacity: 0; transition: opacity .15s; }
+  .ev-strip.on { opacity: 1; }
+  .ev-count { position: absolute; right: 18px; bottom: 14px; z-index: 700; color: #f2ece4; font: 22px "LibSans", sans-serif;
+    background: rgba(20, 14, 10, .78); padding: 6px 12px; border-radius: 4px; pointer-events: none; }
+  .ev-count b { color: #e8c56a; }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Éventail des rôles, v2 : le survol</h1>
+  <p><strong>Déjà choisi (v1) :</strong> A1 (éventail qui se resserre), C2 (rôles trouvés retirés, au portail seulement),
+    D0 (un clic). C'est en jeu depuis la PR #220.</p>
+  <p><strong>Ce qui ne va pas :</strong> au survol, la carte grandit et toutes les autres glissent pour lui faire de la
+    place (H0 ci-dessous). À la souris, quand on glisse vers la carte voisine, elle s'est déjà déplacée : on tombe sur une
+    autre, qui refait tout bouger. Cette page ne règle que le survol, avec la piste « la carte se soulève sur place, les
+    autres ne bougent pas ».</p>
+  <p><strong>Référence</strong> (décrite de mémoire, pas revue en jeu cette fois) : dans Hearthstone, la carte survolée
+    de la main apparaît en grand au-dessus de la main, droite, et la main bouge à peine. Dans Balatro, la carte monte un peu
+    et grossit à peine, ses voisines restent en place. Dans Slay the Spire, la carte monte droite et grossit, et ses
+    voisines s'écartent : c'est ce que fait H0, et c'est la plus pénible à balayer.</p>
+  <p><strong>Aujourd'hui :</strong> <code>RoleFanLayout.Compute</code> écarte les voisines de la carte survolée, et le
+    survol suit la carte là où elle est dessinée (la grande carte attrape la souris).</p>
+  <p><strong>La scène :</strong> le Mage abat le portail et doit deviner le rôle d'Isa1708 parmi les 11 rôles de la partie.
+    Il glisse la souris lentement de gauche à droite pour lire chaque rôle, puis clique sur Ugës. Le compteur en bas
+    à droite donne le nombre de cartes survolées depuis le départ : à la moitié du glissé, la souris est au même
+    endroit dans toutes les images, mais pas sur la même carte.</p>
+  <p><strong>Sans question :</strong> 0,3 s pour qu'une carte monte ou redescende, comme en jeu ; un clic choisit (D0) ;
+    la carte d'Isa1708 reste épinglée à droite et la grande carte ne passe jamais dessus ni hors de l'écran.</p>
+  <p>Le glissé tourne en boucle dans chaque image. <strong>Passe ta souris sur une image pour essayer toi-même</strong>,
+    c'est le vrai test ; le pointillé montre la zone qui décide quelle carte est survolée.</p>
+</header>
+
+<div class="ev-bar"><div id="ev-bar">
+  <b>Rôles</b><button data-n="9">9</button><button data-n="11" class="on">11 (la partie de la scène)</button><button data-n="18">18</button>
+  <b>Moments</b>
+</div></div>
+
+<section data-forme="H0 H1 H2 H3">
+  <h2>La carte survolée</h2>
+  <p>Comment elle se montre pour qu'on lise son nom et son dessin. Dans H1 à H3, les autres cartes ne bougent jamais.</p>
+  <div class="stack">
+    <div class="variant" data-id="H0">
+      <div class="vhead"><span class="vid">H0</span><span class="vname">Actuel</span></div>
+      <p class="vdesc">Elle se redresse et grandit, ses voisines s'écartent des deux côtés pour qu'elle soit entière.</p>
+      <div class="screen"><div class="stage" data-h="H0"></div></div>
+    </div>
+    <div class="variant" data-id="H1">
+      <div class="vhead"><span class="vid">H1</span><span class="vname">Se redresse sur place (par défaut)</span></div>
+      <p class="vdesc">Elle se redresse et grandit vers le haut, là où elle est, par-dessus ses voisines qui restent en
+        place. En glissant, la grande carte avance d'une bande à chaque carte.</p>
+      <div class="screen"><div class="stage" data-h="H1"></div></div>
+    </div>
+    <div class="variant" data-id="H2">
+      <div class="vhead"><span class="vid">H2</span><span class="vname">Monte en gardant son angle</span></div>
+      <p class="vdesc">Elle sort de l'éventail le long de sa pente et grossit un peu, sans se redresser. Le plus discret :
+        elle cache moins ses voisines, mais se lit penchée.</p>
+      <div class="screen"><div class="stage" data-h="H2"></div></div>
+    </div>
+    <div class="variant" data-id="H3">
+      <div class="vhead"><span class="vid">H3</span><span class="vname">Au-dessus de l'éventail</span></div>
+      <p class="vdesc">Elle monte tout entière au-dessus des cartes, droite. Le bas de l'éventail, là où passe la souris,
+        n'est jamais caché.</p>
+      <div class="screen"><div class="stage" data-h="H3"></div></div>
+    </div>
+  </div>
+</section>
+
+<section data-suit>
+  <h2>Où la souris doit être pour garder une carte</h2>
+  <p>Quand la grande carte cache ses voisines, que se passe-t-il si la souris glisse sur elle ?</p>
+  <div class="stack">
+    <div class="variant" data-id="Z1">
+      <div class="vhead"><span class="vid">Z1</span><span class="vname">Sur sa bande dans l'éventail (par défaut)</span></div>
+      <p class="vdesc">C'est la place de la carte au repos qui compte, pas la grande carte : en glissant, on passe d'une carte
+        à la suivante même sous la grande. Monter sur la grande carte la garde.</p>
+      <div class="screen"><div class="stage" data-z="Z1"></div></div>
+    </div>
+    <div class="variant" data-id="Z2">
+      <div class="vhead"><span class="vid">Z2</span><span class="vname">Sur la grande carte, comme aujourd'hui</span></div>
+      <p class="vdesc">La grande carte attrape la souris : tant qu'on est dessus, elle reste. Pour la voisine qu'elle cache,
+        il faut d'abord sortir de la grande carte.</p>
+      <div class="screen"><div class="stage" data-z="Z2"></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="send">
+  <label for="global">Une remarque générale ?</label>
+  <textarea id="global"></textarea>
+  <button id="send">Envoyer mes retours à Claude</button>
+</footer>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+
+  // ---------------- data ----------------
+  const NAMES = {
+    Abyss: "Abyss, L'Extension du Néant", Repenti: "Le Repenti", Croupiere: "Luma, la croupière", MageOcculte: "Va'ahl, Le Mage Occulte",
+    Robot: "Le Robot", Dryade: "La Dryade", Messager: "Le Messager", Technomancien: "Le Technomancien", DrGloubi: "Dr Gloubi",
+    Orpheline: "L'Orpheline", Incomplet: "L'Incomplet", Uges: "Ugës, l'Imposteur", Traqueuse: "La Chasseuse de Prime",
+    Gardien: "Le Gardien", Geolier: "Le Geôlier", Omniscient: "L'Omniscient", Oracle: "L'Oracle", Moork: "Moork",
+  };
+  const SETS = {
+    9: ["Croupiere", "MageOcculte", "Robot", "Messager", "Technomancien", "DrGloubi", "Orpheline", "Incomplet", "Uges"],
+    // the portal of the autoplay game of 21/11 (seed 4310): 11 roles, fan order
+    11: ["Abyss", "Repenti", "Croupiere", "Robot", "Dryade", "Messager", "Technomancien", "DrGloubi", "Orpheline", "Incomplet", "Uges"],
+    18: ["Abyss", "Repenti", "Croupiere", "MageOcculte", "Robot", "Dryade", "Messager", "Technomancien", "DrGloubi", "Orpheline",
+      "Incomplet", "Traqueuse", "Gardien", "Geolier", "Omniscient", "Oracle", "Moork", "Uges"],
+  };
+  let N = +(params.get("n") || 11);
+
+  // ---------------- the game's geometry (stage 1600 x 900, measured on the autoplay captures) ----------------
+  const W = 230, H = 322, U = W / 6.3;               // a role card; U = one Unity unit of the fan at this size
+  const FAN_X = 660, FAN_Y = 660, DROP = 90;         // fan centre (pushed left by the pinned card), edge cards lower
+  const TARGET = { x: 1450, y: 450, w: 230, h: 322 };
+  const SAFE_R = TARGET.x - TARGET.w / 2 - 16, SAFE_L = 14;
+  const GROW = 1.45, BOTTOM = 880;                   // the hovered card's size on screen (zoom + coming forward)
+  const TAU = 0.075;                                 // ~0.3 s to settle, like the game's OutQuint tween
+
+  function restPoses(n) {
+    const step = n > 1 ? Math.min(5 * U, 19 * U / (n - 1)) : 0, rotStep = n > 1 ? Math.min(8, 36 / (n - 1)) : 0, c = (n - 1) / 2;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const d = i - c;
+      out.push({ x: FAN_X + d * step, y: FAN_Y + (c ? DROP * d * d / (c * c) : 0), rot: d * rotStep, s: 1, o: 1 });
+    }
+    return { poses: out, step };
+  }
+
+  // H0: RoleFanLayout.Compute (PR #220), in screen pixels
+  function layoutH0(rest, step, hi) {
+    const n = rest.length, P = rest.map(p => ({ ...p }));
+    const G = W * GROW, gap = 0.3 * U, minStrip = 0.6 * U, margin = 0.3 * U, growth = (G - W) / 2;
+    const left = rest[0].x, right = rest[n - 1].x;
+    const lGap = G / 2 - W / 2 + gap, rGap = G / 2 + W / 2 + gap, nL = hi, nR = n - 1 - hi, restX = rest[hi].x;
+    let xh = restX;
+    if (nL > 0 && nR > 0 && n > 2) xh = left + lGap + nL * (right - left - lGap - rGap) / (n - 2);
+    xh = Math.min(Math.max(xh, restX - W / 2 + step - G / 2 + margin), restX + growth - margin);
+    if (right - left > 2 * growth) xh = Math.min(Math.max(xh, left + growth), right - growth);
+    const minX = nL > 0 ? left + lGap + nL * minStrip : -1e9, maxX = nR > 0 ? right - rGap - (nR - 1) * minStrip : 1e9;
+    if (minX <= maxX) xh = Math.min(Math.max(xh, minX), maxX);
+    P[hi] = { x: xh, y: BOTTOM - H * GROW / 2, rot: 0, s: GROW, o: 1 };
+    if (nL > 0) {
+      const strip = Math.min(Math.max((xh - left - lGap) / nL, minStrip), step);
+      let x = xh - lGap - Math.min(strip, W);
+      for (let i = hi - 1; i >= 0; i--) { P[i].x = x; x -= strip; }
+    }
+    if (nR > 0) {
+      const strip = nR > 1 ? Math.min(Math.max((right - xh - rGap) / (nR - 1), minStrip), step) : step;
+      let x = xh + rGap;
+      for (let i = hi + 1; i < n; i++) { P[i].x = x; x += strip; }
+    }
+    return P;
+  }
+
+  const clampX = (x, s) => Math.min(Math.max(x, SAFE_L + W * s / 2), SAFE_R - W * s / 2);
+  function layout(h, rest, step, hi) {
+    if (hi < 0) return rest.map(p => ({ ...p }));
+    if (h === "H0") return layoutH0(rest, step, hi);
+    const P = rest.map(p => ({ ...p })), r = rest[hi];
+    if (h === "H1") P[hi] = { x: clampX(r.x, GROW), y: BOTTOM - H * GROW / 2, rot: 0, s: GROW, o: 1 };
+    if (h === "H2") {
+      const lift = 125, a = r.rot * Math.PI / 180;
+      P[hi] = { x: r.x + lift * Math.sin(a), y: r.y - lift * Math.cos(a), rot: r.rot, s: 1.22, o: 1 };
+    }
+    if (h === "H3") { const s = 1.2; P[hi] = { x: clampX(r.x, s), y: 640 - H * s / 2, rot: 0, s, o: 1 }; }
+    return P;
+  }
+
+  // is (px, py) on a card drawn at pose p?
+  function inside(p, px, py) {
+    const a = -p.rot * Math.PI / 180, dx = px - p.x, dy = py - p.y;
+    const lx = (dx * Math.cos(a) - dy * Math.sin(a)) / p.s, ly = (dx * Math.sin(a) + dy * Math.cos(a)) / p.s;
+    return Math.abs(lx) <= W / 2 && Math.abs(ly) <= H / 2;
+  }
+  // the topmost card under the point: the hovered one is drawn over all, then right over left
+  function topAt(poses, hovered, px, py) {
+    if (hovered >= 0 && inside(poses[hovered], px, py)) return hovered;
+    for (let i = poses.length - 1; i >= 0; i--) if (i !== hovered && inside(poses[i], px, py)) return i;
+    return -1;
+  }
+  function hitTest(F, px, py) {
+    if (F.zone === "Z2") return topAt(F.poses, F.hover, px, py);
+    // Z1: the place the cards have at rest decides; above the fan, the grown card keeps its hover
+    const i = topAt(F.rest, -1, px, py);
+    if (i >= 0) return i;
+    return F.hover >= 0 && inside(F.poses[F.hover], px, py) ? F.hover : -1;
+  }
+
+  // ---------------- the scene over time ----------------
+  const LOOP = 8500, CLICK = 7000;
+  const X0 = 230, X1 = 1060, Y = 790, T0 = 700, T1 = 6200;
+  const cursorAt = t => ({ x: t < T0 ? X0 : t > T1 ? X1 : X0 + (X1 - X0) * (t - T0) / (T1 - T0), y: Y });
+  const MOMENTS = [["Départ", 600], ["Un quart", 2075], ["La moitié", 3450], ["Trois quarts", 4825], ["Sur Ugës", 6500], ["Clic", 7600]];
+
+  // ---------------- a frame ----------------
+  const frames = [];
+  const el = (cls, parent, html) => { const e = document.createElement("div"); e.className = cls; if (html != null) e.innerHTML = html; parent.appendChild(e); return e; };
+  const tf = (p, w, h) => `translate(${p.x - w / 2}px, ${p.y - h / 2}px) rotate(${p.rot}deg) scale(${p.s})`;
+
+  function build(F) {
+    const st = F.stage;
+    st.innerHTML = "";
+    F.ids = SETS[N];
+    const R = restPoses(F.ids.length);
+    F.rest = R.poses; F.step = R.step;
+    el("ev-bg", st); el("ev-frost", st);
+    el("ev-banner", st, "wouh_le_fantome doit abattre le portail.");
+    el("ev-title", st, "Choisissez un rôle !");
+    el("ev-desc", st, "Devinez le rôle d'Isa1708.");
+    const t = el("ev-card ev-target", st, `<img src="img/card_back.webp" alt=""><div class="ev-name">Isa1708</div>`);
+    Object.assign(t.style, { width: TARGET.w + "px", height: TARGET.h + "px", transform: tf({ ...TARGET, rot: 0, s: 1 }, TARGET.w, TARGET.h), zIndex: 50 });
+    F.cards = F.ids.map(id => {
+      const c = el("ev-card", st, `<img src="img/${id}.webp" alt=""><div class="ev-name">${NAMES[id]}</div>`);
+      c.style.width = W + "px"; c.style.height = H + "px";
+      return c;
+    });
+    F.strip = el("ev-strip", st);
+    F.strip.style.width = W + "px"; F.strip.style.height = H + "px";
+    F.cursor = document.createElement("img");
+    F.cursor.className = "ev-cursor";
+    F.cursor.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 30"><path d="M1 1 L1 23 L7 17 L11 27 L15 25 L11 16 L19 16 Z" fill="#fff" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg>');
+    st.appendChild(F.cursor);
+    F.count = el("ev-count", st);
+    F.hit = el("ev-hit", st);
+    F.hit.addEventListener("pointerenter", e => { F.manual = true; reset(F); F.ptr = toStage(F, e); });
+    F.hit.addEventListener("pointermove", e => { if (F.manual) F.ptr = toStage(F, e); });
+    F.hit.addEventListener("pointerleave", () => { F.manual = false; F.ptr = null; reset(F); simulate(F, now()); });
+    F.hit.addEventListener("pointerup", e => {
+      if (!F.manual) return;
+      F.ptr = toStage(F, e);
+      if (F.picked < 0 && F.hover >= 0) { F.picked = F.hover; F.pickedAt = performance.now(); }
+    });
+    reset(F);
+  }
+  function toStage(F, e) {
+    const r = F.stage.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * 1600 / r.width, y: (e.clientY - r.top) * 900 / r.height };
+  }
+  function reset(F) {
+    F.poses = F.rest.map(p => ({ ...p }));
+    F.hover = -1; F.picked = -1; F.seen = new Set(); F.changes = 0;
+  }
+
+  // one step of dt seconds with the pointer at ptr (null = outside)
+  function step(F, dt, ptr) {
+    if (F.picked < 0 && ptr) {
+      const h = hitTest(F, ptr.x, ptr.y);
+      if (h !== F.hover) { F.hover = h; if (h >= 0) { F.changes++; F.seen.add(h); } }
+    } else if (F.picked < 0) F.hover = -1;
+    let goal;
+    if (F.picked >= 0) {
+      goal = F.rest.map((p, i) => i === F.picked ? { x: TARGET.x, y: TARGET.y, rot: 0, s: 1, o: 1 } : { ...p, o: 0, s: 0.92 });
+    } else goal = layout(F.h, F.rest, F.step, F.hover);
+    const k = 1 - Math.exp(-dt / TAU);
+    F.poses.forEach((p, i) => { for (const key of ["x", "y", "rot", "s", "o"]) p[key] += (goal[i][key] - p[key]) * k; });
+  }
+  function simulate(F, t) {
+    reset(F);
+    const dt = 1 / 60;
+    for (let s = 0; s * 1000 * dt < t; s++) {
+      const ts = s * 1000 * dt;
+      if (F.picked < 0 && ts >= CLICK && F.hover >= 0) F.picked = F.hover;
+      step(F, dt, cursorAt(ts));
+    }
+  }
+  function render(F, ptr) {
+    F.cards.forEach((c, i) => {
+      const p = F.poses[i];
+      c.style.transform = tf(p, W, H);
+      c.style.opacity = p.o.toFixed(3);
+      c.style.zIndex = i === F.hover || i === F.picked ? 300 : 60 + i;
+      c.classList.toggle("hover", i === F.hover && F.picked < 0);
+    });
+    // the zone that decides the hover
+    const showStrip = F.hover >= 0 && F.picked < 0;
+    F.strip.classList.toggle("on", showStrip);
+    if (showStrip) {
+      const p = F.zone === "Z2" ? F.poses[F.hover] : F.rest[F.hover];
+      F.strip.style.transform = tf(p, W, H);
+    }
+    F.cursor.style.display = F.manual ? "none" : "";
+    if (ptr && !F.manual) F.cursor.style.transform = `translate(${ptr.x - 2}px, ${ptr.y - 2}px)`;
+    const extra = F.changes - F.seen.size;
+    F.count.innerHTML = `Cartes survolées : <b>${F.changes}</b>` + (extra > 0 ? ` (dont ${extra} en trop)` : "");
+  }
+
+  document.querySelectorAll(".stage").forEach(stage => {
+    const sec = stage.closest("section");
+    const F = { stage, sec, h: stage.dataset.h || "H1", zone: stage.dataset.z || (stage.dataset.h === "H0" ? "Z2" : "Z1"), manual: false };
+    frames.push(F);
+    build(F);
+  });
+  // the hover zone section is drawn in the card's way of showing he picked (mock.js fires it at load and on each vote)
+  document.addEventListener("mockforme", e => {
+    frames.filter(F => F.sec === e.detail.section).forEach(F => { F.h = e.detail.forme; build(F); simulate(F, now()); render(F, cursorAt(now())); });
+  });
+
+  // ---------------- the clock ----------------
+  let playing = true, speed = 1, t0 = performance.now(), tFrozen = 0, last = performance.now(), lastT = 0;
+  if (params.get("at")) { playing = false; tFrozen = +params.get("at"); }
+  const now = () => playing ? ((performance.now() - t0) * speed) % LOOP : tFrozen;
+  function tick() {
+    const wall = performance.now(), dt = Math.min(0.05, (wall - last) / 1000);
+    last = wall;
+    const t = now();
+    frames.forEach(F => {
+      if (F.manual) {
+        if (F.picked >= 0 && wall - F.pickedAt > 1600) reset(F);
+        step(F, dt, F.ptr);
+        render(F, null);
+        return;
+      }
+      if (!playing) { if (F.frozenAt !== t) { simulate(F, t); F.frozenAt = t; } render(F, cursorAt(t)); return; }
+      F.frozenAt = null;
+      if (t < lastT) reset(F);
+      if (F.picked < 0 && t >= CLICK && F.hover >= 0) F.picked = F.hover;
+      step(F, dt * speed, cursorAt(t));
+      render(F, cursorAt(t));
+    });
+    lastT = t;
+    requestAnimationFrame(tick);
+  }
+
+  // ---------------- the bar ----------------
+  const bar = document.getElementById("ev-bar");
+  const momentBtns = MOMENTS.map(([label, ms]) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.onclick = () => { playing = false; tFrozen = ms; paintBar(); };
+    bar.appendChild(b);
+    return [b, ms];
+  });
+  const loopBtn = document.createElement("button"); loopBtn.textContent = "▶ En boucle"; bar.appendChild(loopBtn);
+  const slowBtn = document.createElement("button"); slowBtn.textContent = "Ralenti"; bar.appendChild(slowBtn);
+  loopBtn.onclick = () => {
+    if (!playing) { playing = true; t0 = performance.now() - tFrozen / speed; lastT = tFrozen; frames.forEach(F => { if (!F.manual) simulate(F, tFrozen); }); }
+    paintBar();
+  };
+  slowBtn.onclick = () => { const t = now(); speed = speed === 1 ? 1 / 3 : 1; t0 = performance.now() - t / speed; paintBar(); };
+  function paintBar() {
+    momentBtns.forEach(([b, ms]) => b.classList.toggle("on", !playing && tFrozen === ms));
+    loopBtn.classList.toggle("on", playing);
+    slowBtn.classList.toggle("on", speed !== 1);
+  }
+  bar.querySelectorAll("[data-n]").forEach(b => {
+    b.classList.toggle("on", +b.dataset.n === N);
+    b.onclick = () => {
+      N = +b.dataset.n;
+      bar.querySelectorAll("[data-n]").forEach(x => x.classList.toggle("on", x === b));
+      frames.forEach(F => { build(F); simulate(F, now()); });
+    };
+  });
+  frames.forEach(F => simulate(F, now()));
+  paintBar();
+  tick();
+})();
+</script>
+<script src="../common/mock.js"></script>
+</body>
+</html>

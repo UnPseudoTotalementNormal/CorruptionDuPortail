@@ -29,11 +29,11 @@ namespace CorruptionDuPortail.Domain.Powers.Decisions
             }
             else if (guess.TargetedRoleNames.Count == 0)
             {
-                message += "\n" + Loc.Token("Le role {0} n'a ciblé aucun rôle.", Loc.Token(guess.GuessRoleName));
+                message += "\n" + Loc.Token("Le rôle {0} n'a ciblé aucun rôle.", Loc.Token(guess.GuessRoleName));
             }
             else
             {
-                message += "\n" + Loc.Token("Le role {0} a ciblé ces rôles:", Loc.Token(guess.GuessRoleName));
+                message += "\n" + Loc.Token("Le rôle {0} a ciblé ces rôles :", Loc.Token(guess.GuessRoleName));
                 foreach (var roleName in guess.TargetedRoleNames)
                 {
                     message += "\n- " + Loc.Token(roleName);

@@ -52,6 +52,12 @@ namespace Autoplay
         public float[] pickerCaptureDelays = { 0f, 0.1f, 0.25f, 0.5f, 1f };
         [Tooltip("Game seconds the chosen card stays hovered (captured) before the click.")]
         public float pickerHoverDwell = 0.6f;
+        [Tooltip("Scenario lever picker-hover-tour: before its pick, a role picker's first, middle and last card are " +
+                 "hovered in turn, each captured (the fan's hover layout: grown card, neighbours aside, all on screen).")]
+        public bool pickerHoverTour;
+        [Tooltip("Scenario lever picker-hover-tour-dwell: with picker-hover-tour, every card is hovered left to right, " +
+                 "each this many game seconds (0.35 checks them all within the power's time, 0.9 at timescale 1 reads on a video). 0 = first, middle and last card, 0.7 s each.")]
+        public float pickerHoverTourDwell;
 
         [Tooltip("Scenario lever role-card-dwell: real seconds the lobby's role detail overlay stays open (lobby-ui).")]
         public float roleCardDwell = 0.5f;
@@ -94,6 +100,8 @@ namespace Autoplay
         public string tourTooltipTargets;
         [Tooltip("Real-input tour (-autoplay-tour-day <N>): the night tour waits for night N (T9: the card marks exist from the second night). 0 = the first night.")]
         public int tourFromDay;
+        [Tooltip("Real-input tour (-autoplay-tour-after-turn): the night tour waits until this process's own seat has had its turn that night (then for a moment where no seat it plays is awake: a fake-role layer) (what its power did is then on the board, e.g. the Robot's hack).")]
+        public bool tourAfterTurn;
         [Tooltip("This peer starts in the middle of a phase (a rejoin): no state hash for that first phase, the host sampled it before the peer was back.")]
         public bool joinedMidPhase;
         [Tooltip("Tour: move an audio slider (PlayerPrefs are shared by every process of a run: the host only).")]
@@ -136,11 +144,21 @@ namespace Autoplay
         [Tooltip("POV tour (-autoplay-pov-tour): the first vote's seated view head at rest / left / right / up, room shown, " +
                  "pitch black without then with the light per cat, each followed by a head sweep (record it with -autoplay-record \"pov\\.sweep:10\").")]
         public bool povTour;
+        [Tooltip("POV tour (-autoplay-pov-gaze-host): every client holds its head turned toward the host's cat instead of touring, " +
+                 "so the host's captures show who looks at it (Wouh 2026-11-15: a cat looking at us seemed to look beside us).")]
+        public bool povGazeHost;
+        [Tooltip("POV tour (-autoplay-pov-fovs 54.5,80,85): after the tour, the rest / left / right looks (black) again at each " +
+                 "of these vertical fields, captures pov-fov<value>-<look> (Poyo 2026-11-26: « augmenter le fov en pov »).")]
+        public string povFovs;
         [Tooltip("POV tour: game seconds of the head sweep left to right (then half of it up).")]
         public float povSweepSeconds = 6f;
         [Tooltip("Turn captures (-autoplay-turn-captures), board task T21: clean captures at night when this process's seat " +
                  "wakes (turn-mine-*) and while it sleeps through another layer (turn-other-*).")]
         public bool turnCaptures;
+        [Tooltip("Voice probe (-autoplay-voice-probe host|client), board task T22: every process swaps Steam Voice for a " +
+                 "synthetic voice sent through the real voice path; the named side talks in the day, every listener " +
+                 "journals the speaker's mouth (voice.probe) and captures his cat.")]
+        public string voiceProbe;
     }
 
     /// <summary>
@@ -340,6 +358,7 @@ namespace Autoplay
             UpdateCardVisibility(_state);
             UpdateSurroundings(_state);
             UpdateTurnCaptures(_state);
+            UpdateVoiceProbe(_state);
 
             switch (_state)
             {
@@ -479,6 +498,7 @@ namespace Autoplay
             CurrentState = _state;
             CurrentStateRealSince = Time.realtimeSinceStartup;
             stateEnterGameTime = Time.time;
+            controlledWokeThisState = false;
             turns.Clear();
             votedThisState.Clear();
             chatSentThisState.Clear();
@@ -746,8 +766,19 @@ namespace Autoplay
                     continue;
                 }
 
-                Character _focus = string.IsNullOrEmpty(options.voteFocusRole) ? null : _targets.FirstOrDefault(_t =>
-                    _t.role != null && _t.role.roleName.ToString().IndexOf(options.voteFocusRole, StringComparison.OrdinalIgnoreCase) >= 0);
+                // A comma list is a priority order: the first listed role whose holder is still free ("Mage,Abyss":
+                // the Mage first, then Abyss once the Mage is chained).
+                Character _focus = null;
+                if (!string.IsNullOrEmpty(options.voteFocusRole))
+                {
+                    foreach (string _wanted in options.voteFocusRole.Split(','))
+                    {
+                        string _text = _wanted.Trim();
+                        _focus = _text.Length == 0 ? null : _targets.FirstOrDefault(_t =>
+                            _t.role != null && _t.role.roleName.ToString().IndexOf(_text, StringComparison.OrdinalIgnoreCase) >= 0);
+                        if (_focus != null) break;
+                    }
+                }
                 ulong _targetId = (_focus != null ? _focus : policy.Choose(_targets, "vote")).ownerClientId.Value;
                 if (options.realInput != null)
                 {
@@ -782,8 +813,10 @@ namespace Autoplay
         private void UpdatePortal(GameManager _gameManager, TakeDownThePortalState _portal)
         {
             ulong _mageId = _portal.mageCharacterOwnerId;
-            // shouldActivate is only set on the SERVER's state instance (ChainingManager); a client only receives the
-            // Mage id (SetMageCharacterRpc to all). A client Mage therefore acts on the id and lets the server decide.
+            // shouldActivate is only set on the SERVER's state instance (decided at the step's start: Mage AND every
+            // anomaly chained); a client only receives the Mage id (SetMageCharacterRpc to all, as soon as the Mage is
+            // chained). A client Mage therefore acts on the id and lets the server decide: a step the server skips is
+            // left within a frame, long before the 5 s gate below lets the client click.
             // The Mage's seat, not this peer's connection id (they differ after a rejoin).
             bool _activated = networkManager.IsServer ? _portal.shouldActivate : _mageId == LocalSeat;
             if (!_activated || !controlledIds.Contains(_mageId))
@@ -871,6 +904,11 @@ namespace Autoplay
                 yield break;
             }
 
+            if (options.pickerHoverTour && _picker.IsRolePicker)
+            {
+                yield return HoverTourRolePicker(_picker, _opening);
+            }
+
             Card _card = policy.Choose(autopilot.Focus(_cards, _c => _c.characterInfo), "picker.card");
             if (options.realInput != null)
             {
@@ -884,21 +922,105 @@ namespace Autoplay
                 }
                 yield break;
             }
+            // The role fan's cards ignore pointer events (the picker drives them, maquettes eventail-roles v2 Z1).
+            bool _fanCard = _picker.IsRolePicker;
             var _pointer = new PointerEventData(EventSystem.current);
-            _card.OnPointerEnter(_pointer);
+            if (_fanCard) _picker.HoverFanCard(_card);
+            else _card.OnPointerEnter(_pointer);
             Journal.Record("picker.hover", $"#{_opening} {DescribeCard(_card)}");
             capture.Request($"picker{_opening:000}-hover-{DescribeCard(_card)}", options.pickerHoverDwell * 0.8f);
             yield return new WaitForSeconds(options.pickerHoverDwell);
 
             if (_card && _picker.IsPickerActive)
             {
-                _card.OnPointerClick(_pointer);
-                _card.OnPointerExit(_pointer);
+                if (_fanCard)
+                {
+                    _picker.ChooseFanCard(_card);
+                }
+                else
+                {
+                    _card.OnPointerClick(_pointer);
+                    _card.OnPointerExit(_pointer);
+                }
                 Journal.Record("picker.click", $"#{_opening} {DescribeCard(_card)}");
             }
 
             yield return null;
             pickerHandling = false;
+        }
+
+        // picker-hover-tour: the fan's cards hovered in turn, left to right (fan order). With real input the virtual mouse
+        // slides along the fan through each card's strip at rest: maquettes eventail-roles v2 (Z1) wants every card to
+        // come under the pointer in order, even under the risen card, else journal picker.hover.lost. Without, the
+        // picker is told which card is hovered. Each hovered card must be whole on screen (picker.hover.offscreen).
+        // Captures: the first, middle and last card.
+        private IEnumerator HoverTourRolePicker(CardPickerManager _picker, int _opening)
+        {
+            List<Card> _fan = _picker.FanCards.Where(_c => _c).ToList();
+            int[] _captured = { 0, _fan.Count / 2, _fan.Count - 1 };
+            bool _sweep = options.pickerHoverTourDwell > 0f;
+            IEnumerable<int> _indexes = _sweep ? Enumerable.Range(0, _fan.Count) : _captured.Distinct();
+            yield return new WaitForSeconds(_sweep ? options.pickerHoverTourDwell * 2f : 0.6f); // the fan at rest first
+
+            // Where each card shows at rest, measured on screen before anything rises: its centre. A card's strip runs
+            // from its left edge to its right neighbour's, aimed at mid-height.
+            List<Vector2?> _centres = _fan.Select(_c => _c && AutoplayUiLocator.TryScreenRect(_c.gameObject, out Rect _r)
+                ? _r.center : (Vector2?)null).ToList();
+            float _halfWidth = _fan.Count > 0 && AutoplayUiLocator.TryScreenRect(_fan[_fan.Count / 2].gameObject, out Rect _mid)
+                ? _mid.width / 2f : 0f;
+            foreach (int _c in _captured.Distinct().Append(Mathf.Max(0, _fan.Count - 2)))
+            {
+                if (_c < _fan.Count && _centres[_c] is Vector2 _rc)
+                {
+                    Journal.Record("picker.fan.calib", $"#{_opening} {_picker.DescribeFanCalibration(_fan[_c], _rc)}");
+                }
+            }
+
+            foreach (int _i in _indexes)
+            {
+                if (!_picker.IsPickerActive || _i < 0 || _i >= _fan.Count || !_fan[_i])
+                {
+                    yield break;
+                }
+
+                if (options.realInput != null && _centres[_i] is Vector2 _centre)
+                {
+                    Vector2 _aim = _i + 1 < _fan.Count && _centres[_i + 1] is Vector2 _next
+                        ? (_centre + _next) / 2f - new Vector2(_halfWidth, 0f) : _centre;
+                    yield return options.realInput.MoveTo(_aim, _sweep ? options.pickerHoverTourDwell * 0.3f : 0.3f);
+                }
+                else
+                {
+                    _picker.HoverFanCard(_fan[_i]);
+                }
+                Journal.Record("picker.hover.tour", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])}");
+                if (_captured.Contains(_i))
+                {
+                    capture.Request($"picker{_opening:000}-tour{_i:00}-{DescribeCard(_fan[_i])}", 0.5f);
+                }
+                yield return new WaitForSeconds(_sweep ? options.pickerHoverTourDwell : 0.7f);
+                // The risen card must stay whole on screen (2026-11-21: the first card of the fan, hovered, came
+                // forward in perspective and lost its left edge). The power's time can close the picker.
+                if (!_picker.IsPickerActive)
+                {
+                    yield break;
+                }
+                if (_picker.HoveredFanCard != _fan[_i])
+                {
+                    Journal.Record("picker.hover.lost", $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])} hovered={(_picker.HoveredFanCard ? DescribeCard(_picker.HoveredFanCard) : "none")} probe={_picker.LastFanProbe}");
+                }
+                else if (AutoplayUiLocator.TryScreenRect(_fan[_i].gameObject, out Rect _rect)
+                    && (_rect.xMin < -2f || _rect.yMin < -2f || _rect.xMax > Screen.width + 2f || _rect.yMax > Screen.height + 2f))
+                {
+                    Journal.Record("picker.hover.offscreen",
+                        $"#{_opening} index={_i}/{_fan.Count} {DescribeCard(_fan[_i])} rect={_rect.xMin:0},{_rect.yMin:0}..{_rect.xMax:0},{_rect.yMax:0} screen={Screen.width}x{Screen.height}");
+                }
+            }
+            if (options.realInput == null)
+            {
+                _picker.HoverFanCard(null);
+            }
+            yield return new WaitForSeconds(0.4f);
         }
 
         private static string DescribePicker(CardPickerManager _picker)

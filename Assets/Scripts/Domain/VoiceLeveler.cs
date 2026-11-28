@@ -12,10 +12,13 @@ namespace CorruptionDuPortail.Domain
     /// <see cref="MinGain"/> and <see cref="MaxGain"/>, so a hot microphone comes down and a quiet one comes up a little;</item>
     /// <item>gate: a block far below the speech level (or under <see cref="NoiseFloorRms"/>) is room noise, the space
     /// between words: it is lowered to <see cref="GateFloor"/>;</item>
-    /// <item>limiter: whatever is left above the knee bends softly under <see cref="Ceiling"/>, never a hard clip.</item>
+    /// <item>limiter: a peak that would pass <see cref="Ceiling"/> turns the whole voice down for a moment (the gain
+    /// falls just before the peak, looking <see cref="LookaheadSeconds"/> ahead, and comes back over
+    /// <see cref="ReleaseSeconds"/>): the wave keeps its shape. The first version bent every sample over -9 dBFS
+    /// instead, which reshaped the peaks of a voice: a saturation of its own (playtest 2026-11-20, still saturated).</item>
     /// </list>
-    /// Gains glide sample by sample inside a block, so nothing clicks. <see cref="Burst"/> measures what came in (for
-    /// the playtest logs: was it already clipped when it arrived?). Pure: no Unity, no FMOD.
+    /// Gains glide sample by sample inside a block, so nothing clicks. <see cref="Burst"/> measures what came in (was it
+    /// already clipped when it arrived?) and what the limiter did (for the playtest logs). Pure: no Unity, no FMOD.
     /// </summary>
     public sealed class VoiceLeveler
     {
@@ -31,10 +34,14 @@ namespace CorruptionDuPortail.Domain
         public const double GateRatio = 0.063;
         /// <summary>What the gate leaves of the noise (-20 dB): quieter, not a hole.</summary>
         public const double GateFloor = 0.1;
-        /// <summary>The limiter starts bending here (≈ -9 dBFS)...</summary>
-        public const double Knee = 0.35;
-        /// <summary>...and never goes past this (≈ -3 dBFS).</summary>
+        /// <summary>The voice never goes past this (≈ -3 dBFS).</summary>
         public const double Ceiling = 0.7;
+        /// <summary>How far ahead the limiter sees a peak coming, so its gain is down before it.</summary>
+        public const double LookaheadSeconds = 0.0015;
+        /// <summary>How long the limiter's gain takes to come back after a peak.</summary>
+        public const double ReleaseSeconds = 0.08;
+        // A sample the limiter lowered by more than this (1 dB) counts as limited in the burst stats.
+        private const double LimitedGain = 0.89;
 
         private const double BlockSeconds = 0.01;
         // Per 10 ms block: the level follower rises fast (a louder voice is lowered within ~30 ms) and falls slowly
@@ -46,6 +53,13 @@ namespace CorruptionDuPortail.Domain
         private const short ClippedSample = 32000;
 
         private readonly int _blockSamples;
+        private readonly int _lookahead;
+        private readonly double _release;
+        private double[] _scratch = Array.Empty<double>();
+        private double[] _envelope = Array.Empty<double>();
+        // The last limiter gains of the previous packet (the smoothing window spans packets).
+        private readonly double[] _history;
+        private double _limiterGain = 1.0;
         private double _speechLevel;
         private double _gain = 1.0;
         private double _gate = 1.0;
@@ -68,6 +82,11 @@ namespace CorruptionDuPortail.Domain
             public double GainSum;
             public int GainBlocks;
 
+            /// <summary>Loudest sample played, after the gain and the limiter.</summary>
+            public double OutPeak;
+            /// <summary>Samples the limiter turned down by more than 1 dB.</summary>
+            public int Limited;
+
             public double SpeechRms => SpeechSamples > 0 ? Math.Sqrt(SpeechSquares / SpeechSamples) : 0;
             public double MeanGain => GainBlocks > 0 ? GainSum / GainBlocks : 1;
         }
@@ -75,6 +94,13 @@ namespace CorruptionDuPortail.Domain
         public VoiceLeveler(int sampleRate)
         {
             _blockSamples = Math.Max(1, (int)(sampleRate * BlockSeconds));
+            _lookahead = Math.Max(1, (int)(sampleRate * LookaheadSeconds));
+            _release = 1.0 - Math.Exp(-1.0 / (sampleRate * ReleaseSeconds));
+            _history = new double[_lookahead];
+            for (int i = 0; i < _lookahead; i++)
+            {
+                _history[i] = 1.0;
+            }
         }
 
         public void ResetBurst() => Burst = default;
@@ -83,11 +109,78 @@ namespace CorruptionDuPortail.Domain
         public void Process(byte[] pcm, int count)
         {
             int _samples = count / 2;
+            if (_scratch.Length < _samples)
+            {
+                _scratch = new double[_samples];
+                _envelope = new double[_samples];
+            }
             for (int _from = 0; _from < _samples; _from += _blockSamples)
             {
                 int _to = Math.Min(_samples, _from + _blockSamples);
                 ProcessBlock(pcm, _from, _to);
             }
+            LimitInto(pcm, _samples);
+        }
+
+        // The gained samples (_scratch) to PCM16 under the ceiling. Per sample: the gain that keeps it under the
+        // ceiling, the lowest one over the next lookahead (so the gain is down before the peak), released slowly, then
+        // averaged over the lookahead so it glides down instead of stepping. The average of gains that are each low
+        // enough for the coming peak stays low enough; a last clamp only catches a peak at a packet's start that the
+        // previous packet could not see.
+        private void LimitInto(byte[] pcm, int samples)
+        {
+            for (int i = 0; i < samples; i++)
+            {
+                double _abs = Math.Abs(_scratch[i]);
+                _envelope[i] = _abs > Ceiling ? Ceiling / _abs : 1.0;
+            }
+            // Lowest need over [i, i + lookahead], then the slow release, carried across packets.
+            for (int i = 0; i < samples; i++)
+            {
+                double _need = _envelope[i];
+                int _end = Math.Min(samples, i + _lookahead + 1);
+                for (int j = i + 1; j < _end; j++)
+                {
+                    if (_envelope[j] < _need)
+                    {
+                        _need = _envelope[j];
+                    }
+                }
+                _limiterGain = _need < _limiterGain ? _need : _limiterGain + (_need - _limiterGain) * _release;
+                _envelope[i] = _limiterGain;
+            }
+            double _window = 0;
+            for (int i = 0; i < _lookahead; i++)
+            {
+                _window += _history[i];
+            }
+            for (int i = 0; i < samples; i++)
+            {
+                double _oldest = i < _lookahead ? _history[i] : _envelope[i - _lookahead];
+                _window += _envelope[i] - _oldest;
+                double _gain = Math.Min(_window / _lookahead, 1.0);
+                double _y = _scratch[i] * _gain;
+                if (_y > Ceiling) _y = Ceiling;
+                else if (_y < -Ceiling) _y = -Ceiling;
+                if (_gain < LimitedGain)
+                {
+                    Burst.Limited++;
+                }
+                double _abs = Math.Abs(_y);
+                if (_abs > Burst.OutPeak)
+                {
+                    Burst.OutPeak = _abs;
+                }
+                Write(pcm, i, _y);
+            }
+            // Keep the last gains for the next packet's window (a packet shorter than the window keeps older ones).
+            var _last = new double[_lookahead];
+            for (int i = 0; i < _lookahead; i++)
+            {
+                int _index = samples - _lookahead + i;
+                _last[i] = _index >= 0 ? _envelope[_index] : _history[i + samples];
+            }
+            Array.Copy(_last, _history, _lookahead);
         }
 
         private void ProcessBlock(byte[] pcm, int from, int to)
@@ -135,23 +228,10 @@ namespace CorruptionDuPortail.Domain
             {
                 double _t = (i - from + 1) / (double)_n;
                 double _g = _startGain + (_endGain - _startGain) * _t;
-                Write(pcm, i, Limit(Read(pcm, i) * _g));
+                _scratch[i] = Read(pcm, i) * _g;
             }
             _gain = _targetGain;
             _gate = _targetGate;
-        }
-
-        /// <summary>Linear under <see cref="Knee"/>, then a soft bend that tends to <see cref="Ceiling"/>.</summary>
-        public static double Limit(double x)
-        {
-            double _abs = Math.Abs(x);
-            if (_abs <= Knee)
-            {
-                return x;
-            }
-            double _room = Ceiling - Knee;
-            double _bent = Knee + _room * Math.Tanh((_abs - Knee) / _room);
-            return x < 0 ? -_bent : _bent;
         }
 
         private static double Clamp(double v, double min, double max) => v < min ? min : v > max ? max : v;

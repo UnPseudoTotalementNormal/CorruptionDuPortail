@@ -28,6 +28,9 @@ namespace Characters
         public NetworkVariable<int> messageLeft = new(1);
         public NetworkVariable<bool> hasSentMessageThisTurn = new(false);
         public NetworkVariable<bool> isAwakened = new(false);
+        // Public: Dr Gloubi's heal was announced to everyone, so every peer shows the Élu logo on this card even while its
+        // role stays hidden (Wouh, fil « Joueur perdu »). Set by PDroolyHealing at the announce, only on an Élu.
+        public NetworkVariable<bool> isKnownChosen = new(false);
         public bool isFake => ownerClientId.Value.IsFakeClientId();
         public event Action onPowersUpdated;
         public event Action onCharacterAwakened;

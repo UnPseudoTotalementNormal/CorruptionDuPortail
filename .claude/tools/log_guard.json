@@ -1,0 +1,15 @@
+{
+  "rule": ".claude/rules/logs.md",
+  "commit_lines": 5,
+  "edit_lines": 8,
+  "parts": [
+    {
+      "name": "game",
+      "code": ["Assets/Scripts/**/*.cs"],
+      "skip": ["**/Editor/**", "**/Test/**", "**/Tests/**", "**/Autoplay/**", "**/Rendering/**", "**/Facepunch/**",
+               "**/Domain/**", "**/Diagnostics/**"],
+      "call": "\\bGameLog\\.",
+      "hint": "GameLog.Info|Warn(\"cat\", \"evt.name\", key, value…) (Diagnostics/Logs/GameLog.cs)"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ namespace Board
         private const string SpriteAsset = "Marques";
 
         /// <summary>The sprite names of the Marques sprite asset (an enum: no literal shares a "// loc" line).</summary>
-        public enum MarkIcon { balise, ours, telephone, oeil, corrompu, soigne, elu, non_elu, benediction }
+        public enum MarkIcon { balise, ours, telephone, oeil, corrompu, soigne, elu, non_elu, benediction, logo_elu, chaine, robot }
 
         public readonly struct Mark
         {
@@ -47,15 +47,29 @@ namespace Board
                 case CardEffectID.MessagerLink:
                     return new Mark(MarkIcon.telephone, "Lié par l'encre", "Le Messager a lié ce joueur par l'encre."); // loc slop-ok: the bubble's content (H2)
                 case CardEffectID.Healed:
-                    return new Mark(MarkIcon.soigne, "Soigné", "Ce joueur a été soigné."); // loc slop-ok: the bubble's content (H2)
+                    // Seen by Dr Gloubi and the Dryade only: their pickers skip a healed player, the corrupters do not.
+                    return new Mark(MarkIcon.soigne, "Soigné", "Déjà soigné : il ne peut plus être soigné, mais peut encore être corrompu."); // loc slop-ok: the bubble's content (H2)
                 case CardEffectID.Blessing:
-                    return new Mark(MarkIcon.benediction, "Bénédiction", "La Dryade a béni ce joueur."); // loc slop-ok: the bubble's content (H2)
+                    // Both corrupting pickers skip a blessed player (TargetIncludeFlags without Blessed), Wouh's wording.
+                    return new Mark(MarkIcon.benediction, "Bénédiction", "La Dryade protège ce joueur : il est immunisé à la Corruption Ciblée et à la Marque corruptrice."); // loc slop-ok: the bubble's content (H2)
                 case CardEffectID.TechnoBeacon:
                     return new Mark(MarkIcon.balise, "Balise", "Le Technomancien a posé une balise sur ce joueur."); // loc slop-ok: the bubble's content (H2)
                 default:
                     return null;
             }
         }
+
+        /// <summary>Dr Gloubi's public heal (Character.isKnownChosen): every player sees the Élu logo on the card.</summary>
+        public static Mark KnownChosen() =>
+            new Mark(MarkIcon.logo_elu, "Élu", "Dr Gloubi l'a soigné : c'est un élu."); // loc slop-ok: the bubble's content (H2)
+
+        /// <summary>A chained player (the chains drawn over the card), for everyone.</summary>
+        public static Mark Chained() =>
+            new Mark(MarkIcon.chaine, "Enchaîné", "Ce joueur a été enchaîné."); // loc slop-ok: the bubble's content (H2)
+
+        /// <summary>The Robot's hack (CharacterInfoReveal.isHacked, the Robot alone sees it).</summary>
+        public static Mark Hacked() =>
+            new Mark(MarkIcon.robot, "Piratage", "Tu as piraté ce joueur : s'il se fait enchaîner aujourd'hui, tu gagnes."); // loc slop-ok: the bubble's content (H2)
 
         /// <summary>The meaning of an icon on a role portrait of the bar, found by its sprite, or null.</summary>
         public static Mark? ForPortraitIcon(Sprite _sprite)

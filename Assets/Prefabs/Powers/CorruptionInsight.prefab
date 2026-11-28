@@ -71,8 +71,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  ownerClientId: 0
-  powerGameId: 0
+  ownerClientId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   powerName:
     utf8LengthInBytes: 18
     bytes:
@@ -142,7 +145,7 @@ MonoBehaviour:
       byte0060: 0
       byte0061: 0
   powerDescription:
-    utf8LengthInBytes: 54
+    utf8LengthInBytes: 55
     bytes:
       offset0000:
         byte0000: 80
@@ -160,49 +163,49 @@ MonoBehaviour:
         byte0012: 110
         byte0013: 110
         byte0014: 97
-        byte0015: 105
+        byte0015: 195
       offset0016:
-        byte0000: 116
-        byte0001: 114
-        byte0002: 101
-        byte0003: 32
-        byte0004: 108
-        byte0005: 39
-        byte0006: 195
-        byte0007: 169
-        byte0008: 116
-        byte0009: 97
-        byte0010: 116
-        byte0011: 32
-        byte0012: 100
-        byte0013: 101
-        byte0014: 32
-        byte0015: 99
-      offset0032:
-        byte0000: 111
-        byte0001: 114
+        byte0000: 174
+        byte0001: 116
         byte0002: 114
-        byte0003: 117
-        byte0004: 112
-        byte0005: 116
-        byte0006: 105
-        byte0007: 111
-        byte0008: 110
-        byte0009: 32
-        byte0010: 100
-        byte0011: 101
-        byte0012: 115
-        byte0013: 32
-        byte0014: 106
-        byte0015: 111
-      offset0048:
-        byte0000: 117
-        byte0001: 101
-        byte0002: 117
+        byte0003: 101
+        byte0004: 32
+        byte0005: 108
+        byte0006: 39
+        byte0007: 195
+        byte0008: 169
+        byte0009: 116
+        byte0010: 97
+        byte0011: 116
+        byte0012: 32
+        byte0013: 100
+        byte0014: 101
+        byte0015: 32
+      offset0032:
+        byte0000: 99
+        byte0001: 111
+        byte0002: 114
         byte0003: 114
-        byte0004: 115
-        byte0005: 46
-        byte0006: 0
+        byte0004: 117
+        byte0005: 112
+        byte0006: 116
+        byte0007: 105
+        byte0008: 111
+        byte0009: 110
+        byte0010: 32
+        byte0011: 100
+        byte0012: 101
+        byte0013: 115
+        byte0014: 32
+        byte0015: 106
+      offset0048:
+        byte0000: 111
+        byte0001: 117
+        byte0002: 101
+        byte0003: 117
+        byte0004: 114
+        byte0005: 115
+        byte0006: 46
         byte0007: 0
         byte0008: 0
         byte0009: 0
@@ -685,12 +688,19 @@ MonoBehaviour:
       byte0507: 0
       byte0508: 0
       byte0509: 0
+  power3DObjectPrefab: {fileID: 0}
   maxWaitTime: 0
   isPassive: 1
+  hideFromRoleCard: 0
   hasToBeAwakened: 0
   targetIncludeFlags: 0
-  powerUseLeft: 0
+  powerUseLeft:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   maxPowerUse: 1
+  powerUseRegenPerAwakening: -1
   canalisationSound:
     Guid:
       Data1: 0
@@ -705,3 +715,36 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  isStolenCopy:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  isCopiedPower:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  hideFromRoleCardRuntime:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  barIcon: {fileID: 0}
+  grantOrder:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  passiveOverride:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  marqueSourceId:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
+  powerComponents: []
+  idHolderServer: 0

@@ -1,7 +1,16 @@
 fileFormatVersion: 2
 guid: 3430b6b25de3ef241a58a33a06b7e97c
 TextureImporter:
-  internalIDToNameTable: []
+  internalIDToNameTable:
+  - first:
+      213: 4563271567092560887
+    second: logo_elu
+  - first:
+      213: 9181300183524863625
+    second: chaine
+  - first:
+      213: 2768662214352607627
+    second: robot
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -294,6 +303,72 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: logo_elu
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f33132205ff35f30800000000000000
+      internalID: 4563271567092560887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: chaine
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98e6a3f4fd78a6f70800000000000000
+      internalID: 9181300183524863625
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: robot
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b89988d6d934c6620800000000000000
+      internalID: 2768662214352607627
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -310,11 +385,14 @@ TextureImporter:
     nameFileIdTable:
       balise: 2596115685180276308
       benediction: 702152684606693145
+      chaine: 9181300183524863625
       corrompu: 8359076569947749117
       elu: -4594630096956928612
+      logo_elu: 4563271567092560887
       non_elu: 7854902110892227201
       oeil: -5293599070120311778
       ours: 8802792444261108547
+      robot: 2768662214352607627
       soigne: 9126014654727121088
       telephone: 5404541440820503025
   mipmapLimitGroupName: 

@@ -111,12 +111,20 @@ namespace Characters.Powers
                 var _chatMessage = new ChatMessage
                 {
                     // T36: a token, read by each player in his language.
-                    message = Loc.Token("{0} à été soigné(e) pendant la nuit avec {1}",
+                    message = Loc.Token("{0} a été soigné(e) pendant la nuit avec {1}",
                         _healedCharacter.GetOwnerPseudoToken(), Loc.Token(powerName.ToString())),
                     senderClientId = GameValues.CHAT_SERVER_CLIENT_ID,
                     chatId = (int)ChatWindowIDs.Server
                 };
                 chatManager.ReceiveChatMessageRpc(_chatMessage, RpcTarget.Everyone);
+
+                // The heal is now public: an Élu's card shows the Élu logo to everyone (Wouh, fil « Joueur perdu »).
+                // Only on an Élu: the logo must never lie about a non-Élu who was announced healed.
+                Role _healedRole = _healedCharacter.GetRole();
+                bool _isChosen = _healedRole != null && _healedRole.factionType == FactionType.chosen;
+                if (_isChosen) _healedCharacter.isKnownChosen.Value = true;
+                Diagnostics.Logs.GameLog.Info("power", "power.heal.public", "target", _healedCharacterId,
+                    "faction", _healedRole != null ? _healedRole.factionType.ToString() : "none", "eluLogo", _isChosen);
             }
 
             healedCharactersThisNight.Clear();

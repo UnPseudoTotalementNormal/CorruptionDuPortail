@@ -9,7 +9,7 @@ namespace Localization
 {
     /// <summary>
     /// Writes a game text into a label FROM CODE, in the player's language, and keeps it right when the language
-    /// changes (T36): <c>votesText.SetLoc("Votes: {0}", count)</c> instead of <c>votesText.text = $"Votes: {count}"</c>.
+    /// changes (T36): <c>votesText.SetLoc("Votes : {0}", count)</c> instead of <c>votesText.text = $"Votes: {count}"</c>.
     /// The label remembers its French source and its arguments; when <see cref="Loc.LanguageChanged"/> fires, every
     /// label still showing what was written here is written again. A label that some code overwrote since
     /// (<c>.text = …</c>) is forgotten.

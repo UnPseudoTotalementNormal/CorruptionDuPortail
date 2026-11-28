@@ -62,11 +62,19 @@ namespace VoiceSystem
         private ushort _nextSequence;
 
         private readonly Dictionary<ulong, VoicePlayback> _playbacks = new();
+
+        // The speaker's own cat: his voice is never played back to him (OwnVoiceMeter).
+        private readonly MemoryStream _ownPcm = new();
+        private OwnVoiceMeter _ownMeter;
+        private float _ownLevel;
         private readonly Dictionary<ulong, VoiceLeveler> _levelers = new();
         private readonly Dictionary<ulong, ushort> _lastSequence = new();
 
         /// <summary>The local microphone is open and its voice is being sent.</summary>
         public bool IsTransmitting { get; private set; }
+
+        /// <summary>Autoplay: talks as if the push-to-talk key were held (the day / night rules still apply).</summary>
+        internal bool ForceTalk { get; set; }
 
         /// <summary>The key held to speak, shown by the key hints.</summary>
         public Key PushToTalkKey => _pushToTalkKey;
@@ -123,6 +131,8 @@ namespace VoiceSystem
             }
             _playbacks.Clear();
             _levelers.Clear();
+            _ownMeter = null;
+            _ownLevel = 0f;
             _lastSequence.Clear();
             _logLastListeners.Clear();
             _logDecodeCounts.Clear();
@@ -141,13 +151,14 @@ namespace VoiceSystem
             SetTransmitting(WantsToTransmit());
             Capture();
             TickPlaybacks();
+            TickOwnVoice();
         }
 
         // ---- Sending ----
 
         private bool WantsToTransmit()
         {
-            if (!_options.OpenMic)
+            if (!_options.OpenMic && !ForceTalk)
             {
                 Keyboard _keyboard = Keyboard.current;
                 if (_keyboard == null || !_keyboard[_pushToTalkKey].isPressed || IsTyping())
@@ -224,7 +235,9 @@ namespace VoiceSystem
                 return;
             }
             LogSent(_read);
-            SendVoice(_captured.ToArray());
+            byte[] _packet = _captured.ToArray();
+            SendVoice(_packet);
+            MeasureOwnVoice(_packet);
         }
 
         /// <summary>Sends one packet of compressed voice to the server, which forwards it to the listeners.</summary>
@@ -478,7 +491,9 @@ namespace VoiceSystem
                 "seconds", Math.Round(_burst.Samples / (double)Math.Max(1, _codec.SampleRate), 2),
                 "peakDb", Db(_burst.Peak), "speechDb", Db(_burst.SpeechRms),
                 "clippedPct", Math.Round(100.0 * _burst.Clipped / _burst.Samples, 2),
-                "gainDb", Db(_burst.MeanGain));
+                "gainDb", Db(_burst.MeanGain),
+                "outPeakDb", Db(_burst.OutPeak),
+                "limitedPct", Math.Round(100.0 * _burst.Limited / _burst.Samples, 2));
         }
 
         private static double Db(double _linear) => _linear > 0 ? Math.Round(20.0 * Math.Log10(_linear), 1) : -120.0;
@@ -507,6 +522,32 @@ namespace VoiceSystem
                     ShowVoiceLevel(_playback.Seat, _playback.Level);
                 }
             }
+        }
+
+        private void MeasureOwnVoice(byte[] _packet)
+        {
+            int _decoded = _codec.Decode(_packet, _packet.Length, _ownPcm);
+            if (_decoded <= 0)
+            {
+                return;
+            }
+            _ownMeter ??= new OwnVoiceMeter(_codec.SampleRate);
+            _ownMeter.Add(_ownPcm.GetBuffer(), _decoded);
+        }
+
+        private void TickOwnVoice()
+        {
+            if (_ownMeter == null)
+            {
+                return;
+            }
+            float _level = _ownMeter.Advance(Time.unscaledDeltaTime);
+            if (_level == 0f && _ownLevel == 0f)
+            {
+                return;
+            }
+            _ownLevel = _level;
+            ShowVoiceLevel(_characterManager.LocalSeatId, _level);
         }
 
         // The speaker's avatar may be missing (not spawned yet, left): the level is simply not shown.

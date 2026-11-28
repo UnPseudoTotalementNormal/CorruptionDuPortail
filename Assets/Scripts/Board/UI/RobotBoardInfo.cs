@@ -25,7 +25,7 @@ namespace Board.UI
         private IGameStateQuery Query => gameManager;
         private IGameLoop Loop => gameManager;
         // Story 10.2 lane C: the targeting system, resolved through the composition root in OnNetworkSpawn
-        // (RoleTargetSystem stays a singleton — not de-singletonised), consumed by AskForNewTextRpc. RoleTargetSystem
+        // (RoleTargetSystem stays a singleton — not de-singletonised), consumed by RefreshCounter. RoleTargetSystem
         // now publishes its singleton in Awake: it used to do so in its own OnNetworkSpawn, and when this board spawned
         // first the field stayed null all game (NRE at every night's end, robot counter stuck; autoplay 2026-10-07).
         private RoleTargetSystem roleTargetSystem;
@@ -47,28 +47,51 @@ namespace Board.UI
                 return;
             }
 
-            GameState[] _awakeningStates = Query.GetGameStates(typeof(AwakeningState));
-            foreach (var _awakeningState in _awakeningStates)
+            Loop.onGameStarted += OnGameStarted;
+        }
+
+        // Bound at game start, never at spawn: GameManager clones its state assets in its own OnNetworkSpawn, and
+        // in-scene objects spawn in no guaranteed order. Subscribing at spawn could land on the uncloned asset, whose
+        // end never fires: the counter then stayed at "0" all game (same trap as CorruptionBoardInfo, playtest 2026-11-22).
+        private GameState[] boundAwakeningStates = System.Array.Empty<GameState>();
+
+        private void BindAwakeningStates()
+        {
+            UnbindAwakeningStates();
+            boundAwakeningStates = Query.GetGameStates(typeof(AwakeningState));
+            foreach (GameState _awakeningState in boundAwakeningStates)
             {
                 _awakeningState.onStateEndServer += OnAwakeningStateEnd;
             }
-            Loop.onGameStarted += OnGameStarted;
+            Diagnostics.Logs.GameLog.Info("board", "board.counter.bound", "kind", "robot", "states", boundAwakeningStates.Length);
+        }
+
+        private void UnbindAwakeningStates()
+        {
+            foreach (GameState _awakeningState in boundAwakeningStates)
+            {
+                if (_awakeningState != null)
+                {
+                    _awakeningState.onStateEndServer -= OnAwakeningStateEnd;
+                }
+            }
+            boundAwakeningStates = System.Array.Empty<GameState>();
         }
 
         private void OnGameStarted()
         {
+            BindAwakeningStates();
             SetShownText("0");
         }
 
         private void OnAwakeningStateEnd()
         {
-            AskForNewTextRpc();
+            RefreshCounter();
         }
 
-        [Rpc(SendTo.Server)]
-        private void AskForNewTextRpc()
+        private void RefreshCounter()
         {
-            Character _robot = CharacterQuery.GetCharacters().FirstOrDefault(_c => _c.role.roleID == RoleID.Robot);
+            Character _robot = CharacterQuery.GetCharacters().FirstOrDefault(_c => _c.role != null && _c.role.roleID == RoleID.Robot);
             if (!_robot)
             {
                 SetShownText("0");
@@ -104,6 +127,14 @@ namespace Board.UI
         public override void OnNetworkDespawn()
         {
             shownText.OnValueChanged -= ShowText;
+            if (IsServer)
+            {
+                UnbindAwakeningStates();
+                if (gameManager != null)
+                {
+                    Loop.onGameStarted -= OnGameStarted;
+                }
+            }
             base.OnNetworkDespawn();
         }
     }

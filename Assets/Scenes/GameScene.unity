@@ -4608,8 +4608,8 @@ MonoBehaviour:
     - Key: corruption
       Value:
         title: Corruption
-        description: "Chaque joueur peut \xEAtre corrompu, lorsque tout les joueurs
-          non-anomalie sont corrompu, les anomalies gagnent"
+        description: "Chaque joueur peut \xEAtre corrompu, lorsque tous les joueurs
+          non-anomalie sont corrompus, les anomalies gagnent"
   characterManager: {fileID: 1541735909}
 --- !u!1 &520556982
 GameObject:
@@ -8132,7 +8132,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'restant: 1'
+  m_text: 'restant : 1'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -13600,17 +13600,19 @@ MonoBehaviour:
   - {fileID: 1455679068}
   - {fileID: 259767583}
   _seatedAvatarScale: 0.75
+  _daySeatedAvatarScale: 1
   _dayScreenShare: 0.6
   _dayCatHeight: 16.2
   _dayFewPlayers: 4
-  _dayFewPlayerDistance: 32
-  _dayFewOthersRadius: 12
-  _dayFullPlayers: 10
   _dayCatRadius: 4.4
   _dayClickHeight: 17.6
   _dayGap: 2
-  _dayMinVisibleShare: 0.5
-  _dayAimShare: 0.8
+  _dayMinVisibleShare: 0.25
+  _dayRingRadius: 24
+  _dayRingPerSeat: 0
+  _dayChainShrinks: 0
+  _dayFaceAboveCentre: 0.25
+  _dayMeasuredScale: 0.75
   _smartphone: {fileID: 724818885}
 --- !u!1 &875423821
 GameObject:
@@ -16525,7 +16527,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Choissisez un r\xF4le !"
+  m_text: "Choisissez un r\xF4le !"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -17348,8 +17350,8 @@ MonoBehaviour:
   instructionParent: {fileID: 962588891}
   instructionTitle: {fileID: 1149569087}
   instructionDescription: {fileID: 2113047651}
-  instructionRoleTitle: "Choissisez un r\xF4le !"
-  instructionPlayerTitle: Choissisez un joueur !
+  instructionRoleTitle: "Choisissez un r\xF4le !"
+  instructionPlayerTitle: Choisissez un joueur !
   instructionRoleSelectionPosition: {fileID: 1600648899}
   instructionPlayerSelectionPosition: {fileID: 802840500}
   characterPickerLiftHeight: 5
@@ -24703,7 +24705,7 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 40
+    FieldOfView: 54.5
     OrthographicSize: 10
     NearClipPlane: 0.1
     FarClipPlane: 5000

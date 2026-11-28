@@ -16,13 +16,15 @@ worktree by what it is now. It runs in the background after each `new` and at ea
   - unused for heavy_hours (24): the ignored folders that rebuild themselves (`heavy`: Library, node_modules, .venv...) go,
     even with uncommitted work, never a tracked file;
   - clean, unused for drop_days (14): the folder goes, its branch stays (`revive`);
-  - uncommitted work: its code is never touched.
+  - uncommitted work: its code is never touched. Changes only a program makes (worktree_guard.json `noise`: an editor's
+    cache, its log) are not work; merged = also each commit found again in the main branch (git cherry), even reworked since.
 Used = the hook PreToolUse saw it (worktree_guard.py), or git wrote in it. A folder some program holds open (Unity, a
 terminal) cannot be renamed on Windows: it is left alone. Decisions go to .git/session-worktree.log. Standard library only.
 """
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import pathlib
@@ -214,7 +216,17 @@ def _conf() -> dict:
     path = HERE / "worktree_guard.json"
     conf = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     return {"heavy": list(conf.get("heavy", HEAVY)), "heavy_hours": float(conf.get("heavy_hours", HEAVY_HOURS)),
-            "drop_days": float(conf.get("drop_days", DROP_DAYS)), "keep": list(conf.get("keep", []))}
+            "drop_days": float(conf.get("drop_days", DROP_DAYS)), "keep": list(conf.get("keep", [])),
+            "noise": list(conf.get("noise", []))}
+
+
+def _work(repo: pathlib.Path, noise: list[str]) -> list[str]:
+    """Uncommitted changes of [repo], less the ones only a program makes (an editor rewriting its cache): a pattern of
+    [noise] matched against the path or the file name. Those are thrown away with the worktree. A file rewritten with
+    other line endings only (git status says M, its content is the same) is not a change either."""
+    paths = (git(repo, "--no-optional-locks", "-c", "core.safecrlf=false", "diff", "--name-only", "HEAD").splitlines()
+             + git(repo, "--no-optional-locks", "ls-files", "--others", "--exclude-standard").splitlines())  # a failure is not « clean »
+    return [p for p in paths if not any(fnmatch.fnmatch(p, n) or fnmatch.fnmatch(p.rsplit("/", 1)[-1], n) for n in noise)]
 
 
 def _repos(w: pathlib.Path) -> list[pathlib.Path]:
@@ -260,6 +272,10 @@ def _merged(repo, head: str = "HEAD") -> bool:
     """[head] brings nothing its main branch (or the remote copy of it) lacks: merged, squashed, rebased or cherry-picked."""
     for base in _bases(repo):
         if git(repo, "rev-list", "--count", f"{base}..{head}", check=False) == "0":
+            return True
+        # each commit has its twin in base (a squashed PR of one commit), even when base changed that code since
+        cherry = git(repo, "cherry", base, head, check=False).splitlines()
+        if cherry and all(c.startswith("-") for c in cherry):
             return True
         p = subprocess.run(["git", "merge-tree", "--write-tree", base, head], cwd=str(repo), capture_output=True, text=True,
                            encoding="utf-8", errors="replace")
@@ -430,7 +446,7 @@ def _sweep_one(root: pathlib.Path, w: pathlib.Path, now: float, conf: dict, dry:
     idle = (now - _last_used(root, w)) / 3600  # before git looks inside
     since = f"inactif depuis {_for(idle)}"
     repos = _repos(w)
-    dirty = any(git(r, "--no-optional-locks", "status", "--porcelain", check=False) for r in repos)
+    dirty = any(_work(r, conf["noise"]) for r in repos)
     if not dirty and idle >= MERGED_HOURS and all(_merged(r) for r in repos):
         return _drop(root, w, True, dry, f"fusionné, {since}", conf["keep"])
     if not dirty and idle >= conf["drop_days"] * 24:
@@ -593,7 +609,17 @@ def _test() -> int:
             assert "dossier principal" in str(e), e
 
         # clean-up: a landed, b holds an unlanded commit, c and d left with heavy folders, e in use, f squashed on main
-        c, d, e, f = (new(root, n) for n in "cdef")
+        c, d, e, f, g, h = (new(root, n) for n in "cdefgh")
+        (g / "g.txt").write_text("g\n")  # g: one commit squashed on main, then main reworked it
+        git(g, "add", ".")
+        git(g, "commit", "-qm", "g")
+        git(root, "cherry-pick", git(g, "rev-parse", "HEAD"))
+        (root / "g.txt").write_text("g reworked\n")
+        git(root, "commit", "-qam", "rework g")
+        (h / "app" / "b.txt").write_text("rewritten by an editor\n")  # h: only noise left
+        (h / "app" / "new.txt").write_text("a new file is work\n")
+        assert _work(h / "app", ["b.txt"]) == ["new.txt"] and _work(h / "app", []) == ["b.txt", "new.txt"]
+        (h / "app" / "new.txt").unlink()
         (c / "app" / "x.txt").write_text("x\n")
         git(c / "app", "add", ".")
         git(c / "app", "commit", "-qm", "c")
@@ -620,14 +646,14 @@ def _test() -> int:
                 if p.exists():
                     os.utime(p, (t, t))
 
-        for w, hours in ((a, 3), (b, 15 * 24), (c, 30), (d, 30 * 24), (e, 30), (f, 3)):
+        for w, hours in ((a, 3), (b, 15 * 24), (c, 30), (d, 30 * 24), (e, 30), (f, 3), (g, 3), (h, 3)):
             age(w, hours)
         _seen(root, e.name).touch()  # the hook just saw a session in e
         for w in (a, b):  # ignored files listed in `keep` come back to the main folder
             (w / "Library").mkdir(exist_ok=True)
             (w / "Library" / "votes.txt").write_text(f"votes {w.name}\n")
         global _conf
-        real_conf, _conf = _conf, lambda: {**real_conf(), "keep": ["Library/*.txt"]}
+        real_conf, _conf = _conf, lambda: {**real_conf(), "keep": ["Library/*.txt"], "noise": ["b.txt"]}
 
         lines = sweep(root, dry=True, fetch=False)
         assert all(w.exists() for w in (a, b, c, d, e, f)) and (c / "Library").exists(), lines
@@ -647,6 +673,8 @@ def _test() -> int:
         assert (c / "app" / "x.txt").exists()
         assert d.exists() and not (d / "Library").exists() and (d / "a.txt").read_text() == "not committed\n", text
         assert e.exists() and (e / "Library").exists(), text
+        assert not g.exists() and not git(root, "branch", "--list", f"claude/{g.name}"), text  # cherry counts
+        assert not h.exists(), text  # noise is not work
         assert not git(root, "branch", "--list", "claude/old"), text
         assert "allégé" in text and (root / ".git" / "session-worktree.log").exists(), text
         _conf = real_conf

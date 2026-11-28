@@ -108,6 +108,33 @@ namespace Autoplay
             return true;
         }
 
+        /// <summary>The screen rectangle covered by the images drawn under <paramref name="_target"/> (world-space canvases
+        /// projected by their camera): what the player sees of a card, to check it stays on screen.</summary>
+        public static bool TryScreenRect(GameObject _target, out Rect _rect)
+        {
+            _rect = default;
+            bool _any = false;
+            var _corners = new Vector3[4];
+            foreach (UnityEngine.UI.Image _image in _target.GetComponentsInChildren<UnityEngine.UI.Image>())
+            {
+                Canvas _canvas = _image.canvas;
+                if (!_image.isActiveAndEnabled || _canvas == null || IsZeroSize(_image.rectTransform))
+                {
+                    continue;
+                }
+                Camera _camera = CanvasCamera(_canvas);
+                _image.rectTransform.GetWorldCorners(_corners);
+                foreach (Vector3 _corner in _corners)
+                {
+                    Vector2 _point = RectTransformUtility.WorldToScreenPoint(_camera, _corner);
+                    _rect = _any ? Rect.MinMaxRect(Mathf.Min(_rect.xMin, _point.x), Mathf.Min(_rect.yMin, _point.y),
+                        Mathf.Max(_rect.xMax, _point.x), Mathf.Max(_rect.yMax, _point.y)) : new Rect(_point, Vector2.zero);
+                    _any = true;
+                }
+            }
+            return _any;
+        }
+
         private static Camera CanvasCamera(Canvas _canvas)
         {
             Canvas _root = _canvas.rootCanvas;

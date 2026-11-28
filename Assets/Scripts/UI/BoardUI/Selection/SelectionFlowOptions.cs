@@ -11,6 +11,8 @@ namespace UI.BoardUI.Selection
         public bool clearFocusOnFinish = true;
         public Action onCanceled;
         public string[] stepDescriptions;
+        /// <summary>Values for the {0}, {1}... of the step descriptions (a player's pseudo...).</summary>
+        public object[] stepDescriptionArgs;
 
         public Character pinnedCharacter;
         public Role pinnedRole;

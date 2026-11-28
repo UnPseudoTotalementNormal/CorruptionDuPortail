@@ -1,8 +1,10 @@
 # Attribution guard - no Claude / AI attribution in commits or PRs (CLAUDE.md "Commits").
 # Hook: PreToolUse (Bash | PowerShell). On a `git commit`, `gh pr create|edit|merge`, if the command text or the
 # message file it passes (-F / --file / --body-file) carries a Claude co-author trailer or a "Generated with Claude
-# Code" line, the call is blocked (exit 2, reason on stderr). The harness asks for those lines by default; this
-# project forbids them, and the rule alone was missed once (T26, 2026-10-27).
+# Code" line, the call is blocked (exit 2, reason on stderr). The harness asked for those lines by default and the
+# CLAUDE.md rule alone kept losing to that request (T26, 2026-10-27; ~7 blocks by 2026-11-09). Since 2026-11-09,
+# `"attribution": {"commit": "", "pr": ""}` in .claude/settings.json turns the request off at the source; this
+# hook stays as the safety net if that setting is ever lost or renamed.
 #
 # Any failure of the hook itself lets the call through: a broken guard must never block work.
 
@@ -37,6 +39,12 @@ try {
     foreach ($m in [regex]::Matches($cmd, '(?:-F|--file|--body-file)[\s=]+("([^"]+)"|''([^'']+)''|(\S+))')) {
         $msgFile = @($m.Groups[2].Value, $m.Groups[3].Value, $m.Groups[4].Value) | Where-Object { $_ } | Select-Object -First 1
         if ($msgFile -eq '-') { continue }
+        # A file the command writes itself (`cat > /tmp/msg.txt <<EOF ... && git commit -F /tmp/msg.txt`) does not
+        # exist yet in its new form when this hook runs: what is on disk is a stale file left by another session
+        # (blocked a clean commit on 2026-11-26, PR #230). Its new text is in the command, already checked above.
+        # Only an overwrite: an append (`>>`, `tee -a`, Add-Content) keeps the old text, which is still read.
+        $writes = '(?:(?<!>)>(?!>)|\btee(?!\s+-a)|\b(?:Out-File|Set-Content)(?:\s+-(?:FilePath|LiteralPath|Path))?)\s*["'']?'
+        if ($cmd -match ($writes + [regex]::Escape($msgFile) + '(?:["'';&|)]|\s|$)')) { continue }
         if ($msgFile -match '^/tmp/(.*)$') { $msgFile = Join-Path $env:TEMP $Matches[1] }
         elseif ($msgFile -match '^/([a-zA-Z])/(.*)$') { $msgFile = "$($Matches[1]):/$($Matches[2])" }
         if ($repo -and -not [IO.Path]::IsPathRooted($msgFile)) { $msgFile = Join-Path $repo $msgFile }

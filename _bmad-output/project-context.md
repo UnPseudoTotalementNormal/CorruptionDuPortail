@@ -55,6 +55,7 @@ None of these fits → stop and ask a human.
 - **No NGO spawn order.** Resolving a *peer manager* via `For(nm)` inside `OnNetworkSpawn` races → scene-wire it as a lane-A `[SerializeField]` instead. Never read another replica's resolved fields during your own spawn.
 - **Per-character data cloned from an authored asset must be deep-cloned.** `[SerializeReference]` lists on a `RoleDataObject` (winning conditions) were shared by every character and every game when the element type was not `ICloneable` (`Role.Clone` fell back to a shallow copy): the Robot's victory read seat 0 on the server and a stale owner hung the next game (W1, 2026-10-08). New condition / effect types stay value-only or implement a real clone.
 - A grandfathered singleton served by `CompositionRoot` must be **published in `Awake`**, not in its own `OnNetworkSpawn`: in-scene objects spawn in no guaranteed order, so a consumer resolving it in its `OnNetworkSpawn` caches null for the whole game (`RobotBoardInfo` ← `RoleTargetSystem`, 2026-10-08). A spawned instance still takes over one that only ran `Awake` (test templates).
+- **`GetGameStates(...)` events: subscribe at `onGameStarted`, never in `OnNetworkSpawn`/`Start`.** `GameManager` replaces its state assets by clones in its own `OnNetworkSpawn`; subscribing earlier hooks the uncloned asset, whose events never fire (corruption/robot counters frozen at "0/N" all game, 2026-11-22). Unsubscribe before re-binding.
 - Fail loud: `Assert.IsNotNull(dep, "<dep> not wired")` after each resolution. **No `?? X.instance` fallback.**
 - Never add a new `static instance`. Grandfathered façades (`GameManager.instance`, `CharacterManager.instance` for static win-rule machinery; `GameAudioManager`, `LobbyManager`, `InputManager`) are not an invitation.
 - `GameManager` owns `currentGameStateIndex` + `OnEnd → write NV → OnStart` sequencing by design. Don't "finish removing" it.
@@ -152,7 +153,7 @@ Every subscribe has a mirrored unsubscribe on the **cached** target: spawned rep
 - Every feature ships with its logs: each player action (click, key) with its target, each **silent refusal** (early
   `return` on a player input: "I clicked, nothing happened") with its reason, each step of a sequence (start / end /
   cut short). A captured `Debug.Log("[TAG] …")` reaches the logs too (category `unity`) but is not searchable by key.
-- Enforced by `.claude/hooks/log_guard.ps1` (PreToolUse): a commit adding ≥ 5 lines of game code (outside Editor, Tests,
+- Enforced by `.claude/tools/log_guard.py` (template Journal; settings `log_guard.json`, method in `.claude/rules/logs.md`; reminder after an edit, and at commit): a commit adding ≥ 5 lines of game code (outside Editor, Tests,
   Autoplay, Rendering, Facepunch, Domain, Diagnostics) with no `GameLog.` call is blocked. Escape hatch for code with
   truly nothing to log: a `Logs: none (<why>)` line in the commit body.
 - `CDP_PLAYTEST_LOGS` is added **only** by `CdpBuild` (CI playtest builds). Never in ProjectSettings: the Editor would
@@ -196,6 +197,11 @@ A text written the old way compiles, reads fine in French and stays French for a
   literal, or a worded literal handed to `.text =` / `new Label(` / a chat or error message, on a line without `Loc.` /
   `SetLoc`. Marks on the line: `// loc` (a game text translated where it is displayed), `// loc-ok` (no player reads it).
   `python .claude/tools/loc_guard.py --scan` audits the tree, `--test` checks the guard.
+- **Spelling** (French and English): `.claude/tools/spell_guard.py` (hook, blocking at `git commit`) has Claude proofread
+  every `texts.json` value the commit adds or changes (spelling, agreement, conjugation, accents, space before
+  `: ; ! ?`). A fix changes the French key: change it where it is written (.cs, prefab FixedString, asset, scene) and
+  in the table together. False positive: the exact text in `.claude/tools/spell_guard_ok.txt`. `--scan` audits the
+  whole table (2026-11-26: 37 mistakes, e.g. "X à été soigné(e)", "Choissisez", "tout les").
 
 ## UI Toolkit gotchas
 

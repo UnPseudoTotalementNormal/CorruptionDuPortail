@@ -85,7 +85,8 @@ namespace Network
                     "|el", Bit(_character.isEliminated.Value),
                     "|aw", Bit(_character.isAwakened.Value),
                     "|bl", Bit(_character.isBlessed.Value),
-                    "|he", Bit(_character.isHealed.Value));
+                    "|he", Bit(_character.isHealed.Value),
+                    "|kc", Bit(_character.isKnownChosen.Value));
             }
         }
 
